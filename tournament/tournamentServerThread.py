@@ -41,7 +41,7 @@ import json
 
 import challonge
 
-from password import CHALLONGE_KEY, CHALLONGE_USER
+from passwords import CHALLONGE_KEY, CHALLONGE_USER
 
 
 
