@@ -1,0 +1,13 @@
+syntax: glob
+*.log
+*~
+*.pyc
+*.jpg
+*.project
+*.settings*
+*.cproject
+*.external*
+*.pydev*
+*.vcproj
+*.jpeg
+passwords.py
