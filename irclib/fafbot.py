@@ -1,3 +1,4 @@
+#!/usr/bin/python
 #-------------------------------------------------------------------------------
 # Copyright (c) 2014 Gael Honorez.
 # All rights reserved. This program and the accompanying materials
@@ -134,7 +135,8 @@ class BotModeration(ircbot.SingleServerIRCBot):
         """
         Constructeur qui pourrait prendre des parametres dans un "vrai" programme.
         """
-        ircbot.SingleServerIRCBot.__init__(self, [("91.121.153.175", 6667)],
+        # FIXME: hardcoded ip
+        ircbot.SingleServerIRCBot.__init__(self, [("37.58.123.2", 6667)],
                                            "fafbot", "FAF bot")
         self.nickpass = "fafbotthegreat"
         self.nickname = "fafbot"

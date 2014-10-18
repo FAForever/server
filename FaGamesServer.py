@@ -23,9 +23,6 @@ import FAGamesServerThread
 import faflogger
 loggerInstance = faflogger.instance
 
-
-
-
 class FAServer(QtNetwork.QTcpServer):
     def __init__(self, listUsers, Games, db,  dirtyGameList, parent=None):
         super(FAServer, self).__init__(parent)
