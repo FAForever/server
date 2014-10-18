@@ -856,92 +856,91 @@ class FAGameThread(QObject):
     def handleGameState(self, state):
         ''' Handle game states - launch,....'''
 
-            if state == 'Idle':
-                #FA has just connected to us
-                self.idleState()
+        if state == 'Idle':
+          #FA has just connected to us
+          self.idleState()
 
-            elif state == 'Lobby':
-                # waiting for command
-                self.lobbyState()
+        elif state == 'Lobby':
+          # waiting for command
+          self.lobbyState()
 
-            elif state == 'Launching':
-                #  game launch, the user is playing !
-                action = self.player.getAction()
-                if self.tasks :
-                    self.tasks.stop()
-                if self.player.getAction() == "HOST" :
+        elif state == 'Launching':
+          #  game launch, the user is playing !
+          action = self.player.getAction()
+          if self.tasks :
+            self.tasks.stop()
+          if self.player.getAction() == "HOST" :
                     
-                    self.game.numPlayers = self.game.getNumPlayer()
+            self.game.numPlayers = self.game.getNumPlayer()
                     
-                    self.game.setLobbyState("playing")
+            self.game.setLobbyState("playing")
                     
-                    if hasattr(self.game, "noStats"):
-                        if self.game.noStats == False:
-                            self.fillGameStats()
-                    else:
-                        self.fillGameStats()
+            if hasattr(self.game, "noStats"):
+              if self.game.noStats == False:
+                self.fillGameStats()
+            else:
+              self.fillGameStats()
 
-                    self.game.fixPlayerPosition()
-                    result = self.game.recombineTeams()
+            self.game.fixPlayerPosition()
+            result = self.game.recombineTeams()
                     
-                    self.fillPlayerStats(self.game.getPlayers())
-                    self.fillAIStats(self.game.AIs)
-                    for player in self.game.getPlayers() :
+            self.fillPlayerStats(self.game.getPlayers())
+            self.fillAIStats(self.game.AIs)
+            for player in self.game.getPlayers() :
                         
-                        player.setAction("PLAYING")
-                        player.resetUdpPacket()
+              player.setAction("PLAYING")
+              player.resetUdpPacket()
                                                        
-                    if not all((i.count())==self.game.finalTeams[0].count() for i in self.game.finalTeams) :
-                            self.game.setInvalid("All Teams don't the same number of players.")
+            if not all((i.count())==self.game.finalTeams[0].count() for i in self.game.finalTeams) :
+              self.game.setInvalid("All Teams don't the same number of players.")
                             
                     
-                    if len(self.game.finalTeams) == (len(self.game.AIs) + self.game.getNumPlayer()) :
-                        if self.game.getNumPlayer() > 3 :
-                            self.game.ffa = True
-                            # ffa doesn't count for that much in rating.
-                            self.game.partial = 0.25
+            if len(self.game.finalTeams) == (len(self.game.AIs) + self.game.getNumPlayer()) :
+              if self.game.getNumPlayer() > 3 :
+                self.game.ffa = True
+                # ffa doesn't count for that much in rating.
+                self.game.partial = 0.25
                     
-                    self.game.setTime()
+            self.game.setTime()
 
-                    self.sendGameInfo()
+            self.sendGameInfo()
                     
-                    if self.game.getGameType() != 0 and self.game.getGamemod() != "coop" :
-                        self.game.setInvalid("Only assassination mode is ranked")
+            if self.game.getGameType() != 0 and self.game.getGamemod() != "coop" :
+              self.game.setInvalid("Only assassination mode is ranked")
                   
-                    elif self.game.gameOptions["FogOfWar"] != "explored" :
-                        self.game.setInvalid("Fog of war not activated")
+            elif self.game.gameOptions["FogOfWar"] != "explored" :
+              self.game.setInvalid("Fog of war not activated")
                         
-                       
-                    elif self.game.gameOptions["CheatsEnabled"] != "false" :
-                        self.game.setInvalid("Cheats were activated")
+            elif self.game.gameOptions["CheatsEnabled"] != "false" :
+              self.game.setInvalid("Cheats were activated")
                         
-                    elif self.game.gameOptions["PrebuiltUnits"] != "Off" :
-                        self.game.setInvalid("Prebuilt was activated")
+            elif self.game.gameOptions["PrebuiltUnits"] != "Off" :
+              self.game.setInvalid("Prebuilt was activated")
 
-                    elif self.game.gameOptions["NoRushOption"] != "Off" :
-                        self.game.setInvalid("No rush games are not ranked")                                        
+            elif self.game.gameOptions["NoRushOption"] != "Off" :
+              self.game.setInvalid("No rush games are not ranked")                                        
 
-                    elif self.game.gameOptions["RestrictedCategories"] != 0 :
-                        self.game.setInvalid("Restricted games are not ranked")                                    
+            elif self.game.gameOptions["RestrictedCategories"] != 0 :
+              self.game.setInvalid("Restricted games are not ranked")                                    
 
-                    elif len(self.game.mods) > 0 :
-                        for uid in self.game.mods:
-                            if not self.isModRanked(uid):
-                                if uid == "e7846e9b-23a4-4b95-ae3a-fb69b289a585" :
-                                    if not "scca_coop_e02" in self.game.getGameMap().lower():
-                                        self.game.setInvalid("Sim mods are not ranked")
+            elif len(self.game.mods) > 0 :
+              for uid in self.game.mods:
+                if not self.isModRanked(uid):
+                  if uid == "e7846e9b-23a4-4b95-ae3a-fb69b289a585" :
+                    if not "scca_coop_e02" in self.game.getGameMap().lower():
+                      self.game.setInvalid("Sim mods are not ranked")
                                         
-                                else:
-                                    self.game.setInvalid("Sim mods are not ranked")
+                  else:
+                    self.game.setInvalid("Sim mods are not ranked")
 
-                            query = QSqlQuery(self.parent.db)
-                            query.prepare("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid = ?")
-                            query.addBindValue(uid)
-                            query.exec_()
+                query = QSqlQuery(self.parent.db)
+                query.prepare("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid = ?")
+                query.addBindValue(uid)
+                query.exec_()
 
-                    for playerTS in self.game.getTrueSkillPlayers() : 
-                        if playerTS.getRating().getMean() < -1000 :
-                            self.game.setInvalid("You are playing with a smurfer.")        
+            for playerTS in self.game.getTrueSkillPlayers() : 
+              if playerTS.getRating().getMean() < -1000 :
+                self.game.setInvalid("You are playing with a smurfer.")        
 
     def doEnd(self):
         ''' bybye player :('''
