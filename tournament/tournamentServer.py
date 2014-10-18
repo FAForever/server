@@ -28,7 +28,7 @@ import logging
 import time
 
 import tournamentServerThread
-from password import CHALLONGE_KEY, CHALLONGE_USER
+from passwords import CHALLONGE_KEY, CHALLONGE_USER
 import challonge 
 challonge.set_credentials(CHALLONGE_USER, CHALLONGE_KEY)
 
