@@ -47,7 +47,7 @@ WIN_PAID = 100
 loggerInstance = gwlogger.instance
 
 from configobj import ConfigObj
-config = ConfigObj(filename)
+config = ConfigObj("/etc/faforever/faforever.conf")
 
 TEXPATH = config['global']['content_path'] + "/images"
 

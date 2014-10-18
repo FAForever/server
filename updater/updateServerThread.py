@@ -40,7 +40,7 @@ import hashlib
 import json
 
 from configobj import ConfigObj
-config = ConfigObj(filename)
+config = ConfigObj("/etc/faforever/faforever.conf")
 
 class updateServerThread(QObject):
     '''
