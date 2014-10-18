@@ -34,6 +34,9 @@ from twitch import *
 
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
 
+from configobj import ConfigObj
+config = ConfigObj("/etc/faforever/faforever.conf")
+
 from threading import Timer
 from trueSkill.GameInfo import GameInfo
 from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import FactorGraphTrueSkillCalculator
@@ -399,7 +402,7 @@ class BotModeration(ircbot.SingleServerIRCBot):
                             date = t.split("T")
                             hour = date[1].replace("Z", "")
 
-                            self.connection.privmsg("#aeolus", "%s - %s - http://www.faforever.com/livestream/?channel=%s Since %s (%i viewers) " % (stream["channel"]["display_name"], stream["channel"]["status"],stream["channel"]["display_name"], hour, stream["viewers"]))
+                            self.connection.privmsg("#aeolus", "%s - %s - " + config['global']['www_url'] + "livestream/?channel=%s Since %s (%i viewers) " % (stream["channel"]["display_name"], stream["channel"]["status"],stream["channel"]["display_name"], hour, stream["viewers"]))
                     else:
                         self.connection.privmsg("#aeolus", "No one is streaming :'(")
             if message.startswith("!casts"):

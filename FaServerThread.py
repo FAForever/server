@@ -60,6 +60,9 @@ from Crypto.Cipher import AES
 
 from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS, MAIL_PASSWORD
 
+from configobj import ConfigObj
+config = ConfigObj("/etc/faforever/faforever.conf")
+
 import json
 
 FA = 9420
@@ -579,15 +582,15 @@ class FAServerThread(QObject):
                     query.prepare("SELECT filename FROM table_mod WHERE filename LIKE '%"+zipmap+"%'")
                     query.exec_()
                     if  query.size() == 0: 
-                        writeFile = QFile("/var/www/faf/vault/mods/%s" % zipmap)
+                        writeFile = QFile(config['global']['content_path'] + "vault/mods/%s" % zipmap)
                         
                         
                         if(writeFile.open(QIODevice.WriteOnly)) :
                                 writeFile.write(fileDatas)
                         writeFile.close()
                         
-                        if zipfile.is_zipfile("/var/www/faf/vault/mods/%s" % zipmap) :
-                            zip = zipfile.ZipFile("/var/www/faf/vault/mods/%s" % zipmap, "r", zipfile.ZIP_DEFLATED)
+                        if zipfile.is_zipfile(config['global']['content_path'] + "vault/mods/%s" % zipmap) :
+                            zip = zipfile.ZipFile(config['global']['content_path'] + "vault/mods/%s" % zipmap, "r", zipfile.ZIP_DEFLATED)
       
 
                             if zip.testzip() == None :
@@ -599,7 +602,7 @@ class FAServerThread(QObject):
                                         continue
                                     if filename.endswith(".png") :
                                         source = zip.open(member)
-                                        target = open(os.path.join("/var/www/faf/vault/mods_thumbs/", zipmap.replace(".zip", ".png")), "wb")
+                                        target = open(os.path.join(config['global']['content_path'] + "vault/mods_thumbs/", zipmap.replace(".zip", ".png")), "wb")
                                         icon = zipmap.replace(".zip", ".png")
 
                                         shutil.copyfileobj(source, target)
@@ -713,15 +716,15 @@ class FAServerThread(QObject):
                     query.exec_(queryStr)
 
                     if  query.size() == 0: 
-                        writeFile = QFile("/var/www/faf/vault/maps/%s" % zipmap)
+                        writeFile = QFile(config['global']['content_path'] + "vault/maps/%s" % zipmap)
                         
                         
                         if(writeFile.open(QIODevice.WriteOnly)) :
                                 writeFile.write(fileDatas)
                         writeFile.close()
                         
-                        if zipfile.is_zipfile("/var/www/faf/vault/maps/%s" % zipmap) :
-                            zip = zipfile.ZipFile("/var/www/faf/vault/maps/%s" % zipmap, "r", zipfile.ZIP_DEFLATED)
+                        if zipfile.is_zipfile(config['global']['content_path'] + "vault/maps/%s" % zipmap) :
+                            zip = zipfile.ZipFile(config['global']['content_path'] + "vault/maps/%s" % zipmap, "r", zipfile.ZIP_DEFLATED)
       
 
                             if zip.testzip() == None :
@@ -732,7 +735,7 @@ class FAServerThread(QObject):
                                         continue
                                     if filename.endswith(".small.png") :
                                         source = zip.open(member)
-                                        target = open(os.path.join("/var/www/faf/vault/map_previews/small/", filename.replace(".small.png", ".png")), "wb")
+                                        target = open(os.path.join(config['global']['content_path'] + "vault/map_previews/small/", filename.replace(".small.png", ".png")), "wb")
 
 
                                         shutil.copyfileobj(source, target)
@@ -740,7 +743,7 @@ class FAServerThread(QObject):
                                         target.close()
                                     elif filename.endswith(".large.png") :
                                         source = zip.open(member)
-                                        target = open(os.path.join("/var/www/faf/vault/map_previews/large/", filename.replace(".large.png", ".png")), "wb")
+                                        target = open(os.path.join(config['global']['content_path'] + "vault/map_previews/large/", filename.replace(".large.png", ".png")), "wb")
 
 
                                         shutil.copyfileobj(source, target)
@@ -859,7 +862,7 @@ class FAServerThread(QObject):
                         query.addBindValue(exp)
                         query.exec_()
                         link = {'a' : 'validate', 'email' : keyHex, 'u' : base64.b64encode(str(uid))}
-                        passwordLink = "http://www.faforever.com/faf/validateAccount.php?" + urllib.urlencode(link)
+                        passwordLink = config['global']['app_url'] + "validateAccount.php?" + urllib.urlencode(link)
 
                         text = "Dear "+login+",\n\n\
 Please visit the following link to validate your FAF account:\n\
@@ -878,7 +881,7 @@ Thanks,\n\
                         
                         #self.log.debug("sending mail to " + em)
                         #self.log.debug(msg.as_string())
-                        s = smtplib.SMTP_SSL('mail.faforever.com', 465, "mail.faforever.com", timeout = 5)
+                        s = smtplib.SMTP_SSL(config['global']['smtp_server'], 465, config['global']['smtp_server'], timeout = 5)
                         s.login(MAIL_ADDRESS, MAIL_PASSWORD)
                         s.sendmail(MAIL_ADDRESS, [em], msg.as_string())
                         s.quit()
@@ -1445,7 +1448,7 @@ Thanks,\n\
 
            
             link = {'a' : 'validate', 'email' : key, 'u' : base64.b64encode(str(uid))}
-            passwordLink = "http://www.faforever.com/faf/validateAccount.php?" + urllib.urlencode(link)
+            passwordLink = config['global']['app_url'] + "validateAccount.php?" + urllib.urlencode(link)
             text = "Dear "+login+",\n\n\
 Please visit the following link to validate your FAF account:\n\
 -----------------------\n\
@@ -1462,7 +1465,7 @@ Thanks,\n\
             
             #self.log.debug("sending mail to " + em)
             #self.log.debug(msg.as_string())
-            s = smtplib.SMTP_SSL('mail.faforever.com', 465, "mail.faforever.com", timeout = 5)
+            s = smtplib.SMTP_SSL(config['global']['smtp_server'], 465, config['global']['smtp_server'], timeout = 5)
             s.login(MAIL_ADDRESS, MAIL_PASSWORD)
             s.sendmail(MAIL_ADDRESS, [em], msg.as_string())
             s.quit()
@@ -1660,7 +1663,7 @@ Thanks,\n\
                 
                 validated = query.value(1)
                 if validated == 0 :
-                    reason = "Your account is not validated. Please visit <a href='http://www.faforever.com/faf/validateAccount.php'>http://www.faforever.com/faf/validateAccount.php</a>.<br>Please re-create an account if your email is not correct (<b>"+str(self.email)+"</b>)"
+                    reason = "Your account is not validated. Please visit <a href='" + config['global']['app_url'] + "faf/validateAccount.php'>" + config['global']['app_url'] + "faf/validateAccount.php</a>.<br>Please re-create an account if your email is not correct (<b>"+str(self.email)+"</b>)"
                     self.resendMail(login) 
                     self.sendJSON(dict(command="notice", style="error", text=reason))
                     return 
@@ -1678,7 +1681,7 @@ Thanks,\n\
                 
                 if not self.steamChecked:
                     if uniqueId == None :
-                        self.sendJSON(dict(command="notice", style="error", text="Unique Id found for another user.<br>Multiple accounts are not allowed.<br><br>Try SteamLink: <a href='http://www.faforever.com/faf/steam.php'>http://www.faforever.com/faf/steam.php</a>"))
+                        self.sendJSON(dict(command="notice", style="error", text="Unique Id found for another user.<br>Multiple accounts are not allowed.<br><br>Try SteamLink: <a href='" + config['global']['app_url'] + "faf/steam.php'>" + config['global']['app_url'] + "faf/steam.php</a>"))
                         return                    
                     # the user is not steam Checked.
                     query = QSqlQuery(self.parent.db)
@@ -1686,7 +1689,7 @@ Thanks,\n\
                     query.addBindValue(uniqueId)
                     query.exec_()
                     if query.size() > 0 :
-                        self.sendJSON(dict(command="notice", style="error", text="This computer has been used by a steam account.<br>You have to authentify your account on steam too in order to use it on this computer :<br>SteamLink: <a href='http://www.faforever.com/faf/steam.php'>http://www.faforever.com/faf/steam.php</a>"))
+                        self.sendJSON(dict(command="notice", style="error", text="This computer has been used by a steam account.<br>You have to authentify your account on steam too in order to use it on this computer :<br>SteamLink: <a href='" + config['global']['app_url'] + "faf/steam.php'>" + config['global']['app_url'] + "faf/steam.php</a>"))
                         return
                     
                     # check for duplicate account
@@ -1708,9 +1711,9 @@ Thanks,\n\
                             if query2.size() != 0:
                                 query2.first()
                                 otherLogging = str(query2.value(0))
-                                self.sendJSON(dict(command="notice", style="error", text="This computer is tied to this account : %s.<br>Multiple accounts are not allowed.<br>You can free this computer by logging in with that account (%s) on another computer.<br><br>Or Try SteamLink: <a href='http://www.faforever.com/faf/steam.php'>http://www.faforever.com/faf/steam.php</a>" %(otherLogging, otherLogging)))
+                                self.sendJSON(dict(command="notice", style="error", text="This computer is tied to this account : %s.<br>Multiple accounts are not allowed.<br>You can free this computer by logging in with that account (%s) on another computer.<br><br>Or Try SteamLink: <a href='" + config['global']['app_url'] + "faf/steam.php'>" + config['global']['app_url'] + "faf/steam.php</a>" %(otherLogging, otherLogging)))
                             else:
-                                self.sendJSON(dict(command="notice", style="error", text="This computer is tied to another account.<br>Multiple accounts are not allowed.<br>You can free this computer by logging in with that account on another computer, or <br><br>Try SteamLink: <a href='http://www.faforever.com/faf/steam.php'>http://www.faforever.com/faf/steam.php</a>"))
+                                self.sendJSON(dict(command="notice", style="error", text="This computer is tied to another account.<br>Multiple accounts are not allowed.<br>You can free this computer by logging in with that account on another computer, or <br><br>Try SteamLink: <a href='" + config['global']['app_url'] + "faf/steam.php'>" + config['global']['app_url'] + "faf/steam.php</a>"))
                             query2 = QSqlQuery(self.parent.db)
                             query2.prepare("INSERT INTO `smurf_table`(`origId`, `smurfId`) VALUES (?,?)")
                             query2.addBindValue(self.uid)
@@ -1910,19 +1913,19 @@ Thanks,\n\
                                         if score > 0 :
                                             if i == 1 :
                                                 avatar = {}
-                                                avatar["url"] = str("http://www.faforever.com/faf/avatars/div1.png")
+                                                avatar["url"] = str(config['global']['content_url'] + "avatars/div1.png")
                                                 avatar["tooltip"] = str("First of my division !")
                                                 self.player.avatar = avatar
                                                 self.leagueAvatar  = avatar
                                             elif i == 2 :
                                                 avatar = {}
-                                                avatar["url"] = str("http://www.faforever.com/faf/avatars/div2.png")
+                                                avatar["url"] = str(config['global']['content_url'] + "avatars/div2.png")
                                                 avatar["tooltip"] = ("Second of my division !")
                                                 self.player.avatar = avatar
                                                 self.leagueAvatar  = avatar
                                             elif i == 3 :
                                                 avatar = {}
-                                                avatar["url"] = str("http://www.faforever.com/faf/avatars/div3.png")
+                                                avatar["url"] = str(config['global']['content_url'] + "avatars/div3.png")
                                                 avatar["tooltip"] = ("Third of my division !")
                                                 self.player.avatar = avatar   
                                                 self.leagueAvatar  = avatar
@@ -1948,20 +1951,20 @@ Thanks,\n\
                                                 isFirst = True
                                                 ourScore = score
                                                 avatar = {}
-                                                avatar["url"] = str("http://www.faforever.com/faf/avatars/league1.png")
+                                                avatar["url"] = str(config['global']['content_url'] + "avatars/league1.png")
                                                 avatar["tooltip"] = str("First of my League !")
                                                 self.player.avatar = avatar
                                                 self.leagueAvatar  = avatar
                                                 
                                             elif i == 2 :
                                                 avatar = {}
-                                                avatar["url"] = str("http://www.faforever.com/faf/avatars/league2.png")
+                                                avatar["url"] = str(config['global']['content_url'] + "avatars/league2.png")
                                                 avatar["tooltip"] = ("Second of my League !")
                                                 self.player.avatar = avatar
                                                 self.leagueAvatar  = avatar
                                             elif i == 3 :
                                                 avatar = {}
-                                                avatar["url"] = str("http://www.faforever.com/faf/avatars/league3.png")
+                                                avatar["url"] = str(config['global']['content_url'] + "avatars/league3.png")
                                                 avatar["tooltip"] = ("Third of my League !")
                                                 self.player.avatar = avatar   
                                                 self.leagueAvatar  = avatar
@@ -2438,7 +2441,7 @@ Thanks,\n\
             avatarDatas    = (zlib.decompress(base64.b64decode(message["file"])))
             description    = message["description"]
             
-            writeFile = QFile("/var/www/faf/avatars/%s" % name)
+            writeFile = QFile(config['global']['content_path'] + "avatars/%s" % name)
                         
             if(writeFile.open(QIODevice.WriteOnly)) :
                     writeFile.write(avatarDatas)
@@ -2446,7 +2449,7 @@ Thanks,\n\
             
             query = QSqlQuery(self.parent.db)
             query.prepare("INSERT INTO avatars_list (`url`,`tooltip`) VALUES (?,?) ON DUPLICATE KEY UPDATE `tooltip` = ?;")
-            query.addBindValue("http://faforever.com/faf/avatars/" + name)
+            query.addBindValue(config['global']['content_url'] + "faf/avatars/" + name)
             query.addBindValue(description)     
             query.addBindValue(description)
             
@@ -2783,11 +2786,11 @@ Thanks,\n\
                     description = str(query.value(12))
                     comments = []
                     bugreports = []
-                    link = "http://www.faforever.com/faf/vault/" + str(query.value(13))
+                    link = config['global']['content_url'] + "vault/" + str(query.value(13))
                     icon = str(query.value(14))
                     thumbstr = ""
                     if icon != "":
-                        thumbstr = "http://www.faforever.com/faf/vault/mods_thumbs/" + urllib2.quote(icon)
+                        thumbstr = config['global']['content_url'] + "vault/mods_thumbs/" + urllib2.quote(icon)
                     
                          
                     out = dict(command="modvault_info",thumbnail=thumbstr,link=link,bugreports=bugreports,comments=comments,description=description,played=played,likes=likes,downloads=downloads,date=date, uid=uid, name=name, version=version, author=author,ui=isuimod,big=isbigmod,small=issmallmod)
@@ -2819,11 +2822,11 @@ Thanks,\n\
                 description = str(query.value(12))
                 comments = []
                 bugreports = []
-                link = "http://www.faforever.com/faf/vault/" + str(query.value(13))
+                link = config['global']['content_url'] + "vault/" + str(query.value(13))
                 icon = str(query.value(14))
                 thumbstr = ""
                 if icon != "":
-                    thumbstr = "http://www.faforever.com/faf/vault/mods_thumbs/" + urllib2.quote(icon)                
+                    thumbstr = config['global']['content_url'] + "vault/mods_thumbs/" + urllib2.quote(icon)                
                 
                 out = dict(command="modvault_info",thumbnail=thumbstr,link=link,bugreports=bugreports,comments=comments,description=description,played=played,likes=likes+1,downloads=downloads,date=date, uid=uid, name=name, version=version, author=author,ui=isuimod,big=isbigmod,small=issmallmod)
                 

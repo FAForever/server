@@ -42,6 +42,9 @@ from faPackets import Packet
 import json
 import logging
 
+from configobj import ConfigObj
+config = ConfigObj("/etc/faforever/faforever.conf")
+
 import faflogger
 loggerInstance = faflogger.instance
 
@@ -1035,7 +1038,9 @@ class FAGameThread(QObject):
         ''' Send a nat packet to the server'''
         self.packetCount = self.packetCount + 1
         datas = "/PLAYERID " + str(self.player.getId()) + " " + self.player.getLogin()
-        self.sendToRelay("SendNatPacket", ["91.121.153.175:30351", datas])
+
+        # FIXME: we should make this a hostname and let the client resolve.
+        self.sendToRelay("SendNatPacket", [config['global']['lobby_ip'] + ":30351", datas])
 
     def createLobby(self, mapname):
         ''' Create a lobby with a specific map'''
@@ -1690,7 +1695,7 @@ class FAGameThread(QObject):
                 if len(self.proxyConnection) > 0 :
                     players = ", ".join(self.proxyConnection)
     
-                    text = "You had trouble connecting to some player(s) : <br>" + players +".<br><br>The server tried to make you connect through a proxy server, running on the FAF server.<br>It can be caused by a problem with that player, or a problem on your side.<br>If you see this message often, you probably have a connection problem. Please visit <a href='http://www.faforever.com/mediawiki/index.php?title=Connection_issues_and_solutions'>http://www.faforever.com/mediawiki/index.php?title=Connection_issues_and_solutions</a> to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs, at your discretion."
+                    text = "You had trouble connecting to some player(s) : <br>" + players +".<br><br>The server tried to make you connect through a proxy server, running on the FAF server.<br>It can be caused by a problem with that player, or a problem on your side.<br>If you see this message often, you probably have a connection problem. Please visit <a href='" + config['global']['www_url'] + "mediawiki/index.php?title=Connection_issues_and_solutions'>" + config['global']['www_url'] + "mediawiki/index.php?title=Connection_issues_and_solutions</a> to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs, at your discretion."
                    
                     self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
                 self.player.setGameSocket(None)

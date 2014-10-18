@@ -39,6 +39,8 @@ import logging
 import hashlib
 import json
 
+from configobj import ConfigObj
+config = ConfigObj(filename)
 
 class updateServerThread(QObject):
     '''
@@ -107,7 +109,7 @@ class updateServerThread(QObject):
                 if sys.platform == "win32" :
                     fullPath = os.path.join('f:\\FAFUPDATER', table, file)
                 else :
-                    fullPath = os.path.join('/var/www/faf/updaterNew/', table, file)
+                    fullPath = os.path.join(config['global']['content_path'] + "updaterNew/", table, file)
 
                 if os.path.exists(fullPath) :
                     md5 = self.getMd5(fullPath)
@@ -252,8 +254,8 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
             if myFile == None:
                 self.sendReply("UP_TO_DATE", file)
             else:
-                patchFileUrl =  "http://direct.faforever.com/faf/updaterNew/" + self.tableModFiles + "/" + myFile    
-                patchFilePath =  os.path.join(r"/var/www/faf/updaterNew/", self.tableModFiles, myFile)
+                patchFileUrl =  config['global']['content_url'] + "updaterNew/" + self.tableModFiles + "/" + myFile    
+                patchFilePath =  os.path.join(config['global']['content_path'] + r"updaterNew/", self.tableModFiles, myFile)
     
                
                 if os.path.isfile(patchFilePath) :
@@ -283,8 +285,8 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
             
             fileVersion = self.getFileVersion(f, version, exact=True)
             if self.tableModFiles and fileVersion :
-                patchFileUrl =  "http://direct.faforever.com/faf/updaterNew/" + self.tableModFiles + "/" + fileVersion     
-                patchFilePath =  os.path.join(r"/var/www/faf/updaterNew/", self.tableModFiles, fileVersion)
+                patchFileUrl =  config['global']['content_url'] + "updaterNew/" + self.tableModFiles + "/" + fileVersion     
+                patchFilePath =  os.path.join(config['global']['content_path'] + r"updaterNew", self.tableModFiles, fileVersion)
     
                
                 if os.path.isfile(patchFilePath) :
@@ -299,8 +301,8 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
             path = stream.readQString()
             file = stream.readQString()
             ##self.log.debug("requesting file %s" % file)
-            patchFileUrl =  "http://direct.faforever.com/faf/updaterNew/" + self.tableModFiles + "/" + self.getLatestFile(file)    
-            patchFilePath =  os.path.join(r"/var/www/faf/updaterNew/", self.tableModFiles, self.getLatestFile(file))
+            patchFileUrl =  config['global']['content_url'] + "updaterNew/" + self.tableModFiles + "/" + self.getLatestFile(file)    
+            patchFilePath =  os.path.join(config['global']['content_path'] + r"updaterNew", self.tableModFiles, self.getLatestFile(file))
             
             
             if os.path.isfile(patchFilePath) :
@@ -338,7 +340,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
                         if  query.size() >= 1 : 
                             query.first()
                             patch = str(query.value(0))                           
-                            patchFileUrl =  "http://direct.faforever.com/faf/xdelta/" + str(patch)
+                            patchFileUrl =  config['global']['content_url'] + "xdelta/" + str(patch)
                             self.sendReply("SEND_PATCH_URL", dir, file, patchFileUrl)
                         else :
                             query.prepare("SELECT `name` FROM `%s` WHERE md5 = ?" % self.tableModFiles)
@@ -401,7 +403,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
                         if  query.size() >= 1 : 
                             query.first()
                             patch = str(query.value(0))                           
-                            patchFileUrl =  "http://direct.faforever.com/faf/xdelta/" + str(patch)
+                            patchFileUrl =  config['global']['content_url'] + "xdelta/" + str(patch)
                             self.sendReply("SEND_PATCH_URL", dir, file, patchFileUrl)
                         else :
                             query.prepare("SELECT `name` FROM `%s` WHERE md5 = ?" % self.tableModFiles)
@@ -452,7 +454,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
                         if  query.size() >= 1 : 
                             query.first()
                             patch = str(query.value(0))                           
-                            patchFileUrl =  "http://direct.faforever.com/faf/xdelta/" + str(patch)
+                            patchFileUrl =  config['global']['content_url'] + "xdelta/" + str(patch)
                             self.sendReply("SEND_PATCH_URL", dir, file, patchFileUrl)
                         else :
                             query.prepare("SELECT `name` FROM `%s` WHERE md5 = ?" % self.tableModFiles)

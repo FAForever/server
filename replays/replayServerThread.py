@@ -24,7 +24,8 @@ from PySide.QtNetwork import QTcpServer, QTcpSocket, QAbstractSocket, QHostInfo
 from PySide import QtCore, QtGui, QtNetwork, QtSql
 from PySide.QtSql import *
 
-
+from configobj import ConfigObj
+config = ConfigObj("/etc/faforever/faforever.conf")
 
 from time import time as curtime
 from types import *
@@ -148,11 +149,11 @@ class replayServerThread(QObject):
                 description = str(query.value(12))
                 comments = []
                 bugreports = []
-                link = "http://www.faforever.com/faf/vault/" + str(query.value(13))
+                link = config['global']['content_url'] + "vault/" + str(query.value(13))
                 icon = str(query.value(14))
                 thumbstr = ""
                 if icon != "":
-                    thumbstr = "http://www.faforever.com/faf/vault/mods_thumbs/" + urllib2.quote(icon)
+                    thumbstr = config['global']['content_url'] + "vault/mods_thumbs/" + urllib2.quote(icon)
                 
                 modList.append(dict(thumbnail=thumbstr,link=link,bugreports=bugreports,comments=comments,description=description,played=played,likes=likes,downloads=downloads,date=date, uid=uid, name=name, version=version, author=author,ui=isuimod,big=isbigmod,small=issmallmod))
 

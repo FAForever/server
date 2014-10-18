@@ -25,6 +25,9 @@ import os
 import random
 import time
 
+from configobj import ConfigObj
+config = ConfigObj("/etc/faforever/faforever.conf")
+
 class Process(QProcess):    
     def __init__(self, patch=None, *args, **kwargs):        
         QProcess.__init__(self, *args, **kwargs)
@@ -57,19 +60,19 @@ class createPatch(QThread):
 
             self.logger.debug("opening database")
             self.db = QtSql.QSqlDatabase.cloneDatabase(self.parentDb, curPatchGen)
-            source = os.path.join(r"/var/www/faf/updaterNew/", mod, fromFile)
-            target = os.path.join(r"/var/www/faf/updaterNew/", mod, toFile)
+            source = os.path.join(config['global']['content_path'] + r"updaterNew/", mod, fromFile)
+            target = os.path.join(config['global']['content_path'] + r"updaterNew/", mod, toFile)
         
             self.logger.debug(source)
             self.logger.debug(target)
 
-            patchdest = os.path.join(r"/var/www/faf/xdelta/", curPatchGen)
+            patchdest = os.path.join(config['global']['content_path'] + r"xdelta/", curPatchGen)
             self.logger.debug(patchdest)            
             
             if os.path.exists(source) and os.path.exists(target) : 
                         
                 executable = "python"
-                arguments = ["/opt/faf-server-pyside/src/patcher.py", source, target, patchdest]
+                arguments = [config['global']['install_path'] + "patcher.py", source, target, patchdest]
                 
                 self.logger.debug(arguments)
                 process = QProcess()

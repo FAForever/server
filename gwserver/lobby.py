@@ -51,8 +51,9 @@ ranksRequirement = {
 }
 
 
-
-TEXPATH = "/var/www/faf/images"
+from configobj import ConfigObj
+config = ConfigObj(filename)
+TEXPATH = config['global']['content_path'] + "/images"
 
 FACTIONS = {0:"uef", 1:"aeon", 2:"cybran", 3:"seraphim"}
 CONTROL_THRESHOLD = 0.9
