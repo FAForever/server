@@ -868,13 +868,13 @@ Thanks,\n\
                         
            
                         msg['Subject'] = 'Forged Alliance Forever - Account validation'
-                        msg['From'] = email.utils.formataddr(('Forged Alliance Forever', username))
+                        msg['From'] = email.utils.formataddr(('Forged Alliance Forever', MAIL_ADDRESS))
                         msg['To'] = email.utils.formataddr((login, em))
                         
                         #self.log.debug("sending mail to " + em)
                         #self.log.debug(msg.as_string())
-                        s = smtplib.SMTP_SSL(config['global']['smtp_server'], 465, config['global']['smtp_server'], timeout = 5)
-                        s.login(MAIL_ADDRESS, MAIL_PASSWORD)
+                        #s = smtplib.SMTP_SSL(config['global']['smtp_server'], 465, config['global']['smtp_server'], timeout = 5)
+                        s = smtplib.SMTP(config['global']['smtp_server'])
                         s.sendmail(MAIL_ADDRESS, [em], msg.as_string())
                         s.quit()
                         
@@ -1452,7 +1452,7 @@ Thanks,\n\
             msg = MIMEText(str(text))  
                        
             msg['Subject'] = 'Forged Alliance Forever - Account validation'
-            msg['From'] = email.utils.formataddr(('Forged Alliance Forever', username))
+            msg['From'] = email.utils.formataddr(('Forged Alliance Forever', MAIL_ADDRESS))
             msg['To'] = email.utils.formataddr((login, em))
             
             #self.log.debug("sending mail to " + em)
