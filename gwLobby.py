@@ -24,22 +24,15 @@ import time
 
 import GWServerThread
 
-import faflogger
-loggerInstance = faflogger.instance
-
-logger = logging.getLogger("GW.lobby")
-logger.addHandler( loggerInstance.getHandler() )
-logger.setLevel(logging.DEBUG)
-
+logger = logging.getLogger(__name__)
 
 class GWLobbyServer(QtNetwork.QTcpServer):
     def __init__(self, listUsers, Games, db, dirtyGameList, parent=None):
         super(GWLobbyServer, self).__init__(parent)
         
         self.parent = parent
-        self.logger = logging.getLogger('gw.lobby.main')
-        self.logger.addHandler( loggerInstance.getHandler() )
-        self.logger.setLevel( logging.DEBUG )
+        self.logger = logging.getLogger(__name__)
+
         self.logger.debug("Starting GW server")
 
         

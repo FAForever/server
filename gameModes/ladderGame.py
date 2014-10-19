@@ -17,12 +17,7 @@
 #-------------------------------------------------------------------------------
 
 import logging
-import faflogger
-loggerInstance = faflogger.instance
-logger = logging.getLogger("laddergame.loader")
-logger.addHandler( loggerInstance.getHandler() )
-logger.setLevel(logging.DEBUG)
-
+logger = logging.getLogger(__name__)
 
 import game
 gameClass = reload(game)

@@ -17,8 +17,7 @@
 #-------------------------------------------------------------------------------
 
 import logging
-logger= logging.getLogger("gameModes")
-logger.setLevel(logging.DEBUG)
+logger= logging.getLogger(__name__)
 
 
 #hyper container

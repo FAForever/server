@@ -36,11 +36,7 @@ import logging
 import pickle
 import time
 
-import faflogger
-loggerInstance = faflogger.instance
-logger = logging.getLogger("gw.lobbyThread")
-logger.addHandler( loggerInstance.getHandler() )
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 try :
     import gameModes.gwContainer
@@ -71,10 +67,7 @@ class GWServerThread(QObject):
         super(GWServerThread, self).__init__(parent)
         self.parent = parent
         
-        self.log = logging.getLogger('GW.lobby')
-        self.log.setLevel( logging.DEBUG )
-        self.log.addHandler(loggerInstance.getHandler())
-                
+        self.log = logging.getLogger(__name__)
         
         self.log.debug("Incoming GW server socket started")
         self.socket = None

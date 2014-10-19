@@ -36,7 +36,7 @@ import pprint
 class updateServer(QtNetwork.QTcpServer):
     def __init__(self, parent=None):
         super(updateServer, self).__init__(parent)
-        self.logger = logging.getLogger('UpdateServer')
+        self.logger = logging.getLogger(__name__)
         self.parent = parent
         self.threads = []
         self.db = self.parent.db

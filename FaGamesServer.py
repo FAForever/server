@@ -20,16 +20,13 @@
 from PySide import QtNetwork
 import logging
 import FAGamesServerThread
-import faflogger
-loggerInstance = faflogger.instance
 
 class FAServer(QtNetwork.QTcpServer):
     def __init__(self, listUsers, Games, db,  dirtyGameList, parent=None):
         super(FAServer, self).__init__(parent)
         self.parent = parent
-        self.logger = logging.getLogger('game.main')
-        self.logger.addHandler(loggerInstance.getHandler())
-        self.logger.setLevel(logging.INFO)
+        self.logger = logging.getLogger(__name__)
+
         self.logger.debug("initializing server")
         self.dirtyGameList = dirtyGameList
         self.listUsers = listUsers

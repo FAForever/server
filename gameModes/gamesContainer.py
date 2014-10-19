@@ -22,17 +22,13 @@ from PySide import QtSql
 
 import logging
 
-import faflogger
-loggerInstance = faflogger.instance
-
 class gamesContainerClass(object):
     '''Class for containing games'''
     
     def __init__(self, gameTypeName, gameNiceName, db, parent = None):
 
-        self.log = logging.getLogger(self.__class__.__name__)
-        self.log.setLevel( logging.DEBUG )
-        self.log.addHandler(loggerInstance.getHandler())
+        self.log = logging.getLogger(__name__)
+
         self.log.debug("initializing " + self.__class__.__name__)
         
         self.games = []

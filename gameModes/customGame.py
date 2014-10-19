@@ -24,9 +24,7 @@ from copy import deepcopy
 import time
 import logging
 
-logger = logging.getLogger("FA.custom.game")
-logger.setLevel(logging.DEBUG)
-
+logger = logging.getLogger(__name__)
 
 class customGameClass(gameClass):
     '''Class for custom game'''

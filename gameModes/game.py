@@ -29,12 +29,6 @@ import logging
 
 from PySide.QtSql import QSqlQuery
 
-
-import faflogger
-loggerInstance = faflogger.instance
-
-
-
 class gameClass(object):
     def __init__(self, uuid, parent = None, host=None, hostId=0, hostIp= None, hostLocalIp=None, hostPort=6112, hostlocalport=6112, state='Idle', gameName='None', map='SCMP_007', mode =0, minPlayer = 1):
         
@@ -42,9 +36,7 @@ class gameClass(object):
         
         
 
-        self.log = logging.getLogger(self.__class__.__name__)
-        self.log.setLevel( logging.DEBUG )
-        self.log.addHandler(loggerInstance.getHandler())
+        self.log = logging.getLogger(__name__)
         
        
         self.uuid = uuid

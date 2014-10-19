@@ -37,7 +37,7 @@ challonge.set_credentials(CHALLONGE_USER, CHALLONGE_KEY)
 class tournamentServer(QtNetwork.QTcpServer):
     def __init__(self, parent=None):
         super(tournamentServer, self).__init__(parent)
-        self.logger = logging.getLogger('tournamentServer')
+        self.logger = logging.getLogger(__name__)
         self.parent = parent
         self.threads    = []
         self.updaters   = []

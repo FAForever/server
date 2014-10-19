@@ -28,12 +28,7 @@ import FaServerThread
 import gc
 import inspect
 
-import faflogger
-loggerInstance = faflogger.instance
-
-logger = logging.getLogger("FA.lobby")
-logger.addHandler( loggerInstance.getHandler() )
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 import teams
 
@@ -57,9 +52,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
         super(FALobbyServer, self).__init__(parent)
         
         self.parent = parent
-        self.logger = logging.getLogger('faf.lobby.main')
-        self.logger.addHandler( loggerInstance.getHandler() )
-        self.logger.setLevel( logging.INFO )
+        self.logger = logging.getLogger(__name__)
         self.logger.debug("Starting lobby server")
         self.logger.propagate = True
 

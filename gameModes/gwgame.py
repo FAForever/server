@@ -17,11 +17,7 @@
 #-------------------------------------------------------------------------------
 
 import logging
-import faflogger
-loggerInstance = faflogger.instance
-logger = logging.getLogger("gwgame.loader")
-logger.addHandler( loggerInstance.getHandler() )
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 import game
@@ -97,17 +93,7 @@ class gwGameClass(gameClass):
         
     
     def setLogger(self, name):    
-        self.log = logging.getLogger(name)
-        self.log.setLevel( logging.DEBUG )
-        self.log.addHandler(loggerInstance.getHandler())        
-
-
-        logHandler = logging.handlers.RotatingFileHandler("gw_game_%i.log" % self.uuid)
-        logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
-        logHandler.setFormatter( logFormatter )  
-        
-        self.log.addHandler( logHandler )
-
+        self.log = logging.getLogger(__name__)
     
     def trueSkillUpdate(self, tsresults, tsplayers, logger, db, players, playerFnc = "setRating", table="global_rating", winner = False, sendScore = True):
         pass

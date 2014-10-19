@@ -56,7 +56,7 @@ class tournamentServerThread(QObject):
     def __init__(self, socketId, parent=None):
         super(tournamentServerThread, self).__init__(parent)
 
-        self.log = logging.getLogger('Tournamenthread')
+        self.log = logging.getLogger(__name__)
 
 
         self.app = None

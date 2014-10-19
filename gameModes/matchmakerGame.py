@@ -24,8 +24,7 @@ from copy import deepcopy
 import time
 import logging
 
-logger = logging.getLogger("FA.matchmaker.game")
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 FACTIONS = {1:"UEF", 2:"Aeon",3:"Cybran",4:"Seraphim"}
 

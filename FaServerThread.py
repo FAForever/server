@@ -111,13 +111,8 @@ import teams
 
 TIMEOUT_SECONDS = 300
 
-import faflogger
-loggerInstance = faflogger.instance
-
 from functools import wraps
-logger = logging.getLogger("faf.lobbyThread")
-logger.addHandler( loggerInstance.getHandler() )
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 def timed(f):
   @wraps(f)
@@ -142,14 +137,11 @@ class FAServerThread(QObject):
         # if not hasattr(self.parent, "teams"):
         #     self.parent.teams = teams.Teams(self)
         
-        self.log = logging.getLogger('FA.lobby')
-        self.log.setLevel( logging.DEBUG )
-        self.log.addHandler(loggerInstance.getHandler())
+        self.log = logging.getLogger(__name__)
                 
         
         self.log.debug("Incoming lobby socket started")
-        
-        
+                
         self.season = LADDER_SEASON
 
         self.socket = None

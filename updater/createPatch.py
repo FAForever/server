@@ -38,7 +38,7 @@ class createPatch(QThread):
     def __init__(self, patches, db, parent=None):
         QThread.__init__(self, parent)
         
-        self.logger = logging.getLogger('Patcher')
+        self.logger = logging.getLogger(__name__)
         self.process = None
         self.patches = patches
         self.parentDb = db

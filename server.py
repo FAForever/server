@@ -30,7 +30,12 @@ from PySide.QtNetwork import QTcpServer, QTcpSocket, QAbstractSocket, QHostInfo
 from PySide import QtCore, QtNetwork, QtSql
 from PySide.QtSql import *
 
+import logging
+from logging import handlers
+
 from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
+from configobj import ConfigObj
+config = ConfigObj("/etc/faforever/faforever.conf")
 
 import uuid
 import random
@@ -39,12 +44,10 @@ from FaLobbyServer import *
 from FaGamesServer import *
 from gwLobby import *
 from players import *
-#from games import *
 
 import gameModes
 
-import faflogger
-loggerInstance = faflogger.instance
+import signal 
 
 from faPackets import Packet
 UNIT16 = 8
@@ -54,10 +57,13 @@ class start(QObject):
     def __init__(self, parent=None):
 
         super(start, self).__init__(parent)
-        self.logger = logging.getLogger('server.main')
-        self.logger.addHandler( loggerInstance.getHandler() )
-        self.logger.setLevel( logging.DEBUG )
-        self.logger.propagate = True
+        self.rootlogger = logging.getLogger("")
+        self.logHandler = handlers.RotatingFileHandler(config['global']['logpath'] + "server.log", backupCount=15, maxBytes=524288 )
+        self.logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
+        self.logHandler.setFormatter( self.logFormatter )
+        self.rootlogger.addHandler( self.logHandler )
+        self.rootlogger.setLevel( eval ("logging." + config['server']['loglevel'] ))
+        self.logger = logging.getLogger(__name__)
         
         # list of users
         self.listUsers = playersOnline()
@@ -86,14 +92,13 @@ class start(QObject):
         self.dirtyGameList = []
         self.games = gameModes.hyperGamesContainerClass(self.listUsers, self.db, self.dirtyGameList)
         
-        
-
-
         self.FALobby =  FALobbyServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)
         self.GWLobby =  GWLobbyServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)
         self.FAGames =  FAServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)       
         
-
+        # Make sure we can shutdown gracefully
+        signal.signal(signal.SIGTERM, self.signal_handler)
+        
 
         if not self.GWLobby.listen(QtNetwork.QHostAddress.LocalHost, 8002):
             self.logger.error ("Unable to start the server")
@@ -119,6 +124,12 @@ class start(QObject):
         else:
             self.logger.info ("starting the Lobby server on  %s:%i" % (self.FALobby.serverAddress().toString(),self.FALobby.serverPort()))
 
+    def signal_handler(self, signal, frame):
+        self.logger.info("Received signal, shutting down")
+        self.FALobby.close()
+        self.GWLobby.close()
+        self.FAGames.close()
+        
     def jsonPlayer(self, player):
         ''' infos about a player'''
         jsonToSend = {}
@@ -186,7 +197,7 @@ class start(QObject):
 if __name__ == '__main__':
     
     try:
-        logger = logging.getLogger("server.main")
+        logger = logging.getLogger(__name__)
         #gc.enable()
         #sys.setrecursionlimit(100)
         #gc.set_debug(gc.DEBUG_LEAK)

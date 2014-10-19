@@ -29,9 +29,6 @@ import logging
 import pickle
 import base64
 
-import gwlogger
-loggerInstance = gwlogger.instance
-
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
 
 CREDITTIMER = 1000 * 60 * 60 * 6
@@ -44,9 +41,7 @@ class ServerMain(QtCore.QObject):
         
         super(ServerMain, self).__init__(parent) 
         
-        self.log = logging.getLogger('GW.server.main')
-        self.log.setLevel( logging.DEBUG )
-        self.log.addHandler(loggerInstance.getHandler())
+        self.log = logging.getLogger(__name__)
         
         self.log.debug("Server instantiating")
         

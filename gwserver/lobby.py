@@ -22,7 +22,6 @@ from PySide.QtSql import QSqlQuery
 
 from types import *
 
-import gwlogger
 import logging
 import json
 import random
@@ -36,8 +35,6 @@ import math
 from teams import teams
 
 AUTORECALL = 500
-
-loggerInstance = gwlogger.instance
 
 
 ranksRequirement = {
@@ -361,9 +358,7 @@ class ClientModule(QtCore.QObject):
     def __init__(self, socket, parent=None):
         super(ClientModule, self).__init__(parent)
         
-        self.log = logging.getLogger('GW.server.clientHandler')
-        self.log.setLevel( logging.DEBUG )
-        self.log.addHandler(loggerInstance.getHandler())
+        self.log = logging.getLogger(__name__)
         
         self.parent = parent        
         self.db = self.parent.db

@@ -20,9 +20,6 @@ from customGamesContainer import customGamesContainerClass
 from ladderGamesContainer import ladder1v1GamesContainerClass
 import sys, inspect, logging
 
-import faflogger
-loggerInstance = faflogger.instance
-
 class hyperGamesContainerClass(object):
     '''Class for containing all games containers'''
     
@@ -32,9 +29,7 @@ class hyperGamesContainerClass(object):
         self.players = players
         self.db = db
         
-        self.log = logging.getLogger('hyperGameContainer')
-        self.log.setLevel( logging.DEBUG )
-        self.log.addHandler(loggerInstance.getHandler())
+        self.log = logging.getLogger(__name__)
         
         self.log.debug("HyperGameContainer initialized")
         

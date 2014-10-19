@@ -20,7 +20,6 @@
 from PySide import QtCore, QtNetwork
 from PySide.QtSql import QSqlQuery
 
-import gwlogger
 import logging
 import lobby
 import json
@@ -44,8 +43,6 @@ ATTACK_WIN_RATIO = 0.05
 ATTACK_THRESHOLD = 0.5
 WIN_PAID = 100
 
-loggerInstance = gwlogger.instance
-
 from configobj import ConfigObj
 config = ConfigObj("/etc/faforever/faforever.conf")
 
@@ -59,12 +56,8 @@ class gwServer(QtNetwork.QTcpServer):
     def __init__(self, db, parent=None):
         super(gwServer, self).__init__(parent)
         
-        self.log = logging.getLogger('GW.server.main')
+        self.log = logging.getLogger(__name__)
         
-        self.log.setLevel( logging.DEBUG )
-        self.log.addHandler(loggerInstance.getHandler())
-
-
         self.log.info("initialize server dispatcher")
 
         self.planets    = {}

@@ -35,7 +35,8 @@ import replayServerThread
 class replayServer(QtNetwork.QTcpServer):
     def __init__(self, parent=None):
         super(replayServer, self).__init__(parent)
-        self.logger = logging.getLogger('replayServer')
+        self.logger = logging.getLogger(__name__)
+
         self.parent = parent
         self.db = self.parent.db
         self.replayVault = []

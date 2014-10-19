@@ -45,15 +45,9 @@ import logging
 from configobj import ConfigObj
 config = ConfigObj("/etc/faforever/faforever.conf")
 
-import faflogger
-loggerInstance = faflogger.instance
-
-logger = logging.getLogger("faf.gameThread")
-logger.addHandler( loggerInstance.getHandler())
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 from proxy import proxy
-
 
 from functools import wraps
 
@@ -79,9 +73,8 @@ class FAGameThread(QObject):
 
     def __init__(self, socket, parent=None):
         super(FAGameThread, self).__init__(parent)
-        self.log = logging.getLogger('FA.game')
-        self.log.setLevel( logging.DEBUG )
-        self.log.addHandler( loggerInstance.getHandler()  )
+        self.log = logging.getLogger(__name__)
+
         self.log.debug("Incoming game socket started")
         self.initTime = time.time()
 

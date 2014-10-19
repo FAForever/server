@@ -52,7 +52,8 @@ class replayServerThread(QObject):
     def __init__(self, socketId, parent=None):
         super(replayServerThread, self).__init__(parent)
 
-        self.log = logging.getLogger('replaythread')
+        self.logger = logging.getLogger(__name__)
+
         self.season = "ladder_season_5"
         self.socket = QtNetwork.QTcpSocket(self)
         self.socket.setSocketDescriptor(socketId)
@@ -106,7 +107,7 @@ class replayServerThread(QObject):
                     INNER JOIN `table_mod` AS t \
                         ON t.`name`= m.`name` \
                         AND t.`version`= m.max_version;" 
-        self.log.debug(queryStr)
+        self.logger.debug(queryStr)
         if typemod != 2:
             queryStr = "SELECT `id`,`uid`,`t`.`name`,`version`,`author`,`ui`,`big`,`small`,`date`,`downloads`,`likes`,`played`,`description`,`filename`,`icon` \
                         FROM     (     SELECT `name`, MAX(`version`) AS max_version \
@@ -121,8 +122,8 @@ class replayServerThread(QObject):
                             AND t.`version`= m.max_version;"         
         
         if not query.prepare(queryStr):
-            self.log.debug(query.lastQuery())
-            self.log.debug(query.lastError())
+            self.logger.debug(query.lastQuery())
+            self.logger.debug(query.lastError())
             
         query.addBindValue(nameField)
         query.addBindValue(descriptionField)
@@ -201,8 +202,8 @@ class replayServerThread(QObject):
         
  
         if not query.exec_():
-            self.log.debug(query.lastQuery())
-            self.log.debug(query.lastError())
+            self.logger.debug(query.lastQuery())
+            self.logger.debug(query.lastError())
         
         missions = {}
         if query.size() > 0:
@@ -426,7 +427,7 @@ class replayServerThread(QObject):
             query.addBindValue(str(lastSeason))
             query.addBindValue(idmap)
             query.exec_()
-            #self.log.debug("map " + str(idmap))
+            #self.logger.debug("map " + str(idmap))
             if query.size() > 0 :
                 query.first()
                 stats["duration_max"] = int(query.value(0))
@@ -541,7 +542,7 @@ class replayServerThread(QObject):
         query.prepare("SELECT * FROM galacticwar.reinforcements_replays WHERE uid = ?")
         query.addBindValue(gameuid)
         if not query.exec_():
-            self.log.debug(query.lastQuery())
+            self.logger.debug(query.lastQuery())
         if query.size() > 0:
             query.first()
             self.sendJSON(dict(command = "gw_game_info", table = str(query.value(1))))
@@ -670,8 +671,8 @@ LIMIT 150\
         
         
         if not query.exec_():
-            self.log.debug(query.lastQuery())
-            self.log.debug(query.lastError())
+            self.logger.debug(query.lastQuery())
+            self.logger.debug(query.lastError())
             
         if query.size() > 0:
             replays = []
@@ -722,7 +723,7 @@ LIMIT 150\
     #                    if query.value(8) :
     #                        player["scoreTime"] = query.value(8)
                 players.append(player)
-            ##self.log.debug(players)
+            ##self.logger.debug(players)
             self.sendJSON(dict(command = "replay_vault", action = "info_replay", uid = uid, players = players))
         
     
@@ -788,7 +789,7 @@ LIMIT 150\
         '''
         message = json.loads(data_string)
         cmd = "command_" + message['command']
-        self.log.debug("handling command : " + cmd)
+        self.logger.debug("handling command : " + cmd)
         if hasattr(self, cmd):
             
             self.lock()
@@ -837,7 +838,7 @@ LIMIT 150\
 
 
         except :
-                self.log.exception("Something awful happened when sending reply !")  
+                self.logger.exception("Something awful happened when sending reply !")  
   
     def done(self) :
         if self.socket != None :
@@ -856,12 +857,12 @@ LIMIT 150\
     # Display errors from servers
     def displayError(self, socketError):
         if socketError == QtNetwork.QAbstractSocket.RemoteHostClosedError:
-            self.log.warning("RemoteHostClosedError")
+            self.logger.warning("RemoteHostClosedError")
      
 
         elif socketError == QtNetwork.QAbstractSocket.HostNotFoundError:
-            self.log.warning("HostNotFoundError")
+            self.logger.warning("HostNotFoundError")
         elif socketError == QtNetwork.QAbstractSocket.ConnectionRefusedError:
-            self.log.warning("ConnectionRefusedError")
+            self.logger.warning("ConnectionRefusedError")
         else:
-            self.log.warning("The following error occurred: %s." % self.socket.errorString())
+            self.logger.warning("The following error occurred: %s." % self.socket.errorString())

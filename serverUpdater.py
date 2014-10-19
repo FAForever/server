@@ -29,8 +29,11 @@ from PySide.QtSql import *
 import uuid
 import random
 import logging
+from logging import handlers
 
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
+from configobj import ConfigObj
+config = ConfigObj("/etc/faforever/faforever.conf")
 
 #update server
 from updater.updateServer import *
@@ -42,7 +45,16 @@ class start(QObject):
     def __init__(self, parent=None):
         try :
             super(start, self).__init__(parent)
-            self.logger = logging.getLogger('FAServerUpdater')
+            self.rootlogger = logging.getLogger("")
+            self.logHandler = handlers.RotatingFileHandler(config['global']['logpath'] + "serverUpdater.log", backupCount=15, maxBytes=524288 )
+            self.logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
+            self.logHandler.setFormatter( self.logFormatter )
+            self.rootlogger.addHandler( self.logHandler )
+            self.rootlogger.setLevel( eval ("logging." + config['serverUpdater']['loglevel'] ))
+            self.logger = logging.getLogger(__name__)
+
+
+
             
             self.logger.info ("starting the update server" )
             #Database thingys
@@ -74,27 +86,8 @@ class start(QObject):
         except :
             self.logger.exception ("Error !!!")
 
-
-
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
-    datefmt='%m-%d %H:%M'
-    )
-x = logging.getLogger("FAServerUpdater")
-x.setLevel(logging.DEBUG)
-
-h = logging.StreamHandler()
-
-x.addHandler(h)
-h1 = logging.FileHandler("debugUpdater.log")
-
-h1.setLevel(logging.DEBUG)
-x.addHandler(h1)
-
-
 if __name__ == '__main__':
-    logger = logging.getLogger("FAServerUpdater")
+    logger = logging.getLogger(__name__)
     import sys
     
 
