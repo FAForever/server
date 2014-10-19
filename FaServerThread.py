@@ -873,8 +873,10 @@ Thanks,\n\
                         
                         #self.log.debug("sending mail to " + em)
                         #self.log.debug(msg.as_string())
-                        #s = smtplib.SMTP_SSL(config['global']['smtp_server'], 465, config['global']['smtp_server'], timeout = 5)
-                        s = smtplib.SMTP(config['global']['smtp_server'])
+                        #s = smtplib.SMTP(config['global']['smtp_server'])
+                        s = smtplib.SMTP_SSL(config['global']['smtp_server'], 465, config['global']['smtp_server'], timeout = 5)
+                        s.login(config['global']['smtp_username'], config['global']['smtp_password'])
+
                         s.sendmail(MAIL_ADDRESS, [em], msg.as_string())
                         s.quit()
                         
