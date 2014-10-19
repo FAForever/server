@@ -1460,7 +1460,7 @@ Thanks,\n\
             #self.log.debug("sending mail to " + em)
             #self.log.debug(msg.as_string())
             s = smtplib.SMTP_SSL(config['global']['smtp_server'], 465, config['global']['smtp_server'], timeout = 5)
-            s.login(MAIL_ADDRESS, MAIL_PASSWORD)
+            s.login(config['global']['smtp_username'], config['global']['smtp_password'])
             s.sendmail(MAIL_ADDRESS, [em], msg.as_string())
             s.quit()
             self.sendJSON(dict(command="notice", style="info", text="A e-mail has been sent with the instructions to validate your account"))
