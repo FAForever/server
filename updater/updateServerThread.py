@@ -259,10 +259,10 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
     
                
                 if os.path.isfile(patchFilePath) :
-                                
                     #patchFile = QFile(patchFilePath)
                     self.sendReply("SEND_FILE_PATH", path, file, patchFileUrl)          
                 else :
+                    self.log.debug("File not found: " + patchFilePath) 
                     self.sendReply("ERROR_FILE", file)
 
         if action == "REQUEST_MOD_VERSION" :
@@ -290,10 +290,11 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
     
                
                 if os.path.isfile(patchFilePath) :
-                                
+
                     #patchFile = QFile(patchFilePath)
                     self.sendReply("SEND_FILE_PATH", path, f, patchFileUrl)          
                 else :
+                    self.log.debug("File not found: " + patchFilePath) 
                     self.sendReply("ERROR_FILE", f)    
             else :
                 self.sendReply("ERROR_FILE", f)         
@@ -306,10 +307,11 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
             
             
             if os.path.isfile(patchFilePath) :
-                            
+
                 #patchFile = QFile(patchFilePath)
                 self.sendReply("SEND_FILE_PATH", path, file, patchFileUrl)          
-            else :
+            else : 
+                self.log.debug("File not found: " + patchFilePath) 
                 self.sendReply("ERROR_FILE", file)
 
 

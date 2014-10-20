@@ -58,7 +58,7 @@ class start(QObject):
 
         super(start, self).__init__(parent)
         self.rootlogger = logging.getLogger("")
-        self.logHandler = handlers.RotatingFileHandler(config['global']['logpath'] + "server.log", backupCount=15, maxBytes=524288 )
+        self.logHandler = handlers.RotatingFileHandler(config['global']['logpath'] + "server.log", backupCount=1024, maxBytes=16777216 )
         self.logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
         self.logHandler.setFormatter( self.logFormatter )
         self.rootlogger.addHandler( self.logHandler )
