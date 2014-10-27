@@ -871,7 +871,7 @@ Thanks,\n\
                         msg['From'] = email.utils.formataddr(('Forged Alliance Forever', MAIL_ADDRESS))
                         msg['To'] = email.utils.formataddr((login, em))
                         
-                        #self.log.debug("sending mail to " + em)
+                        self.log.debug("sending mail to " + em)
                         #self.log.debug(msg.as_string())
                         #s = smtplib.SMTP(config['global']['smtp_server'])
                         s = smtplib.SMTP_SSL(config['global']['smtp_server'], 465, config['global']['smtp_server'], timeout = 5)
@@ -881,7 +881,7 @@ Thanks,\n\
                         s.quit()
                         
                         self.sendJSON(dict(command="notice", style="info", text="A e-mail has been sent with the instructions to validate your account"))
-                        #self.log.debug("sent mail")
+                        self.log.debug("sent mail")
                         self.sendReply( "LOGIN_AVAILABLE", "yes", login)
 
                     else :
@@ -1456,15 +1456,16 @@ Thanks,\n\
             msg['Subject'] = 'Forged Alliance Forever - Account validation'
             msg['From'] = email.utils.formataddr(('Forged Alliance Forever', MAIL_ADDRESS))
             msg['To'] = email.utils.formataddr((login, em))
-            
-            #self.log.debug("sending mail to " + em)
+           
+            #self.log.debug("sending SMTP mail to " + em)
             #self.log.debug(msg.as_string())
+            #s = smtplib.SMTP(config['global']['smtp_server'])
             s = smtplib.SMTP_SSL(config['global']['smtp_server'], 465, config['global']['smtp_server'], timeout = 5)
             s.login(config['global']['smtp_username'], config['global']['smtp_password'])
             s.sendmail(MAIL_ADDRESS, [em], msg.as_string())
             s.quit()
             self.sendJSON(dict(command="notice", style="info", text="A e-mail has been sent with the instructions to validate your account"))
-            #self.log.debug(self.logPrefix + "resend done")
+            #self.log.debug(self.logPrefix + "SMTP resend done")
             
     @timed
     def command_admin(self, message):

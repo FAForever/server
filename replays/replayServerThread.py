@@ -587,33 +587,11 @@ class replayServerThread(QObject):
         player  = message["player"]
         rating  = message.get("rating", 0)
 
-        modUid =  -1
-        playerUid = -1
-        mapUid    = -1
+        modUid = -1
+        mapUid = -1
         
         query = QSqlQuery(self.parent.db)
-        
         query.setForwardOnly(True)
-        if player != "" :
-            
-            query.prepare("SELECT id FROM `login` WHERE  `login` = ? LIMIT 1")
-            query.addBindValue(player)
-            query.exec_()
-            if query.size() != 0 :
-                query.first()
-                playerUid = int(query.value(0))
-            else:                
-                query.prepare("SELECT id FROM `login` WHERE LOWER( `login` ) REGEXP ? LIMIT 1")
-                player = "^" + player.lower()
-                query.addBindValue(player)
-                query.exec_()
-                if query.size() != 0 :
-                    query.first()
-                    playerUid = int(query.value(0))
-                else :
-                    return
-            
-        
 
         if mapname != "" :
             query.prepare("SELECT id FROM `table_map` WHERE LOWER( `name` ) REGEXP ? LIMIT 1")
@@ -635,40 +613,40 @@ class replayServerThread(QObject):
                 modUid = int(query.value(0))
             else :
                 return
-        
-        if playerUid != -1 or rating != 0:
-            query.prepare("\
-SELECT DISTINCT id, gameName, filename, startTime, EndTime, gamemod \
-FROM  replay_vault \
-WHERE  (-1 = ? OR gamemodid = ?) \
-AND (-1 = ? OR playerId = ?) \
-AND rating >= ? \
-AND (-1 = ? OR mapId = ?) \
-ORDER BY `id` DESC \
-LIMIT 150\
-")
-            query.addBindValue(modUid)
-            query.addBindValue(modUid)
-            query.addBindValue(playerUid)
-            query.addBindValue(playerUid)
-            query.addBindValue(rating)
-            query.addBindValue(mapUid)
-            query.addBindValue(mapUid)
 
-        else :
-            query.prepare("\
-SELECT DISTINCT id, gameName, filename, startTime, EndTime, gamemod \
-FROM  replay_vault \
-WHERE  (-1 = ? OR gamemodid = ?) \
-AND (-1 = ? OR mapId = ?) \
-ORDER BY `id` DESC \
-LIMIT 150\
-")
-            query.addBindValue(modUid)
-            query.addBindValue(modUid)
-            query.addBindValue(mapUid)
-            query.addBindValue(mapUid)  
-        
+        queryStr = "\
+SELECT game_stats.id, game_stats.gameName, table_map.filename, game_stats.startTime, game_stats.EndTime, game_featuredMods.gameMod \
+FROM game_stats \
+INNER JOIN table_map ON table_map.id = game_stats.mapId \
+INNER JOIN game_player_stats ON game_player_stats.gameId = game_stats.id \
+INNER JOIN game_featuredMods ON game_featuredMods.id = game_stats.gameMod \
+WHERE  (-1 = ? OR game_stats.gameMod = ?) \
+AND (mean - 3*deviation) >= ? \
+AND (-1 = ? OR mapId = ?) \n"
+
+        if player != "" :
+            query.prepare("SELECT id from login where LOWER(login) REGEXP ?")
+            query.addBindValue(player.lower())
+            query.exec_()
+            if query.size() > 1 :
+                players = []
+                i = 0
+                while query.next() and i < 100 :
+                    players.append(query.value(0))
+                    i += 1
+                queryStr += "AND game_player_stats.playerId IN ("+reduce(lambda x, y: str(x)+","+str(y), players)+") "
+            elif query.size() == 1 :
+                query.first()
+                playerId = query.value(0)
+                queryStr += "AND game_player_stats.playerId = " + str(playerId) + "\n"
+
+        queryStr += "ORDER BY id DESC LIMIT 150"
+        query.prepare(queryStr)
+        query.addBindValue(modUid)
+        query.addBindValue(modUid)
+        query.addBindValue(rating)
+        query.addBindValue(mapUid)
+        query.addBindValue(mapUid)
         
         if not query.exec_():
             self.logger.debug(query.lastQuery())
@@ -688,6 +666,9 @@ LIMIT 150\
                 replays.append(replay)
             self.sendJSON(dict(command = "replay_vault", action = "search_result", replays = replays))
         else:
+            self.logger.debug("Empty search")
+            self.logger.debug(query.boundValues())
+            self.logger.debug(query.lastQuery())
             self.sendJSON(dict(command = "replay_vault", action = "search_result", replays = []))
 
                     
