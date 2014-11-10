@@ -679,7 +679,6 @@ class FAServerThread(QObject):
                   
 
                 name = message["name"]
-                name = name.replace("'", "\\'")
                 description = message["description"]
                 description = description.replace("'", "\\'")
                 
@@ -696,16 +695,18 @@ class FAServerThread(QObject):
                 if check:
 
                     query = QSqlQuery(self.parent.db)
-                    queryStr = ("SELECT * FROM table_map WHERE name = '"+name+"' and version = '"+version+"'")
-                    query.exec_(queryStr)
+                    query.prepare("SELECT * FROM table_map WHERE name = ? and version = ?")
+                    query.addBindValue(name)
+                    query.addBindValue(version)
+                    query.exec_()
                     if  query.size() != 0: 
                         error = name + " version " + version + "already exists in the database."
                         self.sendJSON(dict(command="notice", style="error", text=error))
                         return
 
-                    queryStr = ("SELECT filename FROM table_map WHERE filename LIKE '%"+zipmap+"%'")
-
-                    query.exec_(queryStr)
+                    query.prepare("SELECT filename FROM table_map WHERE filename LIKE ?")
+                    query.addBindValue("%"+zipmap+"%")
+                    query.exec_()
 
                     if  query.size() == 0: 
                         writeFile = QFile(config['global']['content_path'] + "vault/maps/%s" % zipmap)
@@ -830,17 +831,20 @@ class FAServerThread(QObject):
                 
                 
                 if "," in login or "," in em:
-                    self.sendJSON(dict(command="notice", style="info", text="You have an incorrect in your login."))
+                    self.sendJSON(dict(command="notice", style="info", text="Please don't use , in your login or email.")) # TODO: Add proper validation
                     self.sendReply( "LOGIN_AVAILABLE", "no", login)
                     return
                 query = QSqlQuery(self.parent.db)
-                self.log.debug("sending mail")
-                queryStr = "SELECT * FROM `login` WHERE ucase(`login`) = ucase('%s')" % (login)
-                query.exec_(queryStr)
-                if  query.size() == 0:
-                
-                    queryStr = "INSERT INTO login (login, password, email) VALUES ('%s','%s','%s')" % (login, password, em)
-                    if query.exec_(queryStr) :
+                query.prepare("SELECT * FROM `login` WHERE LOWER(`login`) = ?")
+                query.addBindValue(login.lower())
+                if not query.exec_():
+                    self.log.info(query.lastError())
+                if query.size() == 0:
+                    query.prepare("INSERT INTO login (login, password, email) VALUES (?,?,?)")
+                    query.addBindValue(login)
+                    query.addBindValue(password)
+                    query.addBindValue(em)
+                    if query.exec_() :
                         
                         uid = query.lastInsertId()
 
@@ -853,6 +857,7 @@ class FAServerThread(QObject):
                         query.addBindValue(keyHex)
                         query.addBindValue(exp)
                         query.exec_()
+                        self.log.debug("Sending registration mail")
                         link = {'a' : 'validate', 'email' : keyHex, 'u' : base64.b64encode(str(uid))}
                         passwordLink = config['global']['app_url'] + "validateAccount.php?" + urllib.urlencode(link)
 
@@ -885,8 +890,11 @@ Thanks,\n\
                         self.sendReply( "LOGIN_AVAILABLE", "yes", login)
 
                     else :
+                        self.log.debug("Error inserting login %s", login)
+                        self.log.debug(query.lastError())
                         self.sendReply( "LOGIN_AVAILABLE", "no", login)
                 else :
+                    self.log.debug("Login not available: %s", login)
                     self.sendReply( "LOGIN_AVAILABLE", "no", login)
 
 
