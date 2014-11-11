@@ -1368,21 +1368,25 @@ Thanks,\n\
                 for friend in toAdd :
     
                     query = QSqlQuery(self.parent.db)
-                    queryStr = "INSERT INTO friends (idUser, idFriend) values ((SELECT id FROM login WHERE login.login = '%s'),(SELECT id FROM login WHERE login.login = '%s'))" % (self.player.getLogin(), friend)
-                    query.exec_(queryStr)
+                    query.prepare("INSERT INTO friends (idUser, idFriend) values ((SELECT id FROM login WHERE login.login = ?),(SELECT id FROM login WHERE login.login = ?))")
+                    query.addBindValue(self.player.getLogin())
+                    query.addBindValue(friend)
+                    query.exec_()
     
             toRemove = set(self.friendList) - set(friendlist)
     
-            if len(toRemove) > 0 :
-                for friend in toRemove :
+            if len(toRemove) > 0:
+                for friend in toRemove:
                     
                     query = QSqlQuery(self.parent.db)
-                    queryStr = "DELETE FROM friends WHERE idFriend = (SELECT id FROM login WHERE login.login = '%s') AND idUser = (SELECT id FROM login WHERE login.login = '%s')" % (friend, self.player.getLogin()) 
-                    query.exec_(queryStr)
+                    query.prepare("DELETE FROM friends WHERE idFriend = (SELECT id FROM login WHERE login.login = ?) AND idUser = (SELECT id FROM login WHERE login.login = ?)")
+                    query.addBindValue(friend)
+                    query.addBindValue(self.player.getLogin())
+                    query.exec_()
         
             self.friendList = friendlist
         
-        if "foes" in message : 
+        if "foes" in message:
             foelist = message['foes']
             toAdd = set(foelist) - set(self.foeList)
           
@@ -1391,8 +1395,10 @@ Thanks,\n\
                 for foe in toAdd :
     
                     query = QSqlQuery(self.parent.db)
-                    queryStr = "INSERT INTO foes (idUser, idFoe) values ((SELECT id FROM login WHERE login.login = '%s'),(SELECT id FROM login WHERE login.login = '%s'))" % (self.player.getLogin(), foe)
-                    query.exec_(queryStr)
+                    query.prepare("INSERT INTO foes (idUser, idFoe) values ((SELECT id FROM login WHERE login.login = ?),(SELECT id FROM login WHERE login.login = ?))")
+                    query.addBindValue(self.player.getLogin())
+                    query.addBindValue(foe)
+                    query.exec_()
     
             toRemove = set(self.foeList) - set(foelist)
     
@@ -1400,8 +1406,10 @@ Thanks,\n\
                 for foe in toRemove :
                     
                     query = QSqlQuery(self.parent.db)
-                    queryStr = "DELETE FROM foes WHERE idFoe = (SELECT id FROM login WHERE login.login = '%s') AND idUser = (SELECT id FROM login WHERE login.login = '%s')" % (foe, self.player.getLogin()) 
-                    query.exec_(queryStr)
+                    query.prepare("DELETE FROM foes WHERE idFoe = (SELECT id FROM login WHERE login.login = ?) AND idUser = (SELECT id FROM login WHERE login.login = ?)")
+                    query.addBindValue(foe)
+                    query.addBindValue(self.player.getLogin())
+                    query.exec_()
         
             self.foeList = foelist
 
@@ -1617,8 +1625,10 @@ Thanks,\n\
             login = login.strip()
             query = QSqlQuery(self.parent.db)
                            
-            queryStr = ("SELECT id, validated, email, steamchecked, session FROM login WHERE login = '%s' AND password = '%s'") % (login, password)
-            query.exec_(queryStr)
+            query.prepare("SELECT id, validated, email, steamchecked, session FROM login WHERE login = ? AND password = ?")
+            query.addBindValue(login)
+            query.addBindValue(password)
+            query.exec_()
             
             if  query.size() == 1:
                 query.first()
@@ -1762,8 +1772,9 @@ Thanks,\n\
 
     
                 query = QSqlQuery(self.parent.db)
-                queryStr = ("SELECT mean, deviation, numGames FROM global_rating WHERE id = (SELECT id FROM login WHERE login = '%s')") % (login)
-                query.exec_(queryStr)
+                query.prepare("SELECT mean, deviation, numGames FROM global_rating WHERE id = (SELECT id FROM login WHERE login = ?)")
+                query.addBindValue(login)
+                query.exec_()
 
             
                 trueSkill = None
@@ -1772,8 +1783,9 @@ Thanks,\n\
                     trueSkill = faPlayer(Player(login), Rating(1500,500))
             
                     query = QSqlQuery(self.parent.db)
-                    queryStr = ("INSERT INTO global_rating (id, mean, deviation) values ((SELECT id FROM login WHERE login.login = '%s'),1500,500)") % (login)
-                    query.exec_(queryStr)
+                    query.prepare("INSERT INTO global_rating (id, mean, deviation) values ((SELECT id FROM login WHERE login.login = ?),1500,500)")
+                    query.addBindValue(login)
+                    query.exec_()
             
                     globalMean = 500
                     numGames = 0
@@ -1789,15 +1801,17 @@ Thanks,\n\
                 #get ladder 1v1 rating
                 query = QSqlQuery(self.parent.db)
                 
-                queryStr = ("SELECT mean, deviation FROM ladder1v1_rating WHERE id = (SELECT id FROM login WHERE login = '%s')") % (login)
-                query.exec_(queryStr)
+                query.prepare("SELECT mean, deviation FROM ladder1v1_rating WHERE id = (SELECT id FROM login WHERE login = ?)")
+                query.addBindValue(login)
+                query.exec_()
                 #self.parent.db.close()
                 trueSkill1v1 = None
                 if  query.size() != 1:
                     #we dont have a mean yet, set default values
                     trueSkill1v1 = faPlayer(Player(login), Rating(1500,500))
-                    queryStr = ("INSERT INTO ladder1v1_rating (id, mean, deviation) values ((SELECT id FROM login WHERE login.login = '%s'),1500,500)") % (login)
-                    query.exec_(queryStr)
+                    query.prepare("INSERT INTO ladder1v1_rating (id, mean, deviation) values ((SELECT id FROM login WHERE login.login = ?),1500,500)")
+                    query.addBindValue(login)
+                    query.exec_()
                     
                 else :
                     query.first()
@@ -2043,10 +2057,12 @@ Thanks,\n\
                 self.sendArray(reply)
                            
                 query = QSqlQuery(self.parent.db)
-                queryStr = "SELECT login.login FROM friends JOIN login ON idFriend=login.id WHERE idUser = (SELECT id FROM login WHERE login.login = '%s')" % login        
-                query.exec_(queryStr)
-                if  query.size() > 0 :
-                    while query.next() :
+                query.prepare("SELECT login.login FROM friends JOIN login ON idFriend=login.id WHERE idUser = (SELECT id FROM login WHERE login.login = ?)")
+                query.addBindValue(login)
+                query.exec_()
+
+                if query.size() > 0:
+                    while query.next():
                         self.friendList.append(str(query.value(0)))
             
                     jsonToSend = {}
@@ -2063,8 +2079,9 @@ Thanks,\n\
                         self.ladderMapList.append(int(query.value(0)))
     
                 query = QSqlQuery(self.parent.db)
-                queryStr = "SELECT login.login FROM foes JOIN login ON idFoe=login.id WHERE idUser = (SELECT id FROM login WHERE login.login = '%s')" % login        
-                query.exec_(queryStr)
+                query.prepare("SELECT login.login FROM foes JOIN login ON idFoe=login.id WHERE idUser = (SELECT id FROM login WHERE login.login = ?)")
+                query.addBindValue(login)
+                query.exec_()
                 if  query.size() > 0 :
                     while query.next() :
                         self.foeList.append(str(query.value(0)))
