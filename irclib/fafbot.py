@@ -404,7 +404,7 @@ class BotModeration(ircbot.SingleServerIRCBot):
                             date = t.split("T")
                             hour = date[1].replace("Z", "")
 
-                            self.connection.privmsg("#aeolus", "%s - %s - " + config['global']['www_url'] + "livestream/?channel=%s Since %s (%i viewers) " % (stream["channel"]["display_name"], stream["channel"]["status"],stream["channel"]["display_name"], hour, stream["viewers"]))
+                            self.connection.privmsg("#aeolus", "%s - %s - %slivestream/?channel=%s Since %s (%i viewers) " % (stream["channel"]["display_name"], stream["channel"]["status"], config['global']['www_url'], stream["channel"]["display_name"], hour, stream["viewers"]))
                     else:
                         self.connection.privmsg("#aeolus", "No one is streaming :'(")
             if message.startswith("!casts"):
