@@ -430,7 +430,7 @@ class FAServerThread(QObject):
 
      
     @timed
-    def hostGame(self, access, gameName, gamePort, mod = "faf",  map='SCMP_007', password = None, rating = 1, options = []):
+    def hostGame(self, access, gameName, gamePort, version, mod = "faf",  map='SCMP_007', password = None, rating = 1, options = []):
         mod = mod.lower()
         self.checkOldGamesFromPlayer()
         self.parent.games.removeOldGames()
@@ -459,11 +459,12 @@ class FAServerThread(QObject):
             jsonToSend["command"] = "game_launch"
             jsonToSend["mod"] = mod
             jsonToSend["uid"] = uuid
+            jsonToSend["version"] = version
 
 
-            flags = []          
-            flags.append("/ratingcolor " + self.getRankColor(self.player.getRating().getRating().getStandardDeviation()) )          
-            flags.append("/numgames " + str(self.player.getNumGames()))
+            flags = []
+            flags.append(("/ratingcolor", self.getRankColor(self.player.getRating().getRating().getStandardDeviation())))
+            flags.append(("/numgames", str(self.player.getNumGames())))
             jsonToSend["args"] = flags
 
             if len(options) != 0 :
@@ -2758,6 +2759,7 @@ Thanks,\n\
         gameport = message['gameport']
         access = message['access']
         mod = message['mod']
+        version = message['version']
         try:
             title.encode('ascii')
         except UnicodeEncodeError:
@@ -2781,7 +2783,7 @@ Thanks,\n\
         if "options" in message :
             options = message['options']
         
-        self.hostGame(access, title, gameport, mod, mapname, password, lobby_rating, options)
+        self.hostGame(access, title, gameport, version, mod, mapname, password, lobby_rating, options)
 
 
     def command_modvault(self, message):
