@@ -65,6 +65,7 @@ class start(QObject):
             self.db.setDatabaseName(DB_TABLE)  
             self.db.setUserName(DB_LOGIN)  
             self.db.setPassword(DB_PASSWORD)
+	    self.db.setConnectOptions( "MYSQL_OPT_RECONNECT=1" )
             
     
             
