@@ -150,6 +150,8 @@ class FAGameThread(QObject):
     
             if self.parent.db.isOpen() == False :
                 self.parent.db.open()
+
+	    self.parent.db.setConnectOptions("MYSQL_OPT_RECONNECT = 1")
                 
             self.canConnectToHost = False
 
