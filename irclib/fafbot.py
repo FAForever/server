@@ -410,7 +410,7 @@ class BotModeration(ircbot.SingleServerIRCBot):
             if message.startswith("!casts"):
                 if time.time() - self.askForYoutube > 60*10:
                     self.askForYoutube = time.time()
-                    con = urllib2.urlopen("http://gdata.youtube.com/feeds/api/videos?q=forged+alliance&max-results=5&v=2&orderby=published&alt=jsonc")
+                    con = urllib2.urlopen("http://gdata.youtube.com/feeds/api/videos?q=forged+alliance+-SWTOR&max-results=5&v=2&orderby=published&alt=jsonc")
                     info = con.read()
                     con.close()
                     data = json.loads(info)
