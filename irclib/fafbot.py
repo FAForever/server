@@ -398,7 +398,10 @@ class BotModeration(ircbot.SingleServerIRCBot):
                 if time.time() - self.askForCast > 60*10:
                     self.askForCast = time.time()
                     streams = self.info.get_game_streamer_names()
-                    streams_hitbox = json.loads(urllib2.urlopen(HITBOX_STREAMS).read())
+                    try:
+                        streams_hitbox = json.loads(urllib2.urlopen(HITBOX_STREAMS).read())
+                    except:
+                        streams_hitbox = {"livestream": []}
                     num_of_streams = len(streams["streams"]) + len(streams_hitbox["livestream"])
                     if num_of_streams > 0:
                         self.connection.privmsg("#aeolus", "%i Streams online :" % num_of_streams)
