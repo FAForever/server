@@ -32,6 +32,7 @@ import re
 
 from fractions import Fraction
 from twitch import *
+import json
 
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
 
@@ -48,6 +49,7 @@ from trueSkill.Teams import Teams
 TWITCH_STREAMS = "https://api.twitch.tv/kraken/streams/?game=" #add the game name at the end of the link (space = "+", eg: Game+Name)
 STREAMER_INFO  = "https://api.twitch.tv/kraken/streams/" #add streamer name at the end of the link
 GAME = "Supreme+Commander:+Forged+Alliance"
+HITBOX_STREAMS = "https://www.hitbox.tv/api/media/live/list?filter=popular&game=811&hiddenOnly=false&limit=30&liveonly=true&media=true"
 
 class betmatch(object):
     def __init__(self, uid, startTime, name, odds, mostProbableWinner):
@@ -396,8 +398,10 @@ class BotModeration(ircbot.SingleServerIRCBot):
                 if time.time() - self.askForCast > 60*10:
                     self.askForCast = time.time()
                     streams = self.info.get_game_streamer_names()
-                    if len(streams["streams"]) > 0:
-                        self.connection.privmsg("#aeolus", "%i Streams online :" % len(streams["streams"]))
+                    streams_hitbox = json.loads(urllib2.urlopen(HITBOX_STREAMS).read())
+                    num_of_streams = len(streams["streams"]) + len(streams_hitbox["livestream"])
+                    if num_of_streams > 0:
+                        self.connection.privmsg("#aeolus", "%i Streams online :" % num_of_streams)
                         for stream in streams["streams"]:
                             #print stream["channel"]
                             t = stream["channel"]["updated_at"]
@@ -405,6 +409,8 @@ class BotModeration(ircbot.SingleServerIRCBot):
                             hour = date[1].replace("Z", "")
 
                             self.connection.privmsg("#aeolus", "%s - %s - %slivestream/?channel=%s Since %s (%i viewers) " % (stream["channel"]["display_name"], stream["channel"]["status"], config['global']['www_url'], stream["channel"]["display_name"], hour, stream["viewers"]))
+                        for stream in streams_hitbox["livestream"]:
+                            self.connection.privmsg("#aeolus", "%s - %s - %s Since %s (%s viewers) " % (stream["media_display_name"], stream["media_status"], stream["channel"]["channel_link"], stream["media_live_since"], stream["media_views"]))
                     else:
                         self.connection.privmsg("#aeolus", "No one is streaming :'(")
             if message.startswith("!casts"):
