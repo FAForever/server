@@ -1,0 +1,14 @@
+language: python
+
+python:
+  - "2.7_with_system_site_packages"
+
+install:
+  - "sudo apt-get install python-pyside"
+  - "pip install flexmock pytest pytest-qt pytest-cov python-coveralls"
+
+script:
+  - py.test --cov . --cov-report term-missing
+
+after_success:
+  - coveralls

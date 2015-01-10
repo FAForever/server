@@ -1,0 +1,4 @@
+PySide
+pytest
+pytest-qt
+flexmock
