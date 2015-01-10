@@ -106,18 +106,8 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         gameInfo = GameInfo()
         calculator = FactorGraphTrueSkillCalculator()
         return calculator.calculateMatchQuality(gameInfo, matchup)
-    
-    def startGame(self, player1, player2) :
-        #start game
-        
-        #first clean old games that didnt start.
-        for game in self.getGames() :
-            if game.getLobbyState() == 'Idle' :
-                for player in game.getPlayers() :
-                    if player.getLogin() == player1.getLogin() or player.getLogin() == player2.getLogin() :
-                        self.remove(game)
-                        continue
 
+    def startGame(self, player1, player2):
         gameName = str(player1.getLogin() + " Vs " + player2.getLogin())
         
         #creating the game
