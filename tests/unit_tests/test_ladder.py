@@ -1,11 +1,6 @@
-from gameModes import ladderGamesContainer, ladder1v1GamesContainerClass
-
-import pytest
 import random
-from PySide import QtSql
-from flexmock import flexmock
 
-from ladder_fixtures import *
+from tests.unit_tests.ladder_fixtures import *
 
 
 class DictMatcher(object):
