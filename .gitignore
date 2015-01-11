@@ -1,3 +1,5 @@
 passwords.py
 *.pyc
 *.swp
+.idea/
+logs/
