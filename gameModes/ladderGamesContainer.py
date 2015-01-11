@@ -138,6 +138,28 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         else:
             return None
 
+    def choose_ladder_map_pool(self, player1, player2):
+        player_maps = [
+            self.getSelectedLadderMaps(player1.getId()),
+            self.getSelectedLadderMaps(player2.getId())
+        ]
+
+        common_maps = list(set(player_maps[0]).intersection(set(player_maps[1])))
+
+        if len(common_maps) < 15:
+            missing_maps = 15 - len(common_maps)
+            choice = random.randint(0, 2)
+
+            if choice == 1 or choice == 2:
+                common_maps = common_maps + player_maps[choice-1][:missing_maps]
+
+
+        if len(common_maps) < 15:
+            missing_maps = 15 - len(common_maps)
+            common_maps = common_maps + self.getPopularLadderMaps(missing_maps)[:missing_maps]
+
+        return common_maps
+
     def startGame(self, player1, player2):
         gameName = str(player1.getLogin() + " Vs " + player2.getLogin())
         
@@ -148,26 +170,9 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
 
         map = "scmp_007"
 
-        player_maps = [
-            self.getSelectedLadderMaps(player1.getId()),
-            self.getSelectedLadderMaps(player2.getId())
-        ]
+        map_pool = self.choose_ladder_map_pool(player1, player2)
 
-        commonMaps = list(set(player_maps[0]).intersection(set(player_maps[1])))
-
-        if len(commonMaps) < 15:
-            missing_maps = 15 - len(commonMaps)
-            choice = random.randint(0, 2)
-
-            if choice == 1 or choice == 2:
-                commonMaps = commonMaps + player_maps[choice-1][:missing_maps]
-
-
-        if len(commonMaps) < 15:
-            missing_maps = 15 - len(commonMaps)
-            commonMaps = commonMaps + self.getPopularLadderMaps(missing_maps)[:missing_maps]
-
-        mapChosen = random.choice(commonMaps)
+        mapChosen = random.choice(map_pool)
         map = self.getMapName(mapChosen)
 
         ngame = ladder1v1GameClass(gameUuid, self)
@@ -219,10 +224,8 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         json["args"] = ["/players 2", "/team 1"]
         
         player1.getLobbyThread().sendJSON(json)
-        
-#        player1.getLobbyThread().sendReply("LADDER_START", player2.getLogin(), int(1))
-        
-        
+
+
     def searchForMatchup(self, player) :
         
         if  player in self.players :
