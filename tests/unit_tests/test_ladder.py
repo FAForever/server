@@ -66,3 +66,12 @@ def test_start_game_uses_map_from_mappool(container, ladder_setup, lobbythread):
     lobbythread.should_receive('sendJSON').with_args((DictMatcher(map_pool, assert_mapname_in)))
 
     container.startGame(ladder_setup['player1'], ladder_setup['player2'])
+
+
+def test_keeps_track_of_started_games(container, ladder_setup):
+    flexmock(container)
+    map_pool = ladder_setup['popular_maps']
+    container.should_receive('choose_ladder_map_pool').and_return(map_pool)
+
+    container.startGame(ladder_setup['player1'], ladder_setup['player2'])
+    assert len(container.games) == 1
