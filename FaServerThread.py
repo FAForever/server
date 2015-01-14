@@ -2761,7 +2761,7 @@ Thanks,\n\
             return
 
         mapname = message.get('mapname')
-        password = message.get('passworded')
+        password = message.get('password')
         max_players = message.get('max_players', 12)
         lobby_rating = message.get('lobby_rating', 1)  # 0 = no rating inside the lobby. Default is 1.
         options = message.get('options', [])
