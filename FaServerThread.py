@@ -60,8 +60,7 @@ from Crypto.Cipher import AES
 
 from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS, MAIL_PASSWORD
 
-from configobj import ConfigObj
-config = ConfigObj("/etc/faforever/faforever.conf")
+from config import config
 
 import json
 

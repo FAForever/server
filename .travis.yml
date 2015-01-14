@@ -5,7 +5,7 @@ python:
 
 install:
   - "sudo apt-get install python-pyside"
-  - "pip install flexmock pytest pytest-qt pytest-cov python-coveralls"
+  - "pip install flexmock pytest pytest-qt pytest-cov python-coveralls configobj"
 
 script:
   - py.test --cov . --cov-report term-missing

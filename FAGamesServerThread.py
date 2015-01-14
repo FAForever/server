@@ -42,8 +42,7 @@ from faPackets import Packet
 import json
 import logging
 
-from configobj import ConfigObj
-config = ConfigObj("/etc/faforever/faforever.conf")
+from config import config
 
 logger = logging.getLogger(__name__)
 
