@@ -76,9 +76,12 @@ class FALobbyServer(QtNetwork.QTcpServer):
         self.lastDirty = time.time()
         self.skippedDirty = 0
     
-    def incomingConnection(self, socketId):
-        reload(FaServerThread)
-        self.recorders.append(FaServerThread.FAServerThread(socketId, self))    
+    def incomingConnection(self, socket_id):
+        socket = QtNetwork.QTcpSocket()
+        if socket.setSocketDescriptor(socket_id):
+            self.recorders.append(FaServerThread.FAServerThread(socket, self))
+        else:
+            self.logger.warning("Failed to handover socket descriptor for incoming connection")
 
     @timed
     def removeRecorder(self, recorder):

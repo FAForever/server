@@ -112,20 +112,15 @@ class FAServerThread(QObject):
                 
         self.log.debug("Incoming lobby socket started")
 
-        self.socket = None
+        self.season = LADDER_SEASON
 
-        self.socket = QtNetwork.QTcpSocket(self)
+        self.socket = socket
 
         self.socket.disconnected.connect(self.disconnection)
         self.socket.error.connect(self.displayError)    
         self.socket.stateChanged.connect(self.stateChange)
         
-        if self.socket.setSocketDescriptor(socket) == False :
-            self.log.debug("awful error : Socket descriptor not set")
-            self.socket.abort()
-            return
-
-        self.ladderPotentialPlayers = [] 
+        self.ladderPotentialPlayers = []
         self.warned = False
         
         self.loginDone = False

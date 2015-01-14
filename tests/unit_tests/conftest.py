@@ -1,6 +1,7 @@
 import pytest
 from PySide import QtSql
 from flexmock import flexmock
+import mock
 
 
 @pytest.fixture()
@@ -21,5 +22,7 @@ def lobbythread():
 
 @pytest.fixture()
 def db():
-    return flexmock(QtSql.QSqlDatabase)
+    db = QtSql.QSqlDatabase()
+    db.isOpen = mock.Mock(return_value=True)
+    return db
 

@@ -1,3 +1,4 @@
+mock
 PySide
 pytest
 pytest-qt
