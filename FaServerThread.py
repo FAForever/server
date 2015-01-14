@@ -462,8 +462,8 @@ class FAServerThread(QObject):
 
 
             flags = []
-            flags.append("/ratingcolor" + self.getRankColor(self.player.getRating().getRating().getStandardDeviation()))
-            flags.append("/numgames" + str(self.player.getNumGames()))
+            flags.append("/ratingcolor " + self.getRankColor(self.player.getRating().getRating().getStandardDeviation()))
+            flags.append("/numgames " + str(self.player.getNumGames()))
             jsonToSend["args"] = flags
 
             if len(options) != 0 :
