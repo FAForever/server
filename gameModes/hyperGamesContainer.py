@@ -33,7 +33,7 @@ class hyperGamesContainerClass(object):
         
         self.log.debug("HyperGameContainer initialized")
         
-        if self.db.isOpen() == False :
+        if not self.db.isOpen():
             self.db.open()
         
         self.gamesContainer = {}

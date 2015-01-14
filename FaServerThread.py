@@ -22,25 +22,23 @@ from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QCoreApplic
 from PySide import QtCore, QtNetwork
 from PySide.QtSql import QSqlQuery
 
-import base64, zlib
+import zlib
 import urllib
 import cgi
 import socket
-
-from players import *
+import base64
+import geoip
+import json
 import urllib2
-from trueSkill.Player import *
-from trueSkill.faPlayer import *
-from trueSkill.Rating import *
 
-from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import * 
+from trueSkill.faPlayer import *
+from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
 from trueSkill.Team import *
-from trueSkill.Teams import *
 from trueSkill.GameInfo import *
 
-from copy import deepcopy
 from types import *
-import time, datetime
+import time
+import datetime
 import zipfile
 import os
 import shutil
@@ -53,56 +51,35 @@ import smtplib
 from email.mime.text import MIMEText
 import email.utils
 
-
-import rsa, base64
-import geoip
-from Crypto.Cipher import AES
-
+from players import *
 from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS, MAIL_PASSWORD
 
 from config import config
 
-import json
 
 FA = 9420
 LADDER_SEASON = "ladder_season_5"
 
-from steam import user, api
+from steam import api
 
 api.key.set(STEAM_APIKEY)
 
-from gameModes.customGamesContainer import customGamesContainerClass # custom games
-
-from gameModes.ladderGamesContainer import ladder1v1GamesContainerClass # ladder games
-from gameModes.customNomadsGamesContainer import customNomadsGamesContainerClass # custom nomads games
-from gameModes.customLabwarsGamesContainer import customLabwarsGamesContainerClass # custom labwars games
-
-from gameModes.customMurderPartyGamesContainer import customMurderPartyGamesContainerClass # custom murder party games
-from gameModes.customKothGamesContainer import customKothGamesContainerClass # custom king of the hill games
-from gameModes.customPhantomXGamesContainer import customPhantomXGamesContainerClass # custom phantomX games
-
-#from gameModes.customWyvernGamesContainer import customWyvernGamesContainerClass # custom Wyvern games
-from gameModes.customBlackopsGamesContainer import customBlackopsGamesContainerClass # custom Blackops games
-
-from gameModes.customXtremewarsGamesContainer import customXtremewarsGamesContainerClass # custom Blackops games
-from gameModes.customDiamondGamesContainer import customDiamondGamesContainerClass # custom Blackops games
-
-from gameModes.customCiviliansGamesContainer import customCiviliansGamesContainerClass # custom Blackops games
-from gameModes.customVanillaGamesContainer import customVanillaGamesContainerClass # custom Blackops games
-
-from gameModes.balanceTestingGamesContainer import balanceTestingGamesContainerClass # custom Blackops games
-
-
-from gameModes.coopGamesContainer import coopGamesContainerClass # custom Blackops games
-
-#from gameModes.engyRedesignGamesContainer import engyRedesignGamesContainerClass # custom Blackops games
-
-from gameModes.claustrophobiaGamesContainer import claustrophobiaGamesContainerClass # custom Blackops games
-from gameModes.supremeDestructionGamesContainer import supremeDestructionGamesContainerClass # custom Blackops games
-
-
-from gameModes.matchmakerGamesContainer import matchmakerGamesContainerClass # custom matchmaker games
-#from gameModes.swissTournamentContainer import swissTourneyContainerClass, swisstournament # custom Blackops games
+from gameModes.customGamesContainer import customGamesContainerClass
+from gameModes.ladderGamesContainer import ladder1v1GamesContainerClass
+from gameModes.customNomadsGamesContainer import customNomadsGamesContainerClass
+from gameModes.customLabwarsGamesContainer import customLabwarsGamesContainerClass
+from gameModes.customMurderPartyGamesContainer import customMurderPartyGamesContainerClass
+from gameModes.customKothGamesContainer import customKothGamesContainerClass
+from gameModes.customPhantomXGamesContainer import customPhantomXGamesContainerClass
+from gameModes.customBlackopsGamesContainer import customBlackopsGamesContainerClass
+from gameModes.customXtremewarsGamesContainer import customXtremewarsGamesContainerClass
+from gameModes.customDiamondGamesContainer import customDiamondGamesContainerClass
+from gameModes.customCiviliansGamesContainer import customCiviliansGamesContainerClass
+from gameModes.customVanillaGamesContainer import customVanillaGamesContainerClass
+from gameModes.coopGamesContainer import coopGamesContainerClass
+from gameModes.claustrophobiaGamesContainer import claustrophobiaGamesContainerClass
+from gameModes.supremeDestructionGamesContainer import supremeDestructionGamesContainerClass
+from gameModes.matchmakerGamesContainer import matchmakerGamesContainerClass
 
 
 import teams
@@ -125,29 +102,20 @@ def timed(f):
   return wrapper
 
 
-
 class FAServerThread(QObject):
     @timed
     def __init__(self, socket, parent=None):
         super(FAServerThread, self).__init__(parent)
         self.parent = parent
 
-        # obselete
-        # if not hasattr(self.parent, "teams"):
-        #     self.parent.teams = teams.Teams(self)
-        
         self.log = logging.getLogger(__name__)
                 
-        
         self.log.debug("Incoming lobby socket started")
-                
-        self.season = LADDER_SEASON
 
         self.socket = None
 
         self.socket = QtNetwork.QTcpSocket(self)
 
-        #self.parent.setMaxPendingConnections(500)
         self.socket.disconnected.connect(self.disconnection)
         self.socket.error.connect(self.displayError)    
         self.socket.stateChanged.connect(self.stateChange)
@@ -165,19 +133,15 @@ class FAServerThread(QObject):
         self.initTimer = QTimer(self)
         self.initTimer.timeout.connect(self.initNotDone)
         self.initTimer.start(2000)
-        
 
-        if self.socket != None and self.socket.state() == 3 and self.socket.isValid() :
-            
+        if self.socket is not None and self.socket.state() == 3 and self.socket.isValid():
             self.privkey = PRIVATE_KEY
             
-   
             self.noSocket = False
             self.readingSocket = False
            
             self.addGameModes()
-            self.maintainMods()
-            
+
             self.player = player()
 
             self.initPing = True
@@ -205,22 +169,18 @@ class FAServerThread(QObject):
             self.ip = self.socket.peerAddress().toString()
             self.port = self.socket.peerPort()
             self.peerName = self.socket.peerName()
-    
-                
+
             self.socket.readyRead.connect(self.readData)
 
-    
             self.pingTimer = None
             
             self.session = random.getrandbits(32)
 
-    
             self.dirtyGameList = []
-        else  :
-            self.log.debug("We are not connected :'(")
+        else:
+            self.log.warning("We are not connected")
             self.socket.abort()
         
-    
     @timed
     def initNotDone(self):
         self.initTimer.stop()
@@ -235,7 +195,6 @@ class FAServerThread(QObject):
 
     @timed
     def addGameModes(self):
-        ##self.log.debug("Add mods")
         if not self.parent.games.isaContainer("faf") :
             self.parent.games.addContainer("faf", customGamesContainerClass(self.parent.db, self.parent.games))
         
@@ -263,9 +222,6 @@ class FAServerThread(QObject):
         if not self.parent.games.isaContainer("phantomx") :
             self.parent.games.addContainer("phantomx", customPhantomXGamesContainerClass(self.parent.db, self.parent.games))
             
-#        if not self.parent.games.isaContainer("balancetesting") :
-#            self.parent.games.addContainer("balancetesting", balanceTestingGamesContainerClass(self.parent.db, self.parent.games))
-
         if not self.parent.games.isaContainer("vanilla") :
             self.parent.games.addContainer("vanilla", customVanillaGamesContainerClass(self.parent.db, self.parent.games))
 
@@ -284,20 +240,8 @@ class FAServerThread(QObject):
         if not self.parent.games.isaContainer("coop") :
             self.parent.games.addContainer("coop", coopGamesContainerClass(self.parent.db, self.parent.games))
 
-
         if not self.parent.games.isaContainer("matchmaker") :
             self.parent.games.addContainer("matchmaker", matchmakerGamesContainerClass(self.parent.db, self.parent.games))
-
-    @timed
-    def maintainMods(self) :
-        ''' Used to reload new version of game containers, or removed some'''
-        pass
-        #self.parent.games.reloadContainer("matchmaker")
-        # self.parent.games.reloadContainer("ladder1v1")
-        #self.parent.games.reloadContainer("faf")
-        #if "ladder1v1" in self.parent.games.gamesContainer : 
-            #self.parent.games.gamesContainer.pop("ladder1v1")
-
 
     @timed  
     def getRankColor(self, deviation):
