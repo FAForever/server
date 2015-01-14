@@ -23,7 +23,7 @@ from PySide import QtSql
 import logging
 
 class gamesContainerClass(object):
-    '''Class for containing games'''
+    """Class for containing games"""
     
     def __init__(self, gameTypeName, gameNiceName, db, parent = None):
 
@@ -240,26 +240,3 @@ class gamesContainerClass(object):
 
                 continue
 
-   
-    
-    def sendGamesList(self):
-        '''Send the game list'''
-        games = []
-        for game in self.games:
-            
-            if game.lobbyState == "open" :
-                curgame = "%s,%s,%s,%s" % (game.getGameName(),
-                                       game.getHostName(),
-                                       game.getMapName(),
-                                       str(game.getNumPlayer()))
-
-                
-                games.append(curgame)
-        return games
-
-                
-
-    def list(self):
-        '''Print the game list'''
-        for game in self.games:
-            game.infos()

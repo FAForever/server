@@ -42,8 +42,7 @@ from faPackets import Packet
 import json
 import logging
 
-from configobj import ConfigObj
-config = ConfigObj("/etc/faforever/faforever.conf")
+from config import config
 
 logger = logging.getLogger(__name__)
 
@@ -150,7 +149,7 @@ class FAGameThread(QObject):
     
             if self.parent.db.isOpen() == False :
                 self.parent.db.open()
-                
+
             self.canConnectToHost = False
 
             self.lastUpdate = None

@@ -25,10 +25,9 @@ from trueSkill.Teams import *
 import time
 import random, sys
 from ladder.ladderMaps import ladderMaps
-from PySide import QtSql
+from PySide.QtSql import QSqlQuery
 from PySide import QtCore
 
-from PySide.QtSql import *
 
 import gameModes.ladderGame
 reload(gameModes.ladderGame)
@@ -39,8 +38,8 @@ from gameModes.ladderGame import ladder1v1GameClass
 class ladder1v1GamesContainerClass(gamesContainerClass):
     '''Class for 1vs1 ladder games'''
     
-    def __init__(self, db, parent = None):
-        super(ladder1v1GamesContainerClass, self).__init__("ladder1v1", "ladder 1 vs 1" ,db, parent)
+    def __init__(self, db, parent=None):
+        super(ladder1v1GamesContainerClass, self).__init__("ladder1v1", "ladder 1 vs 1", db, parent)
         
         self.version = 21
         self.season = None
@@ -106,127 +105,75 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         gameInfo = GameInfo()
         calculator = FactorGraphTrueSkillCalculator()
         return calculator.calculateMatchQuality(gameInfo, matchup)
-    
-    def startGame(self, player1, player2) :
-        #start game
-        
-        #first clean old games that didnt start.
-        for game in self.getGames() :
-            if game.getLobbyState() == 'Idle' :
-                for player in game.getPlayers() :
-                    if player.getLogin() == player1.getLogin() or player.getLogin() == player2.getLogin() :
-                        self.remove(game)
-                        continue
 
-        gameName = str(player1.getLogin() + " Vs " + player2.getLogin())
-        
-        #creating the game
-        
-        
-        
-        player1.setAction("HOST")
-        
-        gameUuid = self.createUuid(player1.getId())
-        
-        player2.setAction("JOIN")
-        
-        player1.setWantGame(True)
-
-        map = "scmp_007"
-        #self.db.open()
-            
+    def getSelectedLadderMaps(self, playerId):
         query = QSqlQuery(self.db)
-        # get player map selection for player 1
-        mapsP1 = []
         query.prepare("SELECT idMap FROM ladder_map_selection WHERE idUser = ?")
-        query.addBindValue(player1.getId())
+        query.addBindValue(playerId)
         query.exec_()
+        maps = []
         if query.size() > 0:
             while query.next():
-                mapsP1.append(int(query.value(0)))
+                maps.append(int(query.value(0)))
+        return maps
 
-        # get player map selection for player 2
-        mapsP2 = []
-        query.prepare("SELECT idMap FROM ladder_map_selection WHERE idUser = ?")
-        query.addBindValue(player2.getId())
+    def getPopularLadderMaps(self, count):
+        query = QSqlQuery()
+        query.prepare("SELECT `idMap` FROM `ladder_map_selection` GROUP BY `idMap` ORDER BY count(`idUser`) DESC LIMIT %i" % count)
         query.exec_()
+        maps = []
         if query.size() > 0:
             while query.next():
-                mapsP2.append(int(query.value(0)))
-                
-        commonMaps = list(set(mapsP1).intersection(set(mapsP2)))
-        
-        if len(commonMaps) < 15 :
-            
-            moreMaps = 15 - len(commonMaps)
-            choice = random.randint(0,2)
+                maps.append(int(query.value(0)))
+        return maps
 
-            if len(mapsP1) == 0 and choice == 1:
-                choice = 0
-
-            if len(mapsP2) == 0 and choice == 2:
-                choice = 0
-
-            if choice == 0:
-                # not enough common maps, we fill with more maps.
-                query.prepare("SELECT `idMap` FROM `ladder_map_selection` GROUP BY `idMap` ORDER BY count(`idUser`) DESC LIMIT %i" % moreMaps)
-                query.exec_()
-                if query.size() > moreMaps:
-                    while query.next():
-                        commonMaps.append(int(query.value(0)))
-                else:
-                    query.prepare("SELECT `idmap` FROM `ladder_map` ORDER BY RAND( ) LIMIT %i" % moreMaps)
-                    query.exec_()
-                    if query.size() > 0:
-                        while query.next():
-                            commonMaps.append(int(query.value(0)))
-            
-            elif choice == 1:
-                random.shuffle(mapsP1)
-                if len(mapsP1) >= moreMaps:
-                    commonMaps = commonMaps + mapsP1[:moreMaps]
-                else:
-                    commonMaps = commonMaps + mapsP1
-                    remainingMaps = 15 - len(commonMaps)
-                    query.prepare("SELECT `idMap` FROM `ladder_map_selection` GROUP BY `idMap` ORDER BY count(`idUser`) DESC LIMIT %i" % remainingMaps)
-                    query.exec_()
-                    if query.size() > remainingMaps:
-                        while query.next():
-                            commonMaps.append(int(query.value(0)))                    
-                    else:
-                        query.prepare("SELECT `idmap` FROM `ladder_map` ORDER BY RAND( ) LIMIT %i" % remainingMaps)
-                        query.exec_()
-                        if query.size() > 0:
-                            while query.next():
-                                commonMaps.append(int(query.value(0)))                    
-                     
-            elif choice == 2:
-                random.shuffle(mapsP2)
-                if len(mapsP2) >= moreMaps:
-                    commonMaps = commonMaps + mapsP2[:moreMaps]
-                else:
-                    commonMaps = commonMaps + mapsP2
-                    remainingMaps = 15 - len(commonMaps)
-                    query.prepare("SELECT `idMap` FROM `ladder_map_selection` GROUP BY `idMap` ORDER BY count(`idUser`) DESC LIMIT %i" % remainingMaps)
-                    query.exec_()
-                    if query.size() > remainingMaps:
-                        while query.next():
-                            commonMaps.append(int(query.value(0)))                    
-                    else:
-                        query.prepare("SELECT `idmap` FROM `ladder_map` ORDER BY RAND( ) LIMIT %i" % remainingMaps)
-                        query.exec_()
-                        if query.size() > 0:
-                            while query.next():
-                                commonMaps.append(int(query.value(0)))                                        
-        
-        mapChosen = random.choice(commonMaps)
-
+    def getMapName(self, mapId):
+        query = QSqlQuery(self.db)
         query.prepare("SELECT filename FROM table_map WHERE id = ?")
-        query.addBindValue(mapChosen)
+        query.addBindValue(mapId)
         query.exec_()
         if query.size() > 0:
             query.first()
-            map = str(query.value(0)).split("/")[1].replace(".zip", "")
+            return str(query.value(0)).split("/")[1].replace(".zip", "")
+        else:
+            return None
+
+    def choose_ladder_map_pool(self, player1, player2):
+        player_maps = [
+            self.getSelectedLadderMaps(player1.getId()),
+            self.getSelectedLadderMaps(player2.getId())
+        ]
+
+        common_maps = list(set(player_maps[0]).intersection(set(player_maps[1])))
+
+        if len(common_maps) < 15:
+            missing_maps = 15 - len(common_maps)
+            choice = random.randint(0, 2)
+
+            if choice == 1 or choice == 2:
+                common_maps = common_maps + player_maps[choice-1][:missing_maps]
+
+
+        if len(common_maps) < 15:
+            missing_maps = 15 - len(common_maps)
+            common_maps = common_maps + self.getPopularLadderMaps(missing_maps)[:missing_maps]
+
+        return common_maps
+
+    def startGame(self, player1, player2):
+        gameName = str(player1.getLogin() + " Vs " + player2.getLogin())
+        
+        player1.setAction("HOST")
+        gameUuid = self.createUuid(player1.getId())
+        player2.setAction("JOIN")
+        player1.setWantGame(True)
+
+        map = "scmp_007"
+
+        map_pool = self.choose_ladder_map_pool(player1, player2)
+
+        mapChosen = random.choice(map_pool)
+        map = self.getMapName(mapChosen)
 
         ngame = ladder1v1GameClass(gameUuid, self)
 
@@ -243,8 +190,8 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         
         ngame.setGameHostName(player1.getLogin())
         ngame.setGameHostUuid(player1.getId())
-        ngame.setGameHostPort( player1.getGamePort())
-        ngame.setGameHostLocalPort( player1.getGamePort())
+        ngame.setGameHostPort(player1.getGamePort())
+        ngame.setGameHostLocalPort(player1.getGamePort())
         ngame.setGameName(gameName)
         ngame.setTime()
         
@@ -260,8 +207,7 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         ngame.setLeaguePlayer(player1)
         ngame.setLeaguePlayer(player2)
 
-        
-        
+
         # player 2 will be in game
         
         self.addGame(ngame)
@@ -278,10 +224,8 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         json["args"] = ["/players 2", "/team 1"]
         
         player1.getLobbyThread().sendJSON(json)
-        
-#        player1.getLobbyThread().sendReply("LADDER_START", player2.getLogin(), int(1))
-        
-        
+
+
     def searchForMatchup(self, player) :
         
         if  player in self.players :

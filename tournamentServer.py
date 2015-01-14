@@ -32,8 +32,7 @@ import logging
 from logging import handlers
 
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
-from configobj import ConfigObj
-config = ConfigObj("/etc/faforever/faforever.conf")
+from config import config
 
 from tournament.tournamentServer import *
 

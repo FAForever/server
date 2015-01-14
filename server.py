@@ -34,8 +34,7 @@ import logging
 from logging import handlers
 
 from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
-from configobj import ConfigObj
-config = ConfigObj("/etc/faforever/faforever.conf")
+from config import config
 
 import uuid
 import random
@@ -78,6 +77,8 @@ class start(QObject):
         self.db.setPassword(DB_PASSWORD)
         
         self.privkey = PRIVATE_KEY
+
+        self.db.setConnectOptions("MYSQL_OPT_RECONNECT=1")
 
         if not self.db.open():  
             self.logger.error(self.db.lastError().text())  
