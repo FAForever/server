@@ -2750,39 +2750,23 @@ Thanks,\n\
                    
     @timed
     def command_game_host(self, message):
-        '''
-        We are going to host a game.
-        '''
-        
-
-        title = cgi.escape(message['title'])
-        gameport = message['gameport']
-        access = message['access']
-        mod = message['mod']
-        version = message['version']
+        title = cgi.escape(message.get('title', ''))
+        gameport = message.get('gameport')
+        access = message.get('access')
+        mod = message.get('mod')
+        version = message.get('version')
         try:
             title.encode('ascii')
         except UnicodeEncodeError:
             self.sendJSON(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
             return
 
-        mapname = None      #map id as used in vault (lowercase folder name)
-        password= None     #if given and visibility is 'password', this is the password used.
-        max_players = 12  #if given, game has a max number of slots
-        lobby_rating = 1  # 0 = no rating inside the lobby. Default is 1.
-        options = []
+        mapname = message.get('mapname')
+        password = message.get('passworded')
+        max_players = message.get('max_players', 12)
+        lobby_rating = message.get('lobby_rating', 1)  # 0 = no rating inside the lobby. Default is 1.
+        options = message.get('options', [])
 
-        if "mapname" in message :
-             mapname =  message['mapname']
-        if "password" in message :
-             password =  message['password']
-        if "max_players" in message :
-             max_players =  message['max_players']
-        if "lobby_rating" in message :
-             lobby_rating =  message['lobby_rating']              
-        if "options" in message :
-            options = message['options']
-        
         self.hostGame(access, title, gameport, version, mod, mapname, password, lobby_rating, options)
 
 
