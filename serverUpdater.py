@@ -48,58 +48,50 @@ class start(QObject):
             self.rootlogger = logging.getLogger("")
             self.logHandler = handlers.RotatingFileHandler(config['global']['logpath'] + "serverUpdater.log", backupCount=15, maxBytes=524288 )
             self.logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
-            self.logHandler.setFormatter( self.logFormatter )
-            self.rootlogger.addHandler( self.logHandler )
-            self.rootlogger.setLevel( eval ("logging." + config['serverUpdater']['loglevel'] ))
+            self.logHandler.setFormatter(self.logFormatter)
+            self.rootlogger.addHandler(self.logHandler)
+            self.rootlogger.setLevel(eval("logging." + config['serverUpdater']['loglevel']))
             self.logger = logging.getLogger(__name__)
 
-
-
-            
-            self.logger.info ("starting the update server" )
-            #Database thingys
-            self.db= QtSql.QSqlDatabase.addDatabase("QMYSQL")  
-            self.db.setHostName(DB_SERVER)  
+            self.logger.info("Update server starting")
+            self.db = QtSql.QSqlDatabase.addDatabase(QSqlDatabase("QMYSQL"))
+            self.db.setHostName(DB_SERVER)
             self.db.setPort(DB_PORT)
 
-            self.db.setDatabaseName(DB_TABLE)  
-            self.db.setUserName(DB_LOGIN)  
+            self.db.setDatabaseName(DB_TABLE)
+            self.db.setUserName(DB_LOGIN)
             self.db.setPassword(DB_PASSWORD)
-	    self.db.setConnectOptions( "MYSQL_OPT_RECONNECT=1" )
-            
-    
-            
-            if not self.db.open():  
-                self.logger.error(self.db.lastError().text())  
-      
-            else :
-                self.logger.info ("DB opened.")
+            self.db.setConnectOptions("MYSQL_OPT_RECONNECT=1")
 
-            
-            self.updater =  updateServer(self)
-            if not self.updater.listen(QtNetwork.QHostAddress.Any, 9001):
-                
-                self.logger.error ("Unable to start the server")
-                
-                return        
+            if not self.db.open():
+                self.logger.error(self.db.lastError().text())
+
             else:
-                self.logger.info ("starting the update server on  %s:%i" % (self.updater.serverAddress().toString(),self.updater.serverPort()))  
-        except :
-            self.logger.exception ("Error !!!")
+                self.logger.info("DB opened.")
+
+            self.updater = updateServer(self)
+            if not self.updater.listen(QtNetwork.QHostAddress.Any, 9001):
+
+                self.logger.error("Unable to start the server")
+
+                return
+            else:
+                self.logger.info("Starting the update server on  %s:%i" % (self.updater.serverAddress().toString(),self.updater.serverPort()))
+        except Exception as e:
+            self.logger.exception("Error: %r" % e)
 
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
     import sys
-    
 
     try:
-        
+
         app = QtCore.QCoreApplication(sys.argv)
         server = start()
         app.exec_()
-    
-    except Exception, ex:
-        
-        logger.exception("Something awful happened!")
+
+    except Exception as e:
+
+        logger.exception("Error: %r" % e)
         logger.debug("Finishing main")
 
