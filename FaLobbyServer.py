@@ -102,7 +102,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
         jsonToSend["featured_mod"]= game.getGamemod()
         jsonToSend["featured_mod_versions"] = game.getGamemodVersion()
         
-        jsonToSend["sim_mods"]= game.getSimMods()
+        jsonToSend["sim_mods"] = game.getSimMods()
         jsonToSend["mapname"] = game.getMapName().lower()
         jsonToSend["host"] = game.getHostName()
         jsonToSend["num_players"] = game.getNumPlayer()

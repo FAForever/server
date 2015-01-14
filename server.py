@@ -79,7 +79,7 @@ class start(QObject):
         
         self.privkey = PRIVATE_KEY
 
-	self.db.setConnectOptions("MYSQL_OPT_RECONNECT=1") 
+        self.db.setConnectOptions("MYSQL_OPT_RECONNECT=1")
 
         if not self.db.open():  
             self.logger.error(self.db.lastError().text())  
