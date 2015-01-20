@@ -1014,6 +1014,9 @@ class FAGameThread(QObject):
             login = self.player.getLogin()
 
         uid = int(self.player.getId())
+        if not self.game.getGameName() is None:
+            if self.game.getGameName()[0] == '#':
+                self.sendToRelay("P2PReconnect", [ ])
 
         self.sendToRelay("CreateLobby", [rankedMode, port, login, uid, 1])
 
