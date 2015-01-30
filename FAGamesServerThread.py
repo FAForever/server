@@ -54,10 +54,10 @@ def timed(f):
 
 
 class FAGameThread(QObject):
-    '''
+    """
     FA game server thread spawned upon every incoming connection to
     prevent collisions.
-    '''
+    """
 
     def __init__(self, socket, parent=None):
         super(FAGameThread, self).__init__(parent)
@@ -95,7 +95,7 @@ class FAGameThread(QObject):
         self.socket.error.connect(self.displayError)
         self.socket.stateChanged.connect(self.stateChange)
 
-        if self.socket.setSocketDescriptor(socket) == False:
+        if not self.socket.setSocketDescriptor(socket):
             self.log.debug("awful error : Socket descriptor not set")
             self.socket.abort()
             return
@@ -134,7 +134,7 @@ class FAGameThread(QObject):
 
             self.delaySkipped = False
 
-            if self.parent.db.isOpen() == False:
+            if not self.parent.db.isOpen():
                 self.parent.db.open()
 
             self.canConnectToHost = False
@@ -156,12 +156,11 @@ class FAGameThread(QObject):
 
             ip = 0
 
-            if self.noSocket == False:
+            if not self.noSocket:
                 ip = self.socket.peerAddress().toString()
                 # the player is not known, we search for him.
             self.player = self.parent.listUsers.findByIp(ip)
-            if self.player != None and self.noSocket == False:
-                ##self.log.debug("found player !")
+            if self.player is not None and self.noSocket == False:
                 self.player.gameThread = self
                 # reset the udpPacket from server state
 
@@ -178,12 +177,12 @@ class FAGameThread(QObject):
                 self.logGame = strlog
 
                 for player in self.parent.listUsers.getAllPlayers():
-                    if player != None:
+                    if player is not None:
                         if player.getLogin() == self.player.getLogin():
 
                             # we check if there is already a connection socket to a game.
                             oldsocket = player.getGameSocket()
-                            if oldsocket != None:
+                            if oldsocket is not None:
                                 if socket.state() == 3 and socket.isValid():
                                     socket.abort()
                                     player.setGameSocket(0)
@@ -199,7 +198,7 @@ class FAGameThread(QObject):
                 self.socket.abort()
                 return
 
-            if self.noSocket == False:
+            if not self.noSocket:
                 self.tasks = QTimer(self)
                 self.tasks.timeout.connect(self.doTask)
                 self.tasks.start(200)
@@ -214,9 +213,7 @@ class FAGameThread(QObject):
 
     def sendToRelay(self, action, commands):
         ''' send a command to the relay server. The relay server is inside the FAF lobby. It process & relay these messages to FA itself.'''
-        message = {}
-        message["key"] = action
-        message["commands"] = commands
+        message = {"key": action, "commands": commands}
 
         block = QtCore.QByteArray()
         out = QtCore.QDataStream(block, QtCore.QIODevice.ReadWrite)
@@ -253,7 +250,7 @@ class FAGameThread(QObject):
                 return
             ins = QtCore.QDataStream(self.socket)
             ins.setVersion(QtCore.QDataStream.Qt_4_2)
-            while ins.atEnd() == False:
+            while not ins.atEnd():
                 if self.noSocket == False and self.socket.isValid():
                     if self.blockSize == 0:
                         if self.noSocket == False and self.socket.isValid():
@@ -377,7 +374,7 @@ class FAGameThread(QObject):
                                     self.game.removeTrueSkillPlayer(playerInGame)
 
                             self.player.connectedToHost = True
-                            if self.player.setPort == True:
+                            if self.player.setPort:
                                 self.game.setGameHostPort(self.player.getGamePort())
                                 self.game.receiveUdpHost = True
 
@@ -405,11 +402,11 @@ class FAGameThread(QObject):
 
             else:
                 if self in self.parent.recorders:
-                    if self.tasks != None:
+                    if self.tasks is not None:
                         self.tasks.stop()
         else:
             if self in self.parent.recorders:
-                if self.tasks != None:
+                if self.tasks is not None:
                     self.tasks.stop()
 
     def ping(self):
@@ -426,7 +423,7 @@ class FAGameThread(QObject):
                         self.socket.abort()
                 else:
                     self.sendToRelay("ping", [])
-                    self.missedPing = self.missedPing + 1
+                    self.missedPing += 1
             else:
                 self.sendToRelay("ping", [])
                 self.ponged = False
@@ -492,29 +489,36 @@ class FAGameThread(QObject):
             self.log.debug("QUIT - No player action :(")
 
     def lobbyState(self):
-        """Player is in lobby state. We need to tell him to connect to the host, or create the lobby itself if he is the host."""
+        """
+        Player is in lobby state. We need to tell him to connect to the host,
+        or create the lobby itself if he is the host.
+        """
         playeraction = self.player.getAction()
         if playeraction == "HOST":
             map = self.game.getMapName()
             self.createLobby(str(map))
-        # if the player is joigning, we connect him to host.
+        # if the player is joining, we connect him to host.
         elif playeraction == "JOIN":
             plist = []
             for player in self.game.getPlayers():
                 plist.append(player.getLogin())
 
             self.game.addToConnect(self.player)
-
             self.canConnectToHost = True
 
     def handleAction2(self, action):
-        ''' This code is starting to get messy... This function was created when the FA protocol was moved to the lobby itself. '''
+        """
+        This code is starting to get messy...
+        This function was created when the FA protocol was moved to the lobby itself
+        """
         message = json.loads(action)
         self.handleAction(message["action"], message["chuncks"])
 
 
     def handleAction(self, key, values):
-        ''' The big code that handle everything that can happen to a game or a player in a game '''
+        """
+        The big code that handle everything that can happen to a game or a player in a game
+        """
         try:
             if key == 'ping':
                 return
@@ -619,7 +623,7 @@ class FAGameThread(QObject):
             elif key == 'GameResult':
                 ''' Preparing the data for recording the game result'''
                 playerResult = self.game.getPlayerAtPosition(int(values[0]))
-                if playerResult != None:
+                if playerResult is not None:
                     result = values[1]
                     faresult = None
                     score = 0
@@ -635,7 +639,7 @@ class FAGameThread(QObject):
 
                     if faresult != "score":
                         if hasattr(self.game, "noStats"):
-                            if self.game.noStats == False:
+                            if not self.game.noStats:
                                 self.registerTime(playerResult)
                         else:
                             self.registerTime(playerResult)
@@ -683,7 +687,7 @@ class FAGameThread(QObject):
             elif key == 'ArmyCalled':
                 # this is for Galactic War!
                 playerResult = self.game.getPlayerAtPosition(int(values[0]))
-                if playerResult != None:
+                if playerResult is not None:
                     group = values[1]
                     query = QSqlQuery(self.parent.db)
                     query.prepare(
@@ -734,7 +738,7 @@ class FAGameThread(QObject):
         if state != "playing":
             if "PACKET_RECEIVED" in values[1]:
 
-                if self.dontSetMorePortPlease == False:
+                if not self.dontSetMorePortPlease:
                     splits = values[1].split(" ")
                     port = int(splits[len(splits) - 1])
 
@@ -749,8 +753,7 @@ class FAGameThread(QObject):
                     self.setPort = True
 
                     self.player.setPort = True
-                    json = {}
-                    json["debug"] = ("port used : %i" % port)
+                    json = {"debug": ("port used : %i" % port)}
 
                     for otherPlayer in self.game.getPlayers():
                         if self.player.getAddress() in otherPlayer.UDPPacket:
@@ -850,7 +853,7 @@ class FAGameThread(QObject):
                 self.game.setLobbyState("playing")
 
                 if hasattr(self.game, "noStats"):
-                    if self.game.noStats == False:
+                    if not self.game.noStats:
                         self.fillGameStats()
                 else:
                     self.fillGameStats()
@@ -919,7 +922,7 @@ class FAGameThread(QObject):
         self.player.setGameSocket(None)
         try:
             if hasattr(self, "game"):
-                if self.game != None:
+                if self.game is not None:
                     # check if the game was started
                     if self.game.getLobbyState() == "playing":
                         curplayers = self.game.getNumPlayer()
@@ -932,7 +935,7 @@ class FAGameThread(QObject):
                             self.sendGameInfo()
 
                             if hasattr(self.game, "noStats"):
-                                if self.game.noStats == False:
+                                if not self.game.noStats:
                                     query = QSqlQuery(self.parent.db)
                                     queryStr = (
                                         "UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(
@@ -948,7 +951,7 @@ class FAGameThread(QObject):
                                 self.game.setInvalid("Too many desyncs")
 
                             if hasattr(self.game, "noStats"):
-                                if self.game.noStats == False:
+                                if not self.game.noStats:
                                     self.registerScore(self.game.gameResult)
                             else:
                                 self.registerScore(self.game.gameResult)
@@ -958,7 +961,7 @@ class FAGameThread(QObject):
                             for playerTS in self.game.getTrueSkillPlayers():
                                 name = playerTS.getPlayer()
                                 for player in self.parent.listUsers.getAllPlayers():
-                                    if player != None:
+                                    if player is not None:
                                         if str(name) == player.getLogin():
                                             for conn in self.parent.parent.FALobby.recorders:
                                                 conn.sendJSON(self.parent.parent.jsonPlayer(player))
@@ -1011,7 +1014,7 @@ class FAGameThread(QObject):
 
     def sendPacketForNAT(self):
         ''' Send a nat packet to the server'''
-        self.packetCount = self.packetCount + 1
+        self.packetCount += 1
         datas = "/PLAYERID " + str(self.player.getId()) + " " + self.player.getLogin()
 
         # FIXME: we should make this a hostname and let the client resolve.
@@ -1044,7 +1047,7 @@ class FAGameThread(QObject):
 
         connectToHostSent = False
 
-        if localConnect == False:
+        if not localConnect:
 
             if self.game.hasReceivedPacketFrom(self.player.getLogin(), self.game.getHostName()):
                 if self.game.hasReceivedPacketFrom(self.game.getHostName(), self.player.getLogin()):
@@ -1073,7 +1076,7 @@ class FAGameThread(QObject):
 
                     connectToHostSent = True
 
-            if connectToHostSent == False:
+            if not connectToHostSent:
                 if self.game.getHostName() in self.crappyPorts:
                     gameAddress = self.crappyPorts[self.game.getHostName()]
                 count = self.player.countUdpPacket(str(gameAddress))
@@ -1143,7 +1146,7 @@ class FAGameThread(QObject):
                 self.log.debug(self.logGame + "trying to connect " + playerToConnect.getLogin() + " with " + str(
                     self.player.getLogin()))
 
-                if playerToConnect.game == None or str(playerToConnect.game) != str(self.game.getuuid()):
+                if playerToConnect.game is None or str(playerToConnect.game) != str(self.game.getuuid()):
                     self.log.debug(
                         self.logGame + "CONFIRM : trying to connect " + playerToConnect.getLogin() + " with " + str(
                             self.player.getLogin()))
@@ -1162,7 +1165,7 @@ class FAGameThread(QObject):
                     continue
 
                 if self.game.getHostName() != self.player.getLogin():
-                    if playerToConnect.isConnectedToHost() == False:
+                    if not playerToConnect.isConnectedToHost():
                         self.log.debug(self.logGame + "Not connected to host")
                         continue
 
@@ -1195,7 +1198,7 @@ class FAGameThread(QObject):
                 uuid = playerToConnect.getId()
 
                 # connection
-                if localConnect == False:
+                if not localConnect:
                     if self.game.hasReceivedPacketFrom(self.player.getLogin(), playerToConnect.getLogin()):
 
                         if self.game.hasReceivedPacketFrom(playerToConnect.getLogin(), self.player.getLogin()):
@@ -1318,7 +1321,7 @@ class FAGameThread(QObject):
             self.game.proxy.addCouple(self.player.getLogin(), self.game.getHostName())
             numProxy = self.game.proxy.findProxy(self.player.getLogin(), self.game.getHostName())
 
-            if numProxy != None:
+            if numProxy is not None:
                 hostId = self.game.getHostId()
                 hostname = self.game.getHostName()
                 if hasattr(self.game, "getHostNameForJoin"):
@@ -1395,13 +1398,13 @@ class FAGameThread(QObject):
             if playerToConnect in self.sentConnect:
                 del self.sentConnect[playerToConnect]
 
-            if playerToConnect.gameThread == None:
+            if playerToConnect.gameThread is None:
                 return
 
             self.game.proxy.addCouple(self.player.getLogin(), playerToConnect.getLogin())
             numProxy = self.game.proxy.findProxy(self.player.getLogin(), playerToConnect.getLogin())
 
-            if numProxy != None:
+            if numProxy is not None:
                 uuid = playerToConnect.getId()
 
                 if hasattr(self.game, "getPlayerName"):
@@ -1638,7 +1641,7 @@ class FAGameThread(QObject):
                 place = int(self.game.getPositionOfPlayer(name))
                 color = self.game.getPlayerColor(place)
                 faction = self.game.getPlayerFaction(place)
-                if color == None or faction == None:
+                if color is None or faction is None:
                     self.log.error("wrong faction or color for place " + str(place) + " of player " + name)
 
                 rating = None
@@ -1648,7 +1651,7 @@ class FAGameThread(QObject):
                         rating = playerTS.getRating()
                         break
 
-                if rating != None:
+                if rating is not None:
                     mean = rating.getMean()
                     dev = rating.getStandardDeviation()
 
@@ -1693,12 +1696,12 @@ class FAGameThread(QObject):
     def done(self):
         self.noSocket = True
         if self in self.parent.recorders:
-            if self.tasks != None:
+            if self.tasks is not None:
                 self.tasks.stop()
 
         self.triedToConnect = []
 
-        if self.game != 0 and self.game != None:
+        if self.game != 0 and self.game is not None:
 
             state = self.game.getLobbyState()
 
