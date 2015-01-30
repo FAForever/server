@@ -1,4 +1,4 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright (c) 2014 Gael Honorez.
 # All rights reserved. This program and the accompanying materials
 # are made available under the terms of the GNU Public License v3.0
@@ -14,34 +14,21 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
-from PySide.QtCore import SIGNAL, SLOT, QTimer, QObject
-
-from PySide import QtCore, QtNetwork
-from PySide.QtSql import *
-from types import *
 import string
 import time
-import socket
-from stats import statsFunctions
-from stats.playerStatContainer import *
-
-from trueSkill.Player import *
-from trueSkill.faPlayer import *
-from trueSkill.Rating import *
-
-
-from trueSkill.Rating import *
-from trueSkill.Teams import *
-from trueSkill.Team import *
-from trueSkill.Player import *
-
-from faPackets import Packet
-
 import json
 import logging
 
+from PySide.QtCore import QTimer, QObject
+from PySide import QtCore, QtNetwork
+from PySide.QtSql import *
+
+from trueSkill.faPlayer import *
+from trueSkill.Team import *
+from trueSkill.Player import *
+from faPackets import Packet
 from config import config
 
 logger = logging.getLogger(__name__)
@@ -52,17 +39,19 @@ from functools import wraps
 
 proxyServer = QtNetwork.QHostAddress("127.0.0.1")
 
+
 def timed(f):
-  @wraps(f)
-  def wrapper(*args, **kwds):
-    start = time.time()
-    result = f(*args, **kwds)
-    elapsed = (time.time() - start) * 1000
-    if elapsed > 20 :
-        
-        logger.info("%s took %s ms to finish" % (f.__name__, str(elapsed)))
-    return result
-  return wrapper
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        start = time.time()
+        result = f(*args, **kwds)
+        elapsed = (time.time() - start) * 1000
+        if elapsed > 20:
+            logger.info("%s took %s ms to finish" % (f.__name__, str(elapsed)))
+        return result
+
+    return wrapper
+
 
 class FAGameThread(QObject):
     '''
@@ -77,18 +66,17 @@ class FAGameThread(QObject):
         self.log.debug("Incoming game socket started")
         self.initTime = time.time()
 
-
         self.initDone = False
 
         self.udpToServer = 0
-        
+
         self.connectedTo = []
 
         self.forcedConnections = {}
         self.sentConnect = {}
 
         self.forcedJoin = None
-        self.proxies    = {}
+        self.proxies = {}
         self.proxyNotThrough = True
 
         self.noSocket = False
@@ -107,22 +95,22 @@ class FAGameThread(QObject):
         self.socket.error.connect(self.displayError)
         self.socket.stateChanged.connect(self.stateChange)
 
-        if self.socket.setSocketDescriptor(socket) == False :
+        if self.socket.setSocketDescriptor(socket) == False:
             self.log.debug("awful error : Socket descriptor not set")
             self.socket.abort()
             return
 
-        if self.socket.state() == 3 and self.socket.isValid() :
+        if self.socket.state() == 3 and self.socket.isValid():
 
-            self.crappyPorts={}
-            self.lastUdpPacket = {}            
+            self.crappyPorts = {}
+            self.lastUdpPacket = {}
             self.udpTimeout = 0
             self.missedUdpFrom = {}
             self.triedToConnect = []
             self.dontSetMorePortPlease = False
             self.JoinGameDone = False
 
-            #PINGING
+            # PINGING
             self.initPing = True
             self.ponged = False
             self.missedPing = 0
@@ -139,15 +127,14 @@ class FAGameThread(QObject):
             self.chunkSize = 0
             self.fieldType = 0
             self.chunks = []
-            
-            self.socket.readyRead.connect(self.readData)            
-            
+
+            self.socket.readyRead.connect(self.readData)
+
             self.testUdp = False
-    
+
             self.delaySkipped = False
 
-    
-            if self.parent.db.isOpen() == False :
+            if self.parent.db.isOpen() == False:
                 self.parent.db.open()
 
             self.canConnectToHost = False
@@ -156,73 +143,69 @@ class FAGameThread(QObject):
 
             self.gamePort = 6112
             self.player = None
-    
+
             self.infoDelayed = False
             self.connected = 1
-    
+
             self.data = ''
             self.addData = False
             self.addedData = 0
             self.tryingconnect = 0
-    
-    
+
             self.lobby = None
-    
-    
+
             ip = 0
- 
-            if self.noSocket == False :
+
+            if self.noSocket == False:
                 ip = self.socket.peerAddress().toString()
                 # the player is not known, we search for him.
             self.player = self.parent.listUsers.findByIp(ip)
-            if self.player != None and self.noSocket == False :
+            if self.player != None and self.noSocket == False:
                 ##self.log.debug("found player !")
                 self.player.gameThread = self
                 # reset the udpPacket from server state
-                
+
                 self.player.setReceivedUdp(False)
                 self.player.setPort = False
                 self.player.connectedToHost = False
 
                 self.player.resetUdpPacket()
                 self.gamePort = int(self.player.getGamePort())
-                
+
                 self.lobby = self.player.getLobbyThread()
-                
+
                 strlog = ("%s\t" % str(self.player.getLogin()))
                 self.logGame = strlog
-    
-                for player in self.parent.listUsers.getAllPlayers() :
-                    if player != None :
-                        if player.getLogin() == self.player.getLogin() :
-                            
-                            #we check if there is already a connection socket to a game.
+
+                for player in self.parent.listUsers.getAllPlayers():
+                    if player != None:
+                        if player.getLogin() == self.player.getLogin():
+
+                            # we check if there is already a connection socket to a game.
                             oldsocket = player.getGameSocket()
-                            if oldsocket != None :                              
-                                if socket.state() == 3 and socket.isValid() :
+                            if oldsocket != None:
+                                if socket.state() == 3 and socket.isValid():
                                     socket.abort()
                                     player.setGameSocket(0)
 
 
-    
-                    # We set the curremt game Socket.
+
+                                    # We set the curremt game Socket.
                 self.player.setGameSocket(self.socket)
                 self.player.setWantGame(False)
-                    
-            else :
+
+            else:
                 self.log.warning("No player found for this IP : " + str(self.socket.peerAddress().toString()))
                 self.socket.abort()
                 return
-    
 
-            
-            if self.noSocket == False :
+            if self.noSocket == False:
                 self.tasks = QTimer(self)
                 self.tasks.timeout.connect(self.doTask)
                 self.tasks.start(200)
-                
 
-        else :
+
+        else:
             self.socket.abort()
 
     def containsAny(self, str, set):
@@ -234,8 +217,7 @@ class FAGameThread(QObject):
         message = {}
         message["key"] = action
         message["commands"] = commands
-        
-       
+
         block = QtCore.QByteArray()
         out = QtCore.QDataStream(block, QtCore.QIODevice.ReadWrite)
         out.setVersion(QtCore.QDataStream.Qt_4_2)
@@ -243,60 +225,58 @@ class FAGameThread(QObject):
         out.writeUInt32(0)
         out.writeQString(json.dumps(message))
 
-        out.device().seek(0)        
+        out.device().seek(0)
         out.writeUInt32(block.size() - 4)
         self.bytesToSend = block.size() - 4
-    
-        if hasattr(self, "socket") :
+
+        if hasattr(self, "socket"):
             try:
-                if self.socket :
-                    if self.socket.isValid() and self.socket.state() == 3 :
-                        if self.socket.write(block) == -1 :
+                if self.socket:
+                    if self.socket.isValid() and self.socket.state() == 3:
+                        if self.socket.write(block) == -1:
                             self.socket.abort()
-                    
-                    else :
+
+                    else:
                         self.socket.abort()
-                else :
-                    self.socket.abort()   
-            except:     
+                else:
+                    self.socket.abort()
+            except:
                 if self.tasks is not None:
                     self.tasks.stop()
                 self.pingTimer.stop()
 
 
-
-
     def readData(self):
         ''' Our standard protocol. The FA protocol is now decoded by the lobby itself. Easier to handle that way.'''
-        if self.socket.isValid() :           
-            if self.socket.bytesAvailable() == 0 :
+        if self.socket.isValid():
+            if self.socket.bytesAvailable() == 0:
                 return
             ins = QtCore.QDataStream(self.socket)
             ins.setVersion(QtCore.QDataStream.Qt_4_2)
-            while ins.atEnd() == False :                             
-                if self.noSocket == False and self.socket.isValid() :
+            while ins.atEnd() == False:
+                if self.noSocket == False and self.socket.isValid():
                     if self.blockSize == 0:
-                        if self.noSocket == False and self.socket.isValid() :
+                        if self.noSocket == False and self.socket.isValid():
                             if self.socket.bytesAvailable() < 4:
                                 return
                             self.blockSize = ins.readUInt32()
-                        else :
+                        else:
                             return
-        
-                    if self.noSocket == False and self.socket.isValid() :
+
+                    if self.noSocket == False and self.socket.isValid():
                         if self.socket.bytesAvailable() < self.blockSize:
                             return
 
-                    else :
-                        return  
+                    else:
+                        return
                     action = ins.readQString()
-                    
+
                     self.handleAction2(action)
-                    
+
                     self.blockSize = 0
-      
-                else : 
-                    return    
+
+                else:
+                    return
 
             return
 
@@ -304,33 +284,33 @@ class FAGameThread(QObject):
     def doTask(self):
         ''' Do task run regularly to check if some stuff needs to happen when players are inside the FA lobby.'''
         now = time.time()
-        if now - self.initTime > 60 * 60 :
+        if now - self.initTime > 60 * 60:
             self.socket.abort()
             self.tasks.stop()
             return
 
-        if self.forcedJoin :
-            if now - self.forcedJoin > 5 :
+        if self.forcedJoin:
+            if now - self.forcedJoin > 5:
                 self.game.log.debug("%s going to join through proxy" % (self.player.getLogin()))
                 self.joinThroughProxy()
-        
+
         forceConnection = []
-        for forcedPlayer in self.forcedConnections :
-            if now - self.forcedConnections[forcedPlayer] > 10 :
+        for forcedPlayer in self.forcedConnections:
+            if now - self.forcedConnections[forcedPlayer] > 10:
                 forceConnection.append(forcedPlayer)
-        
+
         action = None
         action = self.player.getAction()
-        for forcedPlayer in forceConnection :           
+        for forcedPlayer in forceConnection:
             if action != "HOST":
                 self.connectThroughProxy(forcedPlayer)
                 if self.game:
-                    self.game.log.debug("%s must connect through proxy to %s " % (forcedPlayer.getLogin(), self.player.getLogin()))
-        
+                    self.game.log.debug(
+                        "%s must connect through proxy to %s " % (forcedPlayer.getLogin(), self.player.getLogin()))
 
         sentConnect = []
-        for sentPlayer in self.sentConnect :
-            if now - self.sentConnect[sentPlayer] > 15 :
+        for sentPlayer in self.sentConnect:
+            if now - self.sentConnect[sentPlayer] > 15:
                 sentConnect.append(sentPlayer)
 
         for sentPlayer in sentConnect:
@@ -338,104 +318,98 @@ class FAGameThread(QObject):
             if action != "HOST":
                 self.connectThroughProxy(sentPlayer)
                 if self.game:
-                    self.game.log.debug("%s must connect through proxy to %s (not connected after 10 sec of ConnectToPeer) " % (sentPlayer.getLogin(), self.player.getLogin()))
+                    self.game.log.debug(
+                        "%s must connect through proxy to %s (not connected after 10 sec of ConnectToPeer) " % (
+                            sentPlayer.getLogin(), self.player.getLogin()))
 
+        if not self.noSocket:
+            if self.player is not None:
 
-
-        if self.noSocket == False :
-
-        # check if the player must connect to someone
-
-            if self.player != None and self.noSocket == False :
-                
-                if self.game != None :
+                if self.game is not None:
                     checkConnect = False
                     checkDisconnect = False
-
-                    
                     getUdp = False
-
                     state = ""
-
 
                     state = self.game.getLobbyState()
 
-                    if state != "playing" :
-                        
+                    if state != "playing":
+
                         # first we stop the timer
-                        self.tasks.stop()                        
-                        
-                        if self.player.setPort == False and now - self.initTime > 3 :
+                        self.tasks.stop()
+
+                        if self.player.setPort == False and now - self.initTime > 3:
                             # after 3 seconds we still have nothing, we force it.
-                            self.player.setPort = True 
-                        
+                            self.player.setPort = True
+
                         if self.player.setPort == False and self.dontSetMorePortPlease == False and self.initDone == True and self.packetCount <= 10:
                             self.sendPacketForNAT()
                             self.tasks.start(200)
-                        
 
                         getUdp = self.player.getReceivedUdp()
-    
-                        if getUdp == True and self.testUdp == False :
-                            # we must now test both socket
-       
-                            address = QtNetwork.QHostAddress(str(self.player.getIp()))
-                            if self.player.getGamePort() != self.player.getUdpPacketPort() :                       
-                                self.parent.parent.udpSocket.writeDatagram("\x08PACKET_RECEIVED %i" % self.player.getGamePort(), address, self.player.getGamePort())                           
-                                self.parent.parent.udpSocket.writeDatagram("\x08PACKET_RECEIVED %i" % self.player.getUdpPacketPort(), address, self.player.getUdpPacketPort())
-                            else :                               
-                                self.parent.parent.udpSocket.writeDatagram("\x08PACKET_RECEIVED %i" % self.player.getGamePort(), address, self.player.getGamePort())
 
-                            
+                        if getUdp == True and self.testUdp == False:
+                            # we must now test both socket
+
+                            address = QtNetwork.QHostAddress(str(self.player.getIp()))
+                            if self.player.getGamePort() != self.player.getUdpPacketPort():
+                                self.parent.parent.udpSocket.writeDatagram(
+                                    "\x08PACKET_RECEIVED %i" % self.player.getGamePort(), address,
+                                    self.player.getGamePort())
+                                self.parent.parent.udpSocket.writeDatagram(
+                                    "\x08PACKET_RECEIVED %i" % self.player.getUdpPacketPort(), address,
+                                    self.player.getUdpPacketPort())
+                            else:
+                                self.parent.parent.udpSocket.writeDatagram(
+                                    "\x08PACKET_RECEIVED %i" % self.player.getGamePort(), address,
+                                    self.player.getGamePort())
+
                             self.testUdp = True
-                            
-                        if action == "HOST" :
-                            
+
+                        if action == "HOST":
+
                             for playerInGame in self.game.getPlayers():
                                 if str(playerInGame.game) != str(self.game.getuuid()):
-                                    #self.log.debug(self.logGame + "ERROR : This player is not in the game : " + playerInGame.getLogin())
+                                    # self.log.debug(self.logGame + "ERROR : This player is not in the game : " + playerInGame.getLogin())
                                     self.game.addToDisconnect(playerInGame)
                                     self.game.removePlayer(playerInGame)
                                     self.game.removeFromAllPlayersToConnect(playerInGame)
                                     self.game.removeTrueSkillPlayer(playerInGame)
 
-                            
                             self.player.connectedToHost = True
-                            if self.player.setPort == True :
-    
+                            if self.player.setPort == True:
                                 self.game.setGameHostPort(self.player.getGamePort())
                                 self.game.receiveUdpHost = True
-    
-    
-                        if self.canConnectToHost == True and self.player.setPort == True :
-                        
-                            if self.game.receiveUdpHost == True and self.player.connectedToHost == False :
+
+                        if self.canConnectToHost == True and self.player.setPort == True:
+
+                            if self.game.receiveUdpHost == True and self.player.connectedToHost == False:
                                 self.connectToHost()
-                        
-                        if self.player.setPort == True and self.player.isConnectedToHost() :
+
+                        if self.player.setPort == True and self.player.isConnectedToHost():
                             checkConnect = self.game.isConnectRequired(self.player)
                             checkDisconnect = self.game.isDisconnectRequired(self.player)
-                                                        
-                            if checkConnect :
+
+                            if checkConnect:
                                 self.connectToPeers()
-        
-                            if checkDisconnect :
+
+                            if checkDisconnect:
                                 self.disconnectToPeers()
-                        
+
                         # and we restart it.
                         self.tasks.start(200)
 
 
-                    else :
+                    else:
                         self.tasks.stop()
 
-            else :
-                if self in self.parent.recorders :
-                    if self.tasks != None :
+            else:
+                if self in self.parent.recorders:
+                    if self.tasks != None:
                         self.tasks.stop()
-        else :
-            if self in self.parent.recorders :
-                if self.tasks != None :
+        else:
+            if self in self.parent.recorders:
+                if self.tasks != None:
                     self.tasks.stop()
 
     def ping(self):
@@ -443,7 +417,8 @@ class FAGameThread(QObject):
         if hasattr(self, "socket"):
             if self.ponged is False:
                 if self.missedPing > 2:
-                    self.log.debug(self.logGame + " Missed 2 ping - Removing user IP " + self.socket.peerAddress().toString())
+                    self.log.debug(
+                        self.logGame + " Missed 2 ping - Removing user IP " + self.socket.peerAddress().toString())
                     if self.tasks is not None:
                         self.tasks.stop()
                     self.pingTimer.stop()
@@ -470,7 +445,8 @@ class FAGameThread(QObject):
                 self.game.setHostIP(self.player.getIp())
                 self.game.setHostLocalIP(self.player.getLocalIp())
                 self.game.proxy = proxy.proxy()
-                strlog = ("%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.getuuid()), str(self.game.getGamemod())))
+                strlog = (
+                    "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.getuuid()), str(self.game.getGamemod())))
                 self.logGame = strlog
                 initmode = self.game.getInitMode()
                 self.initSupcom(initmode)
@@ -493,7 +469,8 @@ class FAGameThread(QObject):
                 for otherPlayer in self.game.getPlayers():
                     if self.player.getAddress() in otherPlayer.UDPPacket:
                         otherPlayer.UDPPacket[self.player.getAddress()] = 0
-                strlog = ("%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.getuuid()), str(self.game.getGamemod())))
+                strlog = (
+                    "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.getuuid()), str(self.game.getGamemod())))
                 self.logGame = strlog
 
                 initmode = 0
@@ -508,20 +485,19 @@ class FAGameThread(QObject):
                     self.log.debug("JOIN - Can't find game")
                     # But we tell the lobby that FA must be killed.
                     self.lobby.sendJSON(dict(command="notice", style="kill"))
-                    
+
         else:
             # We tell the lobby that FA must be killed.
             self.lobby.sendJSON(dict(command="notice", style="kill"))
             self.log.debug("QUIT - No player action :(")
 
     def lobbyState(self):
-        '''Player is in lobby state. We need to tell him to connect to the host, or create the lobby itself if he is the host.'''
-        playeraction = ''
+        """Player is in lobby state. We need to tell him to connect to the host, or create the lobby itself if he is the host."""
         playeraction = self.player.getAction()
         if playeraction == "HOST":
             map = self.game.getMapName()
             self.createLobby(str(map))
-        #if the player is joigning, we connect him to host.
+        # if the player is joigning, we connect him to host.
         elif playeraction == "JOIN":
             plist = []
             for player in self.game.getPlayers():
@@ -540,185 +516,189 @@ class FAGameThread(QObject):
     def handleAction(self, key, values):
         ''' The big code that handle everything that can happen to a game or a player in a game '''
         try:
-                if key == 'ping':
-                    return
-                
-                elif key == 'Disconnected':
-                    return
-                
-                elif key == 'pong':
-                    self.ponged = True
-                    return
+            if key == 'ping':
+                return
 
-                elif key == 'Connected' :
-                    uid = int(values[0])
-                    self.handleConnected(uid)
+            elif key == 'Disconnected':
+                return
 
-                elif key == 'Score':
-                    pass
+            elif key == 'pong':
+                self.ponged = True
+                return
 
-                elif key == 'Bottleneck':
-                    pass
+            elif key == 'Connected':
+                uid = int(values[0])
+                self.handleConnected(uid)
 
-                elif key == 'BottleneckCleared':
-                    pass
+            elif key == 'connectedToHost':
+                # player is connect to the host!
+                self.player.connectedToHost = True
+
+            elif key == 'Score':
+                pass
+
+            elif key == 'Bottleneck':
+                pass
+
+            elif key == 'BottleneckCleared':
+                pass
+
+            elif key == 'Desync':
+                self.game.addDesync()
+
+            elif key == 'ProcessNatPacket':
+                self.handleNatPacket(values)
+
+            elif key == 'GameState':
+                state = values[0]
+                self.handleGameState(state)
+
+            # game Option changing !
+            elif key == 'GameOption':
+
+                if values[0] in self.game.gameOptions:
+                    self.game.gameOptions[values[0]] = values[1]
+
+                if values[0] == "Slots":
+                    self.game.maxPlayer = values[1]
+
+                if values[0] == 'ScenarioFile':
+                    raw = "%r" % values[1]
+                    path = raw.replace('\\', '/')
+                    map = str(path.split('/')[2]).lower()
+                    curMap = ''
+                    curMap = self.game.getGameMap()
+                    if curMap != map:
+                        self.game.setGameMap(map)
+                        self.sendGameInfo()
+
+                elif values[0] == 'Victory':
+                    self.game.setGameType(values[1])
 
 
-                elif key == 'Desync':
-                    self.game.addDesync()
-
-                elif key == 'ProcessNatPacket':
-                    self.handleNatPacket(values)
-
-                elif key == 'GameState':
-                    state = values[0]
-                    self.handleGameState(state)
-
-                # game Option changing !
-                elif key == 'GameOption':
-
-                    if values[0] in self.game.gameOptions :
-                        self.game.gameOptions[values[0]] = values[1]
-
-                    if values[0] == "Slots" :
-                        self.game.maxPlayer = values[1] 
-
-                    if values[0] == 'ScenarioFile' :
-                        raw = "%r"%values[1]
-                        path = raw.replace('\\', '/')
-                        map = str(path.split('/')[2]).lower()
-                        curMap = ''
-                        curMap = self.game.getGameMap()
-                        if  curMap != map :
-                            self.game.setGameMap(map)
-                            self.sendGameInfo()
-
-                    elif values[0] == 'Victory' :
-                        self.game.setGameType(values[1])
-
-
-                elif key == 'GameMods':
-                    # find infos about mods...
-                    if values[0] == "activated" :
-                        if values[1] == 0 :
-                            self.game.mods = {} 
-
-                    if values[0] == "uids" :
+            elif key == 'GameMods':
+                # find infos about mods...
+                if values[0] == "activated":
+                    if values[1] == 0:
                         self.game.mods = {}
-                        query = QSqlQuery(self.parent.db)   
-                        for uid in values[1].split():
-                            query.prepare("SELECT name FROM table_mod WHERE uid = ?")
-                            query.addBindValue(uid)
-                            query.exec_()
-                            if query.size() > 0:
-                                query.first()
-                                self.game.mods[uid] = str(query.value(0))
-                            else:
-                                self.game.mods[uid] = "Unknown sim mod"
-                
-                elif key == 'connectedToHost':
-                    # player is connect to the host!
-                    self.player.connectedToHost = True
-                
-                elif key == 'PlayerOption':
-                    action = self.player.getAction()
+
+                if values[0] == "uids":
+                    self.game.mods = {}
+                    query = QSqlQuery(self.parent.db)
+                    for uid in values[1].split():
+                        query.prepare("SELECT name FROM table_mod WHERE uid = ?")
+                        query.addBindValue(uid)
+                        query.exec_()
+                        if query.size() > 0:
+                            query.first()
+                            self.game.mods[uid] = str(query.value(0))
+                        else:
+                            self.game.mods[uid] = "Unknown sim mod"
+
+            elif key == 'PlayerOption':
+                action = self.player.getAction()
+                if action == "HOST":
+                    self.game.clearAIs()
+                for i, value in enumerate(values):
+                    atype, name, place, resultvalue = self.parsePlayerOption(value)
                     if action == "HOST":
-                        self.game.clearAIs()
-                    for i, value in enumerate(values):
-                        atype, name, place, resultvalue = self.parsePlayerOption(value)
-                        if action == "HOST" :
-                            if not ":" in name :
-                                self.game.placePlayer(name, place)
-                            if atype == "faction" :
-                                self.game.setPlayerFaction(place, resultvalue)
-                            elif atype == "color" :
-                                self.game.setPlayerColor(place, resultvalue)
-                            elif atype == "team" :
-                                team = resultvalue-1
-                                if ":" in name :
-                                    self.addAi(name, place, team)
-                                else :
-                                    self.game.assignPlayerToTeam(name, team)
-                            self.sendGameInfo()
-                        
-                elif key == 'GameResult':
-                    ''' Preparing the data for recording the game result'''
-                    playerResult = self.game.getPlayerAtPosition(int(values[0]))                   
-                    if playerResult != None :
-                        result = values[1]
-                        faresult = None
-                        score = 0
-                        if result.startswith("autorecall") or result.startswith("recall") or result.startswith("defeat") or result.startswith("victory") or result.startswith("score") or result.startswith("draw"):
-                            split = result.split(" ")
-                            faresult = split[0]
-                            if len(split) > 1 :
-                                score = int(split[1])
-
-                        self.game.addResultPlayer(playerResult, faresult, score)
-
-                        if faresult != "score":
-                            if hasattr(self.game, "noStats"):
-                                if self.game.noStats == False:
-                                    self.registerTime(playerResult)
+                        if not ":" in name:
+                            self.game.placePlayer(name, place)
+                        if atype == "faction":
+                            self.game.setPlayerFaction(place, resultvalue)
+                        elif atype == "color":
+                            self.game.setPlayerColor(place, resultvalue)
+                        elif atype == "team":
+                            team = resultvalue - 1
+                            if ":" in name:
+                                self.addAi(name, place, team)
                             else:
+                                self.game.assignPlayerToTeam(name, team)
+                        self.sendGameInfo()
+
+            elif key == 'GameResult':
+                ''' Preparing the data for recording the game result'''
+                playerResult = self.game.getPlayerAtPosition(int(values[0]))
+                if playerResult != None:
+                    result = values[1]
+                    faresult = None
+                    score = 0
+                    if result.startswith("autorecall") or result.startswith("recall") or result.startswith(
+                            "defeat") or result.startswith("victory") or result.startswith(
+                            "score") or result.startswith("draw"):
+                        split = result.split(" ")
+                        faresult = split[0]
+                        if len(split) > 1:
+                            score = int(split[1])
+
+                    self.game.addResultPlayer(playerResult, faresult, score)
+
+                    if faresult != "score":
+                        if hasattr(self.game, "noStats"):
+                            if self.game.noStats == False:
                                 self.registerTime(playerResult)
-                
-                elif key == 'Stats':
-                    # stats never worked that well...
-                    pass
+                        else:
+                            self.registerTime(playerResult)
 
-                elif key == 'Chat':
-                    # We should log that....
-                    pass
-                
-                elif key == 'OperationComplete':
-                    # This is for coop!
-                    self.log.debug(self.logGame + "OperationComplete: "+ str(values))
-                    self.log.debug(self.logGame + "OperationComplete: "+ str(values[1]))
-                    if self.game.isValid():
-                        mission = -1
-                        if int(values[0]) == 1:
-                            self.log.debug(self.logGame + "Operation really Complete!")
-                            query = QSqlQuery(self.parent.db)
-                            query.prepare("SELECT id FROM coop_map WHERE filename LIKE '%/"+self.game.getGameMap()+".%'")
-                            query.exec_()
-                            if query.size() > 0:
-                                query.first()
-                                mission = int(query.value(0))
-                            else:
-                                self.log.debug(self.logGame + "can't find coop map " + str(self.game.getGameMap()))
-                        if mission != -1:
-                            
-                            query.prepare("INSERT INTO `coop_leaderboard`(`mission`, `gameuid`, `secondary`, `time`) VALUES (?,?,?,?);")
-                            query.addBindValue(mission)
-                            query.addBindValue(self.game.getuuid())
-                            query.addBindValue(int(values[1]))
-                            query.addBindValue(str(values[2]))
-                            if not query.exec_():
-                                self.log.warning(self.logGame + str(query.lastError()))
-                                self.log.warning(self.logGame + query.executedQuery())
-                    else:
-                        self.log.debug(self.logGame + self.game.getInvalidReason())
-                
-                
-                elif key == 'ArmyCalled':
-                    # this is for Galactic War!
-                    playerResult = self.game.getPlayerAtPosition(int(values[0]))
-                    if playerResult != None :
-                        group = values[1]
+            elif key == 'Stats':
+                # stats never worked that well...
+                pass
+
+            elif key == 'Chat':
+                # We should log that....
+                pass
+
+            elif key == 'OperationComplete':
+                # This is for coop!
+                self.log.debug(self.logGame + "OperationComplete: " + str(values))
+                self.log.debug(self.logGame + "OperationComplete: " + str(values[1]))
+                if self.game.isValid():
+                    mission = -1
+                    if int(values[0]) == 1:
+                        self.log.debug(self.logGame + "Operation really Complete!")
                         query = QSqlQuery(self.parent.db)
-                        query.prepare("DELETE FROM `galacticwar`.`reinforcements_groups` WHERE `userId` = (SELECT id FROM `faf_lobby`.`login` WHERE login.login = ?) AND `group` = ?")
-                        query.addBindValue(playerResult)
-                        query.addBindValue(group)
-                        if query.exec_():
-                            self.game.deleteGroup(group, playerResult)                    
-                    
-                
-                else :
-                    self.log.error(self.logGame + "Unknown key")
-                    self.log.error(self.logGame + key)
+                        query.prepare(
+                            "SELECT id FROM coop_map WHERE filename LIKE '%/" + self.game.getGameMap() + ".%'")
+                        query.exec_()
+                        if query.size() > 0:
+                            query.first()
+                            mission = int(query.value(0))
+                        else:
+                            self.log.debug(self.logGame + "can't find coop map " + str(self.game.getGameMap()))
+                    if mission != -1:
 
-        except :
+                        query.prepare(
+                            "INSERT INTO `coop_leaderboard`(`mission`, `gameuid`, `secondary`, `time`) VALUES (?,?,?,?);")
+                        query.addBindValue(mission)
+                        query.addBindValue(self.game.getuuid())
+                        query.addBindValue(int(values[1]))
+                        query.addBindValue(str(values[2]))
+                        if not query.exec_():
+                            self.log.warning(self.logGame + str(query.lastError()))
+                            self.log.warning(self.logGame + query.executedQuery())
+                else:
+                    self.log.debug(self.logGame + self.game.getInvalidReason())
+
+
+            elif key == 'ArmyCalled':
+                # this is for Galactic War!
+                playerResult = self.game.getPlayerAtPosition(int(values[0]))
+                if playerResult != None:
+                    group = values[1]
+                    query = QSqlQuery(self.parent.db)
+                    query.prepare(
+                        "DELETE FROM `galacticwar`.`reinforcements_groups` WHERE `userId` = (SELECT id FROM `faf_lobby`.`login` WHERE login.login = ?) AND `group` = ?")
+                    query.addBindValue(playerResult)
+                    query.addBindValue(group)
+                    if query.exec_():
+                        self.game.deleteGroup(group, playerResult)
+
+
+            else:
+                self.log.error(self.logGame + "Unknown key")
+                self.log.error(self.logGame + key)
+
+        except:
             self.log.exception(self.logGame + "Something awful happened in a game thread !")
 
     def handleConnected(self, uid):
@@ -728,20 +708,22 @@ class FAGameThread(QObject):
 
             if playerUid == uid:
                 if self.game:
-                    self.game.log.debug("%s Connected to : %s"% (player.getLogin(), self.player.getLogin()))
-                
+                    self.game.log.debug("%s Connected to : %s" % (player.getLogin(), self.player.getLogin()))
+
                 if playerUid == self.game.getHostId():
                     self.forcedJoin = None
-                
+
                 if player in self.forcedConnections:
                     if self.game:
-                        self.game.log.debug("Removed %s from forced connection of %s" %(player.getLogin(), self.player.getLogin()))
+                        self.game.log.debug(
+                            "Removed %s from forced connection of %s" % (player.getLogin(), self.player.getLogin()))
                     del self.forcedConnections[player]
-                
+
                 if player in self.sentConnect:
                     if self.game:
-                        self.game.log.debug("Removed %s from sent connection of %s" %(player.getLogin(), self.player.getLogin()))
-                    del self.sentConnect[player]        
+                        self.game.log.debug(
+                            "Removed %s from sent connection of %s" % (player.getLogin(), self.player.getLogin()))
+                    del self.sentConnect[player]
 
     def handleNatPacket(self, values):
         ''' Nat packets between players'''
@@ -749,59 +731,58 @@ class FAGameThread(QObject):
         state = ''
 
         state = self.game.getLobbyState()
-        if state != "playing" :                        
-            if "PACKET_RECEIVED" in values[1] :
-                                           
-                if self.dontSetMorePortPlease == False :
+        if state != "playing":
+            if "PACKET_RECEIVED" in values[1]:
+
+                if self.dontSetMorePortPlease == False:
                     splits = values[1].split(" ")
-                    port = int(splits[len(splits)-1])
-                    
-                    if self.player.getLocalGamePort() == port and self.packetCount >= 4 :
-                        self.dontSetMorePortPlease = True 
-                    
-                    elif self.packetCount < 2 :
+                    port = int(splits[len(splits) - 1])
+
+                    if self.player.getLocalGamePort() == port and self.packetCount >= 4:
+                        self.dontSetMorePortPlease = True
+
+                    elif self.packetCount < 2:
                         self.sendPacketForNAT()
                         return
-                    
+
                     self.player.setGamePort(port)
                     self.setPort = True
-                    
+
                     self.player.setPort = True
                     json = {}
                     json["debug"] = ("port used : %i" % port)
-                    
+
                     for otherPlayer in self.game.getPlayers():
                         if self.player.getAddress() in otherPlayer.UDPPacket:
                             otherPlayer.UDPPacket[self.player.getAddress()] = 0
-                    
+
                     self.lobby.sendJSON(json)
-                    
-                    if self.player.getAction() == "HOST" :
+
+                    if self.player.getAction() == "HOST":
                         self.game.setGameHostPort(port)
-            
-            elif "PLAYERID" in values[1] :
+
+            elif "PLAYERID" in values[1]:
                 playerName = " ".join(values[1].split()[2:])
                 if hasattr(self.game, "getLoginName"):
                     playerName = self.game.getLoginName(playerName)
-                
+
                 thatPlayer = self.parent.listUsers.findByName(playerName)
-                if thatPlayer != 0 :
+                if thatPlayer != 0:
                     hisAdress = thatPlayer.getAddress()
 
                     addressIp = values[0].split(":")[0]
-                    
-                    address = QtNetwork.QHostAddress(addressIp)
-                    if address.protocol() == 0 :                                 
-                      
-                        self.crappyPorts[playerName] = values[0]
-                    else :
-                        self.log.debug(self.logGame + "bad network address")                                
 
+                    address = QtNetwork.QHostAddress(addressIp)
+                    if address.protocol() == 0:
+
+                        self.crappyPorts[playerName] = values[0]
+                    else:
+                        self.log.debug(self.logGame + "bad network address")
 
                 self.game.receivedPacket(playerName, self.player.getLogin())
-                
-                                            
-            elif  "ASKREPLY" in values[1] :
+
+
+            elif "ASKREPLY" in values[1]:
 
                 playerName = " ".join(values[1].split()[1:])
 
@@ -809,31 +790,32 @@ class FAGameThread(QObject):
                     playerName = self.game.getLoginName(playerName)
 
                 thatPlayer = self.parent.listUsers.findByName(playerName)
-                if thatPlayer != 0 :
+                if thatPlayer != 0:
                     hisAdress = thatPlayer.getAddress()
-                    if hisAdress != values[0] :
-                        addressIp = values[0].split(":")[0]                                    
+                    if hisAdress != values[0]:
+                        addressIp = values[0].split(":")[0]
                         address = QtNetwork.QHostAddress(addressIp)
-                        if address.protocol() == 0 :                                                            
+                        if address.protocol() == 0:
                             self.crappyPorts[playerName] = values[0]
-                        else :
+                        else:
                             self.log.debug(self.logGame + "bad network address")
 
-                if self.game.hasReceivedPacketFrom(playerName, self.player.getLogin()) and self.game.hasReceivedPacketFrom(self.player.getLogin(), playerName) :
-                    #That player ask for a reply, but he already get our id, we ignore his request.
+                if self.game.hasReceivedPacketFrom(playerName,
+                                                   self.player.getLogin()) and self.game.hasReceivedPacketFrom(
+                        self.player.getLogin(), playerName):
+                    # That player ask for a reply, but he already get our id, we ignore his request.
                     return
-                
+
                 now = time.time()
 
-                if  not str(values[0]) in self.lastUdpPacket :
+                if not str(values[0]) in self.lastUdpPacket:
                     self.lastUdpPacket[str(values[0])] = now
-                else :
-                    if now - self.lastUdpPacket[str(values[0])] < 1 :
+                else:
+                    if now - self.lastUdpPacket[str(values[0])] < 1:
                         return
-                
-                 
+
                 self.lastUdpPacket[str(values[0])] = now
-                
+
                 playerUid = self.player.getId()
                 playerName = self.player.getLogin()
 
@@ -841,150 +823,149 @@ class FAGameThread(QObject):
                     playerName = self.game.getPlayerName(self.player)
 
                 datasUdp = "/PLAYERID " + str(playerUid) + " " + playerName
-                
-                self.sendToRelay("SendNatPacket", [str(values[0]), datasUdp])        
+
+                self.sendToRelay("SendNatPacket", [str(values[0]), datasUdp])
 
 
     def handleGameState(self, state):
         ''' Handle game states - launch,....'''
 
         if state == 'Idle':
-          #FA has just connected to us
-          self.idleState()
+            # FA has just connected to us
+            self.idleState()
 
         elif state == 'Lobby':
-          # waiting for command
-          self.lobbyState()
+            # waiting for command
+            self.lobbyState()
 
         elif state == 'Launching':
-          #  game launch, the user is playing !
-          action = self.player.getAction()
-          if self.tasks :
-            self.tasks.stop()
-          if self.player.getAction() == "HOST" :
-                    
-            self.game.numPlayers = self.game.getNumPlayer()
-                    
-            self.game.setLobbyState("playing")
-                    
-            if hasattr(self.game, "noStats"):
-              if self.game.noStats == False:
-                self.fillGameStats()
-            else:
-              self.fillGameStats()
+            # game launch, the user is playing !
+            action = self.player.getAction()
+            if self.tasks:
+                self.tasks.stop()
+            if self.player.getAction() == "HOST":
 
-            self.game.fixPlayerPosition()
-            result = self.game.recombineTeams()
-                    
-            self.fillPlayerStats(self.game.getPlayers())
-            self.fillAIStats(self.game.AIs)
-            for player in self.game.getPlayers() :
-                        
-              player.setAction("PLAYING")
-              player.resetUdpPacket()
-                                                       
-            if not all((i.count())==self.game.finalTeams[0].count() for i in self.game.finalTeams) :
-              self.game.setInvalid("All Teams don't the same number of players.")
-                            
-                    
-            if len(self.game.finalTeams) == (len(self.game.AIs) + self.game.getNumPlayer()) :
-              if self.game.getNumPlayer() > 3 :
-                self.game.ffa = True
-                # ffa doesn't count for that much in rating.
-                self.game.partial = 0.25
-                    
-            self.game.setTime()
+                self.game.numPlayers = self.game.getNumPlayer()
 
-            self.sendGameInfo()
-                    
-            if self.game.getGameType() != 0 and self.game.getGamemod() != "coop" :
-              self.game.setInvalid("Only assassination mode is ranked")
-                  
-            elif self.game.gameOptions["FogOfWar"] != "explored" :
-              self.game.setInvalid("Fog of war not activated")
-                        
-            elif self.game.gameOptions["CheatsEnabled"] != "false" :
-              self.game.setInvalid("Cheats were activated")
-                        
-            elif self.game.gameOptions["PrebuiltUnits"] != "Off" :
-              self.game.setInvalid("Prebuilt was activated")
+                self.game.setLobbyState("playing")
 
-            elif self.game.gameOptions["NoRushOption"] != "Off" :
-              self.game.setInvalid("No rush games are not ranked")                                        
+                if hasattr(self.game, "noStats"):
+                    if self.game.noStats == False:
+                        self.fillGameStats()
+                else:
+                    self.fillGameStats()
 
-            elif self.game.gameOptions["RestrictedCategories"] != 0 :
-              self.game.setInvalid("Restricted games are not ranked")                                    
+                self.game.fixPlayerPosition()
+                result = self.game.recombineTeams()
 
-            elif len(self.game.mods) > 0 :
-              for uid in self.game.mods:
-                if not self.isModRanked(uid):
-                  if uid == "e7846e9b-23a4-4b95-ae3a-fb69b289a585" :
-                    if not "scca_coop_e02" in self.game.getGameMap().lower():
-                      self.game.setInvalid("Sim mods are not ranked")
-                                        
-                  else:
-                    self.game.setInvalid("Sim mods are not ranked")
+                self.fillPlayerStats(self.game.getPlayers())
+                self.fillAIStats(self.game.AIs)
+                for player in self.game.getPlayers():
+                    player.setAction("PLAYING")
+                    player.resetUdpPacket()
 
-                query = QSqlQuery(self.parent.db)
-                query.prepare("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid = ?")
-                query.addBindValue(uid)
-                query.exec_()
+                if not all((i.count()) == self.game.finalTeams[0].count() for i in self.game.finalTeams):
+                    self.game.setInvalid("All Teams don't the same number of players.")
 
-            for playerTS in self.game.getTrueSkillPlayers() : 
-              if playerTS.getRating().getMean() < -1000 :
-                self.game.setInvalid("You are playing with a smurfer.")        
+                if len(self.game.finalTeams) == (len(self.game.AIs) + self.game.getNumPlayer()):
+                    if self.game.getNumPlayer() > 3:
+                        self.game.ffa = True
+                        # ffa doesn't count for that much in rating.
+                        self.game.partial = 0.25
+
+                self.game.setTime()
+
+                self.sendGameInfo()
+
+                if self.game.getGameType() != 0 and self.game.getGamemod() != "coop":
+                    self.game.setInvalid("Only assassination mode is ranked")
+
+                elif self.game.gameOptions["FogOfWar"] != "explored":
+                    self.game.setInvalid("Fog of war not activated")
+
+                elif self.game.gameOptions["CheatsEnabled"] != "false":
+                    self.game.setInvalid("Cheats were activated")
+
+                elif self.game.gameOptions["PrebuiltUnits"] != "Off":
+                    self.game.setInvalid("Prebuilt was activated")
+
+                elif self.game.gameOptions["NoRushOption"] != "Off":
+                    self.game.setInvalid("No rush games are not ranked")
+
+                elif self.game.gameOptions["RestrictedCategories"] != 0:
+                    self.game.setInvalid("Restricted games are not ranked")
+
+                elif len(self.game.mods) > 0:
+                    for uid in self.game.mods:
+                        if not self.isModRanked(uid):
+                            if uid == "e7846e9b-23a4-4b95-ae3a-fb69b289a585":
+                                if not "scca_coop_e02" in self.game.getGameMap().lower():
+                                    self.game.setInvalid("Sim mods are not ranked")
+
+                            else:
+                                self.game.setInvalid("Sim mods are not ranked")
+
+                        query = QSqlQuery(self.parent.db)
+                        query.prepare("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid = ?")
+                        query.addBindValue(uid)
+                        query.exec_()
+
+                for playerTS in self.game.getTrueSkillPlayers():
+                    if playerTS.getRating().getMean() < -1000:
+                        self.game.setInvalid("You are playing with a smurfer.")
 
     def doEnd(self):
         ''' bybye player :('''
         self.player.setGameSocket(None)
-        try :
+        try:
             if hasattr(self, "game"):
-                if self.game != None :
-                    #check if the game was started
-                    if self.game.getLobbyState() == "playing" :
+                if self.game != None:
+                    # check if the game was started
+                    if self.game.getLobbyState() == "playing":
                         curplayers = self.game.getNumPlayer()
                         allScoreHere = False
-                        if hasattr(self.game, "isAllScoresThere") :
+                        if hasattr(self.game, "isAllScoresThere"):
                             allScoreHere = self.game.isAllScoresThere()
 
-
-                        if  curplayers == 0  or allScoreHere == True :
+                        if curplayers == 0 or allScoreHere == True:
                             self.game.setLobbyState("closed")
                             self.sendGameInfo()
-    
+
                             if hasattr(self.game, "noStats"):
                                 if self.game.noStats == False:
                                     query = QSqlQuery(self.parent.db)
-                                    queryStr = ("UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(self.game.getuuid()))
+                                    queryStr = (
+                                        "UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(
+                                            self.game.getuuid()))
                                     query.exec_(queryStr)
                             else:
-                                    query = QSqlQuery(self.parent.db)
-                                    queryStr = ("UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(self.game.getuuid()))
-                                    query.exec_(queryStr)    
-    
-                            if self.game.getDesync() > 20 :
+                                query = QSqlQuery(self.parent.db)
+                                queryStr = (
+                                    "UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(self.game.getuuid()))
+                                query.exec_(queryStr)
+
+                            if self.game.getDesync() > 20:
                                 self.game.setInvalid("Too many desyncs")
-    
 
                             if hasattr(self.game, "noStats"):
-                                if self.game.noStats == False:    
+                                if self.game.noStats == False:
                                     self.registerScore(self.game.gameResult)
                             else:
                                 self.registerScore(self.game.gameResult)
-    
+
                             self.game.specialEnding(self.log, self.parent.db, self.parent.listUsers)
-    
-                            for playerTS in self.game.getTrueSkillPlayers() : 
-                                name = playerTS.getPlayer()                                
-                                for player in self.parent.listUsers.getAllPlayers() :
-                                    if player != None :
-                                        if str(name) == player.getLogin() :                                
-                                            for conn in self.parent.parent.FALobby.recorders :
+
+                            for playerTS in self.game.getTrueSkillPlayers():
+                                name = playerTS.getPlayer()
+                                for player in self.parent.listUsers.getAllPlayers():
+                                    if player != None:
+                                        if str(name) == player.getLogin():
+                                            for conn in self.parent.parent.FALobby.recorders:
                                                 conn.sendJSON(self.parent.parent.jsonPlayer(player))
 
                             self.parent.games.removeGame(self.game)
                             self.game = None
-        except :
+        except:
             self.log.exception("Something awful happened in a game  thread (ending) !")
 
     def ejectPlayer(self, player):
@@ -1016,7 +997,7 @@ class FAGameThread(QObject):
         uid = int(self.player.getId())
         if not self.game.getGameName() is None:
             if self.game.getGameName()[0] == '#':
-                self.sendToRelay("P2PReconnect", [ ])
+                self.sendToRelay("P2PReconnect", [])
 
         self.sendToRelay("CreateLobby", [rankedMode, port, login, uid, 1])
 
@@ -1053,234 +1034,202 @@ class FAGameThread(QObject):
         hostId = ''
         localConnect = False
 
-        if self.game.getHostIp() == self.player.getIp() :
+        if self.game.getHostIp() == self.player.getIp():
             localConnect = True
             gameAddress = self.game.getGameLocalAddress()
-        else :
+        else:
             gameAddress = self.game.getGameAddress()
 
         hostId = self.game.getHostId()
-        
+
         connectToHostSent = False
 
-        if localConnect == False :
-                
-            if self.game.hasReceivedPacketFrom(self.player.getLogin(), self.game.getHostName()) :
-                if self.game.hasReceivedPacketFrom(self.game.getHostName(), self.player.getLogin()) :
-                    if self.game.getHostName() in self.crappyPorts : 
+        if localConnect == False:
+
+            if self.game.hasReceivedPacketFrom(self.player.getLogin(), self.game.getHostName()):
+                if self.game.hasReceivedPacketFrom(self.game.getHostName(), self.player.getLogin()):
+                    if self.game.getHostName() in self.crappyPorts:
                         gameAddress = self.crappyPorts[self.game.getHostName()]
-                    
-                    self.JoinGameDone = True                  
-                    
+
+                    self.JoinGameDone = True
+
                     if hasattr(self.game, "getHostNameForJoin"):
                         hostname = self.game.getHostNameForJoin()
-                    else :
-                        hostname = self.game.getHostName()       
+                    else:
+                        hostname = self.game.getHostName()
 
                     addressToConnect = gameAddress
-                    if hasattr(self.game, "hostPlayerFull") :
+                    if hasattr(self.game, "hostPlayerFull"):
                         try:
                             hostPlayer = self.game.hostPlayerFull
                             if hasattr(hostPlayer, "resolvedAddress"):
-                                addressToConnect = "%s:%s" % (hostPlayer.resolvedAddress, str(gameAddress.split(":")[1]))
+                                addressToConnect = "%s:%s" % (
+                                    hostPlayer.resolvedAddress, str(gameAddress.split(":")[1]))
                         except:
-                            addressToConnect = gameAddress                                             
+                            addressToConnect = gameAddress
 
                     self.sendToRelay("JoinGame", [str(addressToConnect), str(hostname), int(hostId)])
                     self.player.UDPPacket[str(gameAddress)] = 0
-                    
 
-                    connectToHostSent = True               
-                    
-            if connectToHostSent == False :
-                    if self.game.getHostName() in self.crappyPorts : 
-                        gameAddress = self.crappyPorts[self.game.getHostName()]
-                    count = self.player.countUdpPacket(str(gameAddress))
-                    if count < 15:  
+                    connectToHostSent = True
 
-                        playerName = self.player.getLogin()
-                        if hasattr(self.game, "getPlayerName"):
-                            playerName = self.game.getPlayerName(self.player)
+            if connectToHostSent == False:
+                if self.game.getHostName() in self.crappyPorts:
+                    gameAddress = self.crappyPorts[self.game.getHostName()]
+                count = self.player.countUdpPacket(str(gameAddress))
+                if count < 15:
 
-                        datas = "/ASKREPLY " + playerName
-                        self.sendToRelay("SendNatPacket", [str(gameAddress), datas])
-                        self.player.addCountUdpPacket(str(gameAddress))
-                        
-                    else :
-                        self.forceJoin()
+                    playerName = self.player.getLogin()
+                    if hasattr(self.game, "getPlayerName"):
+                        playerName = self.game.getPlayerName(self.player)
 
-        else :
-            if self.noSocket == False and self.socket.isValid() :
+                    datas = "/ASKREPLY " + playerName
+                    self.sendToRelay("SendNatPacket", [str(gameAddress), datas])
+                    self.player.addCountUdpPacket(str(gameAddress))
+
+                else:
+                    self.forceJoin()
+
+        else:
+            if self.noSocket == False and self.socket.isValid():
                 if hasattr(self.game, "getHostNameForJoin"):
                     hostname = self.game.getHostNameForJoin()
-                else :
-                    hostname = self.game.getHostName()       
-                
+                else:
+                    hostname = self.game.getHostName()
+
                 self.sendToRelay("JoinGame", [str(gameAddress), str(hostname), int(hostId)])
 
             self.player.connectedToHost = True
 
 
     def disconnectToPeers(self):
- 
+
         '''Connect the player to others'''
 
         playerToDisconnects = []
 
         playerToDisconnects = self.game.getDisconnectList(self.player)
 
-        for playerToDisconnect in playerToDisconnects :
-                # we only need his uuid
+        for playerToDisconnect in playerToDisconnects:
+            # we only need his uuid
 
-                uuid = playerToDisconnect.getId()
-                if playerToDisconnect in self.connectedTo :
-                    self.sendToRelay("DisconnectFromPeer", [int(uuid)])
-                    self.connectedTo.remove(playerToDisconnect)
-                
-                if playerToDisconnect in self.forcedConnections :
-                    del self.forcedConnections[playerToDisconnect]
+            uuid = playerToDisconnect.getId()
+            if playerToDisconnect in self.connectedTo:
+                self.sendToRelay("DisconnectFromPeer", [int(uuid)])
+                self.connectedTo.remove(playerToDisconnect)
 
-                if playerToDisconnect in self.sentConnect:
-                    del self.sentConnect[playerToDisconnect]
-                        
-                #Now, that player is disconnected. We can remove it to the list of disconnection for self
-                self.game.removeFromDisconnect(self.player, playerToDisconnect)
+            if playerToDisconnect in self.forcedConnections:
+                del self.forcedConnections[playerToDisconnect]
 
-    
+            if playerToDisconnect in self.sentConnect:
+                del self.sentConnect[playerToDisconnect]
+
+            # Now, that player is disconnected. We can remove it to the list of disconnection for self
+            self.game.removeFromDisconnect(self.player, playerToDisconnect)
+
 
     def connectToPeers(self):
-        try :
-           
-            #for all the player in the connection list of current player.
+        try:
+
+            # for all the player in the connection list of current player.
             playerToConnects = []
-            
-            
+
             plist = []
             for player in self.game.getPlayers():
                 plist.append(player.getLogin())
-    
-            playerToConnects = self.game.getConnectList(self.player)   
-            for playerToConnect in playerToConnects :
-                    self.log.debug(self.logGame + "trying to connect " + playerToConnect.getLogin() +" with " + str(self.player.getLogin()))
-                    
-                    if playerToConnect.game == None or str(playerToConnect.game) != str(self.game.getuuid()) :
-                        self.log.debug(self.logGame + "CONFIRM : trying to connect " + playerToConnect.getLogin() +" with " + str(self.player.getLogin()))
-                        self.log.debug(self.logGame + "ERROR : This player is not in the game : " + playerToConnect.getLogin())
+
+            playerToConnects = self.game.getConnectList(self.player)
+            for playerToConnect in playerToConnects:
+                self.log.debug(self.logGame + "trying to connect " + playerToConnect.getLogin() + " with " + str(
+                    self.player.getLogin()))
+
+                if playerToConnect.game == None or str(playerToConnect.game) != str(self.game.getuuid()):
+                    self.log.debug(
+                        self.logGame + "CONFIRM : trying to connect " + playerToConnect.getLogin() + " with " + str(
+                            self.player.getLogin()))
+                    self.log.debug(
+                        self.logGame + "ERROR : This player is not in the game : " + playerToConnect.getLogin())
+                    self.game.removeFromConnect(self.player, playerToConnect)
+                    self.game.removePlayer(playerToConnect)
+                    self.game.removeFromAllPlayersToConnect(playerToConnect)
+                    self.game.removeTrueSkillPlayer(playerToConnect)
+                    continue
+
+                localConnect = False
+
+                if playerToConnect.getReceivedUdp() == False or self.player.getReceivedUdp() == False or self.player.setPort == False or playerToConnect.setPort == False:
+                    self.log.debug(self.logGame + "UDP Problem")
+                    continue
+
+                if self.game.getHostName() != self.player.getLogin():
+                    if playerToConnect.isConnectedToHost() == False:
+                        self.log.debug(self.logGame + "Not connected to host")
+                        continue
+
+                action = self.player.getAction()
+                if action != "HOST":
+                    if self.game.proxy.coupleExists(self.player.getLogin(), playerToConnect.getLogin()):
+                        self.log.debug(
+                            self.logGame + "Must connect to " + playerToConnect.getLogin() + " through proxy")
+                        self.connectThroughProxy(playerToConnect)
+                        if not playerToConnect in self.connectedTo:
+                            self.connectedTo.append(playerToConnect)
                         self.game.removeFromConnect(self.player, playerToConnect)
-                        self.game.removePlayer(playerToConnect)
-                        self.game.removeFromAllPlayersToConnect(playerToConnect)
-                        self.game.removeTrueSkillPlayer(playerToConnect)
                         continue
-                                    
-                    localConnect = False
-                    
-                    if playerToConnect.getReceivedUdp() == False or self.player.getReceivedUdp() == False or self.player.setPort == False or playerToConnect.setPort == False :
-                        self.log.debug(self.logGame + "UDP Problem")
-                        continue
-    
-                    if self.game.getHostName() != self.player.getLogin() :
-                        if playerToConnect.isConnectedToHost() == False :
-                            self.log.debug(self.logGame + "Not connected to host")
-                            continue
-    
-                    
-                    action = self.player.getAction()
-                    if action != "HOST":
-                        if self.game.proxy.coupleExists(self.player.getLogin(), playerToConnect.getLogin()) :
-                            self.log.debug(self.logGame + "Must connect to " + playerToConnect.getLogin() + " through proxy")
-                            self.connectThroughProxy(playerToConnect)
-                            if not playerToConnect in self.connectedTo : 
-                                self.connectedTo.append(playerToConnect)
-                            self.game.removeFromConnect(self.player, playerToConnect)                    
-                            continue
-                        
-    
-                    address = ""
-                    # if both player got the same ip ...
-                    if self.player.getIp() == playerToConnect.getIp() :
-                        address = playerToConnect.getLocalAddress()     
-                        localConnect = True               
-                    else :
-                        address = playerToConnect.getAddress()
 
-                    # and his login name                   
-                    playerName = playerToConnect.getLogin()
+                address = ""
+                # if both player got the same ip ...
+                if self.player.getIp() == playerToConnect.getIp():
+                    address = playerToConnect.getLocalAddress()
+                    localConnect = True
+                else:
+                    address = playerToConnect.getAddress()
 
-                    originalName =  playerName
-                    if hasattr(self.game, "getPlayerName"):
-                        playerName = self.game.getPlayerName(playerToConnect)
-                    # and his UUID
-                    uuid = playerToConnect.getId()
+                # and his login name
+                playerName = playerToConnect.getLogin()
 
-                    # connection
-                    if localConnect == False :
-                        if self.game.hasReceivedPacketFrom(self.player.getLogin(), playerToConnect.getLogin()) :
-                            
-                            if self.game.hasReceivedPacketFrom(playerToConnect.getLogin(), self.player.getLogin()) :
-                                # both player has receive their packet, we can connect them !
-                                if originalName in self.crappyPorts : 
-                                    address = self.crappyPorts[originalName]
-                                
-                                addressToConnect = address
-                                if hasattr(playerToConnect, "resolvedAddress"):
-                                    try:
-                                        addressToConnect = "%s:%s" % (playerToConnect.resolvedAddress, str(address.split(":")[1]))
-                                        self.log.debug("address : " + addressToConnect)
-                                    except:
-                                        addressToConnect = address   
-                                else:
+                originalName = playerName
+                if hasattr(self.game, "getPlayerName"):
+                    playerName = self.game.getPlayerName(playerToConnect)
+                # and his UUID
+                uuid = playerToConnect.getId()
+
+                # connection
+                if localConnect == False:
+                    if self.game.hasReceivedPacketFrom(self.player.getLogin(), playerToConnect.getLogin()):
+
+                        if self.game.hasReceivedPacketFrom(playerToConnect.getLogin(), self.player.getLogin()):
+                            # both player has receive their packet, we can connect them !
+                            if originalName in self.crappyPorts:
+                                address = self.crappyPorts[originalName]
+
+                            addressToConnect = address
+                            if hasattr(playerToConnect, "resolvedAddress"):
+                                try:
+                                    addressToConnect = "%s:%s" % (
+                                        playerToConnect.resolvedAddress, str(address.split(":")[1]))
+                                    self.log.debug("address : " + addressToConnect)
+                                except:
                                     addressToConnect = address
-                                self.sendToRelay("ConnectToPeer", [str(addressToConnect), str(playerName), int(uuid)])
-                                self.connectedTo.append(playerToConnect)
-                                self.player.UDPPacket[str(address)] = 0
-                                #Now, that player is connected. We can remove it to the list of connection for self
-                                self.game.removeFromConnect(self.player, playerToConnect)
-                                self.sentConnect[playerToConnect] = time.time()
-                                
-                                ## let him breath for now
-                                break
-                                
                             else:
-                                count = self.player.countUdpPacket(str(address))
-                                if count < 15 :
-                                    if originalName in self.crappyPorts: 
-                                        address = self.crappyPorts[originalName]
-                               
-                                    #the player to connect has not receive our packet, we resend.
+                                addressToConnect = address
+                            self.sendToRelay("ConnectToPeer", [str(addressToConnect), str(playerName), int(uuid)])
+                            self.connectedTo.append(playerToConnect)
+                            self.player.UDPPacket[str(address)] = 0
+                            # Now, that player is connected. We can remove it to the list of connection for self
+                            self.game.removeFromConnect(self.player, playerToConnect)
+                            self.sentConnect[playerToConnect] = time.time()
 
-                                    playerUid = self.player.getId()
-                                    playerName = self.player.getLogin()
+                            ## let him breath for now
+                            break
 
-                                    if hasattr(self.game, "getPlayerName"):
-                                        playerName = self.game.getPlayerName(self.player)
-
-                                    # send some info about us and ask for a reply.                                    
-                                    datas = "/PLAYERID " + str(playerUid) + " " + playerName
-                                    reply = Packet(SendNatPacket=[str(address), datas])
-                                    if self.noSocket == False and self.socket.isValid() :
-                                        self.sendToRelay("SendNatPacket", [str(address), datas])
-                                        
-                                    datas = "/ASKREPLY " + playerName
-                                    reply = Packet(SendNatPacket=[str(address), datas])
-                                    if self.noSocket == False and self.socket.isValid() :
-                                        self.sendToRelay("SendNatPacket", [str(address), datas])
-                                        
-                                    self.player.addCountUdpPacket(str(address))
-                                else :
-                                    if playerName in self.crappyPorts : 
-                                        address = self.crappyPorts[playerName]
-    
-                                    self.forceConnect(playerToConnect)
-    
-                                    self.connectedTo.append(playerToConnect)
-                                    self.player.UDPPacket[str(address)] = 0
-                                    self.game.removeFromConnect(self.player, playerToConnect)
-                                    break
                         else:
                             count = self.player.countUdpPacket(str(address))
-                            if count < 15 :
-                                if originalName in self.crappyPorts : 
+                            if count < 15:
+                                if originalName in self.crappyPorts:
                                     address = self.crappyPorts[originalName]
+
+                                # the player to connect has not receive our packet, we resend.
 
                                 playerUid = self.player.getId()
                                 playerName = self.player.getLogin()
@@ -1288,204 +1237,235 @@ class FAGameThread(QObject):
                                 if hasattr(self.game, "getPlayerName"):
                                     playerName = self.game.getPlayerName(self.player)
 
-
-                                #the player to connect has not receive our packet, we resend.
+                                # send some info about us and ask for a reply.
                                 datas = "/PLAYERID " + str(playerUid) + " " + playerName
-                                if self.noSocket == False and self.socket.isValid() :
+                                reply = Packet(SendNatPacket=[str(address), datas])
+                                if self.noSocket == False and self.socket.isValid():
                                     self.sendToRelay("SendNatPacket", [str(address), datas])
-                
+
                                 datas = "/ASKREPLY " + playerName
-                                if self.noSocket == False and self.socket.isValid() :
+                                reply = Packet(SendNatPacket=[str(address), datas])
+                                if self.noSocket == False and self.socket.isValid():
                                     self.sendToRelay("SendNatPacket", [str(address), datas])
-                                
+
                                 self.player.addCountUdpPacket(str(address))
-                            else :
-                                if originalName in self.crappyPorts:
-                                    address = self.crappyPorts[originalName]
-    
+                            else:
+                                if playerName in self.crappyPorts:
+                                    address = self.crappyPorts[playerName]
+
                                 self.forceConnect(playerToConnect)
-    
+
                                 self.connectedTo.append(playerToConnect)
                                 self.player.UDPPacket[str(address)] = 0
                                 self.game.removeFromConnect(self.player, playerToConnect)
-                                break                                
-                    # connection to local              
-                    else :
-                        self.sendToRelay("ConnectToPeer", [str(address), str(playerName), int(uuid)])
-                        self.connectedTo.append(playerToConnect)
-                        self.game.removeFromConnect(self.player, playerToConnect)   
-                        break
-        except :
+                                break
+                    else:
+                        count = self.player.countUdpPacket(str(address))
+                        if count < 15:
+                            if originalName in self.crappyPorts:
+                                address = self.crappyPorts[originalName]
+
+                            playerUid = self.player.getId()
+                            playerName = self.player.getLogin()
+
+                            if hasattr(self.game, "getPlayerName"):
+                                playerName = self.game.getPlayerName(self.player)
+
+
+                            # the player to connect has not receive our packet, we resend.
+                            datas = "/PLAYERID " + str(playerUid) + " " + playerName
+                            if self.noSocket == False and self.socket.isValid():
+                                self.sendToRelay("SendNatPacket", [str(address), datas])
+
+                            datas = "/ASKREPLY " + playerName
+                            if self.noSocket == False and self.socket.isValid():
+                                self.sendToRelay("SendNatPacket", [str(address), datas])
+
+                            self.player.addCountUdpPacket(str(address))
+                        else:
+                            if originalName in self.crappyPorts:
+                                address = self.crappyPorts[originalName]
+
+                            self.forceConnect(playerToConnect)
+
+                            self.connectedTo.append(playerToConnect)
+                            self.player.UDPPacket[str(address)] = 0
+                            self.game.removeFromConnect(self.player, playerToConnect)
+                            break
+                            # connection to local
+                else:
+                    self.sendToRelay("ConnectToPeer", [str(address), str(playerName), int(uuid)])
+                    self.connectedTo.append(playerToConnect)
+                    self.game.removeFromConnect(self.player, playerToConnect)
+                    break
+        except:
             self.log.exception(self.logGame + "Something awful happened in a connect thread !")
 
 
     def forceJoin(self):
-        try :
+        try:
             self.game.log.debug("%s in forced join" % (self.player.getLogin()))
-            self.JoinGameDone = True    
-            self.forcedJoin = time.time()    
-        except :
+            self.JoinGameDone = True
+            self.forcedJoin = time.time()
+        except:
             self.log.exception(self.logGame + "Something awful happened in a join forced thread !")
-        
-    def joinThroughProxy(self) :
-        try :
-            
+
+    def joinThroughProxy(self):
+        try:
+
             self.forcedJoin = None
-            
+
             self.game.proxy.addCouple(self.player.getLogin(), self.game.getHostName())
             numProxy = self.game.proxy.findProxy(self.player.getLogin(), self.game.getHostName())
-    
-            if numProxy != None :
+
+            if numProxy != None:
                 hostId = self.game.getHostId()
                 hostname = self.game.getHostName()
                 if hasattr(self.game, "getHostNameForJoin"):
                     hostname = self.game.getHostNameForJoin()
-                
-                      
 
-                self.sendToRelay("JoinProxy", [numProxy, self.game.getHostIp(),  str(hostname), int(hostId)])
-                self.game.log.debug("%s is joining through proxy to %s on port %i" % (self.player.getLogin(), self.game.getHostName(), numProxy))
-                if not self.game.getHostName() in self.proxyConnection :
+                self.sendToRelay("JoinProxy", [numProxy, self.game.getHostIp(), str(hostname), int(hostId)])
+                self.game.log.debug("%s is joining through proxy to %s on port %i" % (
+                    self.player.getLogin(), self.game.getHostName(), numProxy))
+                if not self.game.getHostName() in self.proxyConnection:
                     self.proxyConnection.append(self.game.getHostName())
-                     
+
                 # Host connect to this player through proxy
-                
+
                 host = self.parent.listUsers.findByName(self.game.getHostName())
-                if host :
-                    if host.gameThread :
+                if host:
+                    if host.gameThread:
                         host.gameThread.connectThroughProxy(self.player, sendToOther=False, init=True)
                         host.gameThread.connectedTo.append(self.player)
-                        if self.game.getHostName() in self.game.connections :
-                            self.game.removeFromConnect(host, self.player) 
-                    else :
-                        text = "You were unable to connect to " + hostname +" because he has left the game."
+                        if self.game.getHostName() in self.game.connections:
+                            self.game.removeFromConnect(host, self.player)
+                    else:
+                        text = "You were unable to connect to " + hostname + " because he has left the game."
                         self.lobby.sendJSON(dict(command="notice", style="kill"))
                         self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
                         self.warningProxySent = True
-                         
-                else :
-                    text = "You were unable to connect to " + hostname +" because he has left the game."
+
+                else:
+                    text = "You were unable to connect to " + hostname + " because he has left the game."
                     self.lobby.sendJSON(dict(command="notice", style="kill"))
                     self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
                     self.warningProxySent = True
-                                            
-                        
-      
-            else :
+
+
+
+            else:
                 self.log.debug(self.logGame + "Maximum proxies used")
-        except :
-            self.log.exception(self.logGame + "Something awful happened in a join proxy thread !")        
-    
-    
+        except:
+            self.log.exception(self.logGame + "Something awful happened in a join proxy thread !")
+
+
     def forceConnect(self, playerToConnect):
-        #self.log.debug(self.logGame + "Forced connect to " + playerToConnect.getLogin())
-        self.forcedConnections[playerToConnect] = time.time()   
-        if playerToConnect.getLogin() in self.crappyPorts : 
+        # self.log.debug(self.logGame + "Forced connect to " + playerToConnect.getLogin())
+        self.forcedConnections[playerToConnect] = time.time()
+        if playerToConnect.getLogin() in self.crappyPorts:
             address = self.crappyPorts[playerToConnect.getLogin()]
-        else :
+        else:
             address = playerToConnect.getAddress()
 
         if hasattr(self.game, "getPlayerName"):
             playerName = self.game.getPlayerName(playerToConnect)
-        else :
+        else:
             playerName = playerToConnect.getLogin()
 
         uuid = playerToConnect.getId()
-            
+
         self.sendToRelay("ConnectToPeer", [str(address), str(playerName), int(uuid)])
         self.connectedTo.append(playerToConnect)
         self.player.UDPPacket[str(address)] = 0
-        
-        if playerToConnect.getLogin() in self.game.connections :
-            self.game.removeFromConnect(self.player, playerToConnect)
-        
-        self.game.log.debug("Forcing connection between %s and %s " % (playerToConnect.getLogin(), self.player.getLogin()))
-             
 
-    def connectThroughProxy(self, playerToConnect, sendToOther = True, init=False):
-        try :
+        if playerToConnect.getLogin() in self.game.connections:
+            self.game.removeFromConnect(self.player, playerToConnect)
+
+        self.game.log.debug(
+            "Forcing connection between %s and %s " % (playerToConnect.getLogin(), self.player.getLogin()))
+
+
+    def connectThroughProxy(self, playerToConnect, sendToOther=True, init=False):
+        try:
             numProxy = None
 
-            if playerToConnect in self.forcedConnections :
+            if playerToConnect in self.forcedConnections:
                 del self.forcedConnections[playerToConnect]
-            
+
             if playerToConnect in self.sentConnect:
                 del self.sentConnect[playerToConnect]
 
-            if playerToConnect.gameThread == None :
+            if playerToConnect.gameThread == None:
                 return
-            
+
             self.game.proxy.addCouple(self.player.getLogin(), playerToConnect.getLogin())
             numProxy = self.game.proxy.findProxy(self.player.getLogin(), playerToConnect.getLogin())
-            
-            
-            
-            if numProxy != None :
+
+            if numProxy != None:
                 uuid = playerToConnect.getId()
 
                 if hasattr(self.game, "getPlayerName"):
                     playerName = self.game.getPlayerName(playerToConnect)
-                else :
+                else:
                     playerName = playerToConnect.getLogin()
-               
+
                 self.sendToRelay("ConnectToProxy", [numProxy, playerToConnect.getIp(), str(playerName), int(uuid)])
 
                 if self.game:
-                    self.game.log.debug("%s is connecting through proxy to %s on port %i" % (self.player.getLogin(), playerToConnect.getLogin(), numProxy))
+                    self.game.log.debug("%s is connecting through proxy to %s on port %i" % (
+                        self.player.getLogin(), playerToConnect.getLogin(), numProxy))
 
-    
-                if not playerToConnect.getLogin() in self.proxyConnection :
+                if not playerToConnect.getLogin() in self.proxyConnection:
                     self.proxyConnection.append(playerToConnect.getLogin())
 
-    
-                if sendToOther and self.player.getLogin() != self.game.getHostName() :
+                if sendToOther and self.player.getLogin() != self.game.getHostName():
                     playerToConnect.gameThread.connectThroughProxy(self.player, sendToOther=False)
-                    if not self.player in playerToConnect.gameThread.connectedTo :
+                    if not self.player in playerToConnect.gameThread.connectedTo:
                         playerToConnect.gameThread.connectedTo.append(self.player)
-                    
-                    if playerToConnect.getLogin() in self.game.connections :
-                        self.game.removeFromConnect(playerToConnect, self.player)              
-            else :
-                self.log.debug(self.logGame + "Maximum proxies used")
-        except :
-            self.log.exception(self.logGame + "Something awful happened in a connect proxy thread !")        
 
-                     
+                    if playerToConnect.getLogin() in self.game.connections:
+                        self.game.removeFromConnect(playerToConnect, self.player)
+            else:
+                self.log.debug(self.logGame + "Maximum proxies used")
+        except:
+            self.log.exception(self.logGame + "Something awful happened in a connect proxy thread !")
+
+
     def sendMessage(self, m):
         self.lobby.sendJSON(dict(command="notice", style="scores", text=str(m)))
 
-    def sendGameInfo(self, skipDuration = False):
+    def sendGameInfo(self, skipDuration=False):
         try:
             self.parent.addDirtyGame(self.game.getuuid())
         except:
             self.log.exception("Something awful happened in a sendinfo thread !")
 
-    def registerScore(self, gameResult) :
-        try :
+    def registerScore(self, gameResult):
+        try:
             gameId = self.game.getuuid()
             query = QSqlQuery(self.parent.db)
-            for player in gameResult :
-                
+            for player in gameResult:
+
                 score = gameResult[player]
                 uid = -1
-                if self.game.isAI(player) :
+                if self.game.isAI(player):
                     nameAI = player.rstrip(string.digits)
-                    
+
                     query.prepare("SELECT id FROM AI_names WHERE login = ?")
                     query.addBindValue(nameAI)
                     query.exec_()
                     if query.size() > 0:
                         query.first()
                         uid = int(query.value(0))
-   
-                else :
+
+                else:
                     query.prepare("SELECT id FROM login WHERE login = ?")
                     query.addBindValue(player)
                     query.exec_()
                     if query.size() > 0:
                         query.first()
-                        uid = int(query.value(0))                    
-                
+                        uid = int(query.value(0))
+
                 if uid != -1:
                     query.prepare("UPDATE game_player_stats set `score` = ? where `gameId` = ? AND `playerId` = ?")
                     query.addBindValue(score)
@@ -1494,31 +1474,34 @@ class FAGameThread(QObject):
                     query.exec_()
 
 
-        except :
+        except:
             self.log.exception("Something awful happened in a game  thread (registerScore) !")
-        ##self.log.debug(self.logGame + "register scores done")
+            ##self.log.debug(self.logGame + "register scores done")
 
 
-    def addAi(self, name, place, team) :
-        inGameName = name+str(place)
-        
+    def addAi(self, name, place, team):
+        inGameName = name + str(place)
+
         self.game.addAI(inGameName)
-        
+
         query = QSqlQuery(self.parent.db)
-        #if the AI in the table ?
+        # if the AI in the table ?
         queryStr = "INSERT INTO AI_names (login) VALUES ('%s')" % (name)
         query.exec_(queryStr)
-        
-        #get his rating
-        queryStr = ("SELECT mean, deviation FROM AI_rating WHERE id = (SELECT id FROM AI_names WHERE login = '%s')") % (name)
+
+        # get his rating
+        queryStr = ("SELECT mean, deviation FROM AI_rating WHERE id = (SELECT id FROM AI_names WHERE login = '%s')") % (
+            name)
         query.exec_(queryStr)
-        if  query.size() != 1:
-        
-            #we dont have a mean yet, set default values
-            trueSkill = faPlayer(Player(inGameName), Rating(1500,500))
-            queryStr = ("INSERT INTO AI_rating (id, mean, deviation) values ((SELECT id FROM AI_names WHERE AI_names.login = '%s'),1500,500)") % (name)
+        if query.size() != 1:
+
+            # we dont have a mean yet, set default values
+            trueSkill = faPlayer(Player(inGameName), Rating(1500, 500))
+            queryStr = (
+                           "INSERT INTO AI_rating (id, mean, deviation) values ((SELECT id FROM AI_names WHERE AI_names.login = '%s'),1500,500)") % (
+                           name)
             query.exec_(queryStr)
-        else :
+        else:
             query.first()
             mean = query.value(0)
             dev = query.value(1)
@@ -1532,35 +1515,39 @@ class FAGameThread(QObject):
         options = value.split(' ')
         length = len(options)
         atype = options[0]
-        name = " ".join(options[1:length-2])
-        name =  name.encode('utf-8')
-        place = int(options[length-2])
-        value = int(options[length-1])
+        name = " ".join(options[1:length - 2])
+        name = name.encode('utf-8')
+        place = int(options[length - 2])
+        value = int(options[length - 1])
         return atype, name, place, value
 
-    def registerTime(self, player) :
+    def registerTime(self, player):
         query = QSqlQuery(self.parent.db)
         gameId = self.game.getuuid()
-        if self.game.isAI(player) :
+        if self.game.isAI(player):
             nameAI = player.rstrip(string.digits)
-            queryStr = ("UPDATE game_player_stats set `scoreTime` = NOW() where `gameId` = %s AND `playerId` = (SELECT id FROM AI_names WHERE login = '%s' )") % (str(gameId), nameAI)
-        else :
-            queryStr = ("UPDATE game_player_stats set `scoreTime` = NOW() where `gameId` = %s AND `playerId` = (SELECT id FROM login WHERE login = '%s' )") % (str(gameId), player)
+            queryStr = (
+                           "UPDATE game_player_stats set `scoreTime` = NOW() where `gameId` = %s AND `playerId` = (SELECT id FROM AI_names WHERE login = '%s' )") % (
+                           str(gameId), nameAI)
+        else:
+            queryStr = (
+                           "UPDATE game_player_stats set `scoreTime` = NOW() where `gameId` = %s AND `playerId` = (SELECT id FROM login WHERE login = '%s' )") % (
+                           str(gameId), player)
         query.exec_(queryStr)
 
     def fillGameStats(self):
         mapId = 0
         modId = 0
-        if "thermo" in self.game.getGameMap().lower() :
+        if "thermo" in self.game.getGameMap().lower():
             self.game.setInvalid("This map is not ranked.")
         query = QSqlQuery(self.parent.db)
-        queryStr = ("SELECT id FROM table_map WHERE filename LIKE '%/"+self.game.getGameMap()+".%'")
+        queryStr = ("SELECT id FROM table_map WHERE filename LIKE '%/" + self.game.getGameMap() + ".%'")
         query.exec_(queryStr)
-        if  query.size() > 0:
+        if query.size() > 0:
             query.first()
             mapId = query.value(0)
 
-        if mapId != 0:        
+        if mapId != 0:
             query.prepare("SELECT * FROM table_map_unranked WHERE id = ?")
             query.addBindValue(mapId)
             query.exec_()
@@ -1570,24 +1557,22 @@ class FAGameThread(QObject):
         queryStr = ("SELECT id FROM game_featuredMods WHERE gamemod LIKE '%s'" % self.game.getGamemod() )
         query.exec_(queryStr)
 
-        if  query.size() == 1:
+        if query.size() == 1:
             query.first()
             modId = query.value(0)
-        query = QSqlQuery(self.parent.db)   
-        query.prepare("UPDATE game_stats set `startTime` = NOW(), gameType = ?, gameMod = ?, mapId = ?, gameName = ? WHERE id = ?")
+        query = QSqlQuery(self.parent.db)
+        query.prepare(
+            "UPDATE game_stats set `startTime` = NOW(), gameType = ?, gameMod = ?, mapId = ?, gameName = ? WHERE id = ?")
         query.addBindValue(str(self.game.getGameType()))
         query.addBindValue(modId)
         query.addBindValue(mapId)
         query.addBindValue(self.game.getGameName())
         query.addBindValue(self.game.getuuid())
-        if not query.exec_() :
+        if not query.exec_():
             self.log.debug("fillGameStats error: ")
             self.log.debug(query.lastError())
             self.log.debug(self.game.getGameMap().lower())
 
-
-
-        
         queryStr = ("UPDATE table_map_features set times_played = (times_played +1) WHERE map_id LIKE " + str(mapId))
         query.exec_(queryStr)
 
@@ -1596,11 +1581,11 @@ class FAGameThread(QObject):
         query.prepare("SELECT ranked FROM table_mod WHERE uid LIKE ?")
         query.addBindValue(uidmod)
 
-        if not query.exec_() :
+        if not query.exec_():
             self.log.debug("error isModRanked: ")
             self.log.debug(query.lastError())
 
-        if query.size() != 0 :
+        if query.size() != 0:
             query.first()
             if query.value(0) == 1:
                 return True
@@ -1614,7 +1599,7 @@ class FAGameThread(QObject):
         mean = 0.0
         dev = 0.0
 
-        for AI in AIs :
+        for AI in AIs:
             place = self.game.getPositionOfPlayer(AI)
             color = self.game.getPlayerColor(place)
             faction = self.game.getPlayerFaction(place)
@@ -1622,31 +1607,33 @@ class FAGameThread(QObject):
 
             rating = None
 
-            for playerTS in self.game.getTrueSkillPlayers() :
-                if str(playerTS.getPlayer()) == str(AI) :
+            for playerTS in self.game.getTrueSkillPlayers():
+                if str(playerTS.getPlayer()) == str(AI):
                     rating = playerTS.getRating()
                     break
 
             mean = rating.getMean()
             dev = rating.getStandardDeviation()
             nameAI = str(AI).rstrip(string.digits)
-            queryStr += ("INSERT INTO `game_player_stats`(`AI`, `gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) VALUES (1, %s, (SELECT id FROM AI_names WHERE login = '%s'), %s, %s, %s, %i, %f, %f);") % (str(self.game.getuuid()), nameAI, faction, color, team, place, mean, dev )
+            queryStr += (
+                            "INSERT INTO `game_player_stats`(`AI`, `gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) VALUES (1, %s, (SELECT id FROM AI_names WHERE login = '%s'), %s, %s, %s, %i, %f, %f);") % (
+                            str(self.game.getuuid()), nameAI, faction, color, team, place, mean, dev )
 
         query = QSqlQuery(self.parent.db)
         query.exec_(queryStr)
 
-    def fillPlayerStats(self, players) :
+    def fillPlayerStats(self, players):
         queryStr = ""
-        mean     = 0.0
-        dev      = 0.0
-        
-        for player in players :
+        mean = 0.0
+        dev = 0.0
+
+        for player in players:
 
             name = player.getLogin()
 
             team = self.game.getTeamOfPlayer(name)
 
-            if team != -1 :
+            if team != -1:
 
                 place = int(self.game.getPositionOfPlayer(name))
                 color = self.game.getPlayerColor(place)
@@ -1654,21 +1641,22 @@ class FAGameThread(QObject):
                 if color == None or faction == None:
                     self.log.error("wrong faction or color for place " + str(place) + " of player " + name)
 
-
                 rating = None
 
-                for playerTS in self.game.getTrueSkillPlayers() :
-                    if str(playerTS.getPlayer()) == str(name) :
+                for playerTS in self.game.getTrueSkillPlayers():
+                    if str(playerTS.getPlayer()) == str(name):
                         rating = playerTS.getRating()
                         break
 
-                if rating != None :
+                if rating != None:
                     mean = rating.getMean()
                     dev = rating.getStandardDeviation()
 
-                queryStr += ("INSERT INTO `game_player_stats`(`gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) VALUES (%s, %s, %s, %s, %s, %i, %f, %f);") % (str(self.game.getuuid()), str(player.getId()), faction, color, team, place, mean, dev )
+                queryStr += (
+                                "INSERT INTO `game_player_stats`(`gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) VALUES (%s, %s, %s, %s, %s, %i, %f, %f);") % (
+                                str(self.game.getuuid()), str(player.getId()), faction, color, team, place, mean, dev )
 
-        if queryStr != "" :
+        if queryStr != "":
             query = QSqlQuery(self.parent.db)
             if not query.exec_(queryStr):
                 self.log.error("player staterror")
@@ -1679,39 +1667,43 @@ class FAGameThread(QObject):
 
     def disconnection(self):
         try:
-            if self.player :
+            if self.player:
                 self.player.gameThread = None
-    
-                if self.game :
+
+                if self.game:
                     if hasattr(self.game, "proxy"):
-                        if self.game.proxy.removePlayer(self.player.getLogin()) :
-                            self.parent.parent.udpSocket.writeDatagram(json.dumps(dict(command="cleanup", sourceip = self.player.getIp())), proxyServer, 12000)    
-                if len(self.proxyConnection) > 0 :
+                        if self.game.proxy.removePlayer(self.player.getLogin()):
+                            self.parent.parent.udpSocket.writeDatagram(
+                                json.dumps(dict(command="cleanup", sourceip=self.player.getIp())), proxyServer, 12000)
+                if len(self.proxyConnection) > 0:
                     players = ", ".join(self.proxyConnection)
-    
-                    text = "You had trouble connecting to some player(s) : <br>" + players +".<br><br>The server tried to make you connect through a proxy server, running on the FAF server.<br>It can be caused by a problem with that player, or a problem on your side.<br>If you see this message often, you probably have a connection problem. Please visit <a href='" + config['global']['www_url'] + "mediawiki/index.php?title=Connection_issues_and_solutions'>" + config['global']['www_url'] + "mediawiki/index.php?title=Connection_issues_and_solutions</a> to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs, at your discretion."
-                   
+
+                    text = "You had trouble connecting to some player(s) : <br>" + players + ".<br><br>The server tried to make you connect through a proxy server, running on the FAF server.<br>It can be caused by a problem with that player, or a problem on your side.<br>If you see this message often, you probably have a connection problem. Please visit <a href='" + \
+                           config['global']['www_url'] + "mediawiki/index.php?title=Connection_issues_and_solutions'>" + \
+                           config['global'][
+                               'www_url'] + "mediawiki/index.php?title=Connection_issues_and_solutions</a> to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs, at your discretion."
+
                     self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
                 self.player.setGameSocket(None)
                 self.player.game = None
-            self.done()        
+            self.done()
         except:
             pass
 
-    def done(self) :
+    def done(self):
         self.noSocket = True
-        if self in self.parent.recorders :
-            if self.tasks != None :
+        if self in self.parent.recorders:
+            if self.tasks != None:
                 self.tasks.stop()
 
         self.triedToConnect = []
 
-        if self.game != 0 and self.game != None :
-          
+        if self.game != 0 and self.game != None:
+
             state = self.game.getLobbyState()
-            
+
             # if game in lobby state
-            if state != "playing" :
+            if state != "playing":
                 self.game.addToDisconnect(self.player)
                 self.game.removePlayer(self.player)
                 self.game.removeFromAllPlayersToConnect(self.player)
@@ -1719,33 +1711,33 @@ class FAGameThread(QObject):
 
                 getAction = self.player.getAction()
 
-                if getAction == "HOST" :
-                #if the player was the host  (so, not playing), we remove his game
+                if getAction == "HOST":
+                    # if the player was the host  (so, not playing), we remove his game
 
-                    self.game.setLobbyState("closed")#                    
+                    self.game.setLobbyState("closed")  #
                     self.sendGameInfo()
                     self.parent.games.removeGame(self.game)
                     self.game = None
 
-                elif  getAction == 'JOIN' :
-                        #self.player.setAction("NOTHING")                        
-                        minplayers = self.game.getMinPlayers()
-                        curplayers = self.game.getNumPlayer()
+                elif getAction == 'JOIN':
+                    # self.player.setAction("NOTHING")
+                    minplayers = self.game.getMinPlayers()
+                    curplayers = self.game.getNumPlayer()
 
-                        if  minplayers == 2 or curplayers == 0 :
-                            self.game.setLobbyState("closed")
-                            
-                            self.sendGameInfo()
-                            self.parent.games.removeGame(self.game)
-                            self.game = None
-            #if the game was in play.
-            else :
+                    if minplayers == 2 or curplayers == 0:
+                        self.game.setLobbyState("closed")
+
+                        self.sendGameInfo()
+                        self.parent.games.removeGame(self.game)
+                        self.game = None
+            # if the game was in play.
+            else:
                 self.game.removePlayer(self.player)
                 self.sendGameInfo()
 
             self.doEnd()
 
-        #we remove the gameSocket and reset the udp packet state
+        # we remove the gameSocket and reset the udp packet state
         if self.player is not None:
             self.player.setReceivedUdp(False)
             self.player.setGameSocket(0)
