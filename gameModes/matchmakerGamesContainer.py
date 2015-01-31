@@ -38,7 +38,7 @@ import copy
 
 import gameModes.matchmakerGame
 reload(gameModes.matchmakerGame)
-from gameModes.matchmakerGame import matchmakerGameClass
+from gameModes.matchmakerGame import matchmakerGame
 
 import random
 
@@ -557,7 +557,7 @@ class matchmakerGamesContainerClass(gamesContainerClass):
             query.first()
             mapname = str(query.value(0)).split("/")[1].replace(".zip", "")
 
-        ngame = matchmakerGameClass(gameUuid, self)
+        ngame = matchmakerGame(gameUuid, self)
 
         uuid = ngame.getuuid()
         

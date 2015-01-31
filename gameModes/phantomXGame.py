@@ -18,9 +18,9 @@
 
 import game
 gameClass = reload(game)
-from game import gameClass
+from game import Game
 
-class phantomXGameClass(gameClass):
+class phantomXGame(Game):
     '''Class for phantomN game'''
 
     def __init__(self, uuid, parent = None):

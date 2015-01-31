@@ -43,23 +43,23 @@ from customBlackopsGamesContainer import customBlackopsGamesContainerClass # cus
 from customXtremewarsGamesContainer import customXtremewarsGamesContainerClass # custom Blackops games
 
 # game entity
-from game import gameClass
+from game import Game
 #derived
-from ladderGame import ladder1v1GameClass #ladder 1v1
-from customGame import customGameClass #custom
-from nomadsGame import nomadsGameClass #nomads
-from labwarsGame import labwarsGameClass #labwars
+from ladderGame import ladder1V1Game #ladder 1v1
+from customGame import customGame #custom
+from nomadsGame import nomadsGame #nomads
+from labwarsGame import labwarsGame #labwars
 
-from murderPartyGame import murderPartyGameClass # murder party
+from murderPartyGame import murderPartyGame # murder party
 #from phantomNGame import phantomNGameClass #phantom N
-from phantomXGame import phantomXGameClass # phantom X
-from kothGame import kothGameClass # king of the hill
+from phantomXGame import phantomXGame # phantom X
+from kothGame import kothGame # king of the hill
 #from EWGame import EWGameClass # exp war
 
 #from NFTWGame import NFTWClass # exp war
 #from wyvernGame import wyvernClass # exp war
-from blackopsGame import blackopsGameClass # exp war
-from xtremewarsGame import xtremewarsGameClass # exp war
+from blackopsGame import blackopsGame # exp war
+from xtremewarsGame import xtremewarsGame # exp war
                            
 
 def reloadModules():

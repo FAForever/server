@@ -22,7 +22,7 @@ from PySide import QtSql
 import time
 import gameModes.coopGame
 reload(gameModes.coopGame)
-from gameModes.coopGame import coopGameClass
+from gameModes.coopGame import coopGame
 
 class coopGamesContainerClass(gamesContainerClass):
     '''Class for custom claustrophobia games'''
@@ -65,7 +65,7 @@ class coopGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
         
-        ngame = coopGameClass(gameUuid, self) 
+        ngame = coopGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

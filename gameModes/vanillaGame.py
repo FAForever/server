@@ -18,9 +18,9 @@
 
 import game
 gameClass = reload(game)
-from game import gameClass
+from game import Game
 
-class vanillaClass(gameClass):
+class vanillaClass(Game):
     '''Class for vanillaClass game'''
 
     def __init__(self, uuid, parent = None):

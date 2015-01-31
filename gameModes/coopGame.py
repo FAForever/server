@@ -18,9 +18,9 @@
 
 import game
 gameClass = reload(game)
-from game import gameClass
+from game import Game
 
-class coopGameClass(gameClass):
+class coopGame(Game):
     '''Class forcoop game'''
 
     def __init__(self, uuid, parent = None):

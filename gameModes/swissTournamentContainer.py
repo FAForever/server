@@ -20,7 +20,7 @@ from gamesContainer import  gamesContainerClass
 from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import * 
 from trueSkill.Team import *
 from trueSkill.Teams import *
-from ladderGame import ladder1v1GameClass
+from ladderGame import ladder1V1Game
 
 import random, math
 from ladder.ladderMaps import ladderMaps

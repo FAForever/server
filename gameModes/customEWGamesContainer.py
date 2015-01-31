@@ -17,7 +17,7 @@
 #-------------------------------------------------------------------------------
 
 from gamesContainer import  gamesContainerClass
-from nomadsGame import nomadsGameClass
+from nomadsGame import nomadsGame
 from PySide import QtSql
 
 class customEWGamesContainerClass(gamesContainerClass):
@@ -55,7 +55,7 @@ class customEWGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
         
-        ngame = nomadsGameClass()  
+        ngame = nomadsGame()
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

@@ -22,7 +22,7 @@ from PySide import QtSql
 
 import gameModes.balanceTestingGame
 reload(gameModes.balanceTestingGame)
-from gameModes.balanceTestingGame import balanceTestingGameClass
+from gameModes.balanceTestingGame import balanceTestingGame
 
 class balanceTestingGamesContainerClass(gamesContainerClass):
     '''Class for custom nomads games'''
@@ -65,7 +65,7 @@ class balanceTestingGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
         
-        ngame = balanceTestingGameClass(gameUuid, self) 
+        ngame = balanceTestingGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

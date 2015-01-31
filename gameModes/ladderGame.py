@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 import game
 gameClass = reload(game)
-from game import gameClass
+from game import Game
 
 
 
@@ -37,7 +37,7 @@ from trueSkill.Player import *
 from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import * 
 
 
-class ladder1v1GameClass(gameClass):
+class ladder1V1Game(Game):
     '''Class for 1v1 ladder game'''
     
     def __init__(self, uuid, parent = None):

@@ -68,7 +68,7 @@ class start(QObject):
         self.listUsers = playersOnline()
 
 
-        self.db= QtSql.QSqlDatabase.addDatabase("QMYSQL")  
+        self.db= QtSql.QSqlDatabase.addDatabase("QMYSQL")
         self.db.setHostName(DB_SERVER)  
         self.db.setPort(DB_PORT)
         

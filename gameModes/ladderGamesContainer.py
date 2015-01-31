@@ -31,7 +31,7 @@ from PySide import QtCore
 
 import gameModes.ladderGame
 reload(gameModes.ladderGame)
-from gameModes.ladderGame import ladder1v1GameClass
+from gameModes.ladderGame import ladder1V1Game
 
 
 
@@ -175,7 +175,7 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         mapChosen = random.choice(map_pool)
         map = self.getMapName(mapChosen)
 
-        ngame = ladder1v1GameClass(gameUuid, self)
+        ngame = ladder1V1Game(gameUuid, self)
 
         uuid = ngame.getuuid()
 

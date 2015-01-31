@@ -21,7 +21,7 @@ from PySide import QtSql
 
 import gameModes.supremeDestructionGame
 reload(gameModes.supremeDestructionGame)
-from gameModes.supremeDestructionGame import supremeDestructionGameClass
+from gameModes.supremeDestructionGame import supremeDestructionGame
 
 class supremeDestructionGamesContainerClass(gamesContainerClass):
     '''Class for custom supremeDestruction games'''
@@ -64,7 +64,7 @@ class supremeDestructionGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
         
-        ngame = supremeDestructionGameClass(gameUuid, self) 
+        ngame = supremeDestructionGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

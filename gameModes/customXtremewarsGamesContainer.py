@@ -17,12 +17,12 @@
 #-------------------------------------------------------------------------------
 
 from gamesContainer import  gamesContainerClass
-from xtremewarsGame import xtremewarsGameClass
+from xtremewarsGame import xtremewarsGame
 from PySide import QtSql
 
 import gameModes.xtremewarsGame
 reload(gameModes.xtremewarsGame)
-from gameModes.xtremewarsGame import xtremewarsGameClass
+from gameModes.xtremewarsGame import xtremewarsGame
 
 class customXtremewarsGamesContainerClass(gamesContainerClass):
     '''Class for custom nomads games'''
@@ -59,7 +59,7 @@ class customXtremewarsGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
         
-        ngame = xtremewarsGameClass(gameUuid, self) 
+        ngame = xtremewarsGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

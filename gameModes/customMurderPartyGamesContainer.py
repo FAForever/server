@@ -21,7 +21,7 @@ from PySide import QtSql
 
 import gameModes.murderPartyGame
 reload(gameModes.murderPartyGame)
-from gameModes.murderPartyGame import murderPartyGameClass
+from gameModes.murderPartyGame import murderPartyGame
 
 class customMurderPartyGamesContainerClass(gamesContainerClass):
     '''Class for custom Murder Party games'''
@@ -57,7 +57,7 @@ class customMurderPartyGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
         
-        ngame = murderPartyGameClass(gameUuid, self) 
+        ngame = murderPartyGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

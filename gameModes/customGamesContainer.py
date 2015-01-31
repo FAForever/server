@@ -21,7 +21,7 @@ from PySide import QtSql
 import time
 import gameModes.customGame
 reload(gameModes.customGame)
-from gameModes.customGame import customGameClass
+from gameModes.customGame import customGame
 
 
 class customGamesContainerClass(gamesContainerClass):
@@ -57,7 +57,7 @@ class customGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
     
-        ngame = customGameClass(gameUuid, self)
+        ngame = customGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

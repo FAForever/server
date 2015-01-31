@@ -18,9 +18,9 @@
 
 import game
 gameClass = reload(game)
-from game import gameClass
+from game import Game
 
-class kothGameClass(gameClass):
+class kothGame(Game):
     '''Class for king of the hill game'''
 
     def __init__(self, uuid, parent = None):

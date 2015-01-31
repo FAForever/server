@@ -18,7 +18,7 @@
 
 import game
 gameClass = reload(game)
-from game import gameClass
+from game import Game
 
 from copy import deepcopy
 import time
@@ -26,7 +26,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class customGameClass(gameClass):
+class customGame(Game):
     '''Class for custom game'''
 
     def __init__(self, uuid, parent = None):

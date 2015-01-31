@@ -31,7 +31,7 @@ from PySide.QtSql import *
 
 import gameModes.gwgame
 reload(gameModes.gwgame)
-from gameModes.gwgame import gwGameClass
+from gameModes.gwgame import gwGame
 
 FACTIONS = {0:"UEF", 1:"Aeon",2:"Cybran",3:"Seraphim"}
 
@@ -142,7 +142,7 @@ class gwGamesContainerClass(gamesContainerClass):
                     planetMap = str(query.value(0))
     
                
-            ngame = gwGameClass(gameUuid, self)
+            ngame = gwGame(gameUuid, self)
             
             
             ngame.setLogger("gwGame."+str(gameUuid))

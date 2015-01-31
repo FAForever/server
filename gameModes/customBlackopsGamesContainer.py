@@ -21,7 +21,7 @@ from PySide import QtSql
 
 import gameModes.blackopsGame
 reload(gameModes.blackopsGame)
-from gameModes.blackopsGame import blackopsGameClass
+from gameModes.blackopsGame import blackopsGame
 
 class customBlackopsGamesContainerClass(gamesContainerClass):
     '''Class for custom nomads games'''
@@ -58,7 +58,7 @@ class customBlackopsGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
         
-        ngame = blackopsGameClass(gameUuid, self) 
+        ngame = blackopsGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

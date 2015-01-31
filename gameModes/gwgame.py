@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 import game
 gameClass = reload(game)
-from game import gameClass
+from game import Game
 
 import json
 import time
@@ -48,7 +48,7 @@ RANKS = {0:["Private", "Corporal", "Sergeant", "Captain", "Major", "Colonel", "G
          3:["SouIstle", "Sou", "SouThuum", "YthiIstle", "Ythi", "YthiThuum", "Azeel", "Supreme Commander"]
          }
 
-class gwGameClass(gameClass):
+class gwGame(Game):
     '''Class for gw game'''
     
     def __init__(self, uuid, parent = None):

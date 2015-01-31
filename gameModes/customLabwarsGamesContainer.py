@@ -21,7 +21,7 @@ from PySide import QtSql
 
 import gameModes.labwarsGame
 reload(gameModes.labwarsGame)
-from gameModes.labwarsGame import labwarsGameClass
+from gameModes.labwarsGame import labwarsGame
 
 class customLabwarsGamesContainerClass(gamesContainerClass):
     '''Class for custom nomads games'''
@@ -61,7 +61,7 @@ class customLabwarsGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
         
-        ngame = labwarsGameClass(gameUuid, self)   
+        ngame = labwarsGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

@@ -16,9 +16,9 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from game import gameClass
+from game import Game
 
-class balanceTestingGameClass(gameClass):
+class balanceTestingGame(Game):
     '''Class for balanceTesting game'''
 
     def __init__(self, uuid, parent = None):

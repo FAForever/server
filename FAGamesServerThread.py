@@ -186,9 +186,6 @@ class FAGameThread(QObject):
                                 if socket.state() == 3 and socket.isValid():
                                     socket.abort()
                                     player.setGameSocket(0)
-
-
-
                                     # We set the curremt game Socket.
                 self.player.setGameSocket(self.socket)
                 self.player.setWantGame(False)
@@ -543,7 +540,6 @@ class FAGameThread(QObject):
                 state = values[0]
                 self.handleGameState(state)
 
-            # game Option changing !
             elif key == 'GameOption':
 
                 if values[0] in self.game.gameOptions:
@@ -587,10 +583,8 @@ class FAGameThread(QObject):
             elif key == 'PlayerOption':
                 action = self.player.getAction()
                 if action == "HOST":
-                    self.game.clearAIs()
-                for i, value in enumerate(values):
-                    atype, name, place, resultvalue = self.parsePlayerOption(value)
-                    if action == "HOST":
+                    for i, value in enumerate(values):
+                        atype, name, place, resultvalue = self.parsePlayerOption(value)
                         if not ":" in name:
                             self.game.placePlayer(name, place)
                         if atype == "faction":
