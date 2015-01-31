@@ -500,7 +500,10 @@ class FAGameThread(QObject):
 
     def handleAction(self, key, values):
         """
-        The big code that handle everything that can happen to a game or a player in a game
+        Handle GpgNetSend messages, wrapped in the JSON protocol
+        :param key: command type
+        :param values: command parameters
+        :return: None
         """
         try:
             if key == 'ping':
@@ -561,7 +564,6 @@ class FAGameThread(QObject):
 
                 elif values[0] == 'Victory':
                     self.game.setGameType(values[1])
-
 
             elif key == 'GameMods':
                 # find infos about mods...
@@ -666,7 +668,6 @@ class FAGameThread(QObject):
                 else:
                     self.log.debug(self.logGame + self.game.getInvalidReason())
 
-
             elif key == 'ArmyCalled':
                 # this is for Galactic War!
                 playerResult = self.game.getPlayerAtPosition(int(values[0]))
@@ -680,16 +681,18 @@ class FAGameThread(QObject):
                     if query.exec_():
                         self.game.deleteGroup(group, playerResult)
 
-
             else:
                 self.log.error(self.logGame + "Unknown key")
                 self.log.error(self.logGame + key)
-
         except:
-            self.log.exception(self.logGame + "Something awful happened in a game thread !")
+            self.log.exception(self.logGame + "Something awful happened in a game thread!")
 
     def handleConnected(self, uid):
-        ''' The player is officially connected to another'''
+        """
+        Player established connection to peer
+        :param uid: peer identifier
+        :return: None
+        """
         for player in self.parent.listUsers.players:
             playerUid = player.getId()
 
@@ -713,10 +716,11 @@ class FAGameThread(QObject):
                     del self.sentConnect[player]
 
     def handleNatPacket(self, values):
-        ''' Nat packets between players'''
-
-        state = ''
-
+        """
+        NatPackets are used for establishing connections between players that are behind NAT,
+        aka. hole-punching.
+        :param values List containing packet contents directly
+        """
         state = self.game.getLobbyState()
         if state != "playing":
             if "PACKET_RECEIVED" in values[1]:
@@ -814,8 +818,11 @@ class FAGameThread(QObject):
 
 
     def handleGameState(self, state):
-        ''' Handle game states - launch,....'''
-
+        """
+        Changes in game state
+        :param state: new state
+        :return: None
+        """
         if state == 'Idle':
             # FA has just connected to us
             self.idleState()
