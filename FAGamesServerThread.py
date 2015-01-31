@@ -1402,6 +1402,7 @@ class FAGameThread(QObject):
                 else:
                     playerName = playerToConnect.getLogin()
 
+                self.sendToRelay("DisconnectFromPeer", int(uuid))
                 self.sendToRelay("ConnectToProxy", [numProxy, playerToConnect.getIp(), str(playerName), int(uuid)])
 
                 if self.game:
