@@ -296,7 +296,6 @@ class FAGameThread(QObject):
             if now - self.forcedConnections[forcedPlayer] > 10:
                 forceConnection.append(forcedPlayer)
 
-        action = None
         action = self.player.getAction()
         for forcedPlayer in forceConnection:
             if action != "HOST":
@@ -319,95 +318,79 @@ class FAGameThread(QObject):
                         "%s must connect through proxy to %s (not connected after 10 sec of ConnectToPeer) " % (
                             sentPlayer.getLogin(), self.player.getLogin()))
 
-        if not self.noSocket:
-            if self.player is not None:
-
-                if self.game is not None:
-                    checkConnect = False
-                    checkDisconnect = False
-                    getUdp = False
-                    state = ""
-
-                    state = self.game.getLobbyState()
-
-                    if state != "playing":
-
-                        # first we stop the timer
-                        self.tasks.stop()
-
-                        if self.player.setPort == False and now - self.initTime > 3:
-                            # after 3 seconds we still have nothing, we force it.
-                            self.player.setPort = True
-
-                        if self.player.setPort == False and self.dontSetMorePortPlease == False and self.initDone == True and self.packetCount <= 10:
-                            self.sendPacketForNAT()
-                            self.tasks.start(200)
-
-                        getUdp = self.player.getReceivedUdp()
-
-                        if getUdp == True and self.testUdp == False:
-                            # we must now test both socket
-
-                            address = QtNetwork.QHostAddress(str(self.player.getIp()))
-                            if self.player.getGamePort() != self.player.getUdpPacketPort():
-                                self.parent.parent.udpSocket.writeDatagram(
-                                    "\x08PACKET_RECEIVED %i" % self.player.getGamePort(), address,
-                                    self.player.getGamePort())
-                                self.parent.parent.udpSocket.writeDatagram(
-                                    "\x08PACKET_RECEIVED %i" % self.player.getUdpPacketPort(), address,
-                                    self.player.getUdpPacketPort())
-                            else:
-                                self.parent.parent.udpSocket.writeDatagram(
-                                    "\x08PACKET_RECEIVED %i" % self.player.getGamePort(), address,
-                                    self.player.getGamePort())
-
-                            self.testUdp = True
-
-                        if action == "HOST":
-
-                            for playerInGame in self.game.getPlayers():
-                                if str(playerInGame.game) != str(self.game.getuuid()):
-                                    # self.log.debug(self.logGame + "ERROR : This player is not in the game : " + playerInGame.getLogin())
-                                    self.game.addToDisconnect(playerInGame)
-                                    self.game.removePlayer(playerInGame)
-                                    self.game.removeFromAllPlayersToConnect(playerInGame)
-                                    self.game.removeTrueSkillPlayer(playerInGame)
-
-                            self.player.connectedToHost = True
-                            if self.player.setPort:
-                                self.game.setGameHostPort(self.player.getGamePort())
-                                self.game.receiveUdpHost = True
-
-                        if self.canConnectToHost == True and self.player.setPort == True:
-
-                            if self.game.receiveUdpHost == True and self.player.connectedToHost == False:
-                                self.connectToHost()
-
-                        if self.player.setPort == True and self.player.isConnectedToHost():
-                            checkConnect = self.game.isConnectRequired(self.player)
-                            checkDisconnect = self.game.isDisconnectRequired(self.player)
-
-                            if checkConnect:
-                                self.connectToPeers()
-
-                            if checkDisconnect:
-                                self.disconnectToPeers()
-
-                        # and we restart it.
-                        self.tasks.start(200)
-
-
-                    else:
-                        self.tasks.stop()
-
-            else:
-                if self in self.parent.recorders:
-                    if self.tasks is not None:
-                        self.tasks.stop()
-        else:
+        if self.noSocket or self.player is None or self.game is None:
             if self in self.parent.recorders:
                 if self.tasks is not None:
                     self.tasks.stop()
+            return
+
+        state = self.game.getLobbyState()
+        if state != "playing":
+            # first we stop the timer
+            self.tasks.stop()
+
+            if self.player.setPort is False and now - self.initTime > 3:
+                # after 3 seconds we still have nothing, we force it.
+                self.player.setPort = True
+
+            if self.player.setPort is False \
+                    and self.dontSetMorePortPlease is False \
+                    and self.initDone is True and self.packetCount <= 10:
+                self.sendPacketForNAT()
+                self.tasks.start(200)
+
+            getUdp = self.player.getReceivedUdp()
+
+            if getUdp == True and self.testUdp == False:
+                # we must now test both socket
+
+                address = QtNetwork.QHostAddress(str(self.player.getIp()))
+                if self.player.getGamePort() != self.player.getUdpPacketPort():
+                    self.parent.parent.udpSocket.writeDatagram(
+                        "\x08PACKET_RECEIVED %i" % self.player.getGamePort(), address,
+                        self.player.getGamePort())
+                    self.parent.parent.udpSocket.writeDatagram(
+                        "\x08PACKET_RECEIVED %i" % self.player.getUdpPacketPort(), address,
+                        self.player.getUdpPacketPort())
+                else:
+                    self.parent.parent.udpSocket.writeDatagram(
+                        "\x08PACKET_RECEIVED %i" % self.player.getGamePort(), address,
+                        self.player.getGamePort())
+
+                self.testUdp = True
+
+            if action == "HOST":
+
+                for playerInGame in self.game.getPlayers():
+                    if str(playerInGame.game) != str(self.game.getuuid()):
+                        # self.log.debug(self.logGame + "ERROR : This player is not in the game : " + playerInGame.getLogin())
+                        self.game.addToDisconnect(playerInGame)
+                        self.game.removePlayer(playerInGame)
+                        self.game.removeFromAllPlayersToConnect(playerInGame)
+                        self.game.removeTrueSkillPlayer(playerInGame)
+
+                self.player.connectedToHost = True
+                if self.player.setPort:
+                    self.game.setGameHostPort(self.player.getGamePort())
+                    self.game.receiveUdpHost = True
+
+            if self.canConnectToHost and self.player.setPort:
+
+                if self.game.receiveUdpHost and not self.player.connectedToHost:
+                    self.connectToHost()
+
+            if self.player.setPort and self.player.isConnectedToHost():
+                checkConnect = self.game.isConnectRequired(self.player)
+                checkDisconnect = self.game.isDisconnectRequired(self.player)
+
+                if checkConnect:
+                    self.connectToPeers()
+
+                if checkDisconnect:
+                    self.disconnectToPeers()
+
+            # and we restart it.
+            self.tasks.start(200)
 
     def ping(self):
         ''' Ping the relay server to check if the player is still there.'''
