@@ -169,17 +169,6 @@ class GameConnection(QObject):
                 strlog = ("%s\t" % str(self.player.getLogin()))
                 self.logGame = strlog
 
-                for player in self.parent.listUsers.getAllPlayers():
-                    if player is not None:
-                        if player.getLogin() == self.player.getLogin():
-
-                            # we check if there is already a connection socket to a game.
-                            oldsocket = player.getGameSocket()
-                            if oldsocket is not None:
-                                if socket.state() == 3 and socket.isValid():
-                                    socket.abort()
-                                    player.setGameSocket(0)
-                                    # We set the curremt game Socket.
                 self.player.setGameSocket(self.socket)
                 self.player.setWantGame(False)
 
