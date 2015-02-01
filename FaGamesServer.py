@@ -19,7 +19,7 @@
 
 from PySide.QtNetwork import QTcpServer, QTcpSocket
 import logging
-import GameConnection
+from GameConnection import GameConnection
 
 class FAServer(QTcpServer):
     def __init__(self, listUsers, Games, db,  dirtyGameList, parent=None):
@@ -37,11 +37,12 @@ class FAServer(QTcpServer):
 
     def incomingConnection(self, socket_id):
         self.logger.debug("Incoming Game Connection")
-        socket = QTcpSocket()
 
+        socket = QTcpSocket()
         if socket.setSocketDescriptor(socket_id):
-            self.recorders.append(GameConnection.GameConnection(socket, self))
-    
+            connection = GameConnection(self.listUsers, self)
+            connection.accept(socket)
+            self.recorders.append(connection)
 
     def removeRecorder(self, recorder):
         if recorder in self.recorders:

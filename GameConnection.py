@@ -23,6 +23,7 @@ import logging
 
 from PySide.QtCore import QTimer, QObject
 from PySide import QtCore, QtNetwork
+from PySide.QtNetwork import QTcpSocket
 from PySide.QtSql import *
 
 from trueSkill.faPlayer import *
@@ -57,134 +58,119 @@ class GameConnection(QObject):
     """
     Responsible for the games protocol.
     """
-    def __init__(self, socket, parent=None):
+    def __init__(self, users, parent=None):
         super(GameConnection, self).__init__(parent)
+        self.users = users
         self.log = logging.getLogger(__name__)
-
         self.log.debug("Incoming game socket started")
         self.initTime = time.time()
-
         self.initDone = False
-
         self.udpToServer = 0
-
         self.connectedTo = []
-
         self.forcedConnections = {}
         self.sentConnect = {}
-
         self.forcedJoin = None
         self.proxies = {}
         self.proxyNotThrough = True
-
         self.noSocket = False
         self.player = None
         self.parent = parent
         self.logGame = "\t"
         self.tasks = None
         self.game = None
-
         self.packetCount = 0
-
         self.proxyConnection = []
+        self.crappyPorts = {}
+        self.lastUdpPacket = {}
+        self.udpTimeout = 0
+        self.missedUdpFrom = {}
+        self.triedToConnect = []
+        self.dontSetMorePortPlease = False
+        self.JoinGameDone = False
+
+        # PINGING
+        self.initPing = True
+        self.ponged = False
+        self.missedPing = 0
+        self.pingTimer = QTimer(self)
+        self.pingTimer.timeout.connect(self.ping)
+
+        self.headerSizeRead = False
+        self.headerRead = False
+        self.chunkSizeRead = False
+        self.fieldTypeRead = False
+        self.fieldSizeRead = False
+        self.blockSize = 0
+        self.fieldSize = 0
+        self.chunkSize = 0
+        self.fieldType = 0
+        self.chunks = []
+        self.gamePort = 6112
+        self.testUdp = False
+        self.delaySkipped = False
+        self.canConnectToHost = False
+        self.lastUpdate = None
+        self.player = None
+        self.infoDelayed = False
+        self.connected = 1
+        self.data = ''
+        self.addData = False
+        self.addedData = 0
+        self.tryingconnect = 0
+        self.socket = None
+        self.lobby = None
+
+    def accept(self, socket):
+        """
+        Accept a socket connection
+
+        Will look up the user using the provided users service
+        :param socket:
+        :return: bool
+        """
         self.socket = socket
-        self.socket.setSocketOption(QtNetwork.QTcpSocket.KeepAliveOption, 1)
+        self.socket.setSocketOption(QTcpSocket.KeepAliveOption, 1)
         self.socket.disconnected.connect(self.disconnection)
         self.socket.error.connect(self.displayError)
         self.socket.stateChanged.connect(self.stateChange)
 
-        if self.socket.state() == 3 and self.socket.isValid():
-
-            self.crappyPorts = {}
-            self.lastUdpPacket = {}
-            self.udpTimeout = 0
-            self.missedUdpFrom = {}
-            self.triedToConnect = []
-            self.dontSetMorePortPlease = False
-            self.JoinGameDone = False
-
-            # PINGING
-            self.initPing = True
-            self.ponged = False
-            self.missedPing = 0
-            self.pingTimer = QTimer(self)
-            self.pingTimer.timeout.connect(self.ping)
-
-            self.headerSizeRead = False
-            self.headerRead = False
-            self.chunkSizeRead = False
-            self.fieldTypeRead = False
-            self.fieldSizeRead = False
-            self.blockSize = 0
-            self.fieldSize = 0
-            self.chunkSize = 0
-            self.fieldType = 0
-            self.chunks = []
-
-            self.socket.readyRead.connect(self.readData)
-
-            self.testUdp = False
-
-            self.delaySkipped = False
-
-            if not self.parent.db.isOpen():
-                self.parent.db.open()
-
-            self.canConnectToHost = False
-
-            self.lastUpdate = None
-
-            self.gamePort = 6112
-            self.player = None
-
-            self.infoDelayed = False
-            self.connected = 1
-
-            self.data = ''
-            self.addData = False
-            self.addedData = 0
-            self.tryingconnect = 0
-
-            self.lobby = None
-
-            ip = 0
-
-            if not self.noSocket:
-                ip = self.socket.peerAddress().toString()
-                # the player is not known, we search for him.
-            self.player = self.parent.listUsers.findByIp(ip)
-            if self.player is not None and self.noSocket == False:
-                self.player.gameThread = self
-                # reset the udpPacket from server state
-
-                self.player.setReceivedUdp(False)
-                self.player.setPort = False
-                self.player.connectedToHost = False
-
-                self.player.resetUdpPacket()
-                self.gamePort = int(self.player.getGamePort())
-
-                self.lobby = self.player.getLobbyThread()
-
-                strlog = ("%s\t" % str(self.player.getLogin()))
-                self.logGame = strlog
-
-                self.player.setGameSocket(self.socket)
-                self.player.setWantGame(False)
-
-            else:
-                self.log.warning("No player found for this IP : " + str(self.socket.peerAddress().toString()))
-                self.socket.abort()
-                return
-
-            if not self.noSocket:
-                self.tasks = QTimer(self)
-                self.tasks.timeout.connect(self.doTask)
-                self.tasks.start(200)
-
-
-        else:
+        if self.socket.state() != QTcpSocket.ConnectedState or not self.socket.isValid():
             self.socket.abort()
+            return False
+
+        self.socket.readyRead.connect(self.readData)
+        self.lobby = None
+        ip = self.socket.peerAddress().toString()
+        self.player = self.users.findByIp(ip)
+
+        if self.player is None:
+            self.socket.abort()
+            print "Player not found for IP: %s " % ip
+            return False
+
+        print self.player.getGamePort()
+        self.player.gameThread = self
+        # reset the udpPacket from server state
+
+        self.player.setReceivedUdp(False)
+        self.player.setPort = False
+        self.player.connectedToHost = False
+
+        self.player.resetUdpPacket()
+        self.gamePort = int(self.player.getGamePort())
+
+        self.lobby = self.player.getLobbyThread()
+
+        strlog = ("%s\t" % str(self.player.getLogin()))
+        self.logGame = strlog
+
+        self.player.setGameSocket(self.socket)
+        self.player.setWantGame(False)
+
+        self.tasks = QTimer(self)
+        self.tasks.timeout.connect(self.doTask)
+        self.tasks.start(200)
+        return True
 
     def containsAny(self, str, set):
         """Check whether 'str' contains ANY of the chars in 'set'"""
@@ -372,7 +358,9 @@ class GameConnection(QObject):
             self.tasks.start(200)
 
     def ping(self):
-        ''' Ping the relay server to check if the player is still there.'''
+        """
+        Ping the relay server to check if the player is still there.
+        """
         if hasattr(self, "socket"):
             if self.ponged is False:
                 if self.missedPing > 2:
