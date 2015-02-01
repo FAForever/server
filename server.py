@@ -93,9 +93,9 @@ class start(QObject):
         self.dirtyGameList = []
         self.games = games.hyperGamesContainerClass(self.listUsers, self.db, self.dirtyGameList)
         
-        self.FALobby =  FALobbyServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)
-        self.GWLobby =  GWLobbyServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)
-        self.FAGames =  FAServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)       
+        self.FALobby = FALobbyServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)
+        self.GWLobby = GWLobbyServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)
+        self.FAGames = FAServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)
         
         # Make sure we can shutdown gracefully
         signal.signal(signal.SIGTERM, self.signal_handler)

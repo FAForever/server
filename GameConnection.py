@@ -35,8 +35,9 @@ from config import config
 logger = logging.getLogger(__name__)
 
 from proxy import proxy
-
 from functools import wraps
+
+from JsonTransport import QDataStreamJsonTransport
 
 proxyServer = QtNetwork.QHostAddress("127.0.0.1")
 
@@ -119,6 +120,7 @@ class GameConnection(QObject):
         self.tryingconnect = 0
         self.socket = None
         self.lobby = None
+        self.transport = None
 
     def accept(self, socket):
         """
@@ -138,7 +140,9 @@ class GameConnection(QObject):
             self.socket.abort()
             return False
 
-        self.socket.readyRead.connect(self.readData)
+        self.transport = QDataStreamJsonTransport(self.socket)
+        self.transport.messageReceived.connect(self.handleAction2)
+
         self.lobby = None
         ip = self.socket.peerAddress().toString()
         self.player = self.users.findByIp(ip)
@@ -177,70 +181,8 @@ class GameConnection(QObject):
         return 1 in [c in str for c in set]
 
     def sendToRelay(self, action, commands):
-        ''' send a command to the relay server. The relay server is inside the FAF lobby. It process & relay these messages to FA itself.'''
         message = {"key": action, "commands": commands}
-
-        block = QtCore.QByteArray()
-        out = QtCore.QDataStream(block, QtCore.QIODevice.ReadWrite)
-        out.setVersion(QtCore.QDataStream.Qt_4_2)
-
-        out.writeUInt32(0)
-        out.writeQString(json.dumps(message))
-
-        out.device().seek(0)
-        out.writeUInt32(block.size() - 4)
-        self.bytesToSend = block.size() - 4
-
-        if hasattr(self, "socket"):
-            try:
-                if self.socket:
-                    if self.socket.isValid() and self.socket.state() == 3:
-                        if self.socket.write(block) == -1:
-                            self.socket.abort()
-
-                    else:
-                        self.socket.abort()
-                else:
-                    self.socket.abort()
-            except:
-                if self.tasks is not None:
-                    self.tasks.stop()
-                self.pingTimer.stop()
-
-
-    def readData(self):
-        ''' Our standard protocol. The FA protocol is now decoded by the lobby itself. Easier to handle that way.'''
-        if self.socket.isValid():
-            if self.socket.bytesAvailable() == 0:
-                return
-            ins = QtCore.QDataStream(self.socket)
-            ins.setVersion(QtCore.QDataStream.Qt_4_2)
-            while not ins.atEnd():
-                if self.noSocket == False and self.socket.isValid():
-                    if self.blockSize == 0:
-                        if self.noSocket == False and self.socket.isValid():
-                            if self.socket.bytesAvailable() < 4:
-                                return
-                            self.blockSize = ins.readUInt32()
-                        else:
-                            return
-
-                    if self.noSocket == False and self.socket.isValid():
-                        if self.socket.bytesAvailable() < self.blockSize:
-                            return
-
-                    else:
-                        return
-                    action = ins.readQString()
-
-                    self.handleAction2(action)
-
-                    self.blockSize = 0
-
-                else:
-                    return
-
-            return
+        self.transport.send_message(message)
 
     @timed
     def doTask(self):
