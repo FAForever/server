@@ -27,6 +27,8 @@ import uuid
 import string
 import logging
 
+from .PlayerOptions import PlayerOptions
+
 from PySide.QtSql import QSqlQuery
 
 class GameState():
@@ -96,7 +98,7 @@ class Game(object):
         self.gameFaResult = {}
         self.playerFaction = {}
         self.playerColor = {}
-        self._playerOptions = {}
+        self._playerOptions = PlayerOptions()
         self.state = GameState.from_gpgnet_state(state)
 
         self.gameOptions = {'FogOfWar': 'explored', 'GameSpeed': 'normal', 'CheatsEnabled': 'false',
@@ -109,18 +111,21 @@ class Game(object):
             self.setPlayerFaction(slot, value)
         elif key == 'Color':
             self.setPlayerColor(slot, value)
+        elif key == 'StartSpot':
+            self._playerOptions.move(slot, value)
         else:
-            if slot not in self._playerOptions:
-                self._playerOptions[slot] = {}
             self._playerOptions[slot][key] = value
 
     def getPlayerOption(self, slot, key):
-        if key == 'Faction':
-            return self.getPlayerFaction(slot)
-        elif key == 'Color':
-            return self.getPlayerColor(slot)
-        else:
-            return self._playerOptions[slot][key]
+        try:
+            if key == 'Faction':
+                return self.getPlayerFaction(slot)
+            elif key == 'Color':
+                return self.getPlayerColor(slot)
+            else:
+                return self._playerOptions[slot][key]
+        except KeyError:
+            return None
 
     def getSimMods(self):
         return self.mods

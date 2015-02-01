@@ -576,6 +576,10 @@ class GameConnection(QObject):
             elif key == 'PlayerOption':
                 action = self.player.getAction()
                 if action == "HOST":
+                    slot = values[0]
+                    action = values[1]
+                    option = values[2]
+                    self.game.setPlayerOption(slot, action, option)
                     for i, value in enumerate(values):
                         atype, name, place, resultvalue = self.parsePlayerOption(value)
                         if not ":" in name:
