@@ -17,11 +17,11 @@
 #-------------------------------------------------------------------------------
 
 
-from PySide import QtNetwork
+from PySide.QtNetwork import QTcpServer, QTcpSocket
 import logging
 import FAGamesServerThread
 
-class FAServer(QtNetwork.QTcpServer):
+class FAServer(QTcpServer):
     def __init__(self, listUsers, Games, db,  dirtyGameList, parent=None):
         super(FAServer, self).__init__(parent)
         self.parent = parent
@@ -35,10 +35,12 @@ class FAServer(QtNetwork.QTcpServer):
         self.recorders = []
 
 
-    def incomingConnection(self, socketId):
+    def incomingConnection(self, socket_id):
         self.logger.debug("Incoming Game Connection")
-        reload(FAGamesServerThread)
-        self.recorders.append(FAGamesServerThread.FAGameThread(socketId, self))
+        socket = QTcpSocket()
+
+        if socket.setSocketDescriptor(socket_id):
+            self.recorders.append(FAGamesServerThread.FAGameThread(socket, self))
     
 
     def removeRecorder(self, recorder):

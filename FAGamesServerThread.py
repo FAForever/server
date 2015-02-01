@@ -89,16 +89,11 @@ class FAGameThread(QObject):
         self.packetCount = 0
 
         self.proxyConnection = []
-        self.socket = QtNetwork.QTcpSocket(self)
+        self.socket = socket
         self.socket.setSocketOption(QtNetwork.QTcpSocket.KeepAliveOption, 1)
         self.socket.disconnected.connect(self.disconnection)
         self.socket.error.connect(self.displayError)
         self.socket.stateChanged.connect(self.stateChange)
-
-        if not self.socket.setSocketDescriptor(socket):
-            self.log.debug("awful error : Socket descriptor not set")
-            self.socket.abort()
-            return
 
         if self.socket.state() == 3 and self.socket.isValid():
 
