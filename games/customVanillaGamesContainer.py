@@ -17,20 +17,23 @@
 #-------------------------------------------------------------------------------
 
 from gamesContainer import  gamesContainerClass
+from vanillaGame import vanillaClass
 from PySide import QtSql
-import time
-import gameModes.customGame
-reload(gameModes.customGame)
-from gameModes.customGame import customGame
 
+import games.vanillaGame
+reload(games.vanillaGame)
+from games.vanillaGame import vanillaClass
 
-class customGamesContainerClass(gamesContainerClass):
-    '''Class for custom games'''
+class customVanillaGamesContainerClass(gamesContainerClass):
+    '''Class for custom Nuke for the win games'''
 
     def __init__(self, db, parent = None):
-        super(customGamesContainerClass, self).__init__("faf", "Forged Alliance Forever" , db, parent)
-      
-        self.version = 10
+        super(customVanillaGamesContainerClass, self).__init__("vanilla", "Vanilla", db, parent)
+
+        
+
+        self.betaPass = False
+
         self.parent = parent
 
     def addBasicGame(self, player, newgame, gamePort):
@@ -51,13 +54,13 @@ class customGamesContainerClass(gamesContainerClass):
         
         # check if the host is already hosting something.
         for game in self.games:
-            if game.getLobbyState == 'Lobby' :
+            if game.getLobbyState == 'open' :
                 if game.getHostName() == playerLogin :
                     return False
                 if game.getHostId() == session :
                     return False
-    
-        ngame = customGame(gameUuid, self)
+        
+        ngame = vanillaClass(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)
@@ -67,54 +70,3 @@ class customGamesContainerClass(gamesContainerClass):
         ngame.setTime()
         self.games.append(ngame)
         return ngame
-
-    def removeOldGames(self):
-        '''Remove old games (invalids and not started)'''
-        now = time.time()
-        for game in reversed(self.games):
-
-            diff = now - game.getTime()
-
-            if game.getLobbyState() == 'open' and game.getNumPlayer() == 0 :
-                
-                game.setLobbyState('closed')      
-                self.addDirtyGame(game.getuuid())        
-                self.removeGame(game)
-
-                continue
-
-            if game.getLobbyState() == 'open' :
-                host = game.getHostName()
-                player = self.parent.players.findByName(host)
-
-                if player == 0 : 
-                    game.setLobbyState('closed')
-                    self.addDirtyGame(game.getuuid())
-                    self.removeGame(game)
-
-                    continue
-                else :
-                    if player.getAction() != "HOST" :
-                        
-                        game.setLobbyState('closed')
-                        self.addDirtyGame(game.getuuid())
-                        self.removeGame(game)
-
-                        continue
-
-            
-            if game.getLobbyState() == 'Idle' and diff > 60 :
-
-                game.setLobbyState('closed')   
-                self.addDirtyGame(game.getuuid())               
-                self.removeGame(game)
-
-                continue
-
-            if game.getLobbyState() == 'playing' and diff > 60 * 60 * 8 : #if the game is playing for more than 8 hours
-
-                game.setLobbyState('closed')
-                self.addDirtyGame(game.getuuid())
-                self.removeGame(game)
-
-                continue

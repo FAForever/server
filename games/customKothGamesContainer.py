@@ -19,27 +19,27 @@
 from gamesContainer import  gamesContainerClass
 from PySide import QtSql
 
-import gameModes.murderPartyGame
-reload(gameModes.murderPartyGame)
-from gameModes.murderPartyGame import murderPartyGame
+import games.kothGame
+reload(games.kothGame)
+from games.kothGame import kothGame
 
-class customMurderPartyGamesContainerClass(gamesContainerClass):
-    '''Class for custom Murder Party games'''
+class customKothGamesContainerClass(gamesContainerClass):
+    '''Class for custom nomads games'''
 
     def __init__(self, db, parent = None):
-        super(customMurderPartyGamesContainerClass, self).__init__("murderparty", "Murder Party", db, parent)
+        super(customKothGamesContainerClass, self).__init__("koth", "King of the Hill" ,db, parent)
+
         
 
+        self.betaPass = False
         self.parent = parent
-              
 
     def addBasicGame(self, player, newgame, gamePort):
-              
+        
         playerLogin = player.getLogin()
         playerUuid = player.getId()
         playerState = player.getAction()
         session = player.getSession()
-        
         gameUuid = self.createUuid(playerUuid)
         
         if playerState == "PLAYING" :
@@ -57,7 +57,7 @@ class customMurderPartyGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
         
-        ngame = murderPartyGame(gameUuid, self)
+        ngame = kothGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

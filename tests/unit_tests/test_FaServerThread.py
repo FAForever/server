@@ -33,7 +33,7 @@ def connected_socket():
 @pytest.fixture
 def mock_lobby_server(db):
     users = playersOnline()
-    hyper_container = gameModes.hyperGamesContainerClass(users, db, [])
+    hyper_container = games.hyperGamesContainerClass(users, db, [])
     return FALobbyServer(users, hyper_container, db, [])
 
 

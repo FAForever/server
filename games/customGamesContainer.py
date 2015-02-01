@@ -17,31 +17,29 @@
 #-------------------------------------------------------------------------------
 
 from gamesContainer import  gamesContainerClass
-from xtremewarsGame import xtremewarsGame
 from PySide import QtSql
+import time
+import games.customGame
+reload(games.customGame)
+from games.customGame import customGame
 
-import gameModes.xtremewarsGame
-reload(gameModes.xtremewarsGame)
-from gameModes.xtremewarsGame import xtremewarsGame
 
-class customXtremewarsGamesContainerClass(gamesContainerClass):
-    '''Class for custom nomads games'''
+class customGamesContainerClass(gamesContainerClass):
+    '''Class for custom games'''
 
     def __init__(self, db, parent = None):
-        super(customXtremewarsGamesContainerClass, self).__init__("xtremewars", "Xtreme Wars", db, parent)
-
-        
-
-        self.betaPass = False
+        super(customGamesContainerClass, self).__init__("faf", "Forged Alliance Forever" , db, parent)
+      
+        self.version = 10
         self.parent = parent
 
     def addBasicGame(self, player, newgame, gamePort):
-        
         
         playerLogin = player.getLogin()
         playerUuid = player.getId()
         playerState = player.getAction()
         session = player.getSession()
+        
         gameUuid = self.createUuid(playerUuid)
         
         if playerState == "PLAYING" :
@@ -53,13 +51,13 @@ class customXtremewarsGamesContainerClass(gamesContainerClass):
         
         # check if the host is already hosting something.
         for game in self.games:
-            if game.getLobbyState == 'open' :
+            if game.getLobbyState == 'Lobby' :
                 if game.getHostName() == playerLogin :
                     return False
                 if game.getHostId() == session :
                     return False
-        
-        ngame = xtremewarsGame(gameUuid, self)
+    
+        ngame = customGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)
@@ -69,3 +67,54 @@ class customXtremewarsGamesContainerClass(gamesContainerClass):
         ngame.setTime()
         self.games.append(ngame)
         return ngame
+
+    def removeOldGames(self):
+        '''Remove old games (invalids and not started)'''
+        now = time.time()
+        for game in reversed(self.games):
+
+            diff = now - game.getTime()
+
+            if game.getLobbyState() == 'open' and game.getNumPlayer() == 0 :
+                
+                game.setLobbyState('closed')      
+                self.addDirtyGame(game.getuuid())        
+                self.removeGame(game)
+
+                continue
+
+            if game.getLobbyState() == 'open' :
+                host = game.getHostName()
+                player = self.parent.players.findByName(host)
+
+                if player == 0 : 
+                    game.setLobbyState('closed')
+                    self.addDirtyGame(game.getuuid())
+                    self.removeGame(game)
+
+                    continue
+                else :
+                    if player.getAction() != "HOST" :
+                        
+                        game.setLobbyState('closed')
+                        self.addDirtyGame(game.getuuid())
+                        self.removeGame(game)
+
+                        continue
+
+            
+            if game.getLobbyState() == 'Idle' and diff > 60 :
+
+                game.setLobbyState('closed')   
+                self.addDirtyGame(game.getuuid())               
+                self.removeGame(game)
+
+                continue
+
+            if game.getLobbyState() == 'playing' and diff > 60 * 60 * 8 : #if the game is playing for more than 8 hours
+
+                game.setLobbyState('closed')
+                self.addDirtyGame(game.getuuid())
+                self.removeGame(game)
+
+                continue

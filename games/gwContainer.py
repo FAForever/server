@@ -29,9 +29,9 @@ from PySide import QtCore
 
 from PySide.QtSql import *
 
-import gameModes.gwgame
-reload(gameModes.gwgame)
-from gameModes.gwgame import gwGame
+import games.gwgame
+reload(games.gwgame)
+from games.gwgame import gwGame
 
 FACTIONS = {0:"UEF", 1:"Aeon",2:"Cybran",3:"Seraphim"}
 

@@ -29,6 +29,23 @@ import logging
 
 from PySide.QtSql import QSqlQuery
 
+class GameState():
+    def __init__(self):
+        pass
+
+    INITIALIZING = 0
+    LOBBY = 1
+    LIVE = 2
+
+    @staticmethod
+    def from_gpgnet_state(value):
+        if value == 'Idle':
+            return GameState.INITIALIZING
+        if value == 'Lobby':
+            return GameState.LOBBY
+        if value == 'Launching':
+            return GameState.LIVE
+
 
 class Game(object):
     def __init__(self, uuid, parent=None, host=None, hostId=0, hostIp=None, hostLocalIp=None, hostPort=6112,
@@ -79,11 +96,31 @@ class Game(object):
         self.gameFaResult = {}
         self.playerFaction = {}
         self.playerColor = {}
+        self._playerOptions = {}
+        self.state = GameState.from_gpgnet_state(state)
 
         self.gameOptions = {'FogOfWar': 'explored', 'GameSpeed': 'normal', 'CheatsEnabled': 'false',
                             'PrebuiltUnits': 'Off', 'NoRushOption': 'Off', 'RestrictedCategories': 0}
 
         self.mods = []
+
+    def setPlayerOption(self, slot, key, value):
+        if key == 'Faction':
+            self.setPlayerFaction(slot, value)
+        elif key == 'Color':
+            self.setPlayerColor(slot, value)
+        else:
+            if slot not in self._playerOptions:
+                self._playerOptions[slot] = {}
+            self._playerOptions[slot][key] = value
+
+    def getPlayerOption(self, slot, key):
+        if key == 'Faction':
+            return self.getPlayerFaction(slot)
+        elif key == 'Color':
+            return self.getPlayerColor(slot)
+        else:
+            return self._playerOptions[slot][key]
 
     def getSimMods(self):
         return self.mods

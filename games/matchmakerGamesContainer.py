@@ -36,9 +36,9 @@ from PySide.QtSql import *
 
 import copy
 
-import gameModes.matchmakerGame
-reload(gameModes.matchmakerGame)
-from gameModes.matchmakerGame import matchmakerGame
+import games.matchmakerGame
+reload(games.matchmakerGame)
+from games.matchmakerGame import matchmakerGame
 
 import random
 

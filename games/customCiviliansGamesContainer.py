@@ -19,19 +19,21 @@
 from gamesContainer import  gamesContainerClass
 from PySide import QtSql
 
-import gameModes.kothGame
-reload(gameModes.kothGame)
-from gameModes.kothGame import kothGame
+import games.civiliansGame
+reload(games.civiliansGame)
+from games.civiliansGame import civiliansClass
 
-class customKothGamesContainerClass(gamesContainerClass):
-    '''Class for custom nomads games'''
+
+class customCiviliansGamesContainerClass(gamesContainerClass):
+    '''Class for custom Nuke for the win games'''
 
     def __init__(self, db, parent = None):
-        super(customKothGamesContainerClass, self).__init__("koth", "King of the Hill" ,db, parent)
+        super(customCiviliansGamesContainerClass, self).__init__("civilians", "Civilians Defense", db, parent)
 
         
 
         self.betaPass = False
+
         self.parent = parent
 
     def addBasicGame(self, player, newgame, gamePort):
@@ -40,6 +42,7 @@ class customKothGamesContainerClass(gamesContainerClass):
         playerUuid = player.getId()
         playerState = player.getAction()
         session = player.getSession()
+        
         gameUuid = self.createUuid(playerUuid)
         
         if playerState == "PLAYING" :
@@ -57,7 +60,7 @@ class customKothGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
         
-        ngame = kothGame(gameUuid, self)
+        ngame = civiliansClass(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

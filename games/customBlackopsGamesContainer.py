@@ -19,9 +19,9 @@
 from gamesContainer import  gamesContainerClass
 from PySide import QtSql
 
-import gameModes.blackopsGame
-reload(gameModes.blackopsGame)
-from gameModes.blackopsGame import blackopsGame
+import games.blackopsGame
+reload(games.blackopsGame)
+from games.blackopsGame import blackopsGame
 
 class customBlackopsGamesContainerClass(gamesContainerClass):
     '''Class for custom nomads games'''

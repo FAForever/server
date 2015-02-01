@@ -17,32 +17,36 @@
 #-------------------------------------------------------------------------------
 
 from gamesContainer import  gamesContainerClass
-from vanillaGame import vanillaClass
 from PySide import QtSql
 
-import gameModes.vanillaGame
-reload(gameModes.vanillaGame)
-from gameModes.vanillaGame import vanillaClass
+import games.supremeDestructionGame
+reload(games.supremeDestructionGame)
+from games.supremeDestructionGame import supremeDestructionGame
 
-class customVanillaGamesContainerClass(gamesContainerClass):
-    '''Class for custom Nuke for the win games'''
+class supremeDestructionGamesContainerClass(gamesContainerClass):
+    '''Class for custom supremeDestruction games'''
 
     def __init__(self, db, parent = None):
-        super(customVanillaGamesContainerClass, self).__init__("vanilla", "Vanilla", db, parent)
+        super(supremeDestructionGamesContainerClass, self).__init__("supremeDestruction", "Supreme Destruction", db, parent)
 
-        
-
-        self.betaPass = False
+        self.host = True
+        self.live = True
+        self.join = True
 
         self.parent = parent
-
+        
+        self.listable = True
+     
+        
+        self.betaPass = False
+        self.parent = parent
+    
     def addBasicGame(self, player, newgame, gamePort):
         
         playerLogin = player.getLogin()
         playerUuid = player.getId()
         playerState = player.getAction()
         session = player.getSession()
-        
         gameUuid = self.createUuid(playerUuid)
         
         if playerState == "PLAYING" :
@@ -60,7 +64,7 @@ class customVanillaGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
         
-        ngame = vanillaClass(gameUuid, self)
+        ngame = supremeDestructionGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

@@ -19,30 +19,35 @@
 from gamesContainer import  gamesContainerClass
 from PySide import QtSql
 
-import gameModes.civiliansGame
-reload(gameModes.civiliansGame)
-from gameModes.civiliansGame import civiliansClass
+import time
+import games.coopGame
+reload(games.coopGame)
+from games.coopGame import coopGame
 
-
-class customCiviliansGamesContainerClass(gamesContainerClass):
-    '''Class for custom Nuke for the win games'''
+class coopGamesContainerClass(gamesContainerClass):
+    '''Class for custom claustrophobia games'''
 
     def __init__(self, db, parent = None):
-        super(customCiviliansGamesContainerClass, self).__init__("civilians", "Civilians Defense", db, parent)
+        super(coopGamesContainerClass, self).__init__("coop", "coop", db, parent)
 
-        
-
-        self.betaPass = False
+        self.host = False
+        self.live = True
+        self.join = False
 
         self.parent = parent
-
+        
+        self.listable = False
+     
+        self.version = 3
+        self.betaPass = False
+        self.parent = parent
+    
     def addBasicGame(self, player, newgame, gamePort):
         
         playerLogin = player.getLogin()
         playerUuid = player.getId()
         playerState = player.getAction()
         session = player.getSession()
-        
         gameUuid = self.createUuid(playerUuid)
         
         if playerState == "PLAYING" :
@@ -60,7 +65,7 @@ class customCiviliansGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
         
-        ngame = civiliansClass(gameUuid, self)
+        ngame = coopGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

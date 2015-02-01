@@ -19,22 +19,22 @@
 from gamesContainer import  gamesContainerClass
 from PySide import QtSql
 
-import gameModes.nomadsGame
-reload(gameModes.nomadsGame)
-from gameModes.nomadsGame import nomadsGame
+import games.murderPartyGame
+reload(games.murderPartyGame)
+from games.murderPartyGame import murderPartyGame
 
-class customNomadsGamesContainerClass(gamesContainerClass):
-    '''Class for custom nomads games'''
+class customMurderPartyGamesContainerClass(gamesContainerClass):
+    '''Class for custom Murder Party games'''
 
     def __init__(self, db, parent = None):
-        super(customNomadsGamesContainerClass, self).__init__("nomads", "The Nomads", db, parent)
+        super(customMurderPartyGamesContainerClass, self).__init__("murderparty", "Murder Party", db, parent)
         
 
-        self.betaPass = True  
         self.parent = parent
+              
 
     def addBasicGame(self, player, newgame, gamePort):
-        
+              
         playerLogin = player.getLogin()
         playerUuid = player.getId()
         playerState = player.getAction()
@@ -57,7 +57,7 @@ class customNomadsGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
         
-        ngame = nomadsGame(gameUuid, self)
+        ngame = murderPartyGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

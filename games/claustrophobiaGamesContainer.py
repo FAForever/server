@@ -19,31 +19,35 @@
 from gamesContainer import  gamesContainerClass
 from PySide import QtSql
 
-import gameModes.diamondGame
-reload(gameModes.diamondGame)
-from gameModes.diamondGame import diamondGame
 
-class customDiamondGamesContainerClass(gamesContainerClass):
-    '''Class for custom nomads games'''
+import games.claustrophobiaGame
+reload(games.claustrophobiaGame)
+from games.claustrophobiaGame import claustrophobiaGame
+
+class claustrophobiaGamesContainerClass(gamesContainerClass):
+    '''Class for custom claustrophobia games'''
 
     def __init__(self, db, parent = None):
-        super(customDiamondGamesContainerClass, self).__init__("diamond", "Diamond", db, parent)
+        super(claustrophobiaGamesContainerClass, self).__init__("claustrophobia", "Claustrophobia", db, parent)
 
-        
-
-        self.betaPass = False
-        self.betaName = "diamond"
+        self.host = True
+        self.live = True
+        self.join = True
 
         self.parent = parent
-              
-
+        
+        self.listable = True
+     
+        
+        self.betaPass = False
+        self.parent = parent
+    
     def addBasicGame(self, player, newgame, gamePort):
         
         playerLogin = player.getLogin()
         playerUuid = player.getId()
         playerState = player.getAction()
         session = player.getSession()
-        
         gameUuid = self.createUuid(playerUuid)
         
         if playerState == "PLAYING" :
@@ -61,7 +65,7 @@ class customDiamondGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
         
-        ngame = diamondGame(gameUuid, self)
+        ngame = claustrophobiaGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

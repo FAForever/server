@@ -19,35 +19,27 @@
 from gamesContainer import  gamesContainerClass
 from PySide import QtSql
 
-import time
-import gameModes.coopGame
-reload(gameModes.coopGame)
-from gameModes.coopGame import coopGame
+import games.phantomXGame
+reload(games.phantomXGame)
+from games.phantomXGame import phantomXGame
 
-class coopGamesContainerClass(gamesContainerClass):
-    '''Class for custom claustrophobia games'''
+class customPhantomXGamesContainerClass(gamesContainerClass):
+    '''Class for custom nomads games'''
 
     def __init__(self, db, parent = None):
-        super(coopGamesContainerClass, self).__init__("coop", "coop", db, parent)
+        super(customPhantomXGamesContainerClass, self).__init__("phantomx", "phantom-X", db, parent)
 
-        self.host = False
-        self.live = True
-        self.join = False
-
-        self.parent = parent
         
-        self.listable = False
-     
-        self.version = 3
-        self.betaPass = False
+
         self.parent = parent
-    
+
     def addBasicGame(self, player, newgame, gamePort):
         
         playerLogin = player.getLogin()
         playerUuid = player.getId()
         playerState = player.getAction()
         session = player.getSession()
+        
         gameUuid = self.createUuid(playerUuid)
         
         if playerState == "PLAYING" :
@@ -65,7 +57,7 @@ class coopGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
         
-        ngame = coopGame(gameUuid, self)
+        ngame = phantomXGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

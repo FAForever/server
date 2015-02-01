@@ -17,29 +17,31 @@
 #-------------------------------------------------------------------------------
 
 from gamesContainer import  gamesContainerClass
+from xtremewarsGame import xtremewarsGame
 from PySide import QtSql
 
-import gameModes.phantomXGame
-reload(gameModes.phantomXGame)
-from gameModes.phantomXGame import phantomXGame
+import games.xtremewarsGame
+reload(games.xtremewarsGame)
+from games.xtremewarsGame import xtremewarsGame
 
-class customPhantomXGamesContainerClass(gamesContainerClass):
+class customXtremewarsGamesContainerClass(gamesContainerClass):
     '''Class for custom nomads games'''
 
     def __init__(self, db, parent = None):
-        super(customPhantomXGamesContainerClass, self).__init__("phantomx", "phantom-X", db, parent)
+        super(customXtremewarsGamesContainerClass, self).__init__("xtremewars", "Xtreme Wars", db, parent)
 
         
 
+        self.betaPass = False
         self.parent = parent
 
     def addBasicGame(self, player, newgame, gamePort):
+        
         
         playerLogin = player.getLogin()
         playerUuid = player.getId()
         playerState = player.getAction()
         session = player.getSession()
-        
         gameUuid = self.createUuid(playerUuid)
         
         if playerState == "PLAYING" :
@@ -57,7 +59,7 @@ class customPhantomXGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
         
-        ngame = phantomXGame(gameUuid, self)
+        ngame = xtremewarsGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

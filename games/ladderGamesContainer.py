@@ -29,9 +29,9 @@ from PySide.QtSql import QSqlQuery
 from PySide import QtCore
 
 
-import gameModes.ladderGame
-reload(gameModes.ladderGame)
-from gameModes.ladderGame import ladder1V1Game
+import games.ladderGame
+reload(games.ladderGame)
+from games.ladderGame import ladder1V1Game
 
 
 

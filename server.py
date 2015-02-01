@@ -44,7 +44,7 @@ from FaGamesServer import *
 from gwLobby import *
 from players import *
 
-import gameModes
+import games
 
 import signal 
 
@@ -91,7 +91,7 @@ class start(QObject):
         self.udpSocket.bind(30351)
         self.udpSocket.readyRead.connect(self.processPendingDatagrams)
         self.dirtyGameList = []
-        self.games = gameModes.hyperGamesContainerClass(self.listUsers, self.db, self.dirtyGameList)
+        self.games = games.hyperGamesContainerClass(self.listUsers, self.db, self.dirtyGameList)
         
         self.FALobby =  FALobbyServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)
         self.GWLobby =  GWLobbyServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)

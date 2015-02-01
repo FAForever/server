@@ -53,14 +53,12 @@ def timed(f):
     return wrapper
 
 
-class FAGameThread(QObject):
+class GameConnection(QObject):
     """
-    FA game server thread spawned upon every incoming connection to
-    prevent collisions.
+    Responsible for the games protocol.
     """
-
     def __init__(self, socket, parent=None):
-        super(FAGameThread, self).__init__(parent)
+        super(GameConnection, self).__init__(parent)
         self.log = logging.getLogger(__name__)
 
         self.log.debug("Incoming game socket started")

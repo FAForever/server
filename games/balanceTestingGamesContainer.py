@@ -19,31 +19,35 @@
 from gamesContainer import  gamesContainerClass
 from PySide import QtSql
 
-import gameModes.labwarsGame
-reload(gameModes.labwarsGame)
-from gameModes.labwarsGame import labwarsGame
 
-class customLabwarsGamesContainerClass(gamesContainerClass):
+import games.balanceTestingGame
+reload(games.balanceTestingGame)
+from games.balanceTestingGame import balanceTestingGame
+
+class balanceTestingGamesContainerClass(gamesContainerClass):
     '''Class for custom nomads games'''
 
     def __init__(self, db, parent = None):
-        super(customLabwarsGamesContainerClass, self).__init__("labwars", "LABwars", db, parent)
+        super(balanceTestingGamesContainerClass, self).__init__("balancetesting", "Balance Testing", db, parent)
 
-        
-
-        self.betaPass = False
-        self.betaName = "labwars"
+        self.host = True
+        self.live = True
+        self.join = True
 
         self.parent = parent
-              
-
+        
+        self.listable = True
+     
+        
+        self.betaPass = False
+        self.parent = parent
+    
     def addBasicGame(self, player, newgame, gamePort):
         
         playerLogin = player.getLogin()
         playerUuid = player.getId()
         playerState = player.getAction()
         session = player.getSession()
-        
         gameUuid = self.createUuid(playerUuid)
         
         if playerState == "PLAYING" :
@@ -61,7 +65,7 @@ class customLabwarsGamesContainerClass(gamesContainerClass):
                 if game.getHostId() == session :
                     return False
         
-        ngame = labwarsGame(gameUuid, self)
+        ngame = balanceTestingGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)

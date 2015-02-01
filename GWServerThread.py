@@ -39,9 +39,9 @@ import time
 logger = logging.getLogger(__name__)
 
 try :
-    import gameModes.gwContainer
-    reload(gameModes.gwContainer)   
-    from gameModes.gwContainer import gwGamesContainerClass
+    import games.gwContainer
+    reload(games.gwContainer)
+    from games.gwContainer import gwGamesContainerClass
 except :
     self.log.exception("Something awful happened trying to put that thing!")
 
