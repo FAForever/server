@@ -3,3 +3,4 @@ passwords.py
 *.swp
 .idea/
 logs/
+.coverage

@@ -2,7 +2,7 @@ import pytest
 import mock
 import pytestqt
 
-from PySide.QtNetwork import QTcpSocket
+from PySide import QtNetwork
 
 from GameConnection import GameConnection
 from games import Game
@@ -12,7 +12,7 @@ logging.getLogger("GameConnection").setLevel(logging.DEBUG)
 
 @pytest.fixture()
 def game_socket():
-    return QTcpSocket()
+    return mock.Mock(spec=QtNetwork.QTcpSocket)
 
 @pytest.fixture()
 def host_game_connection(game_socket):
