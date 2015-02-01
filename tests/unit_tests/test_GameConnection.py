@@ -21,11 +21,6 @@ def host_game_connection(game_socket):
     conn.player.getAction = mock.Mock(return_value="HOST")
     return conn
 
-
-def test_connect(qtbot, game_socket, host_game_connection):
-    assert not host_game_connection.initDone
-
-
 def test_handleAction_PlayerOption(host_game_connection):
     game = mock.Mock(spec=Game(1))
     host_game_connection.game = game
