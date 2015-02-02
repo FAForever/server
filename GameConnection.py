@@ -414,6 +414,8 @@ class GameConnection(QObject):
         Handle GpgNetSend messages, wrapped in the JSON protocol
         :param key: command type
         :param values: command parameters
+        :type key str
+        :type values list
         :return: None
         """
         try:

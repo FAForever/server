@@ -2,8 +2,6 @@ import pytest
 import mock
 
 from PySide.QtNetwork import QTcpSocket
-from PySide.QtCore import QObject
-
 
 from GameConnection import GameConnection
 from games import Game
@@ -60,34 +58,64 @@ def game_connection(game, player_service, players, games):
 
 
 def test_accepts_valid_socket(game_connection, connected_game_socket):
+    """
+    :type game_connection: GameConnection
+    :type connected_game_socket QTcpSocket
+    """
     assert game_connection.accept(connected_game_socket) is True
 
+
 def test_handle_action_ConnectedToHost(game, game_connection, players):
+    """
+    :type game Game
+    :type game_connection GameConnection
+    """
     game_connection.player = players.joining
     game_connection.handle_action('ConnectedToHost', [])
     game.add_connection.assert_called_once_with(players.joining, players.hosting)
 
+
 def test_handle_action_Connected(game, game_connection, players):
+    """
+    :type game Game
+    :type game_connection GameConnection
+    """
     game_connection.player = players.joining
     game_connection.handle_action('Connected', [players.peer])
     game.add_connection.assert_called_once_with(players.joining, players.peer)
 
+
 def test_handle_action_Connected_no_raise(game_connection, players):
+    """
+    :type game_connection GameConnection
+    """
     game_connection.player = players.joining
     game_connection.handle_action('Connected', [])
     # Shouldn't raise an exception
 
+
 def test_handle_action_Connected_no_raise2(game_connection, players):
+    """
+    :type game_connection GameConnection
+    """
     game_connection.player = players.joining
     game_connection.handle_action('Connected', ['garbage', 'garbage2'])
     # Shouldn't raise an exception
 
+
 def test_handle_action_PlayerOption(game, game_connection):
+    """
+    :type game Game
+    :type game_connection GameConnection
+    """
     game_connection.handle_action('PlayerOption', [1, 'Color', 2])
     game.setPlayerOption.assert_called_once_with(1, 'Color', 2)
 
 
-def test_handle_action_malformed_PlayerOption_no_raise(game_connection):
+def test_handle_action_PlayerOption_malformed_no_raise(game_connection):
+    """
+    :type game_connection GameConnection
+    """
     game_connection.handle_action('PlayerOption', [1, 'Sheeo', 'Color', 2])
     # Shouldn't raise an exception
 

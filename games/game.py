@@ -113,6 +113,8 @@ class Game(object):
         :param player1:
         :param player2:
         :param proxy: Whether or not the players were proxied
+        :type player1 player
+        :type player2 player
         :return: None
         """
         pass
