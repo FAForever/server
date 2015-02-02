@@ -152,10 +152,9 @@ class GameConnection(QObject):
 
         if self.player is None:
             self.socket.abort()
-            print "Player not found for IP: %s " % ip
+            logger.info("Player not found for IP: %s " % ip)
             return False
 
-        print self.player.getGamePort()
         self.player.gameThread = self
         # reset the udpPacket from server state
 
@@ -1666,10 +1665,10 @@ class GameConnection(QObject):
 
     def displayError(self, socketError):
         if socketError == QtNetwork.QAbstractSocket.RemoteHostClosedError:
-            self.log.warning("RemoteHostClosedError")
+            self.log.debug("RemoteHostClosedError")
         elif socketError == QtNetwork.QAbstractSocket.HostNotFoundError:
-            self.log.warning("HostNotFoundError")
+            self.log.debug("HostNotFoundError")
         elif socketError == QtNetwork.QAbstractSocket.ConnectionRefusedError:
-            self.log.warning("ConnectionRefusedError")
+            self.log.debug("ConnectionRefusedError")
         else:
-            self.log.warning("The following error occurred: %s." % self.socket.errorString())
+            self.log.debug("The following error occurred: %s." % self.socket.errorString())
