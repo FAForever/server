@@ -27,12 +27,18 @@ def transport():
 @pytest.fixture
 def game(players):
     game = mock.MagicMock(spec=Game(1))
+    players.hosting.getGame = mock.Mock(return_value=game)
+    players.joining.getGame = mock.Mock(return_value=game)
+    players.peer.getGame = mock.Mock(return_value=game)
     game.hostPlayer = players.hosting
+    game.getInitMode = lambda: 0
+    game.packetReceived = []
     game.getGameName = lambda: "Some game name"
+    game.getuuid = lambda: 1
     return game
 
 def player(login, id, port, action):
-    p = mock.Mock(spec=Player)
+    p = mock.MagicMock(spec=Player)
     p.getGamePort.return_value = port
     p.getAction = mock.Mock(return_value=action)
     p.getLogin = mock.Mock(return_value=login)
@@ -54,15 +60,22 @@ def player_service(players):
     return p
 
 @pytest.fixture
-def games():
-    return mock.Mock()
+def games(game):
+    return mock.Mock(
+        getGameByUuid=mock.Mock(return_value=game)
+    )
 
 @pytest.fixture
-def game_connection(game, player_service, players, games, transport):
+def game_connection(game, player_service, players, games, transport, monkeypatch, connected_game_socket):
+    monkeypatch.setattr('GameConnection.config',
+                        mock.MagicMock(return_value={'global':
+                                                         mock.MagicMock(return_value={'lobby_ip': '192.168.0.1'})}))
     conn = GameConnection(users=player_service, games=games)
+    conn.socket = connected_game_socket
     conn.transport = transport
     conn.player = players.hosting
     conn.game = game
+    game_connection.lobby = mock.Mock(spec=FAServerThread)
     return conn
 
 def test_accepts_valid_socket(game_connection, connected_game_socket):
@@ -72,22 +85,19 @@ def test_accepts_valid_socket(game_connection, connected_game_socket):
     """
     assert game_connection.accept(connected_game_socket) is True
 
-def test_handle_action_GameState_idle(game_connection, players, games, connected_game_socket, transport, monkeypatch):
+
+def test_handle_action_GameState_idle_sends_CreateLobby(game_connection, players, games, transport):
     """
     :type game_connection: GameConnection
     :type transport Transport
     """
-    monkeypatch.setattr('GameConnection.config',
-                        mock.MagicMock(return_value={'global':
-                          mock.MagicMock(return_value={'lobby_ip': '192.168.0.1'})}))
-    game_connection.socket = connected_game_socket
     game_connection.player = players.joining
-    game_connection.lobby = mock.Mock(spec=FAServerThread)
     game_connection.handle_action('GameState', ['Idle'])
     games.getGameByUuid.assert_called_once_with(players.joining.getGame())
-    print repr(transport.send_message.mock_calls)
     transport.send_message.assert_any_call({'key': 'CreateLobby',
-                                            'commands': [0, players.joining.getGamePort(), players.joining.getLogin(), 2, 1]})
+                                            'commands': [0, players.joining.getGamePort(),
+                                                         players.joining.getLogin(), 2, 1]})
+
 
 def test_handle_action_ConnectedToHost(game, game_connection, players):
     """

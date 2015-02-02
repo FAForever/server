@@ -324,63 +324,52 @@ class GameConnection(QObject):
                 self.ponged = False
                 self.missedPing = 0
 
-    def idleState(self):
-        ''' game is waiting for init
-         we find in what game the player is
-         if he is hosting, the lobby will be in "idle" state, and we add his IP '''
-
+    def _handle_idle_state(self):
+        """
+        This message is sent by FA when it doesn't know what to do.
+        :return: None
+        """
+        assert self.game == self.player.getGame()
         action = self.player.getAction()
+        self.game = self.games.getGameByUuid(self.player.getGame())
+
         if action == "HOST":
-            self.game = self.games.getGameByUuid(self.player.getGame())
-            if self.game is not None and str(self.game.getuuid()) == str(self.player.getGame()):
-                self.game.setLobbyState("Idle")
-                self.game.setHostIP(self.player.getIp())
-                self.game.setHostLocalIP(self.player.getLocalIp())
-                self.game.proxy = proxy.proxy()
-                strlog = (
-                    "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.getuuid()), str(self.game.getGamemod())))
-                self.logGame = strlog
-                initmode = self.game.getInitMode()
-                self.initSupcom(initmode)
-            else:
-                # No game found. I don't know why we got a connection, but we don't want it.
-                self.socket.abort()
-                self.log.debug("HOST - Can't find game")
-                if self.player:
-                    if self.player.getLobbyThread():
-                        self.player.getLobbyThread().sendJSON(dict(command="notice", style="kill"))
+            self.game.state = GameState.INITIALIZING
+            self.game.setLobbyState("Idle")
+            self.game.setHostIP(self.player.getIp())
+            self.game.setHostLocalIP(self.player.getLocalIp())
+            self.game.proxy = proxy.proxy()
+            strlog = (
+                "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.getuuid()), str(self.game.getGamemod())))
+            self.logGame = strlog
+            initmode = self.game.getInitMode()
+            self.initSupcom(initmode)
 
         elif action == "JOIN":
-            self.game = self.games.getGameByUuid(self.player.getGame())
+            if self.player.getLogin() in self.game.packetReceived:
+                self.packetReceived[self.player.getLogin()] = []
 
-            if self.game is not None and str(self.game.getuuid()) == str(self.player.getGame()):
-                if self.player.getLogin() in self.game.packetReceived:
-                    self.packetReceived[self.player.getLogin()] = []
+            for otherPlayer in self.game.getPlayers():
+                if self.player.getAddress() in otherPlayer.UDPPacket:
+                    otherPlayer.UDPPacket[self.player.getAddress()] = 0
+            strlog = (
+                "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.getuuid()), str(self.game.getGamemod())))
+            self.logGame = strlog
 
-                for otherPlayer in self.game.getPlayers():
-                    if self.player.getAddress() in otherPlayer.UDPPacket:
-                        otherPlayer.UDPPacket[self.player.getAddress()] = 0
-                strlog = (
-                    "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.getuuid()), str(self.game.getGamemod())))
-                self.logGame = strlog
-
-                initmode = 0
-                initmode = self.game.getInitMode()
-
-                self.initSupcom(initmode)
-            else:
-                # game not found, so still initialize FA to avoid "black screen" errors reports in the forum.
-                self.initSupcom(0)
-                if self.noSocket is False:
-                    self.socket.abort()
-                    self.log.debug("JOIN - Can't find game")
-                    # But we tell the lobby that FA must be killed.
-                    self.lobby.sendJSON(dict(command="notice", style="kill"))
+            initmode = self.game.getInitMode()
+            self.initSupcom(initmode)
 
         else:
             # We tell the lobby that FA must be killed.
             self.lobby.sendJSON(dict(command="notice", style="kill"))
             self.log.debug("QUIT - No player action :(")
+
+    def abort(self):
+        try:
+            self.socket.abort()
+            self.player.getLobbyThread().sendJSON(dict(command="notice", style="kill"))
+        except:
+            pass
 
     def lobbyState(self):
         """
@@ -725,7 +714,7 @@ class GameConnection(QObject):
         """
         if state == 'Idle':
             # FA has just connected to us
-            self.idleState()
+            self._handle_idle_state()
 
         elif state == 'Lobby':
             # waiting for command
