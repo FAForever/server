@@ -59,9 +59,12 @@ class GameConnection(QObject):
     """
     Responsible for the games protocol.
     """
-    def __init__(self, users, parent=None):
+    def __init__(self, users, games, parent=None):
         super(GameConnection, self).__init__(parent)
+
         self.users = users
+        self.games = games
+
         self.log = logging.getLogger(__name__)
         self.log.debug("Incoming game socket started")
         self.initTime = time.time()
@@ -404,10 +407,10 @@ class GameConnection(QObject):
         This function was created when the FA protocol was moved to the lobby itself
         """
         message = json.loads(action)
-        self.handleAction(message["action"], message["chuncks"])
+        self.handle_action(message["action"], message["chuncks"])
 
 
-    def handleAction(self, key, values):
+    def handle_action(self, key, values):
         """
         Handle GpgNetSend messages, wrapped in the JSON protocol
         :param key: command type
@@ -426,11 +429,10 @@ class GameConnection(QObject):
                 return
 
             elif key == 'Connected':
-                uid = int(values[0])
-                self.handleConnected(uid)
+                self.game.add_connection(self.player, values[0])
 
-            elif key == 'connectedToHost':
-                # player is connect to the host!
+            elif key == 'ConnectedToHost':
+                self.game.add_connection(self.player, self.game.hostPlayer)
                 self.player.connectedToHost = True
 
             elif key == 'Score':
@@ -499,21 +501,7 @@ class GameConnection(QObject):
                     action = values[1]
                     option = values[2]
                     self.game.setPlayerOption(slot, action, option)
-                    for i, value in enumerate(values):
-                        atype, name, place, resultvalue = self.parsePlayerOption(value)
-                        if not ":" in name:
-                            self.game.placePlayer(name, place)
-                        if atype == "faction":
-                            self.game.setPlayerFaction(place, resultvalue)
-                        elif atype == "color":
-                            self.game.setPlayerColor(place, resultvalue)
-                        elif atype == "team":
-                            team = resultvalue - 1
-                            if ":" in name:
-                                self.addAi(name, place, team)
-                            else:
-                                self.game.assignPlayerToTeam(name, team)
-                        self.sendGameInfo()
+                    self.sendGameInfo()
 
             elif key == 'GameResult':
                 ''' Preparing the data for recording the game result'''
@@ -1340,7 +1328,7 @@ class GameConnection(QObject):
 
     def sendGameInfo(self, skipDuration=False):
         try:
-            self.parent.addDirtyGame(self.game.getuuid())
+            self.games.mark_dirty(self.game.getuuid())
         except:
             self.log.exception("Something awful happened in a sendinfo thread !")
 

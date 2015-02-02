@@ -106,6 +106,17 @@ class Game(object):
 
         self.mods = []
 
+    def add_connection(self, player1, player2, proxy=False):
+        """
+        Mark the two players as connected for this game,
+        optionally denote that they were proxied
+        :param player1:
+        :param player2:
+        :param proxy: Whether or not the players were proxied
+        :return: None
+        """
+        pass
+
     def setPlayerOption(self, slot, key, value):
         if key == 'Faction':
             self.setPlayerFaction(slot, value)
