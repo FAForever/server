@@ -18,7 +18,7 @@
 
 
 class Player(object):
-    def __init__(self, parent = None):
+    def __init__(self):
         
         self.uuid = 0
         self.session = 0
