@@ -60,12 +60,13 @@ class GameConnection(QObject):
     """
     Responsible for the games protocol.
     """
-    def __init__(self, users, games, parent=None):
+    def __init__(self, users, games, db, parent=None):
         super(GameConnection, self).__init__(parent)
 
         self.users = users
         self.games = games
 
+        self.db = db
         self.log = logging.getLogger(__name__)
         self.log.debug("Incoming game socket started")
         self.initTime = time.time()

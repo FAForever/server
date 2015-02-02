@@ -40,7 +40,7 @@ class FAServer(QTcpServer):
 
         socket = QTcpSocket()
         if socket.setSocketDescriptor(socket_id):
-            connection = GameConnection(self.listUsers, self)
+            connection = GameConnection(self.listUsers, self.games, self.db, self)
             connection.accept(socket)
             self.recorders.append(connection)
 
