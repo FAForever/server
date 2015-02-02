@@ -17,7 +17,7 @@
 #-------------------------------------------------------------------------------
 
 
-class player(object):
+class Player(object):
     def __init__(self, parent = None):
         
         self.uuid = 0

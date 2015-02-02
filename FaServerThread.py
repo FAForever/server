@@ -139,7 +139,7 @@ class FAServerThread(QObject):
 
             self.addGameModes()
 
-            self.player = player()
+            self.player = Player()
 
             self.initPing = True
             self.ponged = False

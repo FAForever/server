@@ -5,7 +5,7 @@ from PySide.QtNetwork import QTcpSocket
 
 from GameConnection import GameConnection
 from games import Game
-from players import playersOnline, player as Player
+from players import playersOnline, Player
 
 import logging
 logging.getLogger("GameConnection").addHandler(logging.StreamHandler())
