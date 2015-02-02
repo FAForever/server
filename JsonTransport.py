@@ -45,6 +45,7 @@ class QDataStreamJsonTransport(Transport):
     def __init__(self, socket):
         super(QDataStreamJsonTransport, self).__init__(socket)
         self.socket = socket
+        self.noSocket = False
         socket.readyRead.connect(self._on_ready_read)
 
     def _on_ready_read(self):
@@ -54,29 +55,16 @@ class QDataStreamJsonTransport(Transport):
             ins = QtCore.QDataStream(self.socket)
             ins.setVersion(QtCore.QDataStream.Qt_4_2)
             while not ins.atEnd():
-                if self.noSocket == False and self.socket.isValid():
-                    if self.blockSize == 0:
-                        if self.noSocket == False and self.socket.isValid():
-                            if self.socket.bytesAvailable() < 4:
-                                return
-                            self.blockSize = ins.readUInt32()
-                        else:
-                            return
-
-                    if self.noSocket == False and self.socket.isValid():
-                        if self.socket.bytesAvailable() < self.blockSize:
-                            return
-
-                    else:
+                    if self.socket.bytesAvailable() < 4:
                         return
+                    block_size = ins.readUInt32()
+
+                    if self.socket.bytesAvailable() < block_size:
+                        return
+
                     message = ins.readQString()
 
                     self._on_message(message)
-
-                    self.blockSize = 0
-
-                else:
-                    return
             return
 
     def _send(self, message):

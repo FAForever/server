@@ -3,7 +3,6 @@ from PySide import QtSql
 from flexmock import flexmock
 import mock
 
-
 @pytest.fixture()
 def sqlquery():
     return flexmock(
