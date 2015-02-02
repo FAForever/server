@@ -64,7 +64,6 @@ class customGamesContainerClass(gamesContainerClass):
         ngame.setGameHostPort(gamePort)
         ngame.setGameHostLocalPort(gamePort)
         ngame.setGameName(newgame)
-        ngame.setTime()
         self.games.append(ngame)
         return ngame
 
@@ -73,7 +72,7 @@ class customGamesContainerClass(gamesContainerClass):
         now = time.time()
         for game in reversed(self.games):
 
-            diff = now - game.getTime()
+            diff = now - game.created_at
 
             if game.getLobbyState() == 'open' and game.getNumPlayer() == 0 :
                 

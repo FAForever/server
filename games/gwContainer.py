@@ -253,7 +253,7 @@ class gwGamesContainerClass(gamesContainerClass):
         now = time.time()
         for game in reversed(self.games):
 
-            diff = now - game.getTime()
+            diff = now - game.created_at
 
             if game.getLobbyState() == 'open' and game.getNumPlayer() == 0 :
                 

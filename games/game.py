@@ -50,8 +50,28 @@ class GameState():
 
 
 class Game(object):
+    """
+    Object that lasts for the lifetime of a game on FAF.
+    """
     def __init__(self, uuid, parent=None, host=None, hostId=0, hostIp=None, hostLocalIp=None, hostPort=6112,
-                 hostlocalport=6112, state='Idle', gameName='None', map='SCMP_007', mode=0, minPlayer=1):
+                 hostLocalPort=6112, state='Idle', gameName='None', map='SCMP_007', mode=0, minPlayer=1):
+        """
+        Initializes a new game
+        :type uuid int
+        :type host: None
+        :type hostId: int
+        :type hostIp: str
+        :type hostLocalIp: str
+        :type hostPort: int
+        :type hostLocalPort: int
+        :type state: str
+        :type gameName: str
+        :type map: str
+        :type mode: int
+        :type minPlayer: int
+        :return: Game
+        """
+        self.createDate = time.time()
         self.receiveUdpHost = False
         self.log = logging.getLogger(__name__)
         self.uuid = uuid
@@ -68,14 +88,13 @@ class Game(object):
         self.hostip = hostIp
         self.hostlocalip = hostLocalIp
         self.hostport = hostPort
-        self.hostlocalport = hostlocalport
+        self.hostlocalport = hostLocalPort
         self.gameName = gameName
         self.mapName = map
         self.password = None
         self.numberPlayers = 0
         self.players = []
         self.size = 0
-        self.createDate = self.setTime()
         self.options = []
         self.modsVersion = {}
         self.gameType = 0
@@ -788,11 +807,11 @@ class Game(object):
                 return 1
         return 0
 
-    def setTime(self):
-        t = time.time()
-        self.createDate = t
-
-    def getTime(self):
+    @property
+    def created_at(self):
+        """
+        :rtype : time
+        """
         return self.createDate
 
     def isConnectRequired(self, player):

@@ -109,7 +109,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
         jsonToSend["host"] = game.getHostName()
         jsonToSend["num_players"] = game.getNumPlayer()
         jsonToSend["game_type"] = game.getGameType()
-        jsonToSend["game_time"] = game.getTime()
+        jsonToSend["game_time"] = game.created_at
         jsonToSend["options"] = game.getOptions()
         jsonToSend["max_players"] = game.getMaxPlayers()
 

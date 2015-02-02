@@ -193,8 +193,7 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         ngame.setGameHostPort(player1.getGamePort())
         ngame.setGameHostLocalPort(player1.getGamePort())
         ngame.setGameName(gameName)
-        ngame.setTime()
-        
+
         #place the players
         ngame.placePlayer(player1.getLogin(), 1)
         ngame.placePlayer(player2.getLogin(), 2)
@@ -295,7 +294,7 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         now = time.time()
         for game in reversed(self.games):
 
-            diff = now - game.getTime()
+            diff = now - game.created_at
 
             if game.getLobbyState() == 'open' and game.getNumPlayer() == 0 :
                 
