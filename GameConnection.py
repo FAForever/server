@@ -330,9 +330,10 @@ class GameConnection(QObject):
         This message is sent by FA when it doesn't know what to do.
         :return: None
         """
+        self.game = self.games.getGameByUuid(self.player.getGame())
+        assert self.game
         assert self.game == self.player.getGame()
         action = self.player.getAction()
-        self.game = self.games.getGameByUuid(self.player.getGame())
 
         if action == "HOST":
             self.game.state = GameState.INITIALIZING
@@ -372,7 +373,7 @@ class GameConnection(QObject):
         except:
             pass
 
-    def lobbyState(self):
+    def _handle_lobby_state(self):
         """
         Player is in lobby state. We need to tell him to connect to the host,
         or create the lobby itself if he is the host.
@@ -383,11 +384,10 @@ class GameConnection(QObject):
             self.createLobby(str(map))
         # if the player is joining, we connect him to host.
         elif playeraction == "JOIN":
-            plist = []
-            for player in self.game.getPlayers():
-                plist.append(player.getLogin())
-
-            self.game.addToConnect(self.player)
+            self.sendToRelay("JoinGame", [str(self.game.getHostIp()),
+                                          str(self.game.getHostName()),
+                                          int(self.game.getHostId())])
+            self.game.add_peer(self.player, self)
             self.canConnectToHost = True
 
     def handleAction2(self, action):
@@ -430,9 +430,11 @@ class GameConnection(QObject):
                 pass
 
             elif key == 'Bottleneck':
+                # TODO: Use this for p2p reconnect
                 pass
 
             elif key == 'BottleneckCleared':
+                # TODO: Use this for p2p reconnect
                 pass
 
             elif key == 'Desync':
@@ -467,7 +469,6 @@ class GameConnection(QObject):
                     self.game.setGameType(values[1])
 
             elif key == 'GameMods':
-                # find infos about mods...
                 if values[0] == "activated":
                     if values[1] == 0:
                         self.game.mods = {}
@@ -495,7 +496,6 @@ class GameConnection(QObject):
                     self.sendGameInfo()
 
             elif key == 'GameResult':
-                ''' Preparing the data for recording the game result'''
                 playerResult = self.game.getPlayerAtPosition(int(values[0]))
                 if playerResult is not None:
                     result = values[1]
@@ -519,17 +519,14 @@ class GameConnection(QObject):
                             self.registerTime(playerResult)
 
             elif key == 'Stats':
-                # stats never worked that well...
+                # TODO: Log these
                 pass
 
             elif key == 'Chat':
-                # We should log that....
+                # TODO: Send this to IRC for the game?
                 pass
 
             elif key == 'OperationComplete':
-                # This is for coop!
-                self.log.debug(self.logGame + "OperationComplete: " + str(values))
-                self.log.debug(self.logGame + "OperationComplete: " + str(values[1]))
                 if self.game.isValid():
                     mission = -1
                     if int(values[0]) == 1:
@@ -719,7 +716,7 @@ class GameConnection(QObject):
 
         elif state == 'Lobby':
             # waiting for command
-            self.lobbyState()
+            self._handle_lobby_state()
 
         elif state == 'Launching':
             # game launch, the user is playing !
@@ -947,7 +944,7 @@ class GameConnection(QObject):
                         except:
                             addressToConnect = gameAddress
 
-                    self.sendToRelay("JoinGame", [str(addressToConnect), str(hostname), int(hostId)])
+
                     self.player.UDPPacket[str(gameAddress)] = 0
 
                     connectToHostSent = True

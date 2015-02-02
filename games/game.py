@@ -125,6 +125,15 @@ class Game(object):
 
         self.mods = []
 
+    def add_peer(self, player, game_connection):
+        """
+        Add a player with his associated connection to this game
+        :param player:
+        :param game_connection:
+        :return:
+        """
+        pass
+
     def add_connection(self, player1, player2, proxy=False):
         """
         Mark the two players as connected for this game,

@@ -70,7 +70,7 @@ def game_connection(game, player_service, players, games, transport, monkeypatch
     monkeypatch.setattr('GameConnection.config',
                         mock.MagicMock(return_value={'global':
                                                          mock.MagicMock(return_value={'lobby_ip': '192.168.0.1'})}))
-    conn = GameConnection(users=player_service, games=games)
+    conn = GameConnection(users=player_service, games=games, db=None, parent=None)
     conn.socket = connected_game_socket
     conn.transport = transport
     conn.player = players.hosting
@@ -97,6 +97,29 @@ def test_handle_action_GameState_idle_sends_CreateLobby(game_connection, players
     transport.send_message.assert_any_call({'key': 'CreateLobby',
                                             'commands': [0, players.joining.getGamePort(),
                                                          players.joining.getLogin(), 2, 1]})
+
+def test_handle_action_GameState_lobby_sends_HostGame(game_connection, players, game, transport):
+    """
+    :type game_connection: GameConnection
+    :type transport Transport
+    """
+    game_connection.player = players.hosting
+    game_connection.handle_action('GameState', ['Lobby'])
+    transport.send_message.assert_any_call({'key': 'HostGame', 'commands': [str(game.getMapName())]})
+
+def test_handle_action_GameState_lobby_sends_JoinGame(game_connection, players, game, transport):
+    """
+    :type game_connection: GameConnection
+    :type transport Transport
+    """
+    game_connection.player = players.joining
+    game_connection.handle_action('GameState', ['Lobby'])
+    transport.send_message.assert_any_call({'key': 'JoinGame', 'commands': [
+        str(game.getHostIp()),
+        str(game.getHostName()),
+        int(game.getHostId())
+    ]})
+    game.add_peer.assert_called_with(players.joining, game_connection)
 
 
 def test_handle_action_ConnectedToHost(game, game_connection, players):
