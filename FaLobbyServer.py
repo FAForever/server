@@ -56,7 +56,6 @@ class FALobbyServer(QtNetwork.QTcpServer):
         self.logger.debug("Starting lobby server")
         self.logger.propagate = True
 
-        
         self.teams = teams.Teams(self)
 
         self.dirtyGameList = dirtyGameList
@@ -169,7 +168,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
                                   "teams": {},
                                   "options": []}
 
-                    reply.append(self.prepareBigJSON(jsonToSend))
+                    reply.append(json.dumps(jsonToSend))
                                        
                 if uid in self.dirtyGameList:
                     self.dirtyGameList.remove(uid)
