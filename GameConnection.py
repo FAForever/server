@@ -25,6 +25,7 @@ from PySide.QtCore import QTimer, QObject
 from PySide import QtCore, QtNetwork
 from PySide.QtNetwork import QTcpSocket
 from PySide.QtSql import *
+from games.game import GameState
 
 from trueSkill.faPlayer import *
 from trueSkill.Team import *
@@ -330,7 +331,7 @@ class GameConnection(QObject):
 
         action = self.player.getAction()
         if action == "HOST":
-            self.game = self.parent.games.getGameByUuid(self.player.getGame())
+            self.game = self.games.getGameByUuid(self.player.getGame())
             if self.game is not None and str(self.game.getuuid()) == str(self.player.getGame()):
                 self.game.setLobbyState("Idle")
                 self.game.setHostIP(self.player.getIp())
@@ -343,15 +344,14 @@ class GameConnection(QObject):
                 self.initSupcom(initmode)
             else:
                 # No game found. I don't know why we got a connection, but we don't want it.
-                if self.noSocket is False:
-                    self.socket.abort()
-                    self.log.debug("HOST - Can't find game")
-                    if self.player:
-                        if self.player.getLobbyThread():
-                            self.player.getLobbyThread().sendJSON(dict(command="notice", style="kill"))
+                self.socket.abort()
+                self.log.debug("HOST - Can't find game")
+                if self.player:
+                    if self.player.getLobbyThread():
+                        self.player.getLobbyThread().sendJSON(dict(command="notice", style="kill"))
 
         elif action == "JOIN":
-            self.game = self.parent.games.getGameByUuid(self.player.getGame())
+            self.game = self.games.getGameByUuid(self.player.getGame())
 
             if self.game is not None and str(self.game.getuuid()) == str(self.player.getGame()):
                 if self.player.getLogin() in self.game.packetReceived:
@@ -620,6 +620,7 @@ class GameConnection(QObject):
         aka. hole-punching.
         :param values List containing packet contents directly
         """
+        assert self.game.state == GameState.LOBBY
         state = self.game.getLobbyState()
         if state != "playing":
             if "PACKET_RECEIVED" in values[1]:
@@ -869,7 +870,6 @@ class GameConnection(QObject):
         login = None
         uid = None
         if self.game is None:
-
             text = "You were unable to connect to the host because he has left the game."
             self.lobby.sendJSON(dict(command="notice", style="kill"))
             self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
@@ -881,14 +881,11 @@ class GameConnection(QObject):
             return
         port = self.player.getGamePort()
 
-        if hasattr(self.game, "getPlayerName"):
-            login = self.game.getPlayerName(self.player)
-        else:
-            login = self.player.getLogin()
+        login = self.player.getLogin()
 
         uid = int(self.player.getId())
         if not self.game.getGameName() is None:
-            if self.game.getGameName()[0] == '#':
+            if self.game.getGameName().startswith('#'):
                 self.sendToRelay("P2PReconnect", [])
 
         self.sendToRelay("CreateLobby", [rankedMode, port, login, uid, 1])

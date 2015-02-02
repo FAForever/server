@@ -2,8 +2,10 @@ import pytest
 import mock
 
 from PySide.QtNetwork import QTcpSocket
+from FaServerThread import FAServerThread
 
 from GameConnection import GameConnection
+from JsonTransport import Transport
 from games import Game
 from players import playersOnline, Player
 
@@ -19,24 +21,30 @@ def connected_game_socket():
     return game_socket
 
 @pytest.fixture
+def transport():
+    return mock.Mock(spec=Transport)
+
+@pytest.fixture
 def game(players):
     game = mock.MagicMock(spec=Game(1))
     game.hostPlayer = players.hosting
+    game.getGameName = lambda: "Some game name"
     return game
 
-def player(login, port, action):
+def player(login, id, port, action):
     p = mock.Mock(spec=Player)
     p.getGamePort.return_value = port
     p.getAction = mock.Mock(return_value=action)
     p.getLogin = mock.Mock(return_value=login)
+    p.getId = mock.Mock(return_value=id)
     return p
 
 @pytest.fixture
 def players():
     return mock.Mock(
-        hosting=player('Paula_Bean', 6112, "HOST"),
-        peer=player('That_Guy', 6112, "JOIN"),
-        joining=player('James_Kirk', 6112, "JOIN")
+        hosting=player('Paula_Bean', 2, 6112, "HOST"),
+        peer=player('That_Guy', 2, 6112, "JOIN"),
+        joining=player('James_Kirk', 2, 6112, "JOIN")
     )
 
 @pytest.fixture
@@ -50,12 +58,12 @@ def games():
     return mock.Mock()
 
 @pytest.fixture
-def game_connection(game, player_service, players, games):
+def game_connection(game, player_service, players, games, transport):
     conn = GameConnection(users=player_service, games=games)
+    conn.transport = transport
     conn.player = players.hosting
     conn.game = game
     return conn
-
 
 def test_accepts_valid_socket(game_connection, connected_game_socket):
     """
@@ -64,6 +72,22 @@ def test_accepts_valid_socket(game_connection, connected_game_socket):
     """
     assert game_connection.accept(connected_game_socket) is True
 
+def test_handle_action_GameState_idle(game_connection, players, games, connected_game_socket, transport, monkeypatch):
+    """
+    :type game_connection: GameConnection
+    :type transport Transport
+    """
+    monkeypatch.setattr('GameConnection.config',
+                        mock.MagicMock(return_value={'global':
+                          mock.MagicMock(return_value={'lobby_ip': '192.168.0.1'})}))
+    game_connection.socket = connected_game_socket
+    game_connection.player = players.joining
+    game_connection.lobby = mock.Mock(spec=FAServerThread)
+    game_connection.handle_action('GameState', ['Idle'])
+    games.getGameByUuid.assert_called_once_with(players.joining.getGame())
+    print repr(transport.send_message.mock_calls)
+    transport.send_message.assert_any_call({'key': 'CreateLobby',
+                                            'commands': [0, players.joining.getGamePort(), players.joining.getLogin(), 2, 1]})
 
 def test_handle_action_ConnectedToHost(game, game_connection, players):
     """
