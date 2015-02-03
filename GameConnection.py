@@ -43,14 +43,14 @@ from JsonTransport import QDataStreamJsonTransport
 proxyServer = QtNetwork.QHostAddress("127.0.0.1")
 
 
-def timed(f):
+def timed(f, limit=0.2):
     @wraps(f)
     def wrapper(*args, **kwds):
         start = time.time()
         result = f(*args, **kwds)
-        elapsed = (time.time() - start) * 1000
-        if elapsed > 20:
-            logger.info("%s took %s ms to finish" % (f.__name__, str(elapsed)))
+        elapsed = (time.time() - start)
+        if elapsed > limit:
+            logger.info("%s took %s s to finish" % (f.__name__, str(elapsed)))
         return result
 
     return wrapper
