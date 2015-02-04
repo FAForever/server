@@ -4,9 +4,8 @@ python:
   - "3.4"
 
 install:
-  - "sudo apt-get install python3-pyside"
   - "sh ./.travis.sh"
-  - "pip install flexmock pytest pytest-qt pytest-cov python-coveralls configobj mock sip"
+  - "pip install flexmock pytest pytest-qt pytest-cov python-coveralls configobj mock pyside"
 
 script:
   - py.test --cov . --cov-report term-missing
