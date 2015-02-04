@@ -23,7 +23,7 @@ import logging
 
 from PySide.QtCore import QTimer, QObject
 from PySide import QtCore, QtNetwork
-from PySide.QtNetwork import QTcpSocket
+from PySide.QtNetwork import QTcpSocket, QAbstractSocket
 from PySide.QtSql import *
 from games.game import GameState
 
@@ -129,21 +129,22 @@ class GameConnection(QObject):
 
     def accept(self, socket):
         """
-        Accept a socket connection
+        Accept a connected socket for this GameConnection
 
         Will look up the user using the provided users service
-        :param socket:
+        :param socket: An initialised socket
+        :type socket QAbstractSocket
+        :raise AssertionError
         :return: bool
         """
+        assert socket.isValid()
+        assert socket.state() == QAbstractSocket.ConnectedState
+        self.log.debug("Accepting connection on socket %r" % socket)
         self.socket = socket
         self.socket.setSocketOption(QTcpSocket.KeepAliveOption, 1)
         self.socket.disconnected.connect(self.disconnection)
         self.socket.error.connect(self.displayError)
         self.socket.stateChanged.connect(self.stateChange)
-
-        if self.socket.state() != QTcpSocket.ConnectedState or not self.socket.isValid():
-            self.socket.abort()
-            return False
 
         self.transport = QDataStreamJsonTransport(self.socket)
         self.transport.messageReceived.connect(self.handleAction2)
@@ -154,7 +155,7 @@ class GameConnection(QObject):
 
         if self.player is None:
             self.socket.abort()
-            logger.info("Player not found for IP: %s " % ip)
+            self.log.info("Player not found for IP: %s " % ip)
             return False
 
         self.player.gameThread = self
@@ -891,7 +892,7 @@ class GameConnection(QObject):
         datas = "/PLAYERID " + str(self.player.getId()) + " " + self.player.getLogin()
 
         # FIXME: we should make this a hostname and let the client resolve.
-        self.sendToRelay("SendNatPacket", [config['global']['lobby_ip'] + ":30351", datas])
+        self.sendToRelay("SendNatPacket", [str(config['global']['lobby_ip']) + ":30351", datas])
 
     def createLobby(self, mapname):
         ''' Create a lobby with a specific map'''
@@ -1641,13 +1642,7 @@ class GameConnection(QObject):
             self.parent.removeRecorder(self)
 
     def stateChange(self, socketState):
-        if socketState != QtNetwork.QAbstractSocket.ClosingState:
-            self.log.debug("socket about to close")
-        elif socketState != QtNetwork.QAbstractSocket.UnconnectedState:
-            self.log.debug("socket not connected")
-        if socketState != QtNetwork.QAbstractSocket.ConnectedState:
-            self.log.debug("not connected")
-            self.socket.abort()
+        pass
 
     def displayError(self, socketError):
         if socketError == QtNetwork.QAbstractSocket.RemoteHostClosedError:

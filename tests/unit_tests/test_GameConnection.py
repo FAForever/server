@@ -1,17 +1,13 @@
 import pytest
 import mock
 
-from PySide.QtNetwork import QTcpSocket
+from PySide.QtNetwork import QTcpSocket, QTcpServer, QLocalServer, QLocalSocket
 from FaServerThread import FAServerThread
 
 from GameConnection import GameConnection
-from JsonTransport import Transport
+from JsonTransport import Transport, QDataStreamJsonTransport
 from games import Game
 from players import playersOnline, Player
-
-import logging
-logging.getLogger("GameConnection").addHandler(logging.StreamHandler())
-logging.getLogger("GameConnection").setLevel(logging.DEBUG)
 
 @pytest.fixture
 def connected_game_socket():
@@ -120,7 +116,6 @@ def test_handle_action_GameState_lobby_sends_JoinGame(game_connection, players, 
         int(game.getHostId())
     ]})
     game.add_peer.assert_called_with(players.joining, game_connection)
-
 
 def test_handle_action_ConnectedToHost(game, game_connection, players):
     """

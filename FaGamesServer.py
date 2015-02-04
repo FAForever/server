@@ -26,7 +26,7 @@ class FAServer(QTcpServer):
         super(FAServer, self).__init__(parent)
         self.parent = parent
         self.logger = logging.getLogger(__name__)
-
+        self.sockets = {}
         self.logger.debug("initializing server")
         self.dirtyGameList = dirtyGameList
         self.listUsers = listUsers
@@ -34,12 +34,38 @@ class FAServer(QTcpServer):
         self.db = db
         self.recorders = []
 
+    def __enter__(self):
+        """
+        Allows using the FAServer object as a context manager
+        :return: FAServer
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Abort any excess open sockets and shut down the server
+        :param exc_type:
+        :param exc_val:
+        :param exc_tb:
+        :return:
+        """
+        for socket_id, socket in self.sockets.iteritems():
+            self.clean_socket(socket)
+        self.close()
+
+    def clean_socket(self, socket):
+        """
+        :type socket QTcpSocket
+        """
+        if socket.isOpen():
+            socket.abort()
 
     def incomingConnection(self, socket_id):
         self.logger.debug("Incoming Game Connection")
 
         socket = QTcpSocket()
         if socket.setSocketDescriptor(socket_id):
+            self.sockets[socket_id] = socket
             connection = GameConnection(self.listUsers, self.games, self.db, self)
             connection.accept(socket)
             self.recorders.append(connection)
@@ -52,3 +78,4 @@ class FAServer(QTcpServer):
     def addDirtyGame(self, game):
         if not game in self.dirtyGameList:
             self.dirtyGameList.append(game)
+

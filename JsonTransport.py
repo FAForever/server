@@ -1,6 +1,7 @@
 import struct
-import json
 
+import json
+import logging
 from PySide import QtCore
 from PySide.QtCore import QObject
 
@@ -11,9 +12,14 @@ class Transport(QObject):
     def __init__(self, socket):
         super(Transport, self).__init__()
         self.socket = socket
+        self.logger = logging.getLogger(__name__)
 
     def _on_message(self, msg):
         self.messageReceived.emit(msg)
+
+    def _onWriteFailed(self):
+        self.logger.warn("Write failed")
+        pass
 
     def send_message(self, msg):
         self._send(msg)
