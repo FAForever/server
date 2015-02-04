@@ -121,10 +121,10 @@ def loads(string):
 indent = 0
 mult = 2
 def _i():
-    return u' ' * (indent * mult)
+    return ' ' * (indent * mult)
 
 def _dump(obj):
-    nodefmt = u'\n' + _i() + '"{0}"\n' + _i() + '{{\n{1}' + _i() + '}}\n\n'
+    nodefmt = '\n' + _i() + '"{0}"\n' + _i() + '{{\n{1}' + _i() + '}}\n\n'
     podfmt = _i() + '"{0}" "{1}"\n'
     lstfmt = _i() + (' ' * mult) + '"{0}" "1"'
     global indent
@@ -132,7 +132,7 @@ def _dump(obj):
     indent += 1
 
     nodes = []
-    for k, v in obj.items():
+    for k, v in list(obj.items()):
         if isinstance(v, dict):
             nodes.append(nodefmt.format(k, _dump(v)))
         else:
@@ -141,14 +141,14 @@ def _dump(obj):
                     v.isdigit
                     nodes.append(podfmt.format(k, v))
                 except AttributeError:
-                    lst = map(lstfmt.format, v)
-                    nodes.append(nodefmt.format(k, u'\n'.join(lst) + '\n'))
+                    lst = list(map(lstfmt.format, v))
+                    nodes.append(nodefmt.format(k, '\n'.join(lst) + '\n'))
             except TypeError:
                 nodes.append(podfmt.format(k, v))
 
     indent -= 1
 
-    return u''.join(nodes)
+    return ''.join(nodes)
 
 def _run_dump(obj):
     res = _dump(obj)

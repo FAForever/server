@@ -16,11 +16,10 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from gamesContainer import  gamesContainerClass
+from .gamesContainer import  gamesContainerClass
 from PySide import QtSql
 
 import games.murderPartyGame
-reload(games.murderPartyGame)
 from games.murderPartyGame import murderPartyGame
 
 class customMurderPartyGamesContainerClass(gamesContainerClass):

@@ -17,7 +17,7 @@
 #-------------------------------------------------------------------------------
 
 
-from gamesContainer import  gamesContainerClass
+from .gamesContainer import  gamesContainerClass
 from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import * 
 from trueSkill.Team import *
 from trueSkill.Teams import *
@@ -37,7 +37,6 @@ from PySide.QtSql import *
 import copy
 
 import games.matchmakerGame
-reload(games.matchmakerGame)
 from games.matchmakerGame import matchmakerGame
 
 import random
@@ -463,7 +462,7 @@ class matchmakerGamesContainerClass(gamesContainerClass):
         query.addBindValue(len(players1)*2)
         query.exec_()
         if query.size() > 0:
-            while query.next():
+            while next(query):
                 mapsP1.append(int(query.value(0)))
 
         # get player map selection for player 2
@@ -472,7 +471,7 @@ class matchmakerGamesContainerClass(gamesContainerClass):
         query.addBindValue(len(players1)*2)
         query.exec_()
         if query.size() > 0:
-            while query.next():
+            while next(query):
                 mapsP2.append(int(query.value(0)))
                 
         commonMaps = list(set(mapsP1).intersection(set(mapsP2)))
@@ -494,7 +493,7 @@ class matchmakerGamesContainerClass(gamesContainerClass):
                 query.addBindValue(len(players1)*2)
                 query.exec_()
                 if query.size() > moreMaps:
-                    while query.next():
+                    while next(query):
                         commonMaps.append(int(query.value(0)))
                 else:
 
@@ -503,7 +502,7 @@ class matchmakerGamesContainerClass(gamesContainerClass):
                     query.addBindValue(len(players1)*2)
                     query.exec_()
                     if query.size() > 0:
-                        while query.next():
+                        while next(query):
                             commonMaps.append(int(query.value(0)))
             
             elif choice == 1:
@@ -517,14 +516,14 @@ class matchmakerGamesContainerClass(gamesContainerClass):
                     query.addBindValue(len(players1)*2)
                     query.exec_()
                     if query.size() > remainingMaps:
-                        while query.next():
+                        while next(query):
                             commonMaps.append(int(query.value(0)))                    
                     else:
                         query.prepare("SELECT `idmap` FROM `ladder_map` LEFT JOIN table_map ON `idMap` = table_map.id WHERE table_map.max_players >= ? ORDER BY RAND( ) LIMIT %i" % remainingMaps)
                         query.addBindValue(len(players1)*2)
                         query.exec_()
                         if query.size() > 0:
-                            while query.next():
+                            while next(query):
                                 commonMaps.append(int(query.value(0)))                    
                      
             elif choice == 2:
@@ -538,14 +537,14 @@ class matchmakerGamesContainerClass(gamesContainerClass):
                     query.addBindValue(len(players1)*2)
                     query.exec_()
                     if query.size() > remainingMaps:
-                        while query.next():
+                        while next(query):
                             commonMaps.append(int(query.value(0)))                    
                     else:
                         query.prepare("SELECT `idmap` FROM `ladder_map` LEFT JOIN table_map ON `idMap` = table_map.id WHERE table_map.max_players >= ? ORDER BY RAND( ) LIMIT %i" % remainingMaps)
                         query.addBindValue(len(players1)*2)
                         query.exec_()
                         if query.size() > 0:
-                            while query.next():
+                            while next(query):
                                 commonMaps.append(int(query.value(0)))                                        
         
         mapChosen = random.choice(commonMaps)

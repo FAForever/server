@@ -36,7 +36,7 @@ class PlayerPerformancesToTeamPerformancesLayer(TrueSkillFactorGraphLayer) :
     
         localFactors = self.getLocalFactors()
 
-        sequence = self.scheduleSequence(map(self.PerftoTeamPerfStep, localFactors),
+        sequence = self.scheduleSequence(list(map(self.PerftoTeamPerfStep, localFactors)),
                                             "all player perf to team perf schedule")
         
 
@@ -49,7 +49,7 @@ class PlayerPerformancesToTeamPerformancesLayer(TrueSkillFactorGraphLayer) :
 
     def createPlayerToTeamSumFactor(self, teamMembers, sumVariable) :
        
-        weights = map(self.partialPlayPercentage, teamMembers)
+        weights = list(map(self.partialPlayPercentage, teamMembers))
 
         return  GaussianWeightedSumFactor( sumVariable,
                                            teamMembers,
@@ -81,7 +81,7 @@ class PlayerPerformancesToTeamPerformancesLayer(TrueSkillFactorGraphLayer) :
 
     def createOutputVariable(self, team) :
 
-        memberNames = map(self.currentPlayetgetKey,team)
+        memberNames = list(map(self.currentPlayetgetKey,team))
         
 
         teamMemberNames = ", ".join(memberNames)

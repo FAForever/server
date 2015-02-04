@@ -16,9 +16,8 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-import game
-gameClass = reload(game)
-from game import Game
+from . import game
+from .game import Game
 
 class phantomXGame(Game):
     '''Class for phantomN game'''

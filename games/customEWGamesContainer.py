@@ -16,8 +16,8 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from gamesContainer import  gamesContainerClass
-from nomadsGame import nomadsGame
+from .gamesContainer import  gamesContainerClass
+from .nomadsGame import nomadsGame
 from PySide import QtSql
 
 class customEWGamesContainerClass(gamesContainerClass):

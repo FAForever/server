@@ -16,12 +16,11 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from gamesContainer import  gamesContainerClass
-from xtremewarsGame import xtremewarsGame
+from .gamesContainer import  gamesContainerClass
+from .xtremewarsGame import xtremewarsGame
 from PySide import QtSql
 
 import games.xtremewarsGame
-reload(games.xtremewarsGame)
 from games.xtremewarsGame import xtremewarsGame
 
 class customXtremewarsGamesContainerClass(gamesContainerClass):

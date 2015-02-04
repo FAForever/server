@@ -19,7 +19,7 @@
 
 
 names = 'namegenerator/races/cybran.txt'
-import namegen
+from . import namegen
 
 import random
 

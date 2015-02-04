@@ -121,7 +121,7 @@ class ServerMain(QtCore.QObject):
             self.log.info("Generating " + str(credits) + " per faction")
             # Now, we give that amount to each active per faction
             factions = ["uef", "aeon", "cybran", "seraphim"]
-            for i in xrange(0,4) :
+            for i in range(0,4) :
                 
                 query = QtSql.QSqlQuery(self.db)
                 sc = 0
@@ -297,7 +297,7 @@ class ServerMain(QtCore.QObject):
                 stream.writeQString(str(arg))
             elif type(arg) is IntType:
                 stream.writeInt(arg)
-            elif isinstance(arg, basestring):                       
+            elif isinstance(arg, str):                       
                 stream.writeQString(arg)                  
             elif type(arg) is StringType  :
                 stream.writeQString(arg)
@@ -322,7 +322,7 @@ class ServerMain(QtCore.QObject):
         pass
     
     def setup(self):
-        import gwServer
+        from . import gwServer
        
         self.gwServer = gwServer.gwServer(self.db, self)
         

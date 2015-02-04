@@ -30,9 +30,9 @@ import hashlib
 import os
 import copy
 import base64
-import phpserialize
+from . import phpserialize
 import math
-from teams import teams
+from .teams import teams
 
 AUTORECALL = 500
 
@@ -514,16 +514,16 @@ class ClientModule(QtCore.QObject):
             name = ""
             self.rank = 0
             if self.faction == 0 :
-                from namegenerator import uef
+                from .namegenerator import uef
                 name = uef.generateName()
             elif self.faction == 1 :
-                from namegenerator import aeon
+                from .namegenerator import aeon
                 name = aeon.generateName()
             elif self.faction == 2 :
-                from namegenerator import cybran
+                from .namegenerator import cybran
                 name = cybran.generateName()
             elif self.faction == 3 :
-                from namegenerator import seraphim
+                from .namegenerator import seraphim
                 name = seraphim.generateName()
             
             self.name = name 
@@ -1021,7 +1021,7 @@ class ClientModule(QtCore.QObject):
         if not query.exec_() :
             self.log.error(query.lastError())
         if query.size() > 0:
-            while query.next():
+            while next(query):
                 bp_name = str(query.value(0))
                 unit_name = str(query.value(1))
                 unit_type = str(query.value(2))
@@ -1050,7 +1050,7 @@ class ClientModule(QtCore.QObject):
         if not query.exec_() :
             self.log.error(query.lastError())
         if query.size() > 0:
-            while query.next():
+            while next(query):
                 bp_name = str(query.value(0))
                 unit_name = str(query.value(1))
                 unit_type = str(query.value(2))
@@ -1088,7 +1088,7 @@ class ClientModule(QtCore.QObject):
         query.addBindValue(self.uid)
         query.exec_()
         if query.size() > 0:
-            while query.next():
+            while next(query):
                 group = int(query.value(0))
                 unit = str(query.value(1))
                 amount = int(query.value(2))
@@ -1100,7 +1100,7 @@ class ClientModule(QtCore.QObject):
         query.addBindValue(self.uid)
         query.exec_()
         if query.size() > 0:
-            while query.next():
+            while next(query):
                 unit = int(query.value(0))
                 amount = int(query.value(1))
                 item = dict(command="group_reinforcements_info", group=0, unit=unit, amount = amount)
@@ -1116,7 +1116,7 @@ class ClientModule(QtCore.QObject):
         if not query.exec_() :
             self.log.error(query.lastError())
         if query.size() > 0:
-            while query.next():
+            while next(query):
                 itemuid = int(query.value(0))
                 item = dict(command="planetary_defense_info", static=True, uid=itemuid, structure=str(query.value(1)), price=int(query.value(2)), activation=int(query.value(3)), description=str(query.value(4)))
                 self.sendJSON(item)
@@ -1131,7 +1131,7 @@ class ClientModule(QtCore.QObject):
         if not query.exec_() :
             self.log.error(query.lastError())
         if query.size() > 0:
-            while query.next():
+            while next(query):
                 itemuid = int(query.value(0))
                 query2 = QSqlQuery(self.parent.db)
                 amount = 0
@@ -1757,7 +1757,7 @@ class ClientModule(QtCore.QObject):
                 stream.writeQString(str(arg))
             elif type(arg) is IntType:
                 stream.writeInt(arg)
-            elif isinstance(arg, basestring):                       
+            elif isinstance(arg, str):                       
                 stream.writeQString(arg)                  
             elif type(arg) is StringType  :
                 stream.writeQString(arg)
@@ -1807,7 +1807,7 @@ class ClientModule(QtCore.QObject):
                     stream.writeQString(str(arg))
                 elif type(arg) is IntType:
                     stream.writeInt(arg)
-                elif isinstance(arg, basestring):                       
+                elif isinstance(arg, str):                       
                     stream.writeQString(arg)                  
                 elif type(arg) is StringType  :
                     stream.writeQString(arg)

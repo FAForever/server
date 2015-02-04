@@ -16,11 +16,10 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from gamesContainer import  gamesContainerClass
+from .gamesContainer import  gamesContainerClass
 from PySide import QtSql
 
 import games.kothGame
-reload(games.kothGame)
 from games.kothGame import kothGame
 
 class customKothGamesContainerClass(gamesContainerClass):

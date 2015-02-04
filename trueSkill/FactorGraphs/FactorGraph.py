@@ -1,5 +1,5 @@
 
-from VariableFactory import VariableFactory
+from .VariableFactory import VariableFactory
 
 class FactorGraph(object):
     def __init__(self):

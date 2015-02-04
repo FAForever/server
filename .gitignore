@@ -4,3 +4,5 @@ passwords.py
 .idea/
 logs/
 .coverage
+*.bak
+py3env

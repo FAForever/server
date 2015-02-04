@@ -49,7 +49,7 @@ class FAServer(QTcpServer):
         :param exc_tb:
         :return:
         """
-        for socket_id, socket in self.sockets.iteritems():
+        for socket_id, socket in self.sockets.items():
             self.clean_socket(socket)
         self.close()
 

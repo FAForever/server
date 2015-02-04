@@ -1,4 +1,4 @@
-from Variable import Variable, KeyedVariable
+from .Variable import Variable, KeyedVariable
 
 
 class VariableFactory (object):

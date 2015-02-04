@@ -16,7 +16,7 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from gamesContainer import  gamesContainerClass
+from .gamesContainer import  gamesContainerClass
 from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import * 
 from trueSkill.Team import *
 from trueSkill.Teams import *
@@ -138,7 +138,7 @@ class gwGamesContainerClass(gamesContainerClass):
             planetMap = "maps/canis3v3.v0001.zip"
 
             if query.size() > 0 :
-                while query.next() :
+                while next(query) :
                     planetMap = str(query.value(0))
     
                

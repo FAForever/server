@@ -19,9 +19,8 @@
 import logging
 logger = logging.getLogger(__name__)
 
-import game
-gameClass = reload(game)
-from game import Game
+from . import game
+from .game import Game
 
 
 
@@ -141,7 +140,7 @@ class ladder1V1Game(Game):
         
             # and for the ladder !
             evenLeague = True
-            maxleague = max(self.leagues.iteritems(), key=operator.itemgetter(1))[1]
+            maxleague = max(iter(self.leagues.items()), key=operator.itemgetter(1))[1]
             if len(set(self.leagues.values())) != 1 :
                 evenLeague = False
                 
@@ -241,7 +240,7 @@ class ladder1V1Game(Game):
         return self.playerToJoin
   
     def isDraw(self):
-        if len(dict(zip(self.gameResult.values(),self.gameResult.keys()))) == 1 :
+        if len(dict(list(zip(list(self.gameResult.values()),list(self.gameResult.keys()))))) == 1 :
             return True
         return False       
   

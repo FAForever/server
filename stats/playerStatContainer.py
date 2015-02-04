@@ -16,7 +16,7 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from xmlParser import *
+from .xmlParser import *
 import bisect
 
 class playerStatContainer(object):

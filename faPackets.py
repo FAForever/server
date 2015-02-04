@@ -25,7 +25,7 @@ class Packet():
         self._headersize = headersize
           
     def Unpack(self, data=None):
-        print "UNPACK"
+        print("UNPACK")
         if not data:
             data = self._data
         unpacked = {}
@@ -36,20 +36,20 @@ class Packet():
             
             headerSize = struct.unpack("i", data[:4])[0]
             
-            print "headerSize", headerSize
+            print("headerSize", headerSize)
             
             headerPackStr = "<i" + str(headerSize) + "si"
             header = struct.unpack(headerPackStr, data[:headerSize+8])
             
-            print "header", header
+            print("header", header)
             
             headerStr = header[1].replace("/t","\t").replace("/n","\n")
-            if not unpacked.has_key(header[1]):
+            if header[1] not in unpacked:
                 unpacked[headerStr] = []
             chunkSize = header[2]
             data = data[headerSize+8:]
-            print "chunkSize", chunkSize
-            print "data", data
+            print("chunkSize", chunkSize)
+            print("data", data)
             chunk = []
             for i in range(chunkSize):
                 fieldType = struct.unpack("b", data[:1])[0]
@@ -73,7 +73,7 @@ class Packet():
         if self._data:
             return self._data
         data = ""
-        for i, chunk in self._values.iteritems():
+        for i, chunk in self._values.items():
             headerSize = len(str(i))
             headerField = str(i).replace("\t","/t").replace("\n","/n")
             chunkSize = len(chunk)
@@ -101,7 +101,7 @@ class Packet():
         if self._data:
             return self._data
         data = ""
-        for i, chunk in self._values.iteritems():
+        for i, chunk in self._values.items():
             headerSize = len(str(i))
             headerField = str(i).replace("\t","/t").replace("\n","/n")
             chunkSize = len(chunk)

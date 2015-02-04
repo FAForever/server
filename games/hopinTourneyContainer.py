@@ -16,11 +16,11 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from gamesContainer import  gamesContainerClass
+from .gamesContainer import  gamesContainerClass
 from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import * 
 from trueSkill.Team import *
 from trueSkill.Teams import *
-from ladderGame import ladder1V1Game
+from .ladderGame import ladder1V1Game
 
 import random
 from ladder.ladderMaps import ladderMaps
@@ -88,7 +88,7 @@ class hopinTourneyContainerClass(gamesContainerClass):
 
     def createTourney(self, name, player, minPlayers, maxPlayers):
         
-        print "we do this"
+        print("we do this")
         query = QtSql.QSqlQuery(self.db)
         queryStr = ("INSERT INTO hopin_tournament (`host`) VALUE ( %i )" % player.getId())
         query.exec_(queryStr)      
@@ -104,7 +104,7 @@ class hopinTourneyContainerClass(gamesContainerClass):
         player.getLobbyThread().sendJSON(jsonToSend)
 
         for p in self.parent.players.getAllPlayers() :
-            print p
+            print(p)
             jsonToSend = {}
             jsonToSend["command"] = "tournament_info"
             jsonToSend["state"] = tourney.getState()
@@ -113,7 +113,7 @@ class hopinTourneyContainerClass(gamesContainerClass):
             jsonToSend["host"] = player.getLogin()
             jsonToSend["min_players"] = tourney.minPlayers
             jsonToSend["max_players"] = tourney.maxPlayers
-            print jsonToSend
+            print(jsonToSend)
             p.getLobbyThread().sendJSON(jsonToSend)
 
     

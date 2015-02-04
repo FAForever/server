@@ -213,9 +213,9 @@ class attack(object):
 
     def getTeamUids(self, team):
         if team == 1 :
-            return self.team1.keys() 
+            return list(self.team1.keys()) 
         else :
-            return self.team2.keys()        
+            return list(self.team2.keys())        
         return None
     
     def isPlayerIn(self, uid):
@@ -251,7 +251,7 @@ class Attacks(object):
         if query.size() > 0 :
             allUids = []
             
-            while query.next() :
+            while next(query) :
                 uid       = int(query.value(0))
                 playeruid = int(query.value(1))
                 planetuid = int(query.value(2))

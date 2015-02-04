@@ -17,7 +17,7 @@
 #-------------------------------------------------------------------------------
 
 
-from gamesContainer import  gamesContainerClass
+from .gamesContainer import  gamesContainerClass
 from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import * 
 from trueSkill.Team import *
 from trueSkill.Teams import *
@@ -30,7 +30,6 @@ from PySide import QtCore
 
 
 import games.ladderGame
-reload(games.ladderGame)
 from games.ladderGame import ladder1V1Game
 
 
@@ -113,7 +112,7 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         query.exec_()
         maps = []
         if query.size() > 0:
-            while query.next():
+            while next(query):
                 maps.append(int(query.value(0)))
         return maps
 
@@ -123,7 +122,7 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         query.exec_()
         maps = []
         if query.size() > 0:
-            while query.next():
+            while next(query):
                 maps.append(int(query.value(0)))
         return maps
 

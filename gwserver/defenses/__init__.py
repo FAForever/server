@@ -1,1 +1,1 @@
-from defenses import Defenses
+from .defenses import Defenses

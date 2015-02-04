@@ -19,10 +19,10 @@
 from PySide.QtGui import *
 from PySide.QtXml import *
 
-from armyContainer import *
-from army import *
-from playerStat import *
-from playerStatContainer import * 
+from .armyContainer import *
+from .army import *
+from .playerStat import *
+from .playerStatContainer import * 
 
 #def fltFromQStr(qstr):
 #    """
@@ -123,6 +123,6 @@ class SaxStatsHandler(QXmlDefaultHandler) :
         return True
     
     def error(self,exception):
-        print "Exception",exception.message()
+        print("Exception",exception.message())
         return
 

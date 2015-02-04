@@ -2,7 +2,7 @@ from PySide.QtNetwork import QHostAddress
 from PySide.QtCore import QCoreApplication
 import mock
 from FaGamesServer import FAServer
-from TestGPGClient import TestGPGClient
+from .TestGPGClient import TestGPGClient
 from tests.unit_tests.test_GameConnection import *
 import logging
 from players import playersOnline
@@ -23,5 +23,5 @@ def test_timeout(qtbot, patch_config, player_service, games):
         with TestGPGClient(address, server.serverPort()) as client:
             with qtbot.waitSignal(client.transport.messageReceived):
                 client.sendGameState(['Idle'])
-                print client.messages.mock_calls
+                print(client.messages.mock_calls)
                 assert False

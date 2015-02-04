@@ -16,8 +16,8 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from customGamesContainer import customGamesContainerClass
-from ladderGamesContainer import ladder1v1GamesContainerClass
+from .customGamesContainer import customGamesContainerClass
+from .ladderGamesContainer import ladder1v1GamesContainerClass
 import sys, inspect, logging
 
 class hyperGamesContainerClass(object):
@@ -149,7 +149,7 @@ class hyperGamesContainerClass(object):
                         teams = game.getTeamsAssignements()
     
                         teamsToSend = {}
-                        for k, v in teams.iteritems() :
+                        for k, v in teams.items() :
                             if len(v) != 0 :
                                 teamsToSend[k] = v
     

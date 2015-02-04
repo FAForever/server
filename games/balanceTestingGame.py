@@ -16,7 +16,7 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from game import Game
+from .game import Game
 
 class balanceTestingGame(Game):
     '''Class for balanceTesting game'''

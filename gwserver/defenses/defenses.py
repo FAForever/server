@@ -71,7 +71,7 @@ class Defenses(object):
             self.log.warning(query.lastError())
         if query.size() > 0 :
             #query.first()
-            while query.next() :                
+            while next(query) :                
                 planetuid   = int(query.value(0))
                 itemuid     = int(query.value(1))
                 amount      = int(query.value(2))

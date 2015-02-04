@@ -82,7 +82,7 @@ if __name__ == '__main__':
         server = start()
         app.exec_()
     
-    except Exception, ex:
+    except Exception as ex:
         
         logger.exception("Something awful happened!")
         logger.debug("Finishing main")

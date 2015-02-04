@@ -37,10 +37,10 @@ class Domination(object):
                 self.dominations[slave] = dominant
                 
     def getSlaves(self):
-        return self.dominations.keys()
+        return list(self.dominations.keys())
     
     def getDominants(self):
-        return self.dominations.values()
+        return list(self.dominations.values())
     
     def getDominantSlaves(self, dominant):
         slaves = []

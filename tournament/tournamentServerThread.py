@@ -110,7 +110,7 @@ class tournamentServerThread(QObject):
             
             seeding[p["id"]] = rating
             
-        sortedSeed = sorted(seeding.iteritems(), key=operator.itemgetter(1), reverse=True)
+        sortedSeed = sorted(iter(seeding.items()), key=operator.itemgetter(1), reverse=True)
 
         for i in range(len(sortedSeed)):
             challonge.participants.update(uid, sortedSeed[i][0], seed=str(i+1))
@@ -234,7 +234,7 @@ class tournamentServerThread(QObject):
                         stream.writeInt(int(arg))
                     elif type(arg) is StringType  :
                         stream.writeQString(arg)
-                    elif isinstance(arg, basestring):                       
+                    elif isinstance(arg, str):                       
                         stream.writeQString(arg) 
                     elif type(arg) is FloatType:
                         stream.writeFloat(arg)

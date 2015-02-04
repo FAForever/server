@@ -259,9 +259,9 @@ class UNITCOMMAND(object):
 
 
 import struct
-from replayArmy import *
-from replayArmyContainer import *
-from replayInfos import *
+from .replayArmy import *
+from .replayArmyContainer import *
+from .replayInfos import *
 #from replayOptions import *
 
 import json
@@ -414,7 +414,7 @@ class replayParser(object):
 
 
         self.offset, map = self.readLine(self.offset)
-        print map
+        print(map)
         self.offset = self.offset + 4
         
         self.offset, count = self.readInt(self.offset)
@@ -423,7 +423,7 @@ class replayParser(object):
         self.offset = self.offset + count
         
         self.offset, count = self.readInt(self.offset)
-        print count
+        print(count)
         
         self.offset, scenario = self.parseLua(self.offset)
         infos = replayInfos()
@@ -470,7 +470,7 @@ class replayParser(object):
             self.players.append(army)
         
         self.offset, randomSeed = self.readInt(self.offset)
-        print "randomSeed", randomSeed
+        print("randomSeed", randomSeed)
 
 
     def setGameTime(self):
@@ -548,7 +548,7 @@ class replayParser(object):
             if lastbeat == beatDesync or lastbeat == beatDesync-50:
 
                 if message_op != 1 and message_op != 3 and message_op != 12 and message_op != 22: 
-                    print message_op
+                    print(message_op)
                 debug = True
             else:
                 debug = False
@@ -560,7 +560,7 @@ class replayParser(object):
             elif message_op == 1:
                 _, playerturn = self.readChar(offset)
                 if debug:
-                    print "playerTurn", playerturn 
+                    print("playerTurn", playerturn) 
             elif message_op == 3:
                 #print message_length
                 '''CMDST_VerifyChecksum,
@@ -576,7 +576,7 @@ class replayParser(object):
                     #MD5Digest =  MD5Digest + struct.unpack("B", self.bin[fakeoffset:fakeoffset+1])[0]
                     fakeoffset = fakeoffset + 1  
                 if debug:
-                    print MD5Digest
+                    print(MD5Digest)
                 _, beat = self.readInt(fakeoffset)
                 lastbeat = beat
 
@@ -587,7 +587,7 @@ class replayParser(object):
                     #print "beats", beatChecksum[beat]
                     if len( set( beatChecksum[beat] ) ) != 1:
                         
-                        print "error on beat", beat, "tick", tick 
+                        print("error on beat", beat, "tick", tick) 
 
                 
             elif message_op == 11:
@@ -597,7 +597,7 @@ class replayParser(object):
                     playerLastTurn[playerturn]=tick
             elif message_op == 12:
                 if debug:
-                    print "CMDST_IssueCommand for player", playerturn 
+                    print("CMDST_IssueCommand for player", playerturn) 
                     
                     fakeoffset = offset
                     fakeoffset, numUnits = self.readInt(fakeoffset)
@@ -612,7 +612,7 @@ class replayParser(object):
                     
                     fakeoffset, STITarget = self.readChar(fakeoffset)
                     
-                    print "command type", commandType
+                    print("command type", commandType)
                     if commandType == 7 or  commandType == 8 or commandType == 27:
                         if STITarget == 0:
                             fakeoffset += 6
@@ -622,7 +622,7 @@ class replayParser(object):
                         for i in range(7):
                             unitBluePrint =  unitBluePrint + struct.unpack("s", self.bin[fakeoffset:fakeoffset+1])[0]
                             fakeoffset = fakeoffset + 1
-                        print unitBluePrint
+                        print(unitBluePrint)
                     
                 
                 if currentAction != tick or currentPlayer != playerturn:
@@ -677,7 +677,7 @@ class replayParser(object):
                 fakeoffset, command = self.readLine(offset) 
                 fakeoffset, table = self.parseLua(fakeoffset)
                 if debug:
-                    print command, table
+                    print(command, table)
                 if currentAction != tick or currentPlayer != playerturn:
                     currentAction = tick
                     currentPlayer = playerturn
@@ -737,7 +737,7 @@ class replayParser(object):
                         for i in range(7):
                             unitBluePrint =  unitBluePrint + struct.unpack("s", self.bin[fakeoffset:fakeoffset+1])[0]
                             fakeoffset = fakeoffset + 1
-                        print unitBluePrint
+                        print(unitBluePrint)
 
                                 
                         
@@ -767,11 +767,11 @@ inFile = r'c:\Users\nozon\Downloads\1265754.fafreplay'
 
 replay = replayParser(inFile)
 replay.readHeader()
-print "gametime", (float(replay.setGameTime()) /10.0) / 60.0, "minutes"
+print("gametime", (float(replay.setGameTime()) /10.0) / 60.0, "minutes")
 
 lastTurns= replay.setPlayerLastTurn()
 for l in lastTurns :
-    print replay.players[l], ((lastTurns[l] /10.0) / 60.0), "minutes"
+    print(replay.players[l], ((lastTurns[l] /10.0) / 60.0), "minutes")
 #
 #replay.setBuildOrder()
 replay.setDebugDesync()

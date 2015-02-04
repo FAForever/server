@@ -69,7 +69,7 @@ class GWLobbyServer(QtNetwork.QTcpServer):
                 stream.writeQString(str(arg))
             elif type(arg) is IntType:
                 stream.writeInt(arg)
-            elif isinstance(arg, basestring):                       
+            elif isinstance(arg, str):                       
                 stream.writeQString(arg)                  
             elif type(arg) is StringType  :
                 stream.writeQString(arg)

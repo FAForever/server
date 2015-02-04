@@ -16,12 +16,11 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from gamesContainer import  gamesContainerClass
+from .gamesContainer import  gamesContainerClass
 from PySide import QtSql
 
 import time
 import games.coopGame
-reload(games.coopGame)
 from games.coopGame import coopGame
 
 class coopGamesContainerClass(gamesContainerClass):

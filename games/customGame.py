@@ -16,9 +16,7 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-import game
-gameClass = reload(game)
-from game import Game
+from .game import Game
 
 from copy import deepcopy
 import time

@@ -5,7 +5,7 @@ from math import pi as PI
 from math import sqrt, fabs, log, exp
 
 
-from BasicMath import square
+from .BasicMath import square
 
 class GaussianDistribution(object):
     def __init__(self, mean = 0.0, standardDeviation = 1.0):

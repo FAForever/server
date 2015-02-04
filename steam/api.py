@@ -9,15 +9,15 @@ from socket import timeout
 
 # Python 2 <-> 3 glue
 try:
-    from urllib import quote
+    from urllib.parse import quote
     from urllib.request import urlopen
     from urllib.request import Request as urlrequest
     from urllib.parse import urlencode
     from urllib import error as urlerror
 except ImportError:
-    from urllib2 import urlopen
-    from urllib2 import Request as urlrequest
-    from urllib import urlencode
+    from urllib.request import urlopen
+    from urllib.request import Request as urlrequest
+    from urllib.parse import urlencode
     import urllib2 as urlerror
 
 class SteamError(Exception):
@@ -142,7 +142,7 @@ class http_downloader(object):
         body = ''
 
         try:
-            print self._url
+            print(self._url)
             req = urlopen(urlrequest(self._url, headers = head), timeout = self._timeout)
             status_code = req.code
             body = req.read()

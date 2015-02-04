@@ -9,7 +9,7 @@ class RankSorter :
     @staticmethod
     def sort(teams, teamScores) :
       
-        scores, teams = zip(*sorted(zip(teamScores, teams), reverse=True))
+        scores, teams = list(zip(*sorted(zip(teamScores, teams), reverse=True)))
         return scores, teams
 
 

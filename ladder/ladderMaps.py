@@ -60,7 +60,7 @@ maps = {
 class ladderMaps(object):
     @staticmethod
     def getRandomMap():
-        keys = maps.keys()
+        keys = list(maps.keys())
         shuffle(keys)
         map = choice(keys)
         return map

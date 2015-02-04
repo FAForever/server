@@ -98,7 +98,7 @@ class gamesContainerClass(object):
         query.prepare("SELECT fileId, MAX(version) FROM `%s` LEFT JOIN %s ON `fileId` = %s.id GROUP BY fileId" % (tableModFiles, tableMod, tableMod))
         query.exec_()
         if query.size() != 0 :
-            while query.next() :
+            while next(query) :
                 value[int(query.value(0))] = int(query.value(1)) 
         
         return value

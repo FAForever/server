@@ -1,1 +1,1 @@
-from newsFeed import NewsFeed
+from .newsFeed import NewsFeed

@@ -18,7 +18,7 @@
 
 
 
-import namegen
+from . import namegen
 
 
 def generateName() :

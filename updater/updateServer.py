@@ -28,8 +28,8 @@ import logging
 import time
 
 
-import updateServerThread
-import createPatch
+from . import updateServerThread
+from . import createPatch
 import psutil
 import pprint
 

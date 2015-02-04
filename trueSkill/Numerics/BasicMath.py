@@ -17,6 +17,6 @@ def sumArray(itemsToSum, callback ) :
      @return number The sum.
 '''
     
-    mappedItems = map(callback, itemsToSum)
+    mappedItems = list(map(callback, itemsToSum))
     return sum(mappedItems)
 

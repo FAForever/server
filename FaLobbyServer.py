@@ -117,7 +117,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
         teams = game.getTeamsAssignements()
 
         teamsToSend = {}
-        for k, v in teams.iteritems():
+        for k, v in teams.items():
             if len(v) != 0:
                 teamsToSend[k] = v
 
@@ -186,8 +186,8 @@ class FALobbyServer(QtNetwork.QTcpServer):
           #prove they have been collected
          f.write("Collecting GARBAGE:")
          gc.collect()
-         print len(gc.get_objects())
-         print len(gc.garbage)
+         print(len(gc.get_objects()))
+         print(len(gc.garbage))
 
          f.write("\nGARBAGE OBJECTS:")
 

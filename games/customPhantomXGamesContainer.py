@@ -16,11 +16,10 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from gamesContainer import  gamesContainerClass
+from .gamesContainer import  gamesContainerClass
 from PySide import QtSql
 
 import games.phantomXGame
-reload(games.phantomXGame)
 from games.phantomXGame import phantomXGame
 
 class customPhantomXGamesContainerClass(gamesContainerClass):

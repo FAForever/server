@@ -44,7 +44,7 @@ class schema(object):
             # are in inventories, it's mostly just the schema that specifies qualities by non-loc name)
             qualities = {}
             quality_names = {}
-            for k, v in self._api["result"]["qualities"].items():
+            for k, v in list(self._api["result"]["qualities"].items()):
                 locname = self._api["result"]["qualityNames"][k]
                 idname = k.lower()
                 qualities[v] = (v, idname, locname)
@@ -124,7 +124,7 @@ class schema(object):
     def attributes(self):
         """ Returns all attributes in the schema """
         attrs = self._schema["attributes"]
-        return [item_attribute(attr) for attr in sorted(attrs.values(),
+        return [item_attribute(attr) for attr in sorted(list(attrs.values()),
             key = operator.itemgetter("defindex"))]
 
     @property
@@ -259,7 +259,7 @@ class item(object):
         """ Returns a list of classes that _can_ use the item. """
         sitem = self._schema_item
 
-        return [c for c in sitem.get("used_by_classes", self.equipped.keys()) if c]
+        return [c for c in sitem.get("used_by_classes", list(self.equipped.keys())) if c]
 
     @property
     def schema_id(self):
@@ -436,7 +436,7 @@ class item(object):
             if aname.startswith("kill eater"):
                 try:
                     # Get the name prefix (matches up type and score and determines the primary type for ranking)
-                    eateri = list(filter(None, aname.split(' ')))[-1]
+                    eateri = list([_f for _f in aname.split(' ') if _f])[-1]
                     if eateri.isdigit():
                         eateri = int(eateri)
                     else:
@@ -661,7 +661,7 @@ class item_attribute(object):
             d = time.gmtime(int(val))
             pval = time.strftime("%Y-%m-%d %H:%M:%S", d)
 
-        return u"{0}".format(pval)
+        return "{0}".format(pval)
 
     @property
     def formatted_description(self):
@@ -877,7 +877,7 @@ class asset_item:
         if base:
             pricemap = asset.get("original_prices", pricemap)
 
-        return dict([(currency, float(price) / 100) for currency, price in pricemap.items()])
+        return dict([(currency, float(price) / 100) for currency, price in list(pricemap.items())])
 
     @property
     def tags(self):

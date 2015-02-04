@@ -16,12 +16,11 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from gamesContainer import  gamesContainerClass
-from vanillaGame import vanillaClass
+from .gamesContainer import  gamesContainerClass
+from .vanillaGame import vanillaClass
 from PySide import QtSql
 
 import games.vanillaGame
-reload(games.vanillaGame)
 from games.vanillaGame import vanillaClass
 
 class customVanillaGamesContainerClass(gamesContainerClass):

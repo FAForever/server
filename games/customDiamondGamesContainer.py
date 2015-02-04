@@ -16,11 +16,10 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from gamesContainer import  gamesContainerClass
+from .gamesContainer import  gamesContainerClass
 from PySide import QtSql
 
 import games.diamondGame
-reload(games.diamondGame)
 from games.diamondGame import diamondGame
 
 class customDiamondGamesContainerClass(gamesContainerClass):

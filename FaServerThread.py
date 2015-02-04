@@ -23,13 +23,12 @@ from PySide import QtNetwork
 from PySide.QtSql import QSqlQuery
 
 import zlib
-import urllib
 import cgi
 import socket
 import base64
 import geoip
 import json
-import urllib2
+import urllib.parse
 
 from trueSkill.faPlayer import *
 from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
@@ -803,7 +802,7 @@ class FAServerThread(QObject):
                         query.exec_()
                         self.log.debug("Sending registration mail")
                         link = {'a': 'validate', 'email': keyHex, 'u': base64.b64encode(str(uid))}
-                        passwordLink = config['global']['app_url'] + "validateAccount.php?" + urllib.urlencode(link)
+                        passwordLink = config['global']['app_url'] + "validateAccount.php?" + urllib.parse.urlencode(link)
 
                         text = "Dear " + login + ",\n\n\
 Please visit the following link to validate your FAF account:\n\
@@ -961,7 +960,7 @@ Thanks,\n\
         query.prepare("SELECT `section`,`description` FROM `tutorial_sections`")
         query.exec_()
         if query.size() > 0:
-            while query.next():
+            while next(query):
                 jsonToSend = {"command": "tutorials_info", "section": query.value(0), "description": query.value(1)}
                 reply.append(self.prepareBigJSON(jsonToSend))
 
@@ -969,7 +968,7 @@ Thanks,\n\
             "SELECT tutorial_sections.`section`,`name`,`url`, `tutorials`.`description`, `map` FROM `tutorials` LEFT JOIN  tutorial_sections ON tutorial_sections.id = tutorials.section ORDER BY `tutorials`.`section`, name")
         query.exec_()
         if query.size() > 0:
-            while query.next():
+            while next(query):
                 jsonToSend = {"command": "tutorials_info", "tutorial": query.value(1), "url": query.value(2),
                               "tutorial_section": query.value(0), "description": query.value(3),
                               "mapname": query.value(4)}
@@ -985,7 +984,7 @@ Thanks,\n\
         query.prepare("SELECT name, description, filename, type, id FROM `coop_map`")
         query.exec_()
         if query.size() > 0:
-            while query.next():
+            while next(query):
                 jsonToSend = {"command": "coop_info", "name": query.value(0), "description": query.value(1),
                               "filename": query.value(2), "featured_mod": "coop"}
                 if query.value(3) == 0:
@@ -1070,7 +1069,7 @@ Thanks,\n\
                 stream.writeQString(str(arg))
             elif type(arg) is IntType:
                 stream.writeInt(arg)
-            elif isinstance(arg, basestring):
+            elif isinstance(arg, str):
                 stream.writeQString(arg)
             elif type(arg) is StringType:
                 stream.writeQString(arg)
@@ -1119,7 +1118,7 @@ Thanks,\n\
                         stream.writeQString(str(arg))
                     elif type(arg) is IntType:
                         stream.writeInt(arg)
-                    elif isinstance(arg, basestring):
+                    elif isinstance(arg, str):
                         stream.writeQString(arg)
                     elif type(arg) is StringType:
                         stream.writeQString(arg)
@@ -1332,7 +1331,7 @@ Thanks,\n\
         query.addBindValue(self.player.getId())
         query.exec_()
         if query.size() > 0:
-            while query.next():
+            while next(query):
                 self.player.modManager.append(query.value(0))
 
 
@@ -1354,7 +1353,7 @@ Thanks,\n\
             key = str(query.value(3))
 
             link = {'a': 'validate', 'email': key, 'u': base64.b64encode(str(uid))}
-            passwordLink = config['global']['app_url'] + "validateAccount.php?" + urllib.urlencode(link)
+            passwordLink = config['global']['app_url'] + "validateAccount.php?" + urllib.parse.urlencode(link)
             text = "Dear " + login + ",\n\n\
 Please visit the following link to validate your FAF account:\n\
 -----------------------\n\
@@ -1416,7 +1415,7 @@ Thanks,\n\
             query.exec_()
             if query.size() > 0:
                 avatarList = []
-                while query.next():
+                while next(query):
                     avatar = {"url": str(query.value(0)), "tooltip": str(query.value(1))}
                     avatarList.append(avatar)
 
@@ -1443,7 +1442,7 @@ Thanks,\n\
                 query.exec_()
                 if query.size() > 0:
                     avatarList = []
-                    while query.next():
+                    while next(query):
                         avatar = {"iduser": str(query.value(0)), "login": str(query.value(1))}
                         avatarid = query.value(2)
                         avatarList.append(avatar)
@@ -1832,7 +1831,7 @@ Thanks,\n\
 
                             if query.size() >= 4:
                                 query.first()
-                                for i in xrange(1, 4):
+                                for i in range(1, 4):
 
                                     score = float(query.value(0))
                                     idUser = int(query.value(1))
@@ -1856,7 +1855,7 @@ Thanks,\n\
                                                     "tooltip": ("Third of my division !")}
                                                 self.player.avatar = avatar
                                                 self.leagueAvatar = avatar
-                                    query.next()
+                                    next(query)
 
                             # check if top of the league :
                             query.prepare(
@@ -1867,7 +1866,7 @@ Thanks,\n\
                             if query.size() >= 4:
                                 query.first()
                                 ourScore = 0
-                                for i in xrange(1, 4):
+                                for i in range(1, 4):
 
                                     score = float(query.value(0))
                                     idUser = int(query.value(1))
@@ -1966,7 +1965,7 @@ Thanks,\n\
                 query.exec_()
 
                 if query.size() > 0:
-                    while query.next():
+                    while next(query):
                         self.friendList.append(str(query.value(0)))
 
                     jsonToSend = {"command": "social", "friends": self.friendList}
@@ -1977,7 +1976,7 @@ Thanks,\n\
                 query.addBindValue(self.uid)
                 query.exec_()
                 if query.size() > 0:
-                    while query.next():
+                    while next(query):
                         self.ladderMapList.append(int(query.value(0)))
 
                 query = QSqlQuery(self.parent.db)
@@ -1986,7 +1985,7 @@ Thanks,\n\
                 query.addBindValue(login)
                 query.exec_()
                 if query.size() > 0:
-                    while query.next():
+                    while next(query):
                         self.foeList.append(str(query.value(0)))
 
                     jsonToSend = {"command": "social", "foes": self.foeList}
@@ -2084,11 +2083,11 @@ Thanks,\n\
 
         elif (now.month == 6 and now.day < 21) or now.month < 6:
 
-            previous = datetime.datetime(now.year, 03, 21)
+            previous = datetime.datetime(now.year, 0o3, 21)
 
         elif (now.month == 9 and now.day < 21) or now.month < 9:
 
-            previous = datetime.datetime(now.year, 06, 21)
+            previous = datetime.datetime(now.year, 0o6, 21)
 
         else:
 
@@ -2128,7 +2127,7 @@ Thanks,\n\
 
         if query.size() > 0:
 
-            while query.next():
+            while next(query):
                 fileInfo = {"uid": query.value(0), "filename": query.value(1), "path": query.value(2)}
                 modFiles.append(fileInfo)
 
@@ -2139,7 +2138,7 @@ Thanks,\n\
 
         if query.size() > 0:
 
-            while query.next():
+            while next(query):
                 fileInfo = {"uid": query.value(0), "fileuid": query.value(1), "version": query.value(2),
                             "name": query.value(3)}
                 versionFiles.append(fileInfo)
@@ -2218,7 +2217,7 @@ Thanks,\n\
             query.exec_()
             if query.size() > 0:
 
-                while query.next():
+                while next(query):
                     avatar = {"url": str(query.value(0)), "tooltip": str(query.value(1))}
                     avatarList.append(avatar)
 
@@ -2502,7 +2501,7 @@ Thanks,\n\
             query.prepare("SELECT * FROM table_mod ORDER BY likes DESC LIMIT 0, 100")
             query.exec_()
             if query.size() != 0:
-                while query.next():
+                while next(query):
                     uid = str(query.value(1))
                     name = str(query.value(2))
                     version = int(query.value(3))
@@ -2521,7 +2520,7 @@ Thanks,\n\
                     icon = str(query.value(14))
                     thumbstr = ""
                     if icon != "":
-                        thumbstr = config['global']['content_url'] + "vault/mods_thumbs/" + urllib2.quote(icon)
+                        thumbstr = config['global']['content_url'] + "vault/mods_thumbs/" + urllib.parse.quote(icon)
 
                     out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=bugreports,
                                comments=comments, description=description, played=played, likes=likes,
@@ -2559,7 +2558,7 @@ Thanks,\n\
                 icon = str(query.value(14))
                 thumbstr = ""
                 if icon != "":
-                    thumbstr = config['global']['content_url'] + "vault/mods_thumbs/" + urllib2.quote(icon)
+                    thumbstr = config['global']['content_url'] + "vault/mods_thumbs/" + urllib.parse.quote(icon)
 
                 out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=bugreports,
                            comments=comments, description=description, played=played, likes=likes + 1,

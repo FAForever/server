@@ -1,4 +1,4 @@
-from GaussianFactor import *
+from .GaussianFactor import *
 
 
 from copy import copy 

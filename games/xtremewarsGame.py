@@ -17,9 +17,8 @@
 #-------------------------------------------------------------------------------
 
 
-import game
-gameClass = reload(game)
-from game import Game
+from . import game
+from .game import Game
 
 class xtremewarsGame(Game):
     '''Class for xtremewar game'''

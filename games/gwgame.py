@@ -20,9 +20,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-import game
+from . import game
 gameClass = reload(game)
-from game import Game
+from .game import Game
 
 import json
 import time

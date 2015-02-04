@@ -260,19 +260,19 @@ except LookupError:
     default_errors = 'strict'
 
 try:
-    from StringIO import StringIO as BytesIO
+    from io import StringIO as BytesIO
 except ImportError:
     from io import BytesIO as BytesIO
 
 try:
-    unicode
+    str
 except NameError:
     # Python 3
-    unicode = str
-    basestring = (bytes, str)
+    str = str
+    str = (bytes, str)
 
 try:
-    long
+    int
 except NameError:
     # Python 3
     long = int
@@ -309,7 +309,7 @@ class phpobject(object):
         return convert_member_dict(self.__php_vars__)
 
     def _lookup_php_var(self, name):
-        for key, value in self.__php_vars__.items():
+        for key, value in list(self.__php_vars__.items()):
             if _translate_member_name(key) == name:
                 return key, value
 
@@ -339,7 +339,7 @@ def convert_member_dict(d):
     ...                      "default", " * is_active": True})
     {'username': 'user1', 'password': 'default', 'is_active': True}
     """
-    return dict((_translate_member_name(k), v) for k, v in d.items())
+    return dict((_translate_member_name(k), v) for k, v in list(d.items()))
 
 
 def dumps(data, charset='utf-8', errors=default_errors, object_hook=None):
@@ -349,11 +349,11 @@ def dumps(data, charset='utf-8', errors=default_errors, object_hook=None):
     """
     def _serialize(obj, keypos):
         if keypos:
-            if isinstance(obj, (int, long, float, bool)):
+            if isinstance(obj, (int, float, bool)):
                 return ('i:%i;' % obj).encode('latin1')
-            if isinstance(obj, basestring):
+            if isinstance(obj, str):
                 encoded_obj = obj
-                if isinstance(obj, unicode):
+                if isinstance(obj, str):
                     encoded_obj = obj.encode(charset, errors)
                 s = BytesIO()
                 s.write(b's:')
@@ -370,13 +370,13 @@ def dumps(data, charset='utf-8', errors=default_errors, object_hook=None):
                 return b'N;'
             if isinstance(obj, bool):
                 return ('b:%i;' % obj).encode('latin1')
-            if isinstance(obj, (int, long)):
+            if isinstance(obj, int):
                 return ('i:%s;' % obj).encode('latin1')
             if isinstance(obj, float):
                 return ('d:%s;' % obj).encode('latin1')
-            if isinstance(obj, basestring):
+            if isinstance(obj, str):
                 encoded_obj = obj
-                if isinstance(obj, unicode):
+                if isinstance(obj, str):
                     encoded_obj = obj.encode(charset, errors)
                 s = BytesIO()
                 s.write(b's:')
@@ -388,7 +388,7 @@ def dumps(data, charset='utf-8', errors=default_errors, object_hook=None):
             if isinstance(obj, (list, tuple, dict)):
                 out = []
                 if isinstance(obj, dict):
-                    iterable = obj.items()
+                    iterable = list(obj.items())
                 else:
                     iterable = enumerate(obj)
                 for key, value in iterable:
@@ -459,7 +459,7 @@ def load(fp, charset='utf-8', errors=default_errors, decode_strings=False,
         _expect(b'{')
         result = []
         last_item = Ellipsis
-        for idx in xrange(items):
+        for idx in range(items):
             item = _unserialize()
             if last_item is Ellipsis:
                 last_item = item
@@ -545,7 +545,7 @@ def dict_to_list(d):
     # array_hook.
     d = dict(d)
     try:
-        return [d[x] for x in xrange(len(d))]
+        return [d[x] for x in range(len(d))]
     except KeyError:
         raise ValueError('dict is not a sequence')
 

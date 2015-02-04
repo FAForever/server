@@ -593,7 +593,7 @@ class Game(object):
     def fixArray(self, array):
         playerPositionDef = {}
         i = 1
-        for pos in sorted(array.iterkeys()):
+        for pos in sorted(array.keys()):
             if pos != -1:
                 if self.isPlayerInGame(array[pos]) or self.isAI(array[pos]):
                     playerPositionDef[i] = array[pos]

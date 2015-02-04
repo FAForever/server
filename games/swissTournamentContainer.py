@@ -16,11 +16,11 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from gamesContainer import  gamesContainerClass
+from .gamesContainer import  gamesContainerClass
 from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import * 
 from trueSkill.Team import *
 from trueSkill.Teams import *
-from ladderGame import ladder1V1Game
+from .ladderGame import ladder1V1Game
 
 import random, math
 from ladder.ladderMaps import ladderMaps
@@ -230,7 +230,7 @@ class swisstournament(object):
                 chunks = self.chunks(pairings, int(self.round_even() / 2))
                 
 
-                self.savePairing(self.curRound, zip(chunks[0], chunks[1]) )
+                self.savePairing(self.curRound, list(zip(chunks[0], chunks[1])) )
             
         else :
             #winners are matched against winners, losers against losers
@@ -269,7 +269,7 @@ class swisstournament(object):
                             listChanged = True
                            
                 if iteration == 40 :
-                    print "too many errors"
+                    print("too many errors")
                     break
                 if listChanged == False  :
                     break

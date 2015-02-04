@@ -1,1 +1,1 @@
-from depots import Depots
+from .depots import Depots

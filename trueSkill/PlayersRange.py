@@ -1,4 +1,4 @@
-from Numerics.Range import *
+from .Numerics.Range import *
 
 
 class PlayersRange(Range) :

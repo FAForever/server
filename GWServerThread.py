@@ -26,7 +26,7 @@ from PySide import QtCore, QtNetwork
 from PySide.QtSql import QSqlQuery
 
 import base64, zlib
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 from players import *
 
@@ -326,7 +326,7 @@ class GWServerThread(QObject):
                 stream.writeQString(str(arg))
             elif type(arg) is IntType:
                 stream.writeInt(arg)
-            elif isinstance(arg, basestring):                       
+            elif isinstance(arg, str):                       
                 stream.writeQString(arg)                  
             elif type(arg) is StringType  :
                 stream.writeQString(arg)
@@ -378,7 +378,7 @@ class GWServerThread(QObject):
                     stream.writeQString(str(arg))
                 elif type(arg) is IntType:
                     stream.writeInt(arg)
-                elif isinstance(arg, basestring):                       
+                elif isinstance(arg, str):                       
                     stream.writeQString(arg)                  
                 elif type(arg) is StringType  :
                     stream.writeQString(arg)
