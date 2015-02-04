@@ -5,7 +5,10 @@ python:
 
 install:
   - "sh ./.travis.sh"
-  - "pip install flexmock pytest pytest-qt pytest-cov python-coveralls configobj mock pyside"
+  - "sudo apt-get install libqt4-dev"
+  - "pip install PySide --no-index --find-links=http://content.dev.faforever.com/wheel/"
+  - python ~/virtualenv/python${TRAVIS_PYTHON_VERSION}/bin/pyside_postinstall.py -install
+  - "pip install flexmock pytest pytest-qt pytest-cov python-coveralls configobj mock"
 
 script:
   - py.test --cov . --cov-report term-missing
