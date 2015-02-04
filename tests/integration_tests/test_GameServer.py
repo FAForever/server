@@ -9,7 +9,7 @@ from players import playersOnline
 
 logging.getLogger().addHandler(logging.StreamHandler())
 logging.getLogger().setLevel(logging.DEBUG)
-
+app = QCoreApplication([])
 @pytest.fixture
 def patch_config(monkeypatch):
     monkeypatch.setattr('GameConnection.config',
