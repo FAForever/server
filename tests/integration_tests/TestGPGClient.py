@@ -13,7 +13,7 @@ class TestGPGClient(QObject):
         super(TestGPGClient, self).__init__(parent)
         self.logger = logging.getLogger(__name__)
         self.logger.debug("Connecting to %s : %s" % (address, port))
-        self.messages = mock.Mock()
+        self.messages = mock.MagicMock()
         self.socket = QTcpSocket()
         self.socket.connected.connect(self._on_connected)
         self.socket.error.connect(self._on_error)
@@ -29,15 +29,15 @@ class TestGPGClient(QObject):
         self.socket.abort()
 
     def _on_connected(self):
-        print "Connected"
+        self.logger.debug("Connected")
         self.connected.emit()
 
     def _on_error(self, msg):
-        print "Error %s" % msg
-        print self.socket.errorString()
+        self.logger.info("Error %s" % msg)
+        self.logger.info(self.socket.errorString())
 
     def _on_state_change(self, state):
-        print "State changed to %s" % state
+        self.logger.debug("State changed to %s" % state)
 
     def sendGameState(self, arguments):
         self.transport.send_message({'action': 'GameState', 'chuncks': arguments})

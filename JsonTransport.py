@@ -8,6 +8,7 @@ from PySide.QtCore import QObject
 
 class Transport(QObject):
     messageReceived = QtCore.Signal(str)
+    writeFailed = QtCore.Signal(str)
 
     def __init__(self, socket):
         super(Transport, self).__init__()
@@ -15,13 +16,16 @@ class Transport(QObject):
         self.logger = logging.getLogger(__name__)
 
     def _on_message(self, msg):
+        self.logger.debug("<< %r" % msg)
         self.messageReceived.emit(msg)
 
     def _onWriteFailed(self):
         self.logger.warn("Write failed")
+        self.writeFailed.emit(self.socket.errorString())
         pass
 
     def send_message(self, msg):
+        self.logger.debug(">> %r" % msg)
         self._send(msg)
 
 

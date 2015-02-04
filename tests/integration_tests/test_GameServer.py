@@ -24,4 +24,4 @@ def test_timeout(qtbot, patch_config, player_service, games):
             with qtbot.waitSignal(client.transport.messageReceived):
                 client.sendGameState(['Idle'])
                 print client.messages.mock_calls
-                assert True
+                assert False
