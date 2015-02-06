@@ -10,6 +10,10 @@ install:
   - python ~/virtualenv/python${TRAVIS_PYTHON_VERSION}/bin/pyside_postinstall.py -install
   - "pip install flexmock pytest pytest-qt pytest-cov python-coveralls configobj mock quamash"
 
+before_script:
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+
 script:
   - export QUAMASH_QTIMPL=PySide
   - py.test --cov . --cov-report term-missing
