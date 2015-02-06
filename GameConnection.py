@@ -448,7 +448,7 @@ class GameConnection(QObject):
                 self.game.addDesync()
 
             elif key == 'ProcessNatPacket':
-                self.handle_nat_packet(values[0], values[1])
+                self.handle_process_nat_packet(values[0], values[1])
 
             elif key == 'GameState':
                 state = values[0]
@@ -710,8 +710,9 @@ class GameConnection(QObject):
 
                 #self.sendToRelay("SendNatPacket", [str(values[0]), datasUdp])
 
-    def handle_nat_packet(self, ip, message):
-        if message == 'ARE YOU ALIVE?':
+    def handle_process_nat_packet(self, ip, message):
+        self.log.debug("ProcessNatPacket %s" % message)
+        if message == 'ARE YOU ALIVE? %s' % self.player.getId():
             self.connectivity_state = 'PUBLIC'
             self.log.info("Peer is publicly accessible")
         self.nat_packets[ip] = message
@@ -727,6 +728,7 @@ class GameConnection(QObject):
             yield from asyncio.sleep(0.1)
             if self.connectivity_state == 'PUBLIC':
                 times_sent = 500
+                self.sendToRelay('ConnectivityState', [self.player.getId(), 'PUBLIC'])
             times_sent += 1
 
     def handleGameState(self, state):

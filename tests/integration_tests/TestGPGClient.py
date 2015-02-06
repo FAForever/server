@@ -9,6 +9,9 @@ import time
 
 
 class TestGPGClient(QObject):
+    """
+    Client used for acting as a GPGNet client.
+    """
     connected = Signal()
     receivedTcp = Signal(str)
     receivedUdp = Signal(str)
@@ -43,6 +46,7 @@ class TestGPGClient(QObject):
         self.tcp_socket.stateChanged.connect(self._on_state_change)
         self.transport = QDataStreamJsonTransport(self.tcp_socket)
         self.transport.messageReceived.connect(self.messages)
+        self.transport.messageReceived.connect(self.receivedTcp)
         self.tcp_socket.connectToHost(address, port)
         self.udp_socket.bind(udp_port)
 
@@ -76,3 +80,6 @@ class TestGPGClient(QObject):
 
     def send_game_state(self, arguments):
         self.transport.send_message({'action': 'GameState', 'chuncks': arguments})
+
+    def send_process_nat_packet(self, arguments):
+        self.transport.send_message({'action': 'ProcessNatPacket', 'chuncks': arguments})
