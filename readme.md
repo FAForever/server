@@ -3,7 +3,8 @@ FA Forever - Server
 master|develop
  ------------ | -------------
 [![Build Status](https://travis-ci.org/FAForever/server.svg?branch=master)](https://travis-ci.org/FAForever/server) | [![Build Status](https://travis-ci.org/FAForever/server.svg?branch=develop)](https://travis-ci.org/FAForever/server)
-[![Coverage Status](https://coveralls.io/repos/FAForever/server/badge.png?branch=coverage)](https://coveralls.io/r/FAForever/server?branch=master) | [![Coverage Status](https://coveralls.io/repos/FAForever/server/badge.png?branch=coverage)](https://coveralls.io/r/FAForever/server?branch=develop)
+[![Coverage Status](https://coveralls.io/repos/FAForever/server/badge.png?branch=master)](https://coveralls.io/r/FAForever/server?branch=master) | [![Coverage Status](https://coveralls.io/repos/FAForever/server/badge.png?branch=develop)](https://coveralls.io/r/FAForever/server?branch=develop)
+
 
 This is the source code for the FA Forever server.
 
