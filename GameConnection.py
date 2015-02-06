@@ -31,9 +31,8 @@ from games.game import GameState
 from trueSkill.faPlayer import *
 from trueSkill.Team import *
 from trueSkill.Player import *
-from faPackets import Packet
 from config import config
-from UDPTester import UDPTester
+from Connectivity import UdpMessage
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +130,6 @@ class GameConnection(QObject):
         self.transport = None
         self.nat_packets = {}
         self.connectivity_state = 'UNTESTED'
-
 
     def accept(self, socket):
         """
@@ -352,7 +350,7 @@ class GameConnection(QObject):
                 "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.getuuid()), str(self.game.getGamemod())))
             self.logGame = strlog
             initmode = self.game.getInitMode()
-            self.initSupcom(initmode)
+            self._send_create_lobby(initmode)
 
         elif action == "JOIN":
             if self.player.getLogin() in self.game.packetReceived:
@@ -366,7 +364,7 @@ class GameConnection(QObject):
             self.logGame = strlog
 
             initmode = self.game.getInitMode()
-            self.initSupcom(initmode)
+            self._send_create_lobby(initmode)
 
         else:
             # We tell the lobby that FA must be killed.
@@ -452,7 +450,7 @@ class GameConnection(QObject):
 
             elif key == 'GameState':
                 state = values[0]
-                self.handleGameState(state)
+                self.handle_game_state(state)
 
             elif key == 'GameOption':
 
@@ -722,7 +720,7 @@ class GameConnection(QObject):
         times_sent = 0
         while times_sent < 3:
             self.log.debug("Sending connectivity packet")
-            UDPTester(QHostAddress(self.player.getIp()),
+            UdpMessage(QHostAddress(self.player.getIp()),
                       self.player.getGamePort(),
                       '\x08ARE YOU ALIVE? %s' % self.player.getId())
             yield from asyncio.sleep(0.1)
@@ -731,7 +729,7 @@ class GameConnection(QObject):
                 self.sendToRelay('ConnectivityState', [self.player.getId(), 'PUBLIC'])
             times_sent += 1
 
-    def handleGameState(self, state):
+    def handle_game_state(self, state):
         """
         Changes in game state
         :param state: new state
@@ -742,7 +740,9 @@ class GameConnection(QObject):
             self._handle_idle_state()
 
         elif state == 'Lobby':
-            # waiting for command
+            # The game is initialized and awaiting commands
+            # At this point, it is listening locally on the
+            # port we told it to (self.player.getGamePort())
             asyncio.async(self.ping_for_nat())
             self._handle_lobby_state()
 
@@ -879,11 +879,14 @@ class GameConnection(QObject):
     def ejectPlayer(self, player):
         self.sendToRelay("EjectPlayer", [int(player.getId())])
 
-    def initSupcom(self, rankedMode):
-        ''' We init FA with the right infos about the player.'''
-        port = None
-        login = None
-        uid = None
+    def _send_create_lobby(self, rankedMode):
+        """
+        Used for initializing the game to start listening on UDP
+        :param rankedMode int:
+            If 1: The game uses autolobby.lua
+               0: The game uses lobby.lua
+        :return: None
+        """
         if self.game is None:
             text = "You were unable to connect to the host because he has left the game."
             self.lobby.sendJSON(dict(command="notice", style="kill"))
@@ -894,11 +897,11 @@ class GameConnection(QObject):
             if self.pingTimer:
                 self.pingTimer.stop()
             return
+
         port = self.player.getGamePort()
-
         login = self.player.getLogin()
-
         uid = int(self.player.getId())
+
         if not self.game.getGameName() is None:
             if self.game.getGameName().startswith('#'):
                 self.sendToRelay("P2PReconnect", [])

@@ -34,5 +34,4 @@ def test_out_of_band_udp(loop, patch_config, players, player_service, games):
             client.send_process_nat_packet(["%s:%s" % (player.getIp(), player.getGamePort()),
                                             "ARE YOU ALIVE? %s" % player.getId()])
             loop.run_until_complete(wait_signal(client.receivedTcp, 2))
-            print(client.messages.mock_calls)
             client.messages.assert_any_call(json.dumps({"key": "ConnectivityState", "commands": [player.getId(), "PUBLIC"]}))
