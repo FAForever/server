@@ -22,8 +22,9 @@ import logging
 from GameConnection import GameConnection
 
 class FAServer(QTcpServer):
-    def __init__(self, listUsers, Games, db,  dirtyGameList, parent=None):
+    def __init__(self, loop, listUsers, Games, db,  dirtyGameList, parent=None):
         super(FAServer, self).__init__(parent)
+        self.loop = loop
         self.parent = parent
         self.logger = logging.getLogger(__name__)
         self.sockets = {}
@@ -66,7 +67,7 @@ class FAServer(QTcpServer):
         socket = QTcpSocket()
         if socket.setSocketDescriptor(socket_id):
             self.sockets[socket_id] = socket
-            connection = GameConnection(self.listUsers, self.games, self.db, self)
+            connection = GameConnection(self.loop, self.listUsers, self.games, self.db, self)
             connection.accept(socket)
             self.recorders.append(connection)
 

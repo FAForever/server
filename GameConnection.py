@@ -16,6 +16,7 @@
 # GNU General Public License for more details.
 # -------------------------------------------------------------------------------
 
+import asyncio
 import string
 import time
 import json
@@ -23,7 +24,7 @@ import logging
 
 from PySide.QtCore import QTimer, QObject
 from PySide import QtCore, QtNetwork
-from PySide.QtNetwork import QTcpSocket, QAbstractSocket
+from PySide.QtNetwork import QTcpSocket, QAbstractSocket, QHostAddress
 from PySide.QtSql import *
 from games.game import GameState
 
@@ -32,6 +33,7 @@ from trueSkill.Team import *
 from trueSkill.Player import *
 from faPackets import Packet
 from config import config
+from UDPTester import UDPTester
 
 logger = logging.getLogger(__name__)
 
@@ -60,9 +62,10 @@ class GameConnection(QObject):
     """
     Responsible for the games protocol.
     """
-    def __init__(self, users, games, db, parent=None):
+    def __init__(self, loop, users, games, db, parent=None):
         super(GameConnection, self).__init__(parent)
 
+        self.loop = loop
         self.users = users
         self.games = games
 
@@ -126,6 +129,9 @@ class GameConnection(QObject):
         self.socket = None
         self.lobby = None
         self.transport = None
+        self.nat_packets = {}
+        self.connectivity_state = 'UNTESTED'
+
 
     def accept(self, socket):
         """
@@ -133,13 +139,13 @@ class GameConnection(QObject):
 
         Will look up the user using the provided users service
         :param socket: An initialised socket
-        :type socket QAbstractSocket
+        :type socket QTcpSocket
         :raise AssertionError
         :return: bool
         """
         assert socket.isValid()
         assert socket.state() == QAbstractSocket.ConnectedState
-        self.log.debug("Accepting connection on socket %r" % socket)
+        self.log.debug("Accepting connection from %r" % socket.peerAddress())
         self.socket = socket
         self.socket.setSocketOption(QTcpSocket.KeepAliveOption, 1)
         self.socket.disconnected.connect(self.disconnection)
@@ -442,7 +448,7 @@ class GameConnection(QObject):
                 self.game.addDesync()
 
             elif key == 'ProcessNatPacket':
-                self.handleNatPacket(values)
+                self.handle_nat_packet(values[0], values[1])
 
             elif key == 'GameState':
                 state = values[0]
@@ -702,8 +708,26 @@ class GameConnection(QObject):
 
                 datasUdp = "/PLAYERID " + str(playerUid) + " " + playerName
 
-                self.sendToRelay("SendNatPacket", [str(values[0]), datasUdp])
+                #self.sendToRelay("SendNatPacket", [str(values[0]), datasUdp])
 
+    def handle_nat_packet(self, ip, message):
+        if message == 'ARE YOU ALIVE?':
+            self.connectivity_state = 'PUBLIC'
+            self.log.info("Peer is publicly accessible")
+        self.nat_packets[ip] = message
+
+    @asyncio.coroutine
+    def ping_for_nat(self):
+        times_sent = 0
+        while times_sent < 3:
+            self.log.debug("Sending connectivity packet")
+            UDPTester(QHostAddress(self.player.getIp()),
+                      self.player.getGamePort(),
+                      '\x08ARE YOU ALIVE? %s' % self.player.getId())
+            yield from asyncio.sleep(0.1)
+            if self.connectivity_state == 'PUBLIC':
+                times_sent = 500
+            times_sent += 1
 
     def handleGameState(self, state):
         """
@@ -717,6 +741,7 @@ class GameConnection(QObject):
 
         elif state == 'Lobby':
             # waiting for command
+            asyncio.async(self.ping_for_nat())
             self._handle_lobby_state()
 
         elif state == 'Launching':
@@ -892,7 +917,7 @@ class GameConnection(QObject):
         datas = "/PLAYERID " + str(self.player.getId()) + " " + self.player.getLogin()
 
         # FIXME: we should make this a hostname and let the client resolve.
-        self.sendToRelay("SendNatPacket", [str(config['global']['lobby_ip']) + ":30351", datas])
+        #self.sendToRelay("SendNatPacket", [str(config['global']['lobby_ip']) + ":30351", datas])
 
     def createLobby(self, mapname):
         ''' Create a lobby with a specific map'''
@@ -961,7 +986,7 @@ class GameConnection(QObject):
                         playerName = self.game.getPlayerName(self.player)
 
                     datas = "/ASKREPLY " + playerName
-                    self.sendToRelay("SendNatPacket", [str(gameAddress), datas])
+                    #self.sendToRelay("SendNatPacket", [str(gameAddress), datas])
                     self.player.addCountUdpPacket(str(gameAddress))
 
                 else:
@@ -1116,12 +1141,12 @@ class GameConnection(QObject):
 
                                 # send some info about us and ask for a reply.
                                 datas = "/PLAYERID " + str(playerUid) + " " + playerName
-                                reply = Packet(SendNatPacket=[str(address), datas])
+                                #reply = Packet(SendNatPacket=[str(address), datas])
                                 if self.noSocket == False and self.socket.isValid():
                                     self.sendToRelay("SendNatPacket", [str(address), datas])
 
                                 datas = "/ASKREPLY " + playerName
-                                reply = Packet(SendNatPacket=[str(address), datas])
+                                #reply = Packet(SendNatPacket=[str(address), datas])
                                 if self.noSocket == False and self.socket.isValid():
                                     self.sendToRelay("SendNatPacket", [str(address), datas])
 

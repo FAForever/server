@@ -39,6 +39,7 @@ def player(login, id, port, action):
     p.getAction = mock.Mock(return_value=action)
     p.getLogin = mock.Mock(return_value=login)
     p.getId = mock.Mock(return_value=id)
+    p.getIp = mock.Mock(return_value='127.0.0.1')
     return p
 
 @pytest.fixture
@@ -62,11 +63,11 @@ def games(game):
     )
 
 @pytest.fixture
-def game_connection(game, player_service, players, games, transport, monkeypatch, connected_game_socket):
+def game_connection(game, loop, player_service, players, games, transport, monkeypatch, connected_game_socket):
     monkeypatch.setattr('GameConnection.config',
                         mock.MagicMock(return_value={'global':
                                                          mock.MagicMock(return_value={'lobby_ip': '192.168.0.1'})}))
-    conn = GameConnection(users=player_service, games=games, db=None, parent=None)
+    conn = GameConnection(loop=loop, users=player_service, games=games, db=None, parent=None)
     conn.socket = connected_game_socket
     conn.transport = transport
     conn.player = players.hosting
@@ -90,6 +91,7 @@ def test_handle_action_GameState_idle_sends_CreateLobby(game_connection, players
     game_connection.player = players.joining
     game_connection.handle_action('GameState', ['Idle'])
     games.getGameByUuid.assert_called_once_with(players.joining.getGame())
+    print(transport.send_message.mock_calls)
     transport.send_message.assert_any_call({'key': 'CreateLobby',
                                             'commands': [0, players.joining.getGamePort(),
                                                          players.joining.getLogin(), 2, 1]})
