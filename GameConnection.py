@@ -26,13 +26,13 @@ from PySide.QtCore import QTimer, QObject
 from PySide import QtCore, QtNetwork
 from PySide.QtNetwork import QTcpSocket, QAbstractSocket, QHostAddress
 from PySide.QtSql import *
+from Connectivity import TestPeer
 from games.game import GameState
 
 from trueSkill.faPlayer import *
 from trueSkill.Team import *
 from trueSkill.Player import *
 from config import config
-from Connectivity import UdpMessage
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +130,7 @@ class GameConnection(QObject):
         self.transport = None
         self.nat_packets = {}
         self.connectivity_state = 'UNTESTED'
+        self._subscribers = []
 
     def accept(self, socket):
         """
@@ -184,6 +185,22 @@ class GameConnection(QObject):
         self.tasks.timeout.connect(self.doTask)
         self.tasks.start(200)
         return True
+
+    def subscribe(self, f):
+        """
+        Subscribe to messages from this GameConnection
+        :param f: function to call on messages
+        :return: None
+        """
+        self._subscribers.append(f)
+
+    def unsubscribe(self, f):
+        """
+        Unusubscribe a given function from messages
+        :param f: function to unsubscribe
+        :return:
+        """
+        self._subscribers.remove(f)
 
     def containsAny(self, str, set):
         """Check whether 'str' contains ANY of the chars in 'set'"""
@@ -378,11 +395,17 @@ class GameConnection(QObject):
         except:
             pass
 
+    @asyncio.coroutine
     def _handle_lobby_state(self):
         """
-        Player is in lobby state. We need to tell him to connect to the host,
-        or create the lobby itself if he is the host.
+        The game has told us it is ready and listening on
+        self.player.getGamePort() for UDP.
+        We determine the connectivity of the peer and respond
+        appropriately
         """
+        self.peer_test = TestPeer(self)
+        connectivity_state = yield from asyncio.async(self.peer_test.determine_connectivity())
+        self.sendToRelay('ConnectivityState', [self.player.getId(), connectivity_state.value])
         playeraction = self.player.getAction()
         if playeraction == "HOST":
             map = self.game.getMapName()
@@ -401,9 +424,10 @@ class GameConnection(QObject):
         This function was created when the FA protocol was moved to the lobby itself
         """
         message = json.loads(action)
-        self.handle_action(message["action"], message["chuncks"])
+        asyncio.async(self.handle_action(message["action"], message["chuncks"]))
 
 
+    @asyncio.coroutine
     def handle_action(self, key, values):
         """
         Handle GpgNetSend messages, wrapped in the JSON protocol
@@ -413,6 +437,7 @@ class GameConnection(QObject):
         :type values list
         :return: None
         """
+        self.log.debug("handle_action %s:%s" % (key, values))
         try:
             if key == 'ping':
                 return
@@ -450,7 +475,7 @@ class GameConnection(QObject):
 
             elif key == 'GameState':
                 state = values[0]
-                self.handle_game_state(state)
+                yield from self.handle_game_state(state)
 
             elif key == 'GameOption':
 
@@ -715,20 +740,8 @@ class GameConnection(QObject):
             self.log.info("Peer is publicly accessible")
         self.nat_packets[ip] = message
 
-    @asyncio.coroutine
-    def ping_for_nat(self):
-        times_sent = 0
-        while times_sent < 3:
-            self.log.debug("Sending connectivity packet")
-            UdpMessage(QHostAddress(self.player.getIp()),
-                      self.player.getGamePort(),
-                      '\x08ARE YOU ALIVE? %s' % self.player.getId())
-            yield from asyncio.sleep(0.1)
-            if self.connectivity_state == 'PUBLIC':
-                times_sent = 500
-                self.sendToRelay('ConnectivityState', [self.player.getId(), 'PUBLIC'])
-            times_sent += 1
 
+    @asyncio.coroutine
     def handle_game_state(self, state):
         """
         Changes in game state
@@ -743,8 +756,9 @@ class GameConnection(QObject):
             # The game is initialized and awaiting commands
             # At this point, it is listening locally on the
             # port we told it to (self.player.getGamePort())
-            asyncio.async(self.ping_for_nat())
-            self._handle_lobby_state()
+            # We schedule an async task to determine their connectivity
+            # and respond appropriately
+            yield from asyncio.async(self._handle_lobby_state())
 
         elif state == 'Launching':
             # game launch, the user is playing !
