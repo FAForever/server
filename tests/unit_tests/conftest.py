@@ -21,7 +21,7 @@ def lobbythread():
 
 @pytest.fixture()
 def db():
-    db = QtSql.QSqlDatabase()
+    db = QtSql.QSqlDatabase() #mock.Mock(spec=QtSql.QSqlDatabase)
     db.isOpen = mock.Mock(return_value=True)
     return db
 

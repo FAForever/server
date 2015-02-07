@@ -10,7 +10,8 @@ from games import Game
 from JsonTransport import Transport
 
 handler = logging.StreamHandler()
-handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s'))
+handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s',
+                                       '%M:%S'))
 logging.getLogger('quamash').setLevel(logging.INFO)
 logging.getLogger().addHandler(handler)
 logging.getLogger().setLevel(logging.DEBUG)
@@ -41,6 +42,9 @@ def patch_config(monkeypatch):
     monkeypatch.setattr('gameconnection.config',
                         mock.MagicMock(spec={'global':
                              mock.MagicMock(return_value={'lobby_ip': '192.168.0.1'})}))
+    monkeypatch.setattr('connectivity.config',
+                        mock.MagicMock(spec={'global':
+                                                 mock.MagicMock(return_value={'lobby_ip': '192.168.0.1'})}))
 
 @pytest.fixture
 def patch_connectivity(monkeypatch):

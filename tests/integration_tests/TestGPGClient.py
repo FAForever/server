@@ -60,7 +60,7 @@ class TestGPGClient(QObject):
     def _on_udp_message(self):
         while self.udp_socket.hasPendingDatagrams():
             data, host, port = self.udp_socket.readDatagram(self.udp_socket.pendingDatagramSize())
-            self.logger.debug("UDP(%s:%s)<< %s" % (host, port, data))
+            self.logger.debug("UDP(%s:%s)<< %s" % (host.toString(), port, data))
             self.udp_messages(str(data))
             self.receivedUdp.emit(data)
 

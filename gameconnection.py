@@ -181,9 +181,9 @@ class GameConnection(QObject):
         self.player.setGameSocket(self.socket)
         self.player.setWantGame(False)
 
-        self.tasks = QTimer(self)
-        self.tasks.timeout.connect(self.doTask)
-        self.tasks.start(200)
+        #self.tasks = QTimer(self)
+        #self.tasks.timeout.connect(self.doTask)
+        #self.tasks.start(200)
         return True
 
     def subscribe(self, f):
@@ -403,9 +403,13 @@ class GameConnection(QObject):
         We determine the connectivity of the peer and respond
         appropriately
         """
-        self.peer_test = TestPeer(self)
-        connectivity_state = yield from asyncio.async(self.peer_test.determine_connectivity())
-        self.sendToRelay('ConnectivityState', [self.player.getId(), connectivity_state.value])
+        with TestPeer(self,
+                      self.player.getIp(),
+                      self.player.getGamePort(),
+                      self.player.getId()) as peer_test:
+            connectivity_state = yield from asyncio.async(peer_test.determine_connectivity())
+            self.sendToRelay('ConnectivityState', [self.player.getId(), connectivity_state.value])
+
         playeraction = self.player.getAction()
         if playeraction == "HOST":
             map = self.game.getMapName()
@@ -439,6 +443,9 @@ class GameConnection(QObject):
         """
         self.log.debug("handle_action %s:%s" % (key, values))
         try:
+            for subscriber in self._subscribers:
+                if hasattr(subscriber, 'handle_%s' % key):
+                    getattr(subscriber, 'handle_%s' % key)(values)
             if key == 'ping':
                 return
 
@@ -471,7 +478,7 @@ class GameConnection(QObject):
                 self.game.addDesync()
 
             elif key == 'ProcessNatPacket':
-                self.handle_process_nat_packet(values[0], values[1])
+                pass
 
             elif key == 'GameState':
                 state = values[0]
@@ -598,8 +605,7 @@ class GameConnection(QObject):
                         self.game.deleteGroup(group, playerResult)
 
             else:
-                self.log.error(self.logGame + "Unknown key")
-                self.log.error(self.logGame + key)
+                pass
         except:
             self.log.exception(self.logGame + "Something awful happened in a game thread!")
 
@@ -732,14 +738,6 @@ class GameConnection(QObject):
                 datasUdp = "/PLAYERID " + str(playerUid) + " " + playerName
 
                 #self.sendToRelay("SendNatPacket", [str(values[0]), datasUdp])
-
-    def handle_process_nat_packet(self, ip, message):
-        self.log.debug("ProcessNatPacket %s" % message)
-        if message == 'ARE YOU ALIVE? %s' % self.player.getId():
-            self.connectivity_state = 'PUBLIC'
-            self.log.info("Peer is publicly accessible")
-        self.nat_packets[ip] = message
-
 
     @asyncio.coroutine
     def handle_game_state(self, state):

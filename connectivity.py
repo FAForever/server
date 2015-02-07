@@ -1,15 +1,24 @@
+from concurrent.futures import CancelledError, TimeoutError
 from PySide.QtNetwork import QUdpSocket, QHostAddress
 import asyncio
 import logging
 from enum import Enum
 
+from config import config
+
 logger = logging.getLogger(__name__)
+
 
 class Observable():
     def __init__(self):
         pass
-    def __call__(self, *args, **kwargs):
+
+    def subscribe(self):
         pass
+
+    def unsubscribe(self):
+        pass
+
 
 class Connectivity(Enum):
     """
@@ -38,10 +47,18 @@ class UdpMessage():
         self.socket.connectToHost(remote_addr, remote_port)
         self.socket.error.connect(self._on_error)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            self.socket.abort()
+        except:
+            pass
+
     def send_payload(self):
-        logger.debug("UDP(%s:%s)>> %s" % (self.remote_addr, self.remote_port, self.message))
+        logger.debug("UDP(%s:%s)>> %s" % (self.remote_addr.toString(), self.remote_port, self.message))
         self.socket.writeDatagram(self.message.encode(), self.remote_addr, self.remote_port)
-        self.socket.abort()
 
     def _on_error(self):
         logger.debug("UDP socket error %s" % self.socket.errorString)
@@ -51,45 +68,63 @@ class TestPeer():
     """
     Determine the connectivity state of a peer.
     """
-    def __init__(self, game_connection: Observable):
+
+    def __init__(self, connection,
+                 host: str,
+                 port: int,
+                 identifier: str):
         """
-        :param game_connection: Used for subscribing to ProcessNatPacket events
+        :param events: Used for subscribing to ProcessNatPacket events
         :return: None
         """
         super(TestPeer, self).__init__()
-        self.game_connection = game_connection
+        self.connection = connection
+        self.connectivity_state = None
+        self.remote_addr = (host, port)
+        self.identifier = identifier
+        self.connection.log.debug("Testing peer connectivity")
+        self.packets = []
 
     def __enter__(self):
-        self.game_connection.subscribe(self.handle_messsage)
+        self.connection.subscribe(self)
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.game_connection.unsubscribe(self.handle_messsage)
+        self.connection.unsubscribe(self)
 
-    def handle_message(self, message):
-        pass
 
     @asyncio.coroutine
     def determine_connectivity(self):
-        connectivity = Connectivity.PROXY
-        public = yield from asyncio.wait_for(self.test_public(), 1)
-        if public:
-            connectivity = Connectivity.PUBLIC
-        return connectivity
+        try:
+            if (yield from self.test_public()):
+                return Connectivity.PUBLIC
+            elif (yield from self.test_stun()):
+                return Connectivity.STUN
+            else:
+                return Connectivity.PROXY
+        except (TimeoutError, CancelledError):
+            pass
+        return Connectivity.PROXY
 
-    @asyncio.coroutine
-    def receive_nat_packet(self, message: str):
-        pass
+    def handle_ProcessNatPacket(self, arguments):
+        self.packets.append(arguments)
 
     @asyncio.coroutine
     def test_public(self):
-        times_sent = 0
-        while times_sent < 3:
-            self.game_connection.log.debug("Sending connectivity packet")
-            UdpMessage(QHostAddress(self.game_connection.player.getIp()),
-                       self.game_connection.player.getGamePort(),
-                       '\x08ARE YOU ALIVE? %s' % self.game_connection.player.getId())
+        for i in range(1, 3):
+            with UdpMessage(QHostAddress(self.remote_addr[0]),
+                            self.remote_addr[1],
+                            "\x08Are you public? %s" % self.identifier):
+                yield from asyncio.sleep(0.1)
+        return any(map(lambda args: "Are you public? %s" % self.identifier in args,
+                       self.packets))
+
+    @asyncio.coroutine
+    def test_stun(self):
+        try:
+            self.connection.sendToRelay('SendNatPacket', ["%s:%s" % (config['lobby_ip'],
+                                                                     config['lobby_udptest_port']),
+                                                          "Hello %s" % self.identifier])
             yield from asyncio.sleep(0.1)
-            if self.game_connection.connectivity_state == 'PUBLIC':
-                return Connectivity.PUBLIC
-            times_sent += 1
-        return Connectivity.STUN
+        except CancelledError:
+            pass

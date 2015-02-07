@@ -22,13 +22,13 @@ import logging
 from gameconnection import GameConnection
 
 class FAServer(QTcpServer):
-    def __init__(self, loop, listUsers, Games, db,  dirtyGameList, parent=None):
+    def __init__(self, loop, listUsers, Games, db, dirtyGameList, parent=None):
         super(FAServer, self).__init__(parent)
         self.loop = loop
         self.parent = parent
         self.logger = logging.getLogger(__name__)
         self.sockets = {}
-        self.logger.debug("initializing server")
+        self.logger.debug("Starting FAServer")
         self.dirtyGameList = dirtyGameList
         self.listUsers = listUsers
         self.games = Games
