@@ -19,7 +19,7 @@
 
 from PySide.QtNetwork import QTcpServer, QTcpSocket
 import logging
-from GameConnection import GameConnection
+from gameconnection import GameConnection
 
 class FAServer(QTcpServer):
     def __init__(self, loop, listUsers, Games, db,  dirtyGameList, parent=None):

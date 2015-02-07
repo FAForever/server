@@ -26,7 +26,7 @@ from PySide.QtCore import QTimer, QObject
 from PySide import QtCore, QtNetwork
 from PySide.QtNetwork import QTcpSocket, QAbstractSocket, QHostAddress
 from PySide.QtSql import *
-from Connectivity import TestPeer
+from connectivity import TestPeer
 from games.game import GameState
 
 from trueSkill.faPlayer import *

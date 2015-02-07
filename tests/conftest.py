@@ -38,7 +38,7 @@ def loop(request, application):
 
 @pytest.fixture
 def patch_config(monkeypatch):
-    monkeypatch.setattr('GameConnection.config',
+    monkeypatch.setattr('gameconnection.config',
                         mock.MagicMock(spec={'global':
                              mock.MagicMock(return_value={'lobby_ip': '192.168.0.1'})}))
 
@@ -49,7 +49,7 @@ def patch_connectivity(monkeypatch):
         def setter():
             yield from asyncio.sleep(0.001)
             return level
-        monkeypatch.setattr('Connectivity.TestPeer.determine_connectivity', setter)
+        monkeypatch.setattr('connectivity.TestPeer.determine_connectivity', setter)
     return set_to
 
 @pytest.fixture

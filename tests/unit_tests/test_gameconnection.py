@@ -5,17 +5,13 @@ import mock
 from PySide.QtNetwork import QTcpSocket
 from FaServerThread import FAServerThread
 
-from GameConnection import GameConnection
+from gameconnection import GameConnection
 from JsonTransport import Transport
 from games import Game
-from tests.conftest import async_test
 
 
 @pytest.fixture
-def game_connection(game, loop, player_service, players, games, transport, monkeypatch, connected_game_socket):
-    monkeypatch.setattr('GameConnection.config',
-                        mock.MagicMock(return_value={'global':
-                                                         mock.MagicMock(return_value={'lobby_ip': '192.168.0.1'})}))
+def game_connection(game, patch_config, loop, player_service, players, games, transport, monkeypatch, connected_game_socket):
     conn = GameConnection(loop=loop, users=player_service, games=games, db=None, parent=None)
     conn.socket = connected_game_socket
     conn.transport = transport
