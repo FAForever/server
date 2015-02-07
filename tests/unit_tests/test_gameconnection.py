@@ -11,7 +11,7 @@ from games import Game
 
 
 @pytest.fixture
-def game_connection(game, patch_config, loop, player_service, players, games, transport, monkeypatch, connected_game_socket):
+def game_connection(game, loop, player_service, players, games, transport, monkeypatch, connected_game_socket):
     conn = GameConnection(loop=loop, users=player_service, games=games, db=None, parent=None)
     conn.socket = connected_game_socket
     conn.transport = transport

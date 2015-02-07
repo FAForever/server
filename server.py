@@ -34,7 +34,7 @@ import logging
 from logging import handlers
 
 from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
-from config import config
+from config import Config
 
 import uuid
 import random

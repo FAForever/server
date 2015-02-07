@@ -32,7 +32,6 @@ from games.game import GameState
 from trueSkill.faPlayer import *
 from trueSkill.Team import *
 from trueSkill.Player import *
-from config import config
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +40,9 @@ from functools import wraps
 
 from JsonTransport import QDataStreamJsonTransport
 
-proxyServer = QtNetwork.QHostAddress("127.0.0.1")
+from config import Config
 
+proxyServer = QtNetwork.QHostAddress("127.0.0.1")
 
 def timed(f, limit=0.2):
     @wraps(f)
@@ -977,8 +977,8 @@ class GameConnection(QObject):
                     players = ", ".join(self.proxyConnection)
 
                     text = "You had trouble connecting to some player(s) : <br>" + players + ".<br><br>The server tried to make you connect through a proxy server, running on the FAF server.<br>It can be caused by a problem with that player, or a problem on your side.<br>If you see this message often, you probably have a connection problem. Please visit <a href='" + \
-                           config['global']['www_url'] + "mediawiki/index.php?title=Connection_issues_and_solutions'>" + \
-                           config['global'][
+                           Config['global']['www_url'] + "mediawiki/index.php?title=Connection_issues_and_solutions'>" + \
+                           Config['global'][
                                'www_url'] + "mediawiki/index.php?title=Connection_issues_and_solutions</a> to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs, at your discretion."
 
                     self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
@@ -989,13 +989,8 @@ class GameConnection(QObject):
             pass
 
     def done(self):
-        self.noSocket = True
-        if self in self.parent.recorders:
-            if self.tasks is not None:
-                self.tasks.stop()
-
-        self.triedToConnect = []
-
+        if not self.socket.isOpen():
+            return
         if self.game != 0 and self.game is not None:
 
             state = self.game.getLobbyState()
@@ -1046,18 +1041,13 @@ class GameConnection(QObject):
         self.game = None
         self.lobby = None
 
-        if self.socket is not None:
-            try:
-                self.socket.readyRead.disconnect(self.dataReception)
-                self.socket.disconnected.disconnect(self.disconnection)
-                self.socket.error.disconnect(self.displayError)
-            except:
-                pass
+        try:
+            self.socket.readyRead.disconnect(self.dataReception)
+            self.socket.disconnected.disconnect(self.disconnection)
+            self.socket.error.disconnect(self.displayError)
             self.socket.abort()
-            self.socket.deleteLater()
-        self.missedUdpFrom = {}
-        self.triedToConnect = []
-
+        except:
+            pass
         if self in self.parent.recorders:
             self.parent.removeRecorder(self)
 

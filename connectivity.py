@@ -3,22 +3,9 @@ from PySide.QtNetwork import QUdpSocket, QHostAddress
 import asyncio
 import logging
 from enum import Enum
-
-from config import config
+import config
 
 logger = logging.getLogger(__name__)
-
-
-class Observable():
-    def __init__(self):
-        pass
-
-    def subscribe(self):
-        pass
-
-    def unsubscribe(self):
-        pass
-
 
 class Connectivity(Enum):
     """
@@ -111,19 +98,19 @@ class TestPeer():
 
     @asyncio.coroutine
     def test_public(self):
-        for i in range(1, 3):
+        for i in range(0, 3):
             with UdpMessage(QHostAddress(self.remote_addr[0]),
                             self.remote_addr[1],
                             "\x08Are you public? %s" % self.identifier):
-                yield from asyncio.sleep(0.1)
+                yield from asyncio.sleep(0.2)
         return any(map(lambda args: "Are you public? %s" % self.identifier in args,
                        self.packets))
 
     @asyncio.coroutine
     def test_stun(self):
         try:
-            self.connection.sendToRelay('SendNatPacket', ["%s:%s" % (config['lobby_ip'],
-                                                                     config['lobby_udptest_port']),
+            self.connection.sendToRelay('SendNatPacket', ["%s:%s" % (config.LOBBY_IP,
+                                                                     config.LOBBY_UDP_PORT),
                                                           "Hello %s" % self.identifier])
             yield from asyncio.sleep(0.1)
         except CancelledError:

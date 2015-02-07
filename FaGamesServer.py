@@ -54,10 +54,7 @@ class FAServer(QTcpServer):
             self.clean_socket(socket)
         self.close()
 
-    def clean_socket(self, socket):
-        """
-        :type socket QTcpSocket
-        """
+    def clean_socket(self, socket: QTcpSocket):
         if socket.isOpen():
             socket.abort()
 
