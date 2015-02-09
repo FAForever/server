@@ -1,7 +1,16 @@
 import asyncio
+from PySide.QtCore import QCoreApplication
 import pytest
 import logging
 import mock
+import os
+import subprocess
+from PySide import QtCore
+import sys
+import time
+
+if not hasattr(QtCore, 'Signal'):
+    QtCore.Signal = QtCore.pyqtSignal
 
 from PySide.QtNetwork import QTcpSocket
 from players import playersOnline, Player
@@ -17,23 +26,64 @@ logging.getLogger().addHandler(handler)
 logging.getLogger().setLevel(logging.DEBUG)
 
 import quamash
-from quamash import QApplication
+
+def async_test(f):
+    def wrapper(*args, **kwargs):
+        coro = asyncio.coroutine(f)
+        future = coro(*args, **kwargs)
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete()
+    return wrapper
+
+@pytest.fixture(scope='session')
+def test_server(request):
+    #p = subprocess.Popen([sys.executable, 'LocalGameServerTest.py'])
+    try:
+        #out, err = p.communicate(timeout=2)
+        #print("Got {}, {} from child".format(out, err))
+        pass
+    except subprocess.TimeoutExpired:
+        pass
+    def fin():
+        #p.terminate()
+        pass
+    #request.addfinalizer(fin)
 
 @pytest.fixture(scope='session')
 def application():
-    return QApplication([])
+    return QCoreApplication([])
 
-@pytest.fixture()
+@pytest.fixture(scope='function')
 def loop(request, application):
     loop = quamash.QEventLoop(application)
+    loop.set_debug(True)
     asyncio.set_event_loop(loop)
+    additional_exceptions = []
 
     def finalize():
+        sys.excepthook = orig_excepthook
         try:
             loop.close()
+        except KeyError:
+            pass
         finally:
             asyncio.set_event_loop(None)
-
+            for exc in additional_exceptions:
+                if (
+                        os.name == 'nt' and
+                        isinstance(exc['exception'], WindowsError) and
+                        exc['exception'].winerror == 6
+                ):
+                    # ignore Invalid Handle Errors
+                    continue
+                raise exc['exception']
+    def except_handler(loop, ctx):
+        additional_exceptions.append(ctx)
+    def excepthook(type, *args):
+        loop.stop()
+    orig_excepthook = sys.excepthook
+    sys.excepthook = excepthook
+    loop.set_exception_handler(except_handler)
     request.addfinalizer(finalize)
     return loop
 
