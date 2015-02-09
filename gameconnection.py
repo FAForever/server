@@ -23,15 +23,17 @@ import json
 import logging
 
 from PySide.QtCore import QTimer, QObject
-from PySide import QtCore, QtNetwork
-from PySide.QtNetwork import QTcpSocket, QAbstractSocket, QHostAddress
+from PySide import QtNetwork
+from PySide.QtNetwork import QTcpSocket, QAbstractSocket
 from PySide.QtSql import *
-from connectivity import TestPeer
-from games.game import GameState
 
+from src.connectivity import TestPeer
+from games.game import GameState
+from src.subscribable import Subscribable
 from trueSkill.faPlayer import *
 from trueSkill.Team import *
 from trueSkill.Player import *
+
 
 logger = logging.getLogger(__name__)
 
@@ -57,12 +59,12 @@ def timed(f, limit=0.2):
     return wrapper
 
 
-class GameConnection(QObject):
+class GameConnection(Subscribable):
     """
     Responsible for the games protocol.
     """
-    def __init__(self, loop, users, games, db, parent=None):
-        super(GameConnection, self).__init__(parent)
+    def __init__(self, loop, users, games, db, server):
+        Subscribable.__init__(self)
 
         self.loop = loop
         self.users = users
@@ -70,7 +72,6 @@ class GameConnection(QObject):
 
         self.db = db
         self.log = logging.getLogger(__name__)
-        self.log.debug("Incoming game socket started")
         self.initTime = time.time()
         self.initDone = False
         self.udpToServer = 0
@@ -80,9 +81,7 @@ class GameConnection(QObject):
         self.forcedJoin = None
         self.proxies = {}
         self.proxyNotThrough = True
-        self.noSocket = False
         self.player = None
-        self.parent = parent
         self.logGame = "\t"
         self.tasks = None
         self.game = None
@@ -100,8 +99,6 @@ class GameConnection(QObject):
         self.initPing = True
         self.ponged = False
         self.missedPing = 0
-        self.pingTimer = QTimer(self)
-        self.pingTimer.timeout.connect(self.ping)
 
         self.headerSizeRead = False
         self.headerRead = False
@@ -129,8 +126,6 @@ class GameConnection(QObject):
         self.lobby = None
         self.transport = None
         self.nat_packets = {}
-        self.connectivity_state = 'UNTESTED'
-        self._subscribers = []
 
     def accept(self, socket):
         """
@@ -156,7 +151,9 @@ class GameConnection(QObject):
 
         self.lobby = None
         ip = self.socket.peerAddress().toString()
+        port = self.socket.peerPort()
         self.player = self.users.findByIp(ip)
+        self.log.debug("Resolving user to {} through lookup by {}:{}".format(self.player, ip, port))
 
         if self.player is None:
             self.socket.abort()
@@ -181,22 +178,6 @@ class GameConnection(QObject):
         self.player.setGameSocket(self.socket)
         self.player.setWantGame(False)
         return True
-
-    def subscribe(self, f):
-        """
-        Subscribe to messages from this GameConnection
-        :param f: function to call on messages
-        :return: None
-        """
-        self._subscribers.append(f)
-
-    def unsubscribe(self, f):
-        """
-        Unusubscribe a given function from messages
-        :param f: function to unsubscribe
-        :return:
-        """
-        self._subscribers.remove(f)
 
     def sendToRelay(self, action, commands):
         message = {"key": action, "commands": commands}
@@ -309,8 +290,19 @@ class GameConnection(QObject):
         This function was created when the FA protocol was moved to the lobby itself
         """
         message = json.loads(action)
+        message["command_id"] = message['action']
+        message["arguments"] = message['chuncks']
+        self.notify(message)
         asyncio.async(self.handle_action(message["action"], message["chuncks"]))
 
+    def handle_ProcessServerNatPacket(self, message, host, port):
+        print("handle_ProcessServerNatPacket {}".format(id(self)))
+        self.log.warn("handle_ProcessServerNatPacket {}".format(self))
+        self.log.warn("{}:{} >> {}".format(host, port, message))
+        self.notify({
+            'command_id': 'ProcessServerNatPacket',
+            'arguments': [host, port, message]
+        })
 
     @asyncio.coroutine
     def handle_action(self, key, values):
@@ -324,9 +316,6 @@ class GameConnection(QObject):
         """
         self.log.debug("handle_action %s:%s" % (key, values))
         try:
-            for subscriber in self._subscribers:
-                if hasattr(subscriber, 'handle_%s' % key):
-                    getattr(subscriber, 'handle_%s' % key)(values)
             if key == 'ping':
                 return
 
@@ -672,8 +661,6 @@ class GameConnection(QObject):
             self.game.addPlayer(self.player)
             self.game.specialInit(self.player)
 
-        self.pingTimer.start(31000)
-        self.initDone = True
 
     def _send_host_game(self, mapname):
         ''' Create a lobby with a specific map'''
