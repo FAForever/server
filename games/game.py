@@ -22,7 +22,6 @@ from trueSkill.Teams import *
 from time import time
 
 from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
-from stats.playerStatContainer import *
 import uuid
 import string
 import logging
@@ -108,7 +107,6 @@ class Game(object):
         self.connecting = 0
         self.trueSkillPlayers = []
         self.teamAssign = {}
-        self.playerStats = playerStatContainer()
         self.playerPosition = {}
         self.teams = []
         self.finalTeams = []
@@ -398,16 +396,6 @@ class Game(object):
     def getInitMode(self):
         return self.initMode
 
-
-    def processStatsScore(self):
-        for player in self.playerStats:
-            playerName = player.getName()
-            score = player.getScore()
-            self.addScorePlayer(playerName, score)
-        return self.gameScore
-
-    def processStats(self, xml):
-        return self.playerStats.importSax(xml)
 
     def isAllScoresThere(self):
         if len(self.gameFaResult) != self.numPlayers or len(self.gameResult) != self.numPlayers:

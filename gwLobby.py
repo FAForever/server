@@ -16,7 +16,7 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from PySide import QtCore, QtNetwork 
+from PySide import QtCore, QtNetwork
 
 import logging
 import json

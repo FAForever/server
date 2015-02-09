@@ -22,7 +22,6 @@ from PySide.QtXml import *
 from .armyContainer import *
 from .army import *
 from .playerStat import *
-from .playerStatContainer import * 
 
 #def fltFromQStr(qstr):
 #    """

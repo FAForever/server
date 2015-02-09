@@ -268,8 +268,8 @@ class Player(object):
 
 class playersOnline(object):
     def __init__(self, parent = None):
-        self.players=[]
-        self.logins=[]
+        self.players = []
+        self.logins = []
         
         
     def getAllPlayers(self):
@@ -335,10 +335,10 @@ class playersOnline(object):
     
     def findByIp(self, ip):
         for player in self.players:
-            if player.ip == ip and player.getWantGame() == True :
+            if player.ip == ip and player.getWantGame():
                 return player
         return None
-    
+
     def checkSession(self, login, session):
         for player in self.players:
                 return 1

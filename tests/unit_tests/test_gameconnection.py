@@ -12,7 +12,7 @@ from games import Game
 
 @pytest.fixture
 def game_connection(game, loop, player_service, players, games, transport, monkeypatch, connected_game_socket):
-    conn = GameConnection(loop=loop, users=player_service, games=games, db=None, parent=None)
+    conn = GameConnection(loop=loop, users=player_service, games=games, db=None, server=None)
     conn.socket = connected_game_socket
     conn.transport = transport
     conn.player = players.hosting
@@ -101,13 +101,3 @@ def test_handle_action_GameOption(game, loop, game_connection):
     loop.run_until_complete(result)
     game.setPlayerOption.assert_called_once_with(1, 'Color', 2)
 
-def test_subscription(game_connection: GameConnection, loop):
-    subscriber = mock.Mock()
-    game_connection.subscribe(subscriber)
-    result = asyncio.async(game_connection.handle_action('TestSomeCommand', ['has', 3, 'arguments']))
-    loop.run_until_complete(result)
-    subscriber.handle_TestSomeCommand.assert_any_call(['has', 3, 'arguments'])
-    game_connection.unsubscribe(subscriber)
-    result = asyncio.async(game_connection.handle_action('TestSomeOtherCommand', ['has', 3, 'arguments']))
-    loop.run_until_complete(result)
-    assert subscriber.handle_TestSomeOtherCommand.mock_calls == []
