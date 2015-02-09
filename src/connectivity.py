@@ -4,6 +4,8 @@ import asyncio
 import logging
 from enum import Enum
 import config
+from .subscribable import Subscribable
+from .with_logger import with_logger
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +26,27 @@ class Connectivity(Enum):
     PROXY = "PROXY"
 
 
+@with_logger
 class UdpMessage():
-    def __init__(self, remote_addr, remote_port, message):
+    """
+    UDP datagram sender using QUdpSocket
+
+    Usage:
+    >>> with UdpMessage('127.0.0.1', 6112, "Hello there") as msg:
+    >>>     msg.send_payload()
+    >>>     # Optionally change message and send more
+    >>>     msg.message = "New hello"
+    >>>     msg.send_payload()
+
+    """
+    def __init__(self, remote_addr, remote_port, message=None):
         self.message = message
-        self.remote_addr = remote_addr
+        if isinstance(remote_addr, QHostAddress):
+            self.remote_addr = remote_addr
+        else:
+            self.remote_addr = QHostAddress(remote_addr)
         self.remote_port = remote_port
         self.socket = QUdpSocket()
-        self.socket.connected.connect(self.send_payload)
         self.socket.connectToHost(remote_addr, remote_port)
         self.socket.error.connect(self._on_error)
 
@@ -44,24 +60,29 @@ class UdpMessage():
             pass
 
     def send_payload(self):
-        logger.debug("UDP(%s:%s)>> %s" % (self.remote_addr.toString(), self.remote_port, self.message))
+        self._logger.debug("UDP(%s:%s)>> %s" % (self.remote_addr.toString(), self.remote_port, self.message))
         self.socket.writeDatagram(self.message.encode(), self.remote_addr, self.remote_port)
 
     def _on_error(self):
-        logger.debug("UDP socket error %s" % self.socket.errorString)
+        self._logger.debug("UDP socket error %s" % self.socket.errorString)
 
 
+from PySide.QtCore import Qt, QThread, QCoreApplication
+
+
+
+
+@with_logger
 class TestPeer():
     """
     Determine the connectivity state of a peer.
     """
-
-    def __init__(self, connection,
+    def __init__(self,
+                 connection,
                  host: str,
                  port: int,
                  identifier: str):
         """
-        :param events: Used for subscribing to ProcessNatPacket events
         :return: None
         """
         super(TestPeer, self).__init__()
@@ -70,14 +91,17 @@ class TestPeer():
         self.remote_addr = (host, port)
         self.identifier = identifier
         self.connection.log.debug("Testing peer connectivity")
-        self.packets = []
+        self.client_packets = []
+        self.server_packets = []
 
     def __enter__(self):
-        self.connection.subscribe(self)
+        self._logger.warn("Subscribing!")
+        self.connection.subscribe(self, ['ProcessNatPacket', 'ProcessServerNatPacket'])
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.connection.unsubscribe(self)
+        self._logger.warn("Unsubscribing!")
+        self.connection.unsubscribe(self, ['ProcessNatPacket', 'ProcessServerNatPacket'])
 
 
     @asyncio.coroutine
@@ -94,24 +118,43 @@ class TestPeer():
         return Connectivity.PROXY
 
     def handle_ProcessNatPacket(self, arguments):
-        self.packets.append(arguments)
+        self._logger.debug("Got ProcessNatPacket")
+        self.client_packets.append(arguments)
+
+    def handle_ProcessServerNatPacket(self, arguments):
+        self._logger.debug("Got ProcessServerNatPacket {}".format(arguments))
+        self.server_packets.append(arguments)
+        self._logger.debug("id(self):{}".format(id(self)))
+        self._logger.debug("Self.server_packets: {}".format(self.server_packets))
 
     @asyncio.coroutine
     def test_public(self):
+        self._logger.debug("Testing PUBLIC")
+        self._logger.debug("All subs now: {}".format(self.connection._subscriptions))
         for i in range(0, 3):
             with UdpMessage(QHostAddress(self.remote_addr[0]),
                             self.remote_addr[1],
-                            "\x08Are you public? %s" % self.identifier):
+                            "\x08Are you public? %s" % self.identifier) as msg:
+                msg.send_payload()
                 yield from asyncio.sleep(0.2)
         return any(map(lambda args: "Are you public? %s" % self.identifier in args,
-                       self.packets))
+                       self.client_packets))
+
+    def received_server_packet(self):
+        for packet in self.server_packets:
+            if "Hello {}".format(self.identifier) in packet:
+                return True
 
     @asyncio.coroutine
     def test_stun(self):
-        try:
+        self._logger.debug("Testing STUN")
+        self._logger.debug("id(self):{}".format(id(self)))
+        self._logger.debug("All subs now: {}".format(self.connection._subscriptions))
+        for i in range(0, 3):
             self.connection.sendToRelay('SendNatPacket', ["%s:%s" % (config.LOBBY_IP,
                                                                      config.LOBBY_UDP_PORT),
                                                           "Hello %s" % self.identifier])
+            if self.received_server_packet():
+                return True
             yield from asyncio.sleep(0.1)
-        except CancelledError:
-            pass
+        return self.received_server_packet()
