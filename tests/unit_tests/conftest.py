@@ -28,3 +28,12 @@ def db():
     db.isOpen = mock.Mock(return_value=True)
     return db
 
+@pytest.fixture
+def game_connection(game, loop, player_service, players, games, transport, monkeypatch, connected_game_socket):
+    conn = GameConnection(loop=loop, users=player_service, games=games, db=None, server=None)
+    conn.socket = connected_game_socket
+    conn.transport = transport
+    conn.player = players.hosting
+    conn.game = game
+    game_connection.lobby = mock.Mock(spec=FAServerThread)
+    return conn
