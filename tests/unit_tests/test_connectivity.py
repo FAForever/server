@@ -74,3 +74,21 @@ def test_ConnectToHost_public_stun(loop, players):
         peer_conn.send_SendNatPacket.assert_called_with(host.address_and_port, 'Connect to {}'.format(peer.id))
 
     loop.run_until_complete(test())
+
+def test_ConnectToHost_stun_public(loop, players):
+    host_conn, peer_conn = mock.Mock(spec=GameConnection), mock.Mock(spec=GameConnection)
+    host, peer = players.hosting, players.joining
+    host_conn.player = host
+    peer_conn.player = peer
+    public = asyncio.Future()
+    stun = asyncio.Future()
+    public.set_result(Connectivity.PUBLIC)
+    stun.set_result(Connectivity.STUN)
+    host_conn.connectivity_state = stun
+    peer_conn.connectivity_state = public
+    @asyncio.coroutine
+    def test():
+        yield from ConnectToHost(host_conn, peer_conn)
+        host_conn.send_SendNatPacket.assert_called_with(host.address_and_port, 'Connect to {}'.format(peer.id))
+
+    loop.run_until_complete(test())

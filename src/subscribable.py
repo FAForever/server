@@ -38,6 +38,7 @@ class Subscribable():
                 self._subscriptions[i].append((receiver, filter))
             else:
                 self._subscriptions[i] = [(receiver, filter)]
+        return Subscription(self, receiver, command_ids, filter)
 
     def notify(self, message):
         """
@@ -84,3 +85,22 @@ class Subscribable():
                 self._subscriptions[i] = [(recv, fn)
                                           for (recv, fn) in self._subscriptions[i]
                                           if recv != receiver]
+
+
+class Subscription():
+    """
+    Simple object to track a subscription and automatically cancel it.
+
+    For use as a context manager
+    """
+    def __init__(self, source: Subscribable, receiver: object, command_ids: [str], filter):
+        self.receiver = receiver
+        self.command_ids = command_ids
+        self.filter = filter
+        self.source = source
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.source.unsubscribe(self.receiver, self.command_ids)
