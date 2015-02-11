@@ -1,3 +1,4 @@
+import asyncio
 import functools
 import mock
 import pytest
@@ -45,3 +46,17 @@ def test_context_manager(receiver, subscribable):
     subscribable.notify({'command_id': 'SomeOtherCommand', 'arguments': []})
     assert receiver.handle_SomeOtherCommand.mock_calls == []
 
+def test_context_manager_await(loop, receiver, subscribable):
+    @asyncio.coroutine
+    def send_delayed(subscribable):
+        yield from asyncio.sleep(0.001)
+        subscribable.notify({'command_id': 'SomeDelayedCommand',
+                             'arguments': []})
+
+    @asyncio.coroutine
+    def test():
+        with subscribable.subscribe(receiver, ['SomeDelayedCommand']) as sub:
+            asyncio.async(send_delayed(subscribable))
+            yield from sub.wait_for('SomeDelayedCommand')
+            receiver.handle_SomeDelayedCommand.assert_called_with([])
+    loop.run_until_complete(asyncio.wait_for(test(), 2))

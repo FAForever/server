@@ -1,3 +1,4 @@
+import asyncio
 from .with_logger import with_logger
 
 
@@ -15,9 +16,9 @@ class Subscribable():
     Subscribable.notify dispatches messages to the subscriber, they are dispatched
     to the handle_{command_id} method on the subscriber, if it is there.
     """
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
         self._subscriptions = {'_all': []}
+        self._emissions = {}
 
     def subscribe(self, receiver, command_ids=None, filter=None):
         """
@@ -29,16 +30,15 @@ class Subscribable():
             determine whether or not to forward message.
         :return: None
         """
-        if not command_ids:
+        if command_ids is None:
             command_ids = ['_all']
-        if not filter:
-            filter = lambda args: True
+        sub = Subscription(self, receiver, command_ids, filter)
         for i in command_ids:
             if i in self._subscriptions:
-                self._subscriptions[i].append((receiver, filter))
+                self._subscriptions[i].append(sub)
             else:
-                self._subscriptions[i] = [(receiver, filter)]
-        return Subscription(self, receiver, command_ids, filter)
+                self._subscriptions[i] = [sub]
+        return sub
 
     def notify(self, message):
         """
@@ -47,21 +47,12 @@ class Subscribable():
         :return:
         """
         command_id = message.get("command_id")
-        arguments = message.get("arguments", [])
         assert isinstance(command_id, str)
-        cmd_name = 'handle_{cmd_id}'.format(cmd_id=command_id)
         if command_id in self._subscriptions:
-            for sub, fn in self._subscriptions[command_id]:
-                if fn(arguments) and hasattr(sub, cmd_name):
-                    getattr(sub, cmd_name)(arguments)
-                else:
-                    self._logger.debug("Subscriber {sub} does not have {cmd_name}".format(
-                        sub=sub,
-                        cmd_name=cmd_name
-                    ))
-        for sub, fn in self._subscriptions['_all']:
-            if fn(arguments) and hasattr(sub, cmd_name):
-                getattr(sub, cmd_name)(arguments)
+            for sub in self._subscriptions[command_id]:
+                sub.fire(message)
+        for sub in self._subscriptions['_all']:
+            sub.fire(message)
 
     def unsubscribe(self, receiver, command_ids=None):
         """
@@ -82,9 +73,8 @@ class Subscribable():
             command_ids = ['_all']
         for i in command_ids:
             if i in self._subscriptions:
-                self._subscriptions[i] = [(recv, fn)
-                                          for (recv, fn) in self._subscriptions[i]
-                                          if recv != receiver]
+                self._subscriptions[i] = [sub for sub in self._subscriptions[i]
+                                          if sub.receiver != receiver]
 
 
 class Subscription():
@@ -93,14 +83,39 @@ class Subscription():
 
     For use as a context manager
     """
-    def __init__(self, source: Subscribable, receiver: object, command_ids: [str], filter):
+    def __init__(self, source: Subscribable, receiver: object, command_ids: [str]=None, filter=None):
+        if not command_ids:
+            command_ids = ['_all']
+        if not filter:
+            filter = lambda args: True
         self.receiver = receiver
         self.command_ids = command_ids
         self.filter = filter
         self.source = source
+        self._emissions = {}
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.source.unsubscribe(self.receiver, self.command_ids)
+
+    def fire(self, message):
+        command_id = message['command_id']
+        arguments = message['arguments']
+        cmd_name = 'handle_{cmd_id}'.format(cmd_id=command_id)
+        if self.filter(arguments) and hasattr(self.receiver, command_id):
+            getattr(self.receiver, cmd_name)(arguments)
+            if command_id in self._emissions:
+                self._emissions[command_id].set_result(True)
+
+    @asyncio.coroutine
+    def wait_for(self, command_id):
+        """
+        Wait for the given command ID to be executed
+        :param command_id: command identifier
+        :return: future representing when a command has been executed
+        """
+        if command_id not in self._emissions:
+            self._emissions[command_id] = asyncio.Future()
+        yield from self._emissions[command_id]
