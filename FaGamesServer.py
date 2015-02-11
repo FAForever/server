@@ -17,15 +17,15 @@
 #-------------------------------------------------------------------------------
 import asyncio
 from asyncio.base_events import BaseEventLoop
-
-import logging
 import socket
-from PySide.QtCore import QObject, Signal, QByteArray, Slot
-from PySide.QtNetwork import QTcpServer, QTcpSocket, QUdpSocket, QHostAddress
 
-from gameconnection import GameConnection
+from PySide.QtCore import QObject, Signal, Slot
+from PySide.QtNetwork import QTcpServer, QTcpSocket
+
+from src.gameconnection import GameConnection
 import config
 from src.with_logger import with_logger
+
 
 @with_logger
 class NatPacketServer(QObject):

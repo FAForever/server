@@ -65,6 +65,7 @@ class GameConnection(Subscribable):
     """
     def __init__(self, loop, users, games, db, server):
         Subscribable.__init__(self)
+        print("GameConnection ID at initialization {}".format(self))
 
         self.loop = loop
         self.users = users
@@ -137,6 +138,7 @@ class GameConnection(Subscribable):
         :raise AssertionError
         :return: bool
         """
+        print("{} accept".format(self))
         assert socket.isValid()
         assert socket.state() == QAbstractSocket.ConnectedState
         self.log.debug("Accepting connection from %r" % socket.peerAddress())
@@ -265,6 +267,7 @@ class GameConnection(Subscribable):
         We determine the connectivity of the peer and respond
         appropriately
         """
+        self.log.critical("COROUTINE IDENTITY {}".format(id(self)))
         with TestPeer(self,
                       self.player.getIp(),
                       self.player.getGamePort(),
@@ -315,6 +318,7 @@ class GameConnection(Subscribable):
         :return: None
         """
         self.log.debug("handle_action %s:%s" % (key, values))
+        print("Identity at handle_action {}".format(id(self)))
         try:
             if key == 'ping':
                 return
@@ -496,6 +500,7 @@ class GameConnection(Subscribable):
             # port we told it to (self.player.getGamePort())
             # We schedule an async task to determine their connectivity
             # and respond appropriately
+            self.log.critical("IDENTITY BEFORE ASYNC {}".format(id(self)))
             yield from asyncio.async(self._handle_lobby_state())
 
         elif state == 'Launching':
@@ -661,6 +666,8 @@ class GameConnection(Subscribable):
             self.game.addPlayer(self.player)
             self.game.specialInit(self.player)
 
+        #self.pingTimer.start(31000)
+        #self.initDone = True
 
     def _send_host_game(self, mapname):
         ''' Create a lobby with a specific map'''

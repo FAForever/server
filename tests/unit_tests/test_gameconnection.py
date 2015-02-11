@@ -1,11 +1,11 @@
 import asyncio
+
 import pytest
 import mock
-
 from PySide.QtNetwork import QTcpSocket
-from FaServerThread import FAServerThread
 
-from gameconnection import GameConnection
+from FaServerThread import FAServerThread
+from src.gameconnection import GameConnection
 from JsonTransport import Transport
 from games import Game
 

@@ -34,7 +34,7 @@ def run_server(address, loop, player_service, games):
         pass
 
 @pytest.mark.skipif(True, reason='Run these slow tests manually as needed')
-def test_public_host(test_server, loop, qtbot, players, player_service, games):
+def test_public_host(loop, qtbot, players, player_service, games):
     @coroutine
     def test():
         player = players.hosting
@@ -55,7 +55,7 @@ def test_public_host(test_server, loop, qtbot, players, player_service, games):
 
 
 @pytest.mark.skipif(True, reason='Run these slow tests manually as needed')
-def test_stun_host(test_server, loop, qtbot, players, player_service, games):
+def test_stun_host(loop, qtbot, players, player_service, games):
     @asyncio.coroutine
     def test():
         player = players.hosting
