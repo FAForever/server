@@ -21,22 +21,22 @@ from PySide import QtCore, QtNetwork
 from PySide.QtSql import QSqlQuery
 
 import logging
-import lobby
+from . import lobby
 import json
 import os
 import random
 import time
 import hashlib
-import attacks
-import defenses
-import newsFeed
+from . import attacks
+from . import defenses
+from . import newsFeed
 import math
-import teams
-import domination
-import depots
+from . import teams
+from . import domination
+from . import depots
 
 import base64
-import phpserialize
+from . import phpserialize
 
 ATTACK_PERDIOD = 1 * 60 * 60 # 1 hour
 ATTACK_WIN_RATIO = 0.05
@@ -118,7 +118,7 @@ class gwServer(QtNetwork.QTcpServer):
                 numberUnits = query.size()
                 totalMass = 0
                 if numberUnits > 0:
-                    while query.next():
+                    while next(query):
                         blueprint = base64.b64decode(str(query.value(0)))
                         bpdecoded = phpserialize.loads(blueprint)
                         totalMass = totalMass + int(bpdecoded["UnitBlueprint"]["Economy"]["BuildCostMass"])
@@ -315,12 +315,12 @@ class gwServer(QtNetwork.QTcpServer):
 
             if results != None :
             # convert the key to integer.
-                for key in  results.keys() :
+                for key in  list(results.keys()) :
                     results[int(key)] = results.pop(key)
-                for key in  results[1]["players"].keys() :
+                for key in  list(results[1]["players"].keys()) :
                     results[1]["players"][int(key)] = results[1]["players"].pop(key)  
         
-                for key in  results[2]["players"].keys() :
+                for key in  list(results[2]["players"].keys()) :
                     results[2]["players"][int(key)] = results[2]["players"].pop(key)
             else:
                 self.log.debug("game scores are not correct")
@@ -711,7 +711,7 @@ class gwServer(QtNetwork.QTcpServer):
         if not query.exec_():
             self.log.error(query.lastError())
         if query.size() > 0:
-            while query.next():
+            while next(query):
                 idStruct   = int(query.value(0))
                 amount      = int(query.value(1))
                 self.log.debug("removing item %i from player %i" % (idStruct, uid))
@@ -737,7 +737,7 @@ class gwServer(QtNetwork.QTcpServer):
         query.exec_()
         if query.size() > 0:
             playerUpgrades = []
-            while query.next():
+            while next(query):
                 structure   = str(query.value(0))
                 activation  = int(query.value(1))
                 amount      = int(query.value(2))
@@ -779,7 +779,7 @@ class gwServer(QtNetwork.QTcpServer):
         query.exec_()
         if query.size() > 0:
             planetUpgrades = []
-            while query.next():
+            while next(query):
                 structure   = str(query.value(0))
                 activation  = int(query.value(1))
                 amount      = int(query.value(2))
@@ -820,7 +820,7 @@ class gwServer(QtNetwork.QTcpServer):
             query.addBindValue(playeruid)
             query.exec_()
             if query.size() > 0:
-                while query.next():
+                while next(query):
                     item = int(query.value(0))
                     amount = int(query.value(1))                        
                     if item == 0 and amount > 0:
@@ -847,7 +847,7 @@ class gwServer(QtNetwork.QTcpServer):
             query.addBindValue(playeruid)
             query.exec_()
             if query.size() > 0:
-                while query.next():
+                while next(query):
                     group = int(query.value(0))
                     unit = str(query.value(1))
                     amount = int(query.value(2))
@@ -1544,7 +1544,7 @@ class gwServer(QtNetwork.QTcpServer):
                 self.planets = {}
                 self.links = {}
                 #query.first()
-                while query.next() :
+                while next(query) :
                     uid = int(query.value(0))
                     posx = round(query.value(1))
                     posy = round(query.value(2))

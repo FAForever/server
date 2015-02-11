@@ -37,7 +37,7 @@ class inventory_context(object):
         try:
             res = self.ctx[keystr]
         except KeyError:
-            for k, v in self.ctx.items():
+            for k, v in list(self.ctx.items()):
                 if "name" in v and v["name"].lower() == keystr.lower():
                     res = v
                     break
@@ -61,7 +61,7 @@ class inventory_context(object):
 
     def __next__(self):
         iterindex = 0
-        iterdata = sorted(self.ctx.values(), key = operator.itemgetter("appid"))
+        iterdata = sorted(list(self.ctx.values()), key = operator.itemgetter("appid"))
 
         while iterindex < len(iterdata):
             data = iterdata[iterindex]
@@ -125,7 +125,7 @@ class inventory(object):
             downloadlist = sec
             cellcount = contexts[sec]["asset_count"]
         else:
-            for sec, ctx in contexts.items():
+            for sec, ctx in list(contexts.items()):
                 cellcount += ctx["asset_count"]
                 downloadlist.append(str(sec))
 
@@ -145,7 +145,7 @@ class inventory(object):
             if not inv:
                 continue
 
-            for id, item in inv.items():
+            for id, item in list(inv.items()):
                 # Store the section ID for later use
                 item["sec"] = sec
                 item.update(itemdescs.get(item["classid"] + "_" + item["instanceid"], {}))

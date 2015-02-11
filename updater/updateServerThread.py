@@ -103,7 +103,7 @@ class updateServerThread(QObject):
         
         if  query.size() > 0 :
             
-            while query.next() :
+            while next(query) :
                 file = str(query.value(0))
                 fullPath = None
                 if sys.platform == "win32" :
@@ -129,7 +129,7 @@ class updateServerThread(QObject):
 
         query.exec_()
         if  query.size() > 0 :
-            while query.next() :
+            while next(query) :
                 f = str(query.value(0))
                 files.append(f)
 
@@ -575,7 +575,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
                         stream.writeInt(int(arg))
                     elif type(arg) is StringType  :
                         stream.writeQString(arg)
-                    elif isinstance(arg, basestring):                       
+                    elif isinstance(arg, str):                       
                         stream.writeQString(arg) 
                     elif type(arg) is FloatType:
                         stream.writeFloat(arg)

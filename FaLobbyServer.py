@@ -16,14 +16,14 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from PySide import QtCore, QtNetwork 
+from PySide import QtCore, QtNetwork
 
 
 import logging
 import json
 import time
 
-import FaServerThread
+import lobbyserver
 
 import gc
 import inspect
@@ -56,7 +56,6 @@ class FALobbyServer(QtNetwork.QTcpServer):
         self.logger.debug("Starting lobby server")
         self.logger.propagate = True
 
-        
         self.teams = teams.Teams(self)
 
         self.dirtyGameList = dirtyGameList
@@ -79,7 +78,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
     def incomingConnection(self, socket_id):
         socket = QtNetwork.QTcpSocket()
         if socket.setSocketDescriptor(socket_id):
-            self.recorders.append(FaServerThread.FAServerThread(socket, self))
+            self.recorders.append(lobbyserver.FAServerThread(socket, self))
         else:
             self.logger.warning("Failed to handover socket descriptor for incoming connection")
 
@@ -110,7 +109,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
         jsonToSend["host"] = game.getHostName()
         jsonToSend["num_players"] = game.getNumPlayer()
         jsonToSend["game_type"] = game.getGameType()
-        jsonToSend["game_time"] = game.getTime()
+        jsonToSend["game_time"] = game.created_at
         jsonToSend["options"] = game.getOptions()
         jsonToSend["max_players"] = game.getMaxPlayers()
 
@@ -118,7 +117,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
         teams = game.getTeamsAssignements()
 
         teamsToSend = {}
-        for k, v in teams.iteritems():
+        for k, v in teams.items():
             if len(v) != 0:
                 teamsToSend[k] = v
 
@@ -169,7 +168,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
                                   "teams": {},
                                   "options": []}
 
-                    reply.append(self.prepareBigJSON(jsonToSend))
+                    reply.append(json.dumps(jsonToSend))
                                        
                 if uid in self.dirtyGameList:
                     self.dirtyGameList.remove(uid)
@@ -187,8 +186,8 @@ class FALobbyServer(QtNetwork.QTcpServer):
           #prove they have been collected
          f.write("Collecting GARBAGE:")
          gc.collect()
-         print len(gc.get_objects())
-         print len(gc.garbage)
+         print(len(gc.get_objects()))
+         print(len(gc.garbage))
 
          f.write("\nGARBAGE OBJECTS:")
 

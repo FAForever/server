@@ -29,7 +29,7 @@ import time
 
 UNIT16 = 8
 
-import replayServerThread
+from . import replayServerThread
 
 
 class replayServer(QtNetwork.QTcpServer):
@@ -50,7 +50,7 @@ class replayServer(QtNetwork.QTcpServer):
         query.prepare("SELECT id, gamemod FROM `game_featuredMods` WHERE 1")
         query.exec_()
         if query.size() != 0 : 
-            while query.next():
+            while next(query):
                 uid = int(query.value(0))
                 name = str(query.value(1))
                 if not uid in self.mods :

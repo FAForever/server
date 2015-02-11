@@ -51,7 +51,7 @@ class language(object):
             self._code = language._default_language
         else:
             code = code.lower()
-            for lcode, lname in language._languages.items():
+            for lcode, lname in list(language._languages.items()):
                 code_lower = lcode.lower()
                 if code_lower == code or code_lower.split('_')[0] == code:
                     self._code = lcode

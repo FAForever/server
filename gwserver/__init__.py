@@ -17,7 +17,7 @@
 #-------------------------------------------------------------------------------
 
 
-from _server import ServerMain as Server
+from ._server import ServerMain as Server
 # Initialize all important globals
 
 SERVER_PORT = 10001

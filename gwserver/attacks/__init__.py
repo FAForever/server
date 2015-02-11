@@ -1,1 +1,1 @@
-from attacks import Attacks
+from .attacks import Attacks

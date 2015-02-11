@@ -3,3 +3,6 @@ passwords.py
 *.swp
 .idea/
 logs/
+.coverage
+*.bak
+py3env

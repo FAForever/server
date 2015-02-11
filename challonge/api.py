@@ -1,6 +1,6 @@
 import decimal
-import urllib
-import urllib2
+import urllib.request, urllib.parse, urllib.error
+import urllib.request, urllib.error, urllib.parse
 try:
     from xml.etree import cElementTree as ElementTree
 except ImportError:
@@ -32,31 +32,31 @@ def get_credentials():
 
 def fetch(method, uri, params_prefix=None, **params):
     """Fetch the given uri and return the contents of the response."""
-    params = urllib.urlencode(_prepare_params(params, params_prefix))
+    params = urllib.parse.urlencode(_prepare_params(params, params_prefix))
 
     # build the HTTP request
     url = "https://%s/%s.xml" % (CHALLONGE_API_URL, uri)
     if method == "GET":
-        req = urllib2.Request("%s?%s" % (url, params))
+        req = urllib.request.Request("%s?%s" % (url, params))
     else:
-        req = urllib2.Request(url)
+        req = urllib.request.Request(url)
         req.add_data(params)
     req.get_method = lambda: method
 
     # use basic authentication
     user, api_key = get_credentials()
-    auth_handler = urllib2.HTTPBasicAuthHandler()
+    auth_handler = urllib.request.HTTPBasicAuthHandler()
     auth_handler.add_password(
         realm="Application",
         uri=req.get_full_url(),
         user=user,
         passwd=api_key
     )
-    opener = urllib2.build_opener(auth_handler)
+    opener = urllib.request.build_opener(auth_handler)
 
     try:
         response = opener.open(req)
-    except urllib2.HTTPError, e:
+    except urllib.error.HTTPError as e:
         if e.code != 422:
             raise
         # wrap up application-level errors
@@ -115,7 +115,7 @@ def _prepare_params(dirty_params, prefix=None):
 
     """
     params = {}
-    for k, v in dirty_params.iteritems():
+    for k, v in dirty_params.items():
         if hasattr(v, "isoformat"):
             v = v.isoformat()
         elif isinstance(v, bool):

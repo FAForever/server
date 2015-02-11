@@ -1,1 +1,1 @@
-from domination import Domination
+from .domination import Domination

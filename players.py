@@ -17,13 +17,13 @@
 #-------------------------------------------------------------------------------
 
 
-class player(object):
-    def __init__(self, parent = None):
+class Player(object):
+    def __init__(self, login=None):
         
         self.uuid = 0
         self.session = 0
-        self.login = ''
-        self.ip = ''
+        self._login = ''
+        self._ip = ''
         self.localIp = ''
       
       
@@ -258,7 +258,7 @@ class player(object):
         return self.localIp
      
     def getLogin(self):
-        return str(self.login)
+        return str(self._login)
     
     def getId(self):
         return self.uuid
@@ -266,10 +266,30 @@ class player(object):
     def getSession(self):
         return self.session
 
+    @property
+    def id(self):
+        return self.getId()
+
+    @property
+    def ip(self):
+        return self.getIp()
+
+    @property
+    def login(self):
+        return self.getLogin()
+
+    @property
+    def game_port(self):
+        return self.getGamePort()
+
+    @property
+    def address_and_port(self):
+        return "{}:{}".format(self.ip, self.game_port)
+
 class playersOnline(object):
     def __init__(self, parent = None):
-        self.players=[]
-        self.logins=[]
+        self.players = []
+        self.logins = []
         
         
     def getAllPlayers(self):
@@ -335,10 +355,10 @@ class playersOnline(object):
     
     def findByIp(self, ip):
         for player in self.players:
-            if player.ip == ip and player.getWantGame() == True :
+            if player.ip == ip and player.getWantGame():
                 return player
         return None
-    
+
     def checkSession(self, login, session):
         for player in self.players:
                 return 1

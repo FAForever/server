@@ -32,7 +32,7 @@ import logging
 from logging import handlers
 
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
-from config import config
+from config import Config
 
 from tournament.tournamentServer import *
 
@@ -44,11 +44,11 @@ class start(QObject):
 
         super(start, self).__init__(parent)
         self.rootlogger = logging.getLogger("")
-        self.logHandler = handlers.RotatingFileHandler(config['global']['logpath'] + "tournamentServer.log", backupCount=15, maxBytes=524288 )
+        self.logHandler = handlers.RotatingFileHandler(Config['global']['logpath'] + "tournamentServer.log", backupCount=15, maxBytes=524288 )
         self.logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
         self.logHandler.setFormatter( self.logFormatter )
         self.rootlogger.addHandler( self.logHandler )
-        self.rootlogger.setLevel( eval ("logging." + config['tournamentServer']['loglevel'] ))
+        self.rootlogger.setLevel( eval ("logging." + Config['tournamentServer']['loglevel'] ))
         self.logger = logging.getLogger(__name__)
 
         self.db= QtSql.QSqlDatabase.addDatabase("QMYSQL")  
@@ -82,7 +82,7 @@ if __name__ == '__main__':
         server = start()
         app.exec_()
     
-    except Exception, ex:
+    except Exception as ex:
         
         logger.exception("Something awful happened!")
         logger.debug("Finishing main")

@@ -1,0 +1,40 @@
+from abc import ABCMeta, abstractmethod, abstractproperty
+
+
+class GpgNetServerProtocol():
+    __metaclass__ = ABCMeta
+
+    @property
+    @abstractmethod
+    def connectivity_state(self):
+        """
+        The connectivity state of the peer this connection represents
+        :rtype Connectivity
+        """
+        pass  # pragma: no cover
+
+    @property
+    @abstractmethod
+    def player(self):
+        """
+        The connectivity state of the peer this connection represents
+        :rtype Player
+        """
+        pass  # pragma: no cover
+
+    @player.setter
+    def player(self, val):
+        pass  # pragma: no cover
+
+    def send_ConnectToPeer(self, address_and_port: str, player_name: str, player_uid: int):
+        self.send_gpgnet_message('ConnectToPeer', [address_and_port, player_name, player_uid])
+
+    def send_JoinGame(self, address_and_port: str, as_observer: bool, remote_player_name: str, remote_player_uid: int):
+        self.send_gpgnet_message('JoinGame', [address_and_port, as_observer, remote_player_name, remote_player_uid])
+
+    def send_SendNatPacket(self, address_and_port: str, message: str):
+        self.send_gpgnet_message('SendNatPacket', [address_and_port, message])
+
+    @abstractmethod
+    def send_gpgnet_message(self, command_id, arguments):
+        pass  # pragma: no cover

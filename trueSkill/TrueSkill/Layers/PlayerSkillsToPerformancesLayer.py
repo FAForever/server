@@ -47,7 +47,7 @@ class PlayerSkillsToPerformancesLayer(TrueSkillFactorGraphLayer) :
 
         localFactors = self.getLocalFactors()
         return self.scheduleSequence(
-                                     map(self.getSkillToPerfstep, localFactors),
+                                     list(map(self.getSkillToPerfstep, localFactors)),
                                       "All skill to performance sending")
 
 
@@ -57,4 +57,4 @@ class PlayerSkillsToPerformancesLayer(TrueSkillFactorGraphLayer) :
     def createPosteriorSchedule(self) :
     
         localFactors = self.getLocalFactors()
-        return self.scheduleSequence(map(self.getName, localFactors),  "Post All skill to performance sending")
+        return self.scheduleSequence(list(map(self.getName, localFactors)),  "Post All skill to performance sending")

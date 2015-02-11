@@ -1,6 +1,6 @@
-from Rating import *
-from Player import *
-from RatingContainer import *
+from .Rating import *
+from .Player import *
+from .RatingContainer import *
 
 class Team(RatingContainer) :
     def __init__(self, player = None, rating = None):

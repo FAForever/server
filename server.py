@@ -34,7 +34,7 @@ import logging
 from logging import handlers
 
 from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
-from config import config
+from config import Config
 
 import uuid
 import random
@@ -44,7 +44,7 @@ from FaGamesServer import *
 from gwLobby import *
 from players import *
 
-import gameModes
+import games
 
 import signal 
 
@@ -91,11 +91,11 @@ class start(QObject):
         self.udpSocket.bind(30351)
         self.udpSocket.readyRead.connect(self.processPendingDatagrams)
         self.dirtyGameList = []
-        self.games = gameModes.hyperGamesContainerClass(self.listUsers, self.db, self.dirtyGameList)
+        self.games = games.hyperGamesContainerClass(self.listUsers, self.db, self.dirtyGameList)
         
-        self.FALobby =  FALobbyServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)
-        self.GWLobby =  GWLobbyServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)
-        self.FAGames =  FAServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)       
+        self.FALobby = FALobbyServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)
+        self.GWLobby = GWLobbyServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)
+        self.FAGames = FAServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)
         
         # Make sure we can shutdown gracefully
         signal.signal(signal.SIGTERM, self.signal_handler)
@@ -207,7 +207,6 @@ if __name__ == '__main__':
         app.exec_()
 
     
-    except Exception, ex:
-        
+    except Exception as ex:
         logger.exception("Something awful happened!")
         logger.debug("Finishing main")

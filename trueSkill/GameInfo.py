@@ -1,4 +1,4 @@
-from Rating import *
+from .Rating import *
 
 DEFAULT_BETA = 250 # Default initial mean / 6
 DEFAULT_DRAW_PROBABILITY = 0.10

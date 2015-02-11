@@ -1,6 +1,6 @@
-from Factor import Factor
-from FactorGraph import FactorGraph
-from Schedule import Schedule, ScheduleStep, ScheduleSequence
+from .Factor import Factor
+from .FactorGraph import FactorGraph
+from .Schedule import Schedule, ScheduleStep, ScheduleSequence
 
 class FactorGraphLayer(object):
     def __init__(self, parentGraph):

@@ -47,7 +47,7 @@ class Depots(object):
         query.prepare("SELECT planetuid, influence, reinforcements, money FROM `planets_depots`  WHERE 1")
         query.exec_()
         if query.size() > 0 :
-            while query.next():
+            while next(query):
                 uid             = int(query.value(0))        
                 influence       = int(query.value(1))
                 reinforcements  = int(query.value(2))

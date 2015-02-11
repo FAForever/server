@@ -1,4 +1,4 @@
-from gameModes import ladderGamesContainer, ladder1v1GamesContainerClass
+from games import ladderGamesContainer, ladder1v1GamesContainerClass
 
 from PySide import QtSql
 
