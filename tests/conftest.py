@@ -121,13 +121,16 @@ def game(players):
     game.getuuid = lambda: 1
     return game
 
-def player(login, id, port, action):
+def player(login, id, port, action, ip='127.0.0.1'):
     p = mock.MagicMock(spec=Player)
     p.getGamePort.return_value = port
     p.getAction = mock.Mock(return_value=action)
     p.getLogin = mock.Mock(return_value=login)
     p.getId = mock.Mock(return_value=id)
-    p.getIp = mock.Mock(return_value='127.0.0.1')
+    p.getIp = mock.Mock(return_value=ip)
+    p.id = id
+    p.login = login
+    p.address_and_port = "{}:{}".format(ip, port)
     return p
 
 @pytest.fixture

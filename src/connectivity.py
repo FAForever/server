@@ -4,9 +4,11 @@ import asyncio
 import logging
 from enum import Enum
 import config
+from src.protocol.gpgnet import GpgNetServerProtocol
 from .with_logger import with_logger
 
 logger = logging.getLogger(__name__)
+
 
 class Connectivity(Enum):
     """
@@ -38,6 +40,7 @@ class UdpMessage():
     >>>     msg.send_payload()
 
     """
+
     def __init__(self, remote_addr, remote_port, message=None):
         self.message = message
         if isinstance(remote_addr, QHostAddress):
@@ -68,8 +71,9 @@ class UdpMessage():
 @with_logger
 class TestPeer():
     """
-    Determine the connectivity state of a peer.
+    Determine the connectivity state of a single peer.
     """
+
     def __init__(self,
                  connection,
                  host: str,
@@ -145,3 +149,58 @@ class TestPeer():
                 return True
             yield from asyncio.sleep(0.1)
         return self.received_server_packet()
+
+
+@asyncio.coroutine
+def ConnectToHost(host: GpgNetServerProtocol, peer: GpgNetServerProtocol):
+    """
+    Connect a host and a peer
+    :param host:
+    :param peer:
+    :return:
+    """
+    states = [
+        host.connectivity_state,
+        peer.connectivity_state
+    ]
+    yield from asyncio.wait(states)
+    if any([state.result() == Connectivity.PROXY for state in states]):
+        # TODO: Connect through proxy
+        return
+    if host.connectivity_state.result() == Connectivity.PUBLIC:
+        if peer.connectivity_state.result() == Connectivity.PUBLIC:
+            peer.send_JoinGame(host.player.address_and_port,
+                               False,
+                               host.player.login,
+                               host.player.id)
+            host.send_ConnectToPeer(peer.player.address_and_port, peer.player.login, peer.player.id)
+        else:
+            peer.send_SendNatPacket(host.player.address_and_port, 'Connect to {}'.format(peer.player.id))
+
+    elif host.connectivity_state.result() == Connectivity.STUN:
+        if peer.connectivity_state.result() == Connectivity.PUBLIC:
+            host.send_SendNatPacket(peer.player.address_and_port, 'Connect to {}'.format(peer.player.id))
+
+
+
+@asyncio.coroutine
+def ConnectPeers(peer1: GpgNetServerProtocol, peer2: GpgNetServerProtocol):
+    """
+    Connect two peers by directing their respective GameConnection objects.
+
+    Will await determination of the respective peers' ConnectivityState, followed by this algorithm:
+
+    :param peer1:
+    :param peer2:
+    :return: None
+    """
+    states = [
+        peer1.connectivity_state,
+        peer2.connectivity_state
+    ]
+    yield from asyncio.wait(states)
+    if peer1.connectivity_state == Connectivity.PUBLIC:
+        if peer2.connectivity_state != Connectivity.PROXY:
+            peer2.send_ConnectToPeer(peer1.player.getIp(), peer2.player.getLogin(), peer2.player.getUid())
+
+

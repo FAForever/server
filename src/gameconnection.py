@@ -29,6 +29,7 @@ from PySide.QtSql import *
 
 from src.connectivity import TestPeer
 from games.game import GameState
+from src.protocol.gpgnet import GpgNetServerProtocol
 from src.subscribable import Subscribable
 from trueSkill.faPlayer import *
 from trueSkill.Team import *
@@ -59,10 +60,11 @@ def timed(f, limit=0.2):
     return wrapper
 
 
-class GameConnection(Subscribable):
+class GameConnection(Subscribable, GpgNetServerProtocol):
     """
     Responsible for the games protocol.
     """
+
     def __init__(self, loop, users, games, db, server):
         Subscribable.__init__(self)
         print("GameConnection ID at initialization {}".format(self))
@@ -76,13 +78,12 @@ class GameConnection(Subscribable):
         self.initTime = time.time()
         self.initDone = False
         self.udpToServer = 0
-        self.connectedTo = []
         self.forcedConnections = {}
         self.sentConnect = {}
         self.forcedJoin = None
         self.proxies = {}
         self.proxyNotThrough = True
-        self.player = None
+        self._player = None
         self.logGame = "\t"
         self.tasks = None
         self.game = None
@@ -127,6 +128,8 @@ class GameConnection(Subscribable):
         self.lobby = None
         self.transport = None
         self.nat_packets = {}
+
+        self.connectivity_state = asyncio.Future()
 
     def accept(self, socket):
         """
@@ -267,13 +270,13 @@ class GameConnection(Subscribable):
         We determine the connectivity of the peer and respond
         appropriately
         """
-        self.log.critical("COROUTINE IDENTITY {}".format(id(self)))
         with TestPeer(self,
                       self.player.getIp(),
                       self.player.getGamePort(),
                       self.player.getId()) as peer_test:
-            connectivity_state = yield from asyncio.async(peer_test.determine_connectivity())
-            self.sendToRelay('ConnectivityState', [self.player.getId(), connectivity_state.value])
+            self._connectivity_state = yield from asyncio.async(peer_test.determine_connectivity())
+            self.sendToRelay('ConnectivityState', [self.player.getId(),
+                                                   self._connectivity_state.value])
 
         playeraction = self.player.getAction()
         if playeraction == "HOST":
@@ -1057,3 +1060,21 @@ class GameConnection(Subscribable):
             self.log.debug("ConnectionRefusedError")
         else:
             self.log.debug("The following error occurred: %s." % self.socket.errorString())
+
+    def connectivity_state(self):
+        return self._connectivity_state
+
+    def address_and_port(self):
+        return "{}:{}".format(self.player.getIp(), self.player.getGamePort())
+
+    def send_gpgnet_message(self, command_id, arguments):
+        self.sendToRelay(command_id, arguments)
+
+    @property
+    def player(self):
+        return self._player
+
+    @player.setter
+    def player(self, val):
+        self._player = val
+

@@ -38,7 +38,6 @@ def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, pat
     :type game_connection: GameConnection
     :type transport Transport
     """
-    #patch_connectivity(Connectivity.PUBLIC)
     game_connection.player = players.hosting
     result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
     loop.run_until_complete(result)
@@ -49,7 +48,6 @@ def test_handle_action_GameState_lobby_sends_JoinGame(game_connection, loop, pat
     :type game_connection: GameConnection
     :type transport Transport
     """
-    #patch_connectivity(Connectivity.PUBLIC)
     game_connection.player = players.joining
     result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
     loop.run_until_complete(result)
