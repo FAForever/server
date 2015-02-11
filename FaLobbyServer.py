@@ -16,14 +16,14 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from PySide import QtCore, QtNetwork 
+from PySide import QtCore, QtNetwork
 
 
 import logging
 import json
 import time
 
-import FaServerThread
+import lobbyserver
 
 import gc
 import inspect
@@ -78,7 +78,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
     def incomingConnection(self, socket_id):
         socket = QtNetwork.QTcpSocket()
         if socket.setSocketDescriptor(socket_id):
-            self.recorders.append(FaServerThread.FAServerThread(socket, self))
+            self.recorders.append(lobbyserver.FAServerThread(socket, self))
         else:
             self.logger.warning("Failed to handover socket descriptor for incoming connection")
 

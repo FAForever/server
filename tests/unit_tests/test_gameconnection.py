@@ -4,21 +4,13 @@ import pytest
 import mock
 from PySide.QtNetwork import QTcpSocket
 
-from FaServerThread import FAServerThread
+from lobbyserver import FAServerThread
 from src.gameconnection import GameConnection
 from JsonTransport import Transport
 from games import Game
 
 
-@pytest.fixture
-def game_connection(game, loop, player_service, players, games, transport, monkeypatch, connected_game_socket):
-    conn = GameConnection(loop=loop, users=player_service, games=games, db=None, server=None)
-    conn.socket = connected_game_socket
-    conn.transport = transport
-    conn.player = players.hosting
-    conn.game = game
-    game_connection.lobby = mock.Mock(spec=FAServerThread)
-    return conn
+
 
 def test_accepts_valid_socket(game_connection, loop, connected_game_socket):
     """

@@ -4,7 +4,6 @@ import asyncio
 import logging
 from enum import Enum
 import config
-from .subscribable import Subscribable
 from .with_logger import with_logger
 
 logger = logging.getLogger(__name__)
@@ -66,12 +65,6 @@ class UdpMessage():
     def _on_error(self):
         self._logger.debug("UDP socket error %s" % self.socket.errorString)
 
-
-from PySide.QtCore import Qt, QThread, QCoreApplication
-
-
-
-
 @with_logger
 class TestPeer():
     """
@@ -95,12 +88,10 @@ class TestPeer():
         self.server_packets = []
 
     def __enter__(self):
-        self._logger.warn("Subscribing!")
         self.connection.subscribe(self, ['ProcessNatPacket', 'ProcessServerNatPacket'])
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._logger.warn("Unsubscribing!")
         self.connection.unsubscribe(self, ['ProcessNatPacket', 'ProcessServerNatPacket'])
 
 
@@ -118,19 +109,17 @@ class TestPeer():
         return Connectivity.PROXY
 
     def handle_ProcessNatPacket(self, arguments):
-        self._logger.debug("Got ProcessNatPacket")
+        self._logger.debug("handle_ProcessNatPacket {}".format(arguments))
         self.client_packets.append(arguments)
 
     def handle_ProcessServerNatPacket(self, arguments):
-        self._logger.debug("Got ProcessServerNatPacket {}".format(arguments))
+        self._logger.debug("handle_ProcessServerNatPacket {}".format(arguments))
         self.server_packets.append(arguments)
-        self._logger.debug("id(self):{}".format(id(self)))
-        self._logger.debug("Self.server_packets: {}".format(self.server_packets))
 
     @asyncio.coroutine
     def test_public(self):
         self._logger.debug("Testing PUBLIC")
-        self._logger.debug("All subs now: {}".format(self.connection._subscriptions))
+        self._logger.debug(self.client_packets)
         for i in range(0, 3):
             with UdpMessage(QHostAddress(self.remote_addr[0]),
                             self.remote_addr[1],
@@ -148,8 +137,6 @@ class TestPeer():
     @asyncio.coroutine
     def test_stun(self):
         self._logger.debug("Testing STUN")
-        self._logger.debug("id(self):{}".format(id(self)))
-        self._logger.debug("All subs now: {}".format(self.connection._subscriptions))
         for i in range(0, 3):
             self.connection.sendToRelay('SendNatPacket', ["%s:%s" % (config.LOBBY_IP,
                                                                      config.LOBBY_UDP_PORT),

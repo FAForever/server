@@ -3,6 +3,9 @@ from PySide import QtSql
 from flexmock import flexmock
 import mock
 
+from src.gameconnection import GameConnection
+from lobbyserver import FAServerThread
+
 @pytest.fixture()
 def sqlquery():
     return flexmock(

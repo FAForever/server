@@ -1,4 +1,4 @@
-from FaServerThread import FAServerThread, playersOnline
+from lobbyserver import FAServerThread, playersOnline
 from FaLobbyServer import FALobbyServer
 from PySide import QtNetwork
 
