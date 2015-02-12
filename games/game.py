@@ -412,29 +412,19 @@ class Game(object):
     def getAllResults(self):
         final = []
         msg = 'GAME RESULTS : \n'
-
-        #computing winning team
-        teams = self.finalTeams
-
         teamsResults = {}
         i = 1
         for teams in self.finalTeams:
-
             curScore = 0
             for players in teams.getAllPlayers():
                 id = str(players.getId())
-
                 if id in str(self.gameResult):
-
                     resultPlayer = self.gameResult[str(id)]
-
                     curScore = curScore + resultPlayer
                 else:
                     return 0
-
             teamsResults[i] = curScore
             i = i + 1
-
         winnerTeam = None
         draw = False
 
@@ -447,7 +437,6 @@ class Game(object):
                 draw = True
 
         if winnerTeam:
-
             i = 1
             for teams in self.finalTeams:
                 memTeam = []
@@ -464,19 +453,15 @@ class Game(object):
                     msg = msg + "Win \n"
                 else:
                     msg = msg + "Lost \n"
-                i = i + 1
+                i += 1
 
-        #we don't want another update.
         tsresults = self.computeResults(False)
-
         if tsresults != 0:
-            msg = msg + "\nNew ratings :\n"
+            msg += "\nNew ratings :\n"
 
             for playerTS in self.getTrueSkillPlayers():
                 name = playerTS.getPlayer()
                 if str(name) in tsresults.getAllPlayersNames():
-                    resPlayer = tsresults.getRating(name)
-
                     mean = (tsresults.getRating(name).getMean() * self.partial) + (
                         playerTS.getRating().getMean() * (1 - self.partial))
                     dev = (tsresults.getRating(name).getStandardDeviation() * self.partial) + (
@@ -499,15 +484,11 @@ class Game(object):
             curScore = 0
             for players in teams.getAllPlayers():
                 id = str(players.getId())
-
                 if id in str(self.gameResult):
-
                     resultPlayer = self.gameResult[str(id)]
-
                     curScore = curScore + resultPlayer
                 else:
                     return 0
-
             results.append(curScore)
         gameInfo = GameInfo()
         calculator = FactorGraphTrueSkillCalculator()
@@ -523,7 +504,6 @@ class Game(object):
 
 
     def addResultPlayer(self, player, faresult, score):
-
         if player in self.gameFaResult:
             if self.gameFaResult[player] != "victory":
                 # the play got not decicive result yet, so we can apply it.
@@ -562,15 +542,14 @@ class Game(object):
         self.playerColor[player] = color
 
     def placePlayer(self, player, position):
-        #check if the player is already somewhere
+        # check if the player is already somewhere
         key = self.returnKeyIndex(self.playerPosition, player)
-        #if so, delete his old place.
-        if key != None:
+        # if so, delete his old place.
+        if key is not None:
             del self.playerPosition[key]
 
-        if position != None:
+        if position is not None:
             self.playerPosition[position] = str(player)
-
 
     def isAI(self, name):
         if name in self.AIs:
@@ -619,12 +598,11 @@ class Game(object):
         for team in self.teamAssign:
             if len(self.teamAssign[team]) != 0:
                 if team != 0:
-                    result = result + 1
+                    result += 1
         return result
 
     def getBestMatchup(self):
-
-        #getting number of current teams
+        # Getting number of current teams
         nTeams = self.getTeamsCount()
         if nTeams == 0:
             return "No teams formed yet"
@@ -684,7 +662,6 @@ class Game(object):
         msg = msg + "Game Quality : " + str(matchQuality * 100) + '%'
         return msg
 
-
     def getMatchQuality(self):
         try:
             gameInfo = GameInfo()
@@ -723,7 +700,6 @@ class Game(object):
             for team in self.teamAssign:
                 if team != -1:
                     if len(self.teamAssign[team]) != 0:
-
                         if team == 0:
                             for player in self.teamAssign[team]:
                                 if self.getPositionOfPlayer(player) != -1:
@@ -747,10 +723,6 @@ class Game(object):
         except:
             self.log.exception("Something awful happened in a recombing function!")
 
-    def getTeamOfPlayer(self, name):
-        for curTeam in self.teamAssign:
-            if name in self.teamAssign[curTeam]:
-                return curTeam
 
     def removePlayerFromAllTeam(self, name):
         for curTeam in self.teamAssign:
@@ -811,37 +783,6 @@ class Game(object):
         """
         return self.createDate
 
-    def isConnectRequired(self, player):
-        '''Checking if the player must connect to someone'''
-        try:
-            if not player.getLogin() in self.connections:
-                return False
-            if len(self.connections[player.getLogin()]) > 0:
-                return True
-            else:
-                return False
-        except:
-            return False
-
-    def getConnectList(self, player):
-        '''return the connection list of player '''
-        list = []
-        if player.getLogin() in self.connections:
-            list = self.connections[player.getLogin()]
-        return list
-
-    def removeFromConnect(self, player, playerToRemove):
-        """Remove playerToRemove from the connection list of player"""
-        if playerToRemove in self.connections[player.getLogin()]:
-            self.connections[player.getLogin()].remove(playerToRemove)
-
-        if player.getLogin() in self.packetReceived:
-            if playerToRemove in self.packetReceived[player.getLogin()]:
-                self.packetReceived[player.getLogin()].remove(playerToRemove)
-
-            return 1
-        else:
-            return 0
 
     def removeFromAllPlayersToConnect(self, playerToRemove):
         """Remove playerToRemove from all lists of connections"""
@@ -857,109 +798,6 @@ class Game(object):
 
         if playerToRemove.getLogin() in self.packetReceived:
             del self.packetReceived[playerToRemove.getLogin()]
-
-
-    def receivedPacket(self, fromPlayer, toPlayer):
-
-        if toPlayer in self.packetReceived:
-            if not fromPlayer in self.packetReceived[toPlayer]:
-                self.packetReceived[toPlayer].append(fromPlayer)
-        else:
-            list = []
-            list.append(fromPlayer)
-            self.packetReceived[toPlayer] = list
-
-    def hasReceivedPacketFrom(self, player, otherplayer):
-        if player in self.packetReceived:
-            if otherplayer in self.packetReceived[player]:
-                return True
-
-        return False
-
-
-    def addToConnect(self, newPlayer):
-        """Add newPlayer to the list of connections of others player."""
-        newPlayerLogin = newPlayer.getLogin()
-        for player in self.getPlayers():
-            # We don't want to connect the newplayer with himself
-            if player.getLogin() != newPlayerLogin:
-                # We never want to connect with the host, it's done with the connectToHost command
-                if player.getLogin() != self.getHostName():
-                    # if the new player already got a list of connection
-                    if newPlayerLogin in self.connections:
-                        # We add the player in the game to the connection list of the new player
-                        # with that, we connect the new player with all existing players, except the host and himself.
-                        self.connections[newPlayerLogin].append(player)
-                    else:
-                        # if there is no connection list (happens at first loop), we create one.
-                        list = []
-                        list.append(player)
-                        self.connections[newPlayerLogin] = list
-
-
-                # if the player in the list got a connection list
-                if player.getLogin() in self.connections:
-                    # if the new player is not already in that list
-                    if not newPlayer in self.connections[player.getLogin()]:
-                        # We add the new player in his connection list.
-                        # With that, we add the new player to all the current players, host included.
-                        self.connections[player.getLogin()].append(newPlayer)
-                # if the current player doesn't have a connection list (First player in the game, or host)
-                else:
-                    # We create it and add the new player to it
-                    list = []
-                    list.append(newPlayer)
-                    self.connections[player.getLogin()] = list
-
-        return 1
-
-    def getDisconnectList(self, player):
-        list = []
-        '''return the discconnection list of player '''
-        if player.getLogin() in self.disConnections:
-            list = self.disConnections[player.getLogin()]
-        return list
-
-    def isDisconnectRequired(self, player):
-        '''Checking if the player must disconnect from someone'''
-        try:
-            if len(self.disConnections[player.getLogin()]) > 0:
-                return 1
-            else:
-                return 0
-        except:
-            return 0
-
-    def removeFromDisconnect(self, player, playerToRemove):
-        """Remove playerToRemove from the disconnection list of player"""
-        if playerToRemove in self.disConnections[player.getLogin()]:
-            self.disConnections[player.getLogin()].remove(playerToRemove)
-            return 1
-        else:
-            return 0
-
-    def addToDisconnect(self, leavingPlayer):
-        """Add leavingPlayer to the list of Disconnections of others player."""
-        leavingPlayerLogin = leavingPlayer.getLogin()
-
-        for player in self.getPlayers():
-            # We don't want to add a disconnection list to a player not there !
-            if player.getLogin() != leavingPlayerLogin:
-
-                # If the player  have a disconnection list
-                if player.getLogin() in self.disConnections:
-                    # if the leaving Player is not already in that list
-                    if not leavingPlayer in self.disConnections[player.getLogin()]:
-                        # We add the leaving player in his connection list.
-                        # With that, we add the leaving player to all the current players, host included.
-                        self.disConnections[player.getLogin()].append(leavingPlayer)
-                # We don't have a disconnection list for this player
-                else:
-                    # We create it and add the leaving player to it
-                    list = []
-                    list.append(leavingPlayer)
-                    self.disConnections[player.getLogin()] = list
-        return 1
 
     def addPlayer(self, player):
         """Add a player to the game"""
