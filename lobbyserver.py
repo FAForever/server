@@ -16,26 +16,12 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from PySide.QtCore import QTimer
-from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QObject
-
-from PySide import QtNetwork
-from PySide.QtSql import QSqlQuery
-
 import zlib
 import cgi
 import socket
 import base64
-import geoip
 import json
 import urllib.parse
-
-from trueSkill.faPlayer import *
-from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
-from trueSkill.Team import *
-from trueSkill.GameInfo import *
-
-from types import *
 import time
 import datetime
 import zipfile
@@ -45,14 +31,21 @@ import hashlib
 import random
 import re
 import logging
-
 import smtplib
 from email.mime.text import MIMEText
 import email.utils
 
-from players import *
-from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS
+from PySide.QtCore import QTimer
+from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QObject
+from PySide import QtNetwork
+from PySide.QtSql import QSqlQuery
 
+import geoip
+from trueSkill.faPlayer import *
+from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
+from trueSkill.GameInfo import *
+from src.players import *
+from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS
 from config import Config
 
 
@@ -79,8 +72,6 @@ from games.coopGamesContainer import coopGamesContainerClass
 from games.claustrophobiaGamesContainer import claustrophobiaGamesContainerClass
 from games.supremeDestructionGamesContainer import supremeDestructionGamesContainerClass
 from games.matchmakerGamesContainer import matchmakerGamesContainerClass
-
-import teams
 
 
 TIMEOUT_SECONDS = 300

@@ -17,24 +17,13 @@
 #-------------------------------------------------------------------------------
 
 
-from PySide.QtCore import SIGNAL, SLOT, QTimer
-from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QCoreApplication, QObject
-
-from types import IntType, FloatType, ListType, DictType, LongType  
-
-from PySide import QtCore, QtNetwork
-from PySide.QtSql import QSqlQuery
-
-import base64, zlib
-import urllib.request, urllib.parse, urllib.error
-
-from players import *
-
-
+from types import IntType, FloatType, ListType, LongType
 import json
 import logging
-import pickle
 import time
+
+from PySide.QtCore import QByteArray, QDataStream, QIODevice, QObject
+from PySide import QtNetwork
 
 logger = logging.getLogger(__name__)
 

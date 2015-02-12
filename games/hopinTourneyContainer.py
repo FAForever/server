@@ -23,7 +23,6 @@ from trueSkill.Teams import *
 from .ladderGame import ladder1V1Game
 
 import random
-from ladder.ladderMaps import ladderMaps
 from PySide import QtSql
 from PySide import QtCore
 

@@ -24,7 +24,6 @@ from trueSkill.Teams import *
 
 import time
 import random, sys
-from ladder.ladderMaps import ladderMaps
 from PySide.QtSql import QSqlQuery
 from PySide import QtCore
 

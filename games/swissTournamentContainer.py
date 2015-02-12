@@ -17,19 +17,8 @@
 #-------------------------------------------------------------------------------
 
 from .gamesContainer import  gamesContainerClass
-from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import * 
-from trueSkill.Team import *
-from trueSkill.Teams import *
-from .ladderGame import ladder1V1Game
-
-import random, math
-from ladder.ladderMaps import ladderMaps
+import math
 from PySide import QtSql
-from PySide import QtCore
-
-from PySide.QtSql import *
-import re
-import operator
 
 class swisstournament(object):
     def __init__(self, id, name = None, host = None, minPlayers = 2, maxPlayers = 99, minrating = 0, maxrating = 9000, description = "", date = "", parent = None):

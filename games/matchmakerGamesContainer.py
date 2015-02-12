@@ -28,7 +28,6 @@ from trueSkill.Rating import *
 
 import time
 import random, sys
-from ladder.ladderMaps import ladderMaps
 from PySide import QtSql
 from PySide import QtCore
 import math

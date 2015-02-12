@@ -22,7 +22,6 @@ import time
 import json
 import logging
 
-from PySide.QtCore import QTimer, QObject
 from PySide import QtNetwork
 from PySide.QtNetwork import QTcpSocket, QAbstractSocket
 from PySide.QtSql import *
@@ -41,7 +40,7 @@ logger = logging.getLogger(__name__)
 from proxy import proxy
 from functools import wraps
 
-from JsonTransport import QDataStreamJsonTransport
+from src.JsonTransport import QDataStreamJsonTransport
 
 from config import Config
 

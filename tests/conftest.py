@@ -1,22 +1,23 @@
 import asyncio
-from PySide.QtCore import QCoreApplication
-import pytest
 import logging
-import mock
 import os
 import subprocess
-from PySide import QtCore
 import sys
-import time
+
+from PySide.QtCore import QCoreApplication
+import pytest
+import mock
+from PySide import QtCore
+
 
 if not hasattr(QtCore, 'Signal'):
     QtCore.Signal = QtCore.pyqtSignal
 
 from PySide.QtNetwork import QTcpSocket
-from players import playersOnline, Player
+from src.players import playersOnline, Player
 from games import Game
 
-from JsonTransport import Transport
+from src.JsonTransport import Transport
 
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s',
