@@ -19,40 +19,41 @@
 #-------------------------------------------------------------------------------
 
 import sys
+
+import logging
 from logging import handlers
 import signal
-
-from PySide import QtSql
+from quamash import QEventLoop
+from PySide import QtSql, QtCore, QtNetwork
+from PySide.QtSql import QSqlDatabase
 
 from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
-from FaLobbyServer import *
+from FaLobbyServer import FALobbyServer
 from FaGamesServer import *
-from gwLobby import *
 from src.players import *
 import games
 
+import config
+
+logger = logging.getLogger(__name__)
 
 UNIT16 = 8
 if __name__ == '__main__':
 
-    class Start(QObject):
-
-        def __init__(self, parent=None):
-
-            super(Start, self).__init__(parent)
+    class Start(asyncio.Future):
+        def __init__(self, loop):
+            super(Start, self).__init__()
             self.rootlogger = logging.getLogger("")
-            self.logHandler = handlers.RotatingFileHandler(config['global']['logpath'] + "server.log", backupCount=1024, maxBytes=16777216 )
+            self.logHandler = handlers.RotatingFileHandler(config.LOG_PATH + "server.log", backupCount=1024, maxBytes=16777216 )
             self.logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
             self.logHandler.setFormatter( self.logFormatter )
             self.rootlogger.addHandler( self.logHandler )
-            self.rootlogger.setLevel( eval ("logging." + config['server']['loglevel'] ))
+            self.rootlogger.setLevel(config.LOG_LEVEL)
             self.logger = logging.getLogger(__name__)
 
-            # list of users
-            self.listUsers = playersOnline()
+            self.players_online = playersOnline()
 
-
-            self.db = QtSql.QSqlDatabase.addDatabase("QMYSQL")
+            self.db = QtSql.QSqlDatabase.addDatabase(QSqlDatabase("QMYSQL"))
             self.db.setHostName(DB_SERVER)
             self.db.setPort(DB_PORT)
 
@@ -68,18 +69,16 @@ if __name__ == '__main__':
                 self.logger.error(self.db.lastError().text())
                 sys.exit(1)
 
-
             self.db.close()
 
             self.udpSocket = QtNetwork.QUdpSocket(self)
             self.udpSocket.bind(30351)
             self.udpSocket.readyRead.connect(self.processPendingDatagrams)
             self.dirtyGameList = []
-            self.games = games.hyperGamesContainerClass(self.listUsers, self.db, self.dirtyGameList)
+            self.games = games.hyperGamesContainerClass(self.players_online, self.db, self.dirtyGameList)
 
-            self.FALobby = FALobbyServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)
-            self.GWLobby = GWLobbyServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)
-            self.FAGames = FAServer(self.listUsers, self.games, self.db, self.dirtyGameList, self)
+            self.FALobby = FALobbyServer(self.players_online, self.games, self.db, self.dirtyGameList, self)
+            self.FAGames = FAServer(loop, self.players_online, self.games, self.db, self.dirtyGameList, self)
 
             # Make sure we can shutdown gracefully
             signal.signal(signal.SIGTERM, self.signal_handler)
@@ -91,7 +90,6 @@ if __name__ == '__main__':
                 return
             else:
                 self.logger.info ("starting the GW server on  %s:%i" % (self.GWLobby.serverAddress().toString(),self.GWLobby.serverPort()))
-
 
 
             if not self.FAGames.listen(QtNetwork.QHostAddress.Any, 8000):
@@ -111,8 +109,8 @@ if __name__ == '__main__':
 
         def signal_handler(self, signal, frame):
             self.logger.info("Received signal, shutting down")
+            self.set_result(0)
             self.FALobby.close()
-            self.GWLobby.close()
             self.FAGames.close()
 
         def jsonPlayer(self, player):
@@ -168,25 +166,20 @@ if __name__ == '__main__':
 
                 playerName = splitter[last-1]
 
-                for player in self.listUsers.getAllPlayers() :
+                for player in self.players_online.getAllPlayers() :
                     if player.getLogin() == playerName and player.getIp() == host.toString() :
                         player.setReceivedUdp(True)
                         player.setUdpPacketPort(port)
                         self.udpSocket.writeDatagram("packet Received", host, port)
                         break
 
-
-
-
-
-
     try:
-        logger = logging.getLogger(__name__)
         app = QtCore.QCoreApplication(sys.argv)
-        server = Start()
-        app.exec_()
+        loop = QEventLoop(app)
+        asyncio.set_event_loop(loop)
+        server = Start(loop)
+        loop.run_until_complete(Start())
 
-    
     except Exception as ex:
         logger.exception("Something awful happened!")
         logger.debug("Finishing main")

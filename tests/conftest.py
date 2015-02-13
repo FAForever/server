@@ -37,20 +37,6 @@ def async_test(f):
     return wrapper
 
 @pytest.fixture(scope='session')
-def test_server(request):
-    #p = subprocess.Popen([sys.executable, 'LocalGameServerTest.py'])
-    try:
-        #out, err = p.communicate(timeout=2)
-        #print("Got {}, {} from child".format(out, err))
-        pass
-    except subprocess.TimeoutExpired:
-        pass
-    def fin():
-        #p.terminate()
-        pass
-    #request.addfinalizer(fin)
-
-@pytest.fixture(scope='session')
 def application():
     return QCoreApplication([])
 
@@ -129,6 +115,7 @@ def player(login, id, port, action, ip='127.0.0.1'):
     p.getLogin = mock.Mock(return_value=login)
     p.getId = mock.Mock(return_value=id)
     p.getIp = mock.Mock(return_value=ip)
+    p.action = action
     p.id = id
     p.login = login
     p.address_and_port = "{}:{}".format(ip, port)

@@ -1,7 +1,7 @@
+from unittest import mock
+from flexmock import flexmock
 import pytest
 from PySide import QtSql
-from flexmock import flexmock
-import mock
 
 from src.gameconnection import GameConnection
 from lobbyserver import FAServerThread
@@ -37,3 +37,15 @@ def game_connection(game, loop, player_service, players, games, transport, monke
     conn.game = game
     game_connection.lobby = mock.Mock(spec=FAServerThread)
     return conn
+
+@pytest.fixture
+def connections(loop, player_service, players, games, transport, connected_game_socket, game_connection):
+    def make_connection(player, connectivity):
+        conn = GameConnection(loop=loop, users=player_service, games=games, db=None, server=None)
+        conn.player = player
+        conn.transport = transport
+        conn.connectivity_state.set_result(connectivity)
+        return conn
+    return mock.Mock(
+        make_connection=make_connection
+    )

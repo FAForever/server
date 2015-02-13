@@ -1,6 +1,6 @@
 import asyncio
 from unittest import mock
-from src.connectivity import TestPeer, Connectivity, ConnectPeers, ConnectToHost
+from src.connectivity import TestPeer, Connectivity, ConnectToHost
 from src.gameconnection import GameConnection
 
 

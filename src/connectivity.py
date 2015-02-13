@@ -4,7 +4,6 @@ import asyncio
 import logging
 from enum import Enum
 import config
-from src.protocol.gpgnet import GpgNetServerProtocol
 from .with_logger import with_logger
 
 logger = logging.getLogger(__name__)
@@ -152,7 +151,7 @@ class TestPeer():
 
 
 @asyncio.coroutine
-def ConnectToHost(host: GpgNetServerProtocol, peer: GpgNetServerProtocol):
+def ConnectToHost(host, peer):
     """
     Connect a host and a peer
     :param host:
@@ -184,7 +183,7 @@ def ConnectToHost(host: GpgNetServerProtocol, peer: GpgNetServerProtocol):
 
 
 @asyncio.coroutine
-def ConnectPeers(peer1: GpgNetServerProtocol, peer2: GpgNetServerProtocol):
+def ConnectPeers(peer1, peer2):
     """
     Connect two peers by directing their respective GameConnection objects.
 

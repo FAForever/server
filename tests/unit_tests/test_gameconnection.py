@@ -1,6 +1,9 @@
 import asyncio
 
 from PySide.QtNetwork import QTcpSocket
+import mock
+import pytest
+from src.connectivity import Connectivity
 
 from src.gameconnection import GameConnection
 from src.JsonTransport import Transport

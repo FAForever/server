@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 
 try :
     import games.gwContainer
-    reload(games.gwContainer)
     from games.gwContainer import gwGamesContainerClass
 except :
     self.log.exception("Something awful happened trying to put that thing!")

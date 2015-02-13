@@ -91,7 +91,6 @@ class Game(object):
         self.gameName = gameName
         self.mapName = map
         self.password = None
-        self.numberPlayers = 0
         self.players = []
         self.size = 0
         self.options = []
@@ -100,7 +99,6 @@ class Game(object):
         self.AIs = []
         self.connections = {}
         self.packetReceived = {}
-        self.disConnections = {}
         self.desync = 0
         self.validGame = True
         self.invalidReason = None
@@ -730,8 +728,6 @@ class Game(object):
                 self.teamAssign[curTeam].remove(name)
 
     def assignPlayerToTeam(self, name, team):
-
-
         #remove him from others teams :
         for curTeam in self.teamAssign:
             if team != curTeam:
@@ -804,7 +800,6 @@ class Game(object):
         if player == '':
             return 0
         self.players.append(player)
-        #self.numberPlayers = self.numberPlayers + 1
         return 1
 
     def isPlayerInGame(self, player):

@@ -680,17 +680,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def connectThroughProxy(self, playerToConnect, sendToOther=True, init=False):
         try:
-            numProxy = None
-
-            if playerToConnect in self.forcedConnections:
-                del self.forcedConnections[playerToConnect]
-
-            if playerToConnect in self.sentConnect:
-                del self.sentConnect[playerToConnect]
-
-            if playerToConnect.gameThread is None:
-                return
-
             self.game.proxy.addCouple(self.player.getLogin(), playerToConnect.getLogin())
             numProxy = self.game.proxy.findProxy(self.player.getLogin(), playerToConnect.getLogin())
 
@@ -716,9 +705,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     playerToConnect.gameThread.connectThroughProxy(self.player, sendToOther=False)
                     if not self.player in playerToConnect.gameThread.connectedTo:
                         playerToConnect.gameThread.connectedTo.append(self.player)
-
-                    if playerToConnect.getLogin() in self.game.connections:
-                        self.game.removeFromConnect(playerToConnect, self.player)
             else:
                 self.log.debug(self.logGame + "Maximum proxies used")
         except:

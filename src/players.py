@@ -184,8 +184,8 @@ class Player(object):
         
         self.numGames = numGames
         self.session = session
-        self.login = login
-        self.ip = ip
+        self._login = login
+        self._ip = ip
         self.gamePort = port
         self.uuid = uuid
         self.localIp = localIp
@@ -287,11 +287,10 @@ class Player(object):
         return "{}:{}".format(self.ip, self.game_port)
 
 class playersOnline(object):
-    def __init__(self, parent = None):
+    def __init__(self):
         self.players = []
         self.logins = []
-        
-        
+
     def getAllPlayers(self):
         return self.players
 
@@ -299,7 +298,6 @@ class playersOnline(object):
         return len(self.players)
     
     def addUser(self, newplayer):
-        
         gamesocket = None
         lobbySocket = None
         # login not in current active players
@@ -320,14 +318,14 @@ class playersOnline(object):
                     
                     try :
                         gamesocket = player.getGameSocket()
-    
+
                         lobbyThread = player.getLobbyThread()
                         if lobbyThread != None :
                             lobbySocket = lobbyThread.socket
-                         
-                        
+
+
                         #self.players.remove(player)
-                        
+
                     except :
                         pass
                         
@@ -335,7 +333,7 @@ class playersOnline(object):
                     self.logins.append(newplayer.login)
 
                     return gamesocket, lobbySocket
-              
+
 
     def removeUser(self, player):
         if player.getLogin() in self.logins:
