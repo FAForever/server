@@ -5,3 +5,4 @@ pytest
 pytest-qt
 flexmock
 configobj
+pygeoip

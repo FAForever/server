@@ -40,7 +40,6 @@ from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QObject
 from PySide import QtNetwork
 from PySide.QtSql import QSqlQuery
 
-import geoip
 from trueSkill.faPlayer import *
 from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
 from trueSkill.GameInfo import *
@@ -48,6 +47,8 @@ from src.players import *
 from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS
 from config import Config
 
+import pygeoip
+gi = pygeoip.GeoIP('GeoIP.dat')
 
 FA = 9420
 LADDER_SEASON = "ladder_season_5"
@@ -1780,7 +1781,7 @@ Thanks,\n\
                 ## Country
                 ## ----------
 
-                country = geoip.country(self.socket.peerAddress().toString())
+                country = gi.country_name_by_addr(self.socket.peerAddress().toString())
                 if country is not None:
                     self.player.country = str(country)
 
