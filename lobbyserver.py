@@ -48,7 +48,7 @@ from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_A
 from config import Config
 
 import pygeoip
-gi = pygeoip.GeoIP('GeoIP.dat')
+gi = pygeoip.GeoIP('GeoIP.dat', pygeoip.MEMORY_CACHE)
 
 FA = 9420
 LADDER_SEASON = "ladder_season_5"
