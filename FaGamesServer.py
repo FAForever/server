@@ -130,7 +130,7 @@ class FAServer(QTcpServer):
 
     def run(self, address):
         self._logger.debug("Server listening on {}:{}".format(address, 8000))
-        self.listen(address, 8000)
+        return self.listen(address, 8000)
 
     @Slot(str, str, int)
     def _on_nat_packet(self, data, host, port):

@@ -103,7 +103,7 @@ class updateServerThread(QObject):
         
         if  query.size() > 0 :
             
-            while next(query) :
+            while query.next() :
                 file = str(query.value(0))
                 fullPath = None
                 if sys.platform == "win32" :
@@ -129,7 +129,7 @@ class updateServerThread(QObject):
 
         query.exec_()
         if  query.size() > 0 :
-            while next(query) :
+            while query.next() :
                 f = str(query.value(0))
                 files.append(f)
 
@@ -569,24 +569,13 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
 
     
                 for arg in args :
-                    if type(arg) is LongType :
-                        stream.writeQString(str(arg))
-                    if type(arg) is IntType:
+                    if isinstance(arg, int):
                         stream.writeInt(int(arg))
-                    elif type(arg) is StringType  :
-                        stream.writeQString(arg)
                     elif isinstance(arg, str):                       
                         stream.writeQString(arg) 
-                    elif type(arg) is FloatType:
-                        stream.writeFloat(arg)
-                    elif type(arg) is ListType:
+                    elif isinstance(arg, list):
                         stream.writeQString(str(arg))                        
-                    elif type(arg) is QFile :
-                        arg.open(QIODevice.ReadOnly)
-                        fileDatas = QByteArray(arg.readAll())
-                        stream.writeInt32(fileDatas.size())
-                        stream.writeRawData(fileDatas.data())
-                        arg.close()                        
+
                 #stream << action << options
                 stream.device().seek(0)
                 

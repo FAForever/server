@@ -33,6 +33,7 @@ from logging import handlers
 
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
 from configobj import ConfigObj
+import config
 from config import Config
 
 #update server
@@ -46,7 +47,7 @@ class start(QObject):
         try :
             super(start, self).__init__(parent)
             self.rootlogger = logging.getLogger("")
-            self.logHandler = handlers.RotatingFileHandler(Config['global']['logpath'] + "serverUpdater.log", backupCount=15, maxBytes=524288 )
+            self.logHandler = handlers.RotatingFileHandler(config.LOG_PATH + "serverUpdater.log", backupCount=15, maxBytes=524288 )
             self.logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
             self.logHandler.setFormatter(self.logFormatter)
             self.rootlogger.addHandler(self.logHandler)
@@ -54,7 +55,7 @@ class start(QObject):
             self.logger = logging.getLogger(__name__)
 
             self.logger.info("Update server starting")
-            self.db = QtSql.QSqlDatabase.addDatabase(QSqlDatabase("QMYSQL"))
+            self.db = QtSql.QSqlDatabase("QMYSQL")
             self.db.setHostName(DB_SERVER)
             self.db.setPort(DB_PORT)
 

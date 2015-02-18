@@ -25,7 +25,7 @@ from logging import handlers
 import signal
 from quamash import QEventLoop
 from PySide import QtSql, QtCore, QtNetwork
-from PySide.QtSql import QSqlDatabase
+from PySide.QtSql import QSqlDatabase, QSqlDriver
 
 from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
 from FaLobbyServer import FALobbyServer
@@ -40,9 +40,10 @@ logger = logging.getLogger(__name__)
 UNIT16 = 8
 if __name__ == '__main__':
 
-    class Start(asyncio.Future):
+    class Start(QtCore.QObject, asyncio.Future):
         def __init__(self, loop):
-            super(Start, self).__init__()
+            QtCore.QObject.__init__(self)
+            asyncio.Future.__init__(self)
             self.rootlogger = logging.getLogger("")
             self.logHandler = handlers.RotatingFileHandler(config.LOG_PATH + "server.log", backupCount=1024, maxBytes=16777216 )
             self.logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
@@ -53,7 +54,7 @@ if __name__ == '__main__':
 
             self.players_online = playersOnline()
 
-            self.db = QtSql.QSqlDatabase.addDatabase(QSqlDatabase("QMYSQL"))
+            self.db = QtSql.QSqlDatabase("QMYSQL")
             self.db.setHostName(DB_SERVER)
             self.db.setPort(DB_PORT)
 
@@ -71,9 +72,6 @@ if __name__ == '__main__':
 
             self.db.close()
 
-            self.udpSocket = QtNetwork.QUdpSocket(self)
-            self.udpSocket.bind(30351)
-            self.udpSocket.readyRead.connect(self.processPendingDatagrams)
             self.dirtyGameList = []
             self.games = games.hyperGamesContainerClass(self.players_online, self.db, self.dirtyGameList)
 
@@ -84,16 +82,8 @@ if __name__ == '__main__':
             signal.signal(signal.SIGTERM, self.signal_handler)
 
 
-            if not self.GWLobby.listen(QtNetwork.QHostAddress.LocalHost, 8002):
-                self.logger.error ("Unable to start the server")
-                raise Exception("Unable to start the GW server" )
-                return
-            else:
-                self.logger.info ("starting the GW server on  %s:%i" % (self.GWLobby.serverAddress().toString(),self.GWLobby.serverPort()))
-
-
-            if not self.FAGames.listen(QtNetwork.QHostAddress.Any, 8000):
-                self.logger.error ("Unable to start the server")
+            if not self.FAGames.run(QtNetwork.QHostAddress.Any):
+                self.logger.error("Unable to start the server {}".format(self.FAGames.serverError()))
                 raise Exception("Unable to start the game server")
                 return
             else:
@@ -101,7 +91,8 @@ if __name__ == '__main__':
 
 
             if not self.FALobby.listen(QtNetwork.QHostAddress.Any, 8001):
-                self.logger.error ("Unable to start the lobby server")
+                self.logger.error("Unable to start the server {}".format(self.FALobby.serverError()))
+                print("Unable to start the server {}".format(self.FALobby.serverError()))
                 raise Exception("Unable to start the lobby server")
                 return
             else:
@@ -177,8 +168,7 @@ if __name__ == '__main__':
         app = QtCore.QCoreApplication(sys.argv)
         loop = QEventLoop(app)
         asyncio.set_event_loop(loop)
-        server = Start(loop)
-        loop.run_until_complete(Start())
+        loop.run_until_complete(Start(loop))
 
     except Exception as ex:
         logger.exception("Something awful happened!")

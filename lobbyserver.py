@@ -162,7 +162,7 @@ class FAServerThread(QObject):
 
             self.pingTimer = None
 
-            self.session = random.getrandbits(32)
+            self.session = int(random.getrandbits(16))
 
             self.dirtyGameList = []
         else:
@@ -952,7 +952,7 @@ Thanks,\n\
         query.prepare("SELECT `section`,`description` FROM `tutorial_sections`")
         query.exec_()
         if query.size() > 0:
-            while next(query):
+            while query.next():
                 jsonToSend = {"command": "tutorials_info", "section": query.value(0), "description": query.value(1)}
                 reply.append(self.prepareBigJSON(jsonToSend))
 
@@ -960,7 +960,7 @@ Thanks,\n\
             "SELECT tutorial_sections.`section`,`name`,`url`, `tutorials`.`description`, `map` FROM `tutorials` LEFT JOIN  tutorial_sections ON tutorial_sections.id = tutorials.section ORDER BY `tutorials`.`section`, name")
         query.exec_()
         if query.size() > 0:
-            while next(query):
+            while query.next():
                 jsonToSend = {"command": "tutorials_info", "tutorial": query.value(1), "url": query.value(2),
                               "tutorial_section": query.value(0), "description": query.value(3),
                               "mapname": query.value(4)}
@@ -976,7 +976,7 @@ Thanks,\n\
         query.prepare("SELECT name, description, filename, type, id FROM `coop_map`")
         query.exec_()
         if query.size() > 0:
-            while next(query):
+            while query.next():
                 jsonToSend = {"command": "coop_info", "name": query.value(0), "description": query.value(1),
                               "filename": query.value(2), "featured_mod": "coop"}
                 if query.value(3) == 0:
@@ -1057,11 +1057,7 @@ Thanks,\n\
         stream.writeQString(action)
 
         for arg in args:
-            if type(arg) is LongType:
-                stream.writeQString(str(arg))
-            elif type(arg) is IntType:
-                stream.writeInt(arg)
-            elif isinstance(arg, str):
+            if isinstance(arg, str):
                 stream.writeQString(arg)
             elif type(arg) is StringType:
                 stream.writeQString(arg)
@@ -1106,18 +1102,10 @@ Thanks,\n\
                 stream.writeQString(action)
 
                 for arg in args:
-                    if type(arg) is LongType:
-                        stream.writeQString(str(arg))
-                    elif type(arg) is IntType:
+                    if isinstance(arg, int):
                         stream.writeInt(arg)
                     elif isinstance(arg, str):
                         stream.writeQString(arg)
-                    elif type(arg) is StringType:
-                        stream.writeQString(arg)
-                    elif type(arg) is FloatType:
-                        stream.writeFloat(arg)
-                    elif type(arg) is ListType:
-                        stream.writeQString(str(arg))
 
                 stream.device().seek(0)
 
@@ -1323,7 +1311,7 @@ Thanks,\n\
         query.addBindValue(self.player.getId())
         query.exec_()
         if query.size() > 0:
-            while next(query):
+            while query.next():
                 self.player.modManager.append(query.value(0))
 
 
@@ -1407,7 +1395,7 @@ Thanks,\n\
             query.exec_()
             if query.size() > 0:
                 avatarList = []
-                while next(query):
+                while query.next():
                     avatar = {"url": str(query.value(0)), "tooltip": str(query.value(1))}
                     avatarList.append(avatar)
 
@@ -1434,7 +1422,7 @@ Thanks,\n\
                 query.exec_()
                 if query.size() > 0:
                     avatarList = []
-                    while next(query):
+                    while query.next():
                         avatar = {"iduser": str(query.value(0)), "login": str(query.value(1))}
                         avatarid = query.value(2)
                         avatarList.append(avatar)
@@ -1659,10 +1647,10 @@ Thanks,\n\
                 query = QSqlQuery(self.parent.db)
                 query.prepare("UPDATE anope.anope_db_NickCore SET pass = ? WHERE display = ?")
                 m = hashlib.md5()
-                m.update(password)
+                m.update(password.encode())
                 passwordmd5 = m.hexdigest()
                 m = hashlib.md5()
-                m.update(passwordmd5)
+                m.update(passwordmd5.encode())
                 query.addBindValue("md5:" + str(m.hexdigest()))
                 query.addBindValue(login)
                 if not query.exec_():
@@ -1847,7 +1835,7 @@ Thanks,\n\
                                                     "tooltip": ("Third of my division !")}
                                                 self.player.avatar = avatar
                                                 self.leagueAvatar = avatar
-                                    next(query)
+                                    query.next()
 
                             # check if top of the league :
                             query.prepare(
@@ -1957,7 +1945,7 @@ Thanks,\n\
                 query.exec_()
 
                 if query.size() > 0:
-                    while next(query):
+                    while query.next():
                         self.friendList.append(str(query.value(0)))
 
                     jsonToSend = {"command": "social", "friends": self.friendList}
@@ -1968,7 +1956,7 @@ Thanks,\n\
                 query.addBindValue(self.uid)
                 query.exec_()
                 if query.size() > 0:
-                    while next(query):
+                    while query.next():
                         self.ladderMapList.append(int(query.value(0)))
 
                 query = QSqlQuery(self.parent.db)
@@ -1977,7 +1965,7 @@ Thanks,\n\
                 query.addBindValue(login)
                 query.exec_()
                 if query.size() > 0:
-                    while next(query):
+                    while query.next():
                         self.foeList.append(str(query.value(0)))
 
                     jsonToSend = {"command": "social", "foes": self.foeList}
@@ -2119,7 +2107,7 @@ Thanks,\n\
 
         if query.size() > 0:
 
-            while next(query):
+            while query.next():
                 fileInfo = {"uid": query.value(0), "filename": query.value(1), "path": query.value(2)}
                 modFiles.append(fileInfo)
 
@@ -2130,7 +2118,7 @@ Thanks,\n\
 
         if query.size() > 0:
 
-            while next(query):
+            while query.next():
                 fileInfo = {"uid": query.value(0), "fileuid": query.value(1), "version": query.value(2),
                             "name": query.value(3)}
                 versionFiles.append(fileInfo)
@@ -2209,7 +2197,7 @@ Thanks,\n\
             query.exec_()
             if query.size() > 0:
 
-                while next(query):
+                while query.next():
                     avatar = {"url": str(query.value(0)), "tooltip": str(query.value(1))}
                     avatarList.append(avatar)
 
@@ -2493,7 +2481,7 @@ Thanks,\n\
             query.prepare("SELECT * FROM table_mod ORDER BY likes DESC LIMIT 0, 100")
             query.exec_()
             if query.size() != 0:
-                while next(query):
+                while query.next():
                     uid = str(query.value(1))
                     name = str(query.value(2))
                     version = int(query.value(3))

@@ -47,13 +47,11 @@ class updateServer(QtNetwork.QTcpServer):
         
     def incomingConnection(self, socketId):
         
-        reload(updateServerThread)
         self.updaters.append(updateServerThread.updateServerThread(socketId, self))    
 
     def createPatch(self, patches):
 
         if self.patching == False:
-            reload(createPatch)
             self.patching = True
             self.logger.debug(patches)
             thread = createPatch.createPatch(patches, self.db)
