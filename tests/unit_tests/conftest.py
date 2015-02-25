@@ -9,8 +9,8 @@ from lobbyserver import FAServerThread
 @pytest.fixture()
 def sqlquery():
     return flexmock(
-        exec_=lambda s=None: None,
-        size=lambda: 0,
+        exec_=mock.MagicMock(return_value=0),
+        size=mock.MagicMock(return_value=0),
         lastInsertId=lambda: 1,
         prepare=lambda q: None,
         addBindValue=lambda v: None
@@ -18,7 +18,7 @@ def sqlquery():
 
 @pytest.fixture()
 def lobbythread():
-    return flexmock(
+    return mock.Mock(
         sendJSON=lambda obj: None
     )
 

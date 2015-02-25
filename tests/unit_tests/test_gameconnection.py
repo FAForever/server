@@ -43,30 +43,6 @@ def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, pat
     loop.run_until_complete(result)
     transport.send_message.assert_any_call({'key': 'HostGame', 'commands': [str(game.getMapName())]})
 
-def test_handle_action_GameState_lobby_sends_JoinGame(game_connection, loop, patch_connectivity, players, game, transport):
-    """
-    :type game_connection: GameConnection
-    :type transport Transport
-    """
-    game_connection.player = players.joining
-    result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
-    loop.run_until_complete(result)
-    transport.send_message.assert_any_call({'key': 'JoinGame', 'commands': [
-        str(game.getHostIp()),
-        str(game.getHostName()),
-        int(game.getHostId())
-    ]})
-    game.add_peer.assert_called_with(players.joining, game_connection)
-
-def test_handle_action_ConnectedToHost(game, loop, game_connection, players):
-    """
-    :type game Game
-    :type game_connection GameConnection
-    """
-    game_connection.player = players.joining
-    loop.run_until_complete(asyncio.async(game_connection.handle_action('ConnectedToHost', [])))
-    game.add_connection.assert_called_once_with(players.joining, players.hosting)
-
 def test_handle_action_PlayerOption(game, loop, game_connection):
     """
     :type game Game
@@ -90,4 +66,21 @@ def test_handle_action_GameOption(game, loop, game_connection):
     result = asyncio.async(game_connection.handle_action('PlayerOption', [1, 'Color', 2]))
     loop.run_until_complete(result)
     game.setPlayerOption.assert_called_once_with(1, 'Color', 2)
+
+def test_ConnectToHost_public_public(loop, connections, players):
+    host_conn = connections.make_connection(players.hosting, Connectivity.PUBLIC)
+    peer_conn = connections.make_connection(players.joining, Connectivity.PUBLIC)
+    host_conn.send_ConnectToPeer = mock.Mock()
+    peer_conn.send_JoinGame = mock.Mock()
+    host = players.hosting
+    peer = players.joining
+    @asyncio.coroutine
+    def test():
+        yield from host_conn.ConnectToHost(peer_conn)
+        host_conn.send_ConnectToPeer.assert_called_with(peer.address_and_port, peer.login, peer.id)
+        peer_conn.send_JoinGame.assert_called_with(host.address_and_port,
+                                                   False,
+                                                   host.getLogin(),
+                                                   host.getId())
+    loop.run_until_complete(asyncio.wait_for(test(), 2))
 

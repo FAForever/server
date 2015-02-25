@@ -26,7 +26,7 @@ from PySide import QtNetwork
 from PySide.QtNetwork import QTcpSocket, QAbstractSocket
 from PySide.QtSql import *
 
-from src.connectivity import TestPeer
+from src.connectivity import TestPeer, Connectivity
 from games.game import GameState
 from src.protocol.gpgnet import GpgNetServerProtocol
 from src.subscribable import Subscribable
@@ -283,11 +283,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self._send_host_game(str(map))
         # if the player is joining, we connect him to host.
         elif playeraction == "JOIN":
-            self.sendToRelay("JoinGame", [str(self.game.getHostIp()),
-                                          str(self.game.getHostName()),
-                                          int(self.game.getHostId())])
-            self.game.add_peer(self.player, self)
-            self.canConnectToHost = True
+            yield from self.ConnectToHost(self.game.host.gameThread)
 
     def handleAction2(self, action):
         """
@@ -308,6 +304,63 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             'command_id': 'ProcessServerNatPacket',
             'arguments': [host, port, message]
         })
+
+    @asyncio.coroutine
+    def ConnectToHost(self, peer: GpgNetServerProtocol):
+        """
+        Connect a host and a peer
+        :param host:
+        :param peer:
+        :return:
+        """
+        assert self.player.action == 'HOST'
+        states = [
+            self.connectivity_state,
+            peer.connectivity_state
+        ]
+        yield from asyncio.wait(states)
+        peer_state = peer.connectivity_state.result()
+        if self.connectivity_state.result() == Connectivity.PROXY or peer_state == Connectivity.PROXY:
+            # TODO: Proxy
+            pass
+        if self.connectivity_state.result() == Connectivity.PUBLIC:
+            if peer_state == Connectivity.PUBLIC:
+                peer.send_JoinGame(self.player.address_and_port,
+                                   False,
+                                   self.player.login,
+                                   self.player.id)
+                self.send_ConnectToPeer(peer.player.address_and_port, peer.player.login, peer.player.id)
+            else:
+                peer.send_SendNatPacket(self.player.address_and_port, 'Connect to {}'.format(peer.player.id))
+
+        elif self.connectivity_state.result() == Connectivity.STUN:
+            if peer_state == Connectivity.PUBLIC:
+                self.send_SendNatPacket(peer.player.address_and_port, 'Connect to {}'.format(peer.player.id))
+            else:
+                # Perform STUN
+                pass
+
+
+
+    @asyncio.coroutine
+    def ConnectToPeer(self, peer2: GpgNetServerProtocol):
+        """
+        Connect two peers by directing their respective GameConnection objects.
+
+        Will await determination of the respective peers' ConnectivityState, followed by this algorithm:
+
+        :param peer1:
+        :param peer2:
+        :return: None
+        """
+        states = [
+            self.connectivity_state,
+            peer2.connectivity_state
+        ]
+        yield from asyncio.wait(states)
+        if self.connectivity_state == Connectivity.PUBLIC:
+            if peer2.connectivity_state != Connectivity.PROXY:
+                peer2.send_ConnectToPeer(self.player.ip, peer2.player.login, peer2.player.id)
 
     @asyncio.coroutine
     def handle_action(self, key, values):
