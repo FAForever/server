@@ -25,6 +25,7 @@ from logging import handlers
 import signal
 from quamash import QEventLoop
 from PySide import QtSql, QtCore, QtNetwork
+from PySide.QtCore import QTimer
 from PySide.QtSql import QSqlDatabase, QSqlDriver
 
 from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
@@ -80,6 +81,12 @@ if __name__ == '__main__':
 
             # Make sure we can shutdown gracefully
             signal.signal(signal.SIGTERM, self.signal_handler)
+            signal.signal(signal.SIGINT, self.signal_handler)
+            def poll_signal():
+                pass
+            timer = QTimer(self)
+            timer.timeout.connect(poll_signal)
+            timer.start(200)
 
 
             if not self.FAGames.run(QtNetwork.QHostAddress.Any):
@@ -173,3 +180,4 @@ if __name__ == '__main__':
     except Exception as ex:
         logger.exception("Something awful happened!")
         logger.debug("Finishing main")
+        loop.close()
