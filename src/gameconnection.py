@@ -327,9 +327,20 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         elif self.connectivity_state.result() == Connectivity.STUN:
             if peer_state == Connectivity.PUBLIC:
                 with peer.subscribe(self, ['ProcessNatPacket']) as sub:
-                    self.send_SendNatPacket(peer.player.address_and_port, 'Hello {}'.format(peer.player.id))
+                    nat_message = "Hello {}".format(peer.player.id)
+                    self.send_SendNatPacket(peer.player.address_and_port, nat_message)
                     yield from sub.wait_for('ProcessNatPacket', 2)
-                    pass
+                    if nat_message in self.nat_packets.keys()\
+                            and self.nat_packets[nat_message] == peer.player.address_and_port:
+                        self.send_ConnectToPeer(peer.player.address_and_port, peer.player.login, peer.player.id)
+                        peer.send_JoinGame(self.nat_packets[nat_message],
+                                           False,
+                                           self.player.login,
+                                           self.player.id)
+                    else:
+                        # Peer isn't receiving our packets, even though they're meant to
+                        # TODO: Fallback to proxy connection
+                        pass
             else:
                 # Perform STUN
                 pass
@@ -520,6 +531,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 pass
         except:
             self.log.exception(self.logGame + "Something awful happened in a game thread!")
+
+    def on_ProcessNatPacket(self, address_and_port, message):
+        self.nat_packets[message] = address_and_port
 
     @asyncio.coroutine
     def handle_game_state(self, state):

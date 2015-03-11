@@ -41,6 +41,13 @@ class GpgNetServerProtocol():
     def send_Ping(self):
         self.send_gpgnet_message('ping', [])
 
+    def handle_ProcessNatPacket(self, arguments):
+        self.on_ProcessNatPacket(arguments[0], arguments[1])
+
+    @abstractmethod
+    def on_ProcessNatPacket(self, address_and_port, message):
+        pass  # pragma: no cover
+
     @abstractmethod
     def send_gpgnet_message(self, command_id, arguments):
         pass  # pragma: no cover

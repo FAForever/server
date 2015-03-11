@@ -86,7 +86,7 @@ class Subscribable():
 @with_logger
 class Subscription():
     """
-    Simple object to track a subscription and automatically cancel it.
+    Tracks a subscription and automatically cancels it if used as a context manager.
 
     For use as a context manager
     """
@@ -109,18 +109,23 @@ class Subscription():
         # TODO: Cleanup futures in _emissions?
 
     def fire(self, message):
-        self._logger.debug("Notifying {receiver} of {commands} on {self}".format(
-            receiver=self.receiver,
-            commands=self.command_ids,
-            self=self
-        ))
         command_id = message['command_id']
         arguments = message['arguments']
         cmd_name = 'handle_{cmd_id}'.format(cmd_id=command_id)
-        if self.filter(arguments) and hasattr(self.receiver, command_id):
-            getattr(self.receiver, cmd_name)(arguments)
+        self._logger.debug("Notifying {receiver} of {command} on {self}".format(
+            receiver=self.receiver,
+            command=command_id,
+            self=self
+        ))
+        if self.filter(arguments):
             if command_id in self._emissions:
+                self._logger.debug('Setting {} as fired'.format(command_id))
                 self._emissions[command_id].set_result(True)
+            if hasattr(self.receiver, cmd_name):
+                self._logger.debug("Firing {} on {}".format(cmd_name, self.receiver))
+                getattr(self.receiver, cmd_name)(arguments)
+            else:
+                self._logger.info("Receiver {} does not have event handler method {}".format(self.receiver, cmd_name))
 
     @asyncio.coroutine
     def wait_for(self, command_id, timeout=None):
@@ -129,6 +134,7 @@ class Subscription():
         :param command_id: command identifier
         :return: future representing when a command has been executed
         """
+        self._logger.debug("Awaiting {} with a timeout of {}".format(command_id, timeout))
         if command_id not in self._emissions:
             self._emissions[command_id] = asyncio.Future()
         yield from asyncio.wait_for(self._emissions[command_id], timeout=timeout)

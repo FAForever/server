@@ -86,3 +86,21 @@ def test_ConnectToHost_public_public(connections, players):
                                                host_conn.player.id)
 
 
+@asyncio.coroutine
+def test_ConnectToHost_stun_public(connections, players):
+    host_conn = connections.make_connection(players.hosting, Connectivity.STUN)
+    peer_conn = connections.make_connection(players.joining, Connectivity.PUBLIC)
+    host_conn.send_ConnectToPeer = mock.Mock()
+    host_conn.send_SendNatPacket = mock.Mock()
+    peer_conn.send_JoinGame = mock.Mock()
+    connectToHost = asyncio.async(host_conn.ConnectToHost(peer_conn))
+    yield from asyncio.sleep(0.1)
+    peer_conn.notify({'command_id': 'ProcessNatPacket',
+                      'arguments': [peer_conn.player.address_and_port, "Hello {}".format(peer_conn.player.id)]})
+    yield from connectToHost
+    host_conn.send_SendNatPacket.assert_called_with(peer_conn.player.address_and_port,
+                                                    "Hello {}".format(peer_conn.player.id))
+    peer_conn.send_JoinGame.assert_called_with(host_conn.player.address_and_port,
+                                               False,
+                                               host_conn.player.login,
+                                               host_conn.player.id)
