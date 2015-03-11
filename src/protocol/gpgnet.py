@@ -26,6 +26,9 @@ class GpgNetServerProtocol():
     def player(self, val):
         pass  # pragma: no cover
 
+    def send_CreateLobby(self, rankedMode, port, login, uid, natTraversalProvider):
+        self.send_gpgnet_message('CreateLobby', [rankedMode, port, login, uid, natTraversalProvider])
+
     def send_ConnectToPeer(self, address_and_port: str, player_name: str, player_uid: int):
         self.send_gpgnet_message('ConnectToPeer', [address_and_port, player_name, player_uid])
 
@@ -35,6 +38,13 @@ class GpgNetServerProtocol():
     def send_SendNatPacket(self, address_and_port: str, message: str):
         self.send_gpgnet_message('SendNatPacket', [address_and_port, message])
 
+    def send_Ping(self):
+        self.send_gpgnet_message('ping', [])
+
     @abstractmethod
     def send_gpgnet_message(self, command_id, arguments):
         pass  # pragma: no cover
+
+
+class GpgNetClientProtocol():
+    pass

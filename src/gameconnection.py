@@ -715,7 +715,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             if self.game.getGameName().startswith('#'):
                 self.sendToRelay("P2PReconnect", [])
 
-        self.sendToRelay("CreateLobby", [rankedMode, port, login, uid, 1])
+        self.send_CreateLobby(rankedMode, port, login, uid, 1)
 
         if self.game:
             self.game.addPlayer(self.player)
