@@ -26,7 +26,6 @@ import signal
 from quamash import QEventLoop
 from PySide import QtSql, QtCore, QtNetwork
 from PySide.QtCore import QTimer
-from PySide.QtSql import QSqlDatabase, QSqlDriver
 
 from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
 from FaLobbyServer import FALobbyServer
@@ -40,7 +39,6 @@ logger = logging.getLogger(__name__)
 
 UNIT16 = 8
 if __name__ == '__main__':
-
     class Start(QtCore.QObject, asyncio.Future):
         def __init__(self, loop):
             QtCore.QObject.__init__(self)
@@ -110,6 +108,7 @@ if __name__ == '__main__':
             self.set_result(0)
             self.FALobby.close()
             self.FAGames.close()
+            self._loop.stop()
 
         def jsonPlayer(self, player):
             ''' infos about a player'''
@@ -120,18 +119,6 @@ if __name__ == '__main__':
             jsonToSend["login"] = player.getLogin()
             jsonToSend["rating_mean"] = rating.getRating().getMean()
             jsonToSend["rating_deviation"] = rating.getRating().getStandardDeviation()
-            # try:
-            #     if player.view_globalMean and player.view_globalDev:
-            #         jsonToSend["rating_mean"] = player.view_globalMean
-            #         jsonToSend["rating_deviation"] = player.view_globalDev
-            # except:
-            #     pass
-            # try:
-            #     if player.view_globalMean and player.view_globalDev:
-            #         jsonToSend["rating_mean"] = player.view_globalMean
-            #         jsonToSend["rating_deviation"] = player.view_globalDev
-            # except:
-            #     pass
 
             jsonToSend["ladder_rating_mean"] = rating1v1.getRating().getMean()
             jsonToSend["ladder_rating_deviation"] = rating1v1.getRating().getStandardDeviation()
@@ -153,24 +140,6 @@ if __name__ == '__main__':
 
             return jsonToSend
 
-
-        def processPendingDatagrams(self):
-            ''' Handle UDP packets from the users. Used to check UDP connection on their side.'''
-            while self.udpSocket.hasPendingDatagrams():
-                datagram, host, port = self.udpSocket.readDatagram(self.udpSocket.pendingDatagramSize())
-
-                splitter = str(datagram).split(" ")
-                last = len(splitter)
-
-                playerName = splitter[last-1]
-
-                for player in self.players_online.getAllPlayers() :
-                    if player.getLogin() == playerName and player.getIp() == host.toString() :
-                        player.setReceivedUdp(True)
-                        player.setUdpPacketPort(port)
-                        self.udpSocket.writeDatagram("packet Received", host, port)
-                        break
-
     try:
         app = QtCore.QCoreApplication(sys.argv)
         loop = QEventLoop(app)
@@ -178,6 +147,4 @@ if __name__ == '__main__':
         loop.run_until_complete(Start(loop))
 
     except Exception as ex:
-        logger.exception("Something awful happened!")
-        logger.debug("Finishing main")
-        loop.close()
+        logger.exception("Something awful happened {}".format(ex))
