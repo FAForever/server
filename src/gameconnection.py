@@ -66,7 +66,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def __init__(self, loop, users, games, db, server):
         Subscribable.__init__(self)
-        print("GameConnection ID at initialization {}".format(self))
 
         self.loop = loop
         self.users = users
@@ -140,7 +139,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         :raise AssertionError
         :return: bool
         """
-        print("{} accept".format(self))
         assert socket.isValid()
         assert socket.state() == QAbstractSocket.ConnectedState
         self.log.debug("Accepting connection from %r" % socket.peerAddress())
@@ -220,7 +218,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         """
         self.game = self.games.getGameByUuid(self.player.getGame())
         assert self.game
-        assert self.game == self.player.getGame()
         action = self.player.getAction()
 
         if action == "HOST":
@@ -297,7 +294,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         asyncio.async(self.handle_action(message["action"], message["chuncks"]))
 
     def handle_ProcessServerNatPacket(self, message, host, port):
-        print("handle_ProcessServerNatPacket {}".format(id(self)))
         self.log.warn("handle_ProcessServerNatPacket {}".format(self))
         self.log.warn("{}:{} >> {}".format(host, port, message))
         self.notify({
@@ -306,18 +302,13 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         })
 
     @asyncio.coroutine
-    def ConnectToHost(self, peer: GpgNetServerProtocol):
+    def ConnectToHost(self, peer):
         """
-        Connect a host and a peer
-        :param host:
-        :param peer:
+        Connect self (host) to a given peer
         :return:
         """
         assert self.player.action == 'HOST'
-        states = [
-            self.connectivity_state,
-            peer.connectivity_state
-        ]
+        states = [self.connectivity_state, peer.connectivity_state]
         yield from asyncio.wait(states)
         peer_state = peer.connectivity_state.result()
         if self.connectivity_state.result() == Connectivity.PROXY or peer_state == Connectivity.PROXY:
@@ -335,28 +326,21 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
         elif self.connectivity_state.result() == Connectivity.STUN:
             if peer_state == Connectivity.PUBLIC:
-                self.send_SendNatPacket(peer.player.address_and_port, 'Connect to {}'.format(peer.player.id))
+                with peer.subscribe(self, ['ProcessNatPacket']) as sub:
+                    self.send_SendNatPacket(peer.player.address_and_port, 'Hello {}'.format(peer.player.id))
+                    yield from sub.wait_for('ProcessNatPacket', 2)
+                    pass
             else:
                 # Perform STUN
                 pass
 
-
-
     @asyncio.coroutine
     def ConnectToPeer(self, peer2: GpgNetServerProtocol):
         """
-        Connect two peers by directing their respective GameConnection objects.
-
-        Will await determination of the respective peers' ConnectivityState, followed by this algorithm:
-
-        :param peer1:
-        :param peer2:
+        Connect two peers
         :return: None
         """
-        states = [
-            self.connectivity_state,
-            peer2.connectivity_state
-        ]
+        states = [self.connectivity_state, peer2.connectivity_state]
         yield from asyncio.wait(states)
         if self.connectivity_state == Connectivity.PUBLIC:
             if peer2.connectivity_state != Connectivity.PROXY:
@@ -373,7 +357,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         :return: None
         """
         self.log.debug("handle_action %s:%s" % (key, values))
-        print("Identity at handle_action {}".format(id(self)))
         try:
             if key == 'ping':
                 return
@@ -1115,4 +1098,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     @player.setter
     def player(self, val):
         self._player = val
+
+    def __str__(self):
+        return "GameConnection(Player({}))".format(self.player.id)
 

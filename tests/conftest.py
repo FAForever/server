@@ -36,6 +36,27 @@ def async_test(f):
         loop.run_until_complete()
     return wrapper
 
+
+def pytest_pycollect_makeitem(collector, name, obj):
+    if name.startswith('test_') and asyncio.iscoroutinefunction(obj):
+        return list(collector._genfunctions(name, obj))
+
+def pytest_pyfunc_call(pyfuncitem):
+    testfn = pyfuncitem.obj
+
+    if not asyncio.iscoroutinefunction(testfn):
+        return
+
+    funcargs = pyfuncitem.funcargs
+    testargs = {}
+    for arg in pyfuncitem._fixtureinfo.argnames:
+        testargs[arg] = funcargs[arg]
+    coro = testfn(**testargs)
+
+    loop = testargs.get('loop', asyncio.get_event_loop())
+    loop.run_until_complete(coro)
+    return True
+
 @pytest.fixture(scope='session')
 def application():
     return QCoreApplication([])
@@ -124,9 +145,9 @@ def player(login, id, port, action, ip='127.0.0.1'):
 @pytest.fixture
 def players():
     return mock.Mock(
-        hosting=player('Paula_Bean', 2, 6112, "HOST"),
+        hosting=player('Paula_Bean', 1, 6112, "HOST"),
         peer=player('That_Guy', 2, 6112, "JOIN"),
-        joining=player('James_Kirk', 2, 6112, "JOIN")
+        joining=player('James_Kirk', 3, 6112, "JOIN")
     )
 
 @pytest.fixture

@@ -30,6 +30,11 @@ class Subscribable():
             determine whether or not to forward message.
         :return: None
         """
+        self._logger.debug("Subscribing {receiver} to {commands} on {self}".format(
+            receiver=receiver,
+            commands=command_ids,
+            self=self
+        ))
         if command_ids is None:
             command_ids = ['_all']
         sub = Subscription(self, receiver, command_ids, filter)
@@ -46,6 +51,7 @@ class Subscribable():
         :param message:
         :return:
         """
+        self._logger.debug("{sender}.notify({message})".format(sender=self, message=message))
         command_id = message.get("command_id")
         assert isinstance(command_id, str)
         if command_id in self._subscriptions:
@@ -77,6 +83,7 @@ class Subscribable():
                                           if sub.receiver != receiver]
 
 
+@with_logger
 class Subscription():
     """
     Simple object to track a subscription and automatically cancel it.
@@ -99,8 +106,14 @@ class Subscription():
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.source.unsubscribe(self.receiver, self.command_ids)
+        # TODO: Cleanup futures in _emissions?
 
     def fire(self, message):
+        self._logger.debug("Notifying {receiver} of {commands} on {self}".format(
+            receiver=self.receiver,
+            commands=self.command_ids,
+            self=self
+        ))
         command_id = message['command_id']
         arguments = message['arguments']
         cmd_name = 'handle_{cmd_id}'.format(cmd_id=command_id)
@@ -110,7 +123,7 @@ class Subscription():
                 self._emissions[command_id].set_result(True)
 
     @asyncio.coroutine
-    def wait_for(self, command_id):
+    def wait_for(self, command_id, timeout=None):
         """
         Wait for the given command ID to be executed
         :param command_id: command identifier
@@ -118,4 +131,4 @@ class Subscription():
         """
         if command_id not in self._emissions:
             self._emissions[command_id] = asyncio.Future()
-        yield from self._emissions[command_id]
+        yield from asyncio.wait_for(self._emissions[command_id], timeout=timeout)
