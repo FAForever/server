@@ -54,10 +54,8 @@ class gamesContainerClass(object):
 
         self.db = db
         
-        query = QtSql.QSqlQuery(self.db)
-        queryStr = ("SELECT description FROM game_featuredMods WHERE gamemod = '%s'" % self.gameTypeName)
-        query.exec_(queryStr)  
-        if query.size() > 0 :
+        query = self.db.exec_("SELECT description FROM game_featuredMods WHERE gamemod = '%s'" % self.gameTypeName)
+        if query.size() > 0:
             query.first()
             self.desc = query.value(0)  
 
