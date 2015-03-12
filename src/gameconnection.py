@@ -302,7 +302,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         })
 
     @asyncio.coroutine
-    def ConnectToHost(self, peer):
+    def ConnectToHost(self, peer: GpgNetServerProtocol):
         """
         Connect self (host) to a given peer
         :return:
@@ -322,7 +322,19 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                                    self.player.id)
                 self.send_ConnectToPeer(peer.player.address_and_port, peer.player.login, peer.player.id)
             else:
-                peer.send_SendNatPacket(self.player.address_and_port, 'Connect to {}'.format(peer.player.id))
+                with self.subscribe(self, ['ProcessNatPacket']) as sub:
+                    nat_message = "Hello {}".format(self.player.id)
+                    peer.send_SendNatPacket(self.player.address_and_port, nat_message)
+                    yield from sub.wait_for('ProcessNatPacket', 2)
+                    if nat_message in self.nat_packets\
+                            and self.nat_packets[nat_message] == peer.player.address_and_port:
+                        self.send_ConnectToPeer(peer.player.address_and_port,
+                                                peer.player.login,
+                                                peer.player.id)
+                        peer.send_JoinGame(self.player.address_and_port,
+                                           False,
+                                           self.player.login,
+                                           self.player.id)
 
         elif self.connectivity_state.result() == Connectivity.STUN:
             if peer_state == Connectivity.PUBLIC:

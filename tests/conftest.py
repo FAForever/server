@@ -28,6 +28,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 import quamash
 
+
 def async_test(f):
     def wrapper(*args, **kwargs):
         coro = asyncio.coroutine(f)

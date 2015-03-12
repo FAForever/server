@@ -10,8 +10,6 @@ from src.JsonTransport import Transport
 from games import Game
 
 
-
-
 def test_accepts_valid_socket(game_connection, loop, connected_game_socket):
     """
     :type game_connection: GameConnection
@@ -85,6 +83,28 @@ def test_ConnectToHost_public_public(connections, players):
                                                host_conn.player.login,
                                                host_conn.player.id)
 
+@asyncio.coroutine
+def test_ConnectToHost_public_stun(connections, players):
+    host_conn = connections.make_connection(players.hosting, Connectivity.PUBLIC)
+    peer_conn = connections.make_connection(players.joining, Connectivity.STUN)
+    host_conn.send_ConnectToPeer = mock.Mock()
+    peer_conn.send_SendNatPacket = mock.Mock()
+    peer_conn.send_JoinGame = mock.Mock()
+    result = asyncio.async(host_conn.ConnectToHost(peer_conn))
+    yield from asyncio.sleep(0.01)
+    host_conn.notify({'command_id': 'ProcessNatPacket',
+                      'arguments': [peer_conn.player.address_and_port,
+                                    "Hello {}".format(host_conn.player.id)]})
+    yield from result
+    peer_conn.send_SendNatPacket.assert_called_with(host_conn.player.address_and_port,
+                                                    "Hello {}".format(host_conn.player.id))
+    host_conn.send_ConnectToPeer.assert_called_with(peer_conn.player.address_and_port,
+                                                    peer_conn.player.login,
+                                                    peer_conn.player.id)
+    peer_conn.send_JoinGame.assert_called_with(host_conn.player.address_and_port,
+                                               False,
+                                               host_conn.player.login,
+                                               host_conn.player.id)
 
 @asyncio.coroutine
 def test_ConnectToHost_stun_public(connections, players):
@@ -93,14 +113,19 @@ def test_ConnectToHost_stun_public(connections, players):
     host_conn.send_ConnectToPeer = mock.Mock()
     host_conn.send_SendNatPacket = mock.Mock()
     peer_conn.send_JoinGame = mock.Mock()
-    connectToHost = asyncio.async(host_conn.ConnectToHost(peer_conn))
-    yield from asyncio.sleep(0.1)
+    result = asyncio.async(host_conn.ConnectToHost(peer_conn))
+    yield from asyncio.sleep(0.01)
     peer_conn.notify({'command_id': 'ProcessNatPacket',
-                      'arguments': [peer_conn.player.address_and_port, "Hello {}".format(peer_conn.player.id)]})
-    yield from connectToHost
+                      'arguments': [peer_conn.player.address_and_port,
+                                    "Hello {}".format(peer_conn.player.id)]})
+    yield from result
     host_conn.send_SendNatPacket.assert_called_with(peer_conn.player.address_and_port,
                                                     "Hello {}".format(peer_conn.player.id))
+    host_conn.send_ConnectToPeer.assert_called_with(peer_conn.player.address_and_port,
+                                                   peer_conn.player.login,
+                                                   peer_conn.player.id)
     peer_conn.send_JoinGame.assert_called_with(host_conn.player.address_and_port,
                                                False,
                                                host_conn.player.login,
                                                host_conn.player.id)
+
