@@ -10,7 +10,7 @@ from src.JsonTransport import Transport
 from games import Game
 
 
-def test_accepts_valid_socket(game_connection, loop, connected_game_socket):
+def test_accepts_valid_socket(game_connection, connected_game_socket):
     """
     :type game_connection: GameConnection
     :type connected_game_socket QTcpSocket
@@ -18,8 +18,32 @@ def test_accepts_valid_socket(game_connection, loop, connected_game_socket):
     assert game_connection.accept(connected_game_socket) is True
 
 
+def test_accept_no_player_aborts(game_connection, connected_game_socket):
+    mock_users = mock.Mock()
+    mock_users.findByIp = mock.Mock(return_value=None)
+    game_connection.users = mock_users
+    game_connection.accept(connected_game_socket)
+    connected_game_socket.abort.assert_any_call()
+
+def test_ping(game_connection, transport):
+    game_connection.ping()
+    transport.send_message.assert_any_call({
+        'key': 'ping',
+        'commands': []
+    })
+
+def test_abort(game_connection, players, connected_game_socket):
+    game_connection.player = players.hosting
+    game_connection.socket = connected_game_socket
+    game_connection.abort()
+    connected_game_socket.abort.assert_any_call()
+    players.hosting.getLobbyThread().sendJSON.assert_called_with(
+        dict(command='notice',
+             style='kill')
+    )
+
 @asyncio.coroutine
-def test_handle_action_GameState_idle_sends_CreateLobby(game_connection, players, games, transport):
+def test_handle_action_GameState_idle_as_peer_sends_CreateLobby(game_connection, players, games, transport):
     """
     :type game_connection: GameConnection
     :type transport Transport
@@ -33,6 +57,22 @@ def test_handle_action_GameState_idle_sends_CreateLobby(game_connection, players
                                                          players.joining.id,
                                                          1]})
 
+@asyncio.coroutine
+def test_handle_action_GameState_idle_as_host_sends_CreateLobby(game_connection, players, games, transport):
+    """
+    :type game_connection: GameConnection
+    :type transport Transport
+    """
+    game_connection.player = players.hosting
+    yield from game_connection.handle_action('GameState', ['Idle'])
+    games.getGameByUuid.assert_called_once_with(players.hosting.getGame())
+    transport.send_message.assert_any_call({'key': 'CreateLobby',
+                                            'commands': [0, players.hosting.getGamePort(),
+                                                         players.hosting.getLogin(),
+                                                         players.hosting.id,
+                                                         1]})
+
+
 def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, patch_connectivity, players, game, transport):
     """
     :type game_connection: GameConnection
@@ -42,6 +82,7 @@ def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, pat
     result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
     loop.run_until_complete(result)
     transport.send_message.assert_any_call({'key': 'HostGame', 'commands': [str(game.getMapName())]})
+
 
 def test_handle_action_PlayerOption(game, loop, game_connection):
     """

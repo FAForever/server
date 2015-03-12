@@ -155,7 +155,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         ip = self.socket.peerAddress().toString()
         port = self.socket.peerPort()
         self.player = self.users.findByIp(ip)
-        self.log.debug("Resolving user to {} through lookup by {}:{}".format(self.player, ip, port))
+        self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, ip, port))
 
         if self.player is None:
             self.socket.abort()
