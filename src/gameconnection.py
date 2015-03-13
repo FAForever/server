@@ -553,7 +553,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
         elif state == 'Launching':
             # game launch, the user is playing !
-            action = self.player.getAction()
             if self.tasks:
                 self.tasks.stop()
             if self.player.getAction() == "HOST":
