@@ -96,9 +96,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.JoinGameDone = False
 
         # PINGING
-        self.initPing = True
-        self.ponged = False
-        self.missedPing = 0
+        self.last_pong = time.time()
 
         self.headerSizeRead = False
         self.headerRead = False
@@ -193,23 +191,12 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         """
         Ping the relay server to check if the player is still there.
         """
-        if hasattr(self, "socket"):
-            if self.ponged is False:
-                if self.missedPing > 2:
-                    self.log.debug(
-                        self.logGame + " Missed 2 ping - Removing user IP " + self.socket.peerAddress().toString())
-                    if self.tasks is not None:
-                        self.tasks.stop()
-                    self.pingTimer.stop()
-                    if self in self.parent.recorders:
-                        self.socket.abort()
-                else:
-                    self.sendToRelay("ping", [])
-                    self.missedPing += 1
-            else:
-                self.sendToRelay("ping", [])
-                self.ponged = False
-                self.missedPing = 0
+        if time.time() - self.last_pong > 30:
+            self.log.debug("{} Missed ping - removing user {}"
+                           .format(self.logGame, self.socket.peerAddress().toString()))
+            self.abort()
+        else:
+            self.sendToRelay("ping", [])
 
     def _handle_idle_state(self):
         """
@@ -388,7 +375,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 return
 
             elif key == 'pong':
-                self.ponged = True
+                self.last_pong = time.time()
                 return
 
             elif key == 'Connected':

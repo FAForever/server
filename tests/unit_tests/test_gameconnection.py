@@ -1,6 +1,7 @@
 import asyncio
 
 from PySide.QtNetwork import QTcpSocket
+import time
 import mock
 import pytest
 from src.connectivity import Connectivity
@@ -25,12 +26,33 @@ def test_accept_no_player_aborts(game_connection, connected_game_socket):
     game_connection.accept(connected_game_socket)
     connected_game_socket.abort.assert_any_call()
 
-def test_ping(game_connection, transport):
+def test_ping_send(game_connection, transport):
+    game_connection.abort = mock.Mock()
+    game_connection.last_pong = time.time()
     game_connection.ping()
     transport.send_message.assert_any_call({
         'key': 'ping',
         'commands': []
     })
+
+def test_ping_miss(game_connection):
+    game_connection.abort = mock.Mock()
+    game_connection.last_pong = 0
+    for i in range(1, 3):
+        game_connection.ping()
+    game_connection.abort.assert_any_call()
+
+def test_ping_hit(game_connection, transport):
+    game_connection.abort = mock.Mock()
+    game_connection.ping()
+    transport.send_message.assert_any_call({
+        'key': 'ping',
+        'commands': []
+    })
+    for i in range(1, 3):
+        game_connection.handle_action('pong', [])
+        game_connection.ping()
+    assert game_connection.abort.mock_calls == []
 
 def test_abort(game_connection, players, connected_game_socket):
     game_connection.player = players.hosting
