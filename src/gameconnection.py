@@ -281,8 +281,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         asyncio.async(self.handle_action(message["action"], message["chuncks"]))
 
     def handle_ProcessServerNatPacket(self, message, host, port):
-        self.log.warn("handle_ProcessServerNatPacket {}".format(self))
-        self.log.warn("{}:{} >> {}".format(host, port, message))
+        self.log.debug("handle_ProcessServerNatPacket {}".format(self))
         self.notify({
             'command_id': 'ProcessServerNatPacket',
             'arguments': [host, port, message]
@@ -379,11 +378,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 return
 
             elif key == 'Connected':
-                self.game.add_connection(self.player, values[0])
+                pass  # This message is deprecated
 
             elif key == 'ConnectedToHost':
-                self.game.add_connection(self.player, self.game.hostPlayer)
-                self.player.connectedToHost = True
+                pass  # This message is deprecated, since we tell players to connect to all peers at once
 
             elif key == 'Score':
                 pass
@@ -446,8 +444,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                             self.game.mods[uid] = "Unknown sim mod"
 
             elif key == 'PlayerOption':
-                action = self.player.getAction()
-                if action == "HOST":
+                if self.player.getAction() == "HOST":
                     slot = values[0]
                     action = values[1]
                     option = values[2]
@@ -530,6 +527,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 pass
         except:
             self.log.exception(self.logGame + "Something awful happened in a game thread!")
+            self.abort()
 
     def on_ProcessNatPacket(self, address_and_port, message):
         self.nat_packets[message] = address_and_port
@@ -551,7 +549,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             # port we told it to (self.player.getGamePort())
             # We schedule an async task to determine their connectivity
             # and respond appropriately
-            self.log.critical("IDENTITY BEFORE ASYNC {}".format(id(self)))
             yield from asyncio.async(self._handle_lobby_state())
 
         elif state == 'Launching':
