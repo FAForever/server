@@ -274,11 +274,14 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         This code is starting to get messy...
         This function was created when the FA protocol was moved to the lobby itself
         """
-        message = json.loads(action)
-        message["command_id"] = message['action']
-        message["arguments"] = message['chuncks']
-        self.notify(message)
-        asyncio.async(self.handle_action(message["action"], message["chuncks"]))
+        try:
+            message = json.loads(action)
+            message["command_id"] = message['action']
+            message["arguments"] = message['chuncks']
+            self.notify(message)
+            asyncio.async(self.handle_action(message["action"], message["chuncks"]))
+        except ValueError as ex:
+            self.log.error("Garbage JSON {} {}".format(ex, action))
 
     def handle_ProcessServerNatPacket(self, message, host, port):
         self.log.debug("handle_ProcessServerNatPacket {}".format(self))
