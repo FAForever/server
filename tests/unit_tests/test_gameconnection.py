@@ -27,6 +27,11 @@ def test_accept_no_player_aborts(game_connection, connected_game_socket):
     game_connection.accept(connected_game_socket)
     connected_game_socket.abort.assert_any_call()
 
+def test_test_doEnd(game_connection, game):
+    game_connection.doEnd()
+    game.remove_game_connection.assert_called_with(game_connection.player, game_connection)
+
+
 def test_ping_send(game_connection, transport):
     game_connection.abort = mock.Mock()
     game_connection.last_pong = time.time()
@@ -64,6 +69,12 @@ def test_abort(game_connection, players, connected_game_socket):
         dict(command='notice',
              style='kill')
     )
+
+@asyncio.coroutine
+def test_handle_action_GameState_idle_adds_connection(game_connection, players, game):
+    game_connection.player = players.joining
+    yield from game_connection.handle_action('GameState', ['Idle'])
+    game.add_game_connection.assert_called_with(players.joining, game_connection)
 
 @asyncio.coroutine
 def test_handle_action_GameState_idle_as_peer_sends_CreateLobby(game_connection, players, games, transport):

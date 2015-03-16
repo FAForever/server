@@ -121,7 +121,7 @@ class Game(object):
 
         self.mods = []
 
-    def add_peer(self, player, game_connection):
+    def add_game_connection(self, player: Player, game_connection):
         """
         Add a player with his associated connection to this game
         :param player:
@@ -130,15 +130,11 @@ class Game(object):
         """
         pass
 
-    def add_connection(self, player1, player2, proxy=False):
+    def remove_game_connection(self, player: Player, game_connection):
         """
-        Mark the two players as connected for this game,
-        optionally denote that they were proxied
-        :param player1:
-        :param player2:
-        :param proxy: Whether or not the players were proxied
-        :type player1 player
-        :type player2 player
+        Remove a player with his associated connection from this game
+        :param peer:
+        :param
         :return: None
         """
         pass

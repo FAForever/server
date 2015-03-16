@@ -207,6 +207,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         :return: None
         """
         self.game = self.games.getGameByUuid(self.player.getGame())
+        self.game.add_game_connection(self.player, self)
         assert self.game
         action = self.player.getAction()
 
@@ -243,10 +244,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def abort(self):
         try:
-            self.socket.abort()
-            self.player.getLobbyThread().sendJSON(dict(command="notice", style="kill"))
             self.socket.disconnected.disconnect(self.disconnection)
             self.socket.error.disconnect(self.displayError)
+            self.socket.abort()
+            self.player.getLobbyThread().sendJSON(dict(command="notice", style="kill"))
             self.doEnd()
         except Exception as ex:
             self.log.debug("Exception in abort(): {}".format(ex))
