@@ -23,6 +23,7 @@ import json
 import logging
 
 from PySide import QtNetwork
+from PySide.QtCore import QTimer
 from PySide.QtNetwork import QTcpSocket, QAbstractSocket
 from PySide.QtSql import *
 
@@ -97,6 +98,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
         # PINGING
         self.last_pong = time.time()
+        self.pingTimer = QTimer()
+        self.pingTimer.timeout.connect(self.ping)
 
         self.headerSizeRead = False
         self.headerRead = False
@@ -723,8 +726,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.game.addPlayer(self.player)
             self.game.specialInit(self.player)
 
-        #self.pingTimer.start(31000)
-        #self.initDone = True
+            self.pingTimer.start(31000)
+            self.initDone = True
 
     def _send_host_game(self, mapname):
         ''' Create a lobby with a specific map'''
