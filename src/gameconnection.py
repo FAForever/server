@@ -449,7 +449,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
                 if values[0] == "uids":
                     self.game.mods = {}
-                    query = QSqlQuery(self.parent.db)
+                    query = QSqlQuery(self.db)
                     for uid in values[1].split():
                         query.prepare("SELECT name FROM table_mod WHERE uid = ?")
                         query.addBindValue(uid)
@@ -504,7 +504,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     mission = -1
                     if int(values[0]) == 1:
                         self.log.debug(self.logGame + "Operation really Complete!")
-                        query = QSqlQuery(self.parent.db)
+                        query = QSqlQuery(self.db)
                         query.prepare(
                             "SELECT id FROM coop_map WHERE filename LIKE '%/" + self.game.getGameMap() + ".%'")
                         query.exec_()
@@ -532,7 +532,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 playerResult = self.game.getPlayerAtPosition(int(values[0]))
                 if playerResult is not None:
                     group = values[1]
-                    query = QSqlQuery(self.parent.db)
+                    query = QSqlQuery(self.db)
                     query.prepare(
                         "DELETE FROM `galacticwar`.`reinforcements_groups` WHERE `userId` = (SELECT id FROM `faf_lobby`.`login` WHERE login.login = ?) AND `group` = ?")
                     query.addBindValue(playerResult)
@@ -634,7 +634,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                             else:
                                 self.game.setInvalid("Sim mods are not ranked")
 
-                        query = QSqlQuery(self.parent.db)
+                        query = QSqlQuery(self.db)
                         query.prepare("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid = ?")
                         query.addBindValue(uid)
                         query.exec_()
