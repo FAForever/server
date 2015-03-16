@@ -243,8 +243,11 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def abort(self):
         try:
-            self.socket.abort()
+            self.done()
             self.player.getLobbyThread().sendJSON(dict(command="notice", style="kill"))
+            self.socket.disconnected.disconnect(self.disconnection)
+            self.socket.error.disconnect(self.displayError)
+            self.socket.abort()
         except:
             pass
 
@@ -1020,8 +1023,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             pass
 
     def done(self):
-        if not self.socket.isOpen():
-            return
         if self.game != 0 and self.game is not None:
 
             state = self.game.getLobbyState()
@@ -1072,13 +1073,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.game = None
         self.lobby = None
 
-        try:
-            self.socket.readyRead.disconnect(self.dataReception)
-            self.socket.disconnected.disconnect(self.disconnection)
-            self.socket.error.disconnect(self.displayError)
-            self.socket.abort()
-        except:
-            pass
         if self in self.parent.recorders:
             self.parent.removeRecorder(self)
 
