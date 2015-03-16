@@ -251,19 +251,7 @@ class FAServerThread(QObject):
         return '%02x%02x%02x%02x' % (col, col, col, col)
 
     @timed
-    def removeGameSocket(self):
-        socket = self.player.getGameSocket()
-        if socket is not None:
-            if socket.state() == 3 and socket.isValid():
-                self.player.setGameSocket(0)
-                socket.abort()
-            return True
-        return False
-
-    @timed
     def removeLobbySocket(self):
-        self.removeGameSocket()
-
         if self.socket is not None:
             self.socket.abort()
 
@@ -841,10 +829,7 @@ Thanks,\n\
                 check = self.parent.listUsers.checkSession(login, session)
                 if check:
                     self.player.setAction("NOTHING")
-                    socket = None
-                    socket = self.player.getGameSocket()
-                    if socket is not None:
-                        socket.abort()
+                    self.player.gameThread.abort()
             else:
                 self.receiveJSON(action, stream)
         except:
@@ -1128,9 +1113,7 @@ Thanks,\n\
             pass
         else:
             self.player.setAction("NOTHING")
-            socket = self.player.getGameSocket()
-            if socket is not None:
-                socket.abort()
+            self.player.gameThread.abort()
 
     def command_ladder_maps(self, message):
         maplist = message['maps']
@@ -2654,7 +2637,6 @@ Thanks,\n\
             query.exec_()
 
         self.noSocket = True
-        self.removeGameSocket()
         self.dirtyGameList = []
         if not self.player:
             self.command_quit_team(dict(command="quit_team"))

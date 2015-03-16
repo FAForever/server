@@ -313,12 +313,10 @@ class playersOnline(object):
                     # uuid is the same, I don't know how it's possible, but we do nothing.
                     return gamesocket, lobbySocket
                 
-                if newplayer.getLogin() == player.getLogin() :
+                if newplayer.getLogin() == player.getLogin():
                     # login exists, uuid not the same
                     
                     try :
-                        gamesocket = player.getGameSocket()
-
                         lobbyThread = player.getLobbyThread()
                         if lobbyThread != None :
                             lobbySocket = lobbyThread.socket
