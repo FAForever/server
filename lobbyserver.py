@@ -2002,6 +2002,11 @@ Thanks,\n\
                 jsonToSend = {"command": "social", "autojoin": channels}
                 self.sendJSON(jsonToSend)
 
+                # registered channels
+                query = QSqlQuery("select name from anope_db_ChannelInfo", self.parent.db)
+                while query.next():
+                    channels.append(str(query.value(0)))
+
                 # for GW
                 #channelsAvailable = ["#aeon", "#cybran", "#uef", "#seraphim"] + channels
                 channelsAvailable = channels
