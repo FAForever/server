@@ -4,6 +4,7 @@ from PySide.QtNetwork import QTcpSocket
 import time
 import mock
 import pytest
+from proxy import proxy
 from src.connectivity import Connectivity
 
 from src.gameconnection import GameConnection
@@ -192,3 +193,23 @@ def test_ConnectToHost_stun_public(connections, players):
                                                host_conn.player.login,
                                                host_conn.player.id)
 
+@asyncio.coroutine
+def test_ConnectToHost_public_proxy(connections, players):
+    host_conn = connections.make_connection(players.hosting, Connectivity.PUBLIC)
+    peer_conn = connections.make_connection(players.joining, Connectivity.PROXY)
+    host_conn.send_ConnectToProxy = mock.Mock()
+    peer_conn.send_ConnectToProxy = mock.Mock()
+    host_conn.game = mock.Mock()
+    peer_conn.game = mock.Mock()
+    host_conn.game.proxy = proxy.proxy()
+    peer_conn.game.proxy = proxy.proxy()
+    result = asyncio.async(host_conn.ConnectToHost(peer_conn))
+    yield from result
+    host_conn.send_ConnectToProxy.assert_called_with(0,
+                                                     peer_conn.player.ip,
+                                                     peer_conn.player.login,
+                                                     peer_conn.player.id)
+    peer_conn.send_ConnectToProxy.assert_called_with(0,
+                                                     host_conn.player.ip,
+                                                     host_conn.player.login,
+                                                     host_conn.player.id)

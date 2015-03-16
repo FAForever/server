@@ -23,7 +23,7 @@ class Player(object):
         self.uuid = 0
         self.session = 0
         self._login = ''
-        self.ip = ''
+        self._ip = ''
         self.localIp = ''
       
       
@@ -252,7 +252,7 @@ class Player(object):
         return "%s:%s" % (str(self.getLocalIp()), str(self.getLocalGamePort()))
 
     def getIp(self):
-        return self.ip
+        return self._ip
 
     def getLocalIp(self):
         return self.localIp
@@ -269,6 +269,10 @@ class Player(object):
     @property
     def id(self):
         return self.getId()
+
+    @property
+    def ip(self):
+        return self.getIp()
 
     @property
     def login(self):

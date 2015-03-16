@@ -137,6 +137,7 @@ def player(login, id, port, action, ip='127.0.0.1'):
     p.getLogin = mock.Mock(return_value=login)
     p.getId = mock.Mock(return_value=id)
     p.getIp = mock.Mock(return_value=ip)
+    p.ip = ip
     p.action = action
     p.id = id
     p.login = login

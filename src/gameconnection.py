@@ -291,7 +291,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         })
 
     @asyncio.coroutine
-    def ConnectToHost(self, peer: GpgNetServerProtocol):
+    def ConnectToHost(self, peer):
         """
         Connect self (host) to a given peer
         :return:
@@ -301,9 +301,13 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         yield from asyncio.wait(states)
         peer_state = peer.connectivity_state.result()
         if self.connectivity_state.result() == Connectivity.PROXY or peer_state == Connectivity.PROXY:
-            # TODO: Proxy
-            pass
-        if self.connectivity_state.result() == Connectivity.PUBLIC:
+            # TODO: revise if this is the right thing to do
+            peer.send_JoinGame(self.player.address_and_port,
+                               False,
+                               self.player.login,
+                               self.player.id)
+            self.ConnectThroughProxy(peer)
+        elif self.connectivity_state.result() == Connectivity.PUBLIC:
             if peer_state == Connectivity.PUBLIC:
                 peer.send_JoinGame(self.player.address_and_port,
                                    False,
@@ -315,15 +319,18 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     nat_message = "Hello {}".format(self.player.id)
                     peer.send_SendNatPacket(self.player.address_and_port, nat_message)
                     yield from sub.wait_for('ProcessNatPacket', 2)
-                    if nat_message in self.nat_packets\
+                    if nat_message in self.nat_packets \
                             and self.nat_packets[nat_message] == peer.player.address_and_port:
-                        self.send_ConnectToPeer(peer.player.address_and_port,
-                                                peer.player.login,
-                                                peer.player.id)
                         peer.send_JoinGame(self.player.address_and_port,
                                            False,
                                            self.player.login,
                                            self.player.id)
+                        self.send_ConnectToPeer(peer.player.address_and_port,
+                                                peer.player.login,
+                                                peer.player.id)
+                    else:
+                        # TODO: Fallback to proxying
+                        pass
 
         elif self.connectivity_state.result() == Connectivity.STUN:
             if peer_state == Connectivity.PUBLIC:
@@ -331,13 +338,13 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     nat_message = "Hello {}".format(peer.player.id)
                     self.send_SendNatPacket(peer.player.address_and_port, nat_message)
                     yield from sub.wait_for('ProcessNatPacket', 2)
-                    if nat_message in self.nat_packets.keys()\
+                    if nat_message in self.nat_packets.keys() \
                             and self.nat_packets[nat_message] == peer.player.address_and_port:
-                        self.send_ConnectToPeer(peer.player.address_and_port, peer.player.login, peer.player.id)
                         peer.send_JoinGame(self.nat_packets[nat_message],
                                            False,
                                            self.player.login,
                                            self.player.id)
+                        self.send_ConnectToPeer(peer.player.address_and_port, peer.player.login, peer.player.id)
                     else:
                         # Peer isn't receiving our packets, even though they're meant to
                         # TODO: Fallback to proxy connection
@@ -448,10 +455,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
             elif key == 'PlayerOption':
                 if self.player.getAction() == "HOST":
-                    slot = values[0]
+                    id = values[0]
                     action = values[1]
                     option = values[2]
-                    self.game.setPlayerOption(slot, action, option)
+                    self.game.setPlayerOption(id, action, option)
                     self.sendGameInfo()
 
             elif key == 'GameResult':
@@ -726,37 +733,28 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.game.setGameMap(mapname.lower())
         self.sendToRelay("HostGame", [mapname])
 
-    def connectThroughProxy(self, playerToConnect, sendToOther=True, init=False):
+    def ConnectThroughProxy(self, peer, recurse=True):
         try:
-            self.game.proxy.addCouple(self.player.getLogin(), playerToConnect.getLogin())
-            numProxy = self.game.proxy.findProxy(self.player.getLogin(), playerToConnect.getLogin())
+            self.game.proxy.addCouple(self.player.login, peer.player.login)
+            numProxy = self.game.proxy.findProxy(self.player.login, peer.player.login)
 
             if numProxy is not None:
-                uuid = playerToConnect.getId()
-
-                if hasattr(self.game, "getPlayerName"):
-                    playerName = self.game.getPlayerName(playerToConnect)
-                else:
-                    playerName = playerToConnect.getLogin()
-
-                self.sendToRelay("DisconnectFromPeer", int(uuid))
-                self.sendToRelay("ConnectToProxy", [numProxy, playerToConnect.getIp(), str(playerName), int(uuid)])
+                self.sendToRelay("DisconnectFromPeer", int(peer.player.id))
+                self.send_ConnectToProxy(numProxy, peer.player.getIp(), str(peer.player.login), int(peer.player.id))
 
                 if self.game:
                     self.game.log.debug("%s is connecting through proxy to %s on port %i" % (
-                        self.player.getLogin(), playerToConnect.getLogin(), numProxy))
+                        self.player.login, peer.player.login, numProxy))
 
-                if not playerToConnect.getLogin() in self.proxyConnection:
-                    self.proxyConnection.append(playerToConnect.getLogin())
+                if peer.player.login not in self.proxyConnection:
+                    self.proxyConnection.append(peer.player.login)
 
-                if sendToOther and self.player.getLogin() != self.game.getHostName():
-                    playerToConnect.gameThread.connectThroughProxy(self.player, sendToOther=False)
-                    if not self.player in playerToConnect.gameThread.connectedTo:
-                        playerToConnect.gameThread.connectedTo.append(self.player)
+                if recurse:
+                    peer.ConnectThroughProxy(self, False)
             else:
                 self.log.debug(self.logGame + "Maximum proxies used")
         except:
-            self.log.exception(self.logGame + "Something awful happened in a connect proxy thread !")
+            self.log.exception(self.logGame + "Something awful happened in a connect proxy thread!")
 
 
     def sendMessage(self, m):

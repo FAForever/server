@@ -32,6 +32,9 @@ class GpgNetServerProtocol():
     def send_ConnectToPeer(self, address_and_port: str, player_name: str, player_uid: int):
         self.send_gpgnet_message('ConnectToPeer', [address_and_port, player_name, player_uid])
 
+    def send_ConnectToProxy(self, local_proxy_port: int, ip: str, player_name: str, player_uid: int):
+        self.send_gpgnet_message('ConnectToProxy', [local_proxy_port, ip, player_name, player_uid])
+
     def send_JoinGame(self, address_and_port: str, as_observer: bool, remote_player_name: str, remote_player_uid: int):
         self.send_gpgnet_message('JoinGame', [address_and_port, as_observer, remote_player_name, remote_player_uid])
 
