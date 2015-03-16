@@ -148,8 +148,6 @@ class Game(object):
             self.setPlayerFaction(slot, value)
         elif key == 'Color':
             self.setPlayerColor(slot, value)
-        elif key == 'StartSpot':
-            self._playerOptions.move(slot, value)
         else:
             self._playerOptions[slot][key] = value
 
