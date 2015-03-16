@@ -47,6 +47,7 @@ from config import Config
 
 proxyServer = QtNetwork.QHostAddress("127.0.0.1")
 
+
 def timed(f, limit=0.2):
     @wraps(f)
     def wrapper(*args, **kwds):

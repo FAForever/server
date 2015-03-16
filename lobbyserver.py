@@ -2667,21 +2667,12 @@ Thanks,\n\
 
             self.parent.removeRecorder(self)
 
-    @timed
     def stateChange(self, socketState):
-        if socketState != QtNetwork.QAbstractSocket.ClosingState:
-            self.log.debug("socket about to close")
-        elif socketState != QtNetwork.QAbstractSocket.UnconnectedState:
-            self.log.debug("socket not connected")
-
-        if socketState != QtNetwork.QAbstractSocket.ConnectedState:
-            self.log.debug("not connected")
-            self.socket.abort()
+        pass
 
     def displayError(self, socketError):
         if socketError == QtNetwork.QAbstractSocket.RemoteHostClosedError:
             self.log.warning(self.logPrefix + "RemoteHostClosedError")
-
 
         elif socketError == QtNetwork.QAbstractSocket.HostNotFoundError:
             self.log.warning(self.logPrefix + "HostNotFoundError")
