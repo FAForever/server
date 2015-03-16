@@ -185,7 +185,7 @@ class Player(object):
         self.numGames = numGames
         self.session = session
         self._login = login
-        self.ip = ip
+        self._ip = ip
         self.gamePort = port
         self.uuid = uuid
         self.localIp = localIp
