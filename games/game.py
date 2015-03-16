@@ -915,3 +915,6 @@ class Game(object):
 
     def getNumPlayer(self):
         return len(self.players)
+
+    def __str__(self):
+        return "Game({})".format(self.uuid)
