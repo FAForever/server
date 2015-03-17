@@ -62,14 +62,6 @@ class hyperGamesContainerClass(object):
                 self.gamesContainer[fromname].renameMod(toname)
                 self.gamesContainer[toname] = self.gamesContainer[fromname]
                 del self.gamesContainer[fromname]
-        
-
-#    def addHost(self, host, type):
-#        ''' add a host hosting a game type'''
-#        if str(type) in self.gamesContainer :
-#            self.hosts[str(host)] = str(type)
-#            return 1
-#        return 0
 
 
     def removePlayer(self, player):
