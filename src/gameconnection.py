@@ -247,11 +247,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def abort(self):
         try:
-            self.doEnd()
             self.player.getLobbyThread().sendJSON(dict(command="notice", style="kill"))
             self._socket.abort()
-            self._socket.disconnected.disconnect(self.disconnection)
-            self._socket.error.disconnect(self.displayError)
         except Exception as ex:
             self.log.debug("Exception in abort(): {}".format(ex))
             pass
