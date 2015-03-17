@@ -24,6 +24,8 @@ import random
 from PySide.QtSql import *
 
 from .gamesContainer import  gamesContainerClass
+from trueSkill.GameInfo import GameInfo
+from trueSkill.Player import Player
 from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
 from trueSkill.Team import *
 from trueSkill.faPlayer import *

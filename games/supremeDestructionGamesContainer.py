@@ -68,6 +68,5 @@ class supremeDestructionGamesContainerClass(gamesContainerClass):
         ngame.setGameHostPort(gamePort)
         ngame.setGameHostLocalPort(gamePort)
         ngame.setGameName(newgame)
-        ngame.setTime()
         self.games.append(ngame)
         return ngame

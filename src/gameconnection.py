@@ -1033,7 +1033,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.abort()
 
     def stateChange(self, socketState):
-        pass
+        self.log.debug("State changed to {}".format(socketState))
 
     def displayError(self, socketError):
         if socketError == QtNetwork.QAbstractSocket.RemoteHostClosedError:
