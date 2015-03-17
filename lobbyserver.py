@@ -15,6 +15,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
+import hashlib
 
 import zlib
 import cgi
@@ -83,9 +84,9 @@ logger = logging.getLogger(__name__)
 
 def timed(f):
     @wraps(f)
-    def wrapper(*args, **kwds):
+    def wrapper(*args, **kwargs):
         start = time.time()
-        result = f(*args, **kwds)
+        result = f(*args, **kwargs)
         elapsed = time.time() - start
         if elapsed > 1:
             logger.info("%s took %s time to finish" % (f.__name__, str(elapsed)))
@@ -1034,14 +1035,12 @@ Thanks,\n\
         stream.writeQString(action)
 
         for arg in args:
-            if isinstance(arg, str):
-                stream.writeQString(arg)
-            elif type(arg) is StringType:
-                stream.writeQString(arg)
-            elif type(arg) is FloatType:
-                stream.writeFloat(arg)
-            elif type(arg) is ListType:
+            if isinstance(arg, int):
+                stream.writeInt32(arg)
+            elif isinstance(arg, float):
                 stream.writeQString(str(arg))
+            elif isinstance(arg, str):
+                stream.writeFloat(arg)
 
         stream.device().seek(0)
 
