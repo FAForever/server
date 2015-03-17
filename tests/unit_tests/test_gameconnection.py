@@ -26,30 +26,25 @@ def test_accept_no_player_aborts(game_connection, connected_game_socket):
     game_connection.accept(connected_game_socket)
     connected_game_socket.abort.assert_any_call()
 
+
 def test_test_doEnd(game_connection, game):
     game_connection.doEnd()
     game.remove_game_connection.assert_called_with(game_connection.player, game_connection)
 
 
-def test_ping_send(game_connection, transport):
-    game_connection.abort = mock.Mock()
-    game_connection.last_pong = time.time()
-    game_connection.ping()
-    transport.send_message.assert_any_call({
-        'key': 'ping',
-        'commands': []
-    })
-
+@asyncio.coroutine
 def test_ping_miss(game_connection):
     game_connection.abort = mock.Mock()
     game_connection.last_pong = 0
-    for i in range(1, 3):
-        game_connection.ping()
+    asyncio.async(game_connection.ping())
+    yield from asyncio.sleep(0.1)
     game_connection.abort.assert_any_call()
 
+@asyncio.coroutine
 def test_ping_hit(game_connection, transport):
     game_connection.abort = mock.Mock()
-    game_connection.ping()
+    asyncio.async(game_connection.ping())
+    yield from asyncio.sleep(0.1)
     transport.send_message.assert_any_call({
         'key': 'ping',
         'commands': []

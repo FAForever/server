@@ -17,6 +17,7 @@
 # -------------------------------------------------------------------------------
 
 import asyncio
+from concurrent.futures import CancelledError
 import string
 import time
 import json
@@ -92,14 +93,13 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.proxyConnection = []
 
         self.last_pong = time.time()
-        self._pingtimer = QTimer()
-        self._pingtimer.timeout.connect(self.ping)
 
         self.player = None
         self._socket = None
         self.lobby = None
         self.transport = None
         self.nat_packets = {}
+        self.ping_task = None
 
         self.connectivity_state = asyncio.Future()
 
@@ -150,7 +150,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         strlog = ("%s\t" % str(self.player.getLogin()))
         self.logGame = strlog
 
-        self._pingtimer.start(15000)
+        self.ping_task = asyncio.async(self.ping())
         self.player.setGameSocket(self._socket)
         self.player.setWantGame(False)
         self.state = GameConnectionState.initialized
@@ -164,16 +164,21 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.game.removePlayer(playerInGame)
         self.game.removeTrueSkillPlayer(playerInGame)
 
+    @asyncio.coroutine
     def ping(self):
         """
         Ping the relay server to check if the player is still there.
         """
-        if time.time() - self.last_pong > 30:
-            self.log.debug("{} Missed ping - removing user {}"
-                           .format(self.logGame, self._socket.peerAddress().toString()))
-            self.abort()
-        else:
-            self.sendToRelay("ping", [])
+        while True:
+            try:
+                if time.time() - self.last_pong > 30:
+                    self.log.debug("{} Missed ping - removing player {}"
+                                   .format(self.logGame, self._socket.peerAddress().toString()))
+                    self.abort()
+                self.send_Ping()
+                yield from asyncio.sleep(20)
+            except CancelledError:
+                return
 
     def _handle_idle_state(self):
         """
@@ -222,21 +227,22 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         Abort the connection, calling doEnd() first
         :return:
         """
-        if self.state is GameConnectionState.aborted or GameConnectionState.ended:
+        if self.state is GameConnectionState.aborted or self.state is GameConnectionState.ended:
             return
         self.state = GameConnectionState.aborted
         self.log.debug("{}.abort()".format(self))
         try:
             self.doEnd()
             self.player.getLobbyThread().sendJSON(dict(command="notice", style="kill"))
-            self._socket.abort()
-            self._pingtimer.stop()
         except Exception as ex:
             self.log.debug("Exception in abort(): {}".format(ex))
             pass
         finally:
+            if self._socket is not None:
+                self._socket.abort()
+            if self.ping_task is not None:
+                self.ping_task.cancel()
             del self._socket
-            del self._pingtimer
             del self._player
             del self.game
 
