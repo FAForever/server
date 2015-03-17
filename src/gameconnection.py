@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 
 from proxy import proxy
 from functools import wraps
+from enum import Enum
 
 from src.JsonTransport import QDataStreamJsonTransport
 
@@ -61,6 +62,12 @@ def timed(f, limit=0.2):
     return wrapper
 
 
+class GameConnectionState(Enum):
+    initializing = 0
+    initialized = 1
+    ended = 2
+
+
 class GameConnection(Subscribable, GpgNetServerProtocol):
     """
     Responsible for the games protocol.
@@ -68,7 +75,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def __init__(self, loop, users, games, db, server):
         Subscribable.__init__(self)
-
+        self.state = GameConnectionState.initializing
         self.loop = loop
         self.users = users
         self.games = games
@@ -182,6 +189,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self._pingtimer.start(15000)
         self.player.setGameSocket(self._socket)
         self.player.setWantGame(False)
+        self.state = GameConnectionState.initialized
         return True
 
     def sendToRelay(self, action, commands):
@@ -246,7 +254,12 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.log.debug("QUIT - No player action :(")
 
     def abort(self):
+        """
+        Abort the connection, calling doEnd() first
+        :return:
+        """
         try:
+            self.doEnd()
             self.player.getLobbyThread().sendJSON(dict(command="notice", style="kill"))
             self._socket.abort()
         except Exception as ex:
@@ -578,8 +591,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
         elif state == 'Launching':
             # game launch, the user is playing !
-            if self.tasks:
-                self.tasks.stop()
             if self.player.getAction() == "HOST":
 
                 self.game.numPlayers = self.game.getNumPlayer()
@@ -652,6 +663,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def doEnd(self):
         ''' bybye player :('''
+        if self.state is GameConnectionState.ended:
+            return
+        else:
+            self.state = GameConnectionState.ended
         self.player.setGameSocket(None)
 
         try:
@@ -747,11 +762,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             text = "You were unable to connect to the host because he has left the game."
             self.lobby.sendJSON(dict(command="notice", style="kill"))
             self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
-            self._socket.abort()
-            if self.tasks:
-                self.tasks.stop()
-            if self._pingtimer:
-                self._pingtimer.stop()
+            self.abort()
             return
 
         port = self.player.getGamePort()
@@ -1056,7 +1067,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         except:
             pass
         finally:
-            self.doEnd()
+            self.abort()
 
     def stateChange(self, socketState):
         pass
