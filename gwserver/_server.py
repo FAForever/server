@@ -16,18 +16,15 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
+from types import IntType, FloatType, ListType, LongType
+
 from PySide import QtCore, QtNetwork, QtSql
-from types import IntType, FloatType, ListType, DictType, LongType
+
 
 SERVER_PORT = 10001
 
 import json
-import sys
-import time
-import os
 import logging
-import pickle
-import base64
 
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
 

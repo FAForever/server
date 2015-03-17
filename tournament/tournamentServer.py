@@ -16,20 +16,15 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from PySide.QtCore import QByteArray, QDataStream, QIODevice, SIGNAL, SLOT, QReadWriteLock, QReadLocker
-from PySide.QtNetwork import QTcpServer, QTcpSocket, QAbstractSocket, QHostInfo
-  
-from PySide import QtCore, QtGui, QtNetwork, QtSql
-from PySide.QtSql import *
-
-import uuid
-import random
 import logging
-import time
+
+from PySide import QtCore, QtNetwork
+from PySide.QtSql import *
 
 from . import tournamentServerThread
 from passwords import CHALLONGE_KEY, CHALLONGE_USER
-import challonge 
+import challonge
+
 challonge.set_credentials(CHALLONGE_USER, CHALLONGE_KEY)
 
 

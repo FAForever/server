@@ -16,19 +16,12 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from .gamesContainer import  gamesContainerClass
-from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import * 
-from trueSkill.Team import *
-from trueSkill.Teams import *
-from .ladderGame import ladder1V1Game
-
-import random
-from PySide import QtSql
-from PySide import QtCore
-
-from PySide.QtSql import *
 import re
-import math
+
+from PySide import QtSql
+
+from .gamesContainer import  gamesContainerClass
+
 
 class tournament(object):
     def __init__(self, id, name = None, host = None, minPlayers = 2, maxPlayers = 10, parent = None):

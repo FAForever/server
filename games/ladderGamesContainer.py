@@ -17,20 +17,14 @@
 #-------------------------------------------------------------------------------
 
 
-from .gamesContainer import  gamesContainerClass
-from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import * 
-from trueSkill.Team import *
-from trueSkill.Teams import *
-
 import time
-import random, sys
+import random
+
 from PySide.QtSql import QSqlQuery
-from PySide import QtCore
 
-
-import games.ladderGame
+from .gamesContainer import  gamesContainerClass
+from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
 from games.ladderGame import ladder1V1Game
-
 
 
 class ladder1v1GamesContainerClass(gamesContainerClass):

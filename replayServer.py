@@ -19,21 +19,12 @@
 #-------------------------------------------------------------------------------
 
 
-from PySide.QtCore import QThread, QObject, SIGNAL, SLOT
-from PySide.QtCore import QByteArray, QDataStream, QIODevice, QReadWriteLock
-from PySide.QtNetwork import QTcpServer, QTcpSocket, QAbstractSocket, QHostInfo
-  
-from PySide import QtCore, QtNetwork, QtSql
-from PySide.QtSql import *
-
-import uuid
-import random
-import logging
 from logging import handlers
 
+from PySide.QtCore import QObject
+from configobj import ConfigObj
 
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
-from configobj import ConfigObj
 config = ConfigObj("/etc/faforever/faforever.conf")
 
 

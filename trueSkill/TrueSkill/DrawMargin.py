@@ -1,5 +1,7 @@
-from trueSkill.Numerics.GaussianDistribution import *
 from math import sqrt
+
+from trueSkill.Numerics.GaussianDistribution import *
+
 
 class DrawMargin :
 

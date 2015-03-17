@@ -17,10 +17,9 @@
 #-------------------------------------------------------------------------------
 
 import time
+import logging
 
 from PySide import QtSql
-
-import logging
 
 class gamesContainerClass(object):
     """Class for containing games"""

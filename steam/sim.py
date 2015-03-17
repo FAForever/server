@@ -8,8 +8,10 @@ from xml.sax import saxutils
 import re
 import json
 import operator
+
 from . import api
 from . import items
+
 
 class inventory_context(object):
     """ Builds context data that is fetched from a user's inventory page """

@@ -255,13 +255,12 @@ class UNITCOMMAND(object):
 //   EndId - entity id 
 // }'''
 
-
-
-
 import struct
+
 from .replayArmy import *
 from .replayArmyContainer import *
 from .replayInfos import *
+
 #from replayOptions import *
 
 import json

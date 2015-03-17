@@ -1,4 +1,3 @@
-import logging
 from configobj import ConfigObj
 Config = ConfigObj("/etc/faforever/faforever.conf")
 

@@ -4,7 +4,6 @@ from Numerics.Range import *
 from PlayersRange import *
 from TeamsRange import *
 from Guard import *
-from math import sqrt
 from RankSorter import *
 from RatingContainer import *
 from PairwiseComparison import *

@@ -16,20 +16,13 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from .gamesContainer import  gamesContainerClass
-from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import * 
-from trueSkill.Team import *
-from trueSkill.Teams import *
-
-
-import random, sys
-from ladder.ladderMaps import ladderMaps
 from PySide import QtSql
-from PySide import QtCore
-
 from PySide.QtSql import *
 
+from .gamesContainer import  gamesContainerClass
+from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
 import games.gwgame
+
 reload(games.gwgame)
 from games.gwgame import gwGame
 

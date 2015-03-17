@@ -18,7 +18,7 @@
 
 from .gamesContainer import  gamesContainerClass
 from .nomadsGame import nomadsGame
-from PySide import QtSql
+
 
 class customEWGamesContainerClass(gamesContainerClass):
     '''Class for custom exp wars games'''

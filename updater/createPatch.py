@@ -16,16 +16,14 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from PySide.QtCore import QThread, QObject, SIGNAL, SLOT, QReadWriteLock, QWriteLocker, QReadLocker, QProcess
-from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QCoreApplication
-from PySide import QtCore, QtGui, QtNetwork, QtSql
-from PySide.QtSql import *
 import logging
 import os
-import random
-import time
 
+from PySide.QtCore import QThread, QProcess
+from PySide import QtSql
+from PySide.QtSql import *
 from configobj import ConfigObj
+
 config = ConfigObj("/etc/faforever/faforever.conf")
 
 class Process(QProcess):    

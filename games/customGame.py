@@ -16,11 +16,11 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from .game import Game
-
 from copy import deepcopy
 import time
 import logging
+
+from .game import Game
 
 logger = logging.getLogger(__name__)
 

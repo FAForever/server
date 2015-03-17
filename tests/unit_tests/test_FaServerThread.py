@@ -1,10 +1,10 @@
+from PySide import QtNetwork
+import pytest
+import mock
+
 from lobbyserver import FAServerThread, playersOnline
 from FaLobbyServer import FALobbyServer
-from PySide import QtNetwork
-
-import pytest
 import games
-import mock
 
 
 @pytest.fixture()

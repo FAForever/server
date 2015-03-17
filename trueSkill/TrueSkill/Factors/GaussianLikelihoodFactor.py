@@ -1,7 +1,6 @@
+from copy import copy
+
 from .GaussianFactor import *
-
-
-from copy import copy 
 
 class GaussianLikelihoodFactor(GaussianFactor) :
     ''' Connects two variables and adds uncertainty.

@@ -1,6 +1,4 @@
-from math import sqrt
-
-from copy import copy 
+from copy import copy
 
 from trueSkill.TrueSkill.Factors.GaussianFactor import *
 from trueSkill.Numerics.GaussianDistribution import *

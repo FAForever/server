@@ -16,7 +16,6 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from PySide.QtGui import *
 from PySide.QtXml import *
 
 from .armyContainer import *

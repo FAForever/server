@@ -19,10 +19,10 @@
 #-------------------------------------------------------------------------------
 
 import sys
-
 import logging
 from logging import handlers
 import signal
+
 from quamash import QEventLoop
 from PySide import QtSql, QtCore, QtNetwork
 from PySide.QtCore import QTimer
@@ -32,7 +32,6 @@ from FaLobbyServer import FALobbyServer
 from FaGamesServer import *
 from src.players import *
 import games
-
 import config
 
 logger = logging.getLogger(__name__)

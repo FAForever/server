@@ -17,9 +17,7 @@
 #-------------------------------------------------------------------------------
 
 from .gamesContainer import  gamesContainerClass
-from PySide import QtSql
 
-import games.kothGame
 from games.kothGame import kothGame
 
 class customKothGamesContainerClass(gamesContainerClass):

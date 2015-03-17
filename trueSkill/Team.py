@@ -1,5 +1,3 @@
-from .Rating import *
-from .Player import *
 from .RatingContainer import *
 
 class Team(RatingContainer) :

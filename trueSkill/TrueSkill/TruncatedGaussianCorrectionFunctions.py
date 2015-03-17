@@ -1,6 +1,7 @@
-from trueSkill.Numerics.GaussianDistribution import *
-from math import sqrt
 from math import fabs
+
+from trueSkill.Numerics.GaussianDistribution import *
+
 
 class TruncatedGaussianCorrectionFunctions :
 

@@ -17,33 +17,17 @@
 #-------------------------------------------------------------------------------
 
 
-from PySide.QtCore import QThread, QObject, SIGNAL, SLOT, QReadWriteLock, QWriteLocker, QReadLocker
-from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QCoreApplication
-from PySide.QtNetwork import QTcpServer, QTcpSocket, QAbstractSocket, QHostInfo
-  
-from PySide import QtCore, QtGui, QtNetwork, QtSql
-from PySide.QtSql import *
-
-
-
-from time import time as curtime
-from types import *
 import operator
-import sys
-import zipfile
-import os
-import shutil
-import uuid
-import random
 import logging
-import hashlib
 import json
 
+from PySide.QtCore import QObject
+from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QCoreApplication
+from PySide import QtCore, QtNetwork
+from PySide.QtSql import *
+
 import challonge
-
 from passwords import CHALLONGE_KEY, CHALLONGE_USER
-
-
 
 
 class tournamentServerThread(QObject):
@@ -51,8 +35,6 @@ class tournamentServerThread(QObject):
     FA server thread spawned upon every incoming connection to
     prevent collisions.
     '''
-    
-    
     def __init__(self, socketId, parent=None):
         super(tournamentServerThread, self).__init__(parent)
 
@@ -75,9 +57,6 @@ class tournamentServerThread(QObject):
 
             self.socket.readyRead.connect(self.readDatas)
             self.socket.disconnected.connect(self.disconnection)
-            #self.socket.error.connect(self.displayError)
-
-
 
             self.parent.db.open()   
             self.pingTimer = QtCore.QTimer(self)

@@ -1,10 +1,13 @@
 from concurrent.futures import CancelledError, TimeoutError
-from PySide.QtNetwork import QUdpSocket, QHostAddress
 import asyncio
 import logging
 from enum import Enum
+
+from PySide.QtNetwork import QUdpSocket, QHostAddress
+
 import config
 from .with_logger import with_logger
+
 
 logger = logging.getLogger(__name__)
 

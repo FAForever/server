@@ -1,7 +1,7 @@
 import struct
-
 import json
 import logging
+
 from PySide import QtCore
 from PySide.QtCore import QObject
 

@@ -13,7 +13,6 @@ from .testclient import TestGPGClient
 import config
 
 
-
 @coroutine
 def wait_call(mock, call, timeout=0.5):
     start_time = time.time()

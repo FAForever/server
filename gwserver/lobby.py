@@ -17,11 +17,6 @@
 #-------------------------------------------------------------------------------
 
 
-from PySide import QtCore, QtNetwork
-from PySide.QtSql import QSqlQuery
-
-from types import *
-
 import logging
 import json
 import random
@@ -30,9 +25,13 @@ import hashlib
 import os
 import copy
 import base64
-from . import phpserialize
 import math
-from .teams import teams
+
+from PySide import QtCore, QtNetwork
+from PySide.QtSql import QSqlQuery
+
+from . import phpserialize
+
 
 AUTORECALL = 500
 

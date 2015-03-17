@@ -19,9 +19,9 @@
 
 
 names = 'namegenerator/races/cybran.txt'
-from . import namegen
-
 import random
+
+from . import namegen
 
 
 def generateName() :

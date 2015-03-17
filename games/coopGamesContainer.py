@@ -17,10 +17,7 @@
 #-------------------------------------------------------------------------------
 
 from .gamesContainer import  gamesContainerClass
-from PySide import QtSql
 
-import time
-import games.coopGame
 from games.coopGame import coopGame
 
 class coopGamesContainerClass(gamesContainerClass):

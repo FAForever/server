@@ -17,8 +17,6 @@
 #-------------------------------------------------------------------------------
 
 from .gamesContainer import  gamesContainerClass
-from PySide import QtSql
-
 
 import games.balanceTestingGame
 reload(games.balanceTestingGame)

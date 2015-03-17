@@ -1,8 +1,10 @@
 import asyncio
-import functools
+
 import mock
 import pytest
+
 from src.subscribable import Subscribable
+
 
 @pytest.fixture
 def subscribable():

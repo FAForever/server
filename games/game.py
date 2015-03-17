@@ -17,18 +17,14 @@
 #-------------------------------------------------------------------------------
 
 
-from trueSkill.Team import *
-from trueSkill.Teams import *
-from time import time
-
-from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
-import uuid
 import string
 import logging
 
-from .PlayerOptions import PlayerOptions
-
 from PySide.QtSql import QSqlQuery
+
+from trueSkill.Team import *
+from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
+from .PlayerOptions import PlayerOptions
 
 class GameState():
     def __init__(self):

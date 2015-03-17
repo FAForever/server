@@ -16,9 +16,12 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from .gamesContainer import  gamesContainerClass
 import math
+
 from PySide import QtSql
+
+from .gamesContainer import  gamesContainerClass
+
 
 class swisstournament(object):
     def __init__(self, id, name = None, host = None, minPlayers = 2, maxPlayers = 99, minrating = 0, maxrating = 9000, description = "", date = "", parent = None):

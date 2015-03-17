@@ -17,7 +17,6 @@
 #-------------------------------------------------------------------------------
 
 
-from . import game
 from .game import Game
 
 class xtremewarsGame(Game):

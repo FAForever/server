@@ -16,11 +16,11 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from PySide import QtCore, QtNetwork
-
 import logging
 import json
 import time
+
+from PySide import QtCore, QtNetwork
 
 import GWServerThread
 

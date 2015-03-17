@@ -16,9 +16,10 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from .customGamesContainer import customGamesContainerClass
-from .ladderGamesContainer import ladder1v1GamesContainerClass
-import sys, inspect, logging
+import sys
+import inspect
+import logging
+
 
 class hyperGamesContainerClass(object):
     '''Class for containing all games containers'''

@@ -25,6 +25,7 @@ import time
 from PySide.QtCore import QByteArray, QDataStream, QIODevice, QObject
 from PySide import QtNetwork
 
+
 logger = logging.getLogger(__name__)
 
 try :

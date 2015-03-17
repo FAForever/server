@@ -16,17 +16,14 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from PySide import QtCore, QtNetwork
-
-
 import logging
 import json
 import time
+import gc
+
+from PySide import QtCore, QtNetwork
 
 import lobbyserver
-
-import gc
-import inspect
 
 logger = logging.getLogger(__name__)
 

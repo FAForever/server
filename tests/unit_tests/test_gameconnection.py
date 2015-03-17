@@ -1,12 +1,11 @@
 import asyncio
+import time
 
 from PySide.QtNetwork import QTcpSocket
-import time
 import mock
-import pytest
+
 from proxy import proxy
 from src.connectivity import Connectivity
-
 from src.gameconnection import GameConnection
 from src.JsonTransport import Transport
 from games import Game

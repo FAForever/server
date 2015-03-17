@@ -17,28 +17,19 @@
 #-------------------------------------------------------------------------------
 
 
-from .gamesContainer import  gamesContainerClass
-from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import * 
-from trueSkill.Team import *
-from trueSkill.Teams import *
-
-from trueSkill.Player import *
-from trueSkill.faPlayer import *
-from trueSkill.Rating import *
-
 import time
-import random, sys
-from PySide import QtSql
-from PySide import QtCore
 import math
+import random
+
 from PySide.QtSql import *
 
-import copy
-
-import games.matchmakerGame
+from .gamesContainer import  gamesContainerClass
+from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
+from trueSkill.Team import *
+from trueSkill.faPlayer import *
+from trueSkill.Rating import *
 from games.matchmakerGame import matchmakerGame
 
-import random
 
 FACTIONS = {1:"UEF", 2:"Aeon",3:"Cybran",4:"Seraphim"}
 

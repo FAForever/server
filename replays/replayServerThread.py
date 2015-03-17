@@ -17,31 +17,21 @@
 #-------------------------------------------------------------------------------
 
 
-from PySide.QtCore import QThread, QObject, SIGNAL, SLOT, QReadWriteLock, QWriteLocker, QReadLocker
-from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QCoreApplication
-from PySide.QtNetwork import QTcpServer, QTcpSocket, QAbstractSocket, QHostInfo
-  
-from PySide import QtCore, QtGui, QtNetwork, QtSql
-from PySide.QtSql import *
-
-from configobj import ConfigObj
 from functools import reduce
+
+from PySide.QtCore import QObject
+from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QCoreApplication
+from PySide import QtNetwork
+from PySide.QtSql import *
+from configobj import ConfigObj
+
 config = ConfigObj("/etc/faforever/faforever.conf")
 
-from time import time as curtime
-from types import *
-import math
-import sys
-import zipfile
 import os
-import shutil
-import uuid
-import random
 import logging
-import hashlib
 import json
 import urllib.request, urllib.error, urllib.parse
-import time, datetime
+import datetime
 
 class replayServerThread(QObject):
     '''

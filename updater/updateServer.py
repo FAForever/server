@@ -16,22 +16,14 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from PySide.QtCore import QByteArray, QDataStream, QIODevice, SIGNAL, SLOT, QReadWriteLock, QReadLocker
-from PySide.QtNetwork import QTcpServer, QTcpSocket, QAbstractSocket, QHostInfo
-  
-from PySide import QtCore, QtGui, QtNetwork, QtSql
-from PySide.QtSql import *
-
-import uuid
-import random
 import logging
-import time
 
+from PySide.QtCore import SIGNAL, SLOT
+from PySide import QtNetwork
 
 from . import updateServerThread
 from . import createPatch
-import psutil
-import pprint
+
 
 class updateServer(QtNetwork.QTcpServer):
     def __init__(self, parent=None):

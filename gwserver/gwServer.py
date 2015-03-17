@@ -17,26 +17,26 @@
 #-------------------------------------------------------------------------------
 
 
+import logging
+import json
+import os
+import time
+import hashlib
+import math
+import base64
+
 from PySide import QtCore, QtNetwork
 from PySide.QtSql import QSqlQuery
 
-import logging
 from . import lobby
-import json
-import os
-import random
-import time
-import hashlib
 from . import attacks
 from . import defenses
 from . import newsFeed
-import math
 from . import teams
 from . import domination
 from . import depots
-
-import base64
 from . import phpserialize
+
 
 ATTACK_PERDIOD = 1 * 60 * 60 # 1 hour
 ATTACK_WIN_RATIO = 0.05

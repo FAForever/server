@@ -5,7 +5,9 @@ Distributed under the ISC License (see LICENSE)
 """
 
 import os
+
 from . import api
+
 
 class LanguageError(api.APIError):
     pass

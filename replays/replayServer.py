@@ -16,16 +16,11 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from PySide.QtCore import QByteArray, QDataStream, QIODevice, SIGNAL, SLOT, QReadWriteLock, QReadLocker
-from PySide.QtNetwork import QTcpServer, QTcpSocket, QAbstractSocket, QHostInfo
-  
-from PySide import QtCore, QtGui, QtNetwork, QtSql
+import logging
+
+from PySide import QtNetwork
 from PySide.QtSql import *
 
-import uuid
-import random
-import logging
-import time
 
 UNIT16 = 8
 

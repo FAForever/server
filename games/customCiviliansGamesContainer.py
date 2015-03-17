@@ -17,9 +17,7 @@
 #-------------------------------------------------------------------------------
 
 from .gamesContainer import  gamesContainerClass
-from PySide import QtSql
 
-import games.civiliansGame
 from games.civiliansGame import civiliansClass
 
 

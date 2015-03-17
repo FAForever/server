@@ -4,8 +4,10 @@ Copyright (c) 2010-2013, Anthony Garcia <anthony@lagg.me>
 Distributed under the ISC License (see LICENSE)
 """
 
-import os, re, json
+import os
+import json
 from socket import timeout
+
 
 # Python 2 <-> 3 glue
 try:

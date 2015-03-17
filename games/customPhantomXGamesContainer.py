@@ -17,9 +17,7 @@
 #-------------------------------------------------------------------------------
 
 from .gamesContainer import  gamesContainerClass
-from PySide import QtSql
 
-import games.phantomXGame
 from games.phantomXGame import phantomXGame
 
 class customPhantomXGamesContainerClass(gamesContainerClass):

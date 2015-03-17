@@ -1,11 +1,9 @@
+import asyncio
+import signal
+
 from PySide.QtNetwork import QHostAddress
 
 from FaGamesServer import FAServer
-from PySide.QtNetwork import QUdpSocket
-import logging
-import time
-import asyncio
-import signal
 from config import Config
 from tests.conftest import players, player_service, games, game
 

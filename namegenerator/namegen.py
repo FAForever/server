@@ -18,7 +18,6 @@ License along with name-gen.  If not, see
 <http://www.gnu.org/licenses/>.
 """
 
-import itertools
 import random
 import locale
 

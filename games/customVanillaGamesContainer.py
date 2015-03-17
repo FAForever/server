@@ -17,10 +17,7 @@
 #-------------------------------------------------------------------------------
 
 from .gamesContainer import  gamesContainerClass
-from .vanillaGame import vanillaClass
-from PySide import QtSql
 
-import games.vanillaGame
 from games.vanillaGame import vanillaClass
 
 class customVanillaGamesContainerClass(gamesContainerClass):

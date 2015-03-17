@@ -16,7 +16,6 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from . import game
 from .game import Game
 
 class supremeDestructionGame(Game):

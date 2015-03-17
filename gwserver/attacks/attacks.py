@@ -16,8 +16,10 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from PySide.QtSql import QSqlQuery
 import time
+
+from PySide.QtSql import QSqlQuery
+
 
 #ATTACK_PERDIOD = 1 * 60 * 60 # 1 hour
 ATTACK_WIN_RATIO = 0.1

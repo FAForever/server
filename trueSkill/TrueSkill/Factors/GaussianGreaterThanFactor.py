@@ -1,11 +1,9 @@
-from trueSkill.FactorGraphs.Message import *
-from trueSkill.FactorGraphs.Variable import *
-from trueSkill.Numerics.GaussianDistribution import *
+from math import log, sqrt
+from copy import copy
+
 from trueSkill.TrueSkill.TruncatedGaussianCorrectionFunctions import *
 from trueSkill.TrueSkill.Factors.GaussianFactor import *
 
-from math import log, sqrt
-from copy import copy 
 
 class GaussianGreaterThanFactor(GaussianFactor) :
     def __init__(self, epsilon, variable ):

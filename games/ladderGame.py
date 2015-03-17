@@ -19,7 +19,6 @@
 import logging
 logger = logging.getLogger(__name__)
 
-from . import game
 from .game import Game
 
 
@@ -29,9 +28,6 @@ from PySide.QtSql import QSqlQuery
 import operator
 
 from trueSkill.Team import *
-from trueSkill.Teams import *
-from trueSkill.Rating import *
-from trueSkill.Player import *
 
 from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import * 
 

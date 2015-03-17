@@ -1,7 +1,5 @@
 from trueSkill.Guard import Guard
 from trueSkill.HashMap import *
-from trueSkill.FactorGraphs.Message import *
-from trueSkill.FactorGraphs.Variable import *
 
 
 class Factor (object):

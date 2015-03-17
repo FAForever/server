@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import subprocess
 import sys
 
 from PySide.QtCore import QCoreApplication

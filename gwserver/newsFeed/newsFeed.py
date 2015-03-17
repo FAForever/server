@@ -26,7 +26,7 @@ FACTIONS = {0:"UEF", 1:"Aeon",2:"Cybran",3:"Seraphim"}
 
 from collections import deque
 import random
-import json
+
 
 class NewsFeed(object):
     def __init__(self, parent = None):

@@ -19,22 +19,14 @@
 #-------------------------------------------------------------------------------
 
 
-from PySide.QtCore import QThread, QObject, SIGNAL, SLOT
-from PySide.QtCore import QByteArray, QDataStream, QIODevice, QReadWriteLock
-from PySide.QtNetwork import QTcpServer, QTcpSocket, QAbstractSocket, QHostInfo
-  
-from PySide import QtCore, QtNetwork, QtSql
-from PySide.QtSql import *
-
-import uuid
-import random
-import logging
 from logging import handlers
+
+from PySide.QtCore import QObject
 
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
 from config import Config
-
 from tournament.tournamentServer import *
+
 
 UNIT16 = 8
 
@@ -51,7 +43,7 @@ class start(QObject):
         self.rootlogger.setLevel( eval ("logging." + Config['tournamentServer']['loglevel'] ))
         self.logger = logging.getLogger(__name__)
 
-        self.db= QtSql.QSqlDatabase.addDatabase("QMYSQL")  
+        self.db = QtSql.QSqlDatabase.addDatabase("QMYSQL")
         self.db.setHostName(DB_SERVER)  
         self.db.setPort(DB_PORT)
 

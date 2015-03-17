@@ -18,7 +18,6 @@
 
 
 from PySide.QtSql import QSqlQuery
-import time
 
 
 class Depot():

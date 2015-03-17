@@ -25,17 +25,10 @@ gameClass = reload(game)
 from .game import Game
 
 import json
-import time
 from copy import deepcopy
 from PySide.QtSql import QSqlQuery
-import operator
 
-from trueSkill.Team import *
-from trueSkill.Teams import *
-from trueSkill.Rating import *
-from trueSkill.Player import *
-
-from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import * 
+from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
 
 import inspect
 

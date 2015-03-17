@@ -22,12 +22,10 @@ import socket
 import base64
 import json
 import urllib.parse
-import time
 import datetime
 import zipfile
 import os
 import shutil
-import hashlib
 import random
 import re
 import logging
@@ -39,6 +37,7 @@ from PySide.QtCore import QTimer
 from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QObject
 from PySide import QtNetwork
 from PySide.QtSql import QSqlQuery
+import pygeoip
 
 from trueSkill.faPlayer import *
 from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
@@ -47,7 +46,6 @@ from src.players import *
 from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS
 from config import Config
 
-import pygeoip
 gi = pygeoip.GeoIP('GeoIP.dat', pygeoip.MEMORY_CACHE)
 
 FA = 9420

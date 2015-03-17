@@ -4,8 +4,11 @@ Copyright (c) 2010-2013, Anthony Garcia <anthony@lagg.me>
 Distributed under the ISC License (see LICENSE)
 """
 
-import time, operator
+import time
+import operator
+
 from . import api, loc
+
 
 class SchemaError(api.APIError):
     pass

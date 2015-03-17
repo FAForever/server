@@ -4,8 +4,11 @@ Copyright (c) 2010-2013, Anthony Garcia <anthony@lagg.me>
 Distributed under the ISC License (see LICENSE)
 """
 
-import time, os
+import time
+import os
+
 from . import api
+
 
 class ProfileError(api.APIError):
     pass

@@ -1,6 +1,4 @@
 from .HashMap import *
-from .Player import *
-from .Rating import *
 
 
 class RatingContainer(object):

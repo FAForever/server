@@ -1,7 +1,7 @@
 import asyncio
 from unittest import mock
+
 from src.connectivity import TestPeer, Connectivity
-from src.gameconnection import GameConnection
 
 
 def test_TestPeer_tests_public(loop):

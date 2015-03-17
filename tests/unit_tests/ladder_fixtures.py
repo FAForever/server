@@ -1,8 +1,9 @@
-from games import ladderGamesContainer, ladder1v1GamesContainerClass
-from PySide import QtSql
 from unittest import mock
 
+from PySide import QtSql
 import pytest
+
+from games import ladder1v1GamesContainerClass
 from src.players import Player
 
 
