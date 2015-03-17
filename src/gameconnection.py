@@ -31,6 +31,7 @@ from src.connectivity import TestPeer, Connectivity
 from games.game import GameState
 from src.protocol.gpgnet import GpgNetServerProtocol
 from src.subscribable import Subscribable
+from trueSkill.Rating import Rating
 from trueSkill.faPlayer import *
 from trueSkill.Player import *
 
