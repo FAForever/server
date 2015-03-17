@@ -32,7 +32,6 @@ from games.game import GameState
 from src.protocol.gpgnet import GpgNetServerProtocol
 from src.subscribable import Subscribable
 from trueSkill.faPlayer import *
-from trueSkill.Team import *
 from trueSkill.Player import *
 
 

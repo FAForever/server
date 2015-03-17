@@ -19,6 +19,7 @@
 
 import string
 import logging
+import time
 
 from PySide.QtSql import QSqlQuery
 
@@ -117,7 +118,7 @@ class Game(object):
 
         self.mods = []
 
-    def add_game_connection(self, player: Player, game_connection):
+    def add_game_connection(self, player, game_connection):
         """
         Add a player with his associated connection to this game
         :param player:
@@ -126,7 +127,7 @@ class Game(object):
         """
         pass
 
-    def remove_game_connection(self, player: Player, game_connection):
+    def remove_game_connection(self, player, game_connection):
         """
         Remove a player with his associated connection from this game
         :param peer:
