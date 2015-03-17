@@ -648,56 +648,87 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     def doEnd(self):
         ''' bybye player :('''
         self.player.setGameSocket(None)
+
         try:
-            if hasattr(self, "game"):
-                if self.game is not None:
-                    # check if the game was started
-                    if self.game.getLobbyState() == "playing":
-                        curplayers = self.game.getNumPlayer()
-                        allScoreHere = False
-                        if hasattr(self.game, "isAllScoresThere"):
-                            allScoreHere = self.game.isAllScoresThere()
+            if self.game is not None:
+                self.game.remove_game_connection(self.player, self)
+                state = self.game.getLobbyState()
+                if state == "playing":
+                    curplayers = self.game.getNumPlayer()
+                    allScoreHere = False
+                    if hasattr(self.game, "isAllScoresThere"):
+                        allScoreHere = self.game.isAllScoresThere()
 
-                        if curplayers == 0 or allScoreHere == True:
-                            self.game.setLobbyState("closed")
-                            self.sendGameInfo()
+                    if curplayers == 0 or allScoreHere:
+                        self.game.setLobbyState("closed")
+                        self.sendGameInfo()
 
-                            if hasattr(self.game, "noStats"):
-                                if not self.game.noStats:
-                                    query = QSqlQuery(self.parent.db)
-                                    queryStr = (
-                                        "UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(
-                                            self.game.getuuid()))
-                                    query.exec_(queryStr)
-                            else:
-                                query = QSqlQuery(self.parent.db)
+                        if hasattr(self.game, "noStats"):
+                            if not self.game.noStats:
+                                query = QSqlQuery(self.db)
                                 queryStr = (
-                                    "UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(self.game.getuuid()))
+                                    "UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(
+                                        self.game.getuuid()))
                                 query.exec_(queryStr)
+                        else:
+                            query = QSqlQuery(self.db)
+                            queryStr = (
+                                "UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(self.game.getuuid()))
+                            query.exec_(queryStr)
 
-                            if self.game.getDesync() > 20:
-                                self.game.setInvalid("Too many desyncs")
+                        if self.game.getDesync() > 20:
+                            self.game.setInvalid("Too many desyncs")
 
-                            if hasattr(self.game, "noStats"):
-                                if not self.game.noStats:
-                                    self.registerScore(self.game.gameResult)
-                            else:
+                        if hasattr(self.game, "noStats"):
+                            if not self.game.noStats:
                                 self.registerScore(self.game.gameResult)
+                        else:
+                            self.registerScore(self.game.gameResult)
 
-                            self.game.specialEnding(self.log, self.parent.db, self.parent.listUsers)
+                        self.game.specialEnding(self.log, self.db, self.listUsers)
+                        for playerTS in self.game.getTrueSkillPlayers():
+                            name = playerTS.getPlayer()
+                            for player in self.listUsers.getAllPlayers():
+                                if player is not None:
+                                    if str(name) == player.getLogin():
+                                        for conn in self.parent.parent.FALobby.recorders:
+                                            conn.sendJSON(self.parent.parent.jsonPlayer(player))
 
-                            for playerTS in self.game.getTrueSkillPlayers():
-                                name = playerTS.getPlayer()
-                                for player in self.parent.listUsers.getAllPlayers():
-                                    if player is not None:
-                                        if str(name) == player.getLogin():
-                                            for conn in self.parent.parent.FALobby.recorders:
-                                                conn.sendJSON(self.parent.parent.jsonPlayer(player))
+                        self.games.removeGame(self.game)
+                        self.game = None
 
-                            self.parent.games.removeGame(self.game)
+                # if game in lobby state
+                if state != "playing":
+                    self.game.removePlayer(self.player)
+                    self.game.removeFromAllPlayersToConnect(self.player)
+                    self.game.removeTrueSkillPlayer(self.player)
+
+                    getAction = self.player.getAction()
+
+                    if getAction == "HOST":
+                        # if the player was the host (so, not playing), we remove his game
+
+                        self.game.setLobbyState("closed")
+                        self.sendGameInfo()
+                        self.games.removeGame(self.game)
+                        self.game = None
+
+                    elif getAction == 'JOIN':
+                        minplayers = self.game.getMinPlayers()
+                        curplayers = self.game.getNumPlayer()
+
+                        if minplayers == 2 or curplayers == 0:
+                            self.game.setLobbyState("closed")
+
+                            self.sendGameInfo()
+                            self.games.removeGame(self.game)
                             self.game = None
-        except:
-            self.log.exception("Something awful happened in a game  thread (ending) !")
+                # if the game was in play.
+                else:
+                    self.game.removePlayer(self.player)
+                    self.sendGameInfo()
+        except Exception as ex:
+            self.log.exception("Exception in doEnd {}".format(ex))
 
     def _send_create_lobby(self, rankedMode):
         """
@@ -1021,63 +1052,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
                 self.player.setGameSocket(None)
                 self.player.game = None
-            self.done()
+            self.doEnd()
         except:
             pass
-
-    def done(self):
-        if self.game != 0 and self.game is not None:
-
-            state = self.game.getLobbyState()
-
-            # if game in lobby state
-            if state != "playing":
-                self.game.addToDisconnect(self.player)
-                self.game.removePlayer(self.player)
-                self.game.removeFromAllPlayersToConnect(self.player)
-                self.game.removeTrueSkillPlayer(self.player)
-
-                getAction = self.player.getAction()
-
-                if getAction == "HOST":
-                    # if the player was the host  (so, not playing), we remove his game
-
-                    self.game.setLobbyState("closed")  #
-                    self.sendGameInfo()
-                    self.parent.games.removeGame(self.game)
-                    self.game = None
-
-                elif getAction == 'JOIN':
-                    # self.player.setAction("NOTHING")
-                    minplayers = self.game.getMinPlayers()
-                    curplayers = self.game.getNumPlayer()
-
-                    if minplayers == 2 or curplayers == 0:
-                        self.game.setLobbyState("closed")
-
-                        self.sendGameInfo()
-                        self.parent.games.removeGame(self.game)
-                        self.game = None
-            # if the game was in play.
-            else:
-                self.game.removePlayer(self.player)
-                self.sendGameInfo()
-
-            self.doEnd()
-
-        # we remove the gameSocket and reset the udp packet state
-        if self.player is not None:
-            self.player.setReceivedUdp(False)
-            self.player.setGameSocket(0)
-            self.player.resetUdpFrom()
-
-        # CLEANING
-        self.player = None
-        self.game = None
-        self.lobby = None
-
-        if self in self.parent.recorders:
-            self.parent.removeRecorder(self)
 
     def stateChange(self, socketState):
         pass
@@ -1110,5 +1087,5 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self._player = val
 
     def __str__(self):
-        return "GameConnection(Player({}))".format(self.player.id)
+        return "GameConnection(Player({}),Game({}))".format(self.player.id, self.game)
 
