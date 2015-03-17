@@ -225,11 +225,11 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.doEnd()
             self.player.getLobbyThread().sendJSON(dict(command="notice", style="kill"))
             self._socket.abort()
+            self._pingtimer.stop()
         except Exception as ex:
             self.log.debug("Exception in abort(): {}".format(ex))
             pass
         finally:
-            self._pingtimer.stop()
             del self._socket
             del self._pingtimer
             del self._player
