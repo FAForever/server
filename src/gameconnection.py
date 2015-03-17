@@ -66,6 +66,7 @@ class GameConnectionState(Enum):
     initializing = 0
     initialized = 1
     ended = 2
+    aborted = 3
 
 
 class GameConnection(Subscribable, GpgNetServerProtocol):
@@ -221,6 +222,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         Abort the connection, calling doEnd() first
         :return:
         """
+        if self.state is GameConnectionState.aborted or GameConnectionState.ended:
+            return
+        self.state = GameConnectionState.aborted
+        self.log.debug("{}.abort()".format(self))
         try:
             self.doEnd()
             self.player.getLobbyThread().sendJSON(dict(command="notice", style="kill"))
