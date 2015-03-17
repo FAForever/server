@@ -1492,8 +1492,6 @@ Thanks,\n\
                                 self.parent.listUsers.players.remove(p)
 
                     else:
-                        self.sendJSON(dict(command="notice", style="error",
-                                           text="You are already reported online. Please wait some time and try relogging"))
                         #remove ghost
                         for p in self.parent.listUsers.players:
                             if p.getLogin() == login:
@@ -1507,11 +1505,10 @@ Thanks,\n\
                                 self.parent.listUsers.players.remove(p)
 
                         query2 = QSqlQuery(self.parent.db)
-                        query2.prepare("UPDATE login SET session = 0 WHERE id = ?")
+                        query2.prepare("UPDATE login SET session = ? WHERE id = ?")
+                        query2.addBindValue(session)
                         query2.addBindValue(int(query.value(0)))
                         query2.exec_()
-
-                        return
 
                 self.uid = int(query.value(0))
                 self.email = str(query.value(2))
