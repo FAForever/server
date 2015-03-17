@@ -1053,9 +1053,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
                 self.player.setGameSocket(None)
                 self.player.game = None
-            self.doEnd()
         except:
             pass
+        finally:
+            self.doEnd()
 
     def stateChange(self, socketState):
         pass
