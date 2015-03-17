@@ -316,13 +316,6 @@ class FAServerThread(QObject):
                 self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
                 return
 
-                # if game.getNumPlayer() >= game.maxPlayer :
-            #     self.sendJSON(dict(command="notice", style="info", text="Too many players in that game."))
-            #     return
-
-            beta = False
-            mod = "faf"
-
             container = self.parent.games.getGameContainer(game)
             mod = container.getGameTypeName().lower()
 
@@ -1471,8 +1464,6 @@ Thanks,\n\
             self.logPrefix = login + "\t"
 
             channels = []
-            globalMean = 0
-            globalDev = 0
 
             login = login.strip()
             query = QSqlQuery(self.parent.db)
@@ -1837,8 +1828,6 @@ Thanks,\n\
                                         if score > 0:
                                             if i == 1:
 
-                                                isFirst = True
-                                                ourScore = score
                                                 avatar = {
                                                     "url": str(Config['global']['content_url'] + "avatars/league1.png"),
                                                     "tooltip": str("First of my League !")}
@@ -2449,7 +2438,6 @@ Thanks,\n\
 
         mapname = message.get('mapname')
         password = message.get('password')
-        max_players = message.get('max_players', 12)
         lobby_rating = message.get('lobby_rating', 1)  # 0 = no rating inside the lobby. Default is 1.
         options = message.get('options', [])
 
@@ -2554,8 +2542,7 @@ Thanks,\n\
             query.exec_()
 
         elif type == "addcomment":
-            uid = message["uid"]
-            comment = message["comment"]
+            pass
 
     def prepareBigJSON(self, data_dictionary):
         """

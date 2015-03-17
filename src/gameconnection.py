@@ -586,7 +586,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     self.fillGameStats()
 
                 self.game.fixPlayerPosition()
-                result = self.game.recombineTeams()
 
                 self.fillPlayerStats(self.game.getPlayers())
                 self.fillAIStats(self.game.AIs)
