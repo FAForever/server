@@ -98,8 +98,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
         # PINGING
         self.last_pong = time.time()
-        self.pingTimer = QTimer()
-        self.pingTimer.timeout.connect(self.ping)
+        self._pingtimer = QTimer()
+        self._pingtimer.timeout.connect(self.ping)
 
         self.headerSizeRead = False
         self.headerRead = False
@@ -123,7 +123,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.addData = False
         self.addedData = 0
         self.tryingconnect = 0
-        self.socket = None
+        self._socket = None
         self.lobby = None
         self.transport = None
         self.nat_packets = {}
@@ -143,23 +143,23 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         assert socket.isValid()
         assert socket.state() == QAbstractSocket.ConnectedState
         self.log.debug("Accepting connection from %r" % socket.peerAddress())
-        self.socket = socket
-        self.socket.setSocketOption(QTcpSocket.KeepAliveOption, 1)
-        self.socket.disconnected.connect(self.disconnection)
-        self.socket.error.connect(self.displayError)
-        self.socket.stateChanged.connect(self.stateChange)
+        self._socket = socket
+        self._socket.setSocketOption(QTcpSocket.KeepAliveOption, 1)
+        self._socket.disconnected.connect(self.disconnection)
+        self._socket.error.connect(self.displayError)
+        self._socket.stateChanged.connect(self.stateChange)
 
-        self.transport = QDataStreamJsonTransport(self.socket)
+        self.transport = QDataStreamJsonTransport(self._socket)
         self.transport.messageReceived.connect(self.handleAction2)
 
         self.lobby = None
-        ip = self.socket.peerAddress().toString()
-        port = self.socket.peerPort()
+        ip = self._socket.peerAddress().toString()
+        port = self._socket.peerPort()
         self.player = self.users.findByIp(ip)
         self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, ip, port))
 
         if self.player is None:
-            self.socket.abort()
+            self._socket.abort()
             self.log.info("Player not found for IP: %s " % ip)
             return False
 
@@ -178,7 +178,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         strlog = ("%s\t" % str(self.player.getLogin()))
         self.logGame = strlog
 
-        self.player.setGameSocket(self.socket)
+        self.player.setGameSocket(self._socket)
         self.player.setWantGame(False)
         return True
 
@@ -196,7 +196,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         """
         if time.time() - self.last_pong > 30:
             self.log.debug("{} Missed ping - removing user {}"
-                           .format(self.logGame, self.socket.peerAddress().toString()))
+                           .format(self.logGame, self._socket.peerAddress().toString()))
             self.abort()
         else:
             self.sendToRelay("ping", [])
@@ -244,14 +244,21 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def abort(self):
         try:
-            self.socket.disconnected.disconnect(self.disconnection)
-            self.socket.error.disconnect(self.displayError)
-            self.socket.abort()
-            self.player.getLobbyThread().sendJSON(dict(command="notice", style="kill"))
             self.doEnd()
+            self.player.getLobbyThread().sendJSON(dict(command="notice", style="kill"))
+            self._socket.abort()
+            self._socket.disconnected.disconnect(self.disconnection)
+            self._socket.error.disconnect(self.displayError)
         except Exception as ex:
             self.log.debug("Exception in abort(): {}".format(ex))
             pass
+        finally:
+            self._pingtimer.stop()
+            del self._socket
+            del self._pingtimer
+            del self._player
+            del self.game
+
 
     @asyncio.coroutine
     def _handle_lobby_state(self):
@@ -740,11 +747,11 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             text = "You were unable to connect to the host because he has left the game."
             self.lobby.sendJSON(dict(command="notice", style="kill"))
             self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
-            self.socket.abort()
+            self._socket.abort()
             if self.tasks:
                 self.tasks.stop()
-            if self.pingTimer:
-                self.pingTimer.stop()
+            if self._pingtimer:
+                self._pingtimer.stop()
             return
 
         port = self.player.getGamePort()
@@ -761,7 +768,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.game.addPlayer(self.player)
             self.game.specialInit(self.player)
 
-            self.pingTimer.start(31000)
+            self._pingtimer.start(31000)
             self.initDone = True
 
     def _send_host_game(self, mapname):
@@ -1065,7 +1072,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         elif socketError == QtNetwork.QAbstractSocket.ConnectionRefusedError:
             self.log.debug("ConnectionRefusedError")
         else:
-            self.log.debug("The following error occurred: %s." % self.socket.errorString())
+            self.log.debug("The following error occurred: %s." % self._socket.errorString())
 
     def connectivity_state(self):
         return self._connectivity_state

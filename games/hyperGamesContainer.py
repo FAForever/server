@@ -92,7 +92,8 @@ class hyperGamesContainerClass(object):
                 return game
         return None
 
-
+    def mark_dirty(self, game_id):
+        pass
 
     def sendGamesList(self):
         games = []
