@@ -1104,7 +1104,6 @@ Thanks,\n\
             pass
         else:
             self.player.setAction("NOTHING")
-            self.player.gameThread.abort()
 
     def command_ladder_maps(self, message):
         maplist = message['maps']

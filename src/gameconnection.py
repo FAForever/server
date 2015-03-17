@@ -207,8 +207,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         :return: None
         """
         self.game = self.games.getGameByUuid(self.player.getGame())
-        self.game.add_game_connection(self.player, self)
         assert self.game
+        self.game.add_game_connection(self.player, self)
+        self.send_Ping()
         action = self.player.getAction()
 
         if action == "HOST":
