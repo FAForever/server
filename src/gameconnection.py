@@ -118,8 +118,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self._socket = socket
         self._socket.setSocketOption(QTcpSocket.KeepAliveOption, 1)
         self._socket.disconnected.connect(self.disconnection)
-        self._socket.error.connect(self.displayError)
-        self._socket.stateChanged.connect(self.stateChange)
+        self._socket.error.connect(self.on_error)
+        self._socket.stateChanged.connect(self.on_socket_state_change)
 
         self.transport = QDataStreamJsonTransport(self._socket)
         self.transport.messageReceived.connect(self.handleAction2)
@@ -1032,10 +1032,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         finally:
             self.abort()
 
-    def stateChange(self, socketState):
+    def on_socket_state_change(self, socketState):
         self.log.debug("State changed to {}".format(socketState))
 
-    def displayError(self, socketError):
+    def on_error(self, socketError):
         if socketError == QtNetwork.QAbstractSocket.RemoteHostClosedError:
             self.log.debug("RemoteHostClosedError")
         elif socketError == QtNetwork.QAbstractSocket.HostNotFoundError:
@@ -1044,6 +1044,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.log.debug("ConnectionRefusedError")
         else:
             self.log.debug("The following error occurred: %s." % self._socket.errorString())
+        self.abort()
 
     def connectivity_state(self):
         return self._connectivity_state
