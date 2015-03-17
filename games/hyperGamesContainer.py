@@ -51,38 +51,6 @@ class hyperGamesContainerClass(object):
             return 1
         return 0
 
-    def reloadAllContainer(self, force = True):
-        for name in self.gamesContainer :
-            self.reloadContainer(name, force)
-
-    def reloadContainer(self, name, force = False):
-        ''' reload the container named <name>'''
-        if not name in self.gamesContainer :
-            return False
-        
-        container = self.gamesContainer[name]
-        curVersion = container.version
-        self.log.info("Current container version : " + str(curVersion))
-        
-        module = sys.modules[container.__module__]
-        reload(module)
-        classCont = type(container).__name__
-
-        for nameClass, obj in inspect.getmembers(module):
-            if nameClass == classCont :
-                newContainer = obj(container.db, self)
-                
-                if newContainer.version > curVersion or force == True :
-                    self.log.info("Replacing container " + name + " with version " + str(newContainer.version))
-                    #we replace it
-                    self.gamesContainer.pop(name)
-                    self.addContainer(name, newContainer)
-                    
-                    return True
-                else :
-                    return False
-        return False
-
     def isaContainer(self, name):
         if name in self.gamesContainer :
             return True
