@@ -84,53 +84,17 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.log = logging.getLogger(__name__)
         self.initTime = time.time()
         self.initDone = False
-        self.udpToServer = 0
-        self.forcedConnections = {}
-        self.sentConnect = {}
-        self.forcedJoin = None
         self.proxies = {}
-        self.proxyNotThrough = True
         self._player = None
         self.logGame = "\t"
-        self.tasks = None
         self.game = None
-        self.packetCount = 0
         self.proxyConnection = []
-        self.crappyPorts = {}
-        self.lastUdpPacket = {}
-        self.udpTimeout = 0
-        self.missedUdpFrom = {}
-        self.triedToConnect = []
-        self.dontSetMorePortPlease = False
-        self.JoinGameDone = False
 
-        # PINGING
         self.last_pong = time.time()
         self._pingtimer = QTimer()
         self._pingtimer.timeout.connect(self.ping)
 
-        self.headerSizeRead = False
-        self.headerRead = False
-        self.chunkSizeRead = False
-        self.fieldTypeRead = False
-        self.fieldSizeRead = False
-        self.blockSize = 0
-        self.fieldSize = 0
-        self.chunkSize = 0
-        self.fieldType = 0
-        self.chunks = []
-        self.gamePort = 6112
-        self.testUdp = False
-        self.delaySkipped = False
-        self.canConnectToHost = False
-        self.lastUpdate = None
         self.player = None
-        self.infoDelayed = False
-        self.connected = 1
-        self.data = ''
-        self.addData = False
-        self.addedData = 0
-        self.tryingconnect = 0
         self._socket = None
         self.lobby = None
         self.transport = None
@@ -179,7 +143,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.player.connectedToHost = False
 
         self.player.resetUdpPacket()
-        self.gamePort = int(self.player.getGamePort())
 
         self.lobby = self.player.getLobbyThread()
 
