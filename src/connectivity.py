@@ -64,7 +64,7 @@ class UdpMessage():
             pass
 
     def send_payload(self):
-        self._logger.debug("UDP(%s:%s)>> %s" % (self.remote_addr.toString(), self.remote_port, self.message))
+        self._logger.debug("UDP(%s:%s)>> %s" % (self.remote_addr.toString(), self.remote_port, self.message.encode()))
         self.socket.writeDatagram(self.message.encode(), self.remote_addr, self.remote_port)
 
     def _on_error(self):

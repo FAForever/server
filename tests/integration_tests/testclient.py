@@ -16,7 +16,7 @@ class TestGPGClient(QObject):
     receivedTcp = Signal(str)
     receivedUdp = Signal(str)
 
-    def __init__(self, address, port, udp_port, parent=None):
+    def __init__(self, address, port, udp_port, process_nat_packets=True, parent=None):
         """
         Initialize the test client
         :param loop: asyncio event loop:
@@ -30,6 +30,7 @@ class TestGPGClient(QObject):
         :return:
         """
         super(TestGPGClient, self).__init__(parent)
+        self.process_nat_packets = process_nat_packets
         self.logger = logging.getLogger(__name__)
         self.logger.debug("Connecting to %s: %s" % (address, port))
         self.logger.debug("Listening for UDP on: %s" % udp_port)
@@ -60,7 +61,11 @@ class TestGPGClient(QObject):
     def _on_udp_message(self):
         while self.udp_socket.hasPendingDatagrams():
             data, host, port = self.udp_socket.readDatagram(self.udp_socket.pendingDatagramSize())
-            self.logger.debug("UDP(%s:%s)<< %s" % (host.toString(), port, data))
+            self.logger.debug("UDP(%s:%s)<< %s" % (host.toString(), port, data.data()))
+            if self.process_nat_packets and data.data()[0] == 0x08:
+                self.send_ProcessNatPacket(["{}:{}".format(host.toString(), port),
+                                            data.data()[1:].decode()])
+
             self.udp_messages(str(data))
             self.receivedUdp.emit(str(data))
 

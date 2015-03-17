@@ -16,6 +16,7 @@ import config
 @coroutine
 def wait_call(mock, call, timeout=0.5):
     start_time = time.time()
+    yield from asyncio.sleep(0.1)
     while time.time() - start_time < timeout:
         if call in mock.mock_calls:
             return True
@@ -32,47 +33,44 @@ def run_server(address, loop, player_service, games):
     except (CancelledError, TimeoutError) as e:
         pass
 
-@pytest.mark.skipif(True, reason='Run these slow tests manually as needed')
+#@pytest.mark.skipif(True, reason='Run these slow tests manually as needed')
+@asyncio.coroutine
 def test_public_host(loop, qtbot, players, player_service, games):
-    @coroutine
-    def test():
-        player = players.hosting
-        server = asyncio.async(run_server('127.0.0.1', loop, player_service, games))
-        with TestGPGClient('127.0.0.1', 8000, player.getGamePort()) as client:
-            with qtbot.waitSignal(client.connected):
-                pass
-            client.send_GameState(['Idle'])
-            client.send_GameState(['Lobby'])
-            yield from wait_call(client.udp_messages,
-                                  call("\x08Are you public? %s" % player.getId()), 3)
-            client.send_ProcessNatPacket(["%s:%s" % (player.getIp(), player.getGamePort()),
-                                          "Are you public? %s" % player.getId()])
-            yield from wait_call(client.messages,
-                        call(json.dumps({"key": "ConnectivityState",
-                        "commands": [player.getId(), "PUBLIC"]})), 2)
-    loop.run_until_complete(asyncio.wait_for(test(), timeout=3))
+    player = players.hosting
+    server = asyncio.async(run_server('127.0.0.1', loop, player_service, games))
+    with TestGPGClient('127.0.0.1', 8000, player.getGamePort(), process_nat_packets=True) as client:
+        with qtbot.waitSignal(client.connected):
+            pass
+        client.send_GameState(['Idle'])
+        client.send_GameState(['Lobby'])
+        yield from wait_call(client.udp_messages,
+                              call("\x08Are you public? %s" % player.getId()), 2)
+        client.send_ProcessNatPacket(["%s:%s" % (player.getIp(), player.getGamePort()),
+                                      "Are you public? %s" % player.getId()])
+        yield from wait_call(client.messages,
+                    call(json.dumps({"key": "ConnectivityState",
+                    "commands": [player.getId(), "PUBLIC"]})), 2)
+    server.cancel()
 
 
-@pytest.mark.skipif(True, reason='Run these slow tests manually as needed')
+#@pytest.mark.skipif(True, reason='Run these slow tests manually as needed')
+@asyncio.coroutine
 def test_stun_host(loop, qtbot, players, player_service, games):
-    @asyncio.coroutine
-    def test():
-        player = players.hosting
-        server = asyncio.async(run_server('127.0.0.1', loop, player_service, games))
-        with TestGPGClient('127.0.0.1', 8000, player.getGamePort()) as client:
-            with qtbot.waitSignal(client.connected):
-                pass
-            client.send_GameState(['Idle'])
-            client.send_GameState(['Lobby'])
-            yield from wait_call(client.messages,
-                          call(json.dumps({"key": "SendNatPacket",
-                                "commands": ["%s:%s" % (config.LOBBY_IP, config.LOBBY_UDP_PORT),
-                                             "Hello %s" % player.getId()]})), 2)
+    player = players.hosting
+    server = asyncio.async(run_server('127.0.0.1', loop, player_service, games))
+    with TestGPGClient('127.0.0.1', 8000, player.getGamePort(), process_nat_packets=False) as client:
+        with qtbot.waitSignal(client.connected):
+            pass
+        client.send_GameState(['Idle'])
+        client.send_GameState(['Lobby'])
+        yield from wait_call(client.messages,
+                      call(json.dumps({"key": "SendNatPacket",
+                            "commands": ["%s:%s" % (config.LOBBY_IP, config.LOBBY_UDP_PORT),
+                                         "Hello %s" % player.id]})), 2)
 
-            client.send_udp_natpacket('Hello 2', '127.0.0.1', config.LOBBY_UDP_PORT)
+        client.send_udp_natpacket('Hello {}'.format(player.id), '127.0.0.1', config.LOBBY_UDP_PORT)
 
-            yield from wait_call(client.messages,
-                          call(json.dumps({"key": "ConnectivityState",
-                                           "commands": [player.getId(), "STUN"]})), 2)
-        server.cancel()
-    loop.run_until_complete(asyncio.wait_for(test(), timeout=3))
+        yield from wait_call(client.messages,
+                      call(json.dumps({"key": "ConnectivityState",
+                                       "commands": [player.id, "STUN"]})), 2)
+    server.cancel()

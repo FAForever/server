@@ -24,68 +24,11 @@ from PySide.QtNetwork import QTcpServer, QTcpSocket
 
 from src.gameconnection import GameConnection
 import config
+from src.natpacketserver import NatPacketServer
 from src.with_logger import with_logger
 
 
-@with_logger
-class NatPacketServer(QObject):
-    datagram_received = Signal(str, str, int)
-    def __init__(self, loop: BaseEventLoop, port, parent=None):
-        QObject.__init__(self, None)
-        self.loop = loop
-        self.port = port
-        self._logger.debug("{id} Listening on {port}".format(id=id(self), port=port))
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind(('127.0.0.1', port))
-        loop.add_reader(s.fileno(), self._on_psocket_data)
-        self._psocket = s
-        self._subscribers = {}
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._socket.abort()
-
-    def _on_psocket_data(self):
-        data, addr = self._psocket.recvfrom(512)
-        self._logger.debug("Received UDP from {}: {}".format(addr, data))
-        if data[0] == 8:
-            self._logger.debug("Emitting with: {} {} {} ".format(data[1:].decode(), addr[0], addr[1]))
-            self.datagram_received.emit(data[1:].decode(), addr[0], addr[1])
-
-    def _on_error(self):
-        self._logger.critical("Socket error {}".format(self._socket.errorString()))
-
-    def _on_ready_data(self):
-        self._logger.debug("On_ready_data called {}".format(id(self)))
-        while self._socket.hasPendingDatagrams():
-            self._logger.debug("HasPendingDatagrams: {}".format(self._socket.hasPendingDatagrams()))
-            data, host, port = self._socket.readDatagram(self._socket.pendingDatagramSize())
-            if data[0] == b'\x08':  # GPG NAT packets start with this byte
-                self._logger.debug("Emitting datagram_received {}".format(data))
-                # Doing anything interesting with data
-                # will apparently cause a full deep copy
-                # of all objects the signal
-                # gets propagated to.
-                # We don't want that.
-                self.datagram_received.emit("{}".format(data), host.toString(), port)
-
-
-    def _on_ready_read(self):
-        while self._socket.hasPendingDatagrams():
-            data, host, port = self._socket.readDatagram(self._socket.pendingDatagramSize())
-            self._logger.debug('Received {data} from {host}:{port}'.format(data=data, host=host, port=port))
-            self._logger.debug("First bit: {}".format(data[0]))
-            if data[0] == b'\x08':  # GPG NAT packets start with this byte
-                self._logger.debug("Emitting datagram_received")
-                # Doing anything interesting with data
-                # will apparently cause a full deep copy
-                # of all objects the signal
-                # gets propagated to.
-                # We don't want that.
-                self.datagram_received.emit("{}".format(data), host.toString(), port)
 
 @with_logger
 class FAServer(QTcpServer):
@@ -94,8 +37,8 @@ class FAServer(QTcpServer):
         self.loop = loop
         self.sockets = {}
         self._logger.debug("Starting FAServer")
-        self.nat_packet_server = NatPacketServer(loop, config.LOBBY_UDP_PORT, self)
-        self.nat_packet_server.datagram_received.connect(self._on_nat_packet)
+        self.nat_packet_server = NatPacketServer(loop, config.LOBBY_UDP_PORT)
+        self.nat_packet_server.subscribe(self, ['ProcessServerNatPacket'])
         self.newConnection.connect(self._on_new_connection)
         self.dirtyGameList = dirtyGameList
         self.listUsers = listUsers
@@ -122,6 +65,7 @@ class FAServer(QTcpServer):
         for socket_id, socket in self.sockets.items():
             self.clean_socket(socket)
         self.done.set_result(True)
+        self.nat_packet_server.__exit__(exc_type, exc_val, exc_tb)
         self.close()
 
     def clean_socket(self, socket: QTcpSocket):
@@ -131,6 +75,15 @@ class FAServer(QTcpServer):
     def run(self, address):
         self._logger.debug("Server listening on {}:{}".format(address, 8000))
         return self.listen(address, 8000)
+
+    def handle_ProcessServerNatPacket(self, arguments):
+        """
+        FIXME: This is rather inefficient, need to implement progagation of subscriptions
+        :param arguments:
+        :return:
+        """
+        for connection in self.connections:
+            connection.notify(dict(command_id='ProcessServerNatPacket', arguments=arguments))
 
     @Slot(str, str, int)
     def _on_nat_packet(self, data, host, port):
