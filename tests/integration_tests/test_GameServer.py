@@ -38,6 +38,7 @@ def run_server(address, loop, player_service, games):
 def test_public_host(loop, qtbot, players, player_service, games):
     player = players.hosting
     server = asyncio.async(run_server('127.0.0.1', loop, player_service, games))
+    yield from asyncio.sleep(0.1)
     with TestGPGClient('127.0.0.1', 8000, player.getGamePort(), process_nat_packets=True) as client:
         with qtbot.waitSignal(client.connected):
             pass
@@ -58,6 +59,7 @@ def test_public_host(loop, qtbot, players, player_service, games):
 def test_stun_host(loop, qtbot, players, player_service, games):
     player = players.hosting
     server = asyncio.async(run_server('127.0.0.1', loop, player_service, games))
+    yield from asyncio.sleep(0.1)
     with TestGPGClient('127.0.0.1', 8000, player.getGamePort(), process_nat_packets=False) as client:
         with qtbot.waitSignal(client.connected):
             pass
