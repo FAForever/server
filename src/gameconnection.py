@@ -1045,13 +1045,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                         if self.game.proxy.removePlayer(self.player.getLogin()):
                             self.parent.parent.udpSocket.writeDatagram(
                                 json.dumps(dict(command="cleanup", sourceip=self.player.getIp())), proxyServer, 12000)
-                if len(self.proxyConnection) > 0:
-                    players = ", ".join(self.proxyConnection)
-
-                    text = "You had trouble connecting to some player(s) : <br>" + players + ".<br><br>The server tried to make you connect through a proxy server, running on the FAF server.<br>It can be caused by a problem with that player, or a problem on your side.<br>If you see this message often, you probably have a connection problem. Please visit <a href='" + \
-                           Config['global']['www_url'] + "mediawiki/index.php?title=Connection_issues_and_solutions'>" + \
-                           Config['global'][
-                               'www_url'] + "mediawiki/index.php?title=Connection_issues_and_solutions</a> to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs, at your discretion."
+                if self.connectivity_state.result() == Connectivity.PROXY:
+                    wiki_link = "{}index.php?title=Connection_issues_and_solutions".format(Config['global']['wiki_url'])
+                    text = "Your network is not setup right.<br>The server had to make you connect to other players by proxy.<br>Please visit <a href='{}'>{}</a>" + \
+                           "to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs,".format(wiki_link, wiki_link)
 
                     self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
                 self.player.setGameSocket(None)
