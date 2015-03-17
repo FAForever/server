@@ -178,6 +178,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         strlog = ("%s\t" % str(self.player.getLogin()))
         self.logGame = strlog
 
+        self._pingtimer.start(15000)
         self.player.setGameSocket(self._socket)
         self.player.setWantGame(False)
         return True
@@ -769,7 +770,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.game.addPlayer(self.player)
             self.game.specialInit(self.player)
 
-            self._pingtimer.start(31000)
             self.initDone = True
 
     def _send_host_game(self, mapname):
