@@ -1,6 +1,7 @@
 from PySide import QtNetwork
 import pytest
 import mock
+from src.games_service import GamesService
 
 from src.lobbyserver import FAServerThread, playersOnline
 from src.FaLobbyServer import FALobbyServer
@@ -33,8 +34,8 @@ def connected_socket():
 @pytest.fixture
 def mock_lobby_server(db):
     users = playersOnline()
-    hyper_container = games.hyperGamesContainerClass(users, db, [])
-    return FALobbyServer(users, hyper_container, db, [])
+    hyper_container = GamesService(users, db)
+    return FALobbyServer(users, hyper_container, db)
 
 def test_command_game_host_calls_host_game(connected_socket,
                                            mock_lobby_server,

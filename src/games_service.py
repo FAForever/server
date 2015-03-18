@@ -16,17 +16,16 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-import sys
-import inspect
 import logging
 
 
-class hyperGamesContainerClass(object):
-    '''Class for containing all games containers'''
-    
-    def __init__(self, players, db, dirtyGameList, parent = None):
+class GamesService(object):
+    """
+    Utility class for maintaining lifecycle of games
+    """
+    def __init__(self, players, db):
         
-        self.dirtyGameList = dirtyGameList
+        self._dirty_games = []
         self.players = players
         self.db = db
         
@@ -38,15 +37,22 @@ class hyperGamesContainerClass(object):
             self.db.open()
         
         self.gamesContainer = {}
+
+    @property
+    def dirty_games(self):
+        return self._dirty_games
+
+    def clear_dirty(self):
+        self._dirty_games = []
         
     def setContainerDescription(self, name, desc):
         if name in self.gamesContainer :
             self.gamesContainer[name].setDesc(desc)
             return
 
-    def addContainer(self, name, container) :
+    def addContainer(self, name, container):
         ''' add a game container class named <name>'''
-        if not name in self.gamesContainer :
+        if not name in self.gamesContainer:
             self.gamesContainer[name] = container
             return 1
         return 0
@@ -73,9 +79,9 @@ class hyperGamesContainerClass(object):
 
     def addGame(self, access, name, player, gameName, gamePort, mapname, password = None):
         container = self.getContainer(name)
-        if container != None :
+        if container is not None:
             game = container.addBasicGame(player, gameName, gamePort)
-            if game != False :
+            if game is not None:
                 game.setGameMap(mapname)
                 game.setAccess(access)
                 if password != None :

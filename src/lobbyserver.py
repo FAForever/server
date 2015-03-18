@@ -164,7 +164,6 @@ class FAServerThread(QObject):
 
             self.session = int(random.getrandbits(16))
 
-            self.dirtyGameList = []
         else:
             self.log.warning("We are not connected")
             self.socket.abort()
@@ -2618,7 +2617,6 @@ Thanks,\n\
             query.exec_()
 
         self.noSocket = True
-        self.dirtyGameList = []
         if not self.player:
             self.command_quit_team(dict(command="quit_team"))
 

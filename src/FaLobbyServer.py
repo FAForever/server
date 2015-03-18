@@ -46,7 +46,7 @@ def timed(f):
 
 
 class FALobbyServer(QtNetwork.QTcpServer):
-    def __init__(self, listUsers, Games, db, dirtyGameList, parent=None):
+    def __init__(self, listUsers, games, db, parent=None):
         super(FALobbyServer, self).__init__(parent)
         
         self.parent = parent
@@ -56,9 +56,8 @@ class FALobbyServer(QtNetwork.QTcpServer):
 
         self.teams = teams.Teams(self)
 
-        self.dirtyGameList = dirtyGameList
         self.listUsers = listUsers
-        self.games = Games
+        self.games = games
 
         self.db = db
 
@@ -136,12 +135,12 @@ class FALobbyServer(QtNetwork.QTcpServer):
             self.lastDirty = time.time()
             self.skippedDirty += 1
         
-        else :
+        else:
             self.lastDirty = time.time()
             self.skippedDirty = 0
             reply = QtCore.QByteArray()
             
-            for uid in self.dirtyGameList:
+            for uid in self.games.dirty_games:
         
                 game = self.parent.games.getGameByUuid(uid)
                 if game is not None:
@@ -168,8 +167,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
 
                     reply.append(json.dumps(jsonToSend))
                                        
-                if uid in self.dirtyGameList:
-                    self.dirtyGameList.remove(uid)
+                self.games.dirty_games = []
 
             for lobby in self.recorders:
                     lobby.sendArray(reply)

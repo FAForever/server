@@ -30,6 +30,7 @@ from PySide.QtCore import QTimer
 from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
 from src.FaLobbyServer import FALobbyServer
 from src.FaGamesServer import FAServer
+from src.games_service import GamesService
 from src.players import *
 import games
 import config
@@ -72,7 +73,7 @@ if __name__ == '__main__':
             self.db.close()
 
             self.dirtyGameList = []
-            self.games = games.hyperGamesContainerClass(self.players_online, self.db, self.dirtyGameList)
+            self.games = GamesService(self.players_online, self.db)
 
             self.FALobby = FALobbyServer(self.players_online, self.games, self.db, self.dirtyGameList, self)
             self.FAGames = FAServer(loop, self.players_online, self.games, self.db, self.dirtyGameList, self)
@@ -90,7 +91,6 @@ if __name__ == '__main__':
             if not self.FAGames.run(QtNetwork.QHostAddress.Any):
                 self.logger.error("Unable to start the server {}".format(self.FAGames.serverError()))
                 raise Exception("Unable to start the game server")
-                return
             else:
                 self.logger.info ("starting the game server on  %s:%i" % (self.FAGames.serverAddress().toString(),self.FAGames.serverPort()))
 
@@ -99,7 +99,6 @@ if __name__ == '__main__':
                 self.logger.error("Unable to start the server {}".format(self.FALobby.serverError()))
                 print("Unable to start the server {}".format(self.FALobby.serverError()))
                 raise Exception("Unable to start the lobby server")
-                return
             else:
                 self.logger.info ("starting the Lobby server on  %s:%i" % (self.FALobby.serverAddress().toString(),self.FALobby.serverPort()))
 
