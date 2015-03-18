@@ -23,7 +23,8 @@ import gc
 
 from PySide import QtCore, QtNetwork
 
-import lobbyserver
+from src import lobbyserver
+
 
 logger = logging.getLogger(__name__)
 

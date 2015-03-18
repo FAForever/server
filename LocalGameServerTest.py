@@ -3,9 +3,10 @@ import signal
 
 from PySide.QtNetwork import QHostAddress
 
-from FaGamesServer import FAServer
+from src.FaGamesServer import FAServer
 from config import Config
 from tests.conftest import players, player_service, games, game
+
 
 Config['global'] = dict()
 Config['global']['lobby_ip'] = '127.0.0.1'

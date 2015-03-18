@@ -17,7 +17,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
-
+import asyncio
 import sys
 import logging
 from logging import handlers
@@ -28,11 +28,12 @@ from PySide import QtSql, QtCore, QtNetwork
 from PySide.QtCore import QTimer
 
 from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
-from FaLobbyServer import FALobbyServer
-from FaGamesServer import *
+from src.FaLobbyServer import FALobbyServer
+from src.FaGamesServer import FAServer
 from src.players import *
 import games
 import config
+
 
 logger = logging.getLogger(__name__)
 

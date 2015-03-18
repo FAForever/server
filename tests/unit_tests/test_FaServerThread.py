@@ -2,8 +2,8 @@ from PySide import QtNetwork
 import pytest
 import mock
 
-from lobbyserver import FAServerThread, playersOnline
-from FaLobbyServer import FALobbyServer
+from src.lobbyserver import FAServerThread, playersOnline
+from src.FaLobbyServer import FALobbyServer
 import games
 
 

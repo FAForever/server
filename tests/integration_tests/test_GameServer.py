@@ -6,9 +6,8 @@ import time
 
 from PySide.QtNetwork import QHostAddress
 from mock import call
-import pytest
 
-from FaGamesServer import FAServer
+from src.FaGamesServer import FAServer
 from .testclient import TestGPGClient
 import config
 

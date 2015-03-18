@@ -1,10 +1,10 @@
 from unittest import mock
 
 import pytest
-from games.game import Game
 from PySide import QtSql
+
 from src.gameconnection import GameConnection
-from lobbyserver import FAServerThread
+from src.lobbyserver import FAServerThread
 
 
 @pytest.fixture()
