@@ -170,15 +170,12 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         Ping the relay server to check if the player is still there.
         """
         while True:
-            try:
-                if time.time() - self.last_pong > 30:
-                    self.log.debug("{} Missed ping - removing player {}"
-                                   .format(self.logGame, self._socket.peerAddress().toString()))
-                    self.abort()
-                self.send_Ping()
-                yield from asyncio.sleep(20)
-            except CancelledError:
-                return
+            if time.time() - self.last_pong > 30:
+                self.log.debug("{} Missed ping - removing player {}"
+                               .format(self.logGame, self._socket.peerAddress().toString()))
+                self.abort()
+            self.send_Ping()
+            yield from asyncio.sleep(20)
 
     def _handle_idle_state(self):
         """
