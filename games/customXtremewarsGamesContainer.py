@@ -27,12 +27,9 @@ class customXtremewarsGamesContainerClass(gamesContainerClass):
         super(customXtremewarsGamesContainerClass, self).__init__("xtremewars", "Xtreme Wars", db, parent)
 
     def addBasicGame(self, player, newgame, gamePort):
-        
-        
         playerLogin = player.getLogin()
         playerUuid = player.getId()
         playerState = player.getAction()
-        session = player.getSession()
         gameUuid = self.createUuid(playerUuid)
         
         if playerState == "PLAYING" :
@@ -41,15 +38,7 @@ class customXtremewarsGamesContainerClass(gamesContainerClass):
             return False
         elif playerState == "JOIN" :
             return False
-        
-        # check if the host is already hosting something.
-        for game in self.games:
-            if game.getLobbyState == 'open' :
-                if game.getHostName() == playerLogin :
-                    return False
-                if game.getHostId() == session :
-                    return False
-        
+
         ngame = xtremewarsGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)

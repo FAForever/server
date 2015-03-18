@@ -30,12 +30,9 @@ class customGamesContainerClass(gamesContainerClass):
         self.version = 10
 
     def addBasicGame(self, player, newgame, gamePort):
-        
         playerLogin = player.getLogin()
         playerUuid = player.getId()
         playerState = player.action
-        session = player.getSession()
-        
         gameUuid = self.createUuid(playerUuid)
 
         if playerState == "PLAYING":

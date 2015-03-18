@@ -87,12 +87,6 @@ class gamesContainerClass(object):
         
         return uuid
 
-    def checkGame(self, game):
-        ''' check if a game exists'''
-        if game in self.games :
-            return 1
-        return 0
-
     def findGameByUuid(self, uuid):
         '''Find a game by the uuid'''
         for game in self.games:
