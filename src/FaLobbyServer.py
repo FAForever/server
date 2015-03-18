@@ -24,6 +24,7 @@ import gc
 from PySide import QtCore, QtNetwork
 
 from src import lobbyserver
+from src.games_service import GamesService
 
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ def timed(f):
 
 
 class FALobbyServer(QtNetwork.QTcpServer):
-    def __init__(self, listUsers, games, db, parent=None):
+    def __init__(self, listUsers, games: GamesService, db, parent=None):
         super(FALobbyServer, self).__init__(parent)
         
         self.parent = parent
@@ -167,10 +168,10 @@ class FALobbyServer(QtNetwork.QTcpServer):
 
                     reply.append(json.dumps(jsonToSend))
                                        
-                self.games.dirty_games = []
+                self.games.clear_dirty()
 
-            for lobby in self.recorders:
-                    lobby.sendArray(reply)
+            for connection in self.recorders:
+                connection.sendArray(reply)
                     
     @timed
     def dump_garbage(self):
