@@ -27,12 +27,6 @@ class customCiviliansGamesContainerClass(gamesContainerClass):
     def __init__(self, db, parent = None):
         super(customCiviliansGamesContainerClass, self).__init__("civilians", "Civilians Defense", db, parent)
 
-        
-
-        self.betaPass = False
-
-        self.parent = parent
-
     def addBasicGame(self, player, newgame, gamePort):
         
         playerLogin = player.getLogin()

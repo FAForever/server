@@ -26,11 +26,6 @@ class customXtremewarsGamesContainerClass(gamesContainerClass):
     def __init__(self, db, parent = None):
         super(customXtremewarsGamesContainerClass, self).__init__("xtremewars", "Xtreme Wars", db, parent)
 
-        
-
-        self.betaPass = False
-        self.parent = parent
-
     def addBasicGame(self, player, newgame, gamePort):
         
         

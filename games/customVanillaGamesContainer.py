@@ -26,12 +26,6 @@ class customVanillaGamesContainerClass(gamesContainerClass):
     def __init__(self, db, parent = None):
         super(customVanillaGamesContainerClass, self).__init__("vanilla", "Vanilla", db, parent)
 
-        
-
-        self.betaPass = False
-
-        self.parent = parent
-
     def addBasicGame(self, player, newgame, gamePort):
         
         playerLogin = player.getLogin()

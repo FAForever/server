@@ -26,18 +26,6 @@ class claustrophobiaGamesContainerClass(gamesContainerClass):
     def __init__(self, db, parent = None):
         super(claustrophobiaGamesContainerClass, self).__init__("claustrophobia", "Claustrophobia", db, parent)
 
-        self.host = True
-        self.live = True
-        self.join = True
-
-        self.parent = parent
-        
-        self.listable = True
-     
-        
-        self.betaPass = False
-        self.parent = parent
-    
     def addBasicGame(self, player, newgame, gamePort):
         
         playerLogin = player.getLogin()

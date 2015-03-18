@@ -23,4 +23,3 @@ class diamondGame(Game):
 
     def __init__(self, uuid, parent = None):
         super(self.__class__, self).__init__(uuid, parent)
-

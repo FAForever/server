@@ -25,10 +25,6 @@ class customNomadsGamesContainerClass(gamesContainerClass):
 
     def __init__(self, db, parent = None):
         super(customNomadsGamesContainerClass, self).__init__("nomads", "The Nomads", db, parent)
-        
-
-        self.betaPass = True  
-        self.parent = parent
 
     def addBasicGame(self, player, newgame, gamePort):
         

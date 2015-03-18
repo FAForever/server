@@ -45,7 +45,8 @@ class gamesContainerClass(object):
         self.gameTypeName = gameTypeName
         self.gameNiceName = gameNiceName
         self.parent = parent
-        
+
+        # Determines if a game shows up in the "find games" list.
         self.listable = True
         self.betaPass = False
 

@@ -25,10 +25,6 @@ class customMurderPartyGamesContainerClass(gamesContainerClass):
 
     def __init__(self, db, parent = None):
         super(customMurderPartyGamesContainerClass, self).__init__("murderparty", "Murder Party", db, parent)
-        
-
-        self.parent = parent
-              
 
     def addBasicGame(self, player, newgame, gamePort):
               

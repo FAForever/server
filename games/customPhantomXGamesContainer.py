@@ -26,10 +26,6 @@ class customPhantomXGamesContainerClass(gamesContainerClass):
     def __init__(self, db, parent = None):
         super(customPhantomXGamesContainerClass, self).__init__("phantomx", "phantom-X", db, parent)
 
-        
-
-        self.parent = parent
-
     def addBasicGame(self, player, newgame, gamePort):
         
         playerLogin = player.getLogin()

@@ -26,11 +26,7 @@ class customBlackopsGamesContainerClass(gamesContainerClass):
     def __init__(self, db, parent = None):
         super(customBlackopsGamesContainerClass, self).__init__("blackops", "blackops", db, parent)
 
-        
-        
-        self.betaPass = False
         self.options = ["Unleashed", "ACUs"]
-        self.parent = parent
     
     def addBasicGame(self, player, newgame, gamePort):
         

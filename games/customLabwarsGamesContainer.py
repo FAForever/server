@@ -26,14 +26,6 @@ class customLabwarsGamesContainerClass(gamesContainerClass):
     def __init__(self, db, parent = None):
         super(customLabwarsGamesContainerClass, self).__init__("labwars", "LABwars", db, parent)
 
-        
-
-        self.betaPass = False
-        self.betaName = "labwars"
-
-        self.parent = parent
-              
-
     def addBasicGame(self, player, newgame, gamePort):
         
         playerLogin = player.getLogin()

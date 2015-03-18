@@ -26,13 +26,6 @@ class customDiamondGamesContainerClass(gamesContainerClass):
     def __init__(self, db, parent = None):
         super(customDiamondGamesContainerClass, self).__init__("diamond", "Diamond", db, parent)
 
-        
-
-        self.betaPass = False
-        self.betaName = "diamond"
-
-        self.parent = parent
-              
 
     def addBasicGame(self, player, newgame, gamePort):
         

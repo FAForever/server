@@ -26,11 +26,6 @@ class customKothGamesContainerClass(gamesContainerClass):
     def __init__(self, db, parent = None):
         super(customKothGamesContainerClass, self).__init__("koth", "King of the Hill" ,db, parent)
 
-        
-
-        self.betaPass = False
-        self.parent = parent
-
     def addBasicGame(self, player, newgame, gamePort):
         
         playerLogin = player.getLogin()
