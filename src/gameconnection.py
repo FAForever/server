@@ -278,58 +278,58 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     @asyncio.coroutine
     def ConnectToHost(self, peer):
         """
-        Connect self (host) to a given peer
+        Connect self to a given peer (host)
         :return:
         """
-        assert self.player.action == 'HOST'
-        states = [self.connectivity_state, peer.connectivity_state]
+        assert peer.player.action == 'HOST'
+        states = [peer.connectivity_state, self.connectivity_state]
         yield from asyncio.wait(states)
-        peer_state = peer.connectivity_state.result()
-        if self.connectivity_state.result() == Connectivity.PROXY or peer_state == Connectivity.PROXY:
+        peer_state = self.connectivity_state.result()
+        if peer.connectivity_state.result() == Connectivity.PROXY or peer_state == Connectivity.PROXY:
             # TODO: revise if this is the right thing to do
-            peer.send_JoinGame(self.player.address_and_port,
+            self.send_JoinGame(peer.player.address_and_port,
                                False,
-                               self.player.login,
-                               self.player.id)
-            self.ConnectThroughProxy(peer)
-        elif self.connectivity_state.result() == Connectivity.PUBLIC:
+                               peer.player.login,
+                               peer.player.id)
+            peer.ConnectThroughProxy(self)
+        elif peer.connectivity_state.result() == Connectivity.PUBLIC:
             if peer_state == Connectivity.PUBLIC:
-                peer.send_JoinGame(self.player.address_and_port,
+                self.send_JoinGame(peer.player.address_and_port,
                                    False,
-                                   self.player.login,
-                                   self.player.id)
-                self.send_ConnectToPeer(peer.player.address_and_port, peer.player.login, peer.player.id)
+                                   peer.player.login,
+                                   peer.player.id)
+                peer.send_ConnectToPeer(self.player.address_and_port, self.player.login, self.player.id)
             else:
-                with self.subscribe(self, ['ProcessNatPacket']) as sub:
-                    nat_message = "Hello {}".format(self.player.id)
-                    peer.send_SendNatPacket(self.player.address_and_port, nat_message)
+                with peer.subscribe(peer, ['ProcessNatPacket']) as sub:
+                    nat_message = "Hello {}".format(peer.player.id)
+                    self.send_SendNatPacket(peer.player.address_and_port, nat_message)
                     yield from sub.wait_for('ProcessNatPacket', 2)
-                    if nat_message in self.nat_packets \
-                            and self.nat_packets[nat_message] == peer.player.address_and_port:
-                        peer.send_JoinGame(self.player.address_and_port,
+                    if nat_message in peer.nat_packets \
+                            and peer.nat_packets[nat_message] == self.player.address_and_port:
+                        self.send_JoinGame(peer.player.address_and_port,
                                            False,
-                                           self.player.login,
-                                           self.player.id)
-                        self.send_ConnectToPeer(peer.player.address_and_port,
-                                                peer.player.login,
-                                                peer.player.id)
+                                           peer.player.login,
+                                           peer.player.id)
+                        peer.send_ConnectToPeer(self.player.address_and_port,
+                                                self.player.login,
+                                                self.player.id)
                     else:
                         # TODO: Fallback to proxying
                         pass
 
-        elif self.connectivity_state.result() == Connectivity.STUN:
+        elif peer.connectivity_state.result() == Connectivity.STUN:
             if peer_state == Connectivity.PUBLIC:
-                with peer.subscribe(self, ['ProcessNatPacket']) as sub:
-                    nat_message = "Hello {}".format(peer.player.id)
-                    self.send_SendNatPacket(peer.player.address_and_port, nat_message)
+                with self.subscribe(peer, ['ProcessNatPacket']) as sub:
+                    nat_message = "Hello {}".format(self.player.id)
+                    peer.send_SendNatPacket(self.player.address_and_port, nat_message)
                     yield from sub.wait_for('ProcessNatPacket', 2)
-                    if nat_message in self.nat_packets.keys() \
-                            and self.nat_packets[nat_message] == peer.player.address_and_port:
-                        peer.send_JoinGame(self.nat_packets[nat_message],
+                    if nat_message in peer.nat_packets.keys() \
+                            and peer.nat_packets[nat_message] == self.player.address_and_port:
+                        self.send_JoinGame(peer.nat_packets[nat_message],
                                            False,
-                                           self.player.login,
-                                           self.player.id)
-                        self.send_ConnectToPeer(peer.player.address_and_port, peer.player.login, peer.player.id)
+                                           peer.player.login,
+                                           peer.player.id)
+                        peer.send_ConnectToPeer(self.player.address_and_port, self.player.login, self.player.id)
                     else:
                         # Peer isn't receiving our packets, even though they're meant to
                         # TODO: Fallback to proxy connection

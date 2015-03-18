@@ -143,7 +143,7 @@ def test_ConnectToHost_public_public(connections, players):
     peer_conn = connections.make_connection(players.joining, Connectivity.PUBLIC)
     host_conn.send_ConnectToPeer = mock.Mock()
     peer_conn.send_JoinGame = mock.Mock()
-    yield from host_conn.ConnectToHost(peer_conn)
+    yield from peer_conn.ConnectToHost(host_conn)
     host_conn.send_ConnectToPeer.assert_called_with(peer_conn.player.address_and_port,
                                                     peer_conn.player.login,
                                                     peer_conn.player.id)
@@ -159,7 +159,7 @@ def test_ConnectToHost_public_stun(connections, players):
     host_conn.send_ConnectToPeer = mock.Mock()
     peer_conn.send_SendNatPacket = mock.Mock()
     peer_conn.send_JoinGame = mock.Mock()
-    result = asyncio.async(host_conn.ConnectToHost(peer_conn))
+    result = asyncio.async(peer_conn.ConnectToHost(host_conn))
     yield from asyncio.sleep(0.01)
     host_conn.notify({'command_id': 'ProcessNatPacket',
                       'arguments': [peer_conn.player.address_and_port,
@@ -182,7 +182,7 @@ def test_ConnectToHost_stun_public(connections, players):
     host_conn.send_ConnectToPeer = mock.Mock()
     host_conn.send_SendNatPacket = mock.Mock()
     peer_conn.send_JoinGame = mock.Mock()
-    result = asyncio.async(host_conn.ConnectToHost(peer_conn))
+    result = asyncio.async(peer_conn.ConnectToHost(host_conn))
     yield from asyncio.sleep(0.01)
     peer_conn.notify({'command_id': 'ProcessNatPacket',
                       'arguments': [peer_conn.player.address_and_port,
@@ -208,7 +208,7 @@ def test_ConnectToHost_public_proxy(connections, players):
     peer_conn.game = mock.Mock()
     host_conn.game.proxy = proxy.proxy()
     peer_conn.game.proxy = proxy.proxy()
-    result = asyncio.async(host_conn.ConnectToHost(peer_conn))
+    result = asyncio.async(peer_conn.ConnectToHost(host_conn))
     yield from result
     host_conn.send_ConnectToProxy.assert_called_with(0,
                                                      peer_conn.player.ip,
