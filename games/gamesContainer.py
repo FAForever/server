@@ -61,14 +61,6 @@ class gamesContainerClass(object):
     def reloadGameClass(self):
         pass
 
-    def setDesc(self, desc):
-        query = QtSql.QSqlQuery(self.db)
-        query.prepare("UPDATE game_featuredMods SET description = ? WHERE gamemod = ?")
-        query.addBindValue(desc)
-        query.addBindValue(self.gameTypeName)
-        query.exec_()  
-        self.desc = desc          
-
     def getOptions(self):
         return self.options
    

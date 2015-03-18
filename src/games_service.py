@@ -44,11 +44,6 @@ class GamesService(object):
 
     def clear_dirty(self):
         self._dirty_games = []
-        
-    def setContainerDescription(self, name, desc):
-        if name in self.gamesContainer :
-            self.gamesContainer[name].setDesc(desc)
-            return
 
     def addContainer(self, name, container):
         ''' add a game container class named <name>'''
