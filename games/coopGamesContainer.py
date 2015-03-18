@@ -29,7 +29,6 @@ class coopGamesContainerClass(gamesContainerClass):
         self.host = False
         self.join = False
         self.listable = False
-        self.version = 3
     
     def addBasicGame(self, player, newgame, gamePort):
         playerLogin = player.getLogin()

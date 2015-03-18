@@ -345,8 +345,7 @@ class matchmakerGamesContainerClass(gamesContainerClass):
     
     def __init__(self, db, parent = None):
         super(matchmakerGamesContainerClass, self).__init__("matchmaker", "Matchmaker" ,db, parent)
-        
-        self.version = 32
+
         self.manager = teamsManager(self)
         self.listable = False
         self.host = False

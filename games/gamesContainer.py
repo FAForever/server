@@ -37,9 +37,7 @@ class gamesContainerClass(object):
         self.join = True
         
         self.type = 0
-        
-        self.version = 1
-        
+
         self.desc = None
 
         self.gameTypeName = gameTypeName

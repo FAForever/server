@@ -31,8 +31,7 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
     
     def __init__(self, db, parent=None):
         super(ladder1v1GamesContainerClass, self).__init__("ladder1v1", "ladder 1 vs 1", db, parent)
-        
-        self.version = 21
+
         self.season = None
         self.players = []
         self.listable = False

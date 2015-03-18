@@ -27,7 +27,6 @@ class customGamesContainerClass(gamesContainerClass):
 
     def __init__(self, db, parent=None):
         super(customGamesContainerClass, self).__init__("faf", "Forged Alliance Forever" , db, parent)
-        self.version = 10
 
     def addBasicGame(self, player, newgame, gamePort):
         playerLogin = player.getLogin()
