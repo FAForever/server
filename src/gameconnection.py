@@ -17,19 +17,18 @@
 # -------------------------------------------------------------------------------
 
 import asyncio
-from concurrent.futures import CancelledError
 import string
 import time
 import json
 import logging
 
 from PySide import QtNetwork
-from PySide.QtCore import QTimer
 from PySide.QtNetwork import QTcpSocket, QAbstractSocket
 from PySide.QtSql import *
 
 from src.connectivity import TestPeer, Connectivity
 from games.game import GameState
+from src.decorators import with_logger, timed
 from src.protocol.gpgnet import GpgNetServerProtocol
 from src.subscribable import Subscribable
 from trueSkill.Rating import Rating
@@ -40,7 +39,6 @@ from trueSkill.Player import *
 logger = logging.getLogger(__name__)
 
 from proxy import proxy
-from functools import wraps
 from enum import Enum
 
 from src.JsonTransport import QDataStreamJsonTransport
@@ -49,20 +47,6 @@ from config import Config
 
 proxyServer = QtNetwork.QHostAddress("127.0.0.1")
 
-
-def timed(f, limit=0.2):
-    @wraps(f)
-    def wrapper(*args, **kwds):
-        start = time.time()
-        result = f(*args, **kwds)
-        elapsed = (time.time() - start)
-        if elapsed > limit:
-            logger.info("%s took %s s to finish" % (f.__name__, str(elapsed)))
-        return result
-
-    return wrapper
-
-
 class GameConnectionState(Enum):
     initializing = 0
     initialized = 1
@@ -70,6 +54,7 @@ class GameConnectionState(Enum):
     aborted = 3
 
 
+@with_logger
 class GameConnection(Subscribable, GpgNetServerProtocol):
     """
     Responsible for the games protocol.
@@ -268,6 +253,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         elif playeraction == "JOIN":
             yield from self.ConnectToHost(self.game.host.gameThread)
 
+    @timed(0.1)
     def handleAction2(self, action):
         """
         This code is starting to get messy...

@@ -6,7 +6,7 @@ from enum import Enum
 from PySide.QtNetwork import QUdpSocket, QHostAddress
 
 import config
-from .with_logger import with_logger
+from .decorators import with_logger
 
 
 logger = logging.getLogger(__name__)

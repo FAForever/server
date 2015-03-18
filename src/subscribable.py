@@ -1,6 +1,6 @@
 import asyncio
 
-from .with_logger import with_logger
+from .decorators import with_logger
 
 
 @with_logger

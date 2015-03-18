@@ -25,7 +25,7 @@ from PySide.QtNetwork import QTcpServer, QTcpSocket
 from src.gameconnection import GameConnection
 import config
 from src.natpacketserver import NatPacketServer
-from src.with_logger import with_logger
+from src.decorators import with_logger
 
 
 
