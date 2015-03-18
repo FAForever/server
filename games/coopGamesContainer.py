@@ -27,16 +27,9 @@ class coopGamesContainerClass(gamesContainerClass):
         super(coopGamesContainerClass, self).__init__("coop", "coop", db, parent)
 
         self.host = False
-        self.live = True
         self.join = False
-
-        self.parent = parent
-        
         self.listable = False
-     
         self.version = 3
-        self.betaPass = False
-        self.parent = parent
     
     def addBasicGame(self, player, newgame, gamePort):
         playerLogin = player.getLogin()
