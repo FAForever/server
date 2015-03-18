@@ -30,9 +30,7 @@ class GamesService(object):
         self.db = db
         
         self.log = logging.getLogger(__name__)
-        
-        self.log.debug("HyperGameContainer initialized")
-        
+
         if not self.db.isOpen():
             self.db.open()
         
