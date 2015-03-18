@@ -23,7 +23,7 @@ import gc
 
 from PySide import QtCore, QtNetwork
 
-from src import lobbyserver
+from src import lobbyconnection
 from src.decorators import with_logger, timed
 from src.games_service import GamesService
 
@@ -61,7 +61,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
     def incomingConnection(self, socket_id):
         socket = QtNetwork.QTcpSocket()
         if socket.setSocketDescriptor(socket_id):
-            self.recorders.append(lobbyserver.FAServerThread(socket, self))
+            self.recorders.append(lobbyconnection.LobbyConnection(socket, self))
         else:
             self._logger.warning("Failed to handover socket descriptor for incoming connection")
 

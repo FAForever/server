@@ -92,10 +92,10 @@ def timed(f):
     return wrapper
 
 
-class FAServerThread(QObject):
+class LobbyConnection(QObject):
     @timed
     def __init__(self, socket, parent=None):
-        super(FAServerThread, self).__init__(parent)
+        super(LobbyConnection, self).__init__(parent)
         self.parent = parent
 
         self.log = logging.getLogger(__name__)

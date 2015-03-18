@@ -3,7 +3,7 @@ import pytest
 import mock
 from src.games_service import GamesService
 
-from src.lobbyserver import FAServerThread, playersOnline
+from src.lobbyconnection import LobbyConnection, playersOnline
 from src.FaLobbyServer import FALobbyServer
 import games
 
@@ -40,7 +40,7 @@ def mock_lobby_server(db):
 def test_command_game_host_calls_host_game(connected_socket,
                                            mock_lobby_server,
                                            test_game_info):
-    server_thread = FAServerThread(connected_socket, mock_lobby_server)
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
     server_thread.player.getRating = mock.Mock(return_value=mock.Mock(
         getRating=mock.Mock(return_value=mock.Mock(
             getStandardDeviation=lambda: 500

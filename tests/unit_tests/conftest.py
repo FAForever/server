@@ -4,7 +4,7 @@ import pytest
 from PySide import QtSql
 
 from src.gameconnection import GameConnection
-from src.lobbyserver import FAServerThread
+from src.lobbyconnection import LobbyConnection
 
 
 @pytest.fixture()
@@ -40,7 +40,7 @@ def game_connection(game, loop, player_service, players, games, transport, conne
     conn.transport = transport
     conn.player = players.hosting
     conn.game = game
-    game_connection.lobby = mock.Mock(spec=FAServerThread)
+    game_connection.lobby = mock.Mock(spec=LobbyConnection)
     return conn
 
 
