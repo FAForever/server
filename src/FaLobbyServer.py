@@ -78,24 +78,23 @@ class FALobbyServer(QtNetwork.QTcpServer):
 
     @timed
     def jsonGame(self, game):
-        jsonToSend = {}
-        jsonToSend["command"] = "game_info"
-        jsonToSend["access"] = game.getAccess()
-        jsonToSend["uid"] = game.getuuid()
-        jsonToSend["title"] = game.getGameName()
-        jsonToSend["state"] = game.getLobbyState()
-        jsonToSend["featured_mod"] = game.getGamemod()
-        jsonToSend["featured_mod_versions"] = game.getGamemodVersion()
-        
-        jsonToSend["sim_mods"] = game.getSimMods()
-        jsonToSend["mapname"] = game.getMapName().lower()
-        jsonToSend["host"] = game.getHostName()
-        jsonToSend["num_players"] = game.getNumPlayer()
-        jsonToSend["game_type"] = game.getGameType()
-        jsonToSend["game_time"] = game.created_at
-        jsonToSend["options"] = game.getOptions()
-        jsonToSend["max_players"] = game.getMaxPlayers()
-
+        jsonToSend = {
+            "command": "game_info",
+            "access": game.getAccess(),
+            "uid": game.getuuid(),
+            "title": game.getGameName(),
+            "state": game.getLobbyState(),
+            "featured_mod": game.getGamemod(),
+            "featured_mod_versions": game.getGamemodVersion(),
+            "sim_mods": game.getSimMods(),
+            "mapname": game.getMapName().lower(),
+            "host": game.getHostName(),
+            "num_players": game.getNumPlayer(),
+            "game_type": game.getGameType(),
+            "game_time": game.created_at,
+            "options": game.getOptions(),
+            "max_players": game.getMaxPlayers()
+        }
 
         teams = game.getTeamsAssignements()
 

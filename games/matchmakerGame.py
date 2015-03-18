@@ -40,12 +40,10 @@ class matchmakerGame(Game):
         self.team1 = []
         self.team2 = []
 
-    def specialInit(self, player):          
-        #print "custom special init"
+    def specialInit(self, player):
         trueskill = player.getRating()
         trueSkillCopy = deepcopy(trueskill)
         self.addTrueSkillPlayer(trueSkillCopy)
-        #print "custom special init done"
 
     def addPlayerToJoin(self, player):
         if not player in self.playerToJoin : 
@@ -88,30 +86,27 @@ class matchmakerGame(Game):
                     
                     p.setWantGame(True)
 
-                    json = {}
-                    json["command"] = "game_launch"
-                    json["mod"] = self.parent.gameTypeName
-                    json["reason"] = "ranked"
-                    json["uid"] = self.uuid
-                    json["mapname"] = mapname
-    
+                    json = {
+                        "command": "game_launch",
+                        "mod": self.parent.gameTypeName,
+                        "reason": "ranked",
+                        "uid": self.uuid,
+                        "mapname": mapname,
+                        "args": [
+                            "/players %i" % self.numPlayers,
+                            "/team %i" % team,
+                            "/StartSpot %i" % place,
+                            "/%s" % FACTIONS[p.getFaction()]
+                        ]
+                    }
+
                     self.log.debug("Host is %s" % player.getLogin() )
                     self.log.debug("launching FA for %s, place %i" % (p.getLogin(),place) )
-                    
-                       
-                    json["args"] = ["/players %i" % self.numPlayers, "/team %i" % team, "/StartSpot %i" % place, "/%s" % FACTIONS[p.getFaction()]]
+
                     p.getLobbyThread().sendJSON(json)
-                    
-              
-            
         except :
             self.log.exception("Something awful happened when launching a matchmaker game !")
 
-
-
-
-
-        
     def specialEnding(self, logger, db, players):
         
         timeLimit = len(self.trueSkillPlayers) * 60
@@ -123,8 +118,3 @@ class matchmakerGame(Game):
             tsresults = self.computeResults()
             tsplayers = self.getTrueSkillPlayers()
             self.trueSkillUpdate(tsresults, tsplayers, logger, db, players, sendScore = False)
-#        else :
-#            tsplayers = self.getTrueSkillPlayers()
-#            for playerTS in tsplayers : 
-#                name = playerTS.getPlayer()
-#                self.sendMessageToPlayers(players, name, self.getInvalidReason())

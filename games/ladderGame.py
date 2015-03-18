@@ -75,15 +75,16 @@ class ladder1V1Game(Game):
             
             map = str(self.getMapName())
             
-            json = {}
-            json["command"] = "game_launch"
-            json["mod"] = self.parent.gameTypeName
-            json["reason"] = "ranked"
-            json["uid"] = self.uuid
-            json["mapname"] = map
-            json["args"] = ["/players 2", "/team 2"]
+            json = {
+                "command": "game_launch",
+                "mod": self.parent.gameTypeName,
+                "reason": "ranked",
+                "uid": self.uuid,
+                "mapname": map,
+                "args": ["/players 2", "/team 2"]
+            }
             playerToJoin.getLobbyThread().sendJSON(json)
-               
+
             #playerToJoin.getLobbyThread().sendReply("LADDER_START", player.getLogin(), int(2))
             self.assignPlayerToTeam(player.getLogin(), 1)
             

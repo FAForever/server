@@ -89,17 +89,17 @@ class GamesService(object):
                 for game in self.gamesContainer[container].getGames() :
                     if game.getLobbyState() == "open" :
                         
-                        json = {}
-                        json["command"] = "game_info"
-                        json["uid"] = game.getuuid()
-                        json["title"] = game.getGameName()
-                        json["state"] = game.getLobbyState()
-                        json["featured_mod"]= game.getGamemod()
-                        json["mapname"] = game.getMapName().lower()
-                        json["host"] = game.getHostName()
-                        json["num_players"] = game.getNumPlayer()
-                        json["game_type"] = game.getGameType()
-    
+                        json = {
+                            "command": "game_info",
+                            "uid": game.getuuid(),
+                            "title": game.getGameName(),
+                            "state": game.getLobbyState(),
+                            "featured_mod": game.getGamemod(),
+                            "mapname": game.getMapName().lower(),
+                            "host": game.getHostName(),
+                            "num_players": game.getNumPlayer(),
+                            "game_type": game.getGameType()
+                        }
 
                         teams = game.getTeamsAssignements()
     
