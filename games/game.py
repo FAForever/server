@@ -137,6 +137,10 @@ class Game(object):
         elif self.state == GameState.LOBBY:
             return list(self._connections.keys())
 
+    @property
+    def id(self):
+        return self.uuid
+
     def add_game_connection(self, game_connection):
         """
         Add a game connection to this game

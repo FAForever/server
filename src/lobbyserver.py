@@ -361,7 +361,7 @@ class FAServerThread(QObject):
 
         jsonToSend = {}
 
-        game = self.parent.games.addGame(access, mod, self.player, gameName, gamePort, map, password)
+        game = self.parent.games.create_game(access, mod, self.player, gameName, gamePort, map, password)
         if game:
             uuid = game.getuuid()
 
@@ -1179,13 +1179,6 @@ Thanks,\n\
             return
 
         if self.parent.teams.addInSquad(leader, self.player.getLogin()):
-            # if self.parent.cleanGames(leader):
-            #     for conn in self.parent.recorders:
-            #         if conn.uid == leader:
-            #             conn.sendJSON(dict(command="notice", style="info", text="Someone joined your team. Your current attacks are cancelled."))
-            #             break                 
-
-            #first clean the games
 
             # success, we can inform all the squad members
             members = self.parent.teams.getAllMembers(leader)

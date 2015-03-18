@@ -77,21 +77,21 @@ class GamesService(object):
                 self.gamesContainer[container].removePlayer(player)
         
 
-    def addGame(self, access, name, player, gameName, gamePort, mapname, password = None):
+    def create_game(self, access, name, player, gameName, gamePort, mapname, password=None):
         container = self.getContainer(name)
-        if container is not None:
+        if container:
             game = container.addBasicGame(player, gameName, gamePort)
-            if game is not None:
+            if game:
                 game.setGameMap(mapname)
                 game.setAccess(access)
-                if password != None :
+                if password is not None:
                     game.setPassword(password)
-                
+                self.mark_dirty(game.id)
                 return game
         return None
 
     def mark_dirty(self, game_id):
-        pass
+        self._dirty_games.append(game_id)
 
     def sendGamesList(self):
         games = []
