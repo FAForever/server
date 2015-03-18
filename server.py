@@ -75,8 +75,8 @@ if __name__ == '__main__':
             self.dirtyGameList = []
             self.games = GamesService(self.players_online, self.db)
 
-            self.FALobby = FALobbyServer(self.players_online, self.games, self.db, self.dirtyGameList, self)
-            self.FAGames = FAServer(loop, self.players_online, self.games, self.db, self.dirtyGameList, self)
+            self.FALobby = FALobbyServer(self.players_online, self.games, self.db, self)
+            self.FAGames = FAServer(loop, self.players_online, self.games, self.db, self)
 
             # Make sure we can shutdown gracefully
             signal.signal(signal.SIGTERM, self.signal_handler)

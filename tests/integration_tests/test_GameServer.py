@@ -6,6 +6,7 @@ import time
 
 from PySide.QtNetwork import QHostAddress
 from mock import call
+import pytest
 
 from src.FaGamesServer import FAServer
 from .testclient import TestGPGClient
@@ -25,14 +26,14 @@ def wait_call(mock, call, timeout=0.5):
 @coroutine
 def run_server(address, loop, player_service, games):
     try:
-        with FAServer(loop, player_service, games, [], []) as server:
-            server.run(QHostAddress(address))
+        with FAServer(loop, player_service, games, []) as server:
+            if not server.run(QHostAddress(address)):
+                pytest.fail('Failure running FAServer')
             yield from asyncio.wait_for(server.done, 2)
             server.close()
     except (CancelledError, TimeoutError) as e:
         pass
 
-#@pytest.mark.skipif(True, reason='Run these slow tests manually as needed')
 @asyncio.coroutine
 def test_public_host(loop, qtbot, players, player_service, games):
     player = players.hosting
@@ -53,7 +54,6 @@ def test_public_host(loop, qtbot, players, player_service, games):
     server.cancel()
 
 
-#@pytest.mark.skipif(True, reason='Run these slow tests manually as needed')
 @asyncio.coroutine
 def test_stun_host(loop, qtbot, players, player_service, games):
     player = players.hosting

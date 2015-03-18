@@ -16,23 +16,19 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 import asyncio
-from asyncio.base_events import BaseEventLoop
-import socket
 
-from PySide.QtCore import QObject, Signal, Slot
 from PySide.QtNetwork import QTcpServer, QTcpSocket
 
 from src.gameconnection import GameConnection
 import config
+from src.games_service import GamesService
 from src.natpacketserver import NatPacketServer
 from src.decorators import with_logger
 
 
-
-
 @with_logger
 class FAServer(QTcpServer):
-    def __init__(self, loop, listUsers, Games, db, dirtyGameList, parent=None):
+    def __init__(self, loop, listUsers, games: GamesService, db, parent=None):
         QTcpServer.__init__(self, parent)
         self.loop = loop
         self.sockets = {}
@@ -40,9 +36,8 @@ class FAServer(QTcpServer):
         self.nat_packet_server = NatPacketServer(loop, config.LOBBY_UDP_PORT)
         self.nat_packet_server.subscribe(self, ['ProcessServerNatPacket'])
         self.newConnection.connect(self._on_new_connection)
-        self.dirtyGameList = dirtyGameList
         self.listUsers = listUsers
-        self.games = Games
+        self.games = games
         self.db = db
         self.done = asyncio.Future()
         self.connections = []
@@ -98,8 +93,3 @@ class FAServer(QTcpServer):
         if recorder in self.connections:
             self.connections.remove(recorder)
             recorder.deleteLater()
-
-    def addDirtyGame(self, game):
-        if not game in self.dirtyGameList:
-            self.dirtyGameList.append(game)
-
