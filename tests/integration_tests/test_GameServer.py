@@ -25,14 +25,10 @@ def wait_call(mock, call, timeout=0.5):
 
 @coroutine
 def run_server(address, loop, player_service, games):
-    try:
-        with FAServer(loop, player_service, games, []) as server:
-            if not server.run(QHostAddress(address)):
-                pytest.fail('Failure running FAServer')
-            yield from asyncio.wait_for(server.done, 2)
-            server.close()
-    except (CancelledError, TimeoutError) as e:
-        pass
+    with FAServer(loop, player_service, games, []) as server:
+        if not server.run(QHostAddress(address)):
+            pytest.fail('Failure running FAServer')
+        yield from asyncio.wait_for(server.done, 2)
 
 @asyncio.coroutine
 def test_public_host(loop, qtbot, players, player_service, games):
