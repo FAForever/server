@@ -61,26 +61,8 @@ class gamesContainerClass(object):
     def reloadGameClass(self):
         pass
 
-    def getOptions(self):
-        return self.options
-   
-    def getJoin(self):
-        return self.join
-
-    def getHost(self):
-        return self.host
-    
-    def getLive(self):
-        return self.live
-
-    def getDesc(self):
-        return self.desc        
-        
-    def getGameTypeName(self):
-        return self.gameTypeName 
-
     def getGamemodVersion(self):
-        tableMod = "updates_" + self.getGameTypeName()
+        tableMod = "updates_" + self.gameTypeName
         tableModFiles = tableMod + "_files"
         value = {}
         query = QtSql.QSqlQuery(self.db)
@@ -91,10 +73,6 @@ class gamesContainerClass(object):
                 value[int(query.value(0))] = int(query.value(1)) 
         
         return value
-        
-
-    def getGameNiceName(self):
-        return self.gameNiceName 
 
     def renameMod(self, name):
         self.log.debug("renaming %s to %s" % (self.gameTypeName, name))
@@ -108,16 +86,7 @@ class gamesContainerClass(object):
         
         
         return uuid
-    
-    def getType(self):
-        return self.gameTypeName 
-    
-    def isListable(self):
-        return self.listable
-    
-    def getGames(self):
-        return self.games
-    
+
     def checkGame(self, game):
         ''' check if a game exists'''
         if game in self.games :

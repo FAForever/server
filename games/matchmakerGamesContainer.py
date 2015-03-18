@@ -404,7 +404,7 @@ class matchmakerGamesContainerClass(gamesContainerClass):
             return
 
         #first clean old games that didnt start.
-        for game in self.getGames() :
+        for game in self.games :
             if game.getLobbyState() == 'Idle' :
                 for player in game.getPlayers() :
                     for p in players1 + players2:

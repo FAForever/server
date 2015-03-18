@@ -92,7 +92,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
             "num_players": game.getNumPlayer(),
             "game_type": game.getGameType(),
             "game_time": game.created_at,
-            "options": game.getOptions(),
+            "options": game.options,
             "max_players": game.getMaxPlayers()
         }
 

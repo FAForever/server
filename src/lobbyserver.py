@@ -314,7 +314,7 @@ class FAServerThread(QObject):
                 return
 
             container = self.parent.games.getGameContainer(game)
-            mod = container.getGameTypeName().lower()
+            mod = container.gameTypeName.lower()
 
             if self.player is not None:
                 self.player.setAction("JOIN")
@@ -328,11 +328,11 @@ class FAServerThread(QObject):
             jsonToSend = {"command": "game_launch", "mod": mod, "uid": uuid}
             if len(game.getSimMods()) > 0:
                 jsonToSend["sim_mods"] = game.getSimMods()
-            if len(game.getOptions()) != 0:
+            if len(game.options) != 0:
                 jsonToSend["options"] = []
-                numOptions = len(container.getOptions())
-                if numOptions == len(game.getOptions()):
-                    jsonToSend["options"] = game.getOptions()
+                numOptions = len(container.options)
+                if numOptions == len(game.options):
+                    jsonToSend["options"] = game.options
                 else:
                     for i in range(numOptions):
                         jsonToSend["options"].append(True)
@@ -380,7 +380,7 @@ class FAServerThread(QObject):
             if len(options) != 0:
                 game.options = options
                 jsonToSend["options"] = []
-                numOptions = len(self.parent.games.getGameContainer(game).getOptions())
+                numOptions = len(self.parent.games.getGameContainer(game).options)
                 if numOptions == len(options):
                     jsonToSend["options"] = options
                 else:
@@ -979,14 +979,14 @@ Thanks,\n\
 
             jsonToSend = {
                 "command": "mod_info",
-                "name": container.getGameTypeName(),
-                "fullname": container.getGameNiceName(),
+                "name": container.gameTypeName,
+                "fullname": container.gameNiceName,
                 "icon": None,
-                "host": container.getHost(),
-                "join": container.getJoin(),
-                "live": container.getLive(),
-                "desc": container.getDesc(),
-                "options": container.getOptions()
+                "host": container.host,
+                "join": container.join,
+                "live": container.live,
+                "desc": container.desc,
+                "options": container.options
             }
 
             reply.append(self.prepareBigJSON(jsonToSend))
@@ -1011,11 +1011,10 @@ Thanks,\n\
 
         reply = QByteArray()
 
-        for container in self.parent.games.gamesContainer:
-            self.log.debug("sending games of container " + self.parent.games.gamesContainer[container].gameNiceName)
-            if self.parent.games.gamesContainer[container].isListable() == True or self.parent.games.gamesContainer[
-                container].getLive() == True:
-                for game in self.parent.games.gamesContainer[container].getGames():
+        for key, container in self.parent.games.gamesContainer:
+            self.log.debug("sending games of container " + container.gameNiceName)
+            if container.listable == True or container.live == True:
+                for game in container.games:
 
                     if game.getLobbyState() == "open" or game.getLobbyState() == "playing":
                         reply.append(self.prepareBigJSON(self.parent.jsonGame(game)))

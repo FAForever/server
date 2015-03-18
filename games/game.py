@@ -206,7 +206,7 @@ class Game(object):
             self.gameType = 3
 
     def getGamemod(self):
-        return self.parent.getGameTypeName()
+        return self.parent.gameTypeName
 
     def addAI(self, name):
         self.AIs.append(name)

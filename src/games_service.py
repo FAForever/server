@@ -82,11 +82,11 @@ class GamesService(object):
 
     def sendGamesList(self):
         games = []
-        for container in self.gamesContainer :
+        for key, container in self.gamesContainer :
             
-            if self.gamesContainer[container].isListable() == True :
+            if container.listable == True :
 
-                for game in self.gamesContainer[container].getGames() :
+                for game in container.games :
                     if game.getLobbyState() == "open" :
                         
                         json = {
