@@ -96,7 +96,8 @@ class tournamentServer(QtNetwork.QTcpServer):
                                 if query.size() == 1 :
                                     query.first() 
                                     fafuid = int(query.value(0))
-                            
+
+                            name = p["name"]
                             self.logger.debug("player %s was not found", name)
                             query.prepare("SELECT login FROM login WHERE id =  ?")
                             query.addBindValue(fafuid)

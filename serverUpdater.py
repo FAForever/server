@@ -54,7 +54,7 @@ class start(QObject):
             self.logger = logging.getLogger(__name__)
 
             self.logger.info("Update server starting")
-            self.db = QtSql.QSqlDatabase.addDatabase(QSqlDatabase("QMYSQL"))
+            self.db = QtSql.QSqlDatabase.addDatabase("QMYSQL")
             self.db.setHostName(DB_SERVER)
             self.db.setPort(DB_PORT)
 
