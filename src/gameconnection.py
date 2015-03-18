@@ -32,10 +32,6 @@ from games.game import GameState
 from src.decorators import with_logger, timed
 from src.protocol.gpgnet import GpgNetServerProtocol
 from src.subscribable import Subscribable
-from trueSkill.Rating import Rating
-from trueSkill.faPlayer import *
-from trueSkill.Player import *
-
 
 logger = logging.getLogger(__name__)
 

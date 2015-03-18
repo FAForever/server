@@ -23,7 +23,6 @@ import random
 from PySide.QtSql import QSqlQuery
 
 from .gamesContainer import  gamesContainerClass
-from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
 from games.ladderGame import ladder1V1Game
 
 

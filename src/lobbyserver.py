@@ -41,9 +41,6 @@ from PySide import QtNetwork
 from PySide.QtSql import QSqlQuery
 import pygeoip
 
-from trueSkill.faPlayer import *
-from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
-from trueSkill.GameInfo import *
 from src.players import *
 from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS
 from config import Config

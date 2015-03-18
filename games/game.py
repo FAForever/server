@@ -23,10 +23,6 @@ import time
 
 from PySide.QtSql import QSqlQuery
 from src.abc.game import GameConnectionState
-from trueSkill.GameInfo import GameInfo
-
-from trueSkill.Team import *
-from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
 
 
 class GameState(Enum):
