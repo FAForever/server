@@ -374,12 +374,3 @@ class playersOnline(object):
         for player in self.players:
                 return 1
         return 0
-               
-   
-    def list(self):
-        pass
-        # for player in self.players:
-            # print ("uuid : " + str(player.uuid))
-            # print ("login :" + player.login)
-            # print ("ip : " + player.ip)
-            # print ("game port : " + str(player.gamePort))
