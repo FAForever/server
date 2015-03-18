@@ -35,11 +35,11 @@ class customGamesContainerClass(gamesContainerClass):
         
         playerLogin = player.getLogin()
         playerUuid = player.getId()
-        playerState = player.getAction()
+        playerState = player.action
         session = player.getSession()
         
         gameUuid = self.createUuid(playerUuid)
-        
+
         if playerState == "PLAYING":
             return False
         elif playerState == "HOST":

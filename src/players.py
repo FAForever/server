@@ -20,9 +20,10 @@
 class Player(object):
     def __init__(self, login=None):
         
+        self._action = ''
         self.uuid = 0
         self.session = 0
-        self._login = ''
+        self._login = login
         self._ip = ''
         self.localIp = ''
       
@@ -219,7 +220,7 @@ class Player(object):
         return 1
     
     def setLogin(self, login):
-        self.login = str(login)
+        self._login = str(login)
     
     def setGame(self, gameName):
         if gameName == '' :
@@ -227,11 +228,6 @@ class Player(object):
         self.game = gameName
         return 1
 
-    def setAction(self, action):
-        if action == '' :
-            return 0
-        self.action = action
-        return 1
 
     def getGamePort(self):
         return self.gamePort
@@ -241,9 +237,23 @@ class Player(object):
     
     def getGame(self):
         return str(self.game)
+
+    @property
+    def action(self):
+        return self._action
+
+    @action.setter
+    def action(self, value):
+        self._action = value
     
     def getAction(self):
-        return str(self.action)
+        return str(self._action)
+
+    def setAction(self, action):
+        if action == '' :
+            return 0
+        self._action = action
+        return 1
 
     def getAddress(self):
         return "%s:%s" % (str(self.getIp()), str(self.getGamePort()))
@@ -276,7 +286,7 @@ class Player(object):
 
     @property
     def login(self):
-        return self.getLogin()
+        return self._login
 
     @property
     def game_port(self):
@@ -285,6 +295,11 @@ class Player(object):
     @property
     def address_and_port(self):
         return "{}:{}".format(self.ip, self.game_port)
+
+    @login.setter
+    def login(self, value):
+        self._login = value
+
 
 class playersOnline(object):
     def __init__(self):
