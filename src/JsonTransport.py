@@ -16,8 +16,11 @@ class Transport(QObject):
         self.logger = logging.getLogger(__name__)
 
     def _on_message(self, msg):
-        self.logger.debug("<< %r" % msg)
-        self.messageReceived.emit(msg)
+        if msg != '':
+            self.logger.debug("<< %r" % msg)
+            self.messageReceived.emit(msg)
+        else:
+            self.logger.debug("Transport ignoring empty message")
 
     def _onWriteFailed(self):
         self.logger.warn("Write failed")
