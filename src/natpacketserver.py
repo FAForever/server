@@ -23,8 +23,11 @@ class NatPacketServer(Subscribable):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.loop.remove_reader(self._recv)
-        self._socket.shutdown(socket.SHUT_RDWR)
-        self._socket.close()
+        try:
+            self._socket.shutdown(socket.SHUT_RDWR)
+            self._socket.close()
+        except OSError:
+            pass
 
     def _recv(self):
         try:
