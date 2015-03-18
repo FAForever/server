@@ -85,13 +85,6 @@ class FAServer(QTcpServer):
         for connection in self.connections:
             connection.notify(dict(command_id='ProcessServerNatPacket', arguments=arguments))
 
-    @Slot(str, str, int)
-    def _on_nat_packet(self, data, host, port):
-        self._logger.debug("NAT PACKET: {} {} {}".format(data, host, port))
-        for connection in self.connections:
-            self._logger.debug("Propagating to {}".format(id(connection)))
-            connection.handle_ProcessServerNatPacket(data, host, port)
-
     def _on_new_connection(self):
         self._logger.debug("New connection")
         if self.hasPendingConnections():
