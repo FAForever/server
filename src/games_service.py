@@ -62,14 +62,6 @@ class GamesService(object):
             return True
         return False        
 
-    def renameContainer(self, fromname, toname):
-        if fromname in self.gamesContainer :
-            if not toname in self.gamesContainer :
-                self.gamesContainer[fromname].renameMod(toname)
-                self.gamesContainer[toname] = self.gamesContainer[fromname]
-                del self.gamesContainer[fromname]
-
-
     def removePlayer(self, player):
         for container in self.gamesContainer :
            
