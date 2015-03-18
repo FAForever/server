@@ -19,6 +19,7 @@ def test_timed_fun():
     assert something() == "Somevalue"
     logger.info.assert_any_call(mock.ANY)
 
+
 def test_timed_method():
     logger = mock.Mock()
 
@@ -28,3 +29,9 @@ def test_timed_method():
             return "Somevalue"
     assert testClass().something() == "Somevalue"
     logger.info.assert_any_call(mock.ANY)
+
+def test_timed_wraps_right():
+    @timed()
+    def somefun():
+        return 'test'
+    assert somefun.__name__ == 'somefun'
