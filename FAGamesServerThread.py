@@ -310,7 +310,7 @@ class FAGameThread(QObject):
             return
 
         if self.forcedJoin :
-            if now - self.forcedJoin > 5 :
+            if now - self.forcedJoin > 10 :
                 self.game.log.debug("%s going to join through proxy" % (self.player.getLogin()))
                 self.joinThroughProxy()
         
