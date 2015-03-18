@@ -65,18 +65,18 @@ class FALobbyServer(QtNetwork.QTcpServer):
         else:
             self._logger.warning("Failed to handover socket descriptor for incoming connection")
 
-    @timed
+    @timed()
     def removeRecorder(self, recorder):
         if recorder in self.recorders:
             self.recorders.remove(recorder)
             recorder.deleteLater()
 
-    @timed
+    @timed()
     def addDirtyGame(self, game):
         if not game in self.dirtyGameList : 
             self.dirtyGameList.append(game)
 
-    @timed
+    @timed()
     def jsonGame(self, game):
         jsonToSend = {
             "command": "game_info",
