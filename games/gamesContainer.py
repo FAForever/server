@@ -48,7 +48,6 @@ class gamesContainerClass(object):
 
         # Determines if a game shows up in the "find games" list.
         self.listable = True
-        self.betaPass = False
 
         self.options = []
 
@@ -124,9 +123,6 @@ class gamesContainerClass(object):
         if game in self.games :
             return 1
         return 0
-
-    def isPrivateBeta(self):
-        return self.betaPass
 
     def findGameByUuid(self, uuid):
         '''Find a game by the uuid'''

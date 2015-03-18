@@ -129,9 +129,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
         
                 game = self.parent.games.getGameByUuid(uid)
                 if game is not None:
-                    container = self.parent.games.getGameContainer(game)
-                    if container.isListable() or not container.isPrivateBeta():
-                        reply.append(self.prepareBigJSON(self.jsonGame(game)))
+                    reply.append(self.prepareBigJSON(self.jsonGame(game)))
                 else:
                     # If no game was found, send a bogus object to ensure client state updates
                     jsonToSend = {"command": "game_info",

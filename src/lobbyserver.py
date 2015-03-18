@@ -977,15 +977,19 @@ Thanks,\n\
 
             container = self.parent.games.gamesContainer[containerName]
 
-            if container.isListable() == True or container.isPrivateBeta() == False or getattr(self.player,
-                                                                                               container.getGameTypeName(),
-                                                                                               False):
-                jsonToSend = {"command": "mod_info", "name": container.getGameTypeName(),
-                              "fullname": container.getGameNiceName(), "icon": None, "host": container.getHost(),
-                              "join": container.getJoin(), "live": container.getLive(), "desc": container.getDesc(),
-                              "options": container.getOptions()}
+            jsonToSend = {
+                "command": "mod_info",
+                "name": container.getGameTypeName(),
+                "fullname": container.getGameNiceName(),
+                "icon": None,
+                "host": container.getHost(),
+                "join": container.getJoin(),
+                "live": container.getLive(),
+                "desc": container.getDesc(),
+                "options": container.getOptions()
+            }
 
-                reply.append(self.prepareBigJSON(jsonToSend))
+            reply.append(self.prepareBigJSON(jsonToSend))
 
         self.sendArray(reply)
 
