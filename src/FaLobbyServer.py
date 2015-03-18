@@ -24,6 +24,7 @@ import gc
 from PySide import QtCore, QtNetwork
 
 from src import lobbyserver
+from src.decorators import with_logger, timed
 from src.games_service import GamesService
 
 
@@ -31,29 +32,13 @@ logger = logging.getLogger(__name__)
 
 import teams
 
-from functools import wraps
-
-
-def timed(f):
-  @wraps(f)
-  def wrapper(*args, **kwds):
-    start = time.time()
-    result = f(*args, **kwds)
-    elapsed = time.time() - start
-    if elapsed > 1 :
-        logger.info("%s took %s time to finish" % (f.__name__, str(elapsed)))
-    return result
-  return wrapper
-
-
+@with_logger
 class FALobbyServer(QtNetwork.QTcpServer):
     def __init__(self, listUsers, games: GamesService, db, parent=None):
         super(FALobbyServer, self).__init__(parent)
         
         self.parent = parent
-        self.logger = logging.getLogger(__name__)
-        self.logger.debug("Starting lobby server")
-        self.logger.propagate = True
+        self._logger.debug("Starting lobby server")
 
         self.teams = teams.Teams(self)
 
@@ -78,7 +63,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
         if socket.setSocketDescriptor(socket_id):
             self.recorders.append(lobbyserver.FAServerThread(socket, self))
         else:
-            self.logger.warning("Failed to handover socket descriptor for incoming connection")
+            self._logger.warning("Failed to handover socket descriptor for incoming connection")
 
     @timed
     def removeRecorder(self, recorder):
@@ -132,7 +117,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
     @timed
     def dirtyGameCheck(self):
         if time.time() - self.lastDirty > 5.2 and self.skippedDirty < 2:
-            self.logger.debug("skipping")
+            self._logger.debug("Not checking for dirty games")
             self.lastDirty = time.time()
             self.skippedDirty += 1
         
