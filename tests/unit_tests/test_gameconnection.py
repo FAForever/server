@@ -204,10 +204,7 @@ def test_ConnectToHost_public_proxy(connections, players):
     peer_conn = connections.make_connection(players.joining, Connectivity.PROXY)
     host_conn.send_ConnectToProxy = mock.Mock()
     peer_conn.send_ConnectToProxy = mock.Mock()
-    host_conn.game = mock.Mock()
-    peer_conn.game = mock.Mock()
     host_conn.game.proxy = proxy.proxy()
-    peer_conn.game.proxy = proxy.proxy()
     result = asyncio.async(peer_conn.ConnectToHost(host_conn))
     yield from result
     host_conn.send_ConnectToProxy.assert_called_with(0,

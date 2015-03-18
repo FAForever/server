@@ -1,8 +1,8 @@
 from unittest import mock
 
 import pytest
+from games.game import Game
 from PySide import QtSql
-
 from src.gameconnection import GameConnection
 from lobbyserver import FAServerThread
 
@@ -27,14 +27,14 @@ def lobbythread():
 
 @pytest.fixture()
 def db(sqlquery):
-    db = QtSql.QSqlDatabase()  # mock.MagicMock(spec=QtSql.QSqlDatabase)
+    # Since PySide does strict type checking, we cannot mock this directly
+    db = QtSql.QSqlDatabase()
     db.exec_ = lambda q: sqlquery
     db.isOpen = mock.Mock(return_value=True)
     return db
 
-
 @pytest.fixture
-def game_connection(game, loop, player_service, players, games, transport, monkeypatch, connected_game_socket):
+def game_connection(game, loop, player_service, players, games, transport, connected_game_socket):
     conn = GameConnection(loop=loop, users=player_service, games=games, db=None, server=None)
     conn._socket = connected_game_socket
     conn.transport = transport
@@ -45,10 +45,11 @@ def game_connection(game, loop, player_service, players, games, transport, monke
 
 
 @pytest.fixture
-def connections(loop, player_service, players, games, transport, connected_game_socket, game_connection):
+def connections(loop, player_service, games, transport, game):
     def make_connection(player, connectivity):
         conn = GameConnection(loop=loop, users=player_service, games=games, db=None, server=None)
         conn.player = player
+        conn.game = game
         conn.transport = transport
         conn.connectivity_state.set_result(connectivity)
         return conn

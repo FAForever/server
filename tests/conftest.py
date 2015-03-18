@@ -121,7 +121,7 @@ def transport():
 
 @pytest.fixture
 def game(players):
-    game = mock.MagicMock(spec=Game(1))
+    game = mock.create_autospec(spec=Game(1))
     players.hosting.getGame = mock.Mock(return_value=game)
     players.joining.getGame = mock.Mock(return_value=game)
     players.peer.getGame = mock.Mock(return_value=game)
