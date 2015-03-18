@@ -25,7 +25,6 @@ from PySide.QtSql import QSqlQuery
 
 from trueSkill.Team import *
 from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
-from .PlayerOptions import PlayerOptions
 
 class GameState():
     def __init__(self):
@@ -110,7 +109,6 @@ class Game(object):
         self.gameFaResult = {}
         self.playerFaction = {}
         self.playerColor = {}
-        self._playerOptions = PlayerOptions()
         self.state = GameState.from_gpgnet_state(state)
 
         self.gameOptions = {'FogOfWar': 'explored', 'GameSpeed': 'normal', 'CheatsEnabled': 'false',

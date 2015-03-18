@@ -34,10 +34,6 @@ from .customLabwarsGamesContainer import customLabwarsGamesContainerClass # cust
 from .customMurderPartyGamesContainer import customMurderPartyGamesContainerClass # custom murder party games
 from .customKothGamesContainer import customKothGamesContainerClass # custom king of the hill games
 from .customPhantomXGamesContainer import customPhantomXGamesContainerClass # custom phantomX games
-#from customPhantomNGamesContainer import customPhantomNGamesContainerClass # custom phantomN games
-from .customEWGamesContainer import customEWGamesContainerClass # custom Exp Wars games
-#from customNFTWGamesContainer import customNFTWGamesContainerClass # custom NFTW games
-#from customWyvernGamesContainer import customWyvernGamesContainerClass # custom Wyvern games
 from .customBlackopsGamesContainer import customBlackopsGamesContainerClass # custom Blackops games
 
 from .customXtremewarsGamesContainer import customXtremewarsGamesContainerClass # custom Blackops games
@@ -51,19 +47,7 @@ from .nomadsGame import nomadsGame #nomads
 from .labwarsGame import labwarsGame #labwars
 
 from .murderPartyGame import murderPartyGame # murder party
-#from phantomNGame import phantomNGameClass #phantom N
 from .phantomXGame import phantomXGame # phantom X
 from .kothGame import kothGame # king of the hill
-#from EWGame import EWGameClass # exp war
-
-#from NFTWGame import NFTWClass # exp war
-#from wyvernGame import wyvernClass # exp war
 from .blackopsGame import blackopsGame # exp war
 from .xtremewarsGame import xtremewarsGame # exp war
-                           
-
-def reloadModules():
-    '''reloading gameModes modules'''
-    #print "reloading gameModes modules"
-
-    logger.debug("reloading gameModes modules")
