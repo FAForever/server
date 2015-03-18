@@ -25,6 +25,7 @@ import logging
 from PySide import QtNetwork
 from PySide.QtNetwork import QTcpSocket, QAbstractSocket
 from PySide.QtSql import *
+from src.abc.game import GameConnectionState
 
 from src.connectivity import TestPeer, Connectivity
 from games.game import GameState
@@ -39,20 +40,12 @@ from trueSkill.Player import *
 logger = logging.getLogger(__name__)
 
 from proxy import proxy
-from enum import Enum
 
 from src.JsonTransport import QDataStreamJsonTransport
 
 from config import Config
 
 proxyServer = QtNetwork.QHostAddress("127.0.0.1")
-
-class GameConnectionState(Enum):
-    initializing = 0
-    initialized = 1
-    ended = 2
-    aborted = 3
-
 
 @with_logger
 class GameConnection(Subscribable, GpgNetServerProtocol):
@@ -62,7 +55,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def __init__(self, loop, users, games, db, server):
         Subscribable.__init__(self)
-        self.state = GameConnectionState.initializing
+        self._state = GameConnectionState.initializing
         self.loop = loop
         self.users = users
         self.games = games
@@ -87,6 +80,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.ping_task = None
 
         self.connectivity_state = asyncio.Future()
+
+    @property
+    def state(self):
+        return self._state
 
     def accept(self, socket):
         """
@@ -138,7 +135,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.ping_task = asyncio.async(self.ping())
         self.player.setGameSocket(self._socket)
         self.player.setWantGame(False)
-        self.state = GameConnectionState.initialized
+        self._state = GameConnectionState.initialized
         return True
 
     def sendToRelay(self, action, commands):
@@ -169,7 +166,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         """
         self.game = self.games.getGameByUuid(self.player.getGame())
         assert self.game
-        self.game.add_game_connection(self.player, self)
+        self.game.add_game_connection(self)
         self.send_Ping()
         action = self.player.getAction()
 
@@ -209,9 +206,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         Abort the connection, calling doEnd() first
         :return:
         """
-        if self.state is GameConnectionState.aborted or self.state is GameConnectionState.ended:
+        if self._state is GameConnectionState.aborted or self._state is GameConnectionState.ended:
             return
-        self.state = GameConnectionState.aborted
+        self._state = GameConnectionState.aborted
         self.log.debug("{}.abort()".format(self))
         try:
             self.doEnd()
@@ -441,9 +438,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             elif key == 'PlayerOption':
                 if self.player.getAction() == "HOST":
                     id = values[0]
-                    action = values[1]
-                    option = values[2]
-                    self.game.setPlayerOption(id, action, option)
+                    key = values[1]
+                    value = values[2]
+                    self.game.set_player_option(id, key, value)
                     self.sendGameInfo()
 
             elif key == 'GameResult':
@@ -620,15 +617,15 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def doEnd(self):
         ''' bybye player :('''
-        if self.state is GameConnectionState.ended:
+        if self._state is GameConnectionState.ended:
             return
         else:
-            self.state = GameConnectionState.ended
+            self._state = GameConnectionState.ended
         self.player.setGameSocket(None)
 
         try:
             if self.game is not None:
-                self.game.remove_game_connection(self.player, self)
+                self.game.remove_game_connection(self)
                 state = self.game.getLobbyState()
                 if state == "playing":
                     curplayers = self.game.getNumPlayer()
@@ -776,7 +773,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         try:
             self.games.mark_dirty(self.game.getuuid())
         except:
-            self.log.exception("Something awful happened in a sendinfo thread !")
+            self.log.exception("Something awful happened in a sendinfo thread!")
 
     def registerScore(self, gameResult):
         try:

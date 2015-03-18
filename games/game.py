@@ -15,21 +15,21 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
-
+from enum import Enum
 
 import string
 import logging
 import time
 
 from PySide.QtSql import QSqlQuery
+from src.abc.game import GameConnectionState
+from trueSkill.GameInfo import GameInfo
 
 from trueSkill.Team import *
 from trueSkill.TrueSkill.FactorGraphTrueSkillCalculator import *
 
-class GameState():
-    def __init__(self):
-        pass
 
+class GameState(Enum):
     INITIALIZING = 0
     LOBBY = 1
     LIVE = 2
@@ -42,6 +42,11 @@ class GameState():
             return GameState.LOBBY
         if value == 'Launching':
             return GameState.LIVE
+
+
+class GameError(Exception):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 class Game(object):
@@ -66,6 +71,7 @@ class Game(object):
         :type minPlayer: int
         :return: Game
         """
+        self._player_options = {}
         self.createDate = time.time()
         self.receiveUdpHost = False
         self.log = logging.getLogger(__name__)
@@ -87,13 +93,12 @@ class Game(object):
         self.gameName = gameName
         self.mapName = map
         self.password = None
-        self.players = []
+        self._players = []
         self.size = 0
         self.options = []
         self.modsVersion = {}
         self.gameType = 0
         self.AIs = []
-        self.connections = {}
         self.packetReceived = {}
         self.desync = 0
         self.validGame = True
@@ -109,55 +114,61 @@ class Game(object):
         self.gameFaResult = {}
         self.playerFaction = {}
         self.playerColor = {}
-        self.state = GameState.from_gpgnet_state(state)
-
+        self.state = GameState.INITIALIZING
+        self._connections = {}
         self.gameOptions = {'FogOfWar': 'explored', 'GameSpeed': 'normal', 'CheatsEnabled': 'false',
                             'PrebuiltUnits': 'Off', 'NoRushOption': 'Off', 'RestrictedCategories': 0}
 
         self.mods = []
 
-    def add_game_connection(self, player, game_connection):
+    @property
+    def players(self):
         """
-        Add a player with his associated connection to this game
-        :param player:
+        Players in the game
+
+        Depending on the state, it is either:
+          - (LOBBY) The currently connected players
+          - (LIVE) Players who participated in the game
+          - None
+        :return: List
+        """
+        if self.state == GameState.LIVE:
+            return self._players
+        elif self.state == GameState.LOBBY:
+            return list(self._connections.keys())
+
+    def add_game_connection(self, game_connection):
+        """
+        Add a game connection to this game
         :param game_connection:
         :return:
         """
-        pass
+        if game_connection.state != GameConnectionState.connected_to_host:
+            raise GameError("Invalid GameConnectionState: {}".format(game_connection.state))
+        self._connections[game_connection.player] = game_connection
 
-    def remove_game_connection(self, player, game_connection):
+    def remove_game_connection(self, game_connection):
         """
-        Remove a player with his associated connection from this game
+        Remove a game connection from this game
         :param peer:
         :param
         :return: None
         """
-        pass
+        del self._connections[game_connection.player]
 
-    def setPlayerOption(self, slot, key, value):
-        if key == 'Faction':
-            self.setPlayerFaction(slot, value)
-        elif key == 'Color':
-            self.setPlayerColor(slot, value)
-        else:
-            self._playerOptions[slot][key] = value
+    def set_player_option(self, player, key, value):
+        if player not in self._player_options:
+            self._player_options[player] = {}
+        self._player_options[player][key] = value
 
-    def getPlayerOption(self, slot, key):
+    def get_player_option(self, player, key):
         try:
-            if key == 'Faction':
-                return self.getPlayerFaction(slot)
-            elif key == 'Color':
-                return self.getPlayerColor(slot)
-            else:
-                return self._playerOptions[slot][key]
+            return self._player_options[player][key]
         except KeyError:
             return None
 
     def getSimMods(self):
         return self.mods
-
-    def getPlayerName(self, player):
-        return player.getLogin()
 
     def getMaxPlayers(self):
         return self.maxPlayer
@@ -176,7 +187,6 @@ class Game(object):
 
     def getPassword(self):
         return self.password
-
 
     def getGameType(self):
         return self.gameType
@@ -383,7 +393,6 @@ class Game(object):
     def getInitMode(self):
         return self.initMode
 
-
     def isAllScoresThere(self):
         if len(self.gameFaResult) != self.numPlayers or len(self.gameResult) != self.numPlayers:
             return False
@@ -556,14 +565,6 @@ class Game(object):
                 #if pos = 1, team is -1 too
                 self.assignPlayerToTeam(array[pos], -1)
         return playerPositionDef
-
-    def fixPlayerPosition(self):
-        self.playerPosition = self.fixArray(self.playerPosition)
-
-    def getPlayerAtPosition(self, position):
-        if position in self.playerPosition:
-            return self.playerPosition[position]
-        return None
 
     def getPositionOfPlayer(self, player):
         for pos in self.playerPosition:

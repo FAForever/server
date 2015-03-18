@@ -29,7 +29,7 @@ def test_accept_no_player_aborts(game_connection, connected_game_socket):
 
 def test_test_doEnd(game_connection, game):
     game_connection.doEnd()
-    game.remove_game_connection.assert_called_with(game_connection.player, game_connection)
+    game.remove_game_connection.assert_called_with(game_connection)
 
 
 @asyncio.coroutine
@@ -68,7 +68,7 @@ def test_abort(game_connection, players, connected_game_socket):
 def test_handle_action_GameState_idle_adds_connection(game_connection, players, game):
     game_connection.player = players.joining
     yield from game_connection.handle_action('GameState', ['Idle'])
-    game.add_game_connection.assert_called_with(players.joining, game_connection)
+    game.add_game_connection.assert_called_with(game_connection)
 
 @asyncio.coroutine
 def test_handle_action_GameState_idle_as_peer_sends_CreateLobby(game_connection, players, games, transport):
@@ -119,7 +119,7 @@ def test_handle_action_PlayerOption(game, loop, game_connection):
     """
     result = asyncio.async(game_connection.handle_action('PlayerOption', [1, 'Color', 2]))
     loop.run_until_complete(result)
-    game.setPlayerOption.assert_called_once_with(1, 'Color', 2)
+    game.set_player_option.assert_called_once_with(1, 'Color', 2)
 
 
 def test_handle_action_PlayerOption_malformed_no_raise(game_connection, loop):
@@ -134,7 +134,7 @@ def test_handle_action_PlayerOption_malformed_no_raise(game_connection, loop):
 def test_handle_action_GameOption(game, loop, game_connection):
     result = asyncio.async(game_connection.handle_action('PlayerOption', [1, 'Color', 2]))
     loop.run_until_complete(result)
-    game.setPlayerOption.assert_called_once_with(1, 'Color', 2)
+    game.set_player_option.assert_called_once_with(1, 'Color', 2)
 
 
 @asyncio.coroutine
@@ -160,7 +160,7 @@ def test_ConnectToHost_public_stun(connections, players):
     peer_conn.send_SendNatPacket = mock.Mock()
     peer_conn.send_JoinGame = mock.Mock()
     result = asyncio.async(peer_conn.ConnectToHost(host_conn))
-    yield from asyncio.sleep(0.01)
+    yield from asyncio.sleep(0.05)
     host_conn.notify({'command_id': 'ProcessNatPacket',
                       'arguments': [peer_conn.player.address_and_port,
                                     "Hello {}".format(host_conn.player.id)]})
@@ -183,7 +183,7 @@ def test_ConnectToHost_stun_public(connections, players):
     host_conn.send_SendNatPacket = mock.Mock()
     peer_conn.send_JoinGame = mock.Mock()
     result = asyncio.async(peer_conn.ConnectToHost(host_conn))
-    yield from asyncio.sleep(0.01)
+    yield from asyncio.sleep(0.05)
     peer_conn.notify({'command_id': 'ProcessNatPacket',
                       'arguments': [peer_conn.player.address_and_port,
                                     "Hello {}".format(peer_conn.player.id)]})
@@ -215,3 +215,7 @@ def test_ConnectToHost_public_proxy(connections, players):
                                                      host_conn.player.ip,
                                                      host_conn.player.login,
                                                      host_conn.player.id)
+
+@asyncio.coroutine
+def test_ConnectToPeer_(loop):
+    pass
