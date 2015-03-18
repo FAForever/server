@@ -108,17 +108,7 @@ class GamesService(object):
                             if len(v) != 0 :
                                 teamsToSend[k] = v
     
-    
                         json["teams"] = teamsToSend
-    
-    
-                        #self.recombineTeams()
-    
-    
-                        #quality = self.getMatchQuality()
-                        #if quality != None :
-                         #   json["quality"] = quality
-    
 
                         games.append(json) 
 
