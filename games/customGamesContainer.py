@@ -40,21 +40,13 @@ class customGamesContainerClass(gamesContainerClass):
         
         gameUuid = self.createUuid(playerUuid)
         
-        if playerState == "PLAYING" :
+        if playerState == "PLAYING":
             return False
-        elif playerState == "HOST" :
+        elif playerState == "HOST":
             return False
-        elif playerState == "JOIN" :
+        elif playerState == "JOIN":
             return False
         
-        # check if the host is already hosting something.
-        for game in self.games:
-            if game.getLobbyState == 'Lobby' :
-                if game.getHostName() == playerLogin :
-                    return False
-                if game.getHostId() == session :
-                    return False
-    
         ngame = customGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
