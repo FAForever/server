@@ -40,11 +40,6 @@ class matchmakerGame(Game):
         self.team1 = []
         self.team2 = []
 
-    def specialInit(self, player):
-        trueskill = player.getRating()
-        trueSkillCopy = deepcopy(trueskill)
-        self.addTrueSkillPlayer(trueSkillCopy)
-
     def addPlayerToJoin(self, player):
         if not player in self.playerToJoin : 
             self.playerToJoin.append(player)
