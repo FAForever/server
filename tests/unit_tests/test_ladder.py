@@ -37,11 +37,11 @@ def test_starts_game_with_map_from_popular(monkeypatch, container, ladder_setup)
             == set(expected_map_pool))
 
 
-def test_start_game_uses_map_from_mappool(container, ladder_setup, lobbythread):
+def test_start_game_uses_map_from_mappool(container: ladder1v1GamesContainerClass, ladder_setup, lobbythread):
     map_pool = ladder_setup['popular_maps']
     container.choose_ladder_map_pool = mock.Mock(return_value=map_pool)
     lobbythread.sendJSON = mock.Mock()
-    container.mapName = "SCMP_007"  # This is sloppy.
+    container.getMapName = lambda i: i
 
     container.startGame(ladder_setup['player1'], ladder_setup['player2'])
     args, kwargs = lobbythread.sendJSON.call_args

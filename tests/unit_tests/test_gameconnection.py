@@ -107,6 +107,7 @@ def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, pat
     :type transport Transport
     """
     game_connection.player = players.hosting
+    game.mapName = 'some_map'
     result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
     loop.run_until_complete(result)
     transport.send_message.assert_any_call({'key': 'HostGame', 'commands': [game.mapName]})
