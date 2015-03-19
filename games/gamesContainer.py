@@ -108,7 +108,7 @@ class gamesContainerClass(object):
         return 0
 
 
-    def addBasicGame(self):
+    def addBasicGame(self, player, name, port):
         pass
 
     def removeGame(self, gameToRemove):

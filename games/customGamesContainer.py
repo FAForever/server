@@ -28,7 +28,7 @@ class customGamesContainerClass(gamesContainerClass):
     def __init__(self, db, parent=None):
         super(customGamesContainerClass, self).__init__("faf", "Forged Alliance Forever" , db, parent)
 
-    def addBasicGame(self, player, newgame, gamePort):
+    def addBasicGame(self, player, name, gamePort):
         playerLogin = player.getLogin()
         playerUuid = player.getId()
         playerState = player.action
@@ -47,6 +47,6 @@ class customGamesContainerClass(gamesContainerClass):
         ngame.setGameHostUuid(playerUuid)
         ngame.setGameHostPort(gamePort)
         ngame.setGameHostLocalPort(gamePort)
-        ngame.setGameName(newgame)
+        ngame.setGameName(name)
         self.games.append(ngame)
         return ngame

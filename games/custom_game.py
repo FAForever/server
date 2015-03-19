@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class CustomGame(Game):
-    def __init__(self, uuid, parent = None):
+    def __init__(self, uuid, parent):
         super(self.__class__, self).__init__(uuid, parent)
   
     def specialInit(self, player):

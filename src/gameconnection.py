@@ -28,8 +28,9 @@ from PySide.QtSql import *
 from src.abc.base_game import GameConnectionState
 
 from src.connectivity import TestPeer, Connectivity
-from games.game import GameState
+from games.game import Game, GameState
 from src.decorators import with_logger, timed
+from src.games_service import GamesService
 from src.protocol.gpgnet import GpgNetServerProtocol
 from src.subscribable import Subscribable
 
@@ -49,7 +50,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     Responsible for the games protocol.
     """
 
-    def __init__(self, loop, users, games, db, server):
+    def __init__(self, loop, users, games: GamesService, db, server):
         Subscribable.__init__(self)
         self._state = GameConnectionState.initializing
         self.loop = loop
@@ -63,7 +64,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.proxies = {}
         self._player = None
         self.logGame = "\t"
-        self.game = None
+        self._game = None
         self.proxyConnection = []
 
         self.last_pong = time.time()
@@ -80,6 +81,17 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     @property
     def state(self):
         return self._state
+
+    @property
+    def game(self):
+        """
+        :rtype: Game
+        """
+        return self._game
+
+    @game.setter
+    def game(self, value):
+        self._game = value
 
     def accept(self, socket):
         """
@@ -160,7 +172,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         This message is sent by FA when it doesn't know what to do.
         :return: None
         """
-        self.game = self.games.find_by_id(self.player.getGame())
+        self._game = self.games.find_by_id(self.player.getGame())
         assert self.game
         self.game.add_game_connection(self)
         self.send_Ping()
@@ -217,7 +229,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 self.ping_task.cancel()
             del self._socket
             del self._player
-            del self.game
+            del self._game
 
 
     @asyncio.coroutine

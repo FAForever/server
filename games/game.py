@@ -22,7 +22,7 @@ import logging
 import time
 
 from PySide.QtSql import QSqlQuery
-from src.abc.base_game import GameConnectionState
+from src.abc.base_game import GameConnectionState, BaseGame
 
 
 class GameState(Enum):
@@ -45,11 +45,11 @@ class GameError(Exception):
         super().__init__(*args, **kwargs)
 
 
-class Game(object):
+class Game(BaseGame):
     """
     Object that lasts for the lifetime of a game on FAF.
     """
-    def __init__(self, uuid, parent=None, host=None, hostId=0, hostIp=None, hostLocalIp=None, hostPort=6112,
+    def __init__(self, uuid, parent, host=None, hostId=0, hostIp=None, hostLocalIp=None, hostPort=6112,
                  hostLocalPort=6112, state='Idle', gameName='None', map='SCMP_007', mode=0, minPlayer=1):
         """
         Initializes a new game
@@ -67,12 +67,13 @@ class Game(object):
         :type minPlayer: int
         :return: Game
         """
+        self.db = parent.db
+        self.parent = parent
         self._player_options = {}
         self.createDate = time.time()
         self.receiveUdpHost = False
         self.log = logging.getLogger(__name__)
         self.uuid = uuid
-        self.parent = parent
         self.ffa = False
         self.partial = 1
         self.access = "public"
@@ -560,7 +561,7 @@ class Game(object):
         try:
             for team in self.finalTeams:
                 for member in team.getAllPlayers():
-                    query = QSqlQuery(self.parent.db)
+                    query = QSqlQuery(self.db)
                     query.prepare(
                         "SELECT mean, deviation FROM global_rating WHERE id = (SELECT id FROM login WHERE login = ?)")
                     query.addBindValue(member.getId())
