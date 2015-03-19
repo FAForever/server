@@ -137,19 +137,10 @@ class GamesService(object):
         for container in self.gamesContainer :
             self.gamesContainer[container].removeUserGame(player)
         return True
-    
 
     def find_by_id(self, uuid):
-        for container in self.gamesContainer :
+        for container in self.gamesContainer:
             game = self.gamesContainer[container].findGameByUuid(str(uuid))
             if game != None :
                 return game
         return None    
-    
-    def getGameByHost(self, host):
-        '''Get a game by the name of the host'''
-        for container in self.gamesContainer :
-            game = self.gamesContainer[container].findGameByHost(str(host))
-            if game != None :
-                return game
-        return None
