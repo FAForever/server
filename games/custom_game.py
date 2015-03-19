@@ -18,13 +18,12 @@
 
 from copy import deepcopy
 import time
-import logging
 
 from .game import Game
+from src.decorators import with_logger
 
-logger = logging.getLogger(__name__)
 
-
+@with_logger
 class CustomGame(Game):
     def __init__(self, uuid, parent):
         super(self.__class__, self).__init__(uuid, parent)
@@ -34,11 +33,11 @@ class CustomGame(Game):
         trueSkillCopy = deepcopy(trueskill)
         self.addTrueSkillPlayer(trueSkillCopy)
 
-    def specialEnding(self, logger, db, players):
+    def rate_game(self):
         timeLimit = len(self.trueSkillPlayers) * 60
         if time.time() - self.createDate < timeLimit:
             self.setInvalid("Score are invalid: Play time was not long enough (under %i seconds)" % timeLimit)
-            logger.debug("Game is invalid: Play time was not long enough (under %i seconds)" % timeLimit)
+            self._logger.debug("Game is invalid: Play time was not long enough (under %i seconds)" % timeLimit)
         if self.isValid():
             tsresults = self.computeResults()
             tsplayers = self.trueSkillPlayers

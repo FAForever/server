@@ -239,46 +239,24 @@ class Game(BaseGame):
         self.placePlayer(player.getLogin(), -1)
         self.assignPlayerToTeam(player.getLogin(), -1)
 
-    def specialEnding(self, logger, db, players):
-        pass
-
-    def isWinner(self, name):
-        return 0
-
     def trueSkillUpdate(self, tsresults, tsplayers, logger, db, players, playerFnc="setRating", table="global_rating",
                         winner=False, sendScore=True):
-
-
-        logger.debug("TS Results")
 
         noHumanResult = False
         if len(self.AIs) > 0:
             noHumanResult = True
 
-
-        #sending to players
         for playerTS in tsplayers:
-
-
             name = playerTS.getPlayer()
             nameAI = None
             AI = False
-
             if str(name) in self.AIs:
                 logger.debug("This is an AI")
                 nameAI = str(name).rstrip(string.digits)
                 AI = True
-
-            logger.debug(name)
-            logger.debug("original score")
-            logger.debug(playerTS.getRating())
-            origScore = playerTS.getRating()
-            # if we got a result... Something bad can happens
             if tsresults != 0:
                 # if the player was really in a playing team 
                 if str(name) in tsresults.getAllPlayersNames():
-                    logger.debug("player in game TrueSkill")
-
                     mean = (tsresults.getRating(name).getMean() * self.partial) + (
                         playerTS.getRating().getMean() * (1 - self.partial))
                     dev = (tsresults.getRating(name).getStandardDeviation() * self.partial) + (
@@ -288,25 +266,13 @@ class Game(BaseGame):
                     resPlayer.setMean(mean)
                     resPlayer.setStandardDeviation(dev)
 
-                    logger.debug(resPlayer)
-
-                    # Now we write the result in the DB. If player has already disconnect, it will update his score 
-                    # no matter what.
-
-                    #db.open()
                     query = QSqlQuery(db)
 
                     if winner:
-                        if self.isWinner(name):
-                            queryStr = (
-                                           "UPDATE %s set mean =%f, deviation = %f, numGames = (numGames +1), winGames = (winGames +1) WHERE id = (SELECT id FROM login WHERE login.login = '%s')") % (
-                                           table, mean, dev, str(name))
-                            query.exec_(queryStr)
-                        else:
-                            queryStr = (
-                                           "UPDATE %s set mean =%f, deviation = %f, numGames = (numGames +1) WHERE id = (SELECT id FROM login WHERE login.login = '%s')") % (
-                                           table, mean, dev, str(name))
-                            query.exec_(queryStr)
+                        queryStr = (
+                                       "UPDATE %s set mean =%f, deviation = %f, numGames = (numGames +1) WHERE id = (SELECT id FROM login WHERE login.login = '%s')") % (
+                                       table, mean, dev, str(name))
+                        query.exec_(queryStr)
 
                     else:
                         if AI:
@@ -354,7 +320,7 @@ class Game(BaseGame):
                             self.sendMessageToPlayers(players, name, "AI detected in game - No rating for humans.")
 
             else:
-                logger.debug("ERROR : No Valid TS results !")
+                logger.debug("ERROR: No Valid TS results!")
 
     def sendMessageToPlayers(self, players, name, message):
         for player in players.getAllPlayers():

@@ -90,7 +90,7 @@ class gamesContainerClass(object):
         for game in self.games:
             if game.uuid == uuid :
                 return game
-        return None            
+        return None
 
     def findGameByHost(self, host):
         '''Find a game by the hostName'''

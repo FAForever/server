@@ -104,10 +104,10 @@ class ladder1V1Game(Game):
 
     def specialEnding(self, logger, db, players):
         
-        if len(self.invalidPlayers) == 2 :
-            self.setInvalid("Scores not validated. Possible reason : Disconnection between players.")
+        if len(self.invalidPlayers) == 2:
+            self.setInvalid("Scores not validated. Possible reason: Disconnection between players.")
         
-        if self.isValid() :
+        if self.isValid():
             
             if self.isDraw() :
                 query = QSqlQuery(db)
@@ -131,7 +131,7 @@ class ladder1V1Game(Game):
             if len(set(self.leagues.values())) != 1 :
                 evenLeague = False
                 
-            if not self.isDraw() :
+            if not self.isDraw():
                 query = QSqlQuery(db)
                 for player in self.gameResult :
                     if self.isWinner(player) :
@@ -253,7 +253,7 @@ class ladder1V1Game(Game):
 
     def getAllResults(self):
         final = []
-        msg = 'Game outcome  : '
+        msg = 'Game outcome: '
     
         for player in self.gameResult :
             
