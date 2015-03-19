@@ -324,8 +324,7 @@ class LobbyConnection(QObject):
                     for i in range(numOptions):
                         jsonToSend["options"].append(True)
 
-            flags = ["/ratingcolor " + self.getRankColor(self.player.getRating().getRating().getStandardDeviation()),
-                     "/numgames " + str(self.player.getNumGames())]
+            flags = ["/numgames " + str(self.player.getNumGames())]
             jsonToSend["args"] = flags
 
             self.sendJSON(jsonToSend)
@@ -360,8 +359,7 @@ class LobbyConnection(QObject):
             jsonToSend["uid"] = uuid
             jsonToSend["version"] = version
 
-            flags = ["/ratingcolor " + self.getRankColor(self.player.getRating().getRating().getStandardDeviation()),
-                     "/numgames " + str(self.player.getNumGames())]
+            flags = ["/numgames " + str(self.player.getNumGames())]
             jsonToSend["args"] = flags
 
             if len(options) != 0:
@@ -1242,30 +1240,6 @@ Thanks,\n\
 
             self.foeList = foelist
 
-    @timed()
-    def getPlayerPrivateAccess(self):
-
-        self.player.nomadsBeta = True
-        self.player.tourneyDirector = False
-        self.player.modManager = []
-
-        # Tournament directors
-        #        query = QSqlQuery(self.parent.db)
-        #        queryStr = "SELECT * FROM faf_forums.phpbb_user_group WHERE `user_id` = (SELECT `user_id` FROM faf_forums.phpbb_profile_fields_data WHERE `pf_fafusername` = '%s') AND `group_id` = 14" % (self.player.getLogin())
-        #        query.exec_(queryStr)
-        #        if  query.size() == 1:
-        #            self.player.tourneyDirector = True
-
-        # featured mod owners
-        query = QSqlQuery(self.parent.db)
-        query.prepare(
-            "SELECT gamemod FROM featured_mods_owners LEFT JOIN game_featuredMods on `moduid` = game_featuredMods.id WHERE `uid` = ?")
-        query.addBindValue(self.player.id)
-        query.exec_()
-        if query.size() > 0:
-            while query.next():
-                self.player.modManager.append(query.value(0))
-
 
     @timed()
     def resendMail(self, login):
@@ -1813,7 +1787,6 @@ Thanks,\n\
                 self.log.debug("Welcome")
                 self.sendJSON(dict(command="welcome", email=str(self.email)))
 
-                self.getPlayerPrivateAccess()
 
                 if len(self.player.modManager) > 0:
                     #self.log.debug(self.logPrefix + "adding mod management")

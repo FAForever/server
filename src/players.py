@@ -17,7 +17,6 @@
 #-------------------------------------------------------------------------------
 
 from .abc.base_player import BasePlayer
-from src.abc.faction import Faction
 
 
 class Player(BasePlayer):
@@ -36,8 +35,6 @@ class Player(BasePlayer):
         self.clan = None
       
         self.league = None
-      
-        self.nomadsBeta = False
       
         self.admin = False
         self.mod = False
