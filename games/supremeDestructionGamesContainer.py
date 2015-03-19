@@ -28,9 +28,9 @@ class supremeDestructionGamesContainerClass(gamesContainerClass):
 
     def addBasicGame(self, player, newgame, gamePort):
         
-        playerLogin = player.getLogin()
-        playerUuid = player.getId()
-        playerState = player.getAction()
+        playerLogin = player.login
+        playerUuid = player.id
+        playerState = player.action
         gameUuid = self.createUuid(playerUuid)
         
         if playerState == "PLAYING" :

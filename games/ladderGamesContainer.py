@@ -43,7 +43,7 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         
         query = QSqlQuery(self.db)
         query.prepare("SELECT league FROM %s WHERE idUser = ?" % season)
-        query.addBindValue(player.getId())
+        query.addBindValue(player.id)
         query.exec_()
         if query.size() > 0 :
             query.first()
@@ -52,7 +52,7 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         # place the player in his league !
         else :              
             query.prepare("INSERT INTO %s (`idUser` ,`league` ,`score`) VALUES (?, 1, 0)" % season)
-            query.addBindValue(player.getId())     
+            query.addBindValue(player.id)
             query.exec_()
             return 1
 
@@ -130,8 +130,8 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
 
     def choose_ladder_map_pool(self, player1, player2):
         player_maps = [
-            self.getSelectedLadderMaps(player1.getId()),
-            self.getSelectedLadderMaps(player2.getId())
+            self.getSelectedLadderMaps(player1.id),
+            self.getSelectedLadderMaps(player2.id)
         ]
 
         common_maps = list(set(player_maps[0]).intersection(set(player_maps[1])))
@@ -154,7 +154,7 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         gameName = str(player1.getLogin() + " Vs " + player2.getLogin())
         
         player1.setAction("HOST")
-        gameUuid = self.createUuid(player1.getId())
+        gameUuid = self.createUuid(player1.id)
         player2.setAction("JOIN")
         player1.setWantGame(True)
 
@@ -178,20 +178,20 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         
         ngame.setGameMap(map)
         
-        ngame.setGameHostName(player1.getLogin())
-        ngame.setGameHostUuid(player1.getId())
+        ngame.setGameHostName(player1.login)
+        ngame.setGameHostUuid(player1.id)
         ngame.setGameHostPort(player1.getGamePort())
         ngame.setGameHostLocalPort(player1.getGamePort())
         ngame.setGameName(gameName)
 
         #place the players
-        ngame.placePlayer(player1.getLogin(), 1)
-        ngame.placePlayer(player2.getLogin(), 2)
+        ngame.placePlayer(player1.login, 1)
+        ngame.placePlayer(player2.login, 2)
         
         ngame.addPlayerToJoin(player2)
         
-        ngame.assignPlayerToTeam(player1.getLogin(), 1)
-        ngame.assignPlayerToTeam(player2.getLogin(), 2)
+        ngame.assignPlayerToTeam(player1.login, 1)
+        ngame.assignPlayerToTeam(player2.login, 2)
 
         ngame.setLeaguePlayer(player1)
         ngame.setLeaguePlayer(player2)

@@ -982,7 +982,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
                 queryStr += (
                                 "INSERT INTO `game_player_stats`(`gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) VALUES (%s, %s, %s, %s, %s, %i, %f, %f);") % (
-                                str(self.game.uuid), str(player.getId()), faction, color, team, place, mean, dev )
+                                str(self.game.uuid), str(player.id), faction, color, team, place, mean, dev)
 
         if queryStr != "":
             query = QSqlQuery(self.parent.db)

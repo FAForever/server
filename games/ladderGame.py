@@ -316,31 +316,16 @@ class ladder1V1Game(Game):
                 if faresult == "draw" :       
                     self.gameResult[player] = -1                
 
-
     def computeScoreFor1v1(self):
-
-#        print self.finalTeams
         results = []
-        maxScore = len(self.finalTeams1v1)
-
-        for teams in self.finalTeams1v1 :
-
+        for teams in self.finalTeams1v1:
             curScore = 0
-            for players in teams.getAllPlayers() :
-                id = str(players.getId())
+            for player in teams.getAllPlayers():
+                if player.id in str(self.gameResult):
+                    resultPlayer = self.gameResult[str(player.id)]
+                    curScore = curScore + resultPlayer
 
-                if id in str(self.gameResult) :
-
-                    resultPlayer = self.gameResult[str(id)]
-
-                    curScore =  curScore + resultPlayer
-                else :
-                    return 0
-
-             
             results.append(curScore)
-
-       
             self.results = results
 
     def updateTrueskillFor1v1(self):

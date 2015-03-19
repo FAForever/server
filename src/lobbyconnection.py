@@ -701,7 +701,7 @@ class LobbyConnection(QObject):
 
                                 query.prepare("INSERT INTO `table_map_uploaders`(`mapid`, `userid`) VALUES (?,?)")
                                 query.addBindValue(uuid)
-                                query.addBindValue(self.player.getId())
+                                query.addBindValue(self.player.id)
                                 if not query.exec_():
                                     self.log.debug(query.lastError())
 
@@ -1260,7 +1260,7 @@ Thanks,\n\
         query = QSqlQuery(self.parent.db)
         query.prepare(
             "SELECT gamemod FROM featured_mods_owners LEFT JOIN game_featuredMods on `moduid` = game_featuredMods.id WHERE `uid` = ?")
-        query.addBindValue(self.player.getId())
+        query.addBindValue(self.player.id)
         query.exec_()
         if query.size() > 0:
             while query.next():
@@ -1670,7 +1670,7 @@ Thanks,\n\
                 ## LADDER LEAGUES ICONS
                 ## ----------------------
                 query.prepare("SELECT score, league FROM %s WHERE idUser = ?" % self.season)
-                query.addBindValue(self.player.getId())
+                query.addBindValue(self.player.id)
                 query.exec_()
                 if query.size() > 0:
                     query.first()
@@ -1708,7 +1708,7 @@ Thanks,\n\
 
                                     score = float(query.value(0))
                                     idUser = int(query.value(1))
-                                    if idUser == self.player.getId():
+                                    if idUser == self.player.id:
                                         if score > 0:
                                             if i == 1:
                                                 avatar = {
@@ -1744,7 +1744,7 @@ Thanks,\n\
                                     score = float(query.value(0))
                                     idUser = int(query.value(1))
 
-                                    if idUser == self.player.getId():
+                                    if idUser == self.player.id:
                                         if score > 0:
                                             if i == 1:
 

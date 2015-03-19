@@ -412,11 +412,11 @@ class matchmakerGamesContainerClass(gamesContainerClass):
         p1uids = []
         p2uids = []
         for player in players1:
-            p1names.append(player.getLogin())
-            p1uids.append(str(player.getId()))
+            p1names.append(player.login)
+            p1uids.append(str(player.id))
         for player in players2:
-            p2names.append(player.getLogin())
-            p2uids.append(str(player.getId()))
+            p2names.append(player.login)
+            p2uids.append(str(player.id))
 
         gameName = str( ",".join(p1names) + " Vs " + ",".join(p2names))
         
@@ -428,7 +428,7 @@ class matchmakerGamesContainerClass(gamesContainerClass):
         host = players1[0]
         host.setAction("HOST")
         
-        gameUuid = self.createUuid(host.getId())
+        gameUuid = self.createUuid(host.id)
         
         self.log.debug(str(gameUuid) + " " + gameName)
         host.setWantGame(True)
@@ -546,10 +546,10 @@ class matchmakerGamesContainerClass(gamesContainerClass):
         
         ngame.setGameMap(mapname)
         
-        ngame.setGameHostName(host.getLogin())
-        ngame.setGameHostUuid(host.getId())
-        ngame.setGameHostPort( host.getGamePort())
-        ngame.setGameHostLocalPort( host.getGamePort())
+        ngame.setGameHostName(host.login)
+        ngame.setGameHostUuid(host.id)
+        ngame.setGameHostPort(host.getGamePort())
+        ngame.setGameHostLocalPort(host.getGamePort())
         ngame.setGameName(gameName)
         ngame.setTime()
 

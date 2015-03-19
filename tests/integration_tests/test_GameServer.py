@@ -41,12 +41,12 @@ def test_public_host(loop, qtbot, players, player_service, games):
         client.send_GameState(['Idle'])
         client.send_GameState(['Lobby'])
         yield from wait_call(client.udp_messages,
-                              call("\x08Are you public? %s" % player.getId()), 2)
+                              call("\x08Are you public? %s" % player.id), 2)
         client.send_ProcessNatPacket(["%s:%s" % (player.getIp(), player.getGamePort()),
-                                      "Are you public? %s" % player.getId()])
+                                      "Are you public? %s" % player.id])
         yield from wait_call(client.messages,
                     call(json.dumps({"key": "ConnectivityState",
-                    "commands": [player.getId(), "PUBLIC"]})), 2)
+                    "commands": [player.id, "PUBLIC"]})), 2)
     server.cancel()
 
 
