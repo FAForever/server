@@ -1,3 +1,4 @@
+trueskill
 quamash
 mock
 PySide
