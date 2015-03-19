@@ -1690,7 +1690,7 @@ Thanks,\n\
                         query.exec_()
                         if query.size() > 0:
                             query.first()
-                            self.player.setLeague(league)
+                            self.player.league = league
                             self.player.division = str(query.value(0))
                             limit = int(query.value(1))
 
@@ -2207,7 +2207,7 @@ Thanks,\n\
                     if faction.startswith("/"):
                         faction = faction.strip("/")
 
-                    self.player.setFaction(faction)
+                    self.player.faction = faction
 
                     self.warnPotentialOpponent()
 

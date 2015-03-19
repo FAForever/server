@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractproperty
 
 from trueskill import Rating
+from src.abc.faction import Faction
 
 
 class BasePlayer():
@@ -10,6 +11,7 @@ class BasePlayer():
     __metaclass__ = ABCMeta
 
     def __init__(self):
+        self._faction = 0
         self._global_rating = (None, None)
         self._ladder_rating = (None, None)
 
@@ -30,3 +32,15 @@ class BasePlayer():
         self._ladder_rating = (value.mu, value.sigma)
 
     login = abstractproperty()
+    id = abstractproperty()
+
+    @property
+    def faction(self):
+        return self._faction
+
+    @faction.setter
+    def faction(self, value):
+        if isinstance(value, str):
+            self._faction = Faction.from_string()
+        else:
+            self._faction = value

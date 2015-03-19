@@ -17,6 +17,7 @@
 #-------------------------------------------------------------------------------
 
 from .abc.base_player import BasePlayer
+from src.abc.faction import Faction
 
 
 class Player(BasePlayer):
@@ -71,26 +72,6 @@ class Player(BasePlayer):
         
         self.receivedUdp = False
         self.setPort = False
-
-    def getLeague(self):
-        return self.league
-    
-    def setLeague(self, league):
-        self.league = int(league)
-
-    def getFaction(self):
-        return self.faction
-    
-    def setFaction(self, faction):
-        if faction == "uef" :
-            self.faction = 1
-        elif faction == "aeon" :
-            self.faction = 2
-        elif faction == "cybran" :
-            self.faction = 3
-        elif faction == "seraphim" :
-            self.faction = 4
-
 
     def getAvatar(self):
         return self.avatar

@@ -30,7 +30,6 @@ def playerMock(lobbythread, id):
     player_mock.setWantGame = lambda bool: None
     player_mock.setGame = lambda uid: None
     player_mock.getGamePort = lambda: 4242
-    player_mock.getLeague = lambda: 'derp'
     player_mock.getLobbyThread = lambda: lobbythread
     return player_mock
 
