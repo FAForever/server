@@ -6,8 +6,10 @@ from src.gameconnection import GameConnection, GameConnectionState
 
 
 @pytest.fixture()
-def game():
-    return Game(42)
+def game(db):
+    mock_parent = mock.Mock()
+    mock_parent.db = db
+    return Game(42, mock_parent)
 
 
 def test_initialization(game):
@@ -50,5 +52,14 @@ def test_remove_game_connection(game: Game, players, game_connection):
     game.add_game_connection(game_connection)
     game.remove_game_connection(game_connection)
     assert players.hosting not in game.players
+
+
+def test_game_end_when_no_more_connections(game: Game, game_connection):
+    game.state = GameState.LOBBY
+    game.on_game_end = mock.Mock()
+    game_connection.state = GameConnectionState.connected_to_host
+    game.add_game_connection(game_connection)
+    game.remove_game_connection(game_connection)
+    game.on_game_end.assert_any_call()
 
 

@@ -17,6 +17,7 @@
 #-------------------------------------------------------------------------------
 
 import logging
+from games import Game
 
 
 class GamesService(object):
@@ -139,6 +140,9 @@ class GamesService(object):
         return True
 
     def find_by_id(self, uuid):
+        """
+        :rtype: Game
+        """
         for container in self.gamesContainer:
             game = self.gamesContainer[container].findGameByUuid(str(uuid))
             if game != None :

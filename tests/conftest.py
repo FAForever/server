@@ -139,8 +139,10 @@ def transport():
     return mock.Mock(spec=Transport)
 
 @pytest.fixture
-def game(players):
-    game = mock.create_autospec(spec=Game(1))
+def game(players, db):
+    mock_parent = mock.Mock()
+    mock_parent.db = db
+    game = mock.create_autospec(spec=Game(1, mock_parent))
     players.hosting.getGame = mock.Mock(return_value=game)
     players.joining.getGame = mock.Mock(return_value=game)
     players.peer.getGame = mock.Mock(return_value=game)

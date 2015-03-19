@@ -151,11 +151,21 @@ class Game(BaseGame):
     def remove_game_connection(self, game_connection):
         """
         Remove a game connection from this game
+
+        Will trigger on_game_end if there are no more active connections to the game
         :param peer:
         :param
         :return: None
         """
         del self._connections[game_connection.player]
+        if len(self._connections) == 0:
+            self.on_game_end()
+
+    def on_game_end(self):
+        query = QSqlQuery(self.db)
+        queryStr = ("UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(self.id))
+        query.exec_(queryStr)
+        self.rate_game()
 
     def set_player_option(self, player, key, value):
         if player not in self._player_options:

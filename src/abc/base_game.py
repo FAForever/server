@@ -16,3 +16,8 @@ class BaseGame():
     @abstractmethod
     def on_game_end(self):
         pass  # pragma: no cover
+
+
+    @abstractmethod
+    def rate_game(self):
+        pass  # pragma: no cover

@@ -32,7 +32,6 @@ from src.FaLobbyServer import FALobbyServer
 from src.FaGamesServer import FAServer
 from src.games_service import GamesService
 from src.players import *
-import games
 import config
 
 
