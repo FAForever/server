@@ -38,7 +38,7 @@ from .customXtremewarsGamesContainer import customXtremewarsGamesContainerClass 
 from .game import Game
 # derived
 from .ladderGame import ladder1V1Game #ladder 1v1
-from .customGame import customGame #custom
+from .custom_game import CustomGame #custom
 from .nomadsGame import nomadsGame #nomads
 from .labwarsGame import labwarsGame #labwars
 

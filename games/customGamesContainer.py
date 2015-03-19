@@ -19,7 +19,7 @@
 import time
 
 from .gamesContainer import  gamesContainerClass
-from games.customGame import customGame
+from games.custom_game import CustomGame
 
 
 class customGamesContainerClass(gamesContainerClass):
@@ -41,7 +41,7 @@ class customGamesContainerClass(gamesContainerClass):
         elif playerState == "JOIN":
             return False
         
-        ngame = customGame(gameUuid, self)
+        ngame = CustomGame(gameUuid, self)
         ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)
