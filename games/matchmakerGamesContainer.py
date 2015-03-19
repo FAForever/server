@@ -545,14 +545,11 @@ class matchmakerGamesContainerClass(gamesContainerClass):
         #host is player 1
         
         ngame.setGameMap(mapname)
-        
         ngame.setGameHostName(host.login)
         ngame.setGameHostUuid(host.id)
         ngame.setGameHostPort(host.getGamePort())
         ngame.setGameHostLocalPort(host.getGamePort())
         ngame.setGameName(gameName)
-        ngame.setTime()
-
 
         place = 1
         for player in players1 :
