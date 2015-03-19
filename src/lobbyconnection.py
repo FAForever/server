@@ -17,6 +17,7 @@
 #-------------------------------------------------------------------------------
 import hashlib
 
+
 import zlib
 import cgi
 import socket
@@ -40,6 +41,7 @@ from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QObject
 from PySide import QtNetwork
 from PySide.QtSql import QSqlQuery
 import pygeoip
+from src.decorators import timed
 
 from src.players import *
 from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS
@@ -74,26 +76,11 @@ from games.matchmakerGamesContainer import matchmakerGamesContainerClass
 
 TIMEOUT_SECONDS = 300
 
-from functools import wraps
-
 logger = logging.getLogger(__name__)
 
 
-def timed(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        start = time.time()
-        result = f(*args, **kwargs)
-        elapsed = time.time() - start
-        if elapsed > 1:
-            logger.info("%s took %s time to finish" % (f.__name__, str(elapsed)))
-        return result
-
-    return wrapper
-
-
 class LobbyConnection(QObject):
-    @timed
+    @timed()
     def __init__(self, socket, parent=None):
         super(LobbyConnection, self).__init__(parent)
         self.parent = parent
@@ -165,7 +152,7 @@ class LobbyConnection(QObject):
             self.log.warning("We are not connected")
             self.socket.abort()
 
-    @timed
+    @timed()
     def initNotDone(self):
         self.initTimer.stop()
         self.log.warning("Init not done for this IP : " + self.socket.peerAddress().toString())
@@ -177,7 +164,7 @@ class LobbyConnection(QObject):
         except:
             pass
 
-    @timed
+    @timed()
     def addGameModes(self):
         if not self.parent.games.isaContainer("faf"):
             self.parent.games.addContainer("faf", customGamesContainerClass(self.parent.db, self.parent.games))
@@ -238,7 +225,7 @@ class LobbyConnection(QObject):
             self.parent.games.addContainer("matchmaker",
                                            matchmakerGamesContainerClass(self.parent.db, self.parent.games))
 
-    @timed
+    @timed()
     def getRankColor(self, deviation):
         ##self.log.debug(self.logPrefix + "Get rank color")
         normalized = min((deviation / 400.0), 1.0)
@@ -246,12 +233,12 @@ class LobbyConnection(QObject):
         ##self.log.debug("Get rank color done")
         return '%02x%02x%02x%02x' % (col, col, col, col)
 
-    @timed
+    @timed()
     def removeLobbySocket(self):
         if self.socket is not None:
             self.socket.abort()
 
-    @timed
+    @timed()
     def ping(self):
         if hasattr(self, "socket"):
             if not self.noSocket:
@@ -276,7 +263,7 @@ class LobbyConnection(QObject):
                     self.initPing = False
 
 
-    @timed
+    @timed()
     def checkOldGamesFromPlayer(self):
 
         game = self.player.getGame()
@@ -288,7 +275,7 @@ class LobbyConnection(QObject):
                 realGame.removeTrueSkillPlayer(self.player)
 
 
-    @timed
+    @timed()
     def joinGame(self, uuid, gamePort, password=None):
         self.checkOldGamesFromPlayer()
         self.parent.games.removeOldGames()
@@ -343,7 +330,7 @@ class LobbyConnection(QObject):
 
             self.sendJSON(jsonToSend)
 
-    @timed
+    @timed()
     def hostGame(self, access, gameName, gamePort, version, mod="faf", map='SCMP_007', password=None, rating=1,
                  options=[]):
         mod = mod.lower()
@@ -393,7 +380,7 @@ class LobbyConnection(QObject):
             self.sendJSON(dict(command="notice", style="error", text="You are already hosting a game"))
 
 
-    @timed
+    @timed()
     def handleAction(self, action, stream):
         try:
             if action == "PING":
@@ -825,7 +812,7 @@ Thanks,\n\
             self.log.exception("Something awful happened in a lobby thread !")
 
 
-    @timed
+    @timed()
     def readData(self):
         packetSize = 0
         if self.initTimer:
@@ -898,12 +885,12 @@ Thanks,\n\
             return
 
 
-    @timed
+    @timed()
     def disconnection(self):
         self.noSocket = True
         self.done()
 
-    @timed
+    @timed()
     def getPlayerTournament(self, player):
         tojoin = []
         for container in self.parent.games.gamesContainer:
@@ -918,7 +905,7 @@ Thanks,\n\
 
         return tojoin
 
-    @timed
+    @timed()
     def sendReplaySection(self):
         reply = QByteArray()
 
@@ -942,7 +929,7 @@ Thanks,\n\
 
         self.sendArray(reply)
 
-    @timed
+    @timed()
     def sendCoopList(self):
         reply = QByteArray()
 
@@ -969,7 +956,7 @@ Thanks,\n\
 
         self.sendArray(reply)
 
-    @timed
+    @timed()
     def sendModList(self):
         reply = QByteArray()
 
@@ -993,7 +980,7 @@ Thanks,\n\
 
         self.sendArray(reply)
 
-    @timed
+    @timed()
     def jsonTourney(self, tourney):
         jsonToSend = {"command": "tournament_info", "type": tourney.type, "state": tourney.getState(),
                       "uid": tourney.getid(), "title": tourney.getName(), "host": tourney.host,
@@ -1006,7 +993,7 @@ Thanks,\n\
 
         return jsonToSend
 
-    @timed
+    @timed()
     def sendGameList(self):
 
         reply = QByteArray()
@@ -1023,7 +1010,7 @@ Thanks,\n\
 
         self.sendArray(reply)
 
-    @timed
+    @timed()
     def preparePacket(self, action, *args, **kwargs):
 
         reply = QByteArray()
@@ -1047,7 +1034,7 @@ Thanks,\n\
 
         return reply
 
-    @timed
+    @timed()
     def sendArray(self, array):
 
         if self in self.parent.recorders:
@@ -1064,7 +1051,7 @@ Thanks,\n\
                 self.socket.abort()
 
 
-    @timed
+    @timed()
     def sendReply(self, action, *args, **kwargs):
         if self in self.parent.recorders:
             if not self.noSocket:
@@ -1187,7 +1174,7 @@ Thanks,\n\
                 if player:
                     player.getLobbyThread().sendJSON(dict(command="team_info", leader=leader, members=members))
 
-    @timed
+    @timed()
     def command_social(self, message):
 
         if "teaminvite" in message:
@@ -1255,7 +1242,7 @@ Thanks,\n\
 
             self.foeList = foelist
 
-    @timed
+    @timed()
     def getPlayerPrivateAccess(self):
 
         self.player.nomadsBeta = True
@@ -1280,7 +1267,7 @@ Thanks,\n\
                 self.player.modManager.append(query.value(0))
 
 
-    @timed
+    @timed()
     def resendMail(self, login):
         #self.log.debug("resending mail")       
         query = QSqlQuery(self.parent.db)
@@ -1324,7 +1311,7 @@ Thanks,\n\
                                text="A e-mail has been sent with the instructions to validate your account"))
             #self.log.debug(self.logPrefix + "SMTP resend done")
 
-    @timed
+    @timed()
     def command_admin(self, message):
         action = message['action']
 
@@ -1415,7 +1402,7 @@ Thanks,\n\
                 query.addBindValue(avatar)
                 query.exec_()
 
-    @timed
+    @timed()
     def command_hello(self, message):
         try:
             version = message['version']
@@ -2410,7 +2397,7 @@ Thanks,\n\
         """ requestion coop lists"""
         self.sendCoopList()
 
-    @timed
+    @timed()
     def command_game_host(self, message):
         title = cgi.escape(message.get('title', ''))
         gameport = message.get('gameport')
@@ -2541,7 +2528,7 @@ Thanks,\n\
             return
         return self.preparePacket(data_string)
 
-    @timed
+    @timed()
     def sendJSON(self, data_dictionary):
         """
         Simply dumps a dictionary into a string and feeds it into the QTCPSocket
@@ -2565,7 +2552,7 @@ Thanks,\n\
     def command_invalid(self, msg):
         self.log.warning("User sent an invalid command: %r" % msg)
 
-    @timed
+    @timed()
     def receiveJSON(self, data_string, stream):
         """
         A fairly pythonic way to process received strings as JSON messages.
