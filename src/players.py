@@ -16,9 +16,12 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
+from .abc.base_player import BasePlayer
 
-class Player(object):
+
+class Player(BasePlayer):
     def __init__(self, login=None):
+        super().__init__()
         
         self._action = ''
         self.uuid = 0
@@ -26,9 +29,7 @@ class Player(object):
         self._login = login
         self._ip = ''
         self.localIp = ''
-      
-      
-      
+
         #social
         self.avatar = None
         self.clan = None
@@ -53,8 +54,7 @@ class Player(object):
         self.gameThread = None
         
         self.udpFrom = []
-        
-       
+
         self.globalSkill = None
         self.ladder1v1Skill = None
         
@@ -71,7 +71,6 @@ class Player(object):
         
         self.receivedUdp = False
         self.setPort = False
-
 
     def getLeague(self):
         return self.league
