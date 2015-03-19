@@ -25,7 +25,7 @@ import logging
 from PySide import QtNetwork
 from PySide.QtNetwork import QTcpSocket, QAbstractSocket
 from PySide.QtSql import *
-from src.abc.game import GameConnectionState
+from src.abc.base_game import GameConnectionState
 
 from src.connectivity import TestPeer, Connectivity
 from games.game import GameState

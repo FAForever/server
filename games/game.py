@@ -22,7 +22,7 @@ import logging
 import time
 
 from PySide.QtSql import QSqlQuery
-from src.abc.game import GameConnectionState
+from src.abc.base_game import GameConnectionState
 
 
 class GameState(Enum):
