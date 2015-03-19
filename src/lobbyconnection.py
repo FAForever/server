@@ -1603,60 +1603,6 @@ Thanks,\n\
                 if not query.exec_():
                     self.log.error(query.lastError())
 
-                query = QSqlQuery(self.parent.db)
-                query.prepare(
-                    "SELECT mean, deviation, numGames FROM global_rating WHERE id = (SELECT id FROM login WHERE login = ?)")
-                query.addBindValue(login)
-                query.exec_()
-
-                trueSkill = None
-                if query.size() != 1:
-                    #we dont have a mean yet, set default values
-                    trueSkill = faPlayer(Player(login), Rating(1500, 500))
-
-                    query = QSqlQuery(self.parent.db)
-                    query.prepare(
-                        "INSERT INTO global_rating (id, mean, deviation) values ((SELECT id FROM login WHERE login.login = ?),1500,500)")
-                    query.addBindValue(login)
-                    query.exec_()
-
-                    globalMean = 500
-                    numGames = 0
-                else:
-                    query.first()
-                    mean = query.value(0)
-                    dev = query.value(1)
-                    numGames = query.value(2)
-
-                    trueSkill = faPlayer(Player(login), Rating(mean, dev))
-
-
-                #get ladder 1v1 rating
-                query = QSqlQuery(self.parent.db)
-
-                query.prepare(
-                    "SELECT mean, deviation FROM ladder1v1_rating WHERE id = (SELECT id FROM login WHERE login = ?)")
-                query.addBindValue(login)
-                query.exec_()
-                #self.parent.db.close()
-                trueSkill1v1 = None
-                if query.size() != 1:
-                    #we dont have a mean yet, set default values
-                    trueSkill1v1 = faPlayer(Player(login), Rating(1500, 500))
-                    query.prepare(
-                        "INSERT INTO ladder1v1_rating (id, mean, deviation) values ((SELECT id FROM login WHERE login.login = ?),1500,500)")
-                    query.addBindValue(login)
-                    query.exec_()
-
-                else:
-                    query.first()
-                    mean = query.value(0)
-                    dev = query.value(1)
-                    trueSkill1v1 = faPlayer(Player(login), Rating(mean, dev))
-
-                gameSocket = None
-                lobbySocket = None
-
                 if self.player is not None:
                     self.player.setupPlayer(self.session, str(login), self.ip, self.port, localIp, self.uid, trueSkill,
                                             trueSkill1v1, numGames, self)
