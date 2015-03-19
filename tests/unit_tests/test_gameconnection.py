@@ -78,7 +78,7 @@ def test_handle_action_GameState_idle_as_peer_sends_CreateLobby(game_connection,
     """
     game_connection.player = players.joining
     yield from game_connection.handle_action('GameState', ['Idle'])
-    games.getGameByUuid.assert_called_once_with(players.joining.getGame())
+    games.find_by_id.assert_called_once_with(players.joining.getGame())
     transport.send_message.assert_any_call({'key': 'CreateLobby',
                                             'commands': [0, players.joining.getGamePort(),
                                                          players.joining.getLogin(),
@@ -93,7 +93,7 @@ def test_handle_action_GameState_idle_as_host_sends_CreateLobby(game_connection,
     """
     game_connection.player = players.hosting
     yield from game_connection.handle_action('GameState', ['Idle'])
-    games.getGameByUuid.assert_called_once_with(players.hosting.getGame())
+    games.find_by_id.assert_called_once_with(players.hosting.getGame())
     transport.send_message.assert_any_call({'key': 'CreateLobby',
                                             'commands': [0, players.hosting.getGamePort(),
                                                          players.hosting.getLogin(),

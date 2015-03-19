@@ -160,7 +160,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         This message is sent by FA when it doesn't know what to do.
         :return: None
         """
-        self.game = self.games.getGameByUuid(self.player.getGame())
+        self.game = self.games.find_by_id(self.player.getGame())
         assert self.game
         self.game.add_game_connection(self)
         self.send_Ping()

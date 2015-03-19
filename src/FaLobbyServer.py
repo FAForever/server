@@ -127,7 +127,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
             
             for uid in self.games.dirty_games:
         
-                game = self.parent.games.getGameByUuid(uid)
+                game = self.parent.games.find_by_id(uid)
                 if game is not None:
                     reply.append(self.prepareBigJSON(self.jsonGame(game)))
                 else:

@@ -139,8 +139,7 @@ class GamesService(object):
         return True
     
 
-    def getGameByUuid(self, uuid):
-        '''Get a game by his uuid'''
+    def find_by_id(self, uuid):
         for container in self.gamesContainer :
             game = self.gamesContainer[container].findGameByUuid(str(uuid))
             if game != None :

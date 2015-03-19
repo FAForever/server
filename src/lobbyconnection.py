@@ -268,7 +268,7 @@ class LobbyConnection(QObject):
 
         game = self.player.getGame()
         if game:
-            realGame = self.parent.games.getGameByUuid(self.player.getGame())
+            realGame = self.parent.games.find_by_id(self.player.getGame())
             if realGame:
                 realGame.removePlayer(self.player)
                 realGame.removeFromAllPlayersToConnect(self.player)
@@ -285,7 +285,7 @@ class LobbyConnection(QObject):
 
         game = None
         gameExists = False
-        game = self.parent.games.getGameByUuid(uuid)
+        game = self.parent.games.find_by_id(uuid)
 
         if game is not None:
             if game.lobbyState == "open":
@@ -2106,7 +2106,7 @@ Thanks,\n\
         """ When someone is cancelling a ladder game on purpose..."""
         game = self.player.getGame()
         if game:
-            realGame = self.parent.games.getGameByUuid(self.player.getGame())
+            realGame = self.parent.games.find_by_id(self.player.getGame())
             if realGame:
                 if realGame.initMode == 1 and realGame.lobbyState != "playing":
                     # player has a laddergame that isn't playing, so we suspect he is a canceller....

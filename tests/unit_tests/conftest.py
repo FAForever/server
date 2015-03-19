@@ -7,16 +7,6 @@ from src.gameconnection import GameConnection
 from src.lobbyconnection import LobbyConnection
 
 
-@pytest.fixture()
-def sqlquery():
-    query = mock.MagicMock()
-    query.exec_ = lambda: 0
-    query.size = lambda: 0
-    query.lastInsertId = lambda: 1
-    query.prepare = lambda q: None
-    query.addBindValue = lambda v: None
-    return query
-
 
 @pytest.fixture()
 def lobbythread():
@@ -24,14 +14,6 @@ def lobbythread():
         sendJSON=lambda obj: None
     )
 
-
-@pytest.fixture()
-def db(sqlquery):
-    # Since PySide does strict type checking, we cannot mock this directly
-    db = QtSql.QSqlDatabase()
-    db.exec_ = lambda q: sqlquery
-    db.isOpen = mock.Mock(return_value=True)
-    return db
 
 @pytest.fixture
 def game_connection(game, loop, player_service, players, games, transport, connected_game_socket):

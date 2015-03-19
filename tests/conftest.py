@@ -6,7 +6,8 @@ import sys
 from PySide.QtCore import QCoreApplication
 import pytest
 import mock
-from PySide import QtCore
+from PySide import QtCore, QtSql
+from src.games_service import GamesService
 
 
 if not hasattr(QtCore, 'Signal'):
@@ -98,6 +99,24 @@ def loop(request, application):
     request.addfinalizer(finalize)
     return loop
 
+@pytest.fixture()
+def sqlquery():
+    query = mock.MagicMock()
+    query.exec_ = lambda: 0
+    query.size = lambda: 0
+    query.lastInsertId = lambda: 1
+    query.prepare = lambda q: None
+    query.addBindValue = lambda v: None
+    return query
+
+@pytest.fixture()
+def db(sqlquery):
+    # Since PySide does strict type checking, we cannot mock this directly
+    db = QtSql.QSqlDatabase()
+    db.exec_ = lambda q: sqlquery
+    db.isOpen = mock.Mock(return_value=True)
+    return db
+
 @pytest.fixture
 def patch_connectivity(monkeypatch):
     def set_to(level):
@@ -161,7 +180,7 @@ def player_service(players):
     return p
 
 @pytest.fixture
-def games(game):
-    return mock.Mock(
-        getGameByUuid=mock.Mock(return_value=game)
-    )
+def games(game, players, db):
+    service = mock.create_autospec(GamesService(players, db))
+    service.find_by_id.return_value = game
+    return service
