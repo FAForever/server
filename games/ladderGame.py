@@ -55,7 +55,7 @@ class ladder1V1Game(Game):
          
 
     def checkNoScore(self):
-        for player in self.getPlayers() :
+        for player in self.players :
             if not player in self.gameResult :
                 #if the player don't register, we set his score to 0
                 self.gameResult[player] = 0
@@ -73,7 +73,7 @@ class ladder1V1Game(Game):
             playerToJoin = self.getPlayerToJoin()
             playerToJoin.setWantGame(True)
             
-            map = str(self.getMapName())
+            map = self.mapName
             
             json = {
                 "command": "game_launch",
@@ -111,7 +111,7 @@ class ladder1V1Game(Game):
             
             if self.isDraw() :
                 query = QSqlQuery(db)
-                queryStr = ("SELECT id FROM table_map WHERE filename LIKE '%"+self.getGameMap()+"%'")
+                queryStr = ("SELECT id FROM table_map WHERE filename LIKE '%"+self.mapName+"%'")
                 query.exec_(queryStr)
 
                 if  query.size() == 1:
@@ -120,11 +120,7 @@ class ladder1V1Game(Game):
                 
                     queryStr = ("UPDATE table_map_features set num_draws = (num_draws +1) WHERE map_id LIKE " + str(mapId))
                     query.exec_(queryStr)
-            
-#            tsresults = self.computeResults()
-#            tsplayers = self.getTrueSkillPlayers()
-#            self.trueSkillUpdate(tsresults, tsplayers, logger, db, players)
-    
+
             tsresults = self.computeResults1v1()
             tsplayers = self.getTrueSkill1v1Players()
             self.trueSkillUpdate(tsresults, tsplayers, logger, db, players, playerFnc="setladder1v1Rating" ,table="ladder1v1_rating", winner=True, sendScore=False)
@@ -219,7 +215,7 @@ class ladder1V1Game(Game):
 
 
         else :
-            tsplayers = self.getTrueSkillPlayers()
+            tsplayers = self.trueSkillPlayers
             for playerTS in tsplayers : 
                 name = playerTS.getPlayer()
                 self.sendMessageToPlayers(players, name, self.getInvalidReason())

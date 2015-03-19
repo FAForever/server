@@ -88,14 +88,14 @@ class gamesContainerClass(object):
     def findGameByUuid(self, uuid):
         '''Find a game by the uuid'''
         for game in self.games:
-            if str(game.getuuid()) == str(uuid) :
+            if game.uuid == uuid :
                 return game
         return None            
 
     def findGameByHost(self, host):
         '''Find a game by the hostName'''
         for game in self.games:
-            if game.getHostName() == str(host) :
+            if game.hostPlayer == str(host) :
                 return game
         return None    
 
@@ -117,7 +117,7 @@ class gamesContainerClass(object):
         for game in reversed(self.games):
             if game == gameToRemove :
                 game.setLobbyState('closed')
-                self.addDirtyGame(game.getuuid())
+                self.addDirtyGame(game.uuid)
 
                 
                 self.games.remove(game)
@@ -127,7 +127,7 @@ class gamesContainerClass(object):
     def removeUserGame(self, player):
         '''Remove a game, detected by the host, from the list a delete it'''
         for game in reversed(self.games):
-            if game.getHostName() == player.getLogin() :
+            if game.hostPlayer == player.getLogin() :
                     self.removeGame(game)
                     #del game
  
@@ -143,21 +143,21 @@ class gamesContainerClass(object):
 
             diff = now - game.created_at
 
-            if game.getLobbyState() == 'open' and game.getNumPlayer() == 0 :
+            if game.lobbyState == 'open' and game.getNumPlayer() == 0 :
                 
                 game.setLobbyState('closed')      
-                self.addDirtyGame(game.getuuid())        
+                self.addDirtyGame(game.uuid)
                 self.removeGame(game)
 
                 continue
 
-            if game.getLobbyState() == 'open' :
-                host = game.getHostName()
+            if game.lobbyState == 'open' :
+                host = game.hostPlayer
                 player = self.parent.players.findByName(host)
 
                 if player == 0 : 
                     game.setLobbyState('closed')
-                    self.addDirtyGame(game.getuuid())
+                    self.addDirtyGame(game.uuid)
                     self.removeGame(game)
 
                     continue
@@ -165,24 +165,24 @@ class gamesContainerClass(object):
                     if player.getAction() != "HOST" :
                         
                         game.setLobbyState('closed')
-                        self.addDirtyGame(game.getuuid())
+                        self.addDirtyGame(game.uuid)
                         self.removeGame(game)
 
                         continue
 
             
-            if game.getLobbyState() == 'Idle' and diff > 60 :
+            if game.lobbyState == 'Idle' and diff > 60 :
 
                 game.setLobbyState('closed')   
-                self.addDirtyGame(game.getuuid())               
+                self.addDirtyGame(game.uuid)
                 self.removeGame(game)
 
                 continue
 
-            if game.getLobbyState() == 'playing' and diff > 60 * 60 * 8 : #if the game is playing for more than 8 hours
+            if game.lobbyState == 'playing' and diff > 60 * 60 * 8 : #if the game is playing for more than 8 hours
 
                 game.setLobbyState('closed')
-                self.addDirtyGame(game.getuuid())
+                self.addDirtyGame(game.uuid)
                 self.removeGame(game)
 
                 continue

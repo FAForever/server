@@ -126,10 +126,10 @@ def game(players):
     players.joining.getGame = mock.Mock(return_value=game)
     players.peer.getGame = mock.Mock(return_value=game)
     game.hostPlayer = players.hosting
-    game.getInitMode = lambda: 0
+    game.initMode = 0
     game.packetReceived = []
-    game.getGameName = lambda: "Some game name"
-    game.getuuid = lambda: 1
+    game.gameName = "Some game name"
+    game.uuid = 1
     return game
 
 def player(login, id, port, action, ip='127.0.0.1'):

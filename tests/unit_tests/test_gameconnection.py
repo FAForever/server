@@ -109,7 +109,7 @@ def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, pat
     game_connection.player = players.hosting
     result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
     loop.run_until_complete(result)
-    transport.send_message.assert_any_call({'key': 'HostGame', 'commands': [str(game.getMapName())]})
+    transport.send_message.assert_any_call({'key': 'HostGame', 'commands': [game.mapName]})
 
 
 def test_handle_action_PlayerOption(game, loop, game_connection):

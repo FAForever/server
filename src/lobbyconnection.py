@@ -301,7 +301,7 @@ class LobbyConnection(QObject):
         game = self.parent.games.getGameByUuid(uuid)
 
         if game is not None:
-            if game.getLobbyState() == "open":
+            if game.lobbyState == "open":
                 gameExists = True
             else:
                 return
@@ -309,7 +309,7 @@ class LobbyConnection(QObject):
             return
 
         if gameExists:
-            if game.getPassword() != password:
+            if game.password != password:
                 self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
                 return
 
@@ -326,8 +326,8 @@ class LobbyConnection(QObject):
                 return
 
             jsonToSend = {"command": "game_launch", "mod": mod, "uid": uuid}
-            if len(game.getSimMods()) > 0:
-                jsonToSend["sim_mods"] = game.getSimMods()
+            if len(game.mods) > 0:
+                jsonToSend["sim_mods"] = game.mods
             if len(game.options) != 0:
                 jsonToSend["options"] = []
                 numOptions = len(container.options)
@@ -360,7 +360,7 @@ class LobbyConnection(QObject):
 
         game = self.parent.games.create_game(access, mod, self.player, gameName, gamePort, map, password)
         if game:
-            uuid = game.getuuid()
+            uuid = game.uuid
 
             self.player.setAction("HOST")
             self.player.setWantGame(True)
@@ -1016,7 +1016,7 @@ Thanks,\n\
             if container.listable == True or container.live == True:
                 for game in container.games:
 
-                    if game.getLobbyState() == "open" or game.getLobbyState() == "playing":
+                    if game.lobbyState == "open" or game.lobbyState == "playing":
                         reply.append(self.prepareBigJSON(self.parent.jsonGame(game)))
 
             self.log.debug("done")
@@ -2202,7 +2202,7 @@ Thanks,\n\
         if game:
             realGame = self.parent.games.getGameByUuid(self.player.getGame())
             if realGame:
-                if realGame.getInitMode() == 1 and realGame.getLobbyState() != "playing":
+                if realGame.initMode == 1 and realGame.lobbyState != "playing":
                     # player has a laddergame that isn't playing, so we suspect he is a canceller....
                     self.log.debug("Having a ladder and cancelling it...")
 

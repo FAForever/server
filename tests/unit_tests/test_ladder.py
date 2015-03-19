@@ -41,7 +41,7 @@ def test_start_game_uses_map_from_mappool(container, ladder_setup, lobbythread):
     map_pool = ladder_setup['popular_maps']
     container.choose_ladder_map_pool = mock.Mock(return_value=map_pool)
     lobbythread.sendJSON = mock.Mock()
-    container.getMapName = lambda i: i  # This is sloppy.
+    container.mapName = "SCMP_007"  # This is sloppy.
 
     container.startGame(ladder_setup['player1'], ladder_setup['player2'])
     args, kwargs = lobbythread.sendJSON.call_args

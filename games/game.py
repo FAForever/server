@@ -167,33 +167,14 @@ class Game(object):
         except KeyError:
             return None
 
-    def getSimMods(self):
-        return self.mods
-
-    def getMaxPlayers(self):
-        return self.maxPlayer
-
-    def getOptions(self):
-        return self.options
-
     def setAccess(self, access):
         self.access = access
-
-    def getAccess(self):
-        return self.access
 
     def setPassword(self, password):
         self.password = password
 
-    def getPassword(self):
-        return self.password
-
-    def getGameType(self):
-        return self.gameType
-
     def getGamemodVersion(self):
         return self.parent.getGamemodVersion()
-
 
     def setGameType(self, type):
         if type == "demoralization":
@@ -220,7 +201,7 @@ class Game(object):
         self.AIs = []
 
     def checkNoScore(self):
-        for player in self.getPlayers():
+        for player in self.players:
             if not player in self.gameResult:
                 #if the player don't register, chances are that he died or something
                 self.gameResult[player] = -1
@@ -243,20 +224,12 @@ class Game(object):
         self.validGame = False
         self.invalidReason = reason
 
-    def getDesync(self):
-        return self.desync
-
-    def getuuid(self):
-        return self.uuid
-
     def specialInit(self, player):
         self.placePlayer(player.getLogin(), -1)
         self.assignPlayerToTeam(player.getLogin(), -1)
 
-
     def specialEnding(self, logger, db, players):
         pass
-
 
     def isWinner(self, name):
         return 0
@@ -330,7 +303,7 @@ class Game(object):
                                            "UPDATE AI_rating set mean =%f, deviation = %f, numGames = (numGames +1) WHERE id = (SELECT id FROM AI_names WHERE AI_names.login = '%s')") % (
                                            mean, dev, nameAI)
                             query.exec_(queryStr)
-                            gameId = self.getuuid()
+                            gameId = self.uuid
                             queryStr = (
                                            "UPDATE game_player_stats set `after_mean` = %f, `after_deviation` = %f WHERE `gameId` = %s AND `playerId` = (SELECT id FROM AI_names WHERE login = '%s' )") % (
                                            mean, dev, str(gameId), nameAI)
@@ -342,7 +315,7 @@ class Game(object):
                                                "UPDATE %s set mean =%f, deviation = %f, numGames = (numGames +1) WHERE id = (SELECT id FROM login WHERE login.login = '%s')") % (
                                                table, mean, dev, str(name))
                                 query.exec_(queryStr)
-                                gameId = self.getuuid()
+                                gameId = self.uuid
                                 queryStr = (
                                                "UPDATE game_player_stats set `after_mean` = %f, `after_deviation` = %f WHERE `gameId` = %s AND `playerId` = (SELECT id FROM login WHERE login = '%s' )") % (
                                                mean, dev, str(gameId), str(name))
@@ -389,9 +362,6 @@ class Game(object):
                     pass
 
                 break
-
-    def getInitMode(self):
-        return self.initMode
 
     def isAllScoresThere(self):
         if len(self.gameFaResult) != self.numPlayers or len(self.gameResult) != self.numPlayers:
@@ -455,7 +425,7 @@ class Game(object):
         if tsresults != 0:
             msg += "\nNew ratings :\n"
 
-            for playerTS in self.getTrueSkillPlayers():
+            for playerTS in self.trueSkillPlayers:
                 name = playerTS.getPlayer()
                 if str(name) in tsresults.getAllPlayersNames():
                     mean = (tsresults.getRating(name).getMean() * self.partial) + (
@@ -494,7 +464,6 @@ class Game(object):
         except:
             return 0
 
-
     def addScorePlayer(self, player, score):
         self.gameScore[player] = score
 
@@ -512,10 +481,6 @@ class Game(object):
             self.gameResult[player] = score
 
         return
-
-    def getResultPlayers(self):
-        return self.gameResult
-
 
     def returnKeyIndex(self, list, value):
         for d in list:
@@ -735,16 +700,6 @@ class Game(object):
 
         return 1
 
-        return 0  #AI
-
-
-    def getTeamsAssignements(self):
-        return self.teamAssign
-
-
-    def getTrueSkillPlayers(self):
-        return self.trueSkillPlayers
-
     def addTrueSkillPlayer(self, player):
         self.trueSkillPlayers.append(player)
 
@@ -773,7 +728,7 @@ class Game(object):
     def removeFromAllPlayersToConnect(self, playerToRemove):
         """Remove playerToRemove from all lists of connections"""
         # for all the players in the game
-        for player in self.getPlayers():
+        for player in self.players:
             # if the player has a connection list
             if player.getLogin() in self.connections:
                 # we should remove the leaving player of the connection list of that player
@@ -793,7 +748,7 @@ class Game(object):
         return 1
 
     def isPlayerInGame(self, player):
-        for p in self.getPlayers():
+        for p in self.players:
             if player == p.getLogin():
                 return True
         return False
@@ -842,9 +797,6 @@ class Game(object):
         else:
             self.mapName = map
 
-    def getGameMap(self):
-        return self.mapName
-
     def setGameHostPort(self, port):
         if port == '':
             return 0
@@ -870,44 +822,10 @@ class Game(object):
             self.hostuuid = uuid
 
     def getGameAddress(self):
-        return "%s:%s" % (str(self.getHostIp()), str(self.getHostPort()))
+        return "%s:%s" % (str(self.hostip), str(self.hostport))
 
     def getGameLocalAddress(self):
-        return "%s:%s" % (str(self.getHostLocalIp()), str(self.getHostLocalPort()))
-
-    def getHostPort(self):
-        return self.hostport
-
-    def getHostLocalPort(self):
-        return self.hostlocalport
-
-
-    def getHostName(self):
-        return self.hostPlayer
-
-    def getHostId(self):
-        return self.hostuuid
-
-    def getGameName(self):
-        return self.gameName
-
-    def getHostIp(self):
-        return self.hostip
-
-    def getHostLocalIp(self):
-        return self.hostlocalip
-
-    def getLobbyState(self):
-        return self.lobbyState
-
-    def getPlayers(self):
-        return self.players
-
-    def getMinPlayers(self):
-        return self.minPlayer
-
-    def getMapName(self):
-        return self.mapName
+        return "%s:%s" % (str(self.hostlocalip), str(self.hostlocalport))
 
     def getNumPlayer(self):
         return len(self.players)

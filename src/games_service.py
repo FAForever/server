@@ -85,21 +85,21 @@ class GamesService(object):
             if container.listable == True :
 
                 for game in container.games :
-                    if game.getLobbyState() == "open" :
+                    if game.lobbyState == "open" :
                         
                         json = {
                             "command": "game_info",
-                            "uid": game.getuuid(),
-                            "title": game.getGameName(),
-                            "state": game.getLobbyState(),
+                            "uid": game.uuid,
+                            "title": game.gameName,
+                            "state": game.lobbyState,
                             "featured_mod": game.getGamemod(),
-                            "mapname": game.getMapName().lower(),
-                            "host": game.getHostName(),
+                            "mapname": game.mapName.lower(),
+                            "host": game.hostPlayer,
                             "num_players": game.getNumPlayer(),
-                            "game_type": game.getGameType()
+                            "game_type": game.gameType
                         }
 
-                        teams = game.getTeamsAssignements()
+                        teams = game.teamAssign
     
                         teamsToSend = {}
                         for k, v in teams.items() :

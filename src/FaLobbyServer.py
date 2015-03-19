@@ -80,23 +80,23 @@ class FALobbyServer(QtNetwork.QTcpServer):
     def jsonGame(self, game):
         jsonToSend = {
             "command": "game_info",
-            "access": game.getAccess(),
-            "uid": game.getuuid(),
-            "title": game.getGameName(),
-            "state": game.getLobbyState(),
+            "access": game.access,
+            "uid": game.uuid,
+            "title": game.gameName,
+            "state": game.lobbyState,
             "featured_mod": game.getGamemod(),
             "featured_mod_versions": game.getGamemodVersion(),
-            "sim_mods": game.getSimMods(),
-            "mapname": game.getMapName().lower(),
-            "host": game.getHostName(),
+            "sim_mods": game.mods,
+            "mapname": game.mapName.lower(),
+            "host": game.hostPlayer,
             "num_players": game.getNumPlayer(),
-            "game_type": game.getGameType(),
+            "game_type": game.gameType,
             "game_time": game.created_at,
             "options": game.options,
-            "max_players": game.getMaxPlayers()
+            "max_players": game.maxPlayer
         }
 
-        teams = game.getTeamsAssignements()
+        teams = game.teamAssign
 
         teamsToSend = {}
         for k, v in teams.items():

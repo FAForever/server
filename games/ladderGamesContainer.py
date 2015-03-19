@@ -167,7 +167,7 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
 
         ngame = ladder1V1Game(gameUuid, self)
 
-        uuid = ngame.getuuid()
+        uuid = ngame.uuid
 
         player1.setGame(uuid)
         player2.setGame(uuid)
@@ -286,21 +286,21 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
 
             diff = now - game.created_at
 
-            if game.getLobbyState() == 'open' and game.getNumPlayer() == 0 :
+            if game.lobbyState == 'open' and game.getNumPlayer() == 0 :
                 
                 game.setLobbyState('closed')      
-                self.addDirtyGame(game.getuuid())        
+                self.addDirtyGame(game.uuid)
                 self.removeGame(game)
 
                 continue
 
-            if game.getLobbyState() == 'open' :
-                host = game.getHostName()
+            if game.lobbyState == 'open' :
+                host = game.hostPlayer
                 player = self.parent.players.findByName(host)
 
                 if player == 0 : 
                     game.setLobbyState('closed')
-                    self.addDirtyGame(game.getuuid())
+                    self.addDirtyGame(game.uuid)
                     self.removeGame(game)
 
                     continue
@@ -308,25 +308,24 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
                     if player.getAction() != "HOST" :
                         
                         game.setLobbyState('closed')
-                        self.addDirtyGame(game.getuuid())
+                        self.addDirtyGame(game.uuid)
                         self.removeGame(game)
 
                         continue
 
             
-            if game.getLobbyState() == 'Idle' and diff > 60 :
+            if game.lobbyState == 'Idle' and diff > 60 :
 
                 game.setLobbyState('closed')   
-                self.addDirtyGame(game.getuuid())               
+                self.addDirtyGame(game.uuid)
                 self.removeGame(game)
 
                 continue
 
-            if game.getLobbyState() == 'playing' and diff > 60 * 60 * 8 : #if the game is playing for more than 8 hours
+            if game.lobbyState == 'playing' and diff > 60 * 60 * 8 : #if the game is playing for more than 8 hours
 
                 game.setLobbyState('closed')
-                self.addDirtyGame(game.getuuid())
+                self.addDirtyGame(game.uuid)
                 self.removeGame(game)
 
                 continue
-    

@@ -68,7 +68,7 @@ class matchmakerGame(Game):
                 self.setPlayerColor(place, place)
 
                 playerToJoin = self.getPlayerToJoin()
-                mapname = str(self.getMapName())
+                mapname = self.mapName
                 team = 1
                 for p in playerToJoin :
                     place = self.getPositionOfPlayer(p.getLogin())  
@@ -116,5 +116,5 @@ class matchmakerGame(Game):
             logger.debug("Game is invalid : Play time was not long enough (under %i seconds)" % timeLimit)
         if self.isValid() :
             tsresults = self.computeResults()
-            tsplayers = self.getTrueSkillPlayers()
+            tsplayers = self.trueSkillPlayers
             self.trueSkillUpdate(tsresults, tsplayers, logger, db, players, sendScore = False)

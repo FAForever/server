@@ -173,24 +173,22 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.game.setHostLocalIP(self.player.getLocalIp())
             self.game.proxy = proxy.proxy()
             strlog = (
-                "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.getuuid()), str(self.game.getGamemod())))
+                "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.uuid), str(self.game.getGamemod())))
             self.logGame = strlog
-            initmode = self.game.getInitMode()
-            self._send_create_lobby(initmode)
+            self._send_create_lobby(self.game.initMode)
 
         elif action == "JOIN":
             if self.player.getLogin() in self.game.packetReceived:
                 self.packetReceived[self.player.getLogin()] = []
 
-            for otherPlayer in self.game.getPlayers():
+            for otherPlayer in self.game.players:
                 if self.player.getAddress() in otherPlayer.UDPPacket:
                     otherPlayer.UDPPacket[self.player.getAddress()] = 0
             strlog = (
-                "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.getuuid()), str(self.game.getGamemod())))
+                "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.uuid), str(self.game.getGamemod())))
             self.logGame = strlog
 
-            initmode = self.game.getInitMode()
-            self._send_create_lobby(initmode)
+            self._send_create_lobby(self.game.initMode)
 
         else:
             # We tell the lobby that FA must be killed.
@@ -240,7 +238,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
         playeraction = self.player.getAction()
         if playeraction == "HOST":
-            map = self.game.getMapName()
+            map = self.game.mapName
             self._send_host_game(str(map))
         # if the player is joining, we connect him to host.
         elif playeraction == "JOIN":
@@ -404,8 +402,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     raw = "%r" % values[1]
                     path = raw.replace('\\', '/')
                     map = str(path.split('/')[2]).lower()
-                    curMap = ''
-                    curMap = self.game.getGameMap()
+                    curMap = self.game.mapName
                     if curMap != map:
                         self.game.setGameMap(map)
                         self.sendGameInfo()
@@ -477,19 +474,19 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                         self.log.debug(self.logGame + "Operation really Complete!")
                         query = QSqlQuery(self.db)
                         query.prepare(
-                            "SELECT id FROM coop_map WHERE filename LIKE '%/" + self.game.getGameMap() + ".%'")
+                            "SELECT id FROM coop_map WHERE filename LIKE '%/" + self.game.mapName + ".%'")
                         query.exec_()
                         if query.size() > 0:
                             query.first()
                             mission = int(query.value(0))
                         else:
-                            self.log.debug(self.logGame + "can't find coop map " + str(self.game.getGameMap()))
+                            self.log.debug(self.logGame + "can't find coop map " + self.game.mapName)
                     if mission != -1:
 
                         query.prepare(
                             "INSERT INTO `coop_leaderboard`(`mission`, `gameuid`, `secondary`, `time`) VALUES (?,?,?,?);")
                         query.addBindValue(mission)
-                        query.addBindValue(self.game.getuuid())
+                        query.addBindValue(self.game.uuid)
                         query.addBindValue(int(values[1]))
                         query.addBindValue(str(values[2]))
                         if not query.exec_():
@@ -555,9 +552,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
                 self.game.fixPlayerPosition()
 
-                self.fillPlayerStats(self.game.getPlayers())
+                self.fillPlayerStats(self.game.players)
                 self.fillAIStats(self.game.AIs)
-                for player in self.game.getPlayers():
+                for player in self.game.players:
                     player.setAction("PLAYING")
                     player.resetUdpPacket()
 
@@ -574,7 +571,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
                 self.sendGameInfo()
 
-                if self.game.getGameType() != 0 and self.game.getGamemod() != "coop":
+                if self.game.gameType != 0 and self.game.getGamemod() != "coop":
                     self.game.setInvalid("Only assassination mode is ranked")
 
                 elif self.game.gameOptions["FogOfWar"] != "explored":
@@ -596,7 +593,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     for uid in self.game.mods:
                         if not self.isModRanked(uid):
                             if uid == "e7846e9b-23a4-4b95-ae3a-fb69b289a585":
-                                if not "scca_coop_e02" in self.game.getGameMap().lower():
+                                if not "scca_coop_e02" in self.game.mapName.lower():
                                     self.game.setInvalid("Sim mods are not ranked")
 
                             else:
@@ -607,7 +604,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                         query.addBindValue(uid)
                         query.exec_()
 
-                for playerTS in self.game.getTrueSkillPlayers():
+                for playerTS in self.game.trueSkillPlayers:
                     if playerTS.getRating().getMean() < -1000:
                         self.game.setInvalid("You are playing with a smurfer.")
 
@@ -622,7 +619,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         try:
             if self.game is not None:
                 self.game.remove_game_connection(self)
-                state = self.game.getLobbyState()
+                state = self.game.lobbyState
                 if state == "playing":
                     curplayers = self.game.getNumPlayer()
                     allScoreHere = False
@@ -638,15 +635,15 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                                 query = QSqlQuery(self.db)
                                 queryStr = (
                                     "UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(
-                                        self.game.getuuid()))
+                                        self.game.uuid))
                                 query.exec_(queryStr)
                         else:
                             query = QSqlQuery(self.db)
                             queryStr = (
-                                "UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(self.game.getuuid()))
+                                "UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(self.game.uuid))
                             query.exec_(queryStr)
 
-                        if self.game.getDesync() > 20:
+                        if self.game.desync > 20:
                             self.game.setInvalid("Too many desyncs")
 
                         if hasattr(self.game, "noStats"):
@@ -656,7 +653,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                             self.registerScore(self.game.gameResult)
 
                         self.game.specialEnding(self.log, self.db, self.listUsers)
-                        for playerTS in self.game.getTrueSkillPlayers():
+                        for playerTS in self.game.trueSkillPlayers:
                             name = playerTS.getPlayer()
                             for player in self.listUsers.getAllPlayers():
                                 if player is not None:
@@ -684,7 +681,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                         self.game = None
 
                     elif getAction == 'JOIN':
-                        minplayers = self.game.getMinPlayers()
+                        minplayers = self.game.minPlayer
                         curplayers = self.game.getNumPlayer()
 
                         if minplayers == 2 or curplayers == 0:
@@ -719,8 +716,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         login = self.player.getLogin()
         uid = int(self.player.getId())
 
-        if not self.game.getGameName() is None:
-            if self.game.getGameName().startswith('#'):
+        if not self.game.gameName is None:
+            if self.game.gameName.startswith('#'):
                 self.sendToRelay("P2PReconnect", [])
 
         self.send_CreateLobby(rankedMode, port, login, uid, 1)
@@ -767,13 +764,13 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def sendGameInfo(self, skipDuration=False):
         try:
-            self.games.mark_dirty(self.game.getuuid())
+            self.games.mark_dirty(self.game.uuid)
         except:
             self.log.exception("Something awful happened in a sendinfo thread!")
 
     def registerScore(self, gameResult):
         try:
-            gameId = self.game.getuuid()
+            gameId = self.game.uuid
             query = QSqlQuery(self.parent.db)
             for player in gameResult:
 
@@ -854,7 +851,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def registerTime(self, player):
         query = QSqlQuery(self.parent.db)
-        gameId = self.game.getuuid()
+        gameId = self.game.uuid
         if self.game.isAI(player):
             nameAI = player.rstrip(string.digits)
             queryStr = (
@@ -869,10 +866,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     def fillGameStats(self):
         mapId = 0
         modId = 0
-        if "thermo" in self.game.getGameMap().lower():
+        if "thermo" in self.game.mapName.lower():
             self.game.setInvalid("This map is not ranked.")
         query = QSqlQuery(self.parent.db)
-        queryStr = ("SELECT id FROM table_map WHERE filename LIKE '%/" + self.game.getGameMap() + ".%'")
+        queryStr = ("SELECT id FROM table_map WHERE filename LIKE '%/" + self.game.mapName + ".%'")
         query.exec_(queryStr)
         if query.size() > 0:
             query.first()
@@ -894,15 +891,15 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         query = QSqlQuery(self.parent.db)
         query.prepare(
             "UPDATE game_stats set `startTime` = NOW(), gameType = ?, gameMod = ?, mapId = ?, gameName = ? WHERE id = ?")
-        query.addBindValue(str(self.game.getGameType()))
+        query.addBindValue(str(self.game.gameType))
         query.addBindValue(modId)
         query.addBindValue(mapId)
-        query.addBindValue(self.game.getGameName())
-        query.addBindValue(self.game.getuuid())
+        query.addBindValue(self.game.gameName)
+        query.addBindValue(self.game.uuid)
         if not query.exec_():
             self.log.debug("fillGameStats error: ")
             self.log.debug(query.lastError())
-            self.log.debug(self.game.getGameMap().lower())
+            self.log.debug(self.game.mapName.lower())
 
         queryStr = ("UPDATE table_map_features set times_played = (times_played +1) WHERE map_id LIKE " + str(mapId))
         query.exec_(queryStr)
@@ -938,7 +935,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
             rating = None
 
-            for playerTS in self.game.getTrueSkillPlayers():
+            for playerTS in self.game.trueSkillPlayers:
                 if str(playerTS.getPlayer()) == str(AI):
                     rating = playerTS.getRating()
                     break
@@ -948,7 +945,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             nameAI = str(AI).rstrip(string.digits)
             queryStr += (
                             "INSERT INTO `game_player_stats`(`AI`, `gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) VALUES (1, %s, (SELECT id FROM AI_names WHERE login = '%s'), %s, %s, %s, %i, %f, %f);") % (
-                            str(self.game.getuuid()), nameAI, faction, color, team, place, mean, dev )
+                            str(self.game.uuid), nameAI, faction, color, team, place, mean, dev )
 
         query = QSqlQuery(self.parent.db)
         query.exec_(queryStr)
@@ -974,7 +971,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
                 rating = None
 
-                for playerTS in self.game.getTrueSkillPlayers():
+                for playerTS in self.game.trueSkillPlayers:
                     if str(playerTS.getPlayer()) == str(name):
                         rating = playerTS.getRating()
                         break
@@ -985,7 +982,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
                 queryStr += (
                                 "INSERT INTO `game_player_stats`(`gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) VALUES (%s, %s, %s, %s, %s, %i, %f, %f);") % (
-                                str(self.game.getuuid()), str(player.getId()), faction, color, team, place, mean, dev )
+                                str(self.game.uuid), str(player.getId()), faction, color, team, place, mean, dev )
 
         if queryStr != "":
             query = QSqlQuery(self.parent.db)

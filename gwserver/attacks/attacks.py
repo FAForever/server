@@ -93,10 +93,7 @@ class attack(object):
     
     def getCancel(self):
         return self.cancel
-    
-    def getMaxPlayers(self):
-        return self.maxPlayers
-    
+
     def getNumPlayers(self, team):
         if team == 1 :
             return len(self.team1)
@@ -104,7 +101,7 @@ class attack(object):
             return len(self.team2)
     
     def teamIsFull(self, team):
-        if self.getNumPlayers(team) >= self.getMaxPlayers() :
+        if self.getNumPlayers(team) >= self.maxPlayer :
             return True
         else :
             return False
@@ -555,7 +552,7 @@ class Attacks(object):
         ''' add the game uuid'''
         for uid in self.attacks:
             if self.attacks[uid].getPlanet() == planetuid :
-                return self.attacks[uid].getUuid()
+                return self.attacks[uid].uuid
         return None
                 
 

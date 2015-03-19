@@ -49,7 +49,7 @@ class team(object):
 
     def getTrueskillTeam(self):
         curTeam = Team()
-        for player in self.getPlayers():
+        for player in self.players:
             tsPlayer = player.getRating()
             curTeam.addPlayer(tsPlayer.getPlayer(), tsPlayer.getRating())
         return curTeam
@@ -140,7 +140,7 @@ class teamsManager(object):
         toDelete = []
         for uid in self.teams:
             team = self.teams[uid]
-            if player in team.getPlayers():
+            if player in team.players:
                 team.removePlayer(player)
 
                 if team.getNumPlayers() == 0:
@@ -198,14 +198,14 @@ class teamsManager(object):
         self.parent.log.debug("previous size of team1 " + str(self.teams[uidteam1].getNumPlayers()) )
         self.parent.log.debug("previous size of team2 " + str(self.teams[uidteam2].getNumPlayers()) )
         self.parent.log.debug("merging " + str(uidteam1) + " with " + str(uidteam2))
-        self.teams[uidteam1].addPlayers(self.teams[uidteam2].getPlayers())
+        self.teams[uidteam1].addPlayers(self.teams[uidteam2].players)
 
         p1names = []
         p2names = []
 
-        for player in self.teams[uidteam1].getPlayers():
+        for player in self.teams[uidteam1].players:
             p1names.append(player.getLogin())
-        for player in self.teams[uidteam2].getPlayers():
+        for player in self.teams[uidteam2].players:
             p2names.append(player.getLogin())
 
         gameName = str( ",".join(p1names) + " Merged with " + ",".join(p2names))        
@@ -236,7 +236,7 @@ class teamsManager(object):
         toDelete = []
         for uid in self.teams:
             team = self.teams[uid]
-            for player in team.getPlayers():
+            for player in team.players:
                 if not player in self.parent.parent.players.players:
                     team.removePlayer(player)
 
@@ -279,7 +279,7 @@ class teamsManager(object):
 
             teamOk = True
             # now we test all the player
-            for player in curTeam.getPlayers():
+            for player in curTeam.players:
 
                 curMatchQuality = self.getMatchQuality2Players(player.getRating(), teamAvg)
                 if curMatchQuality < gameQuality :
@@ -333,12 +333,8 @@ class teamsManager(object):
                 bestMatchupUid = uid       
 
         if bestMatchup:
-            self.parent.startGame(searchTeam.getPlayers(), bestMatchup.getPlayers(), teamuid, bestMatchupUid)
+            self.parent.startGame(searchTeam.players, bestMatchup.players, teamuid, bestMatchupUid)
             pass
-
-
-
-
 
 class matchmakerGamesContainerClass(gamesContainerClass):
     '''Class for matchmaker games'''
@@ -404,8 +400,8 @@ class matchmakerGamesContainerClass(gamesContainerClass):
 
         #first clean old games that didnt start.
         for game in self.games :
-            if game.getLobbyState() == 'Idle' :
-                for player in game.getPlayers() :
+            if game.lobbyState == 'Idle' :
+                for player in game.players :
                     for p in players1 + players2:
                         if player.getLogin() == p.getLogin() or player.getLogin() == p.getLogin() :
                             self.remove(game)
@@ -543,7 +539,7 @@ class matchmakerGamesContainerClass(gamesContainerClass):
 
         ngame = matchmakerGame(gameUuid, self)
 
-        uuid = ngame.getuuid()
+        uuid = ngame.uuid
         
         ngame.setLobbyState('Idle')
         #host is player 1
@@ -625,21 +621,21 @@ class matchmakerGamesContainerClass(gamesContainerClass):
 
             diff = now - game.created_at
 
-            if game.getLobbyState() == 'open' and game.getNumPlayer() == 0 :
+            if game.lobbyState == 'open' and game.getNumPlayer() == 0 :
                 
                 game.setLobbyState('closed')      
-                self.addDirtyGame(game.getuuid())        
+                self.addDirtyGame(game.uuid)
                 self.removeGame(game)
 
                 continue
 
-            if game.getLobbyState() == 'open' :
-                host = game.getHostName()
+            if game.lobbyState == 'open' :
+                host = game.hostPlayer
                 player = self.parent.players.findByName(host)
 
                 if player == 0 : 
                     game.setLobbyState('closed')
-                    self.addDirtyGame(game.getuuid())
+                    self.addDirtyGame(game.uuid)
                     self.removeGame(game)
 
                     continue
@@ -647,24 +643,24 @@ class matchmakerGamesContainerClass(gamesContainerClass):
                     if player.getAction() != "HOST" :
                         
                         game.setLobbyState('closed')
-                        self.addDirtyGame(game.getuuid())
+                        self.addDirtyGame(game.uuid)
                         self.removeGame(game)
 
                         continue
 
             
-            if game.getLobbyState() == 'Idle' and diff > 60 :
+            if game.lobbyState == 'Idle' and diff > 60 :
 
                 game.setLobbyState('closed')   
-                self.addDirtyGame(game.getuuid())               
+                self.addDirtyGame(game.uuid)
                 self.removeGame(game)
 
                 continue
 
-            if game.getLobbyState() == 'playing' and diff > 60 * 60 * 8 : #if the game is playing for more than 8 hours
+            if game.lobbyState == 'playing' and diff > 60 * 60 * 8 : #if the game is playing for more than 8 hours
 
                 game.setLobbyState('closed')
-                self.addDirtyGame(game.getuuid())
+                self.addDirtyGame(game.uuid)
                 self.removeGame(game)
 
                 continue
