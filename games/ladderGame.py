@@ -51,7 +51,7 @@ class ladder1V1Game(Game):
         self.leagues = {}
 
     def setLeaguePlayer(self, player):
-        self.leagues[deepcopy(player.getLogin())] = deepcopy(player.getLeague())
+        self.leagues[player.getLogin()] = player.league
          
 
     def checkNoScore(self):

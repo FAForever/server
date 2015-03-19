@@ -23,7 +23,7 @@ def player2_maps():
 
 
 def playerMock(lobbythread, id):
-    player_mock = mock.Mock(spec=Player)
+    player_mock = mock.create_autospec(spec=Player(''))
     player_mock.getLogin = lambda: "Player %s" % id
     player_mock.setAction = lambda action: None
     player_mock.getId = lambda: id

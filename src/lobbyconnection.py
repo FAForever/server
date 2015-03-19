@@ -1767,7 +1767,7 @@ Thanks,\n\
                                                 self.player.avatar = avatar
                                                 self.leagueAvatar = avatar
 
-                            jleague = {"league": self.player.getLeague(), "division": self.player.division}
+                            jleague = {"league": self.player.league, "division": self.player.division}
                             self.player.leagueInfo = jleague
 
                 self.log.debug("avatar")

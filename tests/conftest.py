@@ -133,7 +133,7 @@ def game(players):
     return game
 
 def player(login, id, port, action, ip='127.0.0.1'):
-    p = mock.MagicMock(spec=Player)
+    p = mock.create_autospec(spec=Player(login))
     p.getGamePort.return_value = port
     p.getAction = mock.Mock(return_value=action)
     p.getLogin = mock.Mock(return_value=login)
