@@ -168,7 +168,6 @@ class ladder1V1Game(Game):
                     query.addBindValue(player)
                     query.exec_()
                     if query.size() != 0:
-                        update = False
                         query.first()
                         pleague = int(query.value(0))
                         pscore = float(query.value(1))
@@ -176,23 +175,19 @@ class ladder1V1Game(Game):
                             query.prepare("UPDATE %s SET league = league+1, score = 0 WHERE `idUser` = (SELECT id FROM login WHERE login.login = ?)" % self.parent.season)
                             query.addBindValue(player)
                             query.exec_()
-                            update = True
                         elif pleague == 2 and pscore > 75:                      
                             query.prepare("UPDATE %s SET league = league+1, score = 0 WHERE `idUser` = (SELECT id FROM login WHERE login.login = ?)" % self.parent.season)
                             query.addBindValue(player)
-                            query.exec_()     
-                            update = True                                                      
+                            query.exec_()
                         elif pleague == 3 and pscore > 100:                      
                             query.prepare("UPDATE %s SET league = league+1, score = 0 WHERE `idUser` = (SELECT id FROM login WHERE login.login = ?)" % self.parent.season)
                             query.addBindValue(player)
-                            query.exec_() 
-                            update = True
+                            query.exec_()
                         elif pleague == 4 and pscore > 150:                      
                             query.prepare("UPDATE %s SET league = league+1, score = 0 WHERE `idUser` = (SELECT id FROM login WHERE login.login = ?)" % self.parent.season)
                             query.addBindValue(player)
                             query.exec_()
-                            update = True 
-                        
+
                         for p in players.getAllPlayers() :
                             if str(p.getLogin()) == str(player) :
                                 query.prepare("SELECT score, league FROM %s WHERE idUser = ?" % self.parent.season)
@@ -211,9 +206,6 @@ class ladder1V1Game(Game):
                                         query.first()
                                         p.setLeague(league)
                                         p.division = str(query.value(0))
-                                
-
-
         else :
             tsplayers = self.trueSkillPlayers
             for playerTS in tsplayers : 

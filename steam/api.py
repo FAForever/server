@@ -140,13 +140,11 @@ class http_downloader(object):
 
     def download(self):
         head = self._build_headers()
-        status_code = -1
         body = ''
 
         try:
             print(self._url)
             req = urlopen(urlrequest(self._url, headers = head), timeout = self._timeout)
-            status_code = req.code
             body = req.read()
         except urlerror.HTTPError as E:
             code = E.getcode()

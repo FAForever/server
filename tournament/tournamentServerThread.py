@@ -144,12 +144,7 @@ class tournamentServerThread(QObject):
                                     self.blockSize = ins.readUInt32()
                                 else :
                                     return
-                            if self.socket.isValid() :
-                                if self.socket.bytesAvailable() < self.blockSize:
-                                    bytesReceived = str(self.socket.bytesAvailable())
-                                    return
-                                bytesReceived = str(self.socket.bytesAvailable())
-                            else :
+                            if not self.socket.isValid():
                                 return  
                             action = ins.readQString()
                             self.handleAction(action, ins)
@@ -167,15 +162,13 @@ class tournamentServerThread(QObject):
         '''
         Simply dumps a dictionary into a string and feeds it into the QTCPSocket
         '''
-        data_string = ""
         try :
             data_string = json.dumps(data_dictionary)
+            self.sendReply(data_string)
         except :
             self.log.warning("wrong data")
             self.socket.abort()
             return
-
-        self.sendReply(data_string)
 
     def receiveJSON(self, data_string, stream):
         '''
@@ -193,11 +186,8 @@ class tournamentServerThread(QObject):
             return
 
     def sendReply(self, action, *args, **kwargs) :
-        
         try :
-            
             if hasattr(self, "socket"):
-
                 reply = QByteArray()
                 stream = QDataStream(reply, QIODevice.WriteOnly)
                 stream.setVersion(QDataStream.Qt_4_2)
@@ -205,7 +195,6 @@ class tournamentServerThread(QObject):
                 
                 stream.writeQString(action)
 
-    
                 for arg in args :
                     if type(arg) is LongType :
                         stream.writeQString(str(arg))

@@ -158,8 +158,6 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         player2.setAction("JOIN")
         player1.setWantGame(True)
 
-        map = "scmp_007"
-
         map_pool = self.choose_ladder_map_pool(player1, player2)
 
         mapChosen = random.choice(map_pool)
@@ -171,8 +169,7 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
 
         player1.setGame(uuid)
         player2.setGame(uuid)
-        
-        
+
         ngame.setLobbyState('Idle')
         #host is player 1
         
@@ -196,14 +193,12 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         ngame.setLeaguePlayer(player1)
         ngame.setLeaguePlayer(player2)
 
-
         # player 2 will be in game
         
         self.addGame(ngame)
 
         
         #warn both players
-        
         json = {}
         json["command"] = "game_launch"
         json["mod"] = self.gameTypeName
@@ -213,7 +208,6 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         json["args"] = ["/players 2", "/team 1"]
         
         player1.getLobbyThread().sendJSON(json)
-
 
     def searchForMatchup(self, player) :
         

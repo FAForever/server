@@ -936,8 +936,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         if len(AIs) == 0:
             return
         queryStr = ""
-        mean = 0.0
-        dev = 0.0
 
         for AI in AIs:
             place = self.game.getPositionOfPlayer(AI)

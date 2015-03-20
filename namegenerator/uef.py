@@ -27,9 +27,7 @@ import random
 
 def generateName() :
     female = bool(random.getrandbits(1))
-    myline = ""
     if female :
-
         lines = open(girl).read().splitlines()
     else :
         lines = open(male).read().splitlines()
@@ -39,4 +37,3 @@ def generateName() :
     lines = open(last).read().splitlines()
 
     return string.capitalize(myline) + " " + string.capitalize(random.choice(lines))
-    

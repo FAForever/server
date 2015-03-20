@@ -271,8 +271,6 @@ class LobbyConnection(QObject):
         if gamePort == '' or gamePort == 0 or gamePort is None:
             gamePort = 6112
 
-        game = None
-        gameExists = False
         game = self.parent.games.find_by_id(uuid)
 
         if game is not None:
@@ -370,13 +368,9 @@ class LobbyConnection(QObject):
     def handleAction(self, action, stream):
         try:
             if action == "PING":
-                login = stream.readQString()
-                session = stream.readQString()
                 self.sendReply("PONG")
 
             elif action == "PONG":
-                login = stream.readQString()
-                session = stream.readQString()
                 self.ponged = True
 
             elif action == "VERSION":
@@ -787,7 +781,6 @@ Thanks,\n\
             elif action == "FA_CLOSED":
                 login = stream.readQString()
                 session = stream.readQString()
-                check = False
                 check = self.parent.listUsers.checkSession(login, session)
                 if check:
                     self.player.setAction("NOTHING")
@@ -1697,10 +1690,8 @@ Thanks,\n\
                                 "SELECT score, idUser FROM %s  WHERE league = ? ORDER BY score DESC" % self.season)
                             query.addBindValue(league)
                             query.exec_()
-                            isFirst = False
                             if query.size() >= 4:
                                 query.first()
-                                ourScore = 0
                                 for i in range(1, 4):
 
                                     score = float(query.value(0))
@@ -2447,14 +2438,13 @@ Thanks,\n\
                     player.getLobbyThread().removePotentialPlayer(self.player.getLogin())
 
         if not self.noSocket:
-            data_string = ""
             try:
                 data_string = json.dumps(data_dictionary)
-            except:
 
+                if not self.noSocket:
+                    self.sendReply(data_string)
+            except:
                 return
-            if not self.noSocket:
-                self.sendReply(data_string)
 
     def command_invalid(self, msg):
         self.log.warning("User sent an invalid command: %r" % msg)
@@ -2472,11 +2462,7 @@ Thanks,\n\
             message = ""
 
         cmd = "command_" + str(message.get("command", "invalid"))
-        ##self.log.debug("receive JSON")
-        ##self.log.debug(cmd)
         if hasattr(self, cmd):
-
-
             check = False
 
             login = stream.readQString()
@@ -2491,10 +2477,6 @@ Thanks,\n\
 
             if check:
                 getattr(self, cmd)(message)
-        else:
-
-            login = stream.readQString()
-            session = stream.readQString()
 
     def done(self):
         if self.uid:
@@ -2513,7 +2495,6 @@ Thanks,\n\
                     player.getLobbyThread().sendJSON(dict(command="team", action="teaminvitationremove",
                                                           who=self.player.getLogin()))
 
-            ##self.log.debug("removing user")
             for player in self.parent.listUsers.players:
                 player.getLobbyThread().removePotentialPlayer(self.player.getLogin())
             self.checkOldGamesFromPlayer()
