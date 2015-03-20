@@ -11,6 +11,14 @@ This is the source code for the FA Forever server.
 Pre-requisites are listed in `requirements.txt`, install using `pip install -r requirements.txt`.
 
 
+Running the tests
+-----------------
+
+Set the `QUAMASH_QTIMPL` environment variable to `PySide`.
+
+Use `py.test` to execute the unit tests.
+
+
 License
 -------
 
