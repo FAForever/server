@@ -188,16 +188,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self._send_create_lobby(self.game.initMode)
 
         elif action == "JOIN":
-            if self.player.getLogin() in self.game.packetReceived:
-                self.packetReceived[self.player.getLogin()] = []
-
-            for otherPlayer in self.game.players:
-                if self.player.getAddress() in otherPlayer.UDPPacket:
-                    otherPlayer.UDPPacket[self.player.getAddress()] = 0
             strlog = (
                 "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.uuid), str(self.game.getGamemod())))
             self.logGame = strlog
-
             self._send_create_lobby(self.game.initMode)
 
         else:
