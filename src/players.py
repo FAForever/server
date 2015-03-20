@@ -116,7 +116,7 @@ class Player(BasePlayer):
 
     def addCountUdpPacket(self, address):
         if address in self.UDPPacket :
-            self.UDPPacket[address] = self.UDPPacket[address] + 1 
+            self.UDPPacket[address] += 1
         else :
             self.UDPPacket[address] = 1
         
