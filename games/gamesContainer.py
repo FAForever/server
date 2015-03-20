@@ -73,10 +73,6 @@ class gamesContainerClass(object):
         
         return value
 
-    def renameMod(self, name):
-        self.log.debug("renaming %s to %s" % (self.gameTypeName, name))
-        self.gameTypeName = name
-
     def createUuid(self, playerId):
         query = QtSql.QSqlQuery(self.db)
         queryStr = ("INSERT INTO game_stats (`host`) VALUE ( %i )" % playerId)
