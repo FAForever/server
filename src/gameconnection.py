@@ -613,92 +613,78 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def doEnd(self):
         ''' bybye player :('''
+        self.game.remove_game_connection(self)
         if self._state is GameConnectionState.ended:
             return
         else:
             self._state = GameConnectionState.ended
         self.player.setGameSocket(None)
 
-        try:
-            if self.game is not None:
-                self.game.remove_game_connection(self)
-                state = self.game.lobbyState
-                if state == "playing":
-                    curplayers = self.game.getNumPlayer()
-                    allScoreHere = False
-                    if hasattr(self.game, "isAllScoresThere"):
-                        allScoreHere = self.game.isAllScoresThere()
+        state = self.game.lobbyState
+        if state == "playing":
+            curplayers = self.game.getNumPlayer()
+            allScoreHere = False
+            if hasattr(self.game, "isAllScoresThere"):
+                allScoreHere = self.game.isAllScoresThere()
 
-                    if curplayers == 0 or allScoreHere:
-                        self.game.setLobbyState("closed")
-                        self.sendGameInfo()
+            if curplayers == 0 or allScoreHere:
+                self.game.setLobbyState("closed")
+                self.sendGameInfo()
 
-                        if hasattr(self.game, "noStats"):
-                            if not self.game.noStats:
-                                query = QSqlQuery(self.db)
-                                queryStr = (
-                                    "UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(
-                                        self.game.uuid))
-                                query.exec_(queryStr)
-                        else:
-                            query = QSqlQuery(self.db)
-                            queryStr = (
-                                "UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(self.game.uuid))
-                            query.exec_(queryStr)
-
-                        if self.game.desync > 20:
-                            self.game.setInvalid("Too many desyncs")
-
-                        if hasattr(self.game, "noStats"):
-                            if not self.game.noStats:
-                                self.registerScore(self.game.gameResult)
-                        else:
-                            self.registerScore(self.game.gameResult)
-
-                        self.game.specialEnding(self.log, self.db, self.listUsers)
-                        for playerTS in self.game.trueSkillPlayers:
-                            name = playerTS.getPlayer()
-                            for player in self.listUsers.players():
-                                if player is not None:
-                                    if str(name) == player.getLogin():
-                                        for conn in self.parent.parent.FALobby.recorders:
-                                            conn.sendJSON(self.parent.parent.jsonPlayer(player))
-
-                        self.games.removeGame(self.game)
-                        self.game = None
-
-                # if game in lobby state
-                if state != "playing":
-                    self.game.removePlayer(self.player)
-                    self.game.removeFromAllPlayersToConnect(self.player)
-                    self.game.removeTrueSkillPlayer(self.player)
-
-                    getAction = self.player.getAction()
-
-                    if getAction == "HOST":
-                        # if the player was the host (so, not playing), we remove his game
-
-                        self.game.setLobbyState("closed")
-                        self.sendGameInfo()
-                        self.games.removeGame(self.game)
-                        self.game = None
-
-                    elif getAction == 'JOIN':
-                        minplayers = self.game.minPlayer
-                        curplayers = self.game.getNumPlayer()
-
-                        if minplayers == 2 or curplayers == 0:
-                            self.game.setLobbyState("closed")
-
-                            self.sendGameInfo()
-                            self.games.removeGame(self.game)
-                            self.game = None
-                # if the game was in play.
+                if hasattr(self.game, "noStats"):
+                    if not self.game.noStats:
+                        query = QSqlQuery(self.db)
+                        queryStr = (
+                            "UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(
+                                self.game.uuid))
+                        query.exec_(queryStr)
                 else:
-                    self.game.removePlayer(self.player)
+                    query = QSqlQuery(self.db)
+                    queryStr = (
+                        "UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(self.game.uuid))
+                    query.exec_(queryStr)
+
+                if self.game.desync > 20:
+                    self.game.setInvalid("Too many desyncs")
+
+                if hasattr(self.game, "noStats"):
+                    if not self.game.noStats:
+                        self.registerScore(self.game.gameResult)
+                else:
+                    self.registerScore(self.game.gameResult)
+
+                for playerTS in self.game.trueSkillPlayers:
+                    name = playerTS.getPlayer()
+                    for player in self.listUsers.getAllPlayers():
+                        if player is not None:
+                            if str(name) == player.getLogin():
+                                for conn in self.parent.parent.FALobby.recorders:
+                                    conn.sendJSON(self.parent.parent.jsonPlayer(player))
+
+                self.games.removeGame(self.game)
+                self._game = None
+
+        # if game in lobby state
+        if state != "playing":
+            getAction = self.player.getAction()
+            if getAction == "HOST":
+                # if the player was the host (so, not playing), we remove his game
+                self.game.setLobbyState("closed")
+                self.sendGameInfo()
+                self.games.removeGame(self.game)
+                self._game = None
+
+            elif getAction == 'JOIN':
+                minplayers = self.game.minPlayer
+                curplayers = self.game.getNumPlayer()
+                if minplayers == 2 or curplayers == 0:
+                    self.game.setLobbyState("closed")
                     self.sendGameInfo()
-        except Exception as ex:
-            self.log.exception("Exception in doEnd {}".format(ex))
+                    self.games.removeGame(self.game)
+                    self._game = None
+        # if the game was in play.
+        else:
+            self.sendGameInfo()
 
     def _send_create_lobby(self, rankedMode):
         """
