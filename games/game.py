@@ -602,9 +602,7 @@ class Game(BaseGame):
             if not name in self.teamAssign[team]:
                 self.teamAssign[team].append(name)
         else:
-            list = []
-            list.append(name)
-            self.teamAssign[team] = list
+            self.teamAssign[team] = [name]
 
         return 1
 
