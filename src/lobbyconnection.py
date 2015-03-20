@@ -1377,7 +1377,7 @@ Thanks,\n\
                 self.log.info(self.logPrefix + "unable to decypher !!")
 
             query = QSqlQuery(self.parent.db)
-            queryStr = "SELECT version, file FROM version_lobby WHERE id = ( SELECT MAX( id ) FROM version_lobby )"
+            queryStr = "SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1"
             query.exec_(queryStr)
 
             if query.size() == 1:
