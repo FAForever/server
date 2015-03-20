@@ -142,7 +142,7 @@ class gamesContainerClass(object):
         def validateGame(game):
             diff = now - game.created_at
             if game.lobbyState == 'open':
-                if game.getNumPlayer() == 0:
+                if len(game.players) == 0:
                     return False
 
                 hostPlayer = self.parent.players.findByName(game.hostPlayer)

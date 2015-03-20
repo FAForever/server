@@ -96,7 +96,7 @@ class GamesService(object):
                             "featured_mod": game.getGamemod(),
                             "mapname": game.mapName.lower(),
                             "host": game.hostPlayer,
-                            "num_players": game.getNumPlayer(),
+                            "num_players": len(game.players),
                             "game_type": game.gameType
                         }
 

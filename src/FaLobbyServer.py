@@ -89,7 +89,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
             "sim_mods": game.mods,
             "mapname": game.mapName.lower(),
             "host": game.hostPlayer,
-            "num_players": game.getNumPlayer(),
+            "num_players": len(game.players),
             "game_type": game.gameType,
             "game_time": game.created_at,
             "options": game.options,

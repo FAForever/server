@@ -544,8 +544,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             # game launch, the user is playing !
             if self.player.getAction() == "HOST":
 
-                self.game.numPlayers = self.game.getNumPlayer()
-
                 self.game.setLobbyState("playing")
 
                 if hasattr(self.game, "noStats"):
@@ -563,12 +561,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
                 if not all((i.count()) == self.game.finalTeams[0].count() for i in self.game.finalTeams):
                     self.game.setInvalid("All Teams don't the same number of players.")
-
-                if len(self.game.finalTeams) == (len(self.game.AIs) + self.game.getNumPlayer()):
-                    if self.game.getNumPlayer() > 3:
-                        self.game.ffa = True
-                        # ffa doesn't count for that much in rating.
-                        self.game.partial = 0.25
 
                 self.game.setTime()
 
@@ -622,7 +614,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
         state = self.game.lobbyState
         if state == "playing":
-            curplayers = self.game.getNumPlayer()
+            curplayers = len(self.game.players)
             allScoreHere = False
             if hasattr(self.game, "isAllScoresThere"):
                 allScoreHere = self.game.isAllScoresThere()
@@ -676,7 +668,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
             elif getAction == 'JOIN':
                 minplayers = self.game.minPlayer
-                curplayers = self.game.getNumPlayer()
+                curplayers = len(self.game.players)
                 if minplayers == 2 or curplayers == 0:
                     self.game.setLobbyState("closed")
                     self.sendGameInfo()

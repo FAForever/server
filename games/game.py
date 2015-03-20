@@ -735,8 +735,5 @@ class Game(BaseGame):
     def getGameLocalAddress(self):
         return "%s:%s" % (str(self.hostlocalip), str(self.hostlocalport))
 
-    def getNumPlayer(self):
-        return len(self.players)
-
     def __str__(self):
         return "Game({})".format(self.uuid)
