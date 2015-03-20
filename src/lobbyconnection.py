@@ -1361,7 +1361,7 @@ Thanks,\n\
     def command_hello(self, message):
         try:
             version = message['version']
-            login = message['login']
+            login = message['login'].strip()
             password = message['password']
             uniqueIdCoded = message['unique_id']
             uniqueId = None
@@ -1370,7 +1370,6 @@ Thanks,\n\
 
             try:
                 uniqueId = decodeUniqueId(self, uniqueIdCoded, login)
-
             except:
                 self.sendJSON(
                     dict(command="notice", style="error", text="We are not able to log you. Try updating your lobby."))
@@ -1393,8 +1392,6 @@ Thanks,\n\
             self.logPrefix = login + "\t"
 
             channels = []
-
-            login = login.strip()
             query = QSqlQuery(self.parent.db)
 
             # TODO: Hash passwords server-side so the hashing actually *does* something.
