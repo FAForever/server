@@ -1588,17 +1588,15 @@ Thanks,\n\
 
             if query.size() > 0:
                 query.first()
-                if query.value(0) == 2:
+                # 2 for admins, 1 for mods.
+                permissionGroup = query.value(0)
+
+                if permissionGroup >= 2:
                     self.player.admin = True
+                if permissionGroup >= 1:
                     self.player.mod = True
 
-                    jsonToSend = {"command": "social", "power": 2}
-                    self.sendJSON(jsonToSend)
-
-                elif query.value(0) == 1:
-                    self.player.mod = True
-                    jsonToSend = {"command": "social", "power": 1}
-                    self.sendJSON(jsonToSend)
+                self.sendJSON({"command": "social", "power": permissionGroup})
 
             ## Country
             ## ----------
