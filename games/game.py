@@ -69,6 +69,7 @@ class Game(BaseGame):
         :type minPlayer: int
         :return: Game
         """
+        self._teams = {}
         self._results = {}
         self.db = parent.db
         self.parent = parent
@@ -144,8 +145,8 @@ class Game(BaseGame):
 
     @property
     def teams(self):
-        return dict([(team, [player for player in self.players if player.team == team])
-                for team in set([player.team for player in self.players])])
+        return dict([(team, [player for player in self.players if self._teams[player] == team])
+                for team in set([self._teams[player] for player in self.players])])
 
     def add_result(self, player, result):
         """
