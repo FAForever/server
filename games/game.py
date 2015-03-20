@@ -69,7 +69,6 @@ class Game(BaseGame):
         :type minPlayer: int
         :return: Game
         """
-        self._teams = {}
         self._results = {}
         self.db = parent.db
         self.parent = parent
@@ -145,8 +144,11 @@ class Game(BaseGame):
 
     @property
     def teams(self):
-        return dict([(team, [player for player in self.players if self._teams[player] == team])
-                for team in set([self._teams[player] for player in self.players])])
+        def player_team(player):
+            return self.get_player_option(player.id, 'Team')
+
+        return dict([(team, [player for player in self.players if player_team(player) == team])
+                for team in set([player_team(player) for player in self.players])])
 
     def add_result(self, player, result):
         """
@@ -519,19 +521,6 @@ class Game(BaseGame):
         else:
             return False
 
-    def fixArray(self, array):
-        playerPositionDef = {}
-        i = 1
-        for pos in sorted(array.keys()):
-            if pos != -1:
-                if self.isPlayerInGame(array[pos]) or self.isAI(array[pos]):
-                    playerPositionDef[i] = array[pos]
-                    i += 1
-            else:
-                #if pos = 1, team is -1 too
-                self.assignPlayerToTeam(array[pos], -1)
-        return playerPositionDef
-
     def getPositionOfPlayer(self, player):
         for pos in self.playerPosition:
             if self.playerPosition[pos] == player:
@@ -609,27 +598,6 @@ class Game(BaseGame):
             self._logger.exception("Something awful happened in a recombing function!")
 
 
-    def removePlayerFromAllTeam(self, name):
-        for curTeam in self.teamAssign:
-            if name in self.teamAssign[curTeam]:
-                self.teamAssign[curTeam].remove(name)
-
-    def assignPlayerToTeam(self, name, team):
-        #remove him from others teams :
-        for curTeam in self.teamAssign:
-            if team != curTeam:
-                if name in self.teamAssign[curTeam]:
-                    self.teamAssign[curTeam].remove(name)
-
-        if team in self.teamAssign:
-            #check if we dont assign him twice !
-            if not name in self.teamAssign[team]:
-                self.teamAssign[team].append(name)
-        else:
-            self.teamAssign[team] = [name]
-
-        return 1
-
     def addTrueSkillPlayer(self, player):
         self.trueSkillPlayers.append(player)
 
@@ -689,8 +657,7 @@ class Game(BaseGame):
             return 0
         for curPlayer in self.players:
             if curPlayer.getLogin() == player.getLogin():
-                self.players.remove(curPlayer)
-                self.removePlayerFromAllTeam(player.getLogin())
+                self._players.remove(curPlayer)
                 return 1
 
         return 0

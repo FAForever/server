@@ -28,16 +28,22 @@ def test_instance_logging(db):
     logger.info.assert_called_with("{} created".format(game))
 
 
-@pytest.fixture(params=[
-    [('PlayerName', 'Sheeo'),
-     ('StartSpot', 0)]
-])
-def player_option(request):
-    return request.param
-
 @pytest.fixture
 def game_connection():
     return mock.create_autospec(spec=GameConnection)
+
+
+def test_set_player_option(game, players, game_connection):
+    game.state = GameState.LOBBY
+    game_connection.player = players.hosting
+    game_connection.state = GameConnectionState.connected_to_host
+    game.add_game_connection(game_connection)
+    assert game.players == {players.hosting}
+    game.set_player_option(players.hosting.id, 'Team', 1)
+    assert game.get_player_option(players.hosting.id, 'Team') == 1
+    assert game.teams == {1: [players.hosting]}
+    game.set_player_option(players.hosting.id, 'StartSpot', 1)
+    game.get_player_option(players.hosting.id, 'StartSpot') == 1
 
 
 def test_add_game_connection(game: Game, players, game_connection):
@@ -94,7 +100,8 @@ def test_game_launch_freezes_players(game: Game, players):
 
 def test_game_teams_represents_active_teams(game: Game, players):
     game.state = GameState.LIVE
-    game._teams = {players.hosting: 1, players.joining: 2}
+    game.set_player_option(players.hosting.id, 'Team', 1)
+    game.set_player_option(players.joining.id, 'Team', 2)
     game._players = [players.hosting, players.joining]
     assert game.teams == {1: [players.hosting],
                           2: [players.joining]}
@@ -107,7 +114,8 @@ def test_compute_rating_computes_global_ratings(game: Game, players):
     game.add_result(players.hosting, 1)
     game.add_result(players.joining, 0)
     game._players = [players.hosting, players.joining]
-    game._teams = {players.hosting: 1, players.joining: 2}
+    game.set_player_option(players.hosting.id, 'Team', 1)
+    game.set_player_option(players.joining.id, 'Team', 2)
     groups = game.compute_rating()
     assert players.hosting in groups[0]
     assert players.joining in groups[1]
@@ -120,12 +128,9 @@ def test_compute_rating_computes_ladder_ratings(game: Game, players):
     game.add_result(players.hosting, 1)
     game.add_result(players.joining, 0)
     game._players = [players.hosting, players.joining]
-    game._teams = {players.hosting: 1, players.joining: 2}
+    game.set_player_option(players.hosting.id, 'Team', 1)
+    game.set_player_option(players.joining.id, 'Team', 2)
     groups = game.compute_rating(rating='ladder')
     assert players.hosting in groups[0]
     assert players.joining in groups[1]
 
-def test_compute_rating_teamgame(game: Game, players):
-    players = [
-        {}
-    ]

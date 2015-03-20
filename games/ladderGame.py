@@ -85,18 +85,16 @@ class ladder1V1Game(Game):
             }
             playerToJoin.lobbyThread.sendJSON(json)
 
-            self.assignPlayerToTeam(player.getLogin(), 1)
-            
-            self.setPlayerFaction(1, player.getFaction())
-            self.setPlayerColor(1, 1)
+            self.set_player_option(player.id, 'Team', 1)
+            self.set_player_option(player.id, 'Faction', player.faction)
+            self.set_player_option(player.id, 'Color', 1)
 
 
         if player.getAction() == "JOIN" :
-            self.assignPlayerToTeam(player.getLogin(), 2)
- 
-            self.setPlayerFaction(2, player.getFaction())
-            self.setPlayerColor(2, 2)
-    
+            self.set_player_option(player.id, 'Team', 1)
+            self.set_player_option(player.id, 'Faction', player.faction)
+            self.set_player_option(player.id, 'Color', 2)
+
             self.recombineTeams1v1()
             self.recombineTeams()
 
