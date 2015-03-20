@@ -568,7 +568,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 self.fillAIStats(self.game.AIs)
                 for player in self.game.players:
                     player.setAction("PLAYING")
-                    player.resetUdpPacket()
 
                 if not all((i.count()) == self.game.finalTeams[0].count() for i in self.game.finalTeams):
                     self.game.setInvalid("All Teams don't the same number of players.")

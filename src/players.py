@@ -76,52 +76,6 @@ class Player(BasePlayer):
     def getClan(self):
         return self.clan
 
-    def setUdpFrom(self, player):
-        if not player in self.udpFrom :
-            self.udpFrom.append(player)
-
-    def removeUdpFrom(self, player):
-        if player in self.udpFrom :
-            self.udpFrom.remove(player)
-            
-    def receivedUdpFrom(self, player):
-        if player in self.udpFrom :
-            return True
-        return False
-
-
-    def getUdpPacketPort(self) :
-        return self.udpPacketPort
-            
-    def setUdpPacketPort(self, port) :
-        self.udpPacketPort = int(port)
-    
-    def resetUdpFrom(self):
-        self.udpFrom = []
-
-    def getReceivedUdp(self):
-        return self.receivedUdp
-
-    def setReceivedUdp(self, state):
-        self.receivedUdp = state
-
-    def resetUdpPacket(self):
-        self.UDPPacket.clear()
-
-    def countUdpPacket(self, address):
-        if address in self.UDPPacket :
-            return self.UDPPacket[address]
-        else :
-            return 0
-
-    def addCountUdpPacket(self, address):
-        if address in self.UDPPacket :
-            self.UDPPacket[address] = self.UDPPacket[address] + 1 
-        else :
-            self.UDPPacket[address] = 1
-        
-        
-
     def setGameSocket(self, socket):
         if socket != 0 :
             self.gameSocket = socket
@@ -136,7 +90,6 @@ class Player(BasePlayer):
 
     def setWantGame(self, value):
         self.wantToConnectToGame = value
-
 
     def getExpandLadder(self):
         return self.expandLadder 
