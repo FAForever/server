@@ -89,14 +89,6 @@ class gamesContainerClass(object):
                 return game
         return None
 
-    def findGameByHost(self, host):
-        '''Find a game by the hostName'''
-        for game in self.games:
-            if game.hostPlayer == str(host) :
-                return game
-        return None    
-
-
     def addGame(self, game):
         '''Add a game to the list'''
         if not game in self.games :
