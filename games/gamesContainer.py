@@ -20,6 +20,7 @@ import time
 import logging
 
 from PySide import QtSql
+from .game import Game
 
 class gamesContainerClass(object):
     """Class for containing games"""
@@ -107,9 +108,28 @@ class gamesContainerClass(object):
             return 1
         return 0
 
+    def addBasicGame(self, player, name, gamePort):
+        playerLogin = player.getLogin()
+        playerUuid = player.getId()
+        playerState = player.action
+        gameUuid = self.createUuid(playerUuid)
 
-    def addBasicGame(self, player, name, port):
-        pass
+        if playerState == "PLAYING":
+            return False
+        elif playerState == "HOST":
+            return False
+        elif playerState == "JOIN":
+            return False
+
+        ngame = Game(gameUuid, self)
+        ngame.setLobbyState('Idle')
+        ngame.setGameHostName(playerLogin)
+        ngame.setGameHostUuid(playerUuid)
+        ngame.setGameHostPort(gamePort)
+        ngame.setGameHostLocalPort(gamePort)
+        ngame.setGameName(name)
+        self.games.append(ngame)
+        return ngame
 
     def removeGame(self, gameToRemove):
         '''Remove a game from the list'''

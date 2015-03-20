@@ -29,27 +29,3 @@ class coopGamesContainerClass(gamesContainerClass):
         self.host = False
         self.join = False
         self.listable = False
-    
-    def addBasicGame(self, player, newgame, gamePort):
-        playerLogin = player.getLogin()
-        playerUuid = player.getId()
-        playerState = player.getAction()
-        gameUuid = self.createUuid(playerUuid)
-        
-        if playerState == "PLAYING" :
-            return False
-        elif playerState == "HOST" :
-            return False
-        elif playerState == "JOIN" :
-            return False
-
-        ngame = coopGame(gameUuid, self)
-        ngame.setLobbyState('Idle')
-        ngame.setGameHostName(playerLogin)
-        ngame.setGameHostUuid(playerUuid)
-        ngame.setGameHostPort(gamePort)
-        ngame.setGameHostLocalPort(gamePort)
-        ngame.setGameName(newgame)
-        ngame.setTime()
-        self.games.append(ngame)
-        return ngame

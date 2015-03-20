@@ -56,22 +56,10 @@ from steam import api
 
 api.key.set(STEAM_APIKEY)
 
-from games.customGamesContainer import customGamesContainerClass
 from games.ladderGamesContainer import ladder1v1GamesContainerClass
-from games.customNomadsGamesContainer import customNomadsGamesContainerClass
-from games.customLabwarsGamesContainer import customLabwarsGamesContainerClass
-from games.customMurderPartyGamesContainer import customMurderPartyGamesContainerClass
-from games.customKothGamesContainer import customKothGamesContainerClass
-from games.customPhantomXGamesContainer import customPhantomXGamesContainerClass
-from games.customBlackopsGamesContainer import customBlackopsGamesContainerClass
-from games.customXtremewarsGamesContainer import customXtremewarsGamesContainerClass
-from games.customDiamondGamesContainer import customDiamondGamesContainerClass
-from games.customCiviliansGamesContainer import customCiviliansGamesContainerClass
-from games.customVanillaGamesContainer import customVanillaGamesContainerClass
 from games.coopGamesContainer import coopGamesContainerClass
-from games.claustrophobiaGamesContainer import claustrophobiaGamesContainerClass
-from games.supremeDestructionGamesContainer import supremeDestructionGamesContainerClass
 from games.matchmakerGamesContainer import matchmakerGamesContainerClass
+from games.gamesContainer import gamesContainerClass
 
 
 TIMEOUT_SECONDS = 300
@@ -167,56 +155,56 @@ class LobbyConnection(QObject):
     @timed()
     def addGameModes(self):
         if not self.parent.games.isaContainer("faf"):
-            self.parent.games.addContainer("faf", customGamesContainerClass(self.parent.db, self.parent.games))
+            self.parent.games.addContainer("faf", gamesContainerClass("faf", "Forged Alliance Forever", self.parent.db, self.parent.games))
 
         if not self.parent.games.isaContainer("ladder1v1"):
             self.parent.games.addContainer("ladder1v1", ladder1v1GamesContainerClass(self.parent.db, self.parent.games))
 
         if not self.parent.games.isaContainer("nomads"):
-            self.parent.games.addContainer("nomads", customNomadsGamesContainerClass(self.parent.db, self.parent.games))
+            self.parent.games.addContainer("nomads", gamesContainerClass("nomads", "The Nomads", self.parent.db, self.parent.games))
 
         if not self.parent.games.isaContainer("labwars"):
             self.parent.games.addContainer("labwars",
-                                           customLabwarsGamesContainerClass(self.parent.db, self.parent.games))
+                                           gamesContainerClass("labwars", "LABwars", self.parent.db, self.parent.games))
 
         if not self.parent.games.isaContainer("murderparty"):
             self.parent.games.addContainer("murderparty",
-                                           customMurderPartyGamesContainerClass(self.parent.db, self.parent.games))
+                                           gamesContainerClass("murderparty", "Murder Party", self.parent.db, self.parent.games))
 
         if not self.parent.games.isaContainer("blackops"):
             self.parent.games.addContainer("blackops",
-                                           customBlackopsGamesContainerClass(self.parent.db, self.parent.games))
+                                           gamesContainerClass("blackops", "blackops", self.parent.db, self.parent.games))
 
         if not self.parent.games.isaContainer("xtremewars"):
             self.parent.games.addContainer("xtremewars",
-                                           customXtremewarsGamesContainerClass(self.parent.db, self.parent.games))
+                                           gamesContainerClass("xtremewars", "Xtreme Wars", self.parent.db, self.parent.games))
 
         if not self.parent.games.isaContainer("diamond"):
             self.parent.games.addContainer("diamond",
-                                           customDiamondGamesContainerClass(self.parent.db, self.parent.games))
+                                           gamesContainerClass("diamond", "Diamond", self.parent.db, self.parent.games))
 
         if not self.parent.games.isaContainer("phantomx"):
             self.parent.games.addContainer("phantomx",
-                                           customPhantomXGamesContainerClass(self.parent.db, self.parent.games))
+                                           gamesContainerClass("phantomx", "phantom-X", self.parent.db, self.parent.games))
 
         if not self.parent.games.isaContainer("vanilla"):
             self.parent.games.addContainer("vanilla",
-                                           customVanillaGamesContainerClass(self.parent.db, self.parent.games))
+                                           gamesContainerClass("vanilla", "Vanilla", self.parent.db, self.parent.games))
 
         if not self.parent.games.isaContainer("civilians"):
             self.parent.games.addContainer("civilians",
-                                           customCiviliansGamesContainerClass(self.parent.db, self.parent.games))
+                                           gamesContainerClass("civilians", "Civilians Defense", self.parent.db, self.parent.games))
 
         if not self.parent.games.isaContainer("koth"):
-            self.parent.games.addContainer("koth", customKothGamesContainerClass(self.parent.db, self.parent.games))
+            self.parent.games.addContainer("koth", gamesContainerClass("koth", "King of the Hill", self.parent.db, self.parent.games))
 
         if not self.parent.games.isaContainer("claustrophobia"):
             self.parent.games.addContainer("claustrophobia",
-                                           claustrophobiaGamesContainerClass(self.parent.db, self.parent.games))
+                                           gamesContainerClass("claustrophobia", "Claustrophobia", self.parent.db, self.parent.games))
 
         if not self.parent.games.isaContainer("supremedestruction"):
             self.parent.games.addContainer("supremedestruction",
-                                           supremeDestructionGamesContainerClass(self.parent.db, self.parent.games))
+                                           gamesContainerClass("supremeDestruction", "Supreme Destruction", self.parent.db, self.parent.games))
 
         if not self.parent.games.isaContainer("coop"):
             self.parent.games.addContainer("coop", coopGamesContainerClass(self.parent.db, self.parent.games))

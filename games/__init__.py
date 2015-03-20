@@ -19,31 +19,12 @@
 import logging
 logger = logging.getLogger(__name__)
 
-
-
 from .gamesContainer import gamesContainerClass
 # derived
-from .customGamesContainer import customGamesContainerClass # custom games
 from .ladderGamesContainer import ladder1v1GamesContainerClass # ladder games
-from .customNomadsGamesContainer import customNomadsGamesContainerClass # custom nomads games
-from .customLabwarsGamesContainer import customLabwarsGamesContainerClass # custom labwars games
-from .customMurderPartyGamesContainer import customMurderPartyGamesContainerClass # custom murder party games
-from .customKothGamesContainer import customKothGamesContainerClass # custom king of the hill games
-from .customPhantomXGamesContainer import customPhantomXGamesContainerClass # custom phantomX games
-from .customBlackopsGamesContainer import customBlackopsGamesContainerClass # custom Blackops games
-
-from .customXtremewarsGamesContainer import customXtremewarsGamesContainerClass # custom Blackops games
 
 # game entity
 from .game import Game
 # derived
 from .ladderGame import ladder1V1Game #ladder 1v1
 from .custom_game import CustomGame #custom
-from .nomadsGame import nomadsGame #nomads
-from .labwarsGame import labwarsGame #labwars
-
-from .murderPartyGame import murderPartyGame # murder party
-from .phantomXGame import phantomXGame # phantom X
-from .kothGame import kothGame # king of the hill
-from .blackopsGame import blackopsGame # exp war
-from .xtremewarsGame import xtremewarsGame # exp war
