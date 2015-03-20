@@ -1650,23 +1650,25 @@ Thanks,\n\
 
                                     score = float(query.value(0))
                                     idUser = int(query.value(1))
-                                    if idUser == self.player.id:
-                                        if score > 0:
-                                            avatar = {
-                                                "url": str(Config['global']['content_url'] + "avatars/div" + str(i) + ".png")
-                                            }
-                                            if i == 1:
-                                                avatar.tooltip = "First in my division!"
-                                            elif i == 2:
-                                                avatar.tooltip = "Second in my division!"
-                                            elif i == 3:
-                                                avatar.tooltip = "Third in my division!"
 
-                                            self.player.avatar = avatar
-                                            self.leagueAvatar = avatar
+                                    if idUser != self.player.id or score <= 0:
+                                        query.next()
+                                        continue
 
-                                            break;
-                                    query.next()
+                                    avatar = {
+                                        "url": str(Config['global']['content_url'] + "avatars/div" + str(i) + ".png")
+                                    }
+                                    if i == 1:
+                                        avatar.tooltip = "First in my division!"
+                                    elif i == 2:
+                                        avatar.tooltip = "Second in my division!"
+                                    elif i == 3:
+                                        avatar.tooltip = "Third in my division!"
+
+                                    self.player.avatar = avatar
+                                    self.leagueAvatar = avatar
+
+                                    break;
 
                             # check if top of the league :
                             query.prepare(
@@ -1676,24 +1678,26 @@ Thanks,\n\
                             if query.size() >= 4:
                                 query.first()
                                 for i in range(1, 4):
-
                                     score = float(query.value(0))
                                     idUser = int(query.value(1))
 
-                                    if idUser == self.player.id:
-                                        if score > 0:
-                                            avatar = {
-                                                "url": str(Config['global']['content_url'] + "avatars/league" + str(i) + ".png")
-                                            }
-                                            if i == 1:
-                                                avatar.tooltip = "First in my League!"
-                                            elif i == 2:
-                                                avatar.tooltip = "Second in my League!"
-                                            elif i == 3:
-                                                avatar.tooltip = "Third in my League!"
+                                    if idUser != self.player.id or score <= 0:
+                                        query.next()
+                                        continue
 
-                                            self.player.avatar = avatar
-                                            self.leagueAvatar = avatar
+                                    avatar = {
+                                        "url": str(Config['global']['content_url'] + "avatars/league" + str(i) + ".png")
+                                    }
+                                    if i == 1:
+                                        avatar.tooltip = "First in my League!"
+                                    elif i == 2:
+                                        avatar.tooltip = "Second in my League!"
+                                    elif i == 3:
+                                        avatar.tooltip = "Third in my League!"
+
+                                    self.player.avatar = avatar
+                                    self.leagueAvatar = avatar
+                                    break
 
                             jleague = {"league": self.player.league, "division": self.player.division}
                             self.player.leagueInfo = jleague
