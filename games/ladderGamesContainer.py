@@ -179,14 +179,12 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         ngame.setGameHostLocalPort(player1.gamePort)
         ngame.setGameName(gameName)
 
-        #place the players
-        ngame.placePlayer(player1.login, 1)
-        ngame.placePlayer(player2.login, 2)
-        
+        ngame.set_player_option(player1.id, 'StartSpot', 1)
+        ngame.set_player_option(player2.id, 'StartSpot', 2)
+        ngame.set_player_option(player1.id, 'Team', 1)
+        ngame.set_player_option(player2.id, 'Team', 2)
+
         ngame.addPlayerToJoin(player2)
-        
-        ngame.assignPlayerToTeam(player1.login, 1)
-        ngame.assignPlayerToTeam(player2.login, 2)
 
         ngame.setLeaguePlayer(player1)
         ngame.setLeaguePlayer(player2)

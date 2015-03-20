@@ -526,27 +526,26 @@ class matchmakerGamesContainerClass(gamesContainerClass):
         place = 1
         for player in players1 :
             player.setGame(uuid)
-            ngame.assignPlayerToTeam(player.getLogin(), 1)
-            ngame.placePlayer(player.getLogin(), place)
+            ngame.set_player_option(player.id, 'Team', 1)
+            ngame.set_player_option(player.id, 'StartSpot', place)
+            ngame.set_player_option(player.id, 'Color', place)
+            ngame.set_player_option(player.id, 'Faction', player.faction)
             place += 2
-            ngame.setPlayerColor(place, place) 
-            ngame.setPlayerFaction(place, player.getFaction())
-            
 
         place = 2
         for player in players2 :
             player.setGame(uuid)
-            ngame.assignPlayerToTeam(player.getLogin(), 2)
-            ngame.placePlayer(player.getLogin(), place)
+            ngame.set_player_option(player.id, 'Team', 2)
+            ngame.set_player_option(player.id, 'StartSpot', place)
+            ngame.set_player_option(player.id, 'Color', place)
+            ngame.set_player_option(player.id, 'Faction', player.faction)
             place += 2
-            ngame.setPlayerColor(place, place) 
-            ngame.setPlayerFaction(place, player.getFaction())
-        
+
         #place the players
         for player in players1+players2 :
             if player != host:
                 ngame.addPlayerToJoin(player)
-            
+
         for player in players1:
             ngame.team1.append(player)
 

@@ -237,14 +237,6 @@ class Game(BaseGame):
     def addAI(self, name):
         self.AIs.append(name)
 
-    def clearAIs(self):
-        for AI in self.AIs:
-            self.placePlayer(AI, None)
-            self.removePlayerFromAllTeam(AI)
-            self.removeTrueSkillAI(AI)
-
-        self.AIs = []
-
     def checkNoScore(self):
         for player in self.players:
             if not player in self.gameResult:
@@ -270,8 +262,7 @@ class Game(BaseGame):
         self.invalidReason = reason
 
     def specialInit(self, player):
-        self.placePlayer(player.getLogin(), -1)
-        self.assignPlayerToTeam(player.getLogin(), -1)
+        pass
 
     def trueSkillUpdate(self, tsresults, tsplayers, logger, db, players, playerFnc="setRating", table="global_rating",
                         winner=False, sendScore=True):
