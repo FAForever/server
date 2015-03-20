@@ -1176,8 +1176,8 @@ Thanks,\n\
                 for friend in toAdd:
                     query = QSqlQuery(self.parent.db)
                     query.prepare(
-                        "INSERT INTO friends (idUser, idFriend) values ((SELECT id FROM login WHERE login.login = ?),(SELECT id FROM login WHERE login.login = ?))")
-                    query.addBindValue(self.player.getLogin())
+                        "INSERT INTO friends (idUser, idFriend) values (?,(SELECT id FROM login WHERE login.login = ?))")
+                    query.addBindValue(self.uid)
                     query.addBindValue(friend)
                     query.exec_()
 
@@ -1187,9 +1187,9 @@ Thanks,\n\
                 for friend in toRemove:
                     query = QSqlQuery(self.parent.db)
                     query.prepare(
-                        "DELETE FROM friends WHERE idFriend = (SELECT id FROM login WHERE login.login = ?) AND idUser = (SELECT id FROM login WHERE login.login = ?)")
+                        "DELETE FROM friends WHERE idFriend = (SELECT id FROM login WHERE login.login = ?) AND idUser = ?")
                     query.addBindValue(friend)
-                    query.addBindValue(self.player.getLogin())
+                    query.addBindValue(self.uid)
                     query.exec_()
 
             self.friendList = friendlist
@@ -1203,8 +1203,8 @@ Thanks,\n\
                 for foe in toAdd:
                     query = QSqlQuery(self.parent.db)
                     query.prepare(
-                        "INSERT INTO foes (idUser, idFoe) values ((SELECT id FROM login WHERE login.login = ?),(SELECT id FROM login WHERE login.login = ?))")
-                    query.addBindValue(self.player.getLogin())
+                        "INSERT INTO foes (idUser, idFoe) values (?,(SELECT id FROM login WHERE login.login = ?))")
+                    query.addBindValue(self.uid)
                     query.addBindValue(foe)
                     query.exec_()
 
@@ -1214,9 +1214,9 @@ Thanks,\n\
                 for foe in toRemove:
                     query = QSqlQuery(self.parent.db)
                     query.prepare(
-                        "DELETE FROM foes WHERE idFoe = (SELECT id FROM login WHERE login.login = ?) AND idUser = (SELECT id FROM login WHERE login.login = ?)")
+                        "DELETE FROM foes WHERE idFoe = (SELECT id FROM login WHERE login.login = ?) AND idUser = ?")
                     query.addBindValue(foe)
-                    query.addBindValue(self.player.getLogin())
+                    query.addBindValue(self.uid)
                     query.exec_()
 
             self.foeList = foelist
@@ -1580,9 +1580,8 @@ Thanks,\n\
             ## --------------------
             self.player.admin = False
             self.player.mod = False
-            query.prepare(
-                "SELECT `group` FROM `lobby_admin` WHERE `user_id` = (SELECT id FROM login WHERE login = ?)")
-            query.addBindValue(login)
+            query.prepare("SELECT `group` FROM `lobby_admin` WHERE `user_id` = ?")
+            query.addBindValue(self.uid)
             query.exec_()
 
             if query.size() > 0:
@@ -1713,8 +1712,8 @@ Thanks,\n\
             ## AVATARS
             ## -------------------
             query.prepare(
-                "SELECT url, tooltip FROM `avatars` LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = (SELECT id FROM login WHERE login = ?) AND `selected` = 1")
-            query.addBindValue(login)
+                "SELECT url, tooltip FROM `avatars` LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = ? AND `selected` = 1")
+            query.addBindValue(self.uid)
             query.exec_()
             if query.size() > 0:
                 query.first()
@@ -1768,8 +1767,8 @@ Thanks,\n\
 
             query = QSqlQuery(self.parent.db)
             query.prepare(
-                "SELECT login.login FROM friends JOIN login ON idFriend=login.id WHERE idUser = (SELECT id FROM login WHERE login.login = ?)")
-            query.addBindValue(login)
+                "SELECT login.login FROM friends JOIN login ON idFriend=login.id WHERE idUser = ?")
+            query.addBindValue(self.uid)
             query.exec_()
 
             if query.size() > 0:
@@ -1789,8 +1788,8 @@ Thanks,\n\
 
             query = QSqlQuery(self.parent.db)
             query.prepare(
-                "SELECT login.login FROM foes JOIN login ON idFoe=login.id WHERE idUser = (SELECT id FROM login WHERE login.login = ?)")
-            query.addBindValue(login)
+                "SELECT login.login FROM foes JOIN login ON idFoe=login.id WHERE idUser = ?")
+            query.addBindValue(self.uid)
             query.exec_()
             if query.size() > 0:
                 while query.next():
@@ -2016,8 +2015,8 @@ Thanks,\n\
 
             query = QSqlQuery(self.parent.db)
             query.prepare(
-                "SELECT url, tooltip FROM `avatars` LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = (SELECT id FROM login WHERE login = ?)")
-            query.addBindValue(self.player.getLogin())
+                "SELECT url, tooltip FROM `avatars` LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = ?")
+            query.addBindValue(self.uid)
             query.exec_()
             if query.size() > 0:
 
@@ -2035,15 +2034,15 @@ Thanks,\n\
             query = QSqlQuery(self.parent.db)
 
             query.prepare(
-                "UPDATE `avatars` SET `selected` = 0 WHERE `idUser` = (SELECT `id` FROM `login` WHERE `login`.`login` = ?)")
-            query.addBindValue(self.player.getLogin())
+                "UPDATE `avatars` SET `selected` = 0 WHERE `idUser` = ?")
+            query.addBindValue(self.uid)
             query.exec_()
             if avatar is not None:
                 query = QSqlQuery(self.parent.db)
                 query.prepare(
-                    "UPDATE `avatars` SET `selected` = 1 WHERE `idAvatar` = (SELECT id FROM avatars_list WHERE avatars_list.url = ?) and `idUser` = (SELECT `id` FROM `login` WHERE `login`.`login` = ?)")
+                    "UPDATE `avatars` SET `selected` = 1 WHERE `idAvatar` = (SELECT id FROM avatars_list WHERE avatars_list.url = ?) and `idUser` = ?")
                 query.addBindValue(avatar)
-                query.addBindValue(self.player.getLogin())
+                query.addBindValue(self.uid)
                 query.exec_()
 
 
