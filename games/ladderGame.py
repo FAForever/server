@@ -340,7 +340,7 @@ class ladder1V1Game(Game):
             self._logger.exception("Something awful happened while updating trueskill!")
 
     # here we only take result, not score.
-    def computeResults(self, update=True):
+    def compute_rating(self, update=True):
         if update :
             self.updateTrueskill()
         

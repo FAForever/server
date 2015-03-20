@@ -22,7 +22,10 @@ class BasePlayer():
 
     @global_rating.setter
     def global_rating(self, value: Rating):
-        self._global_rating = (value.mu, value.sigma)
+        if isinstance(value, Rating):
+            self._global_rating = (value.mu, value.sigma)
+        else:
+            self._global_rating = value
 
     @property
     def ladder_rating(self):

@@ -39,6 +39,6 @@ class CustomGame(Game):
             self.setInvalid("Score are invalid: Play time was not long enough (under %i seconds)" % timeLimit)
             self._logger.debug("Game is invalid: Play time was not long enough (under %i seconds)" % timeLimit)
         if self.isValid():
-            tsresults = self.computeResults()
+            tsresults = self.compute_rating()
             tsplayers = self.trueSkillPlayers
             self.trueSkillUpdate(tsresults, tsplayers, logger, db, players, sendScore = False)

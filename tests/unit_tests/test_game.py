@@ -2,6 +2,7 @@ import logging
 from unittest import mock
 
 import pytest
+from trueskill import Rating
 
 from games.game import Game, GameState, GameError
 from src.gameconnection import GameConnection, GameConnectionState
@@ -98,3 +99,30 @@ def test_game_teams_represents_active_teams(game: Game, players):
     game._players = [players.hosting, players.joining]
     assert game.teams == {1: [players.hosting],
                           2: [players.joining]}
+
+
+def test_compute_rating_computes_global_ratings(game: Game, players):
+    game.state = GameState.LIVE
+    players.hosting.team = 1
+    players.joining.team = 2
+    players.hosting.global_rating = Rating(1500, 250)
+    players.joining.global_rating = Rating(1500, 250)
+    game.add_result(players.hosting, 1)
+    game.add_result(players.joining, 0)
+    game._players = [players.hosting, players.joining]
+    groups = game.compute_rating()
+    assert players.hosting in groups[0]
+    assert players.joining in groups[1]
+
+def test_compute_rating_computes_ladder_ratings(game: Game, players):
+    game.state = GameState.LIVE
+    players.hosting.team = 1
+    players.joining.team = 2
+    players.hosting.ladder_rating = Rating(1500, 250)
+    players.joining.ladder_rating = Rating(1500, 250)
+    game.add_result(players.hosting, 1)
+    game.add_result(players.joining, 0)
+    game._players = [players.hosting, players.joining]
+    groups = game.compute_rating(rating='ladder')
+    assert players.hosting in groups[0]
+    assert players.joining in groups[1]
