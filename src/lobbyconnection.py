@@ -119,7 +119,6 @@ class LobbyConnection(QObject):
             self.friendList = []
             self.foeList = []
             self.ladderMapList = []
-            self.invitationsTo = []
 
             self.leagueAvatar = None
 
@@ -2468,12 +2467,6 @@ Thanks,\n\
         self.noSocket = True
         if not self.player:
             self.command_quit_team(dict(command="quit_team"))
-
-            for member in self.invitationsTo:
-                player = self.parent.listUsers.findByName(member)
-                if player:
-                    player.getLobbyThread().sendJSON(dict(command="team", action="teaminvitationremove",
-                                                          who=self.player.getLogin()))
 
             for player in self.parent.listUsers.players:
                 player.getLobbyThread().removePotentialPlayer(self.player.getLogin())
