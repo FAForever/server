@@ -133,11 +133,6 @@ class GamesService(object):
         for container in self.gamesContainer :
             self.gamesContainer[container].removeGame(game)
         return True
-    
-    def removeUserGame(self, player):
-        for container in self.gamesContainer :
-            self.gamesContainer[container].removeUserGame(player)
-        return True
 
     def find_by_id(self, uuid):
         """

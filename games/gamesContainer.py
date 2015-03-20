@@ -132,14 +132,6 @@ class gamesContainerClass(object):
 
                 return True
 
-    def removeUserGame(self, player):
-        '''Remove a game, detected by the host, from the list a delete it'''
-        for game in reversed(self.games):
-            if game.hostPlayer == player.getLogin() :
-                    self.removeGame(game)
-                    #del game
- 
- 
     def addDirtyGame(self, game):
         if not game in self.parent.dirtyGameList : 
             self.parent.dirtyGameList.append(game)           
