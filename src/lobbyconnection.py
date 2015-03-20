@@ -1453,8 +1453,6 @@ Thanks,\n\
                     query.first()
                     reason = "You are banned from FAF.\n Reason :\n " + query.value(0)
                     self.sendJSON(dict(command="notice", style="error", text=reason))
-                    #self.log.debug("ban : " + reason)
-                    #self.socket.abort()
                     return
 
                 if not self.steamChecked:
@@ -1612,6 +1610,7 @@ Thanks,\n\
 
                 ## LADDER LEAGUES ICONS
                 ## ----------------------
+                # If a user is top of their division or league, set their avatar appropraitely.
                 query.prepare("SELECT score, league FROM %s WHERE idUser = ?" % self.season)
                 query.addBindValue(self.player.id)
                 query.exec_()
@@ -1653,24 +1652,20 @@ Thanks,\n\
                                     idUser = int(query.value(1))
                                     if idUser == self.player.id:
                                         if score > 0:
+                                            avatar = {
+                                                "url": str(Config['global']['content_url'] + "avatars/div" + str(i) + ".png")
+                                            }
                                             if i == 1:
-                                                avatar = {
-                                                    "url": str(Config['global']['content_url'] + "avatars/div1.png"),
-                                                    "tooltip": str("First of my division !")}
-                                                self.player.avatar = avatar
-                                                self.leagueAvatar = avatar
+                                                avatar.tooltip = "First in my division!"
                                             elif i == 2:
-                                                avatar = {
-                                                    "url": str(Config['global']['content_url'] + "avatars/div2.png"),
-                                                    "tooltip": ("Second of my division !")}
-                                                self.player.avatar = avatar
-                                                self.leagueAvatar = avatar
+                                                avatar.tooltip = "Second in my division!"
                                             elif i == 3:
-                                                avatar = {
-                                                    "url": str(Config['global']['content_url'] + "avatars/div3.png"),
-                                                    "tooltip": ("Third of my division !")}
-                                                self.player.avatar = avatar
-                                                self.leagueAvatar = avatar
+                                                avatar.tooltip = "Third in my division!"
+
+                                            self.player.avatar = avatar
+                                            self.leagueAvatar = avatar
+
+                                            break;
                                     query.next()
 
                             # check if top of the league :
@@ -1687,26 +1682,18 @@ Thanks,\n\
 
                                     if idUser == self.player.id:
                                         if score > 0:
+                                            avatar = {
+                                                "url": str(Config['global']['content_url'] + "avatars/league" + str(i) + ".png")
+                                            }
                                             if i == 1:
-
-                                                avatar = {
-                                                    "url": str(Config['global']['content_url'] + "avatars/league1.png"),
-                                                    "tooltip": str("First of my League !")}
-                                                self.player.avatar = avatar
-                                                self.leagueAvatar = avatar
-
+                                                avatar.tooltip = "First in my League!"
                                             elif i == 2:
-                                                avatar = {
-                                                    "url": str(Config['global']['content_url'] + "avatars/league2.png"),
-                                                    "tooltip": ("Second of my League !")}
-                                                self.player.avatar = avatar
-                                                self.leagueAvatar = avatar
+                                                avatar.tooltip = "Second in my League!"
                                             elif i == 3:
-                                                avatar = {
-                                                    "url": str(Config['global']['content_url'] + "avatars/league3.png"),
-                                                    "tooltip": ("Third of my League !")}
-                                                self.player.avatar = avatar
-                                                self.leagueAvatar = avatar
+                                                avatar.tooltip = "Third in my League!"
+
+                                            self.player.avatar = avatar
+                                            self.leagueAvatar = avatar
 
                             jleague = {"league": self.player.league, "division": self.player.division}
                             self.player.leagueInfo = jleague
