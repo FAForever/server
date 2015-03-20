@@ -1385,6 +1385,7 @@ Thanks,\n\
                 versionDB = query.value(0)
                 file = query.value(1)
 
+                # Version of zero represents a developer build.
                 if version < versionDB and version != 0:
                     self.sendJSON(dict(command="welcome", update=file))
                     return
