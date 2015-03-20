@@ -129,11 +129,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.player.gameThread = self
         # reset the udpPacket from server state
 
-        self.player.setReceivedUdp(False)
         self.player.setPort = False
         self.player.connectedToHost = False
 
-        self.player.resetUdpPacket()
 
         self.lobby = self.player.getLobbyThread()
 
