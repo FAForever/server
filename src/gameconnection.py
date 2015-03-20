@@ -445,9 +445,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     result = values[1]
                     faresult = None
                     score = 0
-                    if result.startswith("autorecall") or result.startswith("recall") or result.startswith(
-                            "defeat") or result.startswith("victory") or result.startswith(
-                            "score") or result.startswith("draw"):
+                    if result.startswith("defeat")\
+                       or result.startswith("victory")\
+                       or result.startswith("score")\
+                       or result.startswith("draw"):
                         split = result.split(" ")
                         faresult = split[0]
                         if len(split) > 1:
