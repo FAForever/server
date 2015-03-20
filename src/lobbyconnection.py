@@ -1411,33 +1411,21 @@ Thanks,\n\
 
                 session = int(query.value(4))
                 if session != 0:
+                    #remove ghost
+                    for p in self.parent.listUsers.players:
+                        if p.getLogin() == login:
+                            if p.getLobbyThread().socket:
+                                p.getLobbyThread().socket.abort()
+                            if p in self.parent.listUsers.players:
+                                self.parent.listUsers.players.remove(p)
+
+                    for p in self.parent.listUsers.logins:
+                        if p == login:
+                            self.parent.listUsers.players.remove(p)
+
                     if session == oldsession:
                         self.session = oldsession
-                        #remove ghost
-                        for p in self.parent.listUsers.players:
-                            if p.getLogin() == login:
-                                if p.getLobbyThread().socket:
-                                    p.getLobbyThread().socket.abort()
-                                if p in self.parent.listUsers.players:
-                                    self.parent.listUsers.players.remove(p)
-
-                        for p in self.parent.listUsers.logins:
-                            if p == login:
-                                self.parent.listUsers.players.remove(p)
-
                     else:
-                        #remove ghost
-                        for p in self.parent.listUsers.players:
-                            if p.getLogin() == login:
-                                if p.getLobbyThread().socket:
-                                    p.getLobbyThread().socket.abort()
-                                if p in self.parent.listUsers.players:
-                                    self.parent.listUsers.players.remove(p)
-
-                        for p in self.parent.listUsers.logins:
-                            if p == login:
-                                self.parent.listUsers.players.remove(p)
-
                         query2 = QSqlQuery(self.parent.db)
                         query2.prepare("UPDATE login SET session = ? WHERE id = ?")
                         query2.addBindValue(session)
@@ -1768,7 +1756,6 @@ Thanks,\n\
 
 
                 if len(self.player.modManager) > 0:
-                    #self.log.debug(self.logPrefix + "adding mod management")
                     self.sendJSON(dict(command="mod_manager", action="list", mods=self.player.modManager))
 
                 tourneychannel = self.getPlayerTournament(self.player)
