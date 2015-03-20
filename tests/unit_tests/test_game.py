@@ -90,3 +90,11 @@ def test_game_launch_freezes_players(game: Game, players):
     assert game.players == {players.hosting, players.joining}
     game.remove_game_connection(conn1)
     assert game.players == {players.hosting, players.joining}
+
+def test_game_teams_represents_active_teams(game: Game, players):
+    game.state = GameState.LIVE
+    players.hosting.team = 1
+    players.joining.team = 2
+    game._players = [players.hosting, players.joining]
+    assert game.teams == {1: [players.hosting],
+                          2: [players.joining]}

@@ -23,6 +23,7 @@ import time
 from PySide.QtSql import QSqlQuery
 
 from src.abc.base_game import GameConnectionState, BaseGame
+from src.players import Player
 
 
 class GameState(Enum):
@@ -104,7 +105,6 @@ class Game(BaseGame):
         self.trueSkillPlayers = []
         self.teamAssign = {}
         self.playerPosition = {}
-        self.teams = []
         self.finalTeams = []
         self.gameScore = {}
         self.gameResult = {}
@@ -127,17 +127,24 @@ class Game(BaseGame):
         Depending on the state, it is either:
           - (LOBBY) The currently connected players
           - (LIVE) Players who participated in the game
-          - None
+          - Empty list
         :return: set
         """
         if self.state == GameState.LIVE:
             return self._players
         elif self.state == GameState.LOBBY:
             return set(self._connections.keys())
+        else:
+            return []
 
     @property
     def id(self):
         return self.uuid
+
+    @property
+    def teams(self):
+        return dict([(team, [player for player in self.players if player.team == team])
+                for team in set([player.team for player in self.players])])
 
     def add_game_connection(self, game_connection):
         """
@@ -324,7 +331,6 @@ class Game(BaseGame):
                                 query.exec_()
                                 query.finish()
 
-                    #db.close()
                     # if the player is still online, we update his rating
                     if not noHumanResult:
                         for player in players.players():
