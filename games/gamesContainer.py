@@ -57,9 +57,6 @@ class gamesContainerClass(object):
             query.first()
             self.desc = query.value(0)  
 
-    def reloadGameClass(self):
-        pass
-
     def getGamemodVersion(self):
         tableMod = "updates_" + self.gameTypeName
         tableModFiles = tableMod + "_files"
@@ -138,52 +135,33 @@ class gamesContainerClass(object):
             
     def removeOldGames(self):
         '''Remove old games (invalids and not started)'''
+
         now = time.time()
-        for game in reversed(self.games):
 
+        ''' Returns true if a game should be kept alive, false if it should die '''
+        def validateGame(game):
             diff = now - game.created_at
+            if game.lobbyState == 'open':
+                if game.getNumPlayer() == 0:
+                    return False
 
-            if game.lobbyState == 'open' and game.getNumPlayer() == 0 :
-                
-                game.setLobbyState('closed')      
-                self.addDirtyGame(game.uuid)
-                self.removeGame(game)
+                hostPlayer = self.parent.players.findByName(game.hostPlayer)
 
-                continue
+                if hostPlayer == 0:
+                    return False
+                else:
+                    if hostPlayer.getAction() != "HOST":
+                        return False
 
-            if game.lobbyState == 'open' :
-                host = game.hostPlayer
-                player = self.parent.players.findByName(host)
-
-                if player == 0 : 
-                    game.setLobbyState('closed')
-                    self.addDirtyGame(game.uuid)
-                    self.removeGame(game)
-
-                    continue
-                else :
-                    if player.getAction() != "HOST" :
-                        
-                        game.setLobbyState('closed')
-                        self.addDirtyGame(game.uuid)
-                        self.removeGame(game)
-
-                        continue
-
-            
-            if game.lobbyState == 'Idle' and diff > 60 :
-
-                game.setLobbyState('closed')   
-                self.addDirtyGame(game.uuid)
-                self.removeGame(game)
-
-                continue
+            if game.lobbyState == 'Idle' and diff > 60:
+                return False
 
             if game.lobbyState == 'playing' and diff > 60 * 60 * 8 : #if the game is playing for more than 8 hours
+                return False
 
+        for game in reversed(self.games):
+
+            if not validateGame(game):
                 game.setLobbyState('closed')
                 self.addDirtyGame(game.uuid)
                 self.removeGame(game)
-
-                continue
-
