@@ -1537,6 +1537,8 @@ Thanks,\n\
             m.update(password.encode())
             passwordmd5 = m.hexdigest()
             m = hashlib.md5()
+            # Since the password is hashed on the client, what we get at this point is really
+            # md5(md5(sha256(password))). This is entirely insane.
             m.update(passwordmd5.encode())
             query.addBindValue("md5:" + str(m.hexdigest()))
             query.addBindValue(login)
