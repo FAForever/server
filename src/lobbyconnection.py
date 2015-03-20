@@ -1610,99 +1610,107 @@ Thanks,\n\
 
                 ## LADDER LEAGUES ICONS
                 ## ----------------------
-                # If a user is top of their division or league, set their avatar appropraitely.
-                query.prepare("SELECT score, league FROM %s WHERE idUser = ?" % self.season)
+                # If a user is top of their division or league, set their avatar appropriately.
+                #
+
+                # Query to extract the user's league and divison info.
+                # Naming a column `limit` was unwise.
+                query.prepare(
+                "SELECT\
+                  score,\
+                  ladder_division.league,\
+                  ladder_division.name AS division,\
+                  ladder_division.limit AS `limit`\
+                FROM\
+                  %s,\
+                  ladder_division\
+                WHERE\
+                  %s.idUser = ? AND\
+                  %s.league = ladder_division.league AND\
+                  ladder_division.limit >= %s.score\
+                ORDER BY ladder_division.limit ASC\
+                LIMIT 1;" % (self.season, self.season, self.season, self.season))
                 query.addBindValue(self.player.id)
                 query.exec_()
                 if query.size() > 0:
                     query.first()
-                    self.log.debug("league")
                     score = float(query.value(0))
                     league = int(query.value(1))
+                    self.player.league = league
+                    self.player.division = str(query.value(2))
+                    limit = int(query.value(3))
 
                     cancontinue = True
                     if league == 1 and score == 0:
                         cancontinue = False
 
                     if cancontinue:
+                        # check if top of the division :
                         query.prepare(
-                            "SELECT name, `limit` FROM `ladder_division` WHERE `league` = ? AND `limit` >= ? ORDER BY `limit` ASC LIMIT 1")
+                            "SELECT score, idUser FROM %s WHERE score <= ? and league = ? ORDER BY score DESC" % self.season)
+                        query.addBindValue(limit)
                         query.addBindValue(league)
-                        query.addBindValue(score)
+                        #query.addBindValue(self.player.getId())
                         query.exec_()
-                        if query.size() > 0:
+
+                        if query.size() >= 4:
                             query.first()
-                            self.player.league = league
-                            self.player.division = str(query.value(0))
-                            limit = int(query.value(1))
+                            for i in range(1, 4):
 
-                            # check if top of the division :
-                            query.prepare(
-                                "SELECT score, idUser FROM %s WHERE score <= ? and league = ? ORDER BY score DESC" % self.season)
-                            query.addBindValue(limit)
-                            query.addBindValue(league)
-                            #query.addBindValue(self.player.getId())
-                            query.exec_()
+                                score = float(query.value(0))
+                                idUser = int(query.value(1))
 
-                            if query.size() >= 4:
-                                query.first()
-                                for i in range(1, 4):
+                                if idUser != self.player.id or score <= 0:
+                                    query.next()
+                                    continue
 
-                                    score = float(query.value(0))
-                                    idUser = int(query.value(1))
+                                avatar = {
+                                    "url": str(Config['global']['content_url'] + "avatars/div" + str(i) + ".png")
+                                }
+                                if i == 1:
+                                    avatar.tooltip = "First in my division!"
+                                elif i == 2:
+                                    avatar.tooltip = "Second in my division!"
+                                elif i == 3:
+                                    avatar.tooltip = "Third in my division!"
 
-                                    if idUser != self.player.id or score <= 0:
-                                        query.next()
-                                        continue
+                                self.player.avatar = avatar
+                                self.leagueAvatar = avatar
 
-                                    avatar = {
-                                        "url": str(Config['global']['content_url'] + "avatars/div" + str(i) + ".png")
-                                    }
-                                    if i == 1:
-                                        avatar.tooltip = "First in my division!"
-                                    elif i == 2:
-                                        avatar.tooltip = "Second in my division!"
-                                    elif i == 3:
-                                        avatar.tooltip = "Third in my division!"
+                                break;
 
-                                    self.player.avatar = avatar
-                                    self.leagueAvatar = avatar
+                        # check if top of the league :
+                        query.prepare(
+                            "SELECT score, idUser FROM %s  WHERE league = ? ORDER BY score DESC" % self.season)
+                        query.addBindValue(league)
+                        query.exec_()
+                        if query.size() >= 4:
+                            query.first()
+                            for i in range(1, 4):
+                                score = float(query.value(0))
+                                idUser = int(query.value(1))
 
-                                    break;
+                                if idUser != self.player.id or score <= 0:
+                                    query.next()
+                                    continue
 
-                            # check if top of the league :
-                            query.prepare(
-                                "SELECT score, idUser FROM %s  WHERE league = ? ORDER BY score DESC" % self.season)
-                            query.addBindValue(league)
-                            query.exec_()
-                            if query.size() >= 4:
-                                query.first()
-                                for i in range(1, 4):
-                                    score = float(query.value(0))
-                                    idUser = int(query.value(1))
+                                avatar = {
+                                    "url": str(Config['global']['content_url'] + "avatars/league" + str(i) + ".png")
+                                }
+                                if i == 1:
+                                    avatar.tooltip = "First in my League!"
+                                elif i == 2:
+                                    avatar.tooltip = "Second in my League!"
+                                elif i == 3:
+                                    avatar.tooltip = "Third in my League!"
 
-                                    if idUser != self.player.id or score <= 0:
-                                        query.next()
-                                        continue
+                                self.player.avatar = avatar
+                                self.leagueAvatar = avatar
+                                break
 
-                                    avatar = {
-                                        "url": str(Config['global']['content_url'] + "avatars/league" + str(i) + ".png")
-                                    }
-                                    if i == 1:
-                                        avatar.tooltip = "First in my League!"
-                                    elif i == 2:
-                                        avatar.tooltip = "Second in my League!"
-                                    elif i == 3:
-                                        avatar.tooltip = "Third in my League!"
+                        jleague = {"league": self.player.league, "division": self.player.division}
+                        self.player.leagueInfo = jleague
 
-                                    self.player.avatar = avatar
-                                    self.leagueAvatar = avatar
-                                    break
-
-                            jleague = {"league": self.player.league, "division": self.player.division}
-                            self.player.leagueInfo = jleague
-
-                self.log.debug("avatar")
                 ## AVATARS
                 ## -------------------
                 query.prepare(
