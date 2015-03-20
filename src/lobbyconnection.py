@@ -1400,486 +1400,487 @@ Thanks,\n\
             login = login.strip()
             query = QSqlQuery(self.parent.db)
 
+            # TODO: Hash passwords server-side so the hashing actually *does* something.
             query.prepare(
                 "SELECT id, validated, email, steamchecked, session FROM login WHERE login = ? AND password = ?")
             query.addBindValue(login)
             query.addBindValue(password)
             query.exec_()
 
-            if query.size() == 1:
-                query.first()
-
-                session = int(query.value(4))
-                if session != 0:
-                    #remove ghost
-                    for p in self.parent.listUsers.players:
-                        if p.getLogin() == login:
-                            if p.getLobbyThread().socket:
-                                p.getLobbyThread().socket.abort()
-                            if p in self.parent.listUsers.players:
-                                self.parent.listUsers.players.remove(p)
-
-                    for p in self.parent.listUsers.logins:
-                        if p == login:
-                            self.parent.listUsers.players.remove(p)
-
-                    if session == oldsession:
-                        self.session = oldsession
-                    else:
-                        query2 = QSqlQuery(self.parent.db)
-                        query2.prepare("UPDATE login SET session = ? WHERE id = ?")
-                        query2.addBindValue(session)
-                        query2.addBindValue(int(query.value(0)))
-                        query2.exec_()
-
-                self.uid = int(query.value(0))
-                self.email = str(query.value(2))
-                self.steamChecked = int(query.value(3))
-
-                validated = query.value(1)
-                if validated == 0:
-                    reason = "Your account is not validated. Please visit <a href='" + Config['global'][
-                        'app_url'] + "faf/validateAccount.php'>" + Config['global'][
-                                 'app_url'] + "faf/validateAccount.php</a>.<br>Please re-create an account if your email is not correct (<b>" + str(
-                        self.email) + "</b>)"
-                    self.resendMail(login)
-                    self.sendJSON(dict(command="notice", style="error", text=reason))
-                    return
-
-                query.prepare("SELECT reason FROM lobby_ban WHERE idUser = ?")
-                query.addBindValue(self.uid)
-                query.exec_()
-                if query.size() == 1:
-                    query.first()
-                    reason = "You are banned from FAF.\n Reason :\n " + query.value(0)
-                    self.sendJSON(dict(command="notice", style="error", text=reason))
-                    return
-
-                if not self.steamChecked:
-                    if uniqueId is None:
-                        self.sendJSON(dict(command="notice", style="error",
-                                           text="Unique Id found for another user.<br>Multiple accounts are not allowed.<br><br>Try SteamLink: <a href='" +
-                                                Config['global']['app_url'] + "faf/steam.php'>" + Config['global'][
-                                                    'app_url'] + "faf/steam.php</a>"))
-                        return
-                        # the user is not steam Checked.
-                    query = QSqlQuery(self.parent.db)
-                    query.prepare("SELECT uniqueid FROM steam_uniqueid WHERE uniqueId = ?")
-                    query.addBindValue(uniqueId)
-                    query.exec_()
-                    if query.size() > 0:
-                        self.sendJSON(dict(command="notice", style="error",
-                                           text="This computer has been used by a steam account.<br>You have to authentify your account on steam too in order to use it on this computer :<br>SteamLink: <a href='" +
-                                                Config['global']['app_url'] + "faf/steam.php'>" + Config['global'][
-                                                    'app_url'] + "faf/steam.php</a>"))
-                        return
-
-                    # check for duplicate account
-                    query = QSqlQuery(self.parent.db)
-                    query.prepare("SELECT id FROM login WHERE uniqueId = ?")
-                    query.addBindValue(uniqueId)
-                    query.exec_()
-
-                    if query.size() == 1:
-                        query.first()
-                        idFound = int(query.value(0))
-
-                        if self.uid != idFound:
-                            self.log.debug("%i (%s) is a smurf of %i" % (self.uid, login, idFound))
-                            query2 = QSqlQuery(self.parent.db)
-                            query2.prepare("SELECT login FROM login WHERE id = ?")
-                            query2.addBindValue(idFound)
-                            query2.exec_()
-                            if query2.size() != 0:
-                                query2.first()
-                                otherLogging = str(query2.value(0))
-                                self.sendJSON(dict(command="notice", style="error",
-                                                   text="This computer is tied to this account : %s.<br>Multiple accounts are not allowed.<br>You can free this computer by logging in with that account (%s) on another computer.<br><br>Or Try SteamLink: <a href='" +
-                                                        Config['global']['app_url'] + "faf/steam.php'>" +
-                                                        Config['global']['app_url'] + "faf/steam.php</a>" % (
-                                                       otherLogging, otherLogging)))
-                            else:
-                                self.sendJSON(dict(command="notice", style="error",
-                                                   text="This computer is tied to another account.<br>Multiple accounts are not allowed.<br>You can free this computer by logging in with that account on another computer, or <br><br>Try SteamLink: <a href='" +
-                                                        Config['global']['app_url'] + "faf/steam.php'>" +
-                                                        Config['global']['app_url'] + "faf/steam.php</a>"))
-                            query2 = QSqlQuery(self.parent.db)
-                            query2.prepare("INSERT INTO `smurf_table`(`origId`, `smurfId`) VALUES (?,?)")
-                            query2.addBindValue(self.uid)
-                            query2.addBindValue(idFound)
-                            query2.exec_()
-                            #self.socket.abort()
-                            return
-
-                    query = QSqlQuery(self.parent.db)
-                    query.prepare("UPDATE login SET ip = ?, uniqueId = ?, session = ? WHERE id = ?")
-                    query.addBindValue(self.ip)
-                    query.addBindValue(str(uniqueId))
-                    query.addBindValue(self.session)
-                    query.addBindValue(self.uid)
-                    query.exec_()
-                else:
-                    # the user is steamchecked
-                    query = QSqlQuery(self.parent.db)
-                    query.prepare("UPDATE login SET ip = ?, session = ? WHERE id = ?")
-                    query.addBindValue(self.ip)
-                    query.addBindValue(self.session)
-                    query.addBindValue(self.uid)
-                    query.exec_()
-
-                    query = QSqlQuery(self.parent.db)
-                    query.prepare("INSERT INTO `steam_uniqueid`(`uniqueid`) VALUES (?)")
-                    query.addBindValue(str(uniqueId))
-                    query.exec_()
-
-                query = QSqlQuery(self.parent.db)
-                query.prepare("UPDATE anope.anope_db_NickCore SET pass = ? WHERE display = ?")
-                m = hashlib.md5()
-                m.update(password.encode())
-                passwordmd5 = m.hexdigest()
-                m = hashlib.md5()
-                m.update(passwordmd5.encode())
-                query.addBindValue("md5:" + str(m.hexdigest()))
-                query.addBindValue(login)
-                if not query.exec_():
-                    self.log.error(query.lastError())
-
-                if self.player is not None:
-                    self.player.setupPlayer(self.session, str(login), self.ip, self.port, localIp, self.uid, trueSkill,
-                                            trueSkill1v1, numGames, self)
-                    self.player.lobbyVersion = version
-                    self.player.resolvedAddress = self.player.getIp()
-
-                    self.player.faction = random.randint(1, 4)
-
-                    try:
-                        hostname = socket.getfqdn(self.player.getIp())
-                        try:
-                            socket.gethostbyname(hostname)
-                            self.player.resolvedAddress = self.player.getIp()
-                        except:
-                            self.player.resolvedAddress = self.player.getIp()
-
-                    except:
-                        self.player.resolvedAddress = self.player.getIp()
-                else:
-                    return
-
-                ## Clan informations
-                query = QSqlQuery(self.parent.db)
-                query.prepare(
-                    "SELECT `clan_tag` FROM `fafclans`.`clan_tags` LEFT JOIN `fafclans`.players_list ON `fafclans`.players_list.player_id = `fafclans`.`clan_tags`.player_id WHERE `faf_id` = ?")
-                query.addBindValue(self.uid)
-                if not query.exec_():
-                    self.log.warning(query.lastError())
-                if query.size() > 0:
-                    query.first()
-                    self.player.clan = str(query.value(0))
-
-
-                ## ADMIN
-                ## --------------------
-                self.player.admin = False
-                self.player.mod = False
-                query.prepare(
-                    "SELECT `group` FROM `lobby_admin` WHERE `user_id` = (SELECT id FROM login WHERE login = ?)")
-                query.addBindValue(login)
-                query.exec_()
-
-                if query.size() > 0:
-                    query.first()
-                    if query.value(0) == 2:
-                        self.player.admin = True
-                        self.player.mod = True
-
-                        jsonToSend = {"command": "social", "power": 2}
-                        self.sendJSON(jsonToSend)
-
-                    elif query.value(0) == 1:
-                        self.player.mod = True
-                        jsonToSend = {"command": "social", "power": 1}
-                        self.sendJSON(jsonToSend)
-
-                ## Country
-                ## ----------
-
-                country = gi.country_name_by_addr(self.socket.peerAddress().toString())
-                if country is not None:
-                    self.player.country = str(country)
-
-
-                ## LADDER LEAGUES ICONS
-                ## ----------------------
-                # If a user is top of their division or league, set their avatar appropriately.
-                #
-
-                # Query to extract the user's league and divison info.
-                # Naming a column `limit` was unwise.
-                query.prepare(
-                "SELECT\
-                  score,\
-                  ladder_division.league,\
-                  ladder_division.name AS division,\
-                  ladder_division.limit AS `limit`\
-                FROM\
-                  %s,\
-                  ladder_division\
-                WHERE\
-                  %s.idUser = ? AND\
-                  %s.league = ladder_division.league AND\
-                  ladder_division.limit >= %s.score\
-                ORDER BY ladder_division.limit ASC\
-                LIMIT 1;" % (self.season, self.season, self.season, self.season))
-                query.addBindValue(self.player.id)
-                query.exec_()
-                if query.size() > 0:
-                    query.first()
-                    score = float(query.value(0))
-                    league = int(query.value(1))
-                    self.player.league = league
-                    self.player.division = str(query.value(2))
-                    limit = int(query.value(3))
-
-                    cancontinue = True
-                    if league == 1 and score == 0:
-                        cancontinue = False
-
-                    if cancontinue:
-                        # check if top of the division :
-                        query.prepare(
-                            "SELECT score, idUser FROM %s WHERE score <= ? and league = ? ORDER BY score DESC" % self.season)
-                        query.addBindValue(limit)
-                        query.addBindValue(league)
-                        #query.addBindValue(self.player.getId())
-                        query.exec_()
-
-                        if query.size() >= 4:
-                            query.first()
-                            for i in range(1, 4):
-
-                                score = float(query.value(0))
-                                idUser = int(query.value(1))
-
-                                if idUser != self.player.id or score <= 0:
-                                    query.next()
-                                    continue
-
-                                avatar = {
-                                    "url": str(Config['global']['content_url'] + "avatars/div" + str(i) + ".png")
-                                }
-                                if i == 1:
-                                    avatar.tooltip = "First in my division!"
-                                elif i == 2:
-                                    avatar.tooltip = "Second in my division!"
-                                elif i == 3:
-                                    avatar.tooltip = "Third in my division!"
-
-                                self.player.avatar = avatar
-                                self.leagueAvatar = avatar
-
-                                break;
-
-                        # check if top of the league :
-                        query.prepare(
-                            "SELECT score, idUser FROM %s  WHERE league = ? ORDER BY score DESC" % self.season)
-                        query.addBindValue(league)
-                        query.exec_()
-                        if query.size() >= 4:
-                            query.first()
-                            for i in range(1, 4):
-                                score = float(query.value(0))
-                                idUser = int(query.value(1))
-
-                                if idUser != self.player.id or score <= 0:
-                                    query.next()
-                                    continue
-
-                                avatar = {
-                                    "url": str(Config['global']['content_url'] + "avatars/league" + str(i) + ".png")
-                                }
-                                if i == 1:
-                                    avatar.tooltip = "First in my League!"
-                                elif i == 2:
-                                    avatar.tooltip = "Second in my League!"
-                                elif i == 3:
-                                    avatar.tooltip = "Third in my League!"
-
-                                self.player.avatar = avatar
-                                self.leagueAvatar = avatar
-                                break
-
-                        jleague = {"league": self.player.league, "division": self.player.division}
-                        self.player.leagueInfo = jleague
-
-                ## AVATARS
-                ## -------------------
-                query.prepare(
-                    "SELECT url, tooltip FROM `avatars` LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = (SELECT id FROM login WHERE login = ?) AND `selected` = 1")
-                query.addBindValue(login)
-                query.exec_()
-                if query.size() > 0:
-                    query.first()
-                    avatar = {"url": str(query.value(0)), "tooltip": str(query.value(1))}
-                    self.player.avatar = avatar
-
-                if self.player is not None:
-                    #remove ghost
-                    for p in self.parent.listUsers.players:
-                        if p.getLogin() == self.player.getLogin():
-                            if p.getLobbyThread().socket:
-                                p.getLobbyThread().command_quit_team(dict(command="quit_team"))
-                                p.getLobbyThread().socket.abort()
-
-                            if p in self.parent.listUsers.players:
-                                self.parent.listUsers.players.remove(p)
-
-                    for p in self.parent.listUsers.logins:
-                        if p == self.player.getLogin():
-                            self.parent.listUsers.logins.remove(p)
-
-                    gameSocket, lobbySocket = self.parent.listUsers.addUser(self.player)
-
-                else:
-                    return
-
-                self.log.debug("Closing users")
-
-                if gameSocket is not None:
-                    gameSocket.abort()
-
-                if lobbySocket is not None:
-                    lobbySocket.abort()
-
-                self.log.debug("Welcome")
-                self.sendJSON(dict(command="welcome", email=str(self.email)))
-
-
-                if len(self.player.modManager) > 0:
-                    self.sendJSON(dict(command="mod_manager", action="list", mods=self.player.modManager))
-
-                tourneychannel = self.getPlayerTournament(self.player)
-                if len(tourneychannel) > 0:
-                    channels = channels + tourneychannel
-
-                reply = QByteArray()
-                for user in self.parent.listUsers.getAllPlayers():
-                    reply.append(self.prepareBigJSON(self.parent.parent.jsonPlayer(user)))
-
-                self.sendArray(reply)
-
-                query = QSqlQuery(self.parent.db)
-                query.prepare(
-                    "SELECT login.login FROM friends JOIN login ON idFriend=login.id WHERE idUser = (SELECT id FROM login WHERE login.login = ?)")
-                query.addBindValue(login)
-                query.exec_()
-
-                if query.size() > 0:
-                    while query.next():
-                        self.friendList.append(str(query.value(0)))
-
-                    jsonToSend = {"command": "social", "friends": self.friendList}
-                    self.sendJSON(jsonToSend)
-
-                query = QSqlQuery(self.parent.db)
-                query.prepare("SELECT idMap FROM ladder_map_selection WHERE idUser = ?")
-                query.addBindValue(self.uid)
-                query.exec_()
-                if query.size() > 0:
-                    while query.next():
-                        self.ladderMapList.append(int(query.value(0)))
-
-                query = QSqlQuery(self.parent.db)
-                query.prepare(
-                    "SELECT login.login FROM foes JOIN login ON idFoe=login.id WHERE idUser = (SELECT id FROM login WHERE login.login = ?)")
-                query.addBindValue(login)
-                query.exec_()
-                if query.size() > 0:
-                    while query.next():
-                        self.foeList.append(str(query.value(0)))
-
-                    jsonToSend = {"command": "social", "foes": self.foeList}
-                    self.sendJSON(jsonToSend)
-
-                self.sendModList()
-                self.sendGameList()
-                self.sendReplaySection()
-
-                self.log.debug("sending new player")
-                for user in self.parent.listUsers.getAllPlayers():
-
-                    if user.getLogin() != str(login):
-
-                        lobby = user.getLobbyThread()
-                        if lobby is not None:
-                            lobby.sendJSON(self.parent.parent.jsonPlayer(self.player))
-
-                if self.player.mod:
-                    channels.append("#moderators")
-                # #channels.append("#techQuestions")
-                # #channels.append("#IMBA_Cup_2")
-                if self.player.getClan() is not None:
-                    channels.append("#%s_clan" % self.player.getClan())
-
-                # Useful for setting clan war on a specific day.
-                #     if datetime.datetime.today().weekday() == 6:
-                #         #if it's sunday, clan war!
-                #         clanwar = ["BC", "B8", "SFo", "VoR", "AIx", "BFA", "OS"]
-                #         if self.player.getClan() in clanwar:
-                #             channels.append("#IntergalacticColosseum6")
-
-
-                jsonToSend = {"command": "social", "autojoin": channels}
-                self.sendJSON(jsonToSend)
-
-                # for GW
-                #channelsAvailable = ["#aeon", "#cybran", "#uef", "#seraphim"] + channels
-                channelsAvailable = channels
-
-                jsonToSend = {"command": "social", "channels": channelsAvailable}
-                self.sendJSON(jsonToSend)
-
-                # for matchmaker match...
-
-                container = self.parent.games.getContainer("ladder1v1")
-                if container is not None:
-                    for player in container.players:
-                        if player == self.player:
-                            continue
-                        #minimum game quality to start a match.
-                        trueSkill = self.player.getladder1v1Rating()
-                        deviation = trueSkill.getRating().getStandardDeviation()
-
-                        gameQuality = 0.8
-                        if deviation > 450:
-                            gameQuality = 0.01
-                        elif deviation > 350:
-                            gameQuality = 0.1
-                        elif deviation > 300:
-                            gameQuality = 0.7
-                        elif deviation > 250:
-                            gameQuality = 0.75
-                        else:
-                            gameQuality = 0.8
-
-                        curTrueSkill = player.getladder1v1Rating()
-
-                        if deviation > 350 and curTrueSkill.getRating().getConservativeRating() > 1600:
-                            continue
-
-                        curMatchQuality = self.getMatchQuality(trueSkill, curTrueSkill)
-                        if curMatchQuality >= gameQuality:
-                            self.addPotentialPlayer(player.getLogin())
-
-                if self in self.parent.recorders:
-                    if self.pingTimer is not None and self.noSocket == False:
-                        self.pingTimer.stop()
-                        self.pingTimer.start(61000)
-
-                self.log.debug("done")
-
-            else:
+            if query.size() != 1:
                 self.sendJSON(dict(command="notice", style="error",
                                    text="Login not found or password incorrect. They are case sensitive."))
+                return
+
+            query.first()
+
+            session = int(query.value(4))
+            if session != 0:
+                #remove ghost
+                for p in self.parent.listUsers.players:
+                    if p.getLogin() == login:
+                        if p.getLobbyThread().socket:
+                            p.getLobbyThread().socket.abort()
+                        if p in self.parent.listUsers.players:
+                            self.parent.listUsers.players.remove(p)
+
+                for p in self.parent.listUsers.logins:
+                    if p == login:
+                        self.parent.listUsers.players.remove(p)
+
+                if session == oldsession:
+                    self.session = oldsession
+                else:
+                    query2 = QSqlQuery(self.parent.db)
+                    query2.prepare("UPDATE login SET session = ? WHERE id = ?")
+                    query2.addBindValue(session)
+                    query2.addBindValue(int(query.value(0)))
+                    query2.exec_()
+
+            self.uid = int(query.value(0))
+            self.email = str(query.value(2))
+            self.steamChecked = int(query.value(3))
+
+            validated = query.value(1)
+            if validated == 0:
+                reason = "Your account is not validated. Please visit <a href='" + Config['global'][
+                    'app_url'] + "faf/validateAccount.php'>" + Config['global'][
+                             'app_url'] + "faf/validateAccount.php</a>.<br>Please re-create an account if your email is not correct (<b>" + str(
+                    self.email) + "</b>)"
+                self.resendMail(login)
+                self.sendJSON(dict(command="notice", style="error", text=reason))
+                return
+
+            query.prepare("SELECT reason FROM lobby_ban WHERE idUser = ?")
+            query.addBindValue(self.uid)
+            query.exec_()
+            if query.size() == 1:
+                query.first()
+                reason = "You are banned from FAF.\n Reason :\n " + query.value(0)
+                self.sendJSON(dict(command="notice", style="error", text=reason))
+                return
+
+            if not self.steamChecked:
+                if uniqueId is None:
+                    self.sendJSON(dict(command="notice", style="error",
+                                       text="Unique Id found for another user.<br>Multiple accounts are not allowed.<br><br>Try SteamLink: <a href='" +
+                                            Config['global']['app_url'] + "faf/steam.php'>" + Config['global'][
+                                                'app_url'] + "faf/steam.php</a>"))
+                    return
+                    # the user is not steam Checked.
+                query = QSqlQuery(self.parent.db)
+                query.prepare("SELECT uniqueid FROM steam_uniqueid WHERE uniqueId = ?")
+                query.addBindValue(uniqueId)
+                query.exec_()
+                if query.size() > 0:
+                    self.sendJSON(dict(command="notice", style="error",
+                                       text="This computer has been used by a steam account.<br>You have to authentify your account on steam too in order to use it on this computer :<br>SteamLink: <a href='" +
+                                            Config['global']['app_url'] + "faf/steam.php'>" + Config['global'][
+                                                'app_url'] + "faf/steam.php</a>"))
+                    return
+
+                # check for duplicate account
+                query = QSqlQuery(self.parent.db)
+                query.prepare("SELECT id FROM login WHERE uniqueId = ?")
+                query.addBindValue(uniqueId)
+                query.exec_()
+
+                if query.size() == 1:
+                    query.first()
+                    idFound = int(query.value(0))
+
+                    if self.uid != idFound:
+                        self.log.debug("%i (%s) is a smurf of %i" % (self.uid, login, idFound))
+                        query2 = QSqlQuery(self.parent.db)
+                        query2.prepare("SELECT login FROM login WHERE id = ?")
+                        query2.addBindValue(idFound)
+                        query2.exec_()
+                        if query2.size() != 0:
+                            query2.first()
+                            otherLogging = str(query2.value(0))
+                            self.sendJSON(dict(command="notice", style="error",
+                                               text="This computer is tied to this account : %s.<br>Multiple accounts are not allowed.<br>You can free this computer by logging in with that account (%s) on another computer.<br><br>Or Try SteamLink: <a href='" +
+                                                    Config['global']['app_url'] + "faf/steam.php'>" +
+                                                    Config['global']['app_url'] + "faf/steam.php</a>" % (
+                                                   otherLogging, otherLogging)))
+                        else:
+                            self.sendJSON(dict(command="notice", style="error",
+                                               text="This computer is tied to another account.<br>Multiple accounts are not allowed.<br>You can free this computer by logging in with that account on another computer, or <br><br>Try SteamLink: <a href='" +
+                                                    Config['global']['app_url'] + "faf/steam.php'>" +
+                                                    Config['global']['app_url'] + "faf/steam.php</a>"))
+                        query2 = QSqlQuery(self.parent.db)
+                        query2.prepare("INSERT INTO `smurf_table`(`origId`, `smurfId`) VALUES (?,?)")
+                        query2.addBindValue(self.uid)
+                        query2.addBindValue(idFound)
+                        query2.exec_()
+                        #self.socket.abort()
+                        return
+
+                query = QSqlQuery(self.parent.db)
+                query.prepare("UPDATE login SET ip = ?, uniqueId = ?, session = ? WHERE id = ?")
+                query.addBindValue(self.ip)
+                query.addBindValue(str(uniqueId))
+                query.addBindValue(self.session)
+                query.addBindValue(self.uid)
+                query.exec_()
+            else:
+                # the user is steamchecked
+                query = QSqlQuery(self.parent.db)
+                query.prepare("UPDATE login SET ip = ?, session = ? WHERE id = ?")
+                query.addBindValue(self.ip)
+                query.addBindValue(self.session)
+                query.addBindValue(self.uid)
+                query.exec_()
+
+                query = QSqlQuery(self.parent.db)
+                query.prepare("INSERT INTO `steam_uniqueid`(`uniqueid`) VALUES (?)")
+                query.addBindValue(str(uniqueId))
+                query.exec_()
+
+            query = QSqlQuery(self.parent.db)
+            query.prepare("UPDATE anope.anope_db_NickCore SET pass = ? WHERE display = ?")
+            m = hashlib.md5()
+            m.update(password.encode())
+            passwordmd5 = m.hexdigest()
+            m = hashlib.md5()
+            m.update(passwordmd5.encode())
+            query.addBindValue("md5:" + str(m.hexdigest()))
+            query.addBindValue(login)
+            if not query.exec_():
+                self.log.error(query.lastError())
+
+            if self.player is not None:
+                self.player.setupPlayer(self.session, str(login), self.ip, self.port, localIp, self.uid, trueSkill,
+                                        trueSkill1v1, numGames, self)
+                self.player.lobbyVersion = version
+                self.player.resolvedAddress = self.player.getIp()
+
+                self.player.faction = random.randint(1, 4)
+
+                try:
+                    hostname = socket.getfqdn(self.player.getIp())
+                    try:
+                        socket.gethostbyname(hostname)
+                        self.player.resolvedAddress = self.player.getIp()
+                    except:
+                        self.player.resolvedAddress = self.player.getIp()
+
+                except:
+                    self.player.resolvedAddress = self.player.getIp()
+            else:
+                return
+
+            ## Clan informations
+            query = QSqlQuery(self.parent.db)
+            query.prepare(
+                "SELECT `clan_tag` FROM `fafclans`.`clan_tags` LEFT JOIN `fafclans`.players_list ON `fafclans`.players_list.player_id = `fafclans`.`clan_tags`.player_id WHERE `faf_id` = ?")
+            query.addBindValue(self.uid)
+            if not query.exec_():
+                self.log.warning(query.lastError())
+            if query.size() > 0:
+                query.first()
+                self.player.clan = str(query.value(0))
+
+
+            ## ADMIN
+            ## --------------------
+            self.player.admin = False
+            self.player.mod = False
+            query.prepare(
+                "SELECT `group` FROM `lobby_admin` WHERE `user_id` = (SELECT id FROM login WHERE login = ?)")
+            query.addBindValue(login)
+            query.exec_()
+
+            if query.size() > 0:
+                query.first()
+                if query.value(0) == 2:
+                    self.player.admin = True
+                    self.player.mod = True
+
+                    jsonToSend = {"command": "social", "power": 2}
+                    self.sendJSON(jsonToSend)
+
+                elif query.value(0) == 1:
+                    self.player.mod = True
+                    jsonToSend = {"command": "social", "power": 1}
+                    self.sendJSON(jsonToSend)
+
+            ## Country
+            ## ----------
+
+            country = gi.country_name_by_addr(self.socket.peerAddress().toString())
+            if country is not None:
+                self.player.country = str(country)
+
+
+            ## LADDER LEAGUES ICONS
+            ## ----------------------
+            # If a user is top of their division or league, set their avatar appropriately.
+            #
+
+            # Query to extract the user's league and divison info.
+            # Naming a column `limit` was unwise.
+            query.prepare(
+            "SELECT\
+              score,\
+              ladder_division.league,\
+              ladder_division.name AS division,\
+              ladder_division.limit AS `limit`\
+            FROM\
+              %s,\
+              ladder_division\
+            WHERE\
+              %s.idUser = ? AND\
+              %s.league = ladder_division.league AND\
+              ladder_division.limit >= %s.score\
+            ORDER BY ladder_division.limit ASC\
+            LIMIT 1;" % (self.season, self.season, self.season, self.season))
+            query.addBindValue(self.player.id)
+            query.exec_()
+            if query.size() > 0:
+                query.first()
+                score = float(query.value(0))
+                league = int(query.value(1))
+                self.player.league = league
+                self.player.division = str(query.value(2))
+                limit = int(query.value(3))
+
+                cancontinue = True
+                if league == 1 and score == 0:
+                    cancontinue = False
+
+                if cancontinue:
+                    # check if top of the division :
+                    query.prepare(
+                        "SELECT score, idUser FROM %s WHERE score <= ? and league = ? ORDER BY score DESC" % self.season)
+                    query.addBindValue(limit)
+                    query.addBindValue(league)
+                    #query.addBindValue(self.player.getId())
+                    query.exec_()
+
+                    if query.size() >= 4:
+                        query.first()
+                        for i in range(1, 4):
+
+                            score = float(query.value(0))
+                            idUser = int(query.value(1))
+
+                            if idUser != self.player.id or score <= 0:
+                                query.next()
+                                continue
+
+                            avatar = {
+                                "url": str(Config['global']['content_url'] + "avatars/div" + str(i) + ".png")
+                            }
+                            if i == 1:
+                                avatar.tooltip = "First in my division!"
+                            elif i == 2:
+                                avatar.tooltip = "Second in my division!"
+                            elif i == 3:
+                                avatar.tooltip = "Third in my division!"
+
+                            self.player.avatar = avatar
+                            self.leagueAvatar = avatar
+
+                            break;
+
+                    # check if top of the league :
+                    query.prepare(
+                        "SELECT score, idUser FROM %s  WHERE league = ? ORDER BY score DESC" % self.season)
+                    query.addBindValue(league)
+                    query.exec_()
+                    if query.size() >= 4:
+                        query.first()
+                        for i in range(1, 4):
+                            score = float(query.value(0))
+                            idUser = int(query.value(1))
+
+                            if idUser != self.player.id or score <= 0:
+                                query.next()
+                                continue
+
+                            avatar = {
+                                "url": str(Config['global']['content_url'] + "avatars/league" + str(i) + ".png")
+                            }
+                            if i == 1:
+                                avatar.tooltip = "First in my League!"
+                            elif i == 2:
+                                avatar.tooltip = "Second in my League!"
+                            elif i == 3:
+                                avatar.tooltip = "Third in my League!"
+
+                            self.player.avatar = avatar
+                            self.leagueAvatar = avatar
+                            break
+
+                    jleague = {"league": self.player.league, "division": self.player.division}
+                    self.player.leagueInfo = jleague
+
+            ## AVATARS
+            ## -------------------
+            query.prepare(
+                "SELECT url, tooltip FROM `avatars` LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = (SELECT id FROM login WHERE login = ?) AND `selected` = 1")
+            query.addBindValue(login)
+            query.exec_()
+            if query.size() > 0:
+                query.first()
+                avatar = {"url": str(query.value(0)), "tooltip": str(query.value(1))}
+                self.player.avatar = avatar
+
+            if self.player is not None:
+                #remove ghost
+                for p in self.parent.listUsers.players:
+                    if p.getLogin() == self.player.getLogin():
+                        if p.getLobbyThread().socket:
+                            p.getLobbyThread().command_quit_team(dict(command="quit_team"))
+                            p.getLobbyThread().socket.abort()
+
+                        if p in self.parent.listUsers.players:
+                            self.parent.listUsers.players.remove(p)
+
+                for p in self.parent.listUsers.logins:
+                    if p == self.player.getLogin():
+                        self.parent.listUsers.logins.remove(p)
+
+                gameSocket, lobbySocket = self.parent.listUsers.addUser(self.player)
+
+            else:
+                return
+
+            self.log.debug("Closing users")
+
+            if gameSocket is not None:
+                gameSocket.abort()
+
+            if lobbySocket is not None:
+                lobbySocket.abort()
+
+            self.log.debug("Welcome")
+            self.sendJSON(dict(command="welcome", email=str(self.email)))
+
+
+            if len(self.player.modManager) > 0:
+                self.sendJSON(dict(command="mod_manager", action="list", mods=self.player.modManager))
+
+            tourneychannel = self.getPlayerTournament(self.player)
+            if len(tourneychannel) > 0:
+                channels = channels + tourneychannel
+
+            reply = QByteArray()
+            for user in self.parent.listUsers.getAllPlayers():
+                reply.append(self.prepareBigJSON(self.parent.parent.jsonPlayer(user)))
+
+            self.sendArray(reply)
+
+            query = QSqlQuery(self.parent.db)
+            query.prepare(
+                "SELECT login.login FROM friends JOIN login ON idFriend=login.id WHERE idUser = (SELECT id FROM login WHERE login.login = ?)")
+            query.addBindValue(login)
+            query.exec_()
+
+            if query.size() > 0:
+                while query.next():
+                    self.friendList.append(str(query.value(0)))
+
+                jsonToSend = {"command": "social", "friends": self.friendList}
+                self.sendJSON(jsonToSend)
+
+            query = QSqlQuery(self.parent.db)
+            query.prepare("SELECT idMap FROM ladder_map_selection WHERE idUser = ?")
+            query.addBindValue(self.uid)
+            query.exec_()
+            if query.size() > 0:
+                while query.next():
+                    self.ladderMapList.append(int(query.value(0)))
+
+            query = QSqlQuery(self.parent.db)
+            query.prepare(
+                "SELECT login.login FROM foes JOIN login ON idFoe=login.id WHERE idUser = (SELECT id FROM login WHERE login.login = ?)")
+            query.addBindValue(login)
+            query.exec_()
+            if query.size() > 0:
+                while query.next():
+                    self.foeList.append(str(query.value(0)))
+
+                jsonToSend = {"command": "social", "foes": self.foeList}
+                self.sendJSON(jsonToSend)
+
+            self.sendModList()
+            self.sendGameList()
+            self.sendReplaySection()
+
+            self.log.debug("sending new player")
+            for user in self.parent.listUsers.getAllPlayers():
+
+                if user.getLogin() != str(login):
+
+                    lobby = user.getLobbyThread()
+                    if lobby is not None:
+                        lobby.sendJSON(self.parent.parent.jsonPlayer(self.player))
+
+            if self.player.mod:
+                channels.append("#moderators")
+            # #channels.append("#techQuestions")
+            # #channels.append("#IMBA_Cup_2")
+            if self.player.getClan() is not None:
+                channels.append("#%s_clan" % self.player.getClan())
+
+            # Useful for setting clan war on a specific day.
+            #     if datetime.datetime.today().weekday() == 6:
+            #         #if it's sunday, clan war!
+            #         clanwar = ["BC", "B8", "SFo", "VoR", "AIx", "BFA", "OS"]
+            #         if self.player.getClan() in clanwar:
+            #             channels.append("#IntergalacticColosseum6")
+
+
+            jsonToSend = {"command": "social", "autojoin": channels}
+            self.sendJSON(jsonToSend)
+
+            # for GW
+            #channelsAvailable = ["#aeon", "#cybran", "#uef", "#seraphim"] + channels
+            channelsAvailable = channels
+
+            jsonToSend = {"command": "social", "channels": channelsAvailable}
+            self.sendJSON(jsonToSend)
+
+            # for matchmaker match...
+
+            container = self.parent.games.getContainer("ladder1v1")
+            if container is not None:
+                for player in container.players:
+                    if player == self.player:
+                        continue
+                    #minimum game quality to start a match.
+                    trueSkill = self.player.getladder1v1Rating()
+                    deviation = trueSkill.getRating().getStandardDeviation()
+
+                    gameQuality = 0.8
+                    if deviation > 450:
+                        gameQuality = 0.01
+                    elif deviation > 350:
+                        gameQuality = 0.1
+                    elif deviation > 300:
+                        gameQuality = 0.7
+                    elif deviation > 250:
+                        gameQuality = 0.75
+                    else:
+                        gameQuality = 0.8
+
+                    curTrueSkill = player.getladder1v1Rating()
+
+                    if deviation > 350 and curTrueSkill.getRating().getConservativeRating() > 1600:
+                        continue
+
+                    curMatchQuality = self.getMatchQuality(trueSkill, curTrueSkill)
+                    if curMatchQuality >= gameQuality:
+                        self.addPotentialPlayer(player.getLogin())
+
+            if self in self.parent.recorders:
+                if self.pingTimer is not None and self.noSocket == False:
+                    self.pingTimer.stop()
+                    self.pingTimer.start(61000)
+
+            self.log.debug("done")
         except:
             self.log.exception("awful : can't decode a json string")
 
