@@ -1408,7 +1408,21 @@ Thanks,\n\
 
             query.first()
 
+            self.uid = int(query.value(0))
+            validated = query.value(1)
+            self.email = str(query.value(2))
+            self.steamChecked = int(query.value(3))
             session = int(query.value(4))
+
+            if validated == 0:
+                reason = "Your account is not validated. Please visit <a href='" + Config['global'][
+                    'app_url'] + "faf/validateAccount.php'>" + Config['global'][
+                             'app_url'] + "faf/validateAccount.php</a>.<br>Please re-create an account if your email is not correct (<b>" + str(
+                    self.email) + "</b>)"
+                self.resendMail(login)
+                self.sendJSON(dict(command="notice", style="error", text=reason))
+                return
+
             if session != 0:
                 #remove ghost
                 for p in self.parent.listUsers.players:
@@ -1430,20 +1444,6 @@ Thanks,\n\
                     query2.addBindValue(session)
                     query2.addBindValue(int(query.value(0)))
                     query2.exec_()
-
-            self.uid = int(query.value(0))
-            self.email = str(query.value(2))
-            self.steamChecked = int(query.value(3))
-
-            validated = query.value(1)
-            if validated == 0:
-                reason = "Your account is not validated. Please visit <a href='" + Config['global'][
-                    'app_url'] + "faf/validateAccount.php'>" + Config['global'][
-                             'app_url'] + "faf/validateAccount.php</a>.<br>Please re-create an account if your email is not correct (<b>" + str(
-                    self.email) + "</b>)"
-                self.resendMail(login)
-                self.sendJSON(dict(command="notice", style="error", text=reason))
-                return
 
             query.prepare("SELECT reason FROM lobby_ban WHERE idUser = ?")
             query.addBindValue(self.uid)
