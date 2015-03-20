@@ -29,7 +29,10 @@ class BasePlayer():
 
     @ladder_rating.setter
     def ladder_rating(self, value: Rating):
-        self._ladder_rating = (value.mu, value.sigma)
+        if isinstance(value, Rating):
+            self._ladder_rating = (value.mu, value.sigma)
+        else:
+            self._ladder_rating = value
 
     login = abstractproperty()
     id = abstractproperty()
@@ -41,6 +44,6 @@ class BasePlayer():
     @faction.setter
     def faction(self, value):
         if isinstance(value, str):
-            self._faction = Faction.from_string()
+            self._faction = Faction.from_string(value)
         else:
             self._faction = value
