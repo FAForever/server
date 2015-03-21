@@ -709,7 +709,10 @@ class LobbyConnection(QObject):
                 query.prepare("SELECT id FROM `login` WHERE LOWER(`login`) = ?")
                 query.addBindValue(login.lower())
                 if not query.exec_():
-                    self.log.info(query.lastError())
+                    self.log.debug("Error inserting login %s", login)
+                    self.log.debug(query.lastError())
+                    self.sendReply("LOGIN_AVAILABLE", "no", login)
+                    return
 
                 if query.size() != 0:
                     self.log.debug("Login not available: %s", login)
