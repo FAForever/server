@@ -70,47 +70,12 @@ class Player(BasePlayer):
         self.receivedUdp = False
         self.setPort = False
 
-    def getAvatar(self):
-        return self.avatar
-    
-    def getClan(self):
-        return self.clan
-
     def setGameSocket(self, socket):
         if socket != 0 :
             self.gameSocket = socket
         else :
             self.gameSocket = None
 
-    def getGameSocket(self):
-        return self.gameSocket
-
-    def getWantGame(self):
-        return self.wantToConnectToGame
-
-    def setWantGame(self, value):
-        self.wantToConnectToGame = value
-
-    def getExpandLadder(self):
-        return self.expandLadder 
-
-    def setExpandLadder(self, value):
-        
-        self.expandLadder = value
-        return 1
-    
-    def isConnectedToHost(self):
-        return self.connectedToHost
-    
-    def connectedToHost(self, value):
-        if value == 1 :
-            self.connectedToHost = True
-        else :
-            self.connectedToHost = False
-    
-    def getLobbyThread(self):
-        return self.lobbyThread
-         
     def setupPlayer(self, session, login, ip, port, localIp, uuid, globalSkill, trueSkill1v1, numGames, lobbyThread ):
         
         self.numGames = numGames
@@ -124,28 +89,19 @@ class Player(BasePlayer):
         self.globalSkill = globalSkill
         self.ladder1v1Skill = trueSkill1v1
 
-    def getNumGames(self):
-        return self.numGames
-
     def setRating(self, rating):
         self.globalSkill.setRating(self.globalSkill.getPlayer(), rating)
 
-    
     def setladder1v1Rating(self, rating):
         self.ladder1v1Skill.setRating(self.ladder1v1Skill.getPlayer(), rating)
 
     def getRating(self):
         return self.globalSkill
 
-    def getladder1v1Rating(self):
-        return self.ladder1v1Skill
-
     def setGamePort(self, gamePort):
         if gamePort == 0 :
             gamePort = 6112
         self.gamePort = gamePort
-         
-        #self.localGamePort = gamePort
 
         return 1
     
@@ -157,10 +113,6 @@ class Player(BasePlayer):
             return 0
         self.game = gameName
         return 1
-
-
-    def getGamePort(self):
-        return self.gamePort
 
     def getLocalGamePort(self):
         return self.localGamePort
@@ -186,7 +138,7 @@ class Player(BasePlayer):
         return 1
 
     def getAddress(self):
-        return "%s:%s" % (str(self.getIp()), str(self.getGamePort()))
+        return "%s:%s" % (str(self.getIp()), str(self.gamePort))
 
     def getLocalAddress(self):
         return "%s:%s" % (str(self.getLocalIp()), str(self.getLocalGamePort()))
@@ -203,9 +155,6 @@ class Player(BasePlayer):
     def getId(self):
         return self.uuid
 
-    def getSession(self):
-        return self.session
-
     @property
     def id(self):
         return self.uuid
@@ -220,7 +169,7 @@ class Player(BasePlayer):
 
     @property
     def game_port(self):
-        return self.getGamePort()
+        return self.gamePort
 
     @property
     def address_and_port(self):
@@ -235,9 +184,6 @@ class playersOnline(object):
     def __init__(self):
         self.players = []
         self.logins = []
-
-    def getAllPlayers(self):
-        return self.players
 
     def getNumPlayers(self):
         return len(self.players)
@@ -254,21 +200,16 @@ class playersOnline(object):
             # login in current active player list !
             
             for player in self.players:
-                if newplayer.getSession() == player.getSession() :
+                if newplayer.session == player.session :
                     # uuid is the same, I don't know how it's possible, but we do nothing.
                     return gamesocket, lobbySocket
                 
                 if newplayer.getLogin() == player.getLogin():
                     # login exists, uuid not the same
-                    
                     try :
-                        lobbyThread = player.getLobbyThread()
+                        lobbyThread = player.lobbyThread
                         if lobbyThread != None :
                             lobbySocket = lobbyThread.socket
-
-
-                        #self.players.remove(player)
-
                     except :
                         pass
                         
@@ -296,7 +237,7 @@ class playersOnline(object):
     
     def findByIp(self, ip):
         for player in self.players:
-            if player.ip == ip and player.getWantGame():
+            if player.ip == ip and player.wantToConnectToGame:
                 return player
         return None
 

@@ -27,10 +27,9 @@ def playerMock(lobbythread, id):
     player_mock.login = "Player %s" % id
     player_mock.setAction = lambda action: None
     player_mock.getId = lambda: id
-    player_mock.setWantGame = lambda bool: None
     player_mock.setGame = lambda uid: None
-    player_mock.getGamePort = lambda: 4242
-    player_mock.getLobbyThread = lambda: lobbythread
+    player_mock.gamePort = 4242
+    player_mock.lobbyThread = lobbythread
     return player_mock
 
 

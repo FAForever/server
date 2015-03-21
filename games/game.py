@@ -256,7 +256,7 @@ class Game(BaseGame):
                 AI = True
             if tsresults != 0:
                 # if the player was really in a playing team 
-                if str(name) in tsresults.getAllPlayersNames():
+                if str(name) in tsresults.playersNames():
                     mean = (tsresults.getRating(name).getMean() * self.partial) + (
                         playerTS.getRating().getMean() * (1 - self.partial))
                     dev = (tsresults.getRating(name).getStandardDeviation() * self.partial) + (
@@ -311,7 +311,7 @@ class Game(BaseGame):
                     #db.close()
                     # if the player is still online, we update his rating
                     if noHumanResult == False:
-                        for player in players.getAllPlayers():
+                        for player in players.players():
                             if str(player.getLogin()) == str(name):
                                 logger.debug("found player online")
                                 function = getattr(player, playerFnc)
@@ -331,10 +331,10 @@ class Game(BaseGame):
                 logger.debug("ERROR: No Valid TS results!")
 
     def sendMessageToPlayers(self, players, name, message):
-        for player in players.getAllPlayers():
+        for player in players.players():
 
             if str(player.getLogin()) == str(name):
-                lobby = player.getLobbyThread()
+                lobby = player.lobbyThread
                 try:
                     if type(message) == list:
                         for part in message:
@@ -367,7 +367,7 @@ class Game(BaseGame):
         i = 1
         for teams in self.finalTeams:
             curScore = 0
-            for players in teams.getAllPlayers():
+            for players in teams.players():
                 id = str(players.getId())
                 if id in str(self.gameResult):
                     resultPlayer = self.gameResult[str(id)]
@@ -391,7 +391,7 @@ class Game(BaseGame):
             i = 1
             for teams in self.finalTeams:
                 memTeam = []
-                for players in teams.getAllPlayers():
+                for players in teams.players():
                     id = str(players.getId())
                     memTeam.append(id)
                 msg = msg + "Team " + str(i) + " ("
@@ -412,7 +412,7 @@ class Game(BaseGame):
 
             for playerTS in self.trueSkillPlayers:
                 name = playerTS.getPlayer()
-                if str(name) in tsresults.getAllPlayersNames():
+                if str(name) in tsresults.playersNames():
                     mean = (tsresults.getRating(name).getMean() * self.partial) + (
                         playerTS.getRating().getMean() * (1 - self.partial))
                     dev = (tsresults.getRating(name).getStandardDeviation() * self.partial) + (
@@ -433,7 +433,7 @@ class Game(BaseGame):
         results = []
         for teams in self.finalTeams:
             curScore = 0
-            for players in teams.getAllPlayers():
+            for players in teams.players():
                 id = str(players.getId())
                 if id in str(self.gameResult):
                     resultPlayer = self.gameResult[str(id)]
@@ -544,7 +544,7 @@ class Game(BaseGame):
         self.log.debug("updating ratings")
         try:
             for team in self.finalTeams:
-                for member in team.getAllPlayers():
+                for member in team.players():
                     query = QSqlQuery(self.db)
                     query.prepare(
                         "SELECT mean, deviation FROM global_rating WHERE id = (SELECT id FROM login WHERE login = ?)")

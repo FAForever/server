@@ -79,7 +79,7 @@ class matchmakerGame(Game):
                     self.setPlayerFaction(place, p.getFaction())
                     self.setPlayerColor(place, place)
                     
-                    p.setWantGame(True)
+                    p.wantToConnectToGame = True
 
                     json = {
                         "command": "game_launch",
@@ -98,7 +98,7 @@ class matchmakerGame(Game):
                     self.log.debug("Host is %s" % player.getLogin() )
                     self.log.debug("launching FA for %s, place %i" % (p.getLogin(),place) )
 
-                    p.getLobbyThread().sendJSON(json)
+                    p.lobbyThread.sendJSON(json)
         except :
             self.log.exception("Something awful happened when launching a matchmaker game !")
 

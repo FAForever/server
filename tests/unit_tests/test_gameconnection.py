@@ -59,7 +59,7 @@ def test_abort(game_connection, players, connected_game_socket):
     game_connection.socket = connected_game_socket
     game_connection.abort()
     connected_game_socket.abort.assert_any_call()
-    players.hosting.getLobbyThread().sendJSON.assert_called_with(
+    players.hosting.lobbyThread.sendJSON.assert_called_with(
         dict(command='notice',
              style='kill')
     )
@@ -80,7 +80,7 @@ def test_handle_action_GameState_idle_as_peer_sends_CreateLobby(game_connection,
     yield from game_connection.handle_action('GameState', ['Idle'])
     games.find_by_id.assert_called_once_with(players.joining.getGame())
     transport.send_message.assert_any_call({'key': 'CreateLobby',
-                                            'commands': [0, players.joining.getGamePort(),
+                                            'commands': [0, players.joining.gamePort,
                                                          players.joining.getLogin(),
                                                          players.joining.id,
                                                          1]})
@@ -95,7 +95,7 @@ def test_handle_action_GameState_idle_as_host_sends_CreateLobby(game_connection,
     yield from game_connection.handle_action('GameState', ['Idle'])
     games.find_by_id.assert_called_once_with(players.hosting.getGame())
     transport.send_message.assert_any_call({'key': 'CreateLobby',
-                                            'commands': [0, players.hosting.getGamePort(),
+                                            'commands': [0, players.hosting.gamePort,
                                                          players.hosting.getLogin(),
                                                          players.hosting.id,
                                                          1]})

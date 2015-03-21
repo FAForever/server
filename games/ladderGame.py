@@ -65,13 +65,13 @@ class ladder1V1Game(Game):
         trueSkillCopy = deepcopy(trueskill)
         self.addTrueSkillPlayer(trueSkillCopy)
         
-        trueskill1v1 = player.getladder1v1Rating()
+        trueskill1v1 = player.ladder1v1Skill
         trueSkillCopy1v1 = deepcopy(trueskill1v1)
         self.addTrueSkill1v1Player(trueSkillCopy1v1)
 
         if player.getAction() == "HOST" :
             playerToJoin = self.getPlayerToJoin()
-            playerToJoin.setWantGame(True)
+            playerToJoin.wantToConnectToGame = True
             
             map = self.mapName
             
@@ -83,9 +83,8 @@ class ladder1V1Game(Game):
                 "mapname": map,
                 "args": ["/players 2", "/team 2"]
             }
-            playerToJoin.getLobbyThread().sendJSON(json)
+            playerToJoin.lobbyThread.sendJSON(json)
 
-            #playerToJoin.getLobbyThread().sendReply("LADDER_START", player.getLogin(), int(2))
             self.assignPlayerToTeam(player.getLogin(), 1)
             
             self.setPlayerFaction(1, player.getFaction())
@@ -188,7 +187,7 @@ class ladder1V1Game(Game):
                             query.addBindValue(player)
                             query.exec_()
 
-                        for p in players.getAllPlayers() :
+                        for p in players.players() :
                             if str(p.getLogin()) == str(player) :
                                 query.prepare("SELECT score, league FROM %s WHERE idUser = ?" % self.parent.season)
                                 query.addBindValue(p.getId())
@@ -312,7 +311,7 @@ class ladder1V1Game(Game):
         results = []
         for teams in self.finalTeams1v1:
             curScore = 0
-            for player in teams.getAllPlayers():
+            for player in teams.players():
                 if player.id in str(self.gameResult):
                     resultPlayer = self.gameResult[str(player.id)]
                     curScore = curScore + resultPlayer
@@ -324,7 +323,7 @@ class ladder1V1Game(Game):
         ''' Update all scores from the DB before updating the results'''
         try :
             for team in self.finalTeams1v1 :
-                for member in team.getAllPlayers() :
+                for member in team.players() :
                     query = QSqlQuery(self.parent.db)
                     query.prepare("SELECT mean, deviation FROM ladder1v1_rating WHERE id = (SELECT id FROM login WHERE login = ?)")
                     query.addBindValue(member.getId())

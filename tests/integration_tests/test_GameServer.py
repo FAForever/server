@@ -35,14 +35,14 @@ def test_public_host(loop, qtbot, players, player_service, games):
     player = players.hosting
     server = asyncio.async(run_server('127.0.0.1', loop, player_service, games))
     yield from asyncio.sleep(0.1)
-    with TestGPGClient('127.0.0.1', 8000, player.getGamePort(), process_nat_packets=True) as client:
+    with TestGPGClient('127.0.0.1', 8000, player.gamePort, process_nat_packets=True) as client:
         with qtbot.waitSignal(client.connected):
             pass
         client.send_GameState(['Idle'])
         client.send_GameState(['Lobby'])
         yield from wait_call(client.udp_messages,
                               call("\x08Are you public? %s" % player.id), 2)
-        client.send_ProcessNatPacket(["%s:%s" % (player.getIp(), player.getGamePort()),
+        client.send_ProcessNatPacket(["%s:%s" % (player.getIp(), player.gamePort),
                                       "Are you public? %s" % player.id])
         yield from wait_call(client.messages,
                     call(json.dumps({"key": "ConnectivityState",
@@ -55,7 +55,7 @@ def test_stun_host(loop, qtbot, players, player_service, games):
     player = players.hosting
     server = asyncio.async(run_server('127.0.0.1', loop, player_service, games))
     yield from asyncio.sleep(0.1)
-    with TestGPGClient('127.0.0.1', 8000, player.getGamePort(), process_nat_packets=False) as client:
+    with TestGPGClient('127.0.0.1', 8000, player.gamePort, process_nat_packets=False) as client:
         with qtbot.waitSignal(client.connected):
             pass
         client.send_GameState(['Idle'])

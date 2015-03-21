@@ -111,8 +111,8 @@ if __name__ == '__main__':
         def jsonPlayer(self, player):
             ''' infos about a player'''
             jsonToSend = {}
-            rating      = player.getRating()
-            rating1v1   = player.getladder1v1Rating()
+            rating      = player.globalSkill
+            rating1v1   = player.ladder1v1Skill
             jsonToSend["command"] = "player_info"
             jsonToSend["login"] = player.getLogin()
             jsonToSend["rating_mean"] = rating.getRating().getMean()
@@ -120,8 +120,8 @@ if __name__ == '__main__':
 
             jsonToSend["ladder_rating_mean"] = rating1v1.getRating().getMean()
             jsonToSend["ladder_rating_deviation"] = rating1v1.getRating().getStandardDeviation()
-            jsonToSend["number_of_games"] = player.getNumGames()
-            jsonToSend["avatar"] = player.getAvatar()
+            jsonToSend["number_of_games"] = player.numGames
+            jsonToSend["avatar"] = player.avatar
 
             if hasattr(player, "leagueInfo") :
                 jsonToSend["league"] = player.leagueInfo
@@ -130,9 +130,9 @@ if __name__ == '__main__':
                 if player.country != None :
                     jsonToSend["country"] = player.country
 
-            clan = player.getClan()
+            clan = player.clan
             if clan != None:
-                jsonToSend["clan"] = player.getClan()
+                jsonToSend["clan"] = player.clan
             else:
                 jsonToSend["clan"] = ""
 

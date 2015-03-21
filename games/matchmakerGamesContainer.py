@@ -383,19 +383,19 @@ class matchmakerGamesContainerClass(gamesContainerClass):
             if player.getAction() != "SEARCH_LADDER":
                 self.removePlayer(player)
                 canStart = False
-                player.getLobbyThread().command_quit_team(dict(command="quit_team"))
+                player.lobbyThread.command_quit_team(dict(command="quit_team"))
 
         for player in players2:
             if player.getAction() != "SEARCH_LADDER":
                 self.removePlayer(player)
                 canStart = False
-                player.getLobbyThread().command_quit_team(dict(command="quit_team"))
+                player.lobbyThread.command_quit_team(dict(command="quit_team"))
 
 
         if canStart == False:
             for p in players1+players2:
                 self.manager.removePlayer(p)
-                p.getLobbyThread().sendJSON(dict(command="matchmaker_info", action="stopSearching"))            
+                p.lobbyThread.sendJSON(dict(command="matchmaker_info", action="stopSearching"))
             return
 
         #first clean old games that didnt start.
@@ -431,7 +431,7 @@ class matchmakerGamesContainerClass(gamesContainerClass):
         gameUuid = self.createUuid(host.id)
         
         self.log.debug(str(gameUuid) + " " + gameName)
-        host.setWantGame(True)
+        host.wantToConnectToGame = True
 
         mapname = "scmp_007"
         #self.db.open()
@@ -547,8 +547,8 @@ class matchmakerGamesContainerClass(gamesContainerClass):
         ngame.setGameMap(mapname)
         ngame.setGameHostName(host.login)
         ngame.setGameHostUuid(host.id)
-        ngame.setGameHostPort(host.getGamePort())
-        ngame.setGameHostLocalPort(host.getGamePort())
+        ngame.setGameHostPort(host.gamePort)
+        ngame.setGameHostLocalPort(host.gamePort)
         ngame.setGameName(gameName)
 
         place = 1
@@ -599,12 +599,12 @@ class matchmakerGamesContainerClass(gamesContainerClass):
         #json["args"] = ["/players 2", "/team 1"]
         json["args"] = ["/players %i" % len(players1+players2), "/team 2", "/StartSpot 1", "/%s" % FACTIONS[host.getFaction()]]
 
-        host.getLobbyThread().sendJSON(json)
+        host.lobbyThread.sendJSON(json)
         
 
         for p in players1+players2:
             self.manager.removePlayer(p)
-            p.getLobbyThread().sendJSON(dict(command="matchmaker_info", action="stopSearching"))
+            p.lobbyThread.sendJSON(dict(command="matchmaker_info", action="stopSearching"))
 
         
         self.manager.deleteTeam(teamuid)

@@ -290,7 +290,7 @@ class LobbyConnection(QObject):
 
             if self.player is not None:
                 self.player.setAction("JOIN")
-                self.player.setWantGame(True)
+                self.player.wantToConnectToGame = True
                 self.player.setGamePort(gamePort)
                 self.player.localGamePort = gamePort
                 self.player.setGame(uuid)
@@ -309,7 +309,7 @@ class LobbyConnection(QObject):
                     for i in range(numOptions):
                         jsonToSend["options"].append(True)
 
-            flags = ["/numgames " + str(self.player.getNumGames())]
+            flags = ["/numgames " + str(self.player.numGames)]
             jsonToSend["args"] = flags
 
             self.sendJSON(jsonToSend)
@@ -334,7 +334,7 @@ class LobbyConnection(QObject):
             uuid = game.uuid
 
             self.player.setAction("HOST")
-            self.player.setWantGame(True)
+            self.player.wantToConnectToGame = True
             self.player.setGame(uuid)
             self.player.setGamePort(gamePort)
             self.player.localGamePort = gamePort
@@ -344,7 +344,7 @@ class LobbyConnection(QObject):
             jsonToSend["uid"] = uuid
             jsonToSend["version"] = version
 
-            flags = ["/numgames " + str(self.player.getNumGames())]
+            flags = ["/numgames " + str(self.player.numGames)]
             jsonToSend["args"] = flags
 
             if len(options) != 0:
@@ -1104,7 +1104,7 @@ Thanks,\n\
             for member in members:
                 player = self.parent.listUsers.findByName(member)
                 if player:
-                    player.getLobbyThread().sendJSON(dict(command="team_info", leader="", members=[]))
+                    player.lobbyThread.sendJSON(dict(command="team_info", leader="", members=[]))
 
         else:
             self.parent.teams.removeFromSquad(leader, self.player.getLogin())
@@ -1117,7 +1117,7 @@ Thanks,\n\
             for member in members:
                 player = self.parent.listUsers.findByName(member)
                 if player:
-                    player.getLobbyThread().sendJSON(dict(command="team_info", leader=leader, members=newmembers))
+                    player.lobbyThread.sendJSON(dict(command="team_info", leader=leader, members=newmembers))
 
 
     def command_accept_team_proposal(self, message):
@@ -1146,7 +1146,7 @@ Thanks,\n\
             for member in members:
                 player = self.parent.listUsers.findByName(member)
                 if player:
-                    player.getLobbyThread().sendJSON(dict(command="team_info", leader=leader, members=members))
+                    player.lobbyThread.sendJSON(dict(command="team_info", leader=leader, members=members))
 
     @timed()
     def command_social(self, message):
@@ -1159,7 +1159,7 @@ Thanks,\n\
                     self.sendJSON(dict(command="notice", style="info", text="The player is already in a team."))
                     return
                 if player.getLogin() != self.player.getLogin():
-                    player.getLobbyThread().sendJSON(
+                    player.lobbyThread.sendJSON(
                         dict(command="team", action="teaminvitation", who=self.player.getLogin()))
 
         if "friends" in message:
@@ -1271,7 +1271,7 @@ Thanks,\n\
             player = self.parent.listUsers.findByName(who)
             if player:
                 #self.log.debug("closing a FA")
-                player.getLobbyThread().sendJSON(dict(command="notice", style="kill"))
+                player.lobbyThread.sendJSON(dict(command="notice", style="kill"))
 
         elif action == "join_channel" and self.player.mod:
             whos = message['users']
@@ -1280,7 +1280,7 @@ Thanks,\n\
             for who in whos:
                 player = self.parent.listUsers.findByName(who)
                 if player:
-                    player.getLobbyThread().sendJSON(dict(command="social", autojoin=[channel]))
+                    player.lobbyThread.sendJSON(dict(command="social", autojoin=[channel]))
 
         elif action == "closelobby" and self.player.admin:
             who = message['user']
@@ -1288,8 +1288,8 @@ Thanks,\n\
             player = self.parent.listUsers.findByName(who)
             if player:
                 #self.log.debug("closing a lobby")
-                player.getLobbyThread().sendJSON(dict(command="notice", style="kick"))
-                player.getLobbyThread().socket.abort()
+                player.lobbyThread.sendJSON(dict(command="notice", style="kick"))
+                player.lobbyThread.socket.abort()
 
         elif action == "requestavatars" and self.player.admin:
             query = QSqlQuery(self.parent.db)
@@ -1422,8 +1422,8 @@ Thanks,\n\
                 #remove ghost
                 for p in self.parent.listUsers.players:
                     if p.getLogin() == login:
-                        if p.getLobbyThread().socket:
-                            p.getLobbyThread().socket.abort()
+                        if p.lobbyThread.socket:
+                            p.lobbyThread.socket.abort()
                         if p in self.parent.listUsers.players:
                             self.parent.listUsers.players.remove(p)
 
@@ -1709,9 +1709,9 @@ Thanks,\n\
                 #remove ghost
                 for p in self.parent.listUsers.players:
                     if p.getLogin() == self.player.getLogin():
-                        if p.getLobbyThread().socket:
-                            p.getLobbyThread().command_quit_team(dict(command="quit_team"))
-                            p.getLobbyThread().socket.abort()
+                        if p.lobbyThread.socket:
+                            p.lobbyThread.command_quit_team(dict(command="quit_team"))
+                            p.lobbyThread.socket.abort()
 
                         if p in self.parent.listUsers.players:
                             self.parent.listUsers.players.remove(p)
@@ -1745,7 +1745,7 @@ Thanks,\n\
                 channels = channels + tourneychannel
 
             reply = QByteArray()
-            for user in self.parent.listUsers.getAllPlayers():
+            for user in self.parent.listUsers.players():
                 reply.append(self.prepareBigJSON(self.parent.parent.jsonPlayer(user)))
 
             self.sendArray(reply)
@@ -1788,11 +1788,11 @@ Thanks,\n\
             self.sendReplaySection()
 
             self.log.debug("sending new player")
-            for user in self.parent.listUsers.getAllPlayers():
+            for user in self.parent.listUsers.players():
 
                 if user.getLogin() != str(login):
 
-                    lobby = user.getLobbyThread()
+                    lobby = user.lobbyThread
                     if lobby is not None:
                         lobby.sendJSON(self.parent.parent.jsonPlayer(self.player))
 
@@ -1800,8 +1800,8 @@ Thanks,\n\
                 channels.append("#moderators")
             # #channels.append("#techQuestions")
             # #channels.append("#IMBA_Cup_2")
-            if self.player.getClan() is not None:
-                channels.append("#%s_clan" % self.player.getClan())
+            if self.player.clan is not None:
+                channels.append("#%s_clan" % self.player.clan)
 
             # Useful for setting clan war on a specific day.
             #     if datetime.datetime.today().weekday() == 6:
@@ -1829,7 +1829,7 @@ Thanks,\n\
                     if player == self.player:
                         continue
                     #minimum game quality to start a match.
-                    trueSkill = self.player.getladder1v1Rating()
+                    trueSkill = self.player.ladder1v1Skill
                     deviation = trueSkill.getRating().getStandardDeviation()
 
                     gameQuality = 0.8
@@ -1844,7 +1844,7 @@ Thanks,\n\
                     else:
                         gameQuality = 0.8
 
-                    curTrueSkill = player.getladder1v1Rating()
+                    curTrueSkill = player.ladder1v1Skill
 
                     if deviation > 350 and curTrueSkill.getRating().getConservativeRating() > 1600:
                         continue
@@ -2111,7 +2111,7 @@ Thanks,\n\
                 if state == "stop":
                     container.removePlayer(self.player)
                     for player in self.parent.listUsers.players:
-                        player.getLobbyThread().removePotentialPlayer(self.player.getLogin())
+                        player.lobbyThread.removePotentialPlayer(self.player.getLogin())
 
                 elif state == "start":
                     gameport = message['gameport']
@@ -2131,7 +2131,7 @@ Thanks,\n\
 
                 elif state == "expand":
                     rate = message['rate']
-                    self.player.setExpandLadder(rate)
+                    self.player.expandLadder = rate
                     container.searchForMatchup(self.player)
 
             if mod == "matchmaker":
@@ -2162,7 +2162,7 @@ Thanks,\n\
                         for member in members:
                             player = self.parent.listUsers.findByName(member)
                             if player:
-                                player.getLobbyThread().sendJSON(
+                                player.lobbyThread.sendJSON(
                                     dict(command="matchmaker_info", action="startSearching", players=players))
                                 onlinePlayers.append(player)
 
@@ -2172,7 +2172,7 @@ Thanks,\n\
 
                         if anyoneOffline:
                             for player in onlinePlayers:
-                                player.getLobbyThread().sendJSON(
+                                player.lobbyThread.sendJSON(
                                     dict(command="team_info", leader=self.player.getLogin(), members=onlinePlayers))
 
                         container.addPlayers(players, onlinePlayers)
@@ -2191,7 +2191,7 @@ Thanks,\n\
                         for member in members:
                             player = self.parent.listUsers.findByName(member)
                             if player:
-                                player.getLobbyThread().sendJSON(
+                                player.lobbyThread.sendJSON(
                                     dict(command="matchmaker_info", action="stopSearching"))
 
                                 container.removePlayer(player)
@@ -2223,7 +2223,7 @@ Thanks,\n\
             if player == self.player:
                 continue
                 #minimum game quality to start a match.
-            trueSkill = player.getladder1v1Rating()
+            trueSkill = player.ladder1v1Skill
             deviation = trueSkill.getRating().getStandardDeviation()
 
             gameQuality = 0.8
@@ -2238,15 +2238,15 @@ Thanks,\n\
             else:
                 gameQuality = 0.8
 
-            curTrueSkill = self.player.getladder1v1Rating()
+            curTrueSkill = self.player.ladder1v1Skill
 
             if deviation > 350 and curTrueSkill.getRating().getConservativeRating() > 1600:
                 continue
 
             curMatchQuality = self.getMatchQuality(trueSkill, curTrueSkill)
             if curMatchQuality >= gameQuality:
-                if hasattr(player.getLobbyThread(), "addPotentialPlayer"):
-                    player.getLobbyThread().addPotentialPlayer(self.player.getLogin())
+                if hasattr(player.lobbyThread, "addPotentialPlayer"):
+                    player.lobbyThread.addPotentialPlayer(self.player.getLogin())
 
     @staticmethod
     def getMatchQuality(player1, player2):
@@ -2400,7 +2400,7 @@ Thanks,\n\
             if data_dictionary["command"] == "game_launch":
                 # if we join a game, we are not a potential player anymore
                 for player in self.parent.listUsers.players:
-                    player.getLobbyThread().removePotentialPlayer(self.player.getLogin())
+                    player.lobbyThread.removePotentialPlayer(self.player.getLogin())
 
         if not self.noSocket:
             try:
@@ -2455,7 +2455,7 @@ Thanks,\n\
             self.command_quit_team(dict(command="quit_team"))
 
             for player in self.parent.listUsers.players:
-                player.getLobbyThread().removePotentialPlayer(self.player.getLogin())
+                player.lobbyThread.removePotentialPlayer(self.player.getLogin())
             self.checkOldGamesFromPlayer()
             self.parent.games.removePlayer(self.player)
             self.parent.listUsers.removeUser(self.player)

@@ -68,14 +68,14 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
 
             self.players.append(player)
             player.setAction("SEARCH_LADDER")
-            trueSkill = player.getladder1v1Rating()
+            trueSkill = player.ladder1v1Skill
 
             deviation = trueSkill.getRating().getStandardDeviation()
             if deviation > 490 :
-                player.getLobbyThread().sendJSON(dict(command="notice", style="info", text="<i>Welcome to the matchmaker system.</i><br><br><b>You will be randomnly matched until the system learn and know enough about you.</b><br>After that, you will be only matched against someone of your level.<br><br><b>So don't worry if your first games are uneven, this will get better over time !</b>"))
+                player.lobbyThread.sendJSON(dict(command="notice", style="info", text="<i>Welcome to the matchmaker system.</i><br><br><b>You will be randomnly matched until the system learn and know enough about you.</b><br>After that, you will be only matched against someone of your level.<br><br><b>So don't worry if your first games are uneven, this will get better over time !</b>"))
             elif deviation > 250 :
                 progress = (500.0 - deviation) / 2.5
-                player.getLobbyThread().sendJSON(dict(command="notice", style="info", text="The system is still learning you. <b><br><br>The learning phase is " + str(progress)+"% complete<b>"))
+                player.lobbyThread.sendJSON(dict(command="notice", style="info", text="The system is still learning you. <b><br><br>The learning phase is " + str(progress)+"% complete<b>"))
             
             return 1
         return 0
@@ -156,7 +156,7 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         player1.setAction("HOST")
         gameUuid = self.createUuid(player1.id)
         player2.setAction("JOIN")
-        player1.setWantGame(True)
+        player1.wantToConnectToGame = True
 
         map_pool = self.choose_ladder_map_pool(player1, player2)
 
@@ -177,8 +177,8 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         
         ngame.setGameHostName(player1.login)
         ngame.setGameHostUuid(player1.id)
-        ngame.setGameHostPort(player1.getGamePort())
-        ngame.setGameHostLocalPort(player1.getGamePort())
+        ngame.setGameHostPort(player1.gamePort)
+        ngame.setGameHostLocalPort(player1.gamePort)
         ngame.setGameName(gameName)
 
         #place the players
@@ -207,7 +207,7 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         json["uid"] = uuid
         json["args"] = ["/players 2", "/team 1"]
         
-        player1.getLobbyThread().sendJSON(json)
+        player1.lobbyThread.sendJSON(json)
 
     def searchForMatchup(self, player) :
         
@@ -216,9 +216,9 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
             if player.getAction() != "SEARCH_LADDER" :
                 return
                 
-            expandValue = player.getExpandLadder()
+            expandValue = player.expandLadder
 
-            trueSkill = player.getladder1v1Rating()
+            trueSkill = player.ladder1v1Skill
 
             deviation = trueSkill.getRating().getStandardDeviation()
             
@@ -250,7 +250,7 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
                 if curPlayer.getLogin() != player.getLogin() :
                     #check if we don't match again a playing fella
                     if curPlayer.getAction() == "SEARCH_LADDER" :
-                        curTrueSkill = curPlayer.getladder1v1Rating()
+                        curTrueSkill = curPlayer.ladder1v1Skill
 
                         if deviation > 350 and curTrueSkill.getRating().getConservativeRating() > 1400 :
                             continue 

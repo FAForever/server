@@ -133,14 +133,14 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.player.connectedToHost = False
 
 
-        self.lobby = self.player.getLobbyThread()
+        self.lobby = self.player.lobbyThread
 
         strlog = ("%s\t" % str(self.player.getLogin()))
         self.logGame = strlog
 
         self.ping_task = asyncio.async(self.ping())
         self.player.setGameSocket(self._socket)
-        self.player.setWantGame(False)
+        self.player.wantToConnectToGame = False
         self._state = GameConnectionState.initialized
         return True
 
@@ -216,7 +216,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.log.debug("{}.abort()".format(self))
         try:
             self.doEnd()
-            self.player.getLobbyThread().sendJSON(dict(command="notice", style="kill"))
+            self.player.lobbyThread.sendJSON(dict(command="notice", style="kill"))
         except Exception as ex:
             self.log.debug("Exception in abort(): {}".format(ex))
             pass
@@ -234,13 +234,13 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     def _handle_lobby_state(self):
         """
         The game has told us it is ready and listening on
-        self.player.getGamePort() for UDP.
+        self.player.gamePort for UDP.
         We determine the connectivity of the peer and respond
         appropriately
         """
         with TestPeer(self,
                       self.player.getIp(),
-                      self.player.getGamePort(),
+                      self.player.gamePort,
                       self.player.getId()) as peer_test:
             self._connectivity_state = yield from asyncio.async(peer_test.determine_connectivity())
             self.sendToRelay('ConnectivityState', [self.player.getId(),
@@ -541,7 +541,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         elif state == 'Lobby':
             # The game is initialized and awaiting commands
             # At this point, it is listening locally on the
-            # port we told it to (self.player.getGamePort())
+            # port we told it to (self.player.gamePort)
             # We schedule an async task to determine their connectivity
             # and respond appropriately
             yield from asyncio.async(self._handle_lobby_state())
@@ -664,7 +664,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                         self.game.specialEnding(self.log, self.db, self.listUsers)
                         for playerTS in self.game.trueSkillPlayers:
                             name = playerTS.getPlayer()
-                            for player in self.listUsers.getAllPlayers():
+                            for player in self.listUsers.players():
                                 if player is not None:
                                     if str(name) == player.getLogin():
                                         for conn in self.parent.parent.FALobby.recorders:
@@ -721,7 +721,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.abort()
             return
 
-        port = self.player.getGamePort()
+        port = self.player.gamePort
         login = self.player.getLogin()
         uid = int(self.player.getId())
 
@@ -1047,7 +1047,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         return self._connectivity_state
 
     def address_and_port(self):
-        return "{}:{}".format(self.player.getIp(), self.player.getGamePort())
+        return "{}:{}".format(self.player.getIp(), self.player.gamePort)
 
     def send_gpgnet_message(self, command_id, arguments):
         self.sendToRelay(command_id, arguments)
