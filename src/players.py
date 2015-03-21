@@ -208,7 +208,7 @@ class playersOnline(object):
                     # login exists, uuid not the same
                     try :
                         lobbyThread = player.lobbyThread
-                        if lobbyThread != None :
+                        if lobbyThread is not None:
                             lobbySocket = lobbyThread.socket
                     except :
                         pass
