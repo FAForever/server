@@ -56,12 +56,6 @@ class GamesService(object):
             return True
         return False        
 
-    def removePlayer(self, player):
-        for container in self.gamesContainer :
-           
-            if hasattr(self.gamesContainer[container], "removePlayer") :
-                self.gamesContainer[container].removePlayer(player)
-        
 
     def create_game(self, access, name, player, gameName, gamePort, mapname, password=None):
         container = self.getContainer(name)

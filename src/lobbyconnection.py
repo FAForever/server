@@ -257,7 +257,6 @@ class LobbyConnection(QObject):
         if game:
             realGame = self.parent.games.find_by_id(self.player.getGame())
             if realGame:
-                realGame.removePlayer(self.player)
                 realGame.removeFromAllPlayersToConnect(self.player)
                 realGame.removeTrueSkillPlayer(self.player)
 
@@ -2109,7 +2108,6 @@ Thanks,\n\
 
             if mod == "ladder1v1":
                 if state == "stop":
-                    container.removePlayer(self.player)
                     for player in self.parent.listUsers.players:
                         player.lobbyThread.removePotentialPlayer(self.player.getLogin())
 
@@ -2194,11 +2192,9 @@ Thanks,\n\
                                 player.lobbyThread.sendJSON(
                                     dict(command="matchmaker_info", action="stopSearching"))
 
-                                container.removePlayer(player)
 
                     else:
                         self.sendJSON(dict(command="matchmaker_info", action="stopSearching"))
-                        container.removePlayer(self.player)
 
 
     def addPotentialPlayer(self, player):
@@ -2457,7 +2453,6 @@ Thanks,\n\
             for player in self.parent.listUsers.players:
                 player.lobbyThread.removePotentialPlayer(self.player.getLogin())
             self.checkOldGamesFromPlayer()
-            self.parent.games.removePlayer(self.player)
             self.parent.listUsers.removeUser(self.player)
 
         if self in self.parent.recorders:

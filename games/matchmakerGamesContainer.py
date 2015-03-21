@@ -136,19 +136,6 @@ class teamsManager(object):
         if uid in self.teams:
             del self.teams[uid]
 
-    def removePlayer(self, player):
-        toDelete = []
-        for uid in self.teams:
-            team = self.teams[uid]
-            if player in team.players:
-                team.removePlayer(player)
-
-                if team.getNumPlayers() == 0:
-                    toDelete.append(uid) 
-        
-        for uid in toDelete:
-            del self.teams[uid]
-
 
     def createTeam(self, number, players = []):
         newTeam = team(number)
@@ -236,9 +223,6 @@ class teamsManager(object):
         toDelete = []
         for uid in self.teams:
             team = self.teams[uid]
-            for player in team.players:
-                if not player in self.parent.parent.players.players:
-                    team.removePlayer(player)
 
             if team.getNumPlayers() == 0:
                 toDelete.append(uid) 
@@ -358,16 +342,7 @@ class matchmakerGamesContainerClass(gamesContainerClass):
 
         self.manager.createTeam(numPlayersWanted, players)
 
-    def removePlayer(self, player):
-        player.setAction("NOTHING") 
-        self.manager.removePlayer(player)
 
-    def removePlayers(self, players):
-        for player in players:
-            player.setAction("NOTHING")
-            self.manager.removePlayer(player)
-
-    
     def startGame(self, players1, players2, teamuid, bestMatchupUid) :
         #start game
         
@@ -394,7 +369,6 @@ class matchmakerGamesContainerClass(gamesContainerClass):
 
         if canStart == False:
             for p in players1+players2:
-                self.manager.removePlayer(p)
                 p.lobbyThread.sendJSON(dict(command="matchmaker_info", action="stopSearching"))
             return
 
@@ -602,7 +576,6 @@ class matchmakerGamesContainerClass(gamesContainerClass):
         
 
         for p in players1+players2:
-            self.manager.removePlayer(p)
             p.lobbyThread.sendJSON(dict(command="matchmaker_info", action="stopSearching"))
 
         

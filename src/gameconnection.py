@@ -147,10 +147,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         message = {"key": action, "commands": commands}
         self.transport.send_message(message)
 
-    def remove_player(self, playerInGame):
-        self.game.removePlayer(playerInGame)
-        self.game.removeTrueSkillPlayer(playerInGame)
-
     @asyncio.coroutine
     def ping(self):
         """
