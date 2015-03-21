@@ -691,11 +691,20 @@ class LobbyConnection(QObject):
                 em = stream.readQString()
                 password = stream.readQString()
 
-                if "," in login or "," in em:
+                username_pattern = re.compile(r"^[^,]{1,20}$")
+                email_pattern = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$")
+                if not email_pattern.match(em):
                     self.sendJSON(dict(command="notice", style="info",
-                                       text="Please don't use , in your login or email."))  # TODO: Add proper validation
+                                       text="Please use a valid email address."))
                     self.sendReply("LOGIN_AVAILABLE", "no", login)
                     return
+
+                if not username_pattern.match(login):
+                    self.sendJSON(dict(command="notice", style="info",
+                                       text="Please don't use \",\" in your username."))
+                    self.sendReply("LOGIN_AVAILABLE", "no", login)
+                    return
+
                 query = QSqlQuery(self.parent.db)
                 query.prepare("SELECT * FROM `login` WHERE LOWER(`login`) = ?")
                 query.addBindValue(login.lower())
