@@ -34,7 +34,7 @@ import teams
 
 @with_logger
 class FALobbyServer(QtNetwork.QTcpServer):
-    def __init__(self, listUsers, games: GamesService, db, parent=None):
+    def __init__(self, listUsers, games: GamesService, parent=None):
         super(FALobbyServer, self).__init__(parent)
         
         self.parent = parent
@@ -44,8 +44,6 @@ class FALobbyServer(QtNetwork.QTcpServer):
 
         self.listUsers = listUsers
         self.games = games
-
-        self.db = db
 
         self.recorders = []
         self.socketToDelete = []

@@ -24,17 +24,13 @@ class GamesService(object):
     """
     Utility class for maintaining lifecycle of games
     """
-    def __init__(self, players, db):
+    def __init__(self, players):
         
         self._dirty_games = []
         self.players = players
-        self.db = db
-        
+
         self.log = logging.getLogger(__name__)
 
-        if not self.db.isOpen():
-            self.db.open()
-        
         self.gamesContainer = {}
 
     @property

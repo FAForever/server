@@ -21,11 +21,12 @@ import logging
 
 from PySide import QtSql
 from .game import Game
+from src import dbhelper
 
 class gamesContainerClass(object):
     """Class for containing games"""
     
-    def __init__(self, gameTypeName, gameNiceName, db, parent = None):
+    def __init__(self, gameTypeName, gameNiceName, parent = None):
 
         self.log = logging.getLogger(__name__)
 
@@ -50,33 +51,26 @@ class gamesContainerClass(object):
 
         self.options = []
 
-        self.db = db
-        
-        query = self.db.exec_("SELECT description FROM game_featuredMods WHERE gamemod = '%s'" % self.gameTypeName)
-        if query.size() > 0:
-            query.first()
-            self.desc = query.value(0)  
+        result = dbhelper.singlerow_query("SELECT description FROM game_featuredMods WHERE gamemod = ?", self.gameTypeName)
+        if result:
+            self.desc = result.value[0]
 
     def getGamemodVersion(self):
         tableMod = "updates_" + self.gameTypeName
         tableModFiles = tableMod + "_files"
         value = {}
-        query = QtSql.QSqlQuery(self.db)
-        query.prepare("SELECT fileId, MAX(version) FROM `%s` LEFT JOIN %s ON `fileId` = %s.id GROUP BY fileId" % (tableModFiles, tableMod, tableMod))
-        query.exec_()
-        if query.size() != 0 :
-            while query.next():
-                value[int(query.value(0))] = int(query.value(1)) 
+
+        for result in dbhelper.query("SELECT fileId, MAX(version) FROM `%s` LEFT JOIN %s ON `fileId` = %s.id GROUP BY fileId" % (tableModFiles, tableMod, tableMod)):
+            value[int(result.value(0))] = int(result.value(1))
         
         return value
 
     def createUuid(self, playerId):
-        query = QtSql.QSqlQuery(self.db)
-        queryStr = ("INSERT INTO game_stats (`host`) VALUE ( %i )" % playerId)
-        query.exec_(queryStr)      
+        query = dbhelper.get_query_object("INSERT INTO game_stats(`host`) VALUE (?)", playerId)
+        query.exec_()
         uuid = query.lastInsertId()
-        
-        
+        query.finish()
+
         return uuid
 
     def findGameByUuid(self, uuid):

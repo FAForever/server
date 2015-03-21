@@ -42,6 +42,7 @@ from PySide import QtNetwork
 from PySide.QtSql import QSqlQuery
 import pygeoip
 from src.decorators import timed
+from src import dbhelper
 
 from src.players import *
 from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS
@@ -1370,44 +1371,35 @@ Thanks,\n\
                     dict(command="notice", style="error", text="We are not able to log you. Try updating your lobby."))
                 self.log.info(self.logPrefix + "unable to decypher !!")
 
-            query = QSqlQuery(self.parent.db)
-            queryStr = "SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1"
-            query.exec_(queryStr)
+            versionRow = dbhelper.singlerow_query("SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1")
+            versionDB = versionRow[0]
+            file = versionRow[1]
 
-            if query.size() == 1:
-                query.first()
-                versionDB = query.value(0)
-                file = query.value(1)
-
-                # Version of zero represents a developer build.
-                if version < versionDB and version != 0:
-                    self.sendJSON(dict(command="welcome", update=file))
-                    return
+            # Version of zero represents a developer build.
+            if version < versionDB and version != 0:
+                self.sendJSON(dict(command="welcome", update=file))
+                return
 
             self.logPrefix = login + "\t"
 
             channels = []
-            query = QSqlQuery(self.parent.db)
 
             # TODO: Hash passwords server-side so the hashing actually *does* something.
-            query.prepare(
-                "SELECT id, validated, email, steamchecked, session FROM login WHERE login = ? AND password = ?")
-            query.addBindValue(login)
-            query.addBindValue(password)
-            query.exec_()
+            userRow = dbhelper.singlerow_query(
+                "SELECT id, validated, email, steamchecked, session FROM login WHERE login = ? AND password = ?",
+                login, password
+            )
 
-            if query.size() != 1:
+            if not userRow:
                 self.sendJSON(dict(command="notice", style="error",
                                    text="Login not found or password incorrect. They are case sensitive."))
                 return
 
-            query.first()
-
-            self.uid = int(query.value(0))
-            validated = query.value(1)
-            self.email = str(query.value(2))
-            self.steamChecked = int(query.value(3))
-            session = int(query.value(4))
+            self.uid = int(userRow[0])
+            validated = userRow[1]
+            self.email = str(userRow[2])
+            self.steamChecked = int(userRow[3])
+            session = int(userRow[4])
 
             if validated == 0:
                 reason = "Your account is not validated. Please visit <a href='" + Config['global'][
@@ -1434,18 +1426,11 @@ Thanks,\n\
                 if session == oldsession:
                     self.session = oldsession
                 else:
-                    query2 = QSqlQuery(self.parent.db)
-                    query2.prepare("UPDATE login SET session = ? WHERE id = ?")
-                    query2.addBindValue(session)
-                    query2.addBindValue(int(self.uid))
-                    query2.exec_()
+                    dbhelper.exec("UPDATE login SET session = ? WHERE id = ?", session, int(self.uid))
 
-            query.prepare("SELECT reason FROM lobby_ban WHERE idUser = ?")
-            query.addBindValue(self.uid)
-            query.exec_()
-            if query.size() == 1:
-                query.first()
-                reason = "You are banned from FAF.\n Reason :\n " + query.value(0)
+            banRow = dbhelper.singlerow_query("SELECT reason FROM lobby_ban WHERE idUser = ?", self.uid)
+            if banRow:
+                reason = "You are banned from FAF.\n Reason :\n " + banRow[0]
                 self.sendJSON(dict(command="notice", style="error", text=reason))
                 return
 
@@ -1457,11 +1442,8 @@ Thanks,\n\
                                                 'app_url'] + "faf/steam.php</a>"))
                     return
                     # the user is not steam Checked.
-                query = QSqlQuery(self.parent.db)
-                query.prepare("SELECT uniqueid FROM steam_uniqueid WHERE uniqueId = ?")
-                query.addBindValue(uniqueId)
-                query.exec_()
-                if query.size() > 0:
+
+                if dbhelper.singlerow_query("SELECT uniqueid FROM steam_uniqueid WHERE uniqueId = ?", uniqueId):
                     self.sendJSON(dict(command="notice", style="error",
                                        text="This computer has been used by a steam account.<br>You have to authentify your account on steam too in order to use it on this computer :<br>SteamLink: <a href='" +
                                             Config['global']['app_url'] + "faf/steam.php'>" + Config['global'][
@@ -1469,17 +1451,11 @@ Thanks,\n\
                     return
 
                 # check for another account using the same uniqueId as us.
-                query = QSqlQuery(self.parent.db)
-                query.prepare("SELECT id, login FROM login WHERE uniqueId = ? AND id != ?")
-                query.addBindValue(uniqueId)
-                query.addBindValue(self.uid)
-                query.exec_()
+                result = dbhelper.singlerow_query("SELECT id, login FROM login WHERE uniqueId = ? AND id != ?", uniqueId, self.uid)
 
-                if query.size() == 1:
-                    query.first()
-
-                    idFound = int(query.value(0))
-                    otherName = str(query.value(1))
+                if result:
+                    idFound = int(result[0])
+                    otherName = str(result[1])
 
                     self.log.debug("%i (%s) is a smurf of %s" % (self.uid, login, otherName))
                     self.sendJSON(dict(command="notice", style="error",
@@ -1488,36 +1464,15 @@ Thanks,\n\
                                             Config['global']['app_url'] + "faf/steam.php</a>" % (
                                            otherName, otherName)))
 
-                    query2 = QSqlQuery(self.parent.db)
-                    query2.prepare("INSERT INTO `smurf_table`(`origId`, `smurfId`) VALUES (?,?)")
-                    query2.addBindValue(self.uid)
-                    query2.addBindValue(idFound)
-                    query2.exec_()
+                    dbhelper.exec("INSERT INTO `smurf_table`(`origId`, `smurfId`) VALUES (?,?)", self.uid, idFound)
                     return
 
-                query = QSqlQuery(self.parent.db)
-                query.prepare("UPDATE login SET ip = ?, uniqueId = ?, session = ? WHERE id = ?")
-                query.addBindValue(self.ip)
-                query.addBindValue(str(uniqueId))
-                query.addBindValue(self.session)
-                query.addBindValue(self.uid)
-                query.exec_()
+                dbhelper.exec("UPDATE login SET ip = ?, uniqueId = ?, session = ? WHERE id = ?", self.ip, str(uniqueId), self.session, self.uid)
             else:
                 # the user is steamchecked
-                query = QSqlQuery(self.parent.db)
-                query.prepare("UPDATE login SET ip = ?, session = ? WHERE id = ?")
-                query.addBindValue(self.ip)
-                query.addBindValue(self.session)
-                query.addBindValue(self.uid)
-                query.exec_()
+                dbhelper.exec("UPDATE login SET ip = ?, session = ? WHERE id = ?", self.ip, self.session, self.uid)
+                dbhelper.exec("INSERT INTO `steam_uniqueid`(`uniqueid`) VALUES (?)", str(uniqueId))
 
-                query = QSqlQuery(self.parent.db)
-                query.prepare("INSERT INTO `steam_uniqueid`(`uniqueid`) VALUES (?)")
-                query.addBindValue(str(uniqueId))
-                query.exec_()
-
-            query = QSqlQuery(self.parent.db)
-            query.prepare("UPDATE anope.anope_db_NickCore SET pass = ? WHERE display = ?")
             m = hashlib.md5()
             m.update(password.encode())
             passwordmd5 = m.hexdigest()
@@ -1525,10 +1480,7 @@ Thanks,\n\
             # Since the password is hashed on the client, what we get at this point is really
             # md5(md5(sha256(password))). This is entirely insane.
             m.update(passwordmd5.encode())
-            query.addBindValue("md5:" + str(m.hexdigest()))
-            query.addBindValue(login)
-            if not query.exec_():
-                self.log.error(query.lastError())
+            dbhelper.exec("UPDATE anope.anope_db_NickCore SET pass = ? WHERE display = ?", "md5:" + str(m.hexdigest()), login)
 
             if self.player is not None:
                 self.player.setupPlayer(self.session, str(login), self.ip, self.port, localIp, self.uid, trueSkill,
@@ -1552,29 +1504,21 @@ Thanks,\n\
                 return
 
             ## Clan informations
-            query = QSqlQuery(self.parent.db)
-            query.prepare(
-                "SELECT `clan_tag` FROM `fafclans`.`clan_tags` LEFT JOIN `fafclans`.players_list ON `fafclans`.players_list.player_id = `fafclans`.`clan_tags`.player_id WHERE `faf_id` = ?")
-            query.addBindValue(self.uid)
-            if not query.exec_():
-                self.log.warning(query.lastError())
-            if query.size() > 0:
-                query.first()
-                self.player.clan = str(query.value(0))
+            result = dbhelper.singlerow_query(
+                "SELECT `clan_tag` FROM `fafclans`.`clan_tags` LEFT JOIN `fafclans`.players_list ON `fafclans`.players_list.player_id = `fafclans`.`clan_tags`.player_id WHERE `faf_id` = ?", self.uid)
+            if result:
+                self.player.clan = str(result[0])
 
 
             ## ADMIN
             ## --------------------
             self.player.admin = False
             self.player.mod = False
-            query.prepare("SELECT `group` FROM `lobby_admin` WHERE `user_id` = ?")
-            query.addBindValue(self.uid)
-            query.exec_()
+            result = dbhelper.singlerow_query("SELECT `group` FROM `lobby_admin` WHERE `user_id` = ?", self.uid)
 
-            if query.size() > 0:
-                query.first()
+            if result:
                 # 2 for admins, 1 for mods.
-                permissionGroup = query.value(0)
+                permissionGroup = result[0]
 
                 if permissionGroup >= 2:
                     self.player.admin = True
@@ -1598,7 +1542,7 @@ Thanks,\n\
 
             # Query to extract the user's league and divison info.
             # Naming a column `limit` was unwise.
-            query.prepare(
+            result = dbhelper.singlerow_query(
             "SELECT\
               score,\
               ladder_division.league,\
@@ -1612,16 +1556,13 @@ Thanks,\n\
               %s.league = ladder_division.league AND\
               ladder_division.limit >= %s.score\
             ORDER BY ladder_division.limit ASC\
-            LIMIT 1;" % (self.season, self.season, self.season, self.season))
-            query.addBindValue(self.player.id)
-            query.exec_()
-            if query.size() > 0:
-                query.first()
-                score = float(query.value(0))
-                league = int(query.value(1))
+            LIMIT 1;" % (self.season, self.season, self.season, self.season), self.player.id)
+            if result:
+                score = float(result[0])
+                league = int(result[1])
                 self.player.league = league
-                self.player.division = str(query.value(2))
-                limit = int(query.value(3))
+                self.player.division = str(result[2])
+                limit = int(result[3])
 
                 cancontinue = True
                 if league == 1 and score == 0:
@@ -1629,80 +1570,63 @@ Thanks,\n\
 
                 if cancontinue:
                     # check if top of the division :
-                    query.prepare(
-                        "SELECT score, idUser FROM %s WHERE score <= ? and league = ? ORDER BY score DESC" % self.season)
-                    query.addBindValue(limit)
-                    query.addBindValue(league)
-                    #query.addBindValue(self.player.getId())
-                    query.exec_()
+                    i = 0
+                    for result in dbhelper.query(
+                                    "SELECT score, idUser FROM %s WHERE score <= ? and league = ? ORDER BY score DESC LIMIT 3" % self.season,
+                                    limit, league):
+                        i += 1
+                        score = float(result.value(0))
+                        idUser = int(result.value(1))
 
-                    if query.size() >= 4:
-                        query.first()
-                        for i in range(1, 4):
+                        if idUser != self.player.id or score <= 0:
+                            continue
 
-                            score = float(query.value(0))
-                            idUser = int(query.value(1))
+                        avatar = {
+                            "url": str(Config['global']['content_url'] + "avatars/div" + str(i) + ".png")
+                        }
+                        if i == 1:
+                            avatar.tooltip = "First in my division!"
+                        elif i == 2:
+                            avatar.tooltip = "Second in my division!"
+                        elif i == 3:
+                            avatar.tooltip = "Third in my division!"
 
-                            if idUser != self.player.id or score <= 0:
-                                query.next()
-                                continue
-
-                            avatar = {
-                                "url": str(Config['global']['content_url'] + "avatars/div" + str(i) + ".png")
-                            }
-                            if i == 1:
-                                avatar.tooltip = "First in my division!"
-                            elif i == 2:
-                                avatar.tooltip = "Second in my division!"
-                            elif i == 3:
-                                avatar.tooltip = "Third in my division!"
-
-                            self.player.avatar = avatar
-                            self.leagueAvatar = avatar
-
-                            break;
+                        self.player.avatar = avatar
+                        self.leagueAvatar = avatar
 
                     # check if top of the league :
-                    query.prepare(
-                        "SELECT score, idUser FROM %s  WHERE league = ? ORDER BY score DESC" % self.season)
-                    query.addBindValue(league)
-                    query.exec_()
-                    if query.size() >= 4:
-                        query.first()
-                        for i in range(1, 4):
-                            score = float(query.value(0))
-                            idUser = int(query.value(1))
+                    i = 0
+                    for result in dbhelper.query("SELECT score, idUser FROM %s WHERE league = ? ORDER BY score DESC LIMIT 3" % self.season, league):
+                        i += 1
+                        score = float(result.value(0))
+                        idUser = int(result.value(1))
 
-                            if idUser != self.player.id or score <= 0:
-                                query.next()
-                                continue
+                        if idUser != self.player.id or score <= 0:
+                            continue
 
-                            avatar = {
-                                "url": str(Config['global']['content_url'] + "avatars/league" + str(i) + ".png")
-                            }
-                            if i == 1:
-                                avatar.tooltip = "First in my League!"
-                            elif i == 2:
-                                avatar.tooltip = "Second in my League!"
-                            elif i == 3:
-                                avatar.tooltip = "Third in my League!"
+                        avatar = {
+                            "url": str(Config['global']['content_url'] + "avatars/league" + str(i) + ".png")
+                        }
+                        if i == 1:
+                            avatar.tooltip = "First in my League!"
+                        elif i == 2:
+                            avatar.tooltip = "Second in my League!"
+                        elif i == 3:
+                            avatar.tooltip = "Third in my League!"
 
-                            self.player.avatar = avatar
-                            self.leagueAvatar = avatar
-                            break
+                        self.player.avatar = avatar
+                        self.leagueAvatar = avatar
 
                     jleague = {"league": self.player.league, "division": self.player.division}
                     self.player.leagueInfo = jleague
 
             ## AVATARS
             ## -------------------
-            query.prepare(
-                "SELECT url, tooltip FROM `avatars` LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = ? AND `selected` = 1")
-            query.addBindValue(self.uid)
-            query.exec_()
-            if query.size() > 0:
-                query.first()
-                avatar = {"url": str(query.value(0)), "tooltip": str(query.value(1))}
+            result = dbhelper.singlerow_query(
+                "SELECT url, tooltip FROM `avatars` LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = ? AND `selected` = 1", self.uid)
+
+            if result:
+                avatar = {"url": str(result[0]), "tooltip": str(result[1])}
                 self.player.avatar = avatar
 
             if self.player is not None:
@@ -1750,38 +1674,20 @@ Thanks,\n\
 
             self.sendArray(reply)
 
-            query = QSqlQuery(self.parent.db)
-            query.prepare(
-                "SELECT login.login FROM friends JOIN login ON idFriend=login.id WHERE idUser = ?")
-            query.addBindValue(self.uid)
-            query.exec_()
+            for result in dbhelper.query("SELECT login.login FROM friends JOIN login ON idFriend=login.id WHERE idUser = ?", self.uid):
+                self.friendList.append(str(result.value(0)))
 
-            if query.size() > 0:
-                while query.next():
-                    self.friendList.append(str(query.value(0)))
+            jsonToSend = {"command": "social", "friends": self.friendList}
+            self.sendJSON(jsonToSend)
 
-                jsonToSend = {"command": "social", "friends": self.friendList}
-                self.sendJSON(jsonToSend)
+            for result in dbhelper.query("SELECT idMap FROM ladder_map_selection WHERE idUser = ?", self.uid):
+                self.ladderMapList.append(int(result.value(0)))
 
-            query = QSqlQuery(self.parent.db)
-            query.prepare("SELECT idMap FROM ladder_map_selection WHERE idUser = ?")
-            query.addBindValue(self.uid)
-            query.exec_()
-            if query.size() > 0:
-                while query.next():
-                    self.ladderMapList.append(int(query.value(0)))
+            for result in dbhelper.query("SELECT login.login FROM foes JOIN login ON idFoe=login.id WHERE idUser = ?", self.uid):
+                self.foeList.append(str(result.value(0)))
 
-            query = QSqlQuery(self.parent.db)
-            query.prepare(
-                "SELECT login.login FROM foes JOIN login ON idFoe=login.id WHERE idUser = ?")
-            query.addBindValue(self.uid)
-            query.exec_()
-            if query.size() > 0:
-                while query.next():
-                    self.foeList.append(str(query.value(0)))
-
-                jsonToSend = {"command": "social", "foes": self.foeList}
-                self.sendJSON(jsonToSend)
+            jsonToSend = {"command": "social", "foes": self.foeList}
+            self.sendJSON(jsonToSend)
 
             self.sendModList()
             self.sendGameList()
