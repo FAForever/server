@@ -859,25 +859,30 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         return atype, name, place, value
 
     def registerTime(self, player):
-        query = QSqlQuery(self.parent.db)
-        gameId = self.game.uuid
         if self.game.isAI(player):
-            nameAI = player.rstrip(string.digits)
-            queryStr = (
-                           "UPDATE game_player_stats set `scoreTime` = NOW() where `gameId` = %s AND `playerId` = (SELECT id FROM AI_names WHERE login = '%s' )") % (
-                           str(gameId), nameAI)
+            table = "AI_names"
+            player_name = player.rstrip(string.digits)
         else:
-            queryStr = (
-                           "UPDATE game_player_stats set `scoreTime` = NOW() where `gameId` = %s AND `playerId` = (SELECT id FROM login WHERE login = '%s' )") % (
-                           str(gameId), player)
-        query.exec_(queryStr)
+            table = "login"
+            player_name = player
+
+        query = QSqlQuery(self.parent.db)
+        query.prepare("UPDATE game_player_stats set `scoreTime` = NOW() where `gameId` = ? AND `playerId` = (SELECT id FROM %s WHERE login = ?)" % table)
+        query.addBindValue(self.game.uuid)
+        query.addBindValue(player_name)
+        query.exec_()
+        query.finish()
 
     def fillGameStats(self):
         mapId = 0
         modId = 0
+
+        # What the actual fucking fuck?
         if "thermo" in self.game.mapName.lower():
             self.game.setInvalid("This map is not ranked.")
+
         query = QSqlQuery(self.parent.db)
+        # Everyone loves table sacns!
         queryStr = ("SELECT id FROM table_map WHERE filename LIKE '%/" + self.game.mapName + ".%'")
         query.exec_(queryStr)
         if query.size() > 0:
@@ -891,6 +896,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             if query.size() > 0:
                 self.game.setInvalid("This map is not ranked.")
 
+        # Why can't this be rephrased to use equality?
         queryStr = ("SELECT id FROM game_featuredMods WHERE gamemod LIKE '%s'" % self.game.getGamemod() )
         query.exec_(queryStr)
 

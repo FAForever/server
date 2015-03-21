@@ -269,36 +269,44 @@ class Game(BaseGame):
                     query = QSqlQuery(db)
 
                     if winner:
-                        queryStr = (
-                                       "UPDATE %s set mean =%f, deviation = %f, numGames = (numGames +1) WHERE id = (SELECT id FROM login WHERE login.login = '%s')") % (
-                                       table, mean, dev, str(name))
-                        query.exec_(queryStr)
-
+                        query.prepare("UPDATE %s set mean = ?, deviation = ?, numGames = (numGames + 1) WHERE id = (SELECT id FROM login WHERE login.login = ?)" % table)
+                        query.addBindValue(mean)
+                        query.addBindValue(dev)
+                        query.addBindValue(str(name))
+                        query.exec_()
+                        query.finish()
                     else:
                         if AI:
-                            queryStr = (
-                                           "UPDATE AI_rating set mean =%f, deviation = %f, numGames = (numGames +1) WHERE id = (SELECT id FROM AI_names WHERE AI_names.login = '%s')") % (
-                                           mean, dev, nameAI)
-                            query.exec_(queryStr)
-                            gameId = self.uuid
-                            queryStr = (
-                                           "UPDATE game_player_stats set `after_mean` = %f, `after_deviation` = %f WHERE `gameId` = %s AND `playerId` = (SELECT id FROM AI_names WHERE login = '%s' )") % (
-                                           mean, dev, str(gameId), nameAI)
-                            logger.debug(queryStr)
+                            query.prepare("UPDATE AI_rating set mean = ?, deviation = ?, numGames = (numGames +1) WHERE id = (SELECT id FROM AI_names WHERE AI_names.login = ?)")
+                            query.addBindValue(mean)
+                            query.addBindValue(dev)
+                            query.addBindValue(nameAI)
+                            query.exec_()
+                            query.finish()
 
+                            query.prepare("UPDATE game_player_stats set `after_mean` = ?, `after_deviation` = ? WHERE `gameId` = ? AND `playerId` = (SELECT id FROM AI_names WHERE login = ?)")
+                            query.addBindValue(mean)
+                            query.addBindValue(dev)
+                            query.addBindValue(str(self.uuid))
+                            query.addBindValue(nameAI)
+                            query.exec_()
+                            query.finish()
                         else:
                             if noHumanResult == False:
-                                queryStr = (
-                                               "UPDATE %s set mean =%f, deviation = %f, numGames = (numGames +1) WHERE id = (SELECT id FROM login WHERE login.login = '%s')") % (
-                                               table, mean, dev, str(name))
-                                query.exec_(queryStr)
-                                gameId = self.uuid
-                                queryStr = (
-                                               "UPDATE game_player_stats set `after_mean` = %f, `after_deviation` = %f WHERE `gameId` = %s AND `playerId` = (SELECT id FROM login WHERE login = '%s' )") % (
-                                               mean, dev, str(gameId), str(name))
-                                logger.debug(queryStr)
-                                query.exec_(queryStr)
-                    #logger.debug(queryStr) 
+                                query.prepare("UPDATE %s set mean = ?, deviation = ?, numGames = (numGames +1) WHERE id = (SELECT id FROM login WHERE login.login = ?)" % table)
+                                query.addBindValue(mean)
+                                query.addBindValue(dev)
+                                query.addBindValue(str(name))
+                                query.exec_()
+                                query.finish()
+
+                                query.prepare("UPDATE game_player_stats set `after_mean` = ?, `after_deviation` = ? WHERE `gameId` = ? AND `playerId` = (SELECT id FROM AI_names WHERE login = ?)")
+                                query.addBindValue(mean)
+                                query.addBindValue(dev)
+                                query.addBindValue(str(self.uuid))
+                                query.addBindValue(str(name))
+                                query.exec_()
+                                query.finish()
 
                     #db.close()
                     # if the player is still online, we update his rating
