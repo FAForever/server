@@ -41,6 +41,6 @@ class BasePlayer():
     @faction.setter
     def faction(self, value):
         if isinstance(value, str):
-            self._faction = Faction.from_string()
+            self._faction = Faction.from_string(value)
         else:
             self._faction = value
