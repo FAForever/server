@@ -254,7 +254,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         elif playeraction == "JOIN":
             yield from self.ConnectToHost(self.game.host.gameThread)
 
-    @timed(0.1)
+    @timed(limit=0.1)
     def handleAction2(self, action):
         """
         This code is starting to get messy...
