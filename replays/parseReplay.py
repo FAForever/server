@@ -261,8 +261,6 @@ from .replayArmy import *
 from .replayArmyContainer import *
 from .replayInfos import *
 
-#from replayOptions import *
-
 import json
 from PyQt4 import  QtCore
 
@@ -630,38 +628,6 @@ class replayParser(object):
                     currentPlayer = playerturn
                     playerLastTurn[playerturn]=tick
                     pass
-#                    if commandType == 5 :
-#                        print "UNITCOMMAND_BuildSiloTactical"
-#                    elif commandType == 6:
-#                        print "BuildSiloNuke"
-#                    elif commandType == 7:
-#                        print "BuildFactory"
-#                    elif commandType == 8:
-#                        print "BuildMobile"
-#                    elif commandType == 9:
-#                        print "BuildAssist"
-#                    elif commandType == 15:
-#                        print "Guard"
-#                    elif commandType == 16:
-#                        print "Patrol"
-#                    elif commandType == 19:
-#                        print "Reclaim"
-#                    elif commandType == 20:
-#                        print "Repair"
-#                    elif commandType == 21:
-#                        print "Capture"
-#                    elif commandType == 27:
-#                        print "Upgrade"
-#                    elif commandType == 28:
-#                        print "Script"
-#                    elif commandType == 29:
-#                        print "AssistCommander"
-#                    elif commandType == 32:
-#                        print "Sacrifice"                                                                        
-#                    elif commandType == 33:
-#                        print "Pause"
-#                    elif commandType == 38:
-#                        print "SpecialAction"                                                
                 playerLastTurn[playerturn]=tick
             elif message_op == 13:
                 playerLastTurn[playerturn]=tick                    
@@ -771,36 +737,8 @@ print("gametime", (float(replay.setGameTime()) /10.0) / 60.0, "minutes")
 lastTurns= replay.setPlayerLastTurn()
 for l in lastTurns :
     print(replay.players[l], ((lastTurns[l] /10.0) / 60.0), "minutes")
-#
-#replay.setBuildOrder()
+
 replay.setDebugDesync()
-#replay.setBuildOrder() 
-#r
-#
-#                            int message_op = (int)ReplayReader.unsignedInt(inputWord, 0, 1);
-#                            index+=ONEBYTE;
-#                            int message_length = 0;
-#                            inputWord = new byte[2];
-#                            inputWord[0] = thereplay[index];
-#                            inputWord[1] = thereplay[index+1];
-#                            index+=TWOBYTES;
-#                            message_length = (int)ReplayReader.unsignedInt(inputWord, 0, 2);
-#                            if(message_op == 0)
-#                            {
-#                                    tick++;
-#                            }
-#                            index+=message_length-3; //skip all the data we don't need to look at
-#                                                                            //we're just looking for the time in this function.
-#                            inputWord = new byte[1];
-#                    }
-#                    this.GameTime = tick;
-#                    index = csl;
-#                    this.setPlayerLastTurn(thereplay);
-#                    this.setPlayerGameTimes();
-#                }else{
-#                   this.GameTime = 0; 
-#                }
-#        } 
 
     
 
