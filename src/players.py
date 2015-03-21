@@ -20,6 +20,12 @@ from .abc.base_player import BasePlayer
 
 
 class Player(BasePlayer):
+    """
+    Standard player object used for representing signed-in players.
+
+    In the context of a game, the Game object holds game-specific
+    information about players.
+    """
     def __init__(self, login=None):
         super().__init__()
         
@@ -40,37 +46,24 @@ class Player(BasePlayer):
         self.mod = False
         
         self.numGames = 0
-            
         self.gamePort = 0
+
         self.localGamePort = 0
-        
         self.udpPacketPort = 0
-        
+
         self.action = "NOTHING"
         self.game = ''
         self.lobbyThread = None
         self.gameThread = None
         
-        self.udpFrom = []
-
         self.globalSkill = None
         self.ladder1v1Skill = None
-        
         self.expandLadder = 0
         self.faction = 1
-        
         self.wantToConnectToGame = False
-        
-        self.connectedToHost = False
-        
 
-        self.UDPPacket = {}
-        
-        self.receivedUdp = False
-        self.setPort = False
 
     def setupPlayer(self, session, login, ip, port, localIp, uuid, globalSkill, trueSkill1v1, numGames, lobbyThread ):
-        
         self.numGames = numGames
         self.session = session
         self._login = login
