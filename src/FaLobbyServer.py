@@ -19,7 +19,6 @@
 import logging
 import json
 import time
-import gc
 
 from PySide import QtCore, QtNetwork
 
@@ -154,21 +153,4 @@ class FALobbyServer(QtNetwork.QTcpServer):
 
             for connection in self.recorders:
                 connection.sendArray(reply)
-                    
-    @timed
-    def dump_garbage(self):
-
-         f=open('debg.txt', 'w')
-          #force collection
-         f.write( "Collecting GARBAGE:")
-         gc.collect()
-          #prove they have been collected
-         f.write("Collecting GARBAGE:")
-         gc.collect()
-         print(len(gc.get_objects()))
-         print(len(gc.garbage))
-
-         f.write("\nGARBAGE OBJECTS:")
-
-         f.close()
 
