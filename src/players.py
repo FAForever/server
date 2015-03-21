@@ -75,15 +75,6 @@ class Player(BasePlayer):
         self.globalSkill = globalSkill
         self.ladder1v1Skill = trueSkill1v1
 
-    def setRating(self, rating):
-        self.globalSkill.setRating(self.globalSkill.getPlayer(), rating)
-
-    def setladder1v1Rating(self, rating):
-        self.ladder1v1Skill.setRating(self.ladder1v1Skill.getPlayer(), rating)
-
-    def getRating(self):
-        return self.globalSkill
-
     def setGamePort(self, gamePort):
         if gamePort == 0 :
             gamePort = 6112
