@@ -1472,42 +1472,32 @@ Thanks,\n\
                                                 'app_url'] + "faf/steam.php</a>"))
                     return
 
-                # check for duplicate account
+                # check for another account using the same uniqueId as us.
                 query = QSqlQuery(self.parent.db)
-                query.prepare("SELECT id FROM login WHERE uniqueId = ?")
+                query.prepare("SELECT id, login FROM login WHERE uniqueId = ? AND id != ?")
                 query.addBindValue(uniqueId)
+                query.addBindValue(self.uid)
                 query.exec_()
 
                 if query.size() == 1:
                     query.first()
-                    idFound = int(query.value(0))
 
-                    if self.uid != idFound:
-                        self.log.debug("%i (%s) is a smurf of %i" % (self.uid, login, idFound))
-                        query2 = QSqlQuery(self.parent.db)
-                        query2.prepare("SELECT login FROM login WHERE id = ?")
-                        query2.addBindValue(idFound)
-                        query2.exec_()
-                        if query2.size() != 0:
-                            query2.first()
-                            otherLogging = str(query2.value(0))
-                            self.sendJSON(dict(command="notice", style="error",
-                                               text="This computer is tied to this account : %s.<br>Multiple accounts are not allowed.<br>You can free this computer by logging in with that account (%s) on another computer.<br><br>Or Try SteamLink: <a href='" +
-                                                    Config['global']['app_url'] + "faf/steam.php'>" +
-                                                    Config['global']['app_url'] + "faf/steam.php</a>" % (
-                                                   otherLogging, otherLogging)))
-                        else:
-                            self.sendJSON(dict(command="notice", style="error",
-                                               text="This computer is tied to another account.<br>Multiple accounts are not allowed.<br>You can free this computer by logging in with that account on another computer, or <br><br>Try SteamLink: <a href='" +
-                                                    Config['global']['app_url'] + "faf/steam.php'>" +
-                                                    Config['global']['app_url'] + "faf/steam.php</a>"))
-                        query2 = QSqlQuery(self.parent.db)
-                        query2.prepare("INSERT INTO `smurf_table`(`origId`, `smurfId`) VALUES (?,?)")
-                        query2.addBindValue(self.uid)
-                        query2.addBindValue(idFound)
-                        query2.exec_()
-                        #self.socket.abort()
-                        return
+                    idFound = int(query.value(0))
+                    otherName = str(query.value(1))
+
+                    self.log.debug("%i (%s) is a smurf of %s" % (self.uid, login, otherName))
+                    self.sendJSON(dict(command="notice", style="error",
+                                       text="This computer is tied to this account : %s.<br>Multiple accounts are not allowed.<br>You can free this computer by logging in with that account (%s) on another computer.<br><br>Or Try SteamLink: <a href='" +
+                                            Config['global']['app_url'] + "faf/steam.php'>" +
+                                            Config['global']['app_url'] + "faf/steam.php</a>" % (
+                                           otherName, otherName)))
+
+                    query2 = QSqlQuery(self.parent.db)
+                    query2.prepare("INSERT INTO `smurf_table`(`origId`, `smurfId`) VALUES (?,?)")
+                    query2.addBindValue(self.uid)
+                    query2.addBindValue(idFound)
+                    query2.exec_()
+                    return
 
                 query = QSqlQuery(self.parent.db)
                 query.prepare("UPDATE login SET ip = ?, uniqueId = ?, session = ? WHERE id = ?")
