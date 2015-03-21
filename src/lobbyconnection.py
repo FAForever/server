@@ -372,22 +372,6 @@ class LobbyConnection(QObject):
             elif action == "PONG":
                 self.ponged = True
 
-            elif action == "VERSION":
-                versionClient = stream.readInt32()
-                query = QSqlQuery(self.parent.db)
-                queryStr = "SELECT version, file FROM version_lobby WHERE id = ( SELECT MAX( id ) FROM version_lobby )"
-                query.exec_(queryStr)
-
-                if query.size() == 1:
-                    query.first()
-                    versionDB = query.value(0)
-                    file = query.value(1)
-
-                    if versionClient < versionDB:
-                        self.sendReply("UPDATING_NEEDED", "yes", file)
-                    else:
-                        self.sendReply("UPDATING_NEEDED", "no", file)
-
             elif action == "UPLOAD_MOD":
                 login = stream.readQString()
                 session = stream.readQString()
