@@ -177,7 +177,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
         if action == "HOST":
             self.game.state = GameState.INITIALIZING
-            self.game.setLobbyState("Idle")
             self.game.setHostIP(self.player.getIp())
             self.game.setHostLocalIP(self.player.getLocalIp())
             self.game.proxy = proxy.proxy()
@@ -542,8 +541,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         elif state == 'Launching':
             # game launch, the user is playing !
             if self.player.getAction() == "HOST":
-
-                self.game.setLobbyState("playing")
+                self.game.launch()
 
                 if hasattr(self.game, "noStats"):
                     if not self.game.noStats:
@@ -610,15 +608,15 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         else:
             self._state = GameConnectionState.ended
 
-        state = self.game.lobbyState
-        if state == "playing":
+        state = self.game.state
+        if state == GameState.LIVE:
             curplayers = len(self.game.players)
             allScoreHere = False
             if hasattr(self.game, "isAllScoresThere"):
                 allScoreHere = self.game.isAllScoresThere()
 
             if curplayers == 0 or allScoreHere:
-                self.game.setLobbyState("closed")
+                self.game.state = GameState.ENDED
                 self.sendGameInfo()
 
                 if hasattr(self.game, "noStats"):
@@ -655,11 +653,11 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 self._game = None
 
         # if game in lobby state
-        if state != "playing":
+        if state != GameState.LIVE:
             getAction = self.player.getAction()
             if getAction == "HOST":
                 # if the player was the host (so, not playing), we remove his game
-                self.game.setLobbyState("closed")
+                self.game.state = GameState.ENDED
                 self.sendGameInfo()
                 self.games.removeGame(self.game)
                 self._game = None
@@ -668,7 +666,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 minplayers = self.game.minPlayer
                 curplayers = len(self.game.players)
                 if minplayers == 2 or curplayers == 0:
-                    self.game.setLobbyState("closed")
+                    self.game.state = GameState.ENDED
                     self.sendGameInfo()
                     self.games.removeGame(self.game)
                     self._game = None
@@ -710,7 +708,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     def _send_host_game(self, mapname):
         ''' Create a lobby with a specific map'''
         self.game.hostPlayerFull = self.player
-        self.game.setLobbyState("open")
         self.game.setGameMap(mapname.lower())
         self.sendToRelay("HostGame", [mapname])
 

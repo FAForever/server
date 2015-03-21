@@ -20,7 +20,8 @@ import time
 import logging
 
 from PySide import QtSql
-from .game import Game
+from .game import Game, GameState
+
 
 class gamesContainerClass(object):
     """Class for containing games"""
@@ -107,7 +108,6 @@ class gamesContainerClass(object):
             return False
 
         ngame = Game(gameUuid, self)
-        ngame.setLobbyState('Idle')
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)
         ngame.setGameHostPort(gamePort)
@@ -121,10 +121,8 @@ class gamesContainerClass(object):
 
         for game in reversed(self.games):
             if game == gameToRemove :
-                game.setLobbyState('closed')
+                game.state = GameState.ENDED
                 self.addDirtyGame(game.uuid)
-
-                
                 self.games.remove(game)
 
                 return True
@@ -162,6 +160,6 @@ class gamesContainerClass(object):
         for game in reversed(self.games):
 
             if not validateGame(game):
-                game.setLobbyState('closed')
+                game.state = GameState.ENDED
                 self.addDirtyGame(game.uuid)
                 self.removeGame(game)

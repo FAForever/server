@@ -29,6 +29,7 @@ class GameState(Enum):
     INITIALIZING = 0
     LOBBY = 1
     LIVE = 2
+    ENDED = 3
 
     @staticmethod
     def from_gpgnet_state(value):
@@ -50,7 +51,7 @@ class Game(BaseGame):
     Object that lasts for the lifetime of a game on FAF.
     """
     def __init__(self, uuid, parent, host=None, hostId=0, hostIp=None, hostLocalIp=None, hostPort=6112,
-                 hostLocalPort=6112, state='Idle', gameName='None', map='SCMP_007', mode=0, minPlayer=1):
+                 hostLocalPort=6112, gameName='None', map='SCMP_007', mode=0, minPlayer=1):
         """
         Initializes a new game
         :type uuid int
@@ -81,7 +82,6 @@ class Game(BaseGame):
         self.maxPlayer = 12
         self.initMode = mode
         self.hostPlayer = host
-        self.lobbyState = state
         self.hostuuid = hostId
         self.hostip = hostIp
         self.hostlocalip = hostLocalIp
@@ -127,12 +127,12 @@ class Game(BaseGame):
           - (LOBBY) The currently connected players
           - (LIVE) Players who participated in the game
           - None
-        :return: List
+        :return: set
         """
         if self.state == GameState.LIVE:
             return self._players
         elif self.state == GameState.LOBBY:
-            return list(self._connections.keys())
+            return set(self._connections.keys())
 
     @property
     def id(self):
@@ -177,6 +177,17 @@ class Game(BaseGame):
             return self._player_options[player][key]
         except KeyError:
             return None
+
+    def launch(self):
+        """
+        Mark the game as live.
+
+        Freezes the set of active players so they are remembered if they drop.
+        :return: None
+        """
+        assert self.state == GameState.LOBBY
+        self._players = self.players
+        self.state = GameState.LIVE
 
     def setAccess(self, access):
         self.access = access
@@ -678,13 +689,6 @@ class Game(BaseGame):
             return None
         else:
             self.gameName = name
-
-
-    def setLobbyState(self, state):
-        if state == '':
-            return 0
-        else:
-            self.lobbyState = state
 
     def setHostIP(self, ip):
         if ip == '':

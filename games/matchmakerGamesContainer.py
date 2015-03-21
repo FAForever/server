@@ -541,7 +541,6 @@ class matchmakerGamesContainerClass(gamesContainerClass):
 
         uuid = ngame.uuid
         
-        ngame.setLobbyState('Idle')
         #host is player 1
         
         ngame.setGameMap(mapname)

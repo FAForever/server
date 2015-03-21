@@ -63,3 +63,18 @@ def test_game_end_when_no_more_connections(game: Game, game_connection):
     game.on_game_end.assert_any_call()
 
 
+def test_game_launch_freezes_players(game: Game, players):
+    conn1 = game_connection()
+    conn1.state = GameConnectionState.connected_to_host
+    conn1.player = players.hosting
+    conn2 = game_connection()
+    conn2.player = players.joining
+    conn2.state = GameConnectionState.connected_to_host
+    game.state = GameState.LOBBY
+    game.add_game_connection(conn1)
+    game.add_game_connection(conn2)
+    game.launch()
+    assert game.state == GameState.LIVE
+    assert game.players == {players.hosting, players.joining}
+    game.remove_game_connection(conn1)
+    assert game.players == {players.hosting, players.joining}

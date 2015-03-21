@@ -170,7 +170,6 @@ class ladder1v1GamesContainerClass(gamesContainerClass):
         player1.setGame(uuid)
         player2.setGame(uuid)
 
-        ngame.setLobbyState('Idle')
         #host is player 1
         
         ngame.setGameMap(map)
