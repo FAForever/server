@@ -1226,51 +1226,6 @@ Thanks,\n\
 
             self.foeList = foelist
 
-
-    @timed()
-    def resendMail(self, login):
-        #self.log.debug("resending mail")       
-        query = QSqlQuery(self.parent.db)
-
-        query.prepare(
-            "SELECT login.id, login, email, `validate_account`.Key FROM `validate_account` LEFT JOIN login ON `validate_account`.`UserID` = login.id WHERE login = ?")
-        query.addBindValue(login)
-
-        query.exec_()
-        if query.size() == 1:
-            query.first()
-
-            uid = str(query.value(0))
-            em = str(query.value(2))
-            key = str(query.value(3))
-
-            link = {'a': 'validate', 'email': key, 'u': base64.b64encode(str(uid))}
-            passwordLink = Config['global']['app_url'] + "validateAccount.php?" + urllib.parse.urlencode(link)
-            text = "Dear " + login + ",\n\n\
-Please visit the following link to validate your FAF account:\n\
------------------------\n\
-" + passwordLink + "\n\
------------------------\n\\n\
-Thanks,\n\
--- The FA Forever team"
-
-            msg = MIMEText(str(text))
-
-            msg['Subject'] = 'Forged Alliance Forever - Account validation'
-            msg['From'] = email.utils.formataddr(('Forged Alliance Forever', MAIL_ADDRESS))
-            msg['To'] = email.utils.formataddr((login, em))
-
-            #self.log.debug("sending SMTP mail to " + em)
-            #self.log.debug(msg.as_string())
-            #s = smtplib.SMTP(config['global']['smtp_server'])
-            s = smtplib.SMTP_SSL(Config['global']['smtp_server'], 465, Config['global']['smtp_server'], timeout=5)
-            s.login(Config['global']['smtp_username'], Config['global']['smtp_password'])
-            s.sendmail(MAIL_ADDRESS, [em], msg.as_string())
-            s.quit()
-            self.sendJSON(dict(command="notice", style="info",
-                               text="A e-mail has been sent with the instructions to validate your account"))
-            #self.log.debug(self.logPrefix + "SMTP resend done")
-
     @timed()
     def command_admin(self, message):
         action = message['action']
