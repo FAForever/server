@@ -24,10 +24,10 @@ from logging import handlers
 import signal
 
 from quamash import QEventLoop
-from PySide import QtSql, QtCore, QtNetwork
+from PySide import QtCore, QtNetwork
 from PySide.QtCore import QTimer
 
-from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
+from passwords import PRIVATE_KEY
 from src.FaLobbyServer import FALobbyServer
 from src.FaGamesServer import FAServer
 from src.games_service import GamesService
@@ -53,29 +53,13 @@ if __name__ == '__main__':
 
             self.players_online = playersOnline()
 
-            self.db = QtSql.QSqlDatabase("QMYSQL")
-            self.db.setHostName(DB_SERVER)
-            self.db.setPort(DB_PORT)
-
-            self.db.setDatabaseName(DB_TABLE)
-            self.db.setUserName(DB_LOGIN)
-            self.db.setPassword(DB_PASSWORD)
-
             self.privkey = PRIVATE_KEY
 
-            self.db.setConnectOptions("MYSQL_OPT_RECONNECT=1")
-
-            if not self.db.open():
-                self.logger.error(self.db.lastError().text())
-                sys.exit(1)
-
-            self.db.close()
-
             self.dirtyGameList = []
-            self.games = GamesService(self.players_online, self.db)
+            self.games = GamesService(self.players_online)
 
-            self.FALobby = FALobbyServer(self.players_online, self.games, self.db, self)
-            self.FAGames = FAServer(loop, self.players_online, self.games, self.db, self)
+            self.FALobby = FALobbyServer(self.players_online, self.games, self)
+            self.FAGames = FAServer(loop, self.players_online, self.games, self)
 
             # Make sure we can shutdown gracefully
             signal.signal(signal.SIGTERM, self.signal_handler)
