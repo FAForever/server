@@ -706,7 +706,7 @@ class LobbyConnection(QObject):
                     return
 
                 query = QSqlQuery(self.parent.db)
-                query.prepare("SELECT * FROM `login` WHERE LOWER(`login`) = ?")
+                query.prepare("SELECT id FROM `login` WHERE LOWER(`login`) = ?")
                 query.addBindValue(login.lower())
                 if not query.exec_():
                     self.log.info(query.lastError())
