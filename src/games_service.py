@@ -140,6 +140,6 @@ class GamesService(object):
         """
         for container in self.gamesContainer:
             game = self.gamesContainer[container].findGameByUuid(str(uuid))
-            if game != None :
+            if game is not None:
                 return game
         return None    
