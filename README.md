@@ -49,4 +49,4 @@ Use `py.test` to execute the unit tests.
 
 # License
 
-GPLv1. See the [license](license.txt) file.
+GPLv3. See the [license](license.txt) file.
