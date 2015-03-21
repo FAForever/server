@@ -720,24 +720,29 @@ class LobbyConnection(QObject):
                 query.addBindValue(login)
                 query.addBindValue(password)
                 query.addBindValue(em)
-                if query.exec_():
 
-                    uid = query.lastInsertId()
+                if not query.exec_():
+                    self.log.debug("Error inserting login %s", login)
+                    self.log.debug(query.lastError())
+                    self.sendReply("LOGIN_AVAILABLE", "no", login)
+                    return
 
-                    exp = time.strftime("%Y-%m-%d %H:%m:%S", time.gmtime())
-                    key = hashlib.md5()
-                    key.update(login + '_' + em + str(random.randrange(0, 10000)) + exp + PW_SALT);
-                    keyHex = key.hexdigest()
-                    query.prepare("INSERT INTO `validate_account` (`UserID`,`Key`,`expDate`) VALUES (?,?,?)")
-                    query.addBindValue(uid)
-                    query.addBindValue(keyHex)
-                    query.addBindValue(exp)
-                    query.exec_()
-                    self.log.debug("Sending registration mail")
-                    link = {'a': 'validate', 'email': keyHex, 'u': base64.b64encode(str(uid))}
-                    passwordLink = Config['global']['app_url'] + "validateAccount.php?" + urllib.parse.urlencode(link)
+                uid = query.lastInsertId()
 
-                    text = "Dear " + login + ",\n\n\
+                exp = time.strftime("%Y-%m-%d %H:%m:%S", time.gmtime())
+                key = hashlib.md5()
+                key.update(login + '_' + em + str(random.randrange(0, 10000)) + exp + PW_SALT);
+                keyHex = key.hexdigest()
+                query.prepare("INSERT INTO `validate_account` (`UserID`,`Key`,`expDate`) VALUES (?,?,?)")
+                query.addBindValue(uid)
+                query.addBindValue(keyHex)
+                query.addBindValue(exp)
+                query.exec_()
+                self.log.debug("Sending registration mail")
+                link = {'a': 'validate', 'email': keyHex, 'u': base64.b64encode(str(uid))}
+                passwordLink = Config['global']['app_url'] + "validateAccount.php?" + urllib.parse.urlencode(link)
+
+                text = "Dear " + login + ",\n\n\
 Please visit the following link to validate your FAF account:\n\
 -----------------------\n\
 " + passwordLink + "\n\
@@ -745,31 +750,26 @@ Please visit the following link to validate your FAF account:\n\
 Thanks,\n\
 -- The FA Forever team"
 
-                    msg = MIMEText(text)
+                msg = MIMEText(text)
 
-                    msg['Subject'] = 'Forged Alliance Forever - Account validation'
-                    msg['From'] = email.utils.formataddr(('Forged Alliance Forever', MAIL_ADDRESS))
-                    msg['To'] = email.utils.formataddr((login, em))
+                msg['Subject'] = 'Forged Alliance Forever - Account validation'
+                msg['From'] = email.utils.formataddr(('Forged Alliance Forever', MAIL_ADDRESS))
+                msg['To'] = email.utils.formataddr((login, em))
 
-                    self.log.debug("sending mail to " + em)
-                    #self.log.debug(msg.as_string())
-                    #s = smtplib.SMTP(config['global']['smtp_server'])
-                    s = smtplib.SMTP_SSL(Config['global']['smtp_server'], 465, Config['global']['smtp_server'],
-                                         timeout=5)
-                    s.login(Config['global']['smtp_username'], Config['global']['smtp_password'])
+                self.log.debug("sending mail to " + em)
+                #self.log.debug(msg.as_string())
+                #s = smtplib.SMTP(config['global']['smtp_server'])
+                s = smtplib.SMTP_SSL(Config['global']['smtp_server'], 465, Config['global']['smtp_server'],
+                                     timeout=5)
+                s.login(Config['global']['smtp_username'], Config['global']['smtp_password'])
 
-                    s.sendmail(MAIL_ADDRESS, [em], msg.as_string())
-                    s.quit()
+                s.sendmail(MAIL_ADDRESS, [em], msg.as_string())
+                s.quit()
 
-                    self.sendJSON(dict(command="notice", style="info",
-                                       text="A e-mail has been sent with the instructions to validate your account"))
-                    self.log.debug("sent mail")
-                    self.sendReply("LOGIN_AVAILABLE", "yes", login)
-
-                else:
-                    self.log.debug("Error inserting login %s", login)
-                    self.log.debug(query.lastError())
-                    self.sendReply("LOGIN_AVAILABLE", "no", login)
+                self.sendJSON(dict(command="notice", style="info",
+                                   text="A e-mail has been sent with the instructions to validate your account"))
+                self.log.debug("sent mail")
+                self.sendReply("LOGIN_AVAILABLE", "yes", login)
             elif action == "FA_CLOSED":
                 login = stream.readQString()
                 session = stream.readQString()
