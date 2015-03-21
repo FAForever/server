@@ -13,7 +13,7 @@ master|develop
 Install Python 3.4 or later. Pre-requisites are listed in `requirements.txt`,
 install using `pip install -r requirements.txt`.
 
-Instructions for Ubuntu 14.10:
+Instructions for Ubuntu (12 and 14.10):
 
 If you do not have pip for python 3 yet, install it.
 
@@ -23,11 +23,15 @@ Then install the dependencies of the repo.
 
     sudo pip3 install -r requirements.txt
     
-Also install PySide
+Also install PySide, either from source using pip
+
+    sudo pip3 install PySide
+
+or use the prebuilt wheel distributed by FAF, for use on travis-ci:
 
     sudo pip3 install PySide --no-index --find-links=http://content.dev.faforever.com/wheel/
 
-And run the `pyside_postinstall.py` script
+If you installed using the wheel, also run the `pyside_postinstall.py` script
 
     sudo python3 /usr/local/bin/pyside_postinstall.py -install
 
