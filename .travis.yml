@@ -8,7 +8,7 @@ install:
   - "sudo apt-get install libqt4-dev"
   - "pip install PySide --no-index --find-links=http://content.dev.faforever.com/wheel/"
   - python ~/virtualenv/python${TRAVIS_PYTHON_VERSION}/bin/pyside_postinstall.py -install
-  - "pip install pytest pytest-qt pytest-cov python-coveralls configobj mock quamash pygeoip trueskill pyflakes"
+  - "pip install pytest pytest-qt pytest-cov python-coveralls configobj mock quamash pygeoip pycrypto trueskill pyflakes"
 
 before_script:
   - "export DISPLAY=:99.0"

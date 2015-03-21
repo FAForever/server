@@ -5,3 +5,4 @@ pytest-qt
 configobj
 pygeoip
 quamash
+pycrypto
