@@ -83,7 +83,7 @@ class GamesService(object):
         games = []
         for key, container in self.gamesContainer :
             
-            if container.listable == True :
+            if container.listable :
 
                 for game in container.games :
                     if game.lobbyState == "open" :
