@@ -139,7 +139,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.logGame = strlog
 
         self.ping_task = asyncio.async(self.ping())
-        self.player.setGameSocket(self._socket)
         self.player.wantToConnectToGame = False
         self._state = GameConnectionState.initialized
         return True
@@ -610,7 +609,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             return
         else:
             self._state = GameConnectionState.ended
-        self.player.setGameSocket(None)
 
         state = self.game.lobbyState
         if state == "playing":
@@ -994,7 +992,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                            "to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs,".format(wiki_link, wiki_link)
 
                     self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
-                self.player.setGameSocket(None)
                 self.player.game = None
         except:
             pass

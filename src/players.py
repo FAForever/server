@@ -63,18 +63,11 @@ class Player(BasePlayer):
         
         self.connectedToHost = False
         
-        self.gameSocket = None
 
         self.UDPPacket = {}
         
         self.receivedUdp = False
         self.setPort = False
-
-    def setGameSocket(self, socket):
-        if socket != 0 :
-            self.gameSocket = socket
-        else :
-            self.gameSocket = None
 
     def setupPlayer(self, session, login, ip, port, localIp, uuid, globalSkill, trueSkill1v1, numGames, lobbyThread ):
         
