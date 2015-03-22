@@ -489,7 +489,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
                 loop = 0
                 while ins.atEnd() == False :
                     QCoreApplication.processEvents()
-                    loop = loop + 1
+                    loop += 1
                     if loop > 1000 : break
                      
                     

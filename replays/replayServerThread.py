@@ -204,7 +204,7 @@ class replayServerThread(QObject):
                 if not uid in missions:
                     missions[uid] = {}
                     missions[uid]= dict(rank = rank, players=[], time= query.value(2).toString("HH:mm:ss"), gameuid = query.value(1), secondary = query.value(3))
-                    rank = rank + 1
+                    rank += 1
                 
                 players = missions[uid]["players"]
                 players.append(str(query.value(0)))
@@ -250,7 +250,7 @@ class replayServerThread(QObject):
                 finalresult = []
                 while next(query) :
                     finalresult.append((dict(number=num, division = str(query.value(0)), league = league)))
-                    num = num + 1
+                    num += 1
                 self.sendJSON(dict(command = "stats", type = "divisions", league=league, values = finalresult))
 
         elif typeState == "division_table" :
@@ -292,7 +292,7 @@ class replayServerThread(QObject):
                     score = float(query.value(1))
                     if score !=0:
                         finalresult.append((dict(rank=rank, name = str(query.value(0)), score = score )))
-                        rank = rank + 1
+                        rank += 1
                 
             self.sendJSON(dict(command = "stats", type = "division_table", division=message['division'], league=message['league'], values = finalresult))
 
@@ -311,7 +311,7 @@ class replayServerThread(QObject):
                     score = float(query.value(1))
                     if score != 0:
                         finalresult.append((dict(rank=rank, name = str(query.value(0)), score = score )))
-                        rank = rank + 1
+                        rank += 1
   
                 self.sendJSON(dict(command = "stats", type = "league_table", league=league, values = finalresult))
             else:
@@ -445,13 +445,13 @@ class replayServerThread(QObject):
                     gameId = int(query.value(0))
                     faction = int(query.value(1))
                     if faction == 1 :
-                        stats["uef_total"] = stats["uef_total"] + 1 
+                        stats["uef_total"] += 1
                     elif faction == 3 :
-                        stats["cybran_total"] = stats["cybran_total"] + 1
+                        stats["cybran_total"] += 1
                     elif faction == 2 :
-                        stats["aeon_total"] = stats["aeon_total"] + 1
+                        stats["aeon_total"] += 1
                     elif faction == 4 :
-                        stats["sera_total"] = stats["sera_total"] + 1
+                        stats["sera_total"] += 1
                             
                     score = int(query.value(2))
 
@@ -467,7 +467,7 @@ class replayServerThread(QObject):
             for game in games :
                 if "player2" in  games[game] :
                     if games[game]["player1"]["score"] == games[game]["player2"]["score"] :
-                        stats["draws"] = stats["draws"] + 1
+                        stats["draws"] += 1
                     else :
                         faction = 0
                         otherfaction = 0
@@ -482,24 +482,24 @@ class replayServerThread(QObject):
                            
                         if faction == 1 :
                             if otherfaction == faction :
-                                stats["uef_ignore"] = stats["uef_ignore"] + 1
+                                stats["uef_ignore"] += 1
                             else :
-                                stats["uef_win"] = stats["uef_win"] + 1 
+                                stats["uef_win"] += 1
                         elif faction == 3 :
                             if otherfaction == faction :
-                                stats["cybran_ignore"] = stats["cybran_ignore"] + 1
+                                stats["cybran_ignore"] += 1
                             else :
-                                stats["cybran_win"] = stats["cybran_win"] + 1
+                                stats["cybran_win"] += 1
                         elif faction == 2 :
                             if otherfaction == faction :
-                                stats["aeon_ignore"] = stats["aeon_ignore"] + 1
+                                stats["aeon_ignore"] += 1
                             else :
-                                stats["aeon_win"] = stats["aeon_win"] + 1
+                                stats["aeon_win"] += 1
                         elif faction == 4 :
                             if otherfaction == faction :
-                                stats["sera_ignore"] = stats["sera_ignore"] + 1
+                                stats["sera_ignore"] += 1
                             else :
-                                stats["sera_win"] = stats["sera_win"] + 1
+                                stats["sera_win"] += 1
                        
 
             self.sendJSON(dict(command = "stats", type = "ladder_map_stat", idmap = idmap, values = stats))
@@ -713,7 +713,7 @@ AND (-1 = ? OR mapId = ?) \n"
                 loop = 0
                 while ins.atEnd() == False :
                     QCoreApplication.processEvents()
-                    loop = loop + 1
+                    loop += 1
                     if self.socket != None :               
                         if self.socket.isValid() :
                             if self.blockSize == 0:

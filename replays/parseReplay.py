@@ -294,8 +294,8 @@ class replayParser(object):
         while True :
             
             char = struct.unpack("s", self.bin[offset:offset+1])
-    
-            offset = offset + 1
+
+            offset += 1
             #print char
             if char[0] == '\r' :
                 #offset = offset + 2
@@ -342,7 +342,7 @@ class replayParser(object):
     def parseLua(self, offset):
     
         type = struct.unpack("b", self.bin[offset:offset+1])[0]
-        offset = offset + 1
+        offset += 1
         #type = struct.unpack("b", data[offset:offset+1])[0]
         
         if type == TYPE_NIL :
@@ -379,8 +379,8 @@ class replayParser(object):
                     pair = (key, value)
                     table.append(pair)
     
-                else : 
-                    offset = offset + 1
+                else :
+                    offset += 1
     
             
             return offset+1, table
@@ -393,7 +393,7 @@ class replayParser(object):
 
     def readHeader(self):
         self.offset, supcomVersion = self.readLine(self.offset)
-        self.offset = self.offset + 3
+        self.offset += 3
   
 
         if (supcomVersion.startswith("Supreme Commander v1") == False) :
@@ -402,7 +402,7 @@ class replayParser(object):
         self.supcomVersion = supcomVersion
 
         self.offset, replayVersion = self.readLine(self.offset)
-        self.offset = self.offset + 1
+        self.offset += 1
         
 
         if (replayVersion.startswith("Replay v1.9") == False) :
@@ -412,7 +412,7 @@ class replayParser(object):
 
         self.offset, map = self.readLine(self.offset)
         print(map)
-        self.offset = self.offset + 4
+        self.offset += 4
         
         self.offset, count = self.readInt(self.offset)
         
@@ -427,7 +427,7 @@ class replayParser(object):
         
         
         numSource = struct.unpack("b", self.bin[self.offset:self.offset+1])[0]
-        self.offset = self.offset + 1
+        self.offset += 1
         
         for i in range(numSource) :
             self.offset, name = self.readLine(self.offset)
@@ -435,13 +435,13 @@ class replayParser(object):
         
         
         cheatsEnabled = struct.unpack("b", self.bin[self.offset:self.offset+1])[0]
-        self.offset = self.offset + 1
+        self.offset += 1
         
         infos.setCheat(cheatsEnabled)
         
         
         numArmies = struct.unpack("b", self.bin[self.offset:self.offset+1])[0]
-        self.offset = self.offset + 1
+        self.offset += 1
         
         armies = replayArmyContainer()
         
@@ -457,10 +457,10 @@ class replayParser(object):
             
             
             b = struct.unpack("b", self.bin[self.offset:self.offset+1])[0]
-            self.offset = self.offset + 1
+            self.offset += 1
             if b != -1 :
                 #b = struct.unpack("b", self.bin[self.offset:self.offset+1])[0]
-                self.offset = self.offset + 1 
+                self.offset += 1
                 #print b
         
         for army in armies :
@@ -477,7 +477,7 @@ class replayParser(object):
             offset, message_op = self.readChar(offset)
             offset, message_length = self.readShort(offset)
             if message_op == 0:
-                tick = tick+1
+                tick += 1
         
             #skip all the data we don't need to look at we're just looking for the time in this function.
             offset = offset + message_length - 3 
@@ -497,7 +497,7 @@ class replayParser(object):
             offset, message_op = self.readChar(offset)
             offset, message_length = self.readShort(offset)
             if message_op == 0:
-                tick = tick + 1
+                tick += 1
             elif message_op == 1:
                 _, playerturn = self.readChar(offset)
             elif message_op == 11:
@@ -571,7 +571,7 @@ class replayParser(object):
 
                     MD5Digest += (struct.unpack("s", self.bin[fakeoffset:fakeoffset+1])[0]).encode("hex")
                     #MD5Digest =  MD5Digest + struct.unpack("B", self.bin[fakeoffset:fakeoffset+1])[0]
-                    fakeoffset = fakeoffset + 1  
+                    fakeoffset += 1
                 if debug:
                     print(MD5Digest)
                 _, beat = self.readInt(fakeoffset)
@@ -618,7 +618,7 @@ class replayParser(object):
                         unitBluePrint = ""
                         for i in range(7):
                             unitBluePrint =  unitBluePrint + struct.unpack("s", self.bin[fakeoffset:fakeoffset+1])[0]
-                            fakeoffset = fakeoffset + 1
+                            fakeoffset += 1
                         print(unitBluePrint)
                     
                 
@@ -666,7 +666,7 @@ class replayParser(object):
             offset, message_op = self.readChar(offset)
             offset, message_length = self.readShort(offset)
             if message_op == 0:
-                tick = tick + 1
+                tick += 1
             elif message_op == 1:
                 _, playerturn = self.readChar(offset)
             elif message_op == 11:
@@ -701,7 +701,7 @@ class replayParser(object):
                         unitBluePrint = ""
                         for i in range(7):
                             unitBluePrint =  unitBluePrint + struct.unpack("s", self.bin[fakeoffset:fakeoffset+1])[0]
-                            fakeoffset = fakeoffset + 1
+                            fakeoffset += 1
                         print(unitBluePrint)
 
                                 

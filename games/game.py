@@ -240,7 +240,7 @@ class Game(BaseGame):
         return self.invalidReason
 
     def addDesync(self):
-        self.desync = self.desync + 1
+        self.desync += 1
 
     def setInvalid(self, reason):
         self.validGame = False
@@ -386,7 +386,7 @@ class Game(BaseGame):
                 else:
                     return 0
             teamsResults[i] = curScore
-            i = i + 1
+            i += 1
         winnerTeam = None
         draw = False
 
@@ -410,11 +410,11 @@ class Game(BaseGame):
                 msg = msg + members + ") : "
 
                 if draw:
-                    msg = msg + "Draw \n"
+                    msg += "Draw \n"
                 elif i == winnerTeam:
-                    msg = msg + "Win \n"
+                    msg += "Win \n"
                 else:
-                    msg = msg + "Lost \n"
+                    msg += "Lost \n"
                 i += 1
 
         tsresults = self.computeResults(False)
@@ -515,7 +515,7 @@ class Game(BaseGame):
             if pos != -1:
                 if self.isPlayerInGame(array[pos]) or self.isAI(array[pos]):
                     playerPositionDef[i] = array[pos]
-                    i = i + 1
+                    i += 1
             else:
                 #if pos = 1, team is -1 too
                 self.assignPlayerToTeam(array[pos], -1)
