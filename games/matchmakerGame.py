@@ -22,6 +22,7 @@ import logging
 
 from .game import Game
 
+
 logger = logging.getLogger(__name__)
 
 FACTIONS = {1:"UEF", 2:"Aeon",3:"Cybran",4:"Seraphim"}

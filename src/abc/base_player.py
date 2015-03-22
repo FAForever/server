@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractproperty
 
 from trueskill import Rating
+
 from src.abc.faction import Faction
 
 

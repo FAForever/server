@@ -1,6 +1,5 @@
 from asyncio import coroutine, sleep
 import asyncio
-from concurrent.futures import CancelledError
 import json
 import time
 

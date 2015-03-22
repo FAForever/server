@@ -1,9 +1,11 @@
 import asyncio
 import socket
+import logging
+
 import mock
+
 from src.natpacketserver import NatPacketServer
 
-import logging
 
 @asyncio.coroutine
 def test_NatPacketServer_receives_udp(loop):

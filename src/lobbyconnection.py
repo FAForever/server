@@ -16,8 +16,6 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 import hashlib
-
-
 import zlib
 import cgi
 import socket
@@ -41,8 +39,8 @@ from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QObject
 from PySide import QtNetwork
 from PySide.QtSql import QSqlQuery
 import pygeoip
-from src.decorators import timed
 
+from src.decorators import timed
 from src.players import *
 from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS
 from config import Config

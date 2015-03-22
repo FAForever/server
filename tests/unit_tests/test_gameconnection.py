@@ -1,5 +1,4 @@
 import asyncio
-import time
 
 from PySide.QtNetwork import QTcpSocket
 import mock

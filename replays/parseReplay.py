@@ -256,13 +256,13 @@ class UNITCOMMAND(object):
 // }'''
 
 import struct
+import json
+
+from PyQt4 import  QtCore
 
 from .replayArmy import *
 from .replayArmyContainer import *
 from .replayInfos import *
-
-import json
-from PyQt4 import  QtCore
 
 TYPE_NUMBER = 0
 TYPE_STRING = 1

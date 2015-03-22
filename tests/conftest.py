@@ -7,6 +7,7 @@ from PySide.QtCore import QCoreApplication
 import pytest
 import mock
 from PySide import QtCore, QtSql
+
 from src.games_service import GamesService
 
 
