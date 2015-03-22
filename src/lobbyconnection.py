@@ -733,7 +733,7 @@ class LobbyConnection(QObject):
 
                 exp = time.strftime("%Y-%m-%d %H:%m:%S", time.gmtime())
                 key = hashlib.md5()
-                key.update(login + '_' + em + str(random.randrange(0, 10000)) + exp + PW_SALT);
+                key.update(login + '_' + em + str(random.randrange(0, 10000)) + exp + PW_SALT)
                 keyHex = key.hexdigest()
                 query.prepare("INSERT INTO `validate_account` (`UserID`,`Key`,`expDate`) VALUES (?,?,?)")
                 query.addBindValue(uid)
@@ -1659,7 +1659,7 @@ Thanks,\n\
                             self.player.avatar = avatar
                             self.leagueAvatar = avatar
 
-                            break;
+                            break
 
                     # check if top of the league :
                     query.prepare(
