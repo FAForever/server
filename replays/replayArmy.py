@@ -18,7 +18,7 @@
 
 class replayArmy(object):
 
-    def __init__(self) :
+    def __init__(self):
 
         self.color = 0
         self.civilian = False
@@ -30,7 +30,6 @@ class replayArmy(object):
 
 
     def populate(self, infos):
-        #print infos
         armyInfo = dict(infos)
         self.color = armyInfo['PlayerColor']
         self.civilian = armyInfo['Civilian']
@@ -42,11 +41,7 @@ class replayArmy(object):
         
         
     def isPlayer(self):
-        
-        if (self.civilian == False and self.human == True) :
-            return True
-        else :
-            return False
+        return not self.civilian and self.human
         
     def __str__(self):
         return "%s : team (%i)" % (self.id, self.team)
