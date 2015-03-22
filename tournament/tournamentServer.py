@@ -168,17 +168,9 @@ class tournamentServer(QtNetwork.QTcpServer):
         if len(ToClose) != 0:
             for uid in ToClose:
                 challonge.tournaments.update(uid, open_signup="false")
-                
-    def incomingConnection(self, socketId):
-        
-        reload(tournamentServerThread)
-        #self.logger.debug("Incoming tourney Connection")
-        self.updaters.append(tournamentServerThread.tournamentServerThread(socketId, self))    
-    
 
         
     def removeUpdater(self, updater):
         if updater in self.updaters:
             self.updaters.remove(updater)
             updater.deleteLater()
-    

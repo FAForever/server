@@ -36,11 +36,6 @@ class updateServer(QtNetwork.QTcpServer):
         self.patching = False
 
 
-        
-    def incomingConnection(self, socketId):
-        
-        self.updaters.append(updateServerThread.updateServerThread(socketId, self))    
-
     def createPatch(self, patches):
 
         if self.patching == False:

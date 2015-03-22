@@ -51,12 +51,7 @@ class replayServer(QtNetwork.QTcpServer):
                 if not uid in self.mods :
                     self.mods[uid] = name       
 
-    def incomingConnection(self, socketId):
-        
-        reload(replayServerThread)
-        self.logger.debug("Incoming replay Connection")
-        self.replayVault.append(replayServerThread.replayServerThread(socketId, self))    
-    
+
     def removeUpdater(self, updater):
         if updater in self.replayVault:
             self.replayVault.remove(updater)
