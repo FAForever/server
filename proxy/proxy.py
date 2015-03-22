@@ -20,31 +20,30 @@
 
 class couple(object):
     def __init__(self, player1, player2):
-        self.player1    = player1
-        self.player2    = player2
-        self.port       = None
-    
-    def isCouple(self, player1, player2):
-        if self.player1 == player1 and self.player2 == player2 :
-            return True
+        self.player1 = player1
+        self.player2 = player2
+        self.port = None
 
-        if self.player2 == player1 and self.player1 == player2 :
-            return True
-         
-        return False
-        
+
+    def isCouple(self, player1, player2):
+        return (self.player1 == player1 and self.player2 == player2) \
+               or (self.player2 == player1 and self.player1 == player2)
+
+
     def setProxy(self, port):
         self.port = port
 
+
     def contains(self, player):
-        if self.player1 == player or self.player2 == player :
+        if self.player1 == player or self.player2 == player:
             return True
         return False
+
 
     def __repr__(self):
         if self.port is not None:
             return "found free port %i for %s and %s" % (self.port, self.player1, self.player2)
-        else :
+        else:
             return "No free port for %s and %s" % (self.player1, self.player2)
 
 class proxy(object):
@@ -52,7 +51,7 @@ class proxy(object):
 
         self.proxies = {}
         
-        for i in range(11) :
+        for i in range(11):
             self.proxies[i] = []
         
         self.couples = []
@@ -61,7 +60,7 @@ class proxy(object):
     def coupleExists(self, player1, player2):    
         """ check if that couple already exists"""
         for c in self.couples :
-            if c.isCouple(player1, player2) :
+            if c.isCouple(player1, player2):
                 return True
         
         return False
@@ -73,9 +72,9 @@ class proxy(object):
         player2Free = []
         
         for proxy in self.proxies :
-            if not couple.player1 in self.proxies[proxy] :
+            if not couple.player1 in self.proxies[proxy]:
                 player1Free.append(proxy)
-            if not couple.player2 in self.proxies[proxy] :
+            if not couple.player2 in self.proxies[proxy]:
                 player2Free.append(proxy)
         
         common = set(player1Free) & set(player2Free)
@@ -83,12 +82,13 @@ class proxy(object):
             return list(common)[0]
 
         return -1
-                   
+
+
     def addCouple(self, player1, player2):
         """ this function add two players that are supposed to connect through proxy"""
         
         # first check if that couple doesn't exist yet.
-        if not self.coupleExists(player1, player2) :
+        if not self.coupleExists(player1, player2):
             c = couple(player1, player2)
             
             
@@ -107,7 +107,7 @@ class proxy(object):
 
     def findProxy(self, player1, player2):
         for couple in self.couples :
-            if couple.isCouple(player1, player2) :
+            if couple.isCouple(player1, player2):
                 return couple.port
             
         return None
@@ -116,14 +116,14 @@ class proxy(object):
         cleaned = False
         # first clearing the proxies
         for proxy in self.proxies :
-            if player in self.proxies[proxy] :
+            if player in self.proxies[proxy]:
                 self.proxies[proxy].remove(player)  
                 cleaned = True  
         
         # and the couples
         
-        for c in reversed(self.couples) :
-            if c.contains(player) :
+        for c in reversed(self.couples):
+            if c.contains(player):
                 self.couples.remove(c)
                 cleaned = True
                 
