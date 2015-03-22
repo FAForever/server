@@ -859,7 +859,7 @@ class FAServerThread(QObject):
                         query.exec_()
                         self.log.debug("Sending registration mail")
                         link = {'a' : 'validate', 'email' : keyHex, 'u' : base64.b64encode(str(uid))}
-                        passwordLink = config['global']['app_url'] + "validateAccount.php?" + urllib.urlencode(link)
+                        passwordLink = config['global']['app_url'] + "faf/validateAccount.php?" + urllib.urlencode(link)
 
                         text = "Dear "+login+",\n\n\
 Please visit the following link to validate your FAF account:\n\
@@ -1458,7 +1458,7 @@ Thanks,\n\
 
            
             link = {'a' : 'validate', 'email' : key, 'u' : base64.b64encode(str(uid))}
-            passwordLink = config['global']['app_url'] + "validateAccount.php?" + urllib.urlencode(link)
+            passwordLink = config['global']['app_url'] + "faf/validateAccount.php?" + urllib.urlencode(link)
             text = "Dear "+login+",\n\n\
 Please visit the following link to validate your FAF account:\n\
 -----------------------\n\
