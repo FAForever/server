@@ -15,36 +15,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
+from proxy.couple import couple
 
-
-
-class couple(object):
-    def __init__(self, player1, player2):
-        self.player1 = player1
-        self.player2 = player2
-        self.port = None
-
-
-    def isCouple(self, player1, player2):
-        return (self.player1 == player1 and self.player2 == player2) \
-               or (self.player2 == player1 and self.player1 == player2)
-
-
-    def setProxy(self, port):
-        self.port = port
-
-
-    def contains(self, player):
-        if self.player1 == player or self.player2 == player:
-            return True
-        return False
-
-
-    def __repr__(self):
-        if self.port is not None:
-            return "found free port %i for %s and %s" % (self.port, self.player1, self.player2)
-        else:
-            return "No free port for %s and %s" % (self.player1, self.player2)
 
 class proxy(object):
     def __init__(self):
@@ -102,8 +74,6 @@ class proxy(object):
             
             self.couples.append(c)
             
-
-
 
     def findProxy(self, player1, player2):
         for couple in self.couples :
