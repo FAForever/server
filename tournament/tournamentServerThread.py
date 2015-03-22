@@ -103,13 +103,13 @@ class tournamentServerThread(QObject):
             
     
     def command_remove_participant(self, message):
-        uid     = message["uid"]
-        login   = message["login"] 
+        uid = message["uid"]
+        login = message["login"] 
         
         participants = self.parent.tournaments[uid]["participants"]
-        for p in participants :
-            if p["name"] == login :
-                challonge.participants.destroy(uid,p["id"])
+        for p in participants:
+            if p["name"] == login:
+                challonge.participants.destroy(uid, p["id"])
         self.parent.importTournaments()
         self.sendJSON(dict(command="tournaments_info", data=self.parent.tournaments)) 
         # for conn in self.parent.updaters:
@@ -125,7 +125,6 @@ class tournamentServerThread(QObject):
         return 1
 
 
-
     def readDatas(self):
         if self.socket != None :
             if self.socket.isValid() :
@@ -136,45 +135,48 @@ class tournamentServerThread(QObject):
                     QCoreApplication.processEvents()
                     loop += 1
                     if self.socket != None :               
-                        if self.socket.isValid() :
+                        if self.socket.isValid():
                             if self.blockSize == 0:
-                                if self.socket.isValid() :
+                                if self.socket.isValid():
                                     if self.socket.bytesAvailable() < 4:
                                         return
                                     self.blockSize = ins.readUInt32()
-                                else :
+                                else:
                                     return
                             if not self.socket.isValid():
                                 return  
                             action = ins.readQString()
                             self.handleAction(action, ins)
                             self.blockSize = 0
-                        else : 
+                        else: 
                             return    
-                    else :
+                    else:
                         return
                 return
 
+
     def disconnection(self):
         self.done()
+
 
     def sendJSON(self, data_dictionary):
         '''
         Simply dumps a dictionary into a string and feeds it into the QTCPSocket
         '''
-        try :
+        try:
             data_string = json.dumps(data_dictionary)
             self.sendReply(data_string)
-        except :
+        except:
             self.log.warning("wrong data")
             self.socket.abort()
             return
+
 
     def receiveJSON(self, data_string, stream):
         '''
         A fairly pythonic way to process received strings as JSON messages.
         '''
-        try :
+        try:
             message = json.loads(data_string)
 
             cmd = "command_" + message['command']
@@ -185,8 +187,9 @@ class tournamentServerThread(QObject):
             self.socket.abort()
             return
 
-    def sendReply(self, action, *args, **kwargs) :
-        try :
+
+    def sendReply(self, action, *args, **kwargs):
+        try:
             if hasattr(self, "socket"):
                 reply = QByteArray()
                 stream = QDataStream(reply, QIODevice.WriteOnly)
@@ -200,7 +203,7 @@ class tournamentServerThread(QObject):
                         stream.writeQString(str(arg))
                     if type(arg) is IntType:
                         stream.writeInt(int(arg))
-                    elif type(arg) is StringType  :
+                    elif type(arg) is StringType:
                         stream.writeQString(arg)
                     elif isinstance(arg, str):                       
                         stream.writeQString(arg) 
@@ -222,10 +225,11 @@ class tournamentServerThread(QObject):
                     self.socket.write(reply)
 
 
-        except :
+        except:
                 self.log.exception("Something awful happened when sending reply !")  
-  
-    def done(self) :
+
+
+    def done(self):
         self.parent.removeUpdater(self)
         if self.socket:
             self.socket.deleteLater()
