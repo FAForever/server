@@ -16,12 +16,12 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 from enum import Enum
-
 import string
 import logging
 import time
 
 from PySide.QtSql import QSqlQuery
+
 from src.abc.base_game import GameConnectionState, BaseGame
 
 

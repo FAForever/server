@@ -1,6 +1,8 @@
 import logging
+
 import trueskill
 from configobj import ConfigObj
+
 Config = ConfigObj("/etc/faforever/faforever.conf")
 
 LOBBY_IP = Config.get('lobby_ip', '127.0.0.1')

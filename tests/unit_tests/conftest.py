@@ -1,7 +1,6 @@
 from unittest import mock
 
 import pytest
-from PySide import QtSql
 
 from src.gameconnection import GameConnection
 from src.lobbyconnection import LobbyConnection

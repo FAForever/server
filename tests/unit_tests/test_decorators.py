@@ -1,5 +1,7 @@
-import mock
 import logging
+
+import mock
+
 from src.decorators import with_logger, timed
 
 

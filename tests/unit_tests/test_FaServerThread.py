@@ -1,11 +1,10 @@
 from PySide import QtNetwork
 import pytest
 import mock
-from src.games_service import GamesService
 
+from src.games_service import GamesService
 from src.lobbyconnection import LobbyConnection, playersOnline
 from src.FaLobbyServer import FALobbyServer
-import games
 
 
 @pytest.fixture()

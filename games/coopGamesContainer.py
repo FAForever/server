@@ -18,7 +18,6 @@
 
 from .gamesContainer import  gamesContainerClass
 
-from games.coopGame import coopGame
 
 class coopGamesContainerClass(gamesContainerClass):
     '''Class for custom claustrophobia games'''

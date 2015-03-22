@@ -20,6 +20,7 @@ import time
 import logging
 
 from PySide import QtSql
+
 from .game import Game, GameState
 
 

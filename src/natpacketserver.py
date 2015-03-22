@@ -1,7 +1,8 @@
 import socket
-from src.subscribable import Subscribable
 
+from src.subscribable import Subscribable
 from .decorators import with_logger
+
 
 @with_logger
 class NatPacketServer(Subscribable):

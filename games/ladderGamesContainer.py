@@ -17,7 +17,6 @@
 #-------------------------------------------------------------------------------
 
 
-import time
 import random
 
 from PySide.QtSql import QSqlQuery
