@@ -529,7 +529,7 @@ class matchmakerGamesContainerClass(gamesContainerClass):
             player.setGame(uuid)
             ngame.assignPlayerToTeam(player.getLogin(), 1)
             ngame.placePlayer(player.getLogin(), place)
-            place = place + 2
+            place += 2
             ngame.setPlayerColor(place, place) 
             ngame.setPlayerFaction(place, player.getFaction())
             
@@ -539,7 +539,7 @@ class matchmakerGamesContainerClass(gamesContainerClass):
             player.setGame(uuid)
             ngame.assignPlayerToTeam(player.getLogin(), 2)
             ngame.placePlayer(player.getLogin(), place)
-            place = place + 2
+            place += 2
             ngame.setPlayerColor(place, place) 
             ngame.setPlayerFaction(place, player.getFaction())
         
