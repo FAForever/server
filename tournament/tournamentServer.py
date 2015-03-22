@@ -66,14 +66,14 @@ class tournamentServer(QtNetwork.QTcpServer):
                 if t["completed-at"] != None :
                     self.tournaments[uid]["state"]      = "finished"
                 
-                if t["open-signup"] == True:
+                if t["open-signup"]:
                     ToClose.append(uid)
                     
                 
                 self.tournaments[uid]["participants"] = []
 
 
-                if checkParticipants == True:
+                if checkParticipants:
                     changed = []
                     for p in challonge.participants.index(uid) :
                         fafuid = None

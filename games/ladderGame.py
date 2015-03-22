@@ -223,7 +223,7 @@ class ladder1V1Game(Game):
         return False       
   
     def isWinner(self, player):
-        if self.isDraw() == True :
+        if self.isDraw() :
             return 0
         elif max(self.gameResult, key=self.gameResult.get) == str(player) :
             return 1
@@ -248,7 +248,7 @@ class ladder1V1Game(Game):
     
         for player in self.gameResult :
             
-            if self.isDraw() == True :
+            if self.isDraw()  :
                 msg = msg + player + " : Draw \n"
             
             else :

@@ -973,7 +973,7 @@ Thanks,\n\
 
         for key, container in self.parent.games.gamesContainer:
             self.log.debug("sending games of container " + container.gameNiceName)
-            if container.listable == True or container.live == True:
+            if container.listable or container.live:
                 for game in container.games:
 
                     if game.lobbyState == "open" or game.lobbyState == "playing":
@@ -2210,7 +2210,7 @@ Thanks,\n\
         if player in self.ladderPotentialPlayers:
             self.ladderPotentialPlayers.remove(player)
 
-        if len(self.ladderPotentialPlayers) == 0 and self.warned == True:
+        if len(self.ladderPotentialPlayers) == 0 and self.warned:
             self.sendJSON(dict(command="matchmaker_info", potential=False))
             self.warned = False
 
