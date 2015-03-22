@@ -41,4 +41,4 @@ class CustomGame(Game):
         if self.isValid():
             tsresults = self.computeResults()
             tsplayers = self.trueSkillPlayers
-            self.trueSkillUpdate(tsresults, tsplayers, logger, db, players, sendScore = False)
+            self.trueSkillUpdate(tsresults, tsplayers, self.logger, self.db, self.players, sendScore = False)
