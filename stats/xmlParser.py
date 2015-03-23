@@ -22,39 +22,12 @@ from .armyContainer import *
 from .army import *
 from .playerStat import *
 
-#def fltFromQStr(qstr):
-#    """
-#    A function to change a QString into a float
-#  
-#    :param qstr: a QString
-#    :type qstr: PyQt4.QtCore.QString
-#    :return: the value of the QString
-#    :rtype: float
-#    """
-#    i, ok = qstr.toFloat()
-#    if ok:
-#        return i
-#    else:
-#        return qstr
-#def intFromQStr(qstr):
-#    """
-#    A function to change a QString into a int
-#  
-#    :param qstr: a QString
-#    :type qstr: PyQt4.QtCore.QString
-#    :return: the value of the QString
-#    :rtype: int
-#    """
-#    i, ok = qstr.toInt()
-#    if ok:
-#        return i
-#    else:
-#        return qstr
-
 class SaxStatsHandler(QXmlDefaultHandler) :
     def __init__(self, playersStats):
         super(SaxStatsHandler, self).__init__()
-        
+
+        self.energy = []
+        self.mass = []
         self.playerStats = playersStats
         
         self.text = ""
@@ -64,16 +37,13 @@ class SaxStatsHandler(QXmlDefaultHandler) :
   
         
     def clear(self):
-        #print "cleared"
         self.player = None
         self.id = None
         self.listUnits = ArmyContainer()
-        
-        self.mass = []
         self.energy = []
-        
+        self.mass = []
+
     def startElement(self, namespaceURI, localName, qName, attributes):
-        #print qName
         if qName == "Army" :
             armyName = attributes.value('name')
             index = int(attributes.value('index'))
@@ -104,22 +74,18 @@ class SaxStatsHandler(QXmlDefaultHandler) :
         
         return True
     
-    def endElement(self,namespaceURI,localName,qName): 
+    def endElement(self, namespaceURI, localName, qName):
         if qName == "Army" :
             if self.player.lower() != "civilian" :
                 self.playerStats.add(playerStat(str(self.player), self.id, self.listUnits, self.mass, self.energy ))
-#
             self.clear()
-
-            
-        
         return True
-        
+
 
     def characters(self, text):
-        #print "character: " + text
         return True
-    
+
+
     def error(self,exception):
         print("Exception",exception.message())
         return
