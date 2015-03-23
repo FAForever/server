@@ -262,7 +262,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
             version = 0         
 
             query = QSqlQuery(self.parent.db)
-            query.prepare("SELECT id FROM `%s` WHERE `filename` = ?" % (self.tableMod))
+            query.prepare("SELECT id FROM `%s` WHERE `filename` = ?" % self.tableMod)
             query.addBindValue(f)
             query.exec_()
             if query.size() != 0 :
@@ -327,7 +327,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
                     tofilename = str(query.value(1))
                     
                     if str(md5) != str(tomd5) :
-                        queryStr = ("SELECT patchFile FROM patchs_table WHERE fromMd5 = '%s' and toMd5 = '%s' ") % (md5, tomd5)
+                        queryStr = "SELECT patchFile FROM patchs_table WHERE fromMd5 = '%s' and toMd5 = '%s' " % (md5, tomd5)
                         query.exec_(queryStr)                       
                         if  query.size() >= 1 : 
                             query.first()
@@ -369,7 +369,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
                 fileId = 0
                 self.updateMd5Db(self.tableModFiles)
                 query = QSqlQuery(self.parent.db)
-                query.prepare("SELECT id FROM `%s` WHERE `filename` = ?" % (self.tableMod))
+                query.prepare("SELECT id FROM `%s` WHERE `filename` = ?" % self.tableMod)
                 query.addBindValue(file)
                 query.exec_()
                 if query.size() != 0 :
@@ -390,7 +390,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
                     tofilename = str(query.value(1))
                     
                     if str(md5) != str(tomd5) :
-                        queryStr = ("SELECT patchFile FROM patchs_table WHERE fromMd5 = '%s' and toMd5 = '%s' ") % (md5, tomd5)
+                        queryStr = "SELECT patchFile FROM patchs_table WHERE fromMd5 = '%s' and toMd5 = '%s' " % (md5, tomd5)
                         query.exec_(queryStr)                       
                         if  query.size() >= 1 : 
                             query.first()
@@ -440,7 +440,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
                     latestMd5 = str(query.value(0))
                     latestName = str(query.value(1))
                     if str(md5) != str(latestMd5) :
-                        queryStr = ("SELECT patchFile FROM patchs_table WHERE fromMd5 = '%s' and toMd5 = '%s' ") % (md5, latestMd5)
+                        queryStr = "SELECT patchFile FROM patchs_table WHERE fromMd5 = '%s' and toMd5 = '%s' " % (md5, latestMd5)
                         query.exec_(queryStr)
                         
                         if  query.size() >= 1 : 
