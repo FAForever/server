@@ -33,10 +33,10 @@ from configobj import ConfigObj
 config = ConfigObj("/etc/faforever/faforever.conf")
 
 class updateServerThread(QObject):
-    '''
+    """
     FA server thread spawned upon every incoming connection to
     prevent collisions.
-    '''
+    """
     
     
     def __init__(self, socketId, parent=None):
@@ -69,10 +69,10 @@ class updateServerThread(QObject):
               
 
     def getMd5(self, fileName):
-        '''
+        """
         Compute md5 hash of the specified file.
         IOErrors raised here are handled in doUpdate.
-        '''
+        """
         m = hashlib.md5()
         if not os.path.isfile(fileName): return None
         

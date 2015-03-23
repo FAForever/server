@@ -29,7 +29,7 @@ from games.matchmakerGame import matchmakerGame
 FACTIONS = {1:"UEF", 2:"Aeon",3:"Cybran",4:"Seraphim"}
 
 class team(object):
-    ''' class for a team of players '''
+    """ class for a team of players """
 
     def __init__(self, number):
         self.number = number
@@ -58,7 +58,7 @@ class team(object):
         self.number = 0
 
     def addPlayers(self, players = []):
-        ''' add players to the team'''
+        """ add players to the team"""
         for player in players:
             if not player in self.players and len(self.players) < self.number:
                 self.players.append(player)
@@ -66,7 +66,7 @@ class team(object):
         self.teamAverage = self.computeAveragePlayer()
 
     def removePlayers(self, players = []):
-        ''' remove players from the team'''
+        """ remove players from the team"""
         for player in players:
             if player in self.players:
                 self.players.remove(player)
@@ -74,7 +74,7 @@ class team(object):
         self.teamAverage = self.computeAveragePlayer()
 
     def removePlayer(self, player):
-        ''' remove player from the team'''
+        """ remove player from the team"""
         if player in self.players:
             self.players.remove(player)
 
@@ -106,7 +106,7 @@ class team(object):
         return self.teamAverage
 
     def computeAveragePlayer(self):
-        ''' compute a average of all players skill '''
+        """ compute a average of all players skill """
 
         if self.getNumPlayers() > 0:
             allMeans = []
@@ -124,7 +124,7 @@ class team(object):
         return faPlayer(Player("averageTeam"), Rating(1500,500))
 
 class teamsManager(object):
-    ''' class for managing teams '''
+    """ class for managing teams """
     def __init__(self, parent = None):
         self.teams = {}
         self.parent = parent
@@ -180,7 +180,7 @@ class teamsManager(object):
 
 
     def mergeTeams(self, uidteam1, uidteam2):
-        ''' merge two teams '''
+        """ merge two teams """
         self.parent.log.debug("previous size of team1 " + str(self.teams[uidteam1].getNumPlayers()) )
         self.parent.log.debug("previous size of team2 " + str(self.teams[uidteam2].getNumPlayers()) )
         self.parent.log.debug("merging " + str(uidteam1) + " with " + str(uidteam2))
@@ -230,7 +230,7 @@ class teamsManager(object):
             del self.teams[uid]
 
     def searchForTeam(self, teamuid):
-        ''' adding players to existing teams '''
+        """ adding players to existing teams """
         self.cleanTeams()
 
         if not teamuid in self.teams:
@@ -281,7 +281,7 @@ class teamsManager(object):
 
     def searchForMatchup(self, teamuid):
 
-        ''' match a team against another '''
+        """ match a team against another """
         self.cleanTeams()
         if not teamuid in self.teams:
             return
@@ -320,7 +320,7 @@ class teamsManager(object):
             pass
 
 class matchmakerGamesContainerClass(gamesContainerClass):
-    '''Class for matchmaker games'''
+    """Class for matchmaker games"""
     
     def __init__(self, db, parent = None):
         super(matchmakerGamesContainerClass, self).__init__("matchmaker", "Matchmaker" ,db, parent)

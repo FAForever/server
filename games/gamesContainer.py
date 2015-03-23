@@ -82,14 +82,14 @@ class gamesContainerClass(object):
         return uuid
 
     def findGameByUuid(self, uuid):
-        '''Find a game by the uuid'''
+        """Find a game by the uuid"""
         for game in self.games:
             if game.uuid == uuid :
                 return game
         return None
 
     def addGame(self, game):
-        '''Add a game to the list'''
+        """Add a game to the list"""
         if not game in self.games :
             self.games.append(game)
             return 1
@@ -118,7 +118,7 @@ class gamesContainerClass(object):
         return ngame
 
     def removeGame(self, gameToRemove):
-        '''Remove a game from the list'''
+        """Remove a game from the list"""
 
         for game in reversed(self.games):
             if game == gameToRemove :
@@ -133,7 +133,7 @@ class gamesContainerClass(object):
             self.parent.dirtyGameList.append(game)           
             
     def removeOldGames(self):
-        '''Remove old games (invalids and not started)'''
+        """Remove old games (invalids and not started)"""
 
         now = time.time()
 

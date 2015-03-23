@@ -18,14 +18,14 @@
 
 
 class Teams(object):
-    ''' Teams object'''
+    """ Teams object"""
     
     def __init__(self, parent = None):
         self.parent = parent
         self.teams = {}
         
     def addInSquad(self, leader, teammate):
-        ''' create a squad, check if the teamate is not already in one squad'''
+        """ create a squad, check if the teamate is not already in one squad"""
         for squad in self.teams:
             if squad == teammate:
                 return False
@@ -68,7 +68,7 @@ class Teams(object):
         return members                
 
     def isInSquad(self, uid):
-        ''' Check if a player is in a squad already'''
+        """ Check if a player is in a squad already"""
         for squad in self.teams:
             if squad == uid:
                 return True
@@ -77,7 +77,7 @@ class Teams(object):
         return False  
     
     def isLeader(self, uid):
-        ''' check if the player is a leader'''
+        """ check if the player is a leader"""
         for squad in self.teams:
             if squad == uid:
                 return True

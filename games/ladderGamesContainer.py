@@ -26,7 +26,7 @@ from games.ladderGame import ladder1V1Game
 
 
 class ladder1v1GamesContainerClass(gamesContainerClass):
-    '''Class for 1vs1 ladder games'''
+    """Class for 1vs1 ladder games"""
     
     def __init__(self, db, parent):
         super(ladder1v1GamesContainerClass, self).__init__("ladder1v1", "ladder 1 vs 1", db, parent)

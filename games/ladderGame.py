@@ -27,7 +27,7 @@ import operator
 
 
 class ladder1V1Game(Game):
-    '''Class for 1v1 ladder game'''
+    """Class for 1v1 ladder game"""
     
     def __init__(self, uuid, parent = None):
         super(self.__class__, self).__init__(uuid, parent)
@@ -320,7 +320,7 @@ class ladder1V1Game(Game):
             self.results = results
 
     def updateTrueskillFor1v1(self):
-        ''' Update all scores from the DB before updating the results'''
+        """ Update all scores from the DB before updating the results"""
         try :
             for team in self.finalTeams1v1 :
                 for member in team.players() :

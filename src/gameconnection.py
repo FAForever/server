@@ -598,7 +598,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                         self.game.setInvalid("You are playing with a smurfer.")
 
     def doEnd(self):
-        ''' bybye player :('''
+        """ bybye player :("""
         self.game.remove_game_connection(self)
         if self._state is GameConnectionState.ended:
             return
@@ -703,7 +703,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.initDone = True
 
     def _send_host_game(self, mapname):
-        ''' Create a lobby with a specific map'''
+        """ Create a lobby with a specific map"""
         self.game.hostPlayerFull = self.player
         self.game.setGameMap(mapname.lower())
         self.sendToRelay("HostGame", [mapname])

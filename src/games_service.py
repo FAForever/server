@@ -46,7 +46,7 @@ class GamesService(object):
         self._dirty_games = []
 
     def addContainer(self, name, container):
-        ''' add a game container class named <name>'''
+        """ add a game container class named <name>"""
         if not name in self.gamesContainer:
             self.gamesContainer[name] = container
             return 1

@@ -20,7 +20,7 @@ from .gamesContainer import  gamesContainerClass
 
 
 class coopGamesContainerClass(gamesContainerClass):
-    '''Class for custom claustrophobia games'''
+    """Class for custom claustrophobia games"""
 
     def __init__(self, db, parent = None):
         super(coopGamesContainerClass, self).__init__("coop", "coop", db, parent)

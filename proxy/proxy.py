@@ -59,7 +59,7 @@ class proxy(object):
         
 
     def coupleExists(self, player1, player2):    
-        ''' check if that couple already exists'''
+        """ check if that couple already exists"""
         for c in self.couples :
             if c.isCouple(player1, player2) :
                 return True
@@ -67,7 +67,7 @@ class proxy(object):
         return False
                     
     def findFreeProxyPort(self, couple):
-        ''' this function return a free proxy number for both player'''
+        """ this function return a free proxy number for both player"""
         
         player1Free = []
         player2Free = []
@@ -85,7 +85,7 @@ class proxy(object):
         return -1
                    
     def addCouple(self, player1, player2):
-        ''' this function add two players that are supposed to connect through proxy'''
+        """ this function add two players that are supposed to connect through proxy"""
         
         # first check if that couple doesn't exist yet.
         if not self.coupleExists(player1, player2) :

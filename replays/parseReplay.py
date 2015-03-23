@@ -17,7 +17,7 @@
 #-------------------------------------------------------------------------------
 
 
-'''
+"""
 Format of command stream:
 //
 // repeat {
@@ -64,7 +64,7 @@ enum ECmdStreamOp
 10    CMDST_WarpEntity,
     // EntId - entity
     // VTransform - new transform
-    
+
 11    CMDST_ProcessInfoPair,
     // EntId - entity
     // string - arg1
@@ -151,7 +151,7 @@ enum ECmdStreamOp
 
 
 // Format of STITarget:
-// 
+//
 // uint8 - target type (ESTITargetType)
 // if target type == STITARGET_Entity {
 //   EntId - entity id
@@ -168,7 +168,7 @@ enum ECmdStreamOp
 //   int16 - x
 //   int16 - z
 // }
-'''
+"""
 
 class UNITCOMMAND(object):
     UNITCOMMAND_None = 0
