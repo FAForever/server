@@ -366,7 +366,7 @@ class matchmakerGamesContainerClass(gamesContainerClass):
                 player.lobbyThread.command_quit_team(dict(command="quit_team"))
 
 
-        if canStart == False:
+        if not canStart:
             for p in players1+players2:
                 p.lobbyThread.sendJSON(dict(command="matchmaker_info", action="stopSearching"))
             return

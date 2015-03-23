@@ -131,7 +131,7 @@ class tournamentServerThread(QObject):
                 ins = QDataStream(self.socket)
                 ins.setVersion(QDataStream.Qt_4_2)
                 loop = 0
-                while ins.atEnd() == False :
+                while not ins.atEnd():
                     QCoreApplication.processEvents()
                     loop += 1
                     if self.socket != None :               

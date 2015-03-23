@@ -43,7 +43,7 @@ class updateServer(QtNetwork.QTcpServer):
 
     def createPatch(self, patches):
 
-        if self.patching == False:
+        if not self.patching:
             self.patching = True
             self.logger.debug(patches)
             thread = createPatch.createPatch(patches, self.db)
@@ -70,7 +70,7 @@ class updateServer(QtNetwork.QTcpServer):
             if thread:
                 self.threads.remove(thread)
                 try:
-                    if thread.isRunning() == False :
+                    if not thread.isRunning():
                         thread.done()
                         if thread.isFinished() :
                             self.patching = False

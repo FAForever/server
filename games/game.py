@@ -308,7 +308,7 @@ class Game(BaseGame):
                             query.exec_()
                             query.finish()
                         else:
-                            if noHumanResult == False:
+                            if not noHumanResult:
                                 query.prepare("UPDATE %s set mean = ?, deviation = ?, numGames = (numGames +1) WHERE id = (SELECT id FROM login WHERE login.login = ?)" % table)
                                 query.addBindValue(mean)
                                 query.addBindValue(dev)
@@ -326,7 +326,7 @@ class Game(BaseGame):
 
                     #db.close()
                     # if the player is still online, we update his rating
-                    if noHumanResult == False:
+                    if not noHumanResult:
                         for player in players.players():
                             if str(player.getLogin()) == str(name):
                                 logger.debug("found player online")
