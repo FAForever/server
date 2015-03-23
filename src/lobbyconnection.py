@@ -1267,7 +1267,11 @@ Thanks,\n\
 
             player = self.parent.listUsers.findByName(who)
             if player:
-                #self.log.debug("closing a FA")
+                self.sendJSON(dict(command="notice", style="info",
+                                   text="Your game was closed by an administrator ({admin_name})."
+                                        + "Please refer to our rules for the lobby/game here {rule_link}."
+                                   .format(admin_name=self.player.login,
+                                           rule_link=Config['lobbyconnection']['rule_link'])))
                 player.lobbyThread.sendJSON(dict(command="notice", style="kill"))
 
         elif action == "join_channel" and self.player.mod:
@@ -1284,7 +1288,11 @@ Thanks,\n\
 
             player = self.parent.listUsers.findByName(who)
             if player:
-                #self.log.debug("closing a lobby")
+                self.sendJSON(dict(command="notice", style="info",
+                                   text="Your client was closed by an administrator ({admin_name})."
+                                        + "Please refer to our rules for the lobby/game here {rule_link}."
+                                   .format(admin_name=self.player.login,
+                                           rule_link=Config['lobbyconnection']['rule_link'])))
                 player.lobbyThread.sendJSON(dict(command="notice", style="kick"))
                 player.lobbyThread.socket.abort()
 
