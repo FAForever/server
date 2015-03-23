@@ -470,7 +470,7 @@ class Game(BaseGame):
         >>> p1,p2,p3,p4 = Player()
         >>> [{p1: p1.rating, p2: p2.rating}, {p3: p3.rating, p4: p4.rating}]
         """
-        assert self.state == GameState.LIVE
+        assert self.state == GameState.LIVE or self.state == GameState.ENDED
         ranks = []
         for team, players in self.teams.items():
             score = 0
