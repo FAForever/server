@@ -328,16 +328,16 @@ class ladder1V1Game(Game):
                     query.prepare("SELECT mean, deviation FROM ladder1v1_rating WHERE id = (SELECT id FROM login WHERE login = ?)")
                     query.addBindValue(member.getId())
                     query.exec_()
-                    self.log.debug("updating a player")
+                    self._logger.debug("updating a player")
                     if query.size() > 0:
                         query.first()
                         team.getRating(member).setMean(query.value(0))
                         team.getRating(member).setStandardDeviation(query.value(1))
                     else :
-                        self.log.debug("error updating a player")
-                        self.log.debug(member.getId())
+                        self._logger.debug("error updating a player")
+                        self._logger.debug(member.getId())
         except :
-            self.log.exception("Something awful happened while updating trueskill!")        
+            self._logger.exception("Something awful happened while updating trueskill!")
 
     # here we only take result, not score.
     def computeResults(self, update=True):

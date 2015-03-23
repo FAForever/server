@@ -51,7 +51,7 @@ class matchmakerGame(Game):
 
     def specialInit(self, player):          
         try :
-            self.log.debug("player " + str(player.getLogin()))
+            self._logger.debug("player " + str(player.getLogin()))
             #print "custom special init"
             trueskill = player.getRating()
             trueSkillCopy = deepcopy(trueskill)
@@ -75,7 +75,7 @@ class matchmakerGame(Game):
                         team = 3
 
                     else:
-                        self.log.debug("player " + str(p.getLogin()) + " not a team")
+                        self._logger.debug("player " + str(p.getLogin()) + " not a team")
 
                     self.setPlayerFaction(place, p.getFaction())
                     self.setPlayerColor(place, place)
@@ -96,12 +96,12 @@ class matchmakerGame(Game):
                         ]
                     }
 
-                    self.log.debug("Host is %s" % player.getLogin() )
-                    self.log.debug("launching FA for %s, place %i" % (p.getLogin(),place) )
+                    self._logger.debug("Host is %s" % player.getLogin() )
+                    self._logger.debug("launching FA for %s, place %i" % (p.getLogin(),place) )
 
                     p.lobbyThread.sendJSON(json)
         except :
-            self.log.exception("Something awful happened when launching a matchmaker game !")
+            self._logger.exception("Something awful happened when launching a matchmaker game !")
 
     def specialEnding(self, logger, db, players):
         

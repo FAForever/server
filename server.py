@@ -46,8 +46,8 @@ if __name__ == '__main__':
             self.rootlogger = logging.getLogger("")
             self.logHandler = handlers.RotatingFileHandler(config.LOG_PATH + "server.log", backupCount=1024, maxBytes=16777216 )
             self.logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
-            self.logHandler.setFormatter( self.logFormatter )
-            self.rootlogger.addHandler( self.logHandler )
+            self.logHandler.setFormatter(self.logFormatter)
+            self.rootlogger.addHandler(self.logHandler)
             self.rootlogger.setLevel(config.LOG_LEVEL)
             self.logger = logging.getLogger(__name__)
 

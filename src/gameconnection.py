@@ -718,7 +718,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 self.send_ConnectToProxy(numProxy, peer.player.getIp(), str(peer.player.login), int(peer.player.id))
 
                 if self.game:
-                    self.game.log.debug("%s is connecting through proxy to %s on port %i" % (
+                    self.game._logger.debug("%s is connecting through proxy to %s on port %i" % (
                         self.player.login, peer.player.login, numProxy))
 
                 if peer.player.login not in self.proxyConnection:

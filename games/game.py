@@ -73,7 +73,7 @@ class Game(BaseGame):
         self._player_options = {}
         self.createDate = time.time()
         self.receiveUdpHost = False
-        self.log = logging.getLogger(__name__)
+        self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, uuid))
         self.uuid = uuid
         self.ffa = False
         self.partial = 1
@@ -117,6 +117,7 @@ class Game(BaseGame):
                             'PrebuiltUnits': 'Off', 'NoRushOption': 'Off', 'RestrictedCategories': 0}
 
         self.mods = []
+        self._logger.info("{} created".format(self))
 
     @property
     def players(self):
@@ -146,6 +147,7 @@ class Game(BaseGame):
         """
         if game_connection.state != GameConnectionState.connected_to_host:
             raise GameError("Invalid GameConnectionState: {}".format(game_connection.state))
+        self._logger.info("Added game connection {}".format(game_connection))
         self._connections[game_connection.player] = game_connection
 
     def remove_game_connection(self, game_connection):
@@ -158,10 +160,12 @@ class Game(BaseGame):
         :return: None
         """
         del self._connections[game_connection.player]
+        self._logger.info("Removed game connection {}".format(game_connection))
         if len(self._connections) == 0:
             self.on_game_end()
 
     def on_game_end(self):
+        self._logger.info("Game ended")
         query = QSqlQuery(self.db)
         queryStr = ("UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(self.id))
         query.exec_(queryStr)
@@ -188,6 +192,7 @@ class Game(BaseGame):
         assert self.state == GameState.LOBBY
         self._players = self.players
         self.state = GameState.LIVE
+        self._logger.info("Game launched")
 
     def setAccess(self, access):
         self.access = access
@@ -437,7 +442,7 @@ class Game(BaseGame):
 
 
     def computeResults(self, update=True):
-        self.log.debug("Computing results")
+        self._logger.debug("Computing results")
         if update:
             self.updateTrueskill()
 
@@ -546,7 +551,7 @@ class Game(BaseGame):
 
     def updateTrueskill(self):
         ''' Update all scores from the DB before updating the results'''
-        self.log.debug("updating ratings")
+        self._logger.debug("updating ratings")
         try:
             for team in self.finalTeams:
                 for member in team.players():
@@ -555,16 +560,16 @@ class Game(BaseGame):
                         "SELECT mean, deviation FROM global_rating WHERE id = (SELECT id FROM login WHERE login = ?)")
                     query.addBindValue(member.getId())
                     query.exec_()
-                    self.log.debug("updating a player")
+                    self._logger.debug("updating a player")
                     if query.size() > 0:
                         query.first()
                         team.getRating(member).setMean(query.value(0))
                         team.getRating(member).setStandardDeviation(query.value(1))
                     else:
-                        self.log.debug("error updating a player")
-                        self.log.debug(member.getId())
+                        self._logger.debug("error updating a player")
+                        self._logger.debug(member.getId())
         except:
-            self.log.exception("Something awful happened while updating trueskill!")
+            self._logger.exception("Something awful happened while updating trueskill!")
 
 
     def recombineTeams(self):
@@ -595,7 +600,7 @@ class Game(BaseGame):
 
             return self.finalTeams
         except:
-            self.log.exception("Something awful happened in a recombing function!")
+            self._logger.exception("Something awful happened in a recombing function!")
 
 
     def removePlayerFromAllTeam(self, name):

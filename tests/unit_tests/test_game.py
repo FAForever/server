@@ -1,3 +1,4 @@
+import logging
 from unittest import mock
 
 import pytest
@@ -15,6 +16,16 @@ def game(db):
 
 def test_initialization(game):
     assert game.state == GameState.INITIALIZING
+
+
+def test_instance_logging(db):
+    logger = logging.getLogger('{}.5'.format(Game.__qualname__))
+    logger.info = mock.Mock()
+    mock_parent = mock.Mock()
+    mock_parent.db = db
+    game = Game(5, mock_parent)
+    logger.info.assert_called_with("{} created".format(game))
+
 
 @pytest.fixture(params=[
     [('PlayerName', 'Sheeo'),
