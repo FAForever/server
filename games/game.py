@@ -196,10 +196,17 @@ class Game(BaseGame):
         query.exec_(queryStr)
         self.rate_game()
 
-    def set_player_option(self, player, key, value):
-        if player not in self._player_options:
-            self._player_options[player] = {}
-        self._player_options[player][key] = value
+    def set_player_option(self, id, key, value):
+        """
+        Set game-related options for given player, by id
+        :param id: int
+        :param key: option key string
+        :param value: option value
+        :return: None
+        """
+        if id not in self._player_options:
+            self._player_options[id] = {}
+        self._player_options[id][key] = value
 
     def get_player_option(self, player, key):
         try:
