@@ -52,8 +52,6 @@ class replayServer(QtNetwork.QTcpServer):
                     self.mods[uid] = name       
 
     def incomingConnection(self, socketId):
-        
-        reload(replayServerThread)
         self.logger.debug("Incoming replay Connection")
         self.replayVault.append(replayServerThread.replayServerThread(socketId, self))    
     
