@@ -105,12 +105,8 @@ class FALobbyServer(QtNetwork.QTcpServer):
 
         jsonToSend["teams"] = teamsToSend
 
-        # quality is computed lobby-side now. Was taking too much time server-side either way.
-        #quality = game.getMatchQuality()
-        #if quality != None :
-        #   jsonToSend["quality"] = quality    
-        
         return jsonToSend
+
 
     @timed
     def dirtyGameCheck(self):
