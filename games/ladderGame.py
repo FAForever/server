@@ -32,22 +32,15 @@ class ladder1V1Game(Game):
     def __init__(self, uuid, parent = None):
         super(self.__class__, self).__init__(uuid, parent)
 
-       
         self.hosted = False
         
         self.initMode = 1
-
         self.trueSkill1v1Players = []
         self.finalTeams1v1 = []
-
         self.invalidPlayers = []
-
         self.results = []
-      
-        self.playerToJoin = None 
-        
+        self.playerToJoin = None
         self.minPlayer = 2
-
         self.leagues = {}
 
     def setLeaguePlayer(self, player):
@@ -69,7 +62,7 @@ class ladder1V1Game(Game):
         trueSkillCopy1v1 = deepcopy(trueskill1v1)
         self.addTrueSkill1v1Player(trueSkillCopy1v1)
 
-        if player.getAction() == "HOST" :
+        if player.getAction() == "HOST":
             playerToJoin = self.getPlayerToJoin()
             playerToJoin.wantToConnectToGame = True
             
