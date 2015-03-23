@@ -258,9 +258,9 @@ class UNITCOMMAND(object):
 import struct
 import json
 
-from PyQt4 import  QtCore
+from PyQt4 import QtCore
 
-from .replayArmy import *
+from .ReplayArmy import *
 from .replayArmyContainer import *
 from .replayInfos import *
 
@@ -450,9 +450,9 @@ class replayParser(object):
         
             self.offset, army = self.parseLua(self.offset)
             
-            newArmy = replayArmy()
+            newArmy = ReplayArmy()
             newArmy.populate(army)
-            if newArmy.isPlayer() :
+            if newArmy.is_player() :
                 armies.add(newArmy)
             
             

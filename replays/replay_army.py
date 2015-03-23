@@ -16,8 +16,8 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-class replayArmy(object):
 
+class ReplayArmy(object):
     def __init__(self):
 
         self.color = 0
@@ -26,8 +26,6 @@ class replayArmy(object):
         self.id = ''
         self.team = 0
         self.human = True
-        
-
 
     def populate(self, infos):
         armyInfo = dict(infos)
@@ -38,9 +36,7 @@ class replayArmy(object):
         self.team = armyInfo['Team']
         self.human = armyInfo['Human']
 
-        
-        
-    def isPlayer(self):
+    def is_player(self):
         return not self.civilian and self.human
         
     def __str__(self):

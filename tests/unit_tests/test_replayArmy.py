@@ -1,22 +1,22 @@
-from replays.replayArmy import replayArmy
+from replays.replay_army import ReplayArmy
 
 def test_civiliansAreNotPlayers():
-    army = replayArmy()
+    army = ReplayArmy()
     army.civilian = True
     army.human = True
 
-    assert not army.isPlayer()
+    assert not army.is_player()
 
 def test_nonHumansAreNotPlayers():
-    army = replayArmy()
+    army = ReplayArmy()
     army.civilian = False
     army.human = False
 
-    assert not army.isPlayer()
+    assert not army.is_player()
 
 def test_nonCivilianHumansArePlayers():
-    army = replayArmy()
+    army = ReplayArmy()
     army.civilian = False
     army.human = True
 
-    assert army.isPlayer()
+    assert army.is_player()
