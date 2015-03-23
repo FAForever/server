@@ -111,9 +111,9 @@ def test_compute_rating_computes_global_ratings(game: Game, players):
     game.state = GameState.LIVE
     players.hosting.global_rating = Rating(1500, 250)
     players.joining.global_rating = Rating(1500, 250)
+    game._players = [players.hosting, players.joining]
     game.add_result(players.hosting, 1)
     game.add_result(players.joining, 0)
-    game._players = [players.hosting, players.joining]
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 2)
     groups = game.compute_rating()
@@ -125,9 +125,9 @@ def test_compute_rating_computes_ladder_ratings(game: Game, players):
     game.state = GameState.LIVE
     players.hosting.ladder_rating = Rating(1500, 250)
     players.joining.ladder_rating = Rating(1500, 250)
+    game._players = [players.hosting, players.joining]
     game.add_result(players.hosting, 1)
     game.add_result(players.joining, 0)
-    game._players = [players.hosting, players.joining]
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 2)
     groups = game.compute_rating(rating='ladder')

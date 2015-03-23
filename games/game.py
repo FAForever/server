@@ -158,6 +158,7 @@ class Game(BaseGame):
         :param result:
         :return:
         """
+        assert player in self.players
         self._results[player] = result
 
     def add_game_connection(self, game_connection):
@@ -168,6 +169,8 @@ class Game(BaseGame):
         """
         if game_connection.state != GameConnectionState.connected_to_host:
             raise GameError("Invalid GameConnectionState: {}".format(game_connection.state))
+        if self.state != GameState.LOBBY:
+            raise GameError("Invalid GameState: {state}".format(state=self.state))
         self._logger.info("Added game connection {}".format(game_connection))
         self._connections[game_connection.player] = game_connection
 
@@ -180,6 +183,7 @@ class Game(BaseGame):
         :param
         :return: None
         """
+        assert game_connection in self._connections.values()
         del self._connections[game_connection.player]
         self._logger.info("Removed game connection {}".format(game_connection))
         if len(self._connections) == 0:
