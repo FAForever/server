@@ -129,14 +129,15 @@ class Game(BaseGame):
           - (LOBBY) The currently connected players
           - (LIVE) Players who participated in the game
           - Empty list
-        :return: set
+        :return: frozenset
         """
         if self.state == GameState.LIVE:
-            return self._players
+            result = self._players
         elif self.state == GameState.LOBBY:
-            return set(self._connections.keys())
+            result = self._connections.keys()
         else:
-            return []
+            result = []
+        return frozenset(result)
 
     @property
     def id(self):
