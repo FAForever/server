@@ -40,7 +40,7 @@ class ugc_file(object):
             status = self._api["status"]["code"]
         except KeyError:
             if not data:
-                if status != None and status != 9:
+                if status is not None and status != 9:
                     raise UGCError("Code " + str(status))
                 else:
                     raise FileNotFoundError("File not found")

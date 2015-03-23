@@ -122,7 +122,7 @@ class inventory(object):
         cellcount = 0
         items = []
 
-        if self._section != None:
+        if self._section is not None:
             sec = str(self._section)
             downloadlist = sec
             cellcount = contexts[sec]["asset_count"]

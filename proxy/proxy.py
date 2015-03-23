@@ -42,7 +42,7 @@ class couple(object):
         return False
 
     def __repr__(self):
-        if self.port != None :
+        if self.port is not None:
             return "found free port %i for %s and %s" % (self.port, self.player1, self.player2)
         else :
             return "No free port for %s and %s" % (self.player1, self.player2)
@@ -128,4 +128,3 @@ class proxy(object):
                 cleaned = True
                 
         return cleaned
-   

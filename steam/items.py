@@ -83,7 +83,7 @@ class schema(object):
             self._cache["items"] = dict([(i["defindex"], i) for i in items])
         except KeyError:
             # Due to the various fields needed we can't check for certain fields and fall back ala 'inventory'
-            if status != None:
+            if status is not None:
                 raise SchemaError("Steam returned bad schema with error code " + str(status))
             else:
                 raise SchemaError("Empty or corrupt schema returned")
@@ -456,7 +456,7 @@ class item(object):
                 eaters.setdefault(eateri, [None, None])
                 if aname.find("score type") != -1 or aname.find("kill type") != -1:
                     # Score type attribute
-                    if eaters[eateri][0] == None:
+                    if eaters[eateri][0] is None:
                         eaters[eateri][0] = attr.value
                 else:
                     # Value attribute
@@ -469,7 +469,7 @@ class item(object):
 
             # Eater type can be null (it still is in some older items), null count means we're looking at
             # either an uninitialized item or schema item
-            if count != None:
+            if count is not None:
                 rank = ranktypes.get(etype or 0, {"level_data": defaultleveldata, "type_name": "Count"})
                 eaterlist.append((rank.get("level_data", defaultleveldata), rank["type_name"], count))
 
@@ -757,7 +757,7 @@ class item_attribute(object):
         """ True if the attribute is "hidden"
         (not intended to be shown to the end user). Note
         that hidden attributes also usually have no description string """
-        return self._attribute.get("hidden", False) or self.description == None
+        return self._attribute.get("hidden", False) or self.description is None
 
     @property
     def account_info(self):
@@ -799,7 +799,7 @@ class inventory(object):
             items = self._api["result"]["items"]
         except KeyError:
             # Only try to check status code if items don't exist (why error out when items are there)
-            if status != None:
+            if status is not None:
                 if status == 8:
                     raise BadID64Error("Bad Steam ID64 given")
                 elif status == 15:

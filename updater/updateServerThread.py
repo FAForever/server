@@ -103,7 +103,7 @@ class updateServerThread(QObject):
 
                 if os.path.exists(fullPath) :
                     md5 = self.getMd5(fullPath)
-                    if md5 != None :
+                    if md5 is not None:
                         query2 = QSqlQuery(self.parent.db)
                         query2.prepare("UPDATE `faf_lobby`.`%s` SET `md5` = ? WHERE `%s`.`name` = ?;" % (table, table))
                         query2.addBindValue(md5)
@@ -241,7 +241,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
            
             myFile = self.getFileVersion(file, version)
             #self.log.debug(myFile)
-            if myFile == None:
+            if myFile is None:
                 self.sendReply("UP_TO_DATE", file)
             else:
                 patchFileUrl =  config['global']['content_url'] + "updaterNew/" + self.tableModFiles + "/" + myFile    
@@ -313,7 +313,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
  
             #self.log.debug(toVersion)
             #self.log.debug("got app ?")
-            if self.app != None :
+            if self.app is not None:
                 self.updateMd5Db(self.tableModFiles)
                 query = QSqlQuery(self.parent.db)
                 query.prepare("SELECT `md5`, `name` FROM `%s` LEFT JOIN `%s` ON `%s`.`id` = `%s`.`fileId` WHERE `%s`.`filename` = ? AND `%s`.`version` <= ?  AND obselete = 0 ORDER BY `version` DESC" % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFiles, self.tableMod, self.tableModFiles))                
@@ -365,7 +365,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
             if not toVersions:
                 self.sendReply("VERSION_MOD_PATCH_NOT_FOUND",  file)
             
-            if self.app != None :
+            if self.app is not None:
                 fileId = 0
                 self.updateMd5Db(self.tableModFiles)
                 query = QSqlQuery(self.parent.db)
@@ -426,7 +426,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
             file = stream.readQString()
             md5 = stream.readQString()
 
-            if self.app != None :
+            if self.app is not None:
                 
                 self.updateMd5Db(self.tableModFiles)
                 
@@ -481,7 +481,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
     def readDatas(self):
 
         #self.readingSocket = True
-        if self.socket != None :
+        if self.socket is not None:
             if self.socket.isValid() :
                 ins = QDataStream(self.socket)
         
@@ -494,7 +494,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
                     if loop > 1000 : break
                      
                     
-                    if self.socket != None :               
+                    if self.socket is not None:
                         if self.socket.isValid() :
          
                             if self.blockSize == 0:
@@ -584,7 +584,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
                 self.log.exception("Something awful happened when sending reply !")  
   
     def done(self) :
-        if self.socket != None :
+        if self.socket is not None:
             #self.parent.addSocketToDelete(self.socket)
             self.socket.readyRead.disconnect(self.readDatas)
             self.socket.disconnected.disconnect(self.disconnection)

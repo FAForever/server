@@ -706,7 +706,7 @@ AND (-1 = ? OR mapId = ?) \n"
 
 
     def readDatas(self):
-        if self.socket != None :
+        if self.socket is not None:
             if self.socket.isValid() :
                 ins = QDataStream(self.socket)
                 ins.setVersion(QDataStream.Qt_4_2)
@@ -714,7 +714,7 @@ AND (-1 = ? OR mapId = ?) \n"
                 while ins.atEnd() == False :
                     QCoreApplication.processEvents()
                     loop += 1
-                    if self.socket != None :               
+                    if self.socket is not None:
                         if self.socket.isValid() :
                             if self.blockSize == 0:
                                 if self.socket.isValid() :
@@ -813,7 +813,7 @@ AND (-1 = ? OR mapId = ?) \n"
                 self.logger.exception("Something awful happened when sending reply !")  
   
     def done(self) :
-        if self.socket != None :
+        if self.socket is not None:
             #self.parent.addSocketToDelete(self.socket)
             self.socket.readyRead.disconnect(self.readDatas)
             self.socket.disconnected.disconnect(self.disconnection)

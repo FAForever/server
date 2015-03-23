@@ -126,7 +126,7 @@ class tournamentServerThread(QObject):
 
 
     def readDatas(self):
-        if self.socket != None :
+        if self.socket is not None:
             if self.socket.isValid() :
                 ins = QDataStream(self.socket)
                 ins.setVersion(QDataStream.Qt_4_2)
@@ -134,7 +134,7 @@ class tournamentServerThread(QObject):
                 while ins.atEnd() == False :
                     QCoreApplication.processEvents()
                     loop += 1
-                    if self.socket != None :               
+                    if self.socket is not None:
                         if self.socket.isValid():
                             if self.blockSize == 0:
                                 if self.socket.isValid():
