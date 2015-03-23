@@ -62,7 +62,7 @@ class app_list(object):
         i = 0
         data = self._apps
 
-        while(i < len(data)):
+        while i < len(data):
             app = data[i]["appid"]
             name = data[i]["name"]
             i += 1

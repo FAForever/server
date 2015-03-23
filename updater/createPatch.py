@@ -84,7 +84,7 @@ class createPatch(QThread):
                 
                 self.db.open()
                 query = QSqlQuery(self.db)
-                queryStr = ("INSERT INTO patchs_table (fromMd5, toMd5, patchFile) VALUES ('%s','%s','%s')") % (frommd5, tomd5, curPatchGen)
+                queryStr = "INSERT INTO patchs_table (fromMd5, toMd5, patchFile) VALUES ('%s','%s','%s')" % (frommd5, tomd5, curPatchGen)
                 query.exec_(queryStr)
     #        
                 self.db.close()

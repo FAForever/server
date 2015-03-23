@@ -149,7 +149,7 @@ class profile(object):
         Current game app ID, server ip:port, misc. extra info (eg. game title)
         """
         obj = self._prof
-        return (obj.get("gameid"), obj.get("gameserverip"), obj.get("gameextrainfo"))
+        return obj.get("gameid"), obj.get("gameserverip"), obj.get("gameextrainfo")
 
     @property
     def location(self):
@@ -158,7 +158,7 @@ class profile(object):
         State ISO code, country ISO code
         """
         obj = self._prof
-        return (obj.get("locstatecode"), obj.get("loccountrycode"))
+        return obj.get("locstatecode"), obj.get("loccountrycode")
 
     @property
     def _prof(self):

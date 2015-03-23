@@ -178,7 +178,7 @@ class schema(object):
         iterindex = 0
         iterdata = list(self._schema["items"].values())
 
-        while(iterindex < len(iterdata)):
+        while iterindex < len(iterdata):
             data = item(iterdata[iterindex], self)
             iterindex += 1
             yield data
@@ -541,7 +541,7 @@ class item(object):
         iterindex = 0
         attrs = self.attributes
 
-        while(iterindex < len(attrs)):
+        while iterindex < len(attrs):
             data = attrs[iterindex]
             iterindex += 1
             yield data
@@ -839,7 +839,7 @@ class inventory(object):
         iterindex = 0
         iterdata = self._inv["items"]
 
-        while(iterindex < len(iterdata)):
+        while iterindex < len(iterdata):
             data = item(iterdata[iterindex], self._schema)
             iterindex += 1
             yield data

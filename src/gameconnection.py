@@ -787,11 +787,11 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
         query = QSqlQuery(self.parent.db)
         # if the AI in the table ?
-        queryStr = "INSERT INTO AI_names (login) VALUES ('%s')" % (name)
+        queryStr = "INSERT INTO AI_names (login) VALUES ('%s')" % name
         query.exec_(queryStr)
 
         # get his rating
-        queryStr = ("SELECT mean, deviation FROM AI_rating WHERE id = (SELECT id FROM AI_names WHERE login = '%s')") % (
+        queryStr = "SELECT mean, deviation FROM AI_rating WHERE id = (SELECT id FROM AI_names WHERE login = '%s')" % (
             name)
         query.exec_(queryStr)
         if query.size() != 1:
