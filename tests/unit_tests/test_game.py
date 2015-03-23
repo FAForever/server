@@ -149,3 +149,25 @@ def test_compute_rating_computes_ladder_ratings(game: Game, players):
     assert players.hosting in groups[0]
     assert players.joining in groups[1]
 
+
+def test_compute_rating_balanced_teamgame(game: Game, create_player):
+    game.state = GameState.LOBBY
+    players = [
+        (create_player(**info), result, team) for info, result, team in [
+            (dict(login='Paula_Bean', id=1, global_rating=Rating(1500, 250.7)), 0, 1),
+            (dict(login='Some_Guy', id=2, global_rating=Rating(1700, 120.1)), 0, 1),
+            (dict(login='Some_Other_Guy', id=3, global_rating=Rating(1200, 72.02)), 0, 2),
+            (dict(login='That_Person', id=4, global_rating=Rating(1200, 72.02)), 0, 2),
+        ]
+    ]
+    add_connected_players(game, [player for player, _, _ in players])
+    for player, _, team in players:
+        game.set_player_option(player.id, 'Team', team)
+    game.launch()
+    for player, result, _ in players:
+        game.add_result(player, result)
+    result = game.compute_rating()
+    for team in result:
+        for player, new_rating in team.items():
+            assert player in game.players
+            assert new_rating != player.global_rating
