@@ -550,7 +550,7 @@ class Game(BaseGame):
         return result
 
     def updateTrueskill(self):
-        ''' Update all scores from the DB before updating the results'''
+        """ Update all scores from the DB before updating the results"""
         self._logger.debug("updating ratings")
         try:
             for team in self.finalTeams:

@@ -34,10 +34,10 @@ import urllib.request, urllib.error, urllib.parse
 import datetime
 
 class replayServerThread(QObject):
-    '''
+    """
     FA server thread spawned upon every incoming connection to
     prevent collisions.
-    '''
+    """
     
     
     def __init__(self, socketId, parent=None):
@@ -78,7 +78,7 @@ class replayServerThread(QObject):
             
 
     def command_modvault_search(self, message):
-        '''that function is used by the mod vault to search for mods!'''
+        """that function is used by the mod vault to search for mods!"""
 
         typemod = message["typemod"]
         search = message["search"]
@@ -743,9 +743,9 @@ AND (-1 = ? OR mapId = ?) \n"
         self.done()
 
     def sendJSON(self, data_dictionary):
-        '''
+        """
         Simply dumps a dictionary into a string and feeds it into the QTCPSocket
-        '''
+        """
         data_string = ""
         try :
             data_string = json.dumps(data_dictionary)
@@ -756,9 +756,9 @@ AND (-1 = ? OR mapId = ?) \n"
         self.sendReply(data_string)
 
     def receiveJSON(self, data_string, stream):
-        '''
+        """
         A fairly pythonic way to process received strings as JSON messages.
-        '''
+        """
         message = json.loads(data_string)
         cmd = "command_" + message['command']
         self.logger.debug("handling command : " + cmd)

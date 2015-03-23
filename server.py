@@ -109,7 +109,7 @@ if __name__ == '__main__':
             self._loop.stop()
 
         def jsonPlayer(self, player):
-            ''' infos about a player'''
+            """ infos about a player"""
             jsonToSend = {}
             rating      = player.globalSkill
             rating1v1   = player.ladder1v1Skill

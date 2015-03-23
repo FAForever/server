@@ -31,10 +31,10 @@ from passwords import CHALLONGE_KEY, CHALLONGE_USER
 
 
 class tournamentServerThread(QObject):
-    '''
+    """
     FA server thread spawned upon every incoming connection to
     prevent collisions.
-    '''
+    """
     def __init__(self, socketId, parent=None):
         super(tournamentServerThread, self).__init__(parent)
 
@@ -160,9 +160,9 @@ class tournamentServerThread(QObject):
 
 
     def sendJSON(self, data_dictionary):
-        '''
+        """
         Simply dumps a dictionary into a string and feeds it into the QTCPSocket
-        '''
+        """
         try:
             data_string = json.dumps(data_dictionary)
             self.sendReply(data_string)
@@ -173,9 +173,9 @@ class tournamentServerThread(QObject):
 
 
     def receiveJSON(self, data_string, stream):
-        '''
+        """
         A fairly pythonic way to process received strings as JSON messages.
-        '''
+        """
         try:
             message = json.loads(data_string)
 

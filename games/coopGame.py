@@ -19,7 +19,7 @@
 from .game import Game
 
 class coopGame(Game):
-    '''Class forcoop game'''
+    """Class forcoop game"""
 
     def __init__(self, uuid, parent = None):
         super(self.__class__, self).__init__(uuid, parent)

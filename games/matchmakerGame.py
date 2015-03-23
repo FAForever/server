@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 FACTIONS = {1:"UEF", 2:"Aeon",3:"Cybran",4:"Seraphim"}
 
 class matchmakerGame(Game):
-    '''Class for matchmaker game'''
+    """Class for matchmaker game"""
 
     def __init__(self, uuid, parent = None):
         super(self.__class__, self).__init__(uuid, parent)
