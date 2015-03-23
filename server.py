@@ -127,11 +127,11 @@ if __name__ == '__main__':
                 jsonToSend["league"] = player.leagueInfo
 
             if hasattr(player, "country") :
-                if player.country != None :
+                if player.country is not None:
                     jsonToSend["country"] = player.country
 
             clan = player.clan
-            if clan != None:
+            if clan is not None:
                 jsonToSend["clan"] = player.clan
             else:
                 jsonToSend["clan"] = ""

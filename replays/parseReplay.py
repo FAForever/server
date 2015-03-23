@@ -366,14 +366,14 @@ class replayParser(object):
     
                 datasKey = self.parseLua(offset)
                 key = ''
-                if datasKey != None :
+                if datasKey is not None:
                     off, key = datasKey
                     offset = off
     
                 
                 datasValue = self.parseLua(offset)
                 value = ''
-                if datasValue != None :
+                if datasValue is not None:
                     off, value = datasValue
                     offset =  off 
                     pair = (key, value)

@@ -59,11 +59,11 @@ class tournamentServer(QtNetwork.QTcpServer):
                 self.tournaments[uid]["state"]          = "open"
                 checkParticipants = False
                 
-                if t["started-at"] != None :
+                if t["started-at"] is not None:
                     self.tournaments[uid]["state"]      = "started"
                     if t["progress-meter"] == 0:
                         checkParticipants = True
-                if t["completed-at"] != None :
+                if t["completed-at"] is not None:
                     self.tournaments[uid]["state"]      = "finished"
                 
                 if t["open-signup"]:
@@ -84,7 +84,7 @@ class tournamentServer(QtNetwork.QTcpServer):
                             if query.size() == 1 :
                                 query.first()
                                 fafuid = int(query.value(0))
-                        if fafuid == None:
+                        if fafuid is None:
                             query.prepare("SELECT user_id FROM name_history WHERE previous_name LIKE ?")
                             query.addBindValue(p["name"])
                             if query.exec_():
@@ -137,7 +137,7 @@ class tournamentServer(QtNetwork.QTcpServer):
                                 query.first()
                                 fafuid = int(query.value(0))
                         
-                        if fafuid == None:
+                        if fafuid is None:
                             query.prepare("SELECT user_id FROM name_history WHERE previous_name LIKE ?")
                             query.addBindValue(p["name"])
                             if query.exec_():
