@@ -7,7 +7,7 @@ from PySide.QtCore import QCoreApplication
 import pytest
 import mock
 from PySide import QtCore, QtSql
-
+from trueskill import Rating
 from src.games_service import GamesService
 
 
@@ -154,26 +154,31 @@ def game(players, db):
     game.uuid = 1
     return game
 
-def player(login, id, port, action, ip='127.0.0.1'):
-    p = mock.create_autospec(spec=Player(login))
-    p.getAction = mock.Mock(return_value=action)
-    p.getLogin = mock.Mock(return_value=login)
-    p.getId = mock.Mock(return_value=id)
-    p.getIp = mock.Mock(return_value=ip)
-    p.ip = ip
-    p.gamePort = port
-    p.action = action
-    p.id = id
-    p.login = login
-    p.address_and_port = "{}:{}".format(ip, port)
-    return p
+@pytest.fixture
+def create_player():
+    def make(login='', id=0, port=6112, action='HOST', ip='127.0.0.1', global_rating=Rating(1500, 250), ladder_rating=Rating(1500, 250)):
+        p = mock.create_autospec(spec=Player(login))
+        p.global_rating = global_rating
+        p.ladder_rating = ladder_rating
+        p.getAction = mock.Mock(return_value=action)
+        p.getLogin = mock.Mock(return_value=login)
+        p.getId = mock.Mock(return_value=id)
+        p.getIp = mock.Mock(return_value=ip)
+        p.ip = ip
+        p.gamePort = port
+        p.action = action
+        p.id = id
+        p.login = login
+        p.address_and_port = "{}:{}".format(ip, port)
+        return p
+    return make
 
 @pytest.fixture
-def players():
+def players(create_player):
     return mock.Mock(
-        hosting=player('Paula_Bean', 1, 6112, "HOST"),
-        peer=player('That_Guy', 2, 6112, "JOIN"),
-        joining=player('James_Kirk', 3, 6112, "JOIN")
+        hosting=create_player(login='Paula_Bean', id=1, port=6112, action="HOST"),
+        peer=create_player(login='That_Guy', id=2, port=6112, action="JOIN"),
+        joining=create_player(login='James_Kirk', id=3, port=6112, action="JOIN")
     )
 
 @pytest.fixture

@@ -29,8 +29,20 @@ def test_instance_logging(db):
 
 
 @pytest.fixture
-def game_connection():
-    return mock.create_autospec(spec=GameConnection)
+def game_connection(state=GameConnectionState.initializing, player=None):
+    gc = mock.create_autospec(spec=GameConnection)
+    gc.state = state
+    gc.player = player
+    return gc
+
+
+def add_connected_player(game: Game, player):
+    game.add_game_connection(game_connection(state=GameConnectionState.connected_to_host, player=player))
+
+
+def add_connected_players(game: Game, players):
+    for player in players:
+        add_connected_player(game, player)
 
 
 def test_set_player_option(game, players, game_connection):
@@ -98,20 +110,22 @@ def test_game_launch_freezes_players(game: Game, players):
     game.remove_game_connection(conn1)
     assert game.players == {players.hosting, players.joining}
 
+
 def test_game_teams_represents_active_teams(game: Game, players):
-    game.state = GameState.LIVE
+    game.state = GameState.LOBBY
+    add_connected_players(game, [players.hosting, players.joining])
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 2)
-    game._players = [players.hosting, players.joining]
     assert game.teams == {1: [players.hosting],
                           2: [players.joining]}
 
 
 def test_compute_rating_computes_global_ratings(game: Game, players):
-    game.state = GameState.LIVE
+    game.state = GameState.LOBBY
     players.hosting.global_rating = Rating(1500, 250)
     players.joining.global_rating = Rating(1500, 250)
-    game._players = [players.hosting, players.joining]
+    add_connected_players(game, [players.hosting, players.joining])
+    game.launch()
     game.add_result(players.hosting, 1)
     game.add_result(players.joining, 0)
     game.set_player_option(players.hosting.id, 'Team', 1)
@@ -122,10 +136,11 @@ def test_compute_rating_computes_global_ratings(game: Game, players):
 
 
 def test_compute_rating_computes_ladder_ratings(game: Game, players):
-    game.state = GameState.LIVE
+    game.state = GameState.LOBBY
     players.hosting.ladder_rating = Rating(1500, 250)
     players.joining.ladder_rating = Rating(1500, 250)
-    game._players = [players.hosting, players.joining]
+    add_connected_players(game, [players.hosting, players.joining])
+    game.launch()
     game.add_result(players.hosting, 1)
     game.add_result(players.joining, 0)
     game.set_player_option(players.hosting.id, 'Team', 1)
