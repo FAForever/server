@@ -23,7 +23,7 @@ import random
 from PySide.QtSql import *
 
 from src.games.gamesContainer import  gamesContainerClass
-from games.matchmakerGame import matchmakerGame
+from .matchmakerGame import matchmakerGame
 
 
 FACTIONS = {1:"UEF", 2:"Aeon",3:"Cybran",4:"Seraphim"}

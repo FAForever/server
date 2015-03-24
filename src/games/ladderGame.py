@@ -19,7 +19,7 @@
 import logging
 logger = logging.getLogger(__name__)
 
-from src.games.game import Game
+from .game import Game
 
 from copy import deepcopy
 from PySide.QtSql import QSqlQuery

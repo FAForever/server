@@ -19,7 +19,7 @@
 from copy import deepcopy
 import time
 
-from src.games.game import Game
+from .game import Game
 from src.decorators import with_logger
 
 

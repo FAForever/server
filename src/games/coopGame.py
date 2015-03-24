@@ -16,7 +16,7 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from src.games.game import Game
+from .game import Game
 
 class coopGame(Game):
     """Class forcoop game"""

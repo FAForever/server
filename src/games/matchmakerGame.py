@@ -20,7 +20,7 @@ from copy import deepcopy
 import time
 import logging
 
-from src.games.game import Game
+from .game import Game
 
 
 logger = logging.getLogger(__name__)
