@@ -1256,7 +1256,7 @@ Thanks,\n\
 
             player = self.parent.listUsers.findByName(who)
             if player:
-                self.sendJSON(dict(command="notice", style="info",
+                player.lobbyThread.sendJSON(dict(command="notice", style="info",
                                    text="Your game was closed by an administrator ({admin_name})."
                                         + "Please refer to our rules for the lobby/game here {rule_link}."
                                    .format(admin_name=self.player.login,
@@ -1277,7 +1277,7 @@ Thanks,\n\
 
             player = self.parent.listUsers.findByName(who)
             if player:
-                self.sendJSON(dict(command="notice", style="info",
+                player.lobbyThread.sendJSON(dict(command="notice", style="info",
                                    text="Your client was closed by an administrator ({admin_name})."
                                         + "Please refer to our rules for the lobby/game here {rule_link}."
                                    .format(admin_name=self.player.login,
