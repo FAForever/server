@@ -15,7 +15,7 @@ if not hasattr(QtCore, 'Signal'):
     QtCore.Signal = QtCore.pyqtSignal
 
 from PySide.QtNetwork import QTcpSocket
-from src.players import playersOnline, Player
+from src.players import PlayersOnline, Player
 from games import Game
 
 from src.JsonTransport import Transport
@@ -178,7 +178,7 @@ def players():
 
 @pytest.fixture
 def player_service(players):
-    p = mock.Mock(spec=playersOnline())
+    p = mock.Mock(spec=PlayersOnline())
     p.findByIp = mock.Mock(return_value=players.hosting)
     return p
 

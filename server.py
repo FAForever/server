@@ -51,7 +51,7 @@ if __name__ == '__main__':
             self.rootlogger.setLevel(config.LOG_LEVEL)
             self.logger = logging.getLogger(__name__)
 
-            self.players_online = playersOnline()
+            self.players_online = PlayersOnline()
 
             self.db = QtSql.QSqlDatabase("QMYSQL")
             self.db.setHostName(DB_SERVER)

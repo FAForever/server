@@ -12,3 +12,4 @@ def test_faction():
     assert p.faction == Faction.aeon
     p.faction = Faction.aeon
     assert p.faction == Faction.aeon
+

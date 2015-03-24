@@ -3,7 +3,7 @@ import pytest
 import mock
 
 from src.games_service import GamesService
-from src.lobbyconnection import LobbyConnection, playersOnline
+from src.lobbyconnection import LobbyConnection, PlayersOnline
 from src.FaLobbyServer import FALobbyServer
 
 
@@ -32,7 +32,7 @@ def connected_socket():
 
 @pytest.fixture
 def mock_lobby_server(db):
-    users = playersOnline()
+    users = PlayersOnline()
     hyper_container = GamesService(users, db)
     return FALobbyServer(users, hyper_container, db)
 

@@ -166,7 +166,7 @@ class Player(BasePlayer):
         self._login = value
 
 
-class playersOnline(object):
+class PlayersOnline(object):
     def __init__(self):
         self.players = []
         self.logins = []
@@ -217,7 +217,7 @@ class playersOnline(object):
 
     def findByName(self, name):
         for player in self.players:
-            if player.getLogin() == name :
+            if player.getLogin() == name:
                 return player
         return 0
     
