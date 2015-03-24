@@ -21,10 +21,10 @@ from .gamesContainer import GamesContainer
 
 class CoopGamesContainer(GamesContainer):
     """Class for custom claustrophobia games"""
+    listable = False
 
     def __init__(self, db, parent = None):
         super(CoopGamesContainer, self).__init__("coop", "coop", db, parent)
 
         self.host = False
         self.join = False
-        self.listable = False

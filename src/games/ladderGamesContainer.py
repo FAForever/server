@@ -27,13 +27,13 @@ from .ladderGame import ladder1V1Game
 
 class Ladder1V1GamesContainer(GamesContainer):
     """Class for 1vs1 ladder games"""
-    
+    listable = False
+
     def __init__(self, db, parent):
         super(Ladder1V1GamesContainer, self).__init__("ladder1v1", "ladder 1 vs 1", db, parent)
 
         self.season = None
         self.players = []
-        self.listable = False
         self.host = False
         self.join = False
         self.parent = parent

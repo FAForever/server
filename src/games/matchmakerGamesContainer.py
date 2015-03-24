@@ -321,12 +321,13 @@ class teamsManager(object):
 
 class MatchmakerGamesContainer(GamesContainer):
     """Class for matchmaker games"""
-    
+
+    listable = False
+
     def __init__(self, db, parent = None):
         super(MatchmakerGamesContainer, self).__init__("matchmaker", "Matchmaker" ,db, parent)
 
         self.manager = teamsManager(self)
-        self.listable = False
         self.host = False
         self.join = False
         self.parent = parent

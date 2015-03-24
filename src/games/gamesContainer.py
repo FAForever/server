@@ -26,7 +26,8 @@ from src.games.game import Game, GameState
 
 class GamesContainer(object):
     """Class for containing games"""
-    
+    listable = True
+
     def __init__(self, gameTypeName, gameNiceName, db, parent = None):
 
         self.log = logging.getLogger(__name__)
@@ -46,9 +47,6 @@ class GamesContainer(object):
         self.gameTypeName = gameTypeName
         self.gameNiceName = gameNiceName
         self.parent = parent
-
-        # Determines if a game shows up in the "find games" list.
-        self.listable = True
 
         self.options = []
 
