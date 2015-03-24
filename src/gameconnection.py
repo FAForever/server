@@ -37,7 +37,7 @@ from src.subscribable import Subscribable
 
 logger = logging.getLogger(__name__)
 
-from proxy import proxy
+from src import proxy_map
 
 from src.JsonTransport import QDataStreamJsonTransport
 
@@ -176,7 +176,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.game.state = GameState.INITIALIZING
             self.game.setHostIP(self.player.getIp())
             self.game.setHostLocalIP(self.player.getLocalIp())
-            self.game.proxy = proxy.proxy()
+            self.game.proxy = proxy_map.ProxyMap()
             strlog = (
                 "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.uuid), str(self.game.getGamemod())))
             self.logGame = strlog
@@ -710,8 +710,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def ConnectThroughProxy(self, peer, recurse=True):
         try:
-            self.game.proxy.addCouple(self.player.login, peer.player.login)
-            numProxy = self.game.proxy.findProxy(self.player.login, peer.player.login)
+            numProxy = self.game.proxy.map(self.player.login, peer.player.login)
 
             if numProxy is not None:
                 self.sendToRelay("DisconnectFromPeer", int(peer.player.id))
@@ -977,7 +976,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
                 if self.game:
                     if hasattr(self.game, "proxy"):
-                        if self.game.proxy.removePlayer(self.player.getLogin()):
+                        if self.game.proxy.unmap(self.player.getLogin()):
                             self.parent.parent.udpSocket.writeDatagram(
                                 json.dumps(dict(command="cleanup", sourceip=self.player.getIp())), proxyServer, 12000)
                 if self.connectivity_state.result() == Connectivity.PROXY:

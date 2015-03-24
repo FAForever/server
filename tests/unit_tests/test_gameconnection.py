@@ -3,7 +3,7 @@ import asyncio
 from PySide.QtNetwork import QTcpSocket
 import mock
 
-from proxy import proxy
+from src import proxy_map
 from src.connectivity import Connectivity
 from src.gameconnection import GameConnection
 from src.JsonTransport import Transport
@@ -204,7 +204,7 @@ def test_ConnectToHost_public_proxy(connections, players):
     peer_conn = connections.make_connection(players.joining, Connectivity.PROXY)
     host_conn.send_ConnectToProxy = mock.Mock()
     peer_conn.send_ConnectToProxy = mock.Mock()
-    host_conn.game.proxy = proxy.proxy()
+    host_conn.game.proxy = proxy_map.ProxyMap()
     result = asyncio.async(peer_conn.ConnectToHost(host_conn))
     yield from result
     host_conn.send_ConnectToProxy.assert_called_with(0,
