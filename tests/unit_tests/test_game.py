@@ -4,7 +4,7 @@ from unittest import mock
 import pytest
 from trueskill import Rating
 
-from games.game import Game, GameState, GameError
+from src.games.game import Game, GameState, GameError
 from src.gameconnection import GameConnection, GameConnectionState
 
 

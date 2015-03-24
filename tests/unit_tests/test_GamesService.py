@@ -1,4 +1,4 @@
-from games import gamesContainerClass
+from src.games import gamesContainerClass
 from src.games_service import GamesService
 
 

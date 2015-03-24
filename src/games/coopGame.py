@@ -16,15 +16,10 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-import logging
-logger = logging.getLogger(__name__)
+from src.games.game import Game
 
-from .gamesContainer import gamesContainerClass
-# derived
-from .ladderGamesContainer import ladder1v1GamesContainerClass # ladder games
+class coopGame(Game):
+    """Class forcoop game"""
 
-# game entity
-from .game import Game
-# derived
-from .ladderGame import ladder1V1Game #ladder 1v1
-from .custom_game import CustomGame #custom
+    def __init__(self, uuid, parent = None):
+        super(self.__class__, self).__init__(uuid, parent)

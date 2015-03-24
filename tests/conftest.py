@@ -8,6 +8,7 @@ import pytest
 import mock
 from PySide import QtCore, QtSql
 from trueskill import Rating
+
 from src.games_service import GamesService
 
 
@@ -16,7 +17,7 @@ if not hasattr(QtCore, 'Signal'):
 
 from PySide.QtNetwork import QTcpSocket
 from src.players import PlayersOnline, Player
-from games import Game
+from src.games import Game
 
 from src.JsonTransport import Transport
 

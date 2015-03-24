@@ -28,7 +28,7 @@ from PySide.QtSql import *
 
 from src.abc.base_game import GameConnectionState
 from src.connectivity import TestPeer, Connectivity
-from games.game import Game, GameState
+from src.games.game import Game, GameState
 from src.decorators import with_logger, timed
 from src.games_service import GamesService
 from src.protocol.gpgnet import GpgNetServerProtocol

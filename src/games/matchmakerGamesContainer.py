@@ -22,7 +22,7 @@ import random
 
 from PySide.QtSql import *
 
-from .gamesContainer import  gamesContainerClass
+from src.games.gamesContainer import  gamesContainerClass
 from games.matchmakerGame import matchmakerGame
 
 

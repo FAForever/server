@@ -7,7 +7,7 @@ from src import proxy_map
 from src.connectivity import Connectivity
 from src.gameconnection import GameConnection
 from src.JsonTransport import Transport
-from games import Game
+from src.games import Game
 
 
 def test_accepts_valid_socket(game_connection, connected_game_socket):

@@ -22,7 +22,7 @@ import random
 from PySide.QtSql import QSqlQuery
 
 from .gamesContainer import  gamesContainerClass
-from games.ladderGame import ladder1V1Game
+from src.games.ladderGame import ladder1V1Game
 
 
 class ladder1v1GamesContainerClass(gamesContainerClass):

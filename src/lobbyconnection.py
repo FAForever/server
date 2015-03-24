@@ -45,6 +45,7 @@ from src.players import *
 from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS
 from config import Config
 
+
 gi = pygeoip.GeoIP('GeoIP.dat', pygeoip.MEMORY_CACHE)
 
 FA = 9420
@@ -54,10 +55,10 @@ from steam import api
 
 api.key.set(STEAM_APIKEY)
 
-from games.ladderGamesContainer import ladder1v1GamesContainerClass
-from games.coopGamesContainer import coopGamesContainerClass
-from games.matchmakerGamesContainer import matchmakerGamesContainerClass
-from games.gamesContainer import gamesContainerClass
+from src.games.ladderGamesContainer import ladder1v1GamesContainerClass
+from src.games.coopGamesContainer import coopGamesContainerClass
+from src.games.matchmakerGamesContainer import matchmakerGamesContainerClass
+from src.games.gamesContainer import gamesContainerClass
 
 
 TIMEOUT_SECONDS = 300
