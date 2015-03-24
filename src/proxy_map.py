@@ -44,7 +44,7 @@ class ProxyMap():
         players = frozenset(players)
         assert len(players) == 2
 
-        if players not in self._map.keys():
+        if players not in self._map:
             self._map[players] = self.find_free_port(players)
 
         return self._map[players]
