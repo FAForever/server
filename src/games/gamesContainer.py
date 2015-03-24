@@ -24,7 +24,7 @@ from PySide import QtSql
 from src.games.game import Game, GameState
 
 
-class gamesContainerClass(object):
+class GamesContainer(object):
     """Class for containing games"""
     
     def __init__(self, gameTypeName, gameNiceName, db, parent = None):

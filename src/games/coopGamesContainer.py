@@ -16,14 +16,14 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from .gamesContainer import gamesContainerClass
+from .gamesContainer import GamesContainer
 
 
-class coopGamesContainerClass(gamesContainerClass):
+class CoopGamesContainer(GamesContainer):
     """Class for custom claustrophobia games"""
 
     def __init__(self, db, parent = None):
-        super(coopGamesContainerClass, self).__init__("coop", "coop", db, parent)
+        super(CoopGamesContainer, self).__init__("coop", "coop", db, parent)
 
         self.host = False
         self.join = False

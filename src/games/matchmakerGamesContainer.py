@@ -22,7 +22,7 @@ import random
 
 from PySide.QtSql import *
 
-from src.games.gamesContainer import  gamesContainerClass
+from src.games.gamesContainer import  GamesContainer
 from .matchmakerGame import matchmakerGame
 
 
@@ -319,11 +319,11 @@ class teamsManager(object):
             self.parent.startGame(searchTeam.players, bestMatchup.players, teamuid, bestMatchupUid)
             pass
 
-class matchmakerGamesContainerClass(gamesContainerClass):
+class MatchmakerGamesContainer(GamesContainer):
     """Class for matchmaker games"""
     
     def __init__(self, db, parent = None):
-        super(matchmakerGamesContainerClass, self).__init__("matchmaker", "Matchmaker" ,db, parent)
+        super(MatchmakerGamesContainer, self).__init__("matchmaker", "Matchmaker" ,db, parent)
 
         self.manager = teamsManager(self)
         self.listable = False

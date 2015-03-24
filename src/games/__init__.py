@@ -19,9 +19,9 @@
 import logging
 logger = logging.getLogger(__name__)
 
-from src.games.gamesContainer import gamesContainerClass
+from src.games.gamesContainer import GamesContainer
 # derived
-from src.games.ladderGamesContainer import ladder1v1GamesContainerClass # ladder games
+from src.games.ladderGamesContainer import Ladder1V1GamesContainer # ladder games
 
 # game entity
 from src.games.game import Game
