@@ -416,79 +416,75 @@ class LobbyConnection(QObject):
                 small = message["small"]
                 icon = ""
 
-                check = self.parent.listUsers.checkSession(login, session)
-                if check:
-                    query = QSqlQuery(self.parent.db)
-                    query.prepare("SELECT * FROM table_mod WHERE uid = ?")
-                    query.addBindValue(uid)
-                    query.exec_()
-                    if query.size() != 0:
-                        error = name + " uid " + uid + "already exists in the database."
-                        self.sendJSON(dict(command="notice", style="error", text=error))
-                        return
+                query = QSqlQuery(self.parent.db)
+                query.prepare("SELECT * FROM table_mod WHERE uid = ?")
+                query.addBindValue(uid)
+                query.exec_()
+                if query.size() != 0:
+                    error = name + " uid " + uid + "already exists in the database."
+                    self.sendJSON(dict(command="notice", style="error", text=error))
+                    return
 
-                    query.prepare("SELECT filename FROM table_mod WHERE filename LIKE '%" + zipmap + "%'")
-                    query.exec_()
-                    if query.size() == 0:
-                        writeFile = QFile(Config['global']['content_path'] + "vault/mods/%s" % zipmap)
+                query.prepare("SELECT filename FROM table_mod WHERE filename LIKE '%" + zipmap + "%'")
+                query.exec_()
+                if query.size() == 0:
+                    writeFile = QFile(Config['global']['content_path'] + "vault/mods/%s" % zipmap)
 
-                        if writeFile.open(QIODevice.WriteOnly):
-                            writeFile.write(fileDatas)
-                        writeFile.close()
+                    if writeFile.open(QIODevice.WriteOnly):
+                        writeFile.write(fileDatas)
+                    writeFile.close()
 
-                        if zipfile.is_zipfile(Config['global']['content_path'] + "vault/mods/%s" % zipmap):
-                            zip = zipfile.ZipFile(Config['global']['content_path'] + "vault/mods/%s" % zipmap, "r",
-                                                  zipfile.ZIP_DEFLATED)
+                    if zipfile.is_zipfile(Config['global']['content_path'] + "vault/mods/%s" % zipmap):
+                        zip = zipfile.ZipFile(Config['global']['content_path'] + "vault/mods/%s" % zipmap, "r",
+                                              zipfile.ZIP_DEFLATED)
 
-                            if zip.testzip() is None:
+                        if zip.testzip() is None:
 
-                                for member in zip.namelist():
-                                    #QCoreApplication.processEvents()
-                                    filename = os.path.basename(member)
-                                    if not filename:
-                                        continue
-                                    if filename.endswith(".png"):
-                                        source = zip.open(member)
-                                        target = open(
-                                            os.path.join(Config['global']['content_path'] + "vault/mods_thumbs/",
-                                                         zipmap.replace(".zip", ".png")), "wb")
-                                        icon = zipmap.replace(".zip", ".png")
+                            for member in zip.namelist():
+                                #QCoreApplication.processEvents()
+                                filename = os.path.basename(member)
+                                if not filename:
+                                    continue
+                                if filename.endswith(".png"):
+                                    source = zip.open(member)
+                                    target = open(
+                                        os.path.join(Config['global']['content_path'] + "vault/mods_thumbs/",
+                                                     zipmap.replace(".zip", ".png")), "wb")
+                                    icon = zipmap.replace(".zip", ".png")
 
-                                        shutil.copyfileobj(source, target)
-                                        source.close()
-                                        target.close()
+                                    shutil.copyfileobj(source, target)
+                                    source.close()
+                                    target.close()
 
-                                #add the datas in the db
-                                filename = "mods/%s" % zipmap
+                            #add the datas in the db
+                            filename = "mods/%s" % zipmap
 
-                                query = QSqlQuery(self.parent.db)
-                                query.prepare(
-                                    "INSERT INTO `table_mod`(`uid`, `name`, `version`, `author`, `ui`, `big`, `small`, `description`, `filename`, `icon`) VALUES (?,?,?,?,?,?,?,?,?,?)")
-                                query.addBindValue(uid)
-                                query.addBindValue(name)
-                                query.addBindValue(version)
-                                query.addBindValue(author)
-                                query.addBindValue(int(ui))
-                                query.addBindValue(int(big))
-                                query.addBindValue(int(small))
-                                query.addBindValue(description)
-                                query.addBindValue(filename)
-                                query.addBindValue(icon)
+                            query = QSqlQuery(self.parent.db)
+                            query.prepare(
+                                "INSERT INTO `table_mod`(`uid`, `name`, `version`, `author`, `ui`, `big`, `small`, `description`, `filename`, `icon`) VALUES (?,?,?,?,?,?,?,?,?,?)")
+                            query.addBindValue(uid)
+                            query.addBindValue(name)
+                            query.addBindValue(version)
+                            query.addBindValue(author)
+                            query.addBindValue(int(ui))
+                            query.addBindValue(int(big))
+                            query.addBindValue(int(small))
+                            query.addBindValue(description)
+                            query.addBindValue(filename)
+                            query.addBindValue(icon)
 
-                                if not query.exec_():
-                                    self.log.debug(query.lastError())
+                            if not query.exec_():
+                                self.log.debug(query.lastError())
 
-                            zip.close()
+                        zip.close()
 
-                            self.sendJSON(dict(command="notice", style="info", text="Mod correctly uploaded."))
-                        else:
-                            self.sendJSON(
-                                dict(command="notice", style="error", text="Cannot unzip mod. Upload error ?"))
+                        self.sendJSON(dict(command="notice", style="info", text="Mod correctly uploaded."))
                     else:
-                        self.sendJSON(dict(command="notice", style="error",
-                                           text="This file (%s) is already in the database !" % str(zipmap)))
+                        self.sendJSON(
+                            dict(command="notice", style="error", text="Cannot unzip mod. Upload error ?"))
                 else:
-                    self.sendJSON(dict(command="notice", style="error", text="Database not available"))
+                    self.sendJSON(dict(command="notice", style="error",
+                                       text="This file (%s) is already in the database !" % str(zipmap)))
 
 
             elif action == "UPLOAD_MAP":
@@ -546,142 +542,137 @@ class LobbyConnection(QObject):
                 map_size_Y = str(map_size["1"])
                 version = message["version"]
 
-                check = self.parent.listUsers.checkSession(login, session)
-                if check:
+                query = QSqlQuery(self.parent.db)
+                query.prepare("SELECT * FROM table_map WHERE name = ? and version = ?")
+                query.addBindValue(name)
+                query.addBindValue(version)
+                query.exec_()
+                if query.size() != 0:
+                    error = name + " version " + version + "already exists in the database."
+                    self.sendJSON(dict(command="notice", style="error", text=error))
+                    return
 
-                    query = QSqlQuery(self.parent.db)
-                    query.prepare("SELECT * FROM table_map WHERE name = ? and version = ?")
-                    query.addBindValue(name)
-                    query.addBindValue(version)
-                    query.exec_()
-                    if query.size() != 0:
-                        error = name + " version " + version + "already exists in the database."
-                        self.sendJSON(dict(command="notice", style="error", text=error))
-                        return
+                query.prepare("SELECT filename FROM table_map WHERE filename LIKE ?")
+                query.addBindValue("%" + zipmap + "%")
+                query.exec_()
 
-                    query.prepare("SELECT filename FROM table_map WHERE filename LIKE ?")
-                    query.addBindValue("%" + zipmap + "%")
-                    query.exec_()
+                if query.size() == 0:
+                    writeFile = QFile(Config['global']['content_path'] + "vault/maps/%s" % zipmap)
 
-                    if query.size() == 0:
-                        writeFile = QFile(Config['global']['content_path'] + "vault/maps/%s" % zipmap)
+                    if writeFile.open(QIODevice.WriteOnly):
+                        writeFile.write(fileDatas)
+                    writeFile.close()
 
-                        if writeFile.open(QIODevice.WriteOnly):
-                            writeFile.write(fileDatas)
-                        writeFile.close()
+                    if zipfile.is_zipfile(Config['global']['content_path'] + "vault/maps/%s" % zipmap):
+                        zip = zipfile.ZipFile(Config['global']['content_path'] + "vault/maps/%s" % zipmap, "r",
+                                              zipfile.ZIP_DEFLATED)
 
-                        if zipfile.is_zipfile(Config['global']['content_path'] + "vault/maps/%s" % zipmap):
-                            zip = zipfile.ZipFile(Config['global']['content_path'] + "vault/maps/%s" % zipmap, "r",
-                                                  zipfile.ZIP_DEFLATED)
+                        if zip.testzip() is None:
 
-                            if zip.testzip() is None:
+                            for member in zip.namelist():
+                                filename = os.path.basename(member)
+                                if not filename:
+                                    continue
+                                if filename.endswith(".small.png"):
+                                    source = zip.open(member)
+                                    target = open(
+                                        os.path.join(Config['global']['content_path'] + "vault/map_previews/small/",
+                                                     filename.replace(".small.png", ".png")), "wb")
 
-                                for member in zip.namelist():
-                                    filename = os.path.basename(member)
-                                    if not filename:
-                                        continue
-                                    if filename.endswith(".small.png"):
-                                        source = zip.open(member)
-                                        target = open(
-                                            os.path.join(Config['global']['content_path'] + "vault/map_previews/small/",
-                                                         filename.replace(".small.png", ".png")), "wb")
+                                    shutil.copyfileobj(source, target)
+                                    source.close()
+                                    target.close()
+                                elif filename.endswith(".large.png"):
+                                    source = zip.open(member)
+                                    target = open(
+                                        os.path.join(Config['global']['content_path'] + "vault/map_previews/large/",
+                                                     filename.replace(".large.png", ".png")), "wb")
 
-                                        shutil.copyfileobj(source, target)
-                                        source.close()
-                                        target.close()
-                                    elif filename.endswith(".large.png"):
-                                        source = zip.open(member)
-                                        target = open(
-                                            os.path.join(Config['global']['content_path'] + "vault/map_previews/large/",
-                                                         filename.replace(".large.png", ".png")), "wb")
+                                    shutil.copyfileobj(source, target)
+                                    source.close()
+                                    target.close()
+                                elif filename.endswith("_script.lua"):
+                                    fopen = zip.open(member)
+                                    temp = []
+                                    for line in fopen:
+                                        temp.append(line.rstrip())
+                                        text = " ".join(temp)
 
-                                        shutil.copyfileobj(source, target)
-                                        source.close()
-                                        target.close()
-                                    elif filename.endswith("_script.lua"):
-                                        fopen = zip.open(member)
-                                        temp = []
-                                        for line in fopen:
-                                            temp.append(line.rstrip())
-                                            text = " ".join(temp)
-
-                                        pattern = re.compile("function OnPopulate\(\)(.*?)end")
-                                        match = re.search(pattern, text)
-                                        if match:
-                                            script = match.group(1).replace("ScenarioUtils.InitializeArmies()",
-                                                                            "").replace(" ", "").strip()
-                                            if len(script) > 0:
-                                                if len(script.lower().replace(" ", "").replace(
-                                                        "scenarioframework.setplayablearea('area_1',false)",
-                                                        "").strip()) > 0:
-                                                    unranked = True
-                                        fopen.close()
+                                    pattern = re.compile("function OnPopulate\(\)(.*?)end")
+                                    match = re.search(pattern, text)
+                                    if match:
+                                        script = match.group(1).replace("ScenarioUtils.InitializeArmies()",
+                                                                        "").replace(" ", "").strip()
+                                        if len(script) > 0:
+                                            if len(script.lower().replace(" ", "").replace(
+                                                    "scenarioframework.setplayablearea('area_1',false)",
+                                                    "").strip()) > 0:
+                                                unranked = True
+                                    fopen.close()
 
 
 
-                                # check if the map name is already there
-                                gmuid = 0
+                            # check if the map name is already there
+                            gmuid = 0
+                            query = QSqlQuery(self.parent.db)
+                            query.prepare("SELECT mapuid FROM table_map WHERE name = ?")
+                            query.addBindValue(name)
+                            query.exec_()
+                            if query.size() != 0:
+                                query.first()
+                                gmuid = int(query.value(0))
+
+                            else:
                                 query = QSqlQuery(self.parent.db)
-                                query.prepare("SELECT mapuid FROM table_map WHERE name = ?")
-                                query.addBindValue(name)
+                                query.prepare("SELECT MAX(mapuid) FROM table_map")
                                 query.exec_()
                                 if query.size() != 0:
                                     query.first()
-                                    gmuid = int(query.value(0))
+                                    gmuid = int(query.value(0)) + 1
 
-                                else:
-                                    query = QSqlQuery(self.parent.db)
-                                    query.prepare("SELECT MAX(mapuid) FROM table_map")
-                                    query.exec_()
-                                    if query.size() != 0:
-                                        query.first()
-                                        gmuid = int(query.value(0)) + 1
+                            #add the data in the db
+                            filename = "maps/%s" % zipmap
 
-                                #add the data in the db
-                                filename = "maps/%s" % zipmap
+                            query = QSqlQuery(self.parent.db)
+                            query.prepare(
+                                "INSERT INTO table_map(name,description,max_players,map_type,battle_type,map_sizeX,map_sizeY,version,filename, mapuid) VALUES (?,?,?,?,?,?,?,?,?,?)")
+                            query.addBindValue(name)
+                            query.addBindValue(description)
+                            query.addBindValue(max_players)
+                            query.addBindValue(map_type)
+                            query.addBindValue(battle_type)
+                            query.addBindValue(map_size_X)
+                            query.addBindValue(map_size_Y)
+                            query.addBindValue(version)
+                            query.addBindValue(filename)
+                            query.addBindValue(gmuid)
 
-                                query = QSqlQuery(self.parent.db)
-                                query.prepare(
-                                    "INSERT INTO table_map(name,description,max_players,map_type,battle_type,map_sizeX,map_sizeY,version,filename, mapuid) VALUES (?,?,?,?,?,?,?,?,?,?)")
-                                query.addBindValue(name)
-                                query.addBindValue(description)
-                                query.addBindValue(max_players)
-                                query.addBindValue(map_type)
-                                query.addBindValue(battle_type)
-                                query.addBindValue(map_size_X)
-                                query.addBindValue(map_size_Y)
-                                query.addBindValue(version)
-                                query.addBindValue(filename)
-                                query.addBindValue(gmuid)
+                            if not query.exec_():
+                                self.log.debug(query.lastError())
 
-                                if not query.exec_():
-                                    self.log.debug(query.lastError())
+                            uuid = query.lastInsertId()
 
-                                uuid = query.lastInsertId()
+                            query.prepare("INSERT INTO `table_map_uploaders`(`mapid`, `userid`) VALUES (?,?)")
+                            query.addBindValue(uuid)
+                            query.addBindValue(self.player.id)
+                            if not query.exec_():
+                                self.log.debug(query.lastError())
 
-                                query.prepare("INSERT INTO `table_map_uploaders`(`mapid`, `userid`) VALUES (?,?)")
+                            if unranked:
+                                query.prepare("INSERT INTO `table_map_unranked`(`id`) VALUES (?)")
                                 query.addBindValue(uuid)
-                                query.addBindValue(self.player.id)
                                 if not query.exec_():
                                     self.log.debug(query.lastError())
 
-                                if unranked:
-                                    query.prepare("INSERT INTO `table_map_unranked`(`id`) VALUES (?)")
-                                    query.addBindValue(uuid)
-                                    if not query.exec_():
-                                        self.log.debug(query.lastError())
+                        zip.close()
 
-                            zip.close()
-
-                            self.sendJSON(dict(command="notice", style="info", text="Map correctly uploaded."))
-                        else:
-                            self.sendJSON(
-                                dict(command="notice", style="error", text="Cannot unzip map. Upload error ?"))
+                        self.sendJSON(dict(command="notice", style="info", text="Map correctly uploaded."))
                     else:
                         self.sendJSON(
-                            dict(command="notice", style="error", text="This map is already in the database !"))
+                            dict(command="notice", style="error", text="Cannot unzip map. Upload error ?"))
                 else:
-                    self.sendJSON(dict(command="notice", style="error", text="Database not available"))
+                    self.sendJSON(
+                        dict(command="notice", style="error", text="This map is already in the database !"))
 
             elif action == "CREATE_ACCOUNT":
                 login = stream.readQString()
@@ -773,10 +764,8 @@ Thanks,\n\
             elif action == "FA_CLOSED":
                 login = stream.readQString()
                 session = stream.readQString()
-                check = self.parent.listUsers.checkSession(login, session)
-                if check:
-                    self.player.setAction("NOTHING")
-                    self.player.gameThread.abort()
+                self.player.setAction("NOTHING")
+                self.player.gameThread.abort()
             else:
                 self.receiveJSON(action, stream)
         except:
@@ -2430,20 +2419,12 @@ Thanks,\n\
 
         cmd = "command_" + str(message.get("command", "invalid"))
         if hasattr(self, cmd):
-            check = False
-
             login = stream.readQString()
             session = stream.readQString()
+            if len(self.parent.listUsers.listUsers) == 0:
+                return
 
-            if cmd == "command_ask_session":
-                getattr(self, cmd)(message)
-            elif cmd != "command_hello":
-                check = self.parent.listUsers.checkSession(login, session)
-            else:
-                check = True
-
-            if check:
-                getattr(self, cmd)(message)
+            getattr(self, cmd)(message)
 
     def done(self):
         if self.uid:

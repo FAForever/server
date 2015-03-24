@@ -171,9 +171,9 @@ class playersOnline(object):
         self.players = []
         self.logins = []
 
-    def getNumPlayers(self):
+    def __len__(self):
         return len(self.players)
-    
+
     def addUser(self, newplayer):
         gamesocket = None
         lobbySocket = None
@@ -226,8 +226,3 @@ class playersOnline(object):
             if player.ip == ip and player.wantToConnectToGame:
                 return player
         return None
-
-    def checkSession(self, login, session):
-        for player in self.players:
-                return 1
-        return 0
