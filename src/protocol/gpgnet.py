@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
+from src.abc.base_game import InitMode
 
 class GpgNetServerProtocol():
     __metaclass__ = ABCMeta
@@ -26,8 +27,16 @@ class GpgNetServerProtocol():
     def player(self, val):
         pass  # pragma: no cover
 
-    def send_CreateLobby(self, rankedMode, port, login, uid, natTraversalProvider):
-        self.send_gpgnet_message('CreateLobby', [rankedMode, port, login, uid, natTraversalProvider])
+    def send_CreateLobby(self, init_mode, port, login, uid, natTraversalProvider):
+        """
+        :type init_mode: InitMode
+        :type port: int
+        :type login: str
+        :type uid: int
+        :type natTraversalProvider: int
+        :return:
+        """
+        self.send_gpgnet_message('CreateLobby', [init_mode.value, port, login, uid, natTraversalProvider])
 
     def send_ConnectToPeer(self, address_and_port: str, player_name: str, player_uid: int):
         self.send_gpgnet_message('ConnectToPeer', [address_and_port, player_name, player_uid])

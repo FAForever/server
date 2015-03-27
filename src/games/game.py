@@ -22,7 +22,7 @@ import time
 
 from PySide.QtSql import QSqlQuery
 import trueskill
-from src.abc.base_game import GameConnectionState, BaseGame
+from src.abc.base_game import GameConnectionState, BaseGame, InitMode
 from src.players import Player
 
 
@@ -51,6 +51,8 @@ class Game(BaseGame):
     """
     Object that lasts for the lifetime of a game on FAF.
     """
+    init_mode = InitMode.NORMAL_LOBBY
+
     def __init__(self, uuid, parent, host=None, hostId=0, hostIp=None, hostLocalIp=None, hostPort=6112,
                  hostLocalPort=6112, gameName='None', map='SCMP_007', mode=0, minPlayer=1):
         """
@@ -83,7 +85,6 @@ class Game(BaseGame):
         self.access = "public"
         self.minPlayer = minPlayer
         self.maxPlayer = 12
-        self.initMode = mode
         self.hostPlayer = host
         self.hostuuid = hostId
         self.hostip = hostIp

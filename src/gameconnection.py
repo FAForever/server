@@ -181,13 +181,13 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             strlog = (
                 "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.uuid), str(self.game.getGamemod())))
             self.logGame = strlog
-            self._send_create_lobby(self.game.initMode)
+            self._send_create_lobby()
 
         elif action == "JOIN":
             strlog = (
                 "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.uuid), str(self.game.getGamemod())))
             self.logGame = strlog
-            self._send_create_lobby(self.game.initMode)
+            self._send_create_lobby()
 
         else:
             # We tell the lobby that FA must be killed.
@@ -661,7 +661,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         else:
             self.sendGameInfo()
 
-    def _send_create_lobby(self, rankedMode):
+    def _send_create_lobby(self):
         """
         Used for initializing the game to start listening on UDP
         :param rankedMode int:
@@ -684,7 +684,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             if self.game.gameName.startswith('#'):
                 self.sendToRelay("P2PReconnect", [])
 
-        self.send_CreateLobby(rankedMode, port, login, uid, 1)
+        self.send_CreateLobby(self.game.init_mode, port, login, uid, 1)
 
         if self.game:
             self.game.addPlayer(self.player)

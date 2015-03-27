@@ -8,6 +8,7 @@ import pytest
 import mock
 from PySide import QtCore, QtSql
 from trueskill import Rating
+from src.abc.base_game import InitMode
 
 from src.games_service import GamesService
 
@@ -149,7 +150,7 @@ def game(players, db):
     players.joining.getGame = mock.Mock(return_value=game)
     players.peer.getGame = mock.Mock(return_value=game)
     game.hostPlayer = players.hosting
-    game.initMode = 0
+    game.init_mode = InitMode.NORMAL_LOBBY
     game.packetReceived = []
     game.gameName = "Some game name"
     game.uuid = 1

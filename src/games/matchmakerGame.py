@@ -19,6 +19,7 @@
 from copy import deepcopy
 import time
 import logging
+from src.abc.base_game import InitMode
 
 from .game import Game
 
@@ -29,6 +30,7 @@ FACTIONS = {1:"UEF", 2:"Aeon",3:"Cybran",4:"Seraphim"}
 
 class matchmakerGame(Game):
     """Class for matchmaker game"""
+    init_mode = InitMode.AUTO_LOBBY
 
     def __init__(self, uuid, parent = None):
         super(self.__class__, self).__init__(uuid, parent)
@@ -36,8 +38,6 @@ class matchmakerGame(Game):
         self.playerToJoin = [] 
         self.minPlayer = 2
 
-        self.initMode = 1
-        
         self.team1 = []
         self.team2 = []
 

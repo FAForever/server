@@ -2,6 +2,7 @@ import asyncio
 
 from PySide.QtNetwork import QTcpSocket
 import mock
+from src.abc.base_game import InitMode
 
 from src import proxy_map
 from src.connectivity import Connectivity

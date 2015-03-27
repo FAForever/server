@@ -1,5 +1,5 @@
-from abc import ABCMeta, abstractmethod
-from enum import Enum
+from abc import ABCMeta, abstractmethod, abstractproperty
+from enum import Enum, IntEnum
 from src.players import Player
 
 
@@ -11,7 +11,7 @@ class GameConnectionState(Enum):
     ABORTED = 4
 
 
-class InitMode(Enum):
+class InitMode(IntEnum):
     NORMAL_LOBBY = 0
     AUTO_LOBBY = 1
 

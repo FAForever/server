@@ -17,6 +17,8 @@
 #-------------------------------------------------------------------------------
 
 import logging
+from src.abc.base_game import InitMode
+
 logger = logging.getLogger(__name__)
 
 from .game import Game
@@ -28,13 +30,13 @@ import operator
 
 class ladder1V1Game(Game):
     """Class for 1v1 ladder game"""
+    init_mode = InitMode.AUTO_LOBBY
     
     def __init__(self, uuid, parent = None):
         super(self.__class__, self).__init__(uuid, parent)
 
         self.hosted = False
         
-        self.initMode = 1
         self.trueSkill1v1Players = []
         self.finalTeams1v1 = []
         self.invalidPlayers = []
