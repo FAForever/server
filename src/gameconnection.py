@@ -400,10 +400,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 if values[0] == 'ScenarioFile':
                     raw = "%r" % values[1]
                     path = raw.replace('\\', '/')
-                    map = str(path.split('/')[2]).lower()
+                    mapname = str(path.split('/')[2]).lower()
                     curMap = self.game.mapName
-                    if curMap != map:
-                        self.game.setGameMap(map)
+                    if curMap != mapname:
+                        self.game.setGameMap(mapname)
                         self.sendGameInfo()
 
                 elif values[0] == 'Victory':
