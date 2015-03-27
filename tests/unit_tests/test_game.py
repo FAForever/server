@@ -29,7 +29,7 @@ def test_instance_logging(db):
 
 
 @pytest.fixture
-def game_connection(state=GameConnectionState.initializing, player=None):
+def game_connection(state=GameConnectionState.INITIALIZING, player=None):
     gc = mock.create_autospec(spec=GameConnection)
     gc.state = state
     gc.player = player
@@ -37,7 +37,7 @@ def game_connection(state=GameConnectionState.initializing, player=None):
 
 
 def add_connected_player(game: Game, player):
-    game.add_game_connection(game_connection(state=GameConnectionState.connected_to_host, player=player))
+    game.add_game_connection(game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=player))
 
 
 def add_connected_players(game: Game, players):
@@ -48,7 +48,7 @@ def add_connected_players(game: Game, players):
 def test_set_player_option(game, players, game_connection):
     game.state = GameState.LOBBY
     game_connection.player = players.hosting
-    game_connection.state = GameConnectionState.connected_to_host
+    game_connection.state = GameConnectionState.CONNECTED_TO_HOST
     game.add_game_connection(game_connection)
     assert game.players == {players.hosting}
     game.set_player_option(players.hosting.id, 'Team', 1)
@@ -61,7 +61,7 @@ def test_set_player_option(game, players, game_connection):
 def test_add_game_connection(game: Game, players, game_connection):
     game.state = GameState.LOBBY
     game_connection.player = players.hosting
-    game_connection.state = GameConnectionState.connected_to_host
+    game_connection.state = GameConnectionState.CONNECTED_TO_HOST
     game.add_game_connection(game_connection)
     assert players.hosting in game.players
 
@@ -69,7 +69,7 @@ def test_add_game_connection(game: Game, players, game_connection):
 def test_add_game_connection_throws_if_not_connected_to_host(game: Game, players, game_connection):
     game.state = GameState.LOBBY
     game_connection.player = players.hosting
-    game_connection.state = GameConnectionState.initialized
+    game_connection.state = GameConnectionState.INITIALIZED
     with pytest.raises(GameError):
         game.add_game_connection(game_connection)
 
@@ -79,7 +79,7 @@ def test_add_game_connection_throws_if_not_connected_to_host(game: Game, players
 def test_remove_game_connection(game: Game, players, game_connection):
     game.state = GameState.LOBBY
     game_connection.player = players.hosting
-    game_connection.state = GameConnectionState.connected_to_host
+    game_connection.state = GameConnectionState.CONNECTED_TO_HOST
     game.add_game_connection(game_connection)
     game.remove_game_connection(game_connection)
     assert players.hosting not in game.players
@@ -88,7 +88,7 @@ def test_remove_game_connection(game: Game, players, game_connection):
 def test_game_end_when_no_more_connections(game: Game, game_connection):
     game.state = GameState.LOBBY
     game.on_game_end = mock.Mock()
-    game_connection.state = GameConnectionState.connected_to_host
+    game_connection.state = GameConnectionState.CONNECTED_TO_HOST
     game.add_game_connection(game_connection)
     game.remove_game_connection(game_connection)
     game.on_game_end.assert_any_call()
@@ -96,11 +96,11 @@ def test_game_end_when_no_more_connections(game: Game, game_connection):
 
 def test_game_launch_freezes_players(game: Game, players):
     conn1 = game_connection()
-    conn1.state = GameConnectionState.connected_to_host
+    conn1.state = GameConnectionState.CONNECTED_TO_HOST
     conn1.player = players.hosting
     conn2 = game_connection()
     conn2.player = players.joining
-    conn2.state = GameConnectionState.connected_to_host
+    conn2.state = GameConnectionState.CONNECTED_TO_HOST
     game.state = GameState.LOBBY
     game.add_game_connection(conn1)
     game.add_game_connection(conn2)

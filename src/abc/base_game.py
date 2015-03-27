@@ -4,11 +4,16 @@ from src.players import Player
 
 
 class GameConnectionState(Enum):
-    initializing = 0
-    initialized = 1
-    connected_to_host = 2
-    ended = 3
-    aborted = 4
+    INITIALIZING = 0
+    INITIALIZED = 1
+    CONNECTED_TO_HOST = 2
+    ENDED = 3
+    ABORTED = 4
+
+
+class InitMode(Enum):
+    NORMAL_LOBBY = 0
+    AUTO_LOBBY = 1
 
 
 class BaseGame():
@@ -19,6 +24,16 @@ class BaseGame():
         pass  # pragma: no cover
 
     def rate_game(self):
+        pass  # pragma: no cover
+
+    @property
+    @abstractmethod
+    def init_mode(self):
+        """
+        The intialization mode to use for the Game
+        :rtype InitMode
+        :return:
+        """
         pass  # pragma: no cover
 
     @abstractmethod

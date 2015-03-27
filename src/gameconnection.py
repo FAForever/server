@@ -54,7 +54,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def __init__(self, loop, users, games: GamesService, db, server):
         Subscribable.__init__(self)
-        self._state = GameConnectionState.initializing
+        self._state = GameConnectionState.INITIALIZING
         self.loop = loop
         self.users = users
         self.games = games
@@ -142,7 +142,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
         self.ping_task = asyncio.async(self.ping())
         self.player.wantToConnectToGame = False
-        self._state = GameConnectionState.initialized
+        self._state = GameConnectionState.INITIALIZED
         return True
 
     def sendToRelay(self, action, commands):
@@ -199,9 +199,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         Abort the connection, calling doEnd() first
         :return:
         """
-        if self._state is GameConnectionState.aborted or self._state is GameConnectionState.ended:
+        if self._state is GameConnectionState.ABORTED or self._state is GameConnectionState.ENDED:
             return
-        self._state = GameConnectionState.aborted
+        self._state = GameConnectionState.ABORTED
         self.log.debug("{}.abort()".format(self))
         try:
             self.doEnd()
@@ -590,10 +590,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     def doEnd(self):
         """ bybye player :("""
         self.game.remove_game_connection(self)
-        if self._state is GameConnectionState.ended:
+        if self._state is GameConnectionState.ENDED:
             return
         else:
-            self._state = GameConnectionState.ended
+            self._state = GameConnectionState.ENDED
 
         state = self.game.state
         if state == GameState.LIVE:

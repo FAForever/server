@@ -173,7 +173,7 @@ class Game(BaseGame):
         :param game_connection:
         :return:
         """
-        if game_connection.state != GameConnectionState.connected_to_host:
+        if game_connection.state != GameConnectionState.CONNECTED_TO_HOST:
             raise GameError("Invalid GameConnectionState: {}".format(game_connection.state))
         if self.state != GameState.LOBBY:
             raise GameError("Invalid GameState: {state}".format(state=self.state))
