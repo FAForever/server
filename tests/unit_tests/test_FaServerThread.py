@@ -63,3 +63,40 @@ def test_command_game_host_calls_host_game_invalid_title(connected_socket,
     server_thread = LobbyConnection(connected_socket, mock_lobby_server)
     server_thread.command_game_host(test_game_info_invalid)
     # TODO: outcome should be Non-ascii characters in game name detected.
+
+# ModVault
+# TODO: check outcome of the test, nut only running code
+def test_mod_vault_start(connected_socket,
+                         mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'type': 'start'})
+
+# database releaed
+# TODO: fix test or fix code?
+# def test_mod_vault_like(connected_socket,
+#                          mock_lobby_server):
+#     server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+#     server_thread.command_modvault({'type': 'like',
+#                                     'uid': 'something_invalid'})
+
+def test_mod_vault_like(connected_socket,
+                         mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'type': 'download',
+                                    'uid': None})
+
+def test_mod_vault_addcomment(connected_socket,
+                        mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'type': 'addcomment'})
+
+def test_mod_vault_invalid_type(connected_socket,
+                        mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'type': 'DragonfireNegativeTest'})
+
+# TODO: catch if type is unset
+# def test_mod_vault_no_type(connected_socket,
+#                          mock_lobby_server):
+#     server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+#     server_thread.command_modvault({'invalidKey': None})
