@@ -15,4 +15,5 @@ apt-get -y install mysql-server-5.5 > /dev/null 2>&1
 echo -e "\n--- Setting up MySQL user and db ---\n"
 mysql -uroot -p$DBPASSWD -e "CREATE DATABASE $DBNAME"
 mysql -uroot -p$DBPASSWD -e "grant all privileges on $DBNAME.* to '$DBUSER'@'localhost' identified by '$DBPASSWD'"
- 
+
+cp /vagrant/passwords.py.example /vagrant/passwords.py
