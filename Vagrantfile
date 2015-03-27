@@ -14,13 +14,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     v.memory = 2048
   end
 
-  # actimeo makes it faster :-)
-  # https://gist.github.com/fideloper/dab171a2aa646e86b782#comment-973847
-  # On macOS the argument must be :nfs => false ,so maybe remove :nfs or change it?
-  config.vm.synced_folder ".", "/vagrant", :nfs => true
-  # Private network necessary for nfs
-  config.vm.network :private_network, ip: "10.11.12.13"
-
+  config.vm.synced_folder ".", "/vagrant"
 
   # -- Networking ------------------------------------------
 

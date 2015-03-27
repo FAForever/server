@@ -2,7 +2,6 @@
 set -e
 
 apt-get -y update
-apt-get -y install nfs-common portmap # for nfs support
 
 echo "========================================================"
 uname -a
