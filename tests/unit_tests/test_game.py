@@ -175,3 +175,11 @@ def test_compute_rating_balanced_teamgame(game: Game, create_player):
         for player, new_rating in team.items():
             assert player in game.players
             assert new_rating != player.global_rating
+
+
+def test_on_game_end_calls_rate_game(game):
+    game.rate_game = mock.Mock()
+    game.state = GameState.LIVE
+    game.on_game_end()
+    assert game.state == GameState.ENDED
+    game.rate_game.assert_any_call()
