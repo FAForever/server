@@ -506,8 +506,21 @@ class Game(BaseGame):
         final.append(msg)
         return final
 
-    def get_army_result(self, player):
-        return 0
+    def get_army_result(self, army):
+        """
+        Since we log multiple results from multiple sources, we have to pick one.
+
+        We're optimistic and simply choose the highest reported score.
+
+        TODO: Flag games with conflicting scores for manual review.
+        :param army index of army
+        :raise KeyError
+        :return:
+        """
+        score = 0
+        for result in self._results[army]:
+            score = max(score, result[2])
+        return score
 
     def compute_rating(self, rating='global'):
         """
@@ -522,11 +535,12 @@ class Game(BaseGame):
         for player in self.players:
             try:
                 team = self.get_player_option(player.id, 'Team')
+                army = self.get_player_option(player.id, 'Army')
                 if not team:
                     raise GameError("Missing team for player id: {}".format(player.id))
                 if team not in team_scores:
                     team_scores[team] = []
-                team_scores[team] += [self.get_army_result(player)]
+                team_scores[team] += [self.get_army_result(army)]
             except KeyError:
                 raise GameError("Missing game result for player: {player}".format(player=player))
         ranks = [score for team, score in sorted(team_scores.items())]
