@@ -137,6 +137,12 @@ def test_handle_action_GameOption(game, loop, game_connection):
     game.set_player_option.assert_called_once_with(1, 'Color', 2)
 
 
+def test_handle_action_GameResult_calls_add_result(game, loop, game_connection):
+    result = asyncio.async(game_connection.handle_action('GameResult', [0, 'score -5']))
+    loop.run_until_complete(result)
+    game.add_result.assert_called_once_with(game_connection.player, 0, 'score', -5)
+
+
 @asyncio.coroutine
 def test_ConnectToHost_public_public(connections, players):
     host_conn = connections.make_connection(players.hosting, Connectivity.PUBLIC)

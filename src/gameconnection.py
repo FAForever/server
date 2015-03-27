@@ -25,6 +25,7 @@ import logging
 from PySide import QtNetwork
 from PySide.QtNetwork import QTcpSocket, QAbstractSocket
 from PySide.QtSql import *
+import functools
 
 from src.abc.base_game import GameConnectionState
 from src.connectivity import TestPeer, Connectivity
@@ -435,28 +436,17 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     self.sendGameInfo()
 
             elif key == 'GameResult':
-                playerResult = self.game.getPlayerAtPosition(int(values[0]))
-                if playerResult is not None:
-                    result = values[1]
-                    faresult = None
-                    score = 0
-                    if result.startswith("defeat")\
-                       or result.startswith("victory")\
-                       or result.startswith("score")\
-                       or result.startswith("draw"):
-                        split = result.split(" ")
-                        faresult = split[0]
-                        if len(split) > 1:
-                            score = int(split[1])
-
-                    self.game.addResultPlayer(playerResult, faresult, score)
-
-                    if faresult != "score":
-                        if hasattr(self.game, "noStats"):
-                            if not self.game.noStats:
-                                self.registerTime(playerResult)
-                        else:
-                            self.registerTime(playerResult)
+                army = int(values[0])
+                result = str(values[1])
+                try:
+                    if not any(map(functools.partial(str.startswith, result),
+                            ['score', 'default', 'victory', 'draw'])):
+                        raise ValueError()
+                    result = result.split(' ')
+                    self.game.add_result(self.player, army, result[0], int(result[1]))
+                except (KeyError, ValueError):
+                    self.log.warn("Invalid result for {} reported: {}".format(army, result))
+                    pass
 
             elif key == 'Stats':
                 # TODO: Log these
