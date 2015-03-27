@@ -2410,6 +2410,10 @@ Thanks,\n\
         """
         A fairly pythonic way to process received strings as JSON messages.
         """
+        # Incredibly evil hack to work around what is presumably a client bug.
+        if data_string == "":
+            return
+
         try:
             message = json.loads(data_string)
         except:
