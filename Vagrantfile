@@ -27,7 +27,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.hostname = hostname
 
   # MySql
-  config.vm.network :forwarded_port, guest: 3306, host: 3306
+  # config.vm.network :forwarded_port, guest: 3306, host: 3306
 
   # -- Provisioning ----------------------------------------
   provision_dir = "vagrant/provision"
