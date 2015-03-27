@@ -6,3 +6,4 @@ logs/
 .coverage
 *.bak
 py3env
+.vagrant
