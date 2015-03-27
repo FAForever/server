@@ -2421,8 +2421,6 @@ Thanks,\n\
         if hasattr(self, cmd):
             login = stream.readQString()
             session = stream.readQString()
-            if len(self.parent.listUsers) == 0:
-                return
 
             getattr(self, cmd)(message)
 
