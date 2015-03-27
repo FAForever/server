@@ -72,12 +72,11 @@ def test_mod_vault_start(connected_socket,
     server_thread.command_modvault({'type': 'start'})
 
 # database releaed
-# TODO: fix test or fix code?
-# def test_mod_vault_like(connected_socket,
-#                          mock_lobby_server):
-#     server_thread = LobbyConnection(connected_socket, mock_lobby_server)
-#     server_thread.command_modvault({'type': 'like',
-#                                     'uid': 'something_invalid'})
+def test_mod_vault_like(connected_socket,
+                         mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'type': 'like',
+                                    'uid': 'something_invalid'})
 
 def test_mod_vault_like(connected_socket,
                          mock_lobby_server):
@@ -95,8 +94,7 @@ def test_mod_vault_invalid_type(connected_socket,
     server_thread = LobbyConnection(connected_socket, mock_lobby_server)
     server_thread.command_modvault({'type': 'DragonfireNegativeTest'})
 
-# TODO: catch if type is unset
-# def test_mod_vault_no_type(connected_socket,
-#                          mock_lobby_server):
-#     server_thread = LobbyConnection(connected_socket, mock_lobby_server)
-#     server_thread.command_modvault({'invalidKey': None})
+def test_mod_vault_no_type(connected_socket,
+                         mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'invalidKey': None})

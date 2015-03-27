@@ -2273,6 +2273,9 @@ Thanks,\n\
 
 
     def command_modvault(self, message):
+        if "type" not in message:
+            # TODO: message, exception if invalid
+            return
         type = message["type"]
         if type == "start":
             query = QSqlQuery(self.parent.db)
