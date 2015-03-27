@@ -50,6 +50,7 @@ def mock_lobby_server(db):
     hyper_container = GamesService(users, db)
     return FALobbyServer(users, hyper_container, db)
 
+
 def test_command_game_host_calls_host_game(connected_socket,
                                            mock_lobby_server,
                                            test_game_info):

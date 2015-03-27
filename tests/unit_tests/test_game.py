@@ -53,7 +53,7 @@ def test_set_player_option(game, players, game_connection):
     assert game.players == {players.hosting}
     game.set_player_option(players.hosting.id, 'Team', 1)
     assert game.get_player_option(players.hosting.id, 'Team') == 1
-    assert game.teams == {1: [players.hosting]}
+    assert game.teams == {1}
     game.set_player_option(players.hosting.id, 'StartSpot', 1)
     game.get_player_option(players.hosting.id, 'StartSpot') == 1
 
@@ -116,8 +116,7 @@ def test_game_teams_represents_active_teams(game: Game, players):
     add_connected_players(game, [players.hosting, players.joining])
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 2)
-    assert game.teams == {1: [players.hosting],
-                          2: [players.joining]}
+    assert game.teams == {1, 2}
 
 
 def test_compute_rating_computes_global_ratings(game: Game, players):
@@ -125,9 +124,11 @@ def test_compute_rating_computes_global_ratings(game: Game, players):
     players.hosting.global_rating = Rating(1500, 250)
     players.joining.global_rating = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
+    game.set_player_option(players.hosting.id, 'Army', 0)
+    game.set_player_option(players.joining.id, 'Army', 1)
     game.launch()
-    game.add_result(players.hosting, 1)
-    game.add_result(players.joining, 0)
+    game.add_result(players.hosting, 0, 'victory', 1)
+    game.add_result(players.joining, 1, 'defeat', 0)
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 2)
     groups = game.compute_rating()
@@ -140,9 +141,11 @@ def test_compute_rating_computes_ladder_ratings(game: Game, players):
     players.hosting.ladder_rating = Rating(1500, 250)
     players.joining.ladder_rating = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
+    game.set_player_option(players.hosting.id, 'Army', 0)
+    game.set_player_option(players.joining.id, 'Army', 1)
     game.launch()
-    game.add_result(players.hosting, 1)
-    game.add_result(players.joining, 0)
+    game.add_result(players.hosting, 0, 'victory', 1)
+    game.add_result(players.joining, 1, 'defeat', 0)
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 2)
     groups = game.compute_rating(rating='ladder')
@@ -163,9 +166,10 @@ def test_compute_rating_balanced_teamgame(game: Game, create_player):
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
         game.set_player_option(player.id, 'Team', team)
+        game.set_player_option(player.id, 'Army', player.id - 1)
     game.launch()
     for player, result, _ in players:
-        game.add_result(player, result)
+        game.add_result(player, player.id - 1, 'score', result)
     result = game.compute_rating()
     for team in result:
         for player, new_rating in team.items():

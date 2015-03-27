@@ -73,6 +73,7 @@ class Game(BaseGame):
         self.db = parent.db
         self.parent = parent
         self._player_options = {}
+        self._army_options = {}
         self.createDate = time.time()
         self.receiveUdpHost = False
         self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, uuid))
@@ -121,6 +122,11 @@ class Game(BaseGame):
         self._logger.info("{} created".format(self))
 
     @property
+    def armies(self):
+        return frozenset({self.get_player_option(player.id, 'Army')
+                          for player in self.players})
+
+    @property
     def players(self):
         """
         Players in the game
@@ -145,21 +151,21 @@ class Game(BaseGame):
 
     @property
     def teams(self):
-        def player_team(player):
-            return self.get_player_option(player.id, 'Team')
+        return frozenset({self.get_player_option(player.id, 'Team')
+                          for player in self.players})
 
-        return dict([(team, [player for player in self.players if player_team(player) == team])
-                for team in set([player_team(player) for player in self.players])])
-
-    def add_result(self, player, result):
+    def add_result(self, reporter, army, result_type, score):
         """
-        As computed by the game. Result is an integer, possibly negative
-        :param player:
-        :param result:
+        As computed by the game.
+        :param army: army
+        :param result: str
         :return:
         """
-        assert player in self.players
-        self._results[player] = result
+        assert army in self.armies
+        if army not in self._results:
+            self._results[army] = []
+        self._logger.info("{} reported result for army {}: {} {}".format(reporter, army, result_type, score))
+        self._results[army].append((reporter, result_type, score))
 
     def add_game_connection(self, game_connection):
         """
@@ -190,17 +196,21 @@ class Game(BaseGame):
             self.on_game_end()
 
     def on_game_end(self):
+        self.state = GameState.ENDED
         self._logger.info("Game ended")
         query = QSqlQuery(self.db)
-        queryStr = ("UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(self.id))
-        query.exec_(queryStr)
+        query.prepare("UPDATE game_stats set `EndTime` = NOW() where `id` = ?")
+        query.addBindValue(self.id)
+        query.exec_()
         self.rate_game()
 
     def set_player_option(self, id, key, value):
         """
-        Set game-related options for given player, by id
+        Set game-associative options for given player, by id
         :param id: int
+        :type id: int
         :param key: option key string
+        :type key: str
         :param value: option value
         :return: None
         """
@@ -208,9 +218,43 @@ class Game(BaseGame):
             self._player_options[id] = {}
         self._player_options[id][key] = value
 
-    def get_player_option(self, player, key):
+    def get_player_option(self, id, key):
+        """
+        Retrieve game-associative options for given player, by id
+        :param id:
+        :type id: int
+        :param key:
+        :return:
+        """
         try:
-            return self._player_options[player][key]
+            return self._player_options[id][key]
+        except KeyError:
+            return None
+
+    def set_army_option(self, id, key, value):
+        """
+        Set game-associative options for given army, by id
+        :param id:
+        :type id: int
+        :param key:
+        :type key: str
+        :param value:
+        :return:
+        """
+        if id not in self._army_options:
+            self._army_options[id] = {}
+        self._army_options[id][key] = value
+
+    def get_army_option(self, id, key):
+        """
+        Retrieve game-associative options for given army, by id
+        :param id: army identity
+        :param key: army option key
+        :type key: str
+        :return:
+        """
+        try:
+            return self._army_options[id][key]
         except KeyError:
             return None
 
@@ -462,6 +506,9 @@ class Game(BaseGame):
         final.append(msg)
         return final
 
+    def get_army_result(self, player):
+        return 0
+
     def compute_rating(self, rating='global'):
         """
         Compute new ratings
@@ -471,18 +518,23 @@ class Game(BaseGame):
         >>> [{p1: p1.rating, p2: p2.rating}, {p3: p3.rating, p4: p4.rating}]
         """
         assert self.state == GameState.LIVE or self.state == GameState.ENDED
-        ranks = []
-        for team, players in self.teams.items():
-            score = 0
-            for player in players:
-                if player in self._results:
-                    score += self._results[player]
-                else:
-                    raise GameError("Missing game result for {player}".format(player=player))
-            ranks.append(score)
-        rating_groups = [dict([(player, getattr(player, '{}_rating'.format(rating)))
-                               for player in players])
-                         for team, players in self.teams.items()]
+        team_scores = {}
+        for player in self.players:
+            try:
+                team = self.get_player_option(player.id, 'Team')
+                if not team:
+                    raise GameError("Missing team for player id: {}".format(player.id))
+                if team not in team_scores:
+                    team_scores[team] = []
+                team_scores[team] += [self.get_army_result(player)]
+            except KeyError:
+                raise GameError("Missing game result for player: {player}".format(player=player))
+        ranks = [score for team, score in sorted(team_scores.items())]
+        rating_groups = []
+        for team in sorted(self.teams):
+            rating_groups += [{player: getattr(player, '{}_rating'.format(rating))
+                            for player in self.players if
+                            self.get_player_option(player.id, 'Team') == team}]
         return trueskill.rate(rating_groups, ranks)
 
     def addResultPlayer(self, player, faresult, score):
