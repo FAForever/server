@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+apt-get -y update
+
+echo "========================================================"
+uname -a
+echo "Important: Manually update kernel to 3.8:"
+echo "$ sudo apt-get install linux-image-generic-lts-raring linux-headers-generic-lts-raring"
+echo "$ sudo reboot"
+echo "========================================================"

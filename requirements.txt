@@ -1,8 +1,7 @@
 trueskill
-quamash
 mock
-PySide
 pytest
 pytest-qt
 configobj
 pygeoip
+quamash
