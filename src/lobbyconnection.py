@@ -2434,7 +2434,7 @@ Thanks,\n\
             query.exec_()
 
         self.noSocket = True
-        if not self.player:
+        if self.player:
             self.command_quit_team(dict(command="quit_team"))
 
             for player in self.parent.listUsers.players:
@@ -2443,10 +2443,10 @@ Thanks,\n\
             self.parent.listUsers.removeUser(self.player)
 
         if self in self.parent.recorders:
-            if not self.pingTimer:
+            if self.pingTimer:
                 self.pingTimer.stop()
 
-            if not self.socket:
+            if self.socket:
                 self.socket.readyRead.disconnect(self.readData)
                 self.socket.disconnected.disconnect(self.disconnection)
                 self.socket.error.disconnect(self.displayError)
