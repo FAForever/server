@@ -24,3 +24,9 @@ def test_faction():
     p.faction = Faction.aeon
     assert p.faction == Faction.aeon
 
+
+def test_equality_by_id():
+    p = Player('Sheeo', 42)
+    p2 = Player('RandomSheeo', 42)
+    assert p == p2
+    assert p.__hash__() == p2.__hash__()

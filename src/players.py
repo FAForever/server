@@ -26,7 +26,7 @@ class Player(BasePlayer):
     In the context of a game, the Game object holds game-specific
     information about players.
     """
-    def __init__(self, login=None):
+    def __init__(self, login=None, id=None):
         super().__init__()
         
         self._action = ''
@@ -155,6 +155,15 @@ class Player(BasePlayer):
     @login.setter
     def login(self, value):
         self._login = value
+
+    def __hash__(self):
+        return self.id
+
+    def __eq__(self, other):
+        if not isinstance(other, BasePlayer):
+            return False
+        else:
+            return self.id == other.id
 
 
 class PlayersOnline(object):
