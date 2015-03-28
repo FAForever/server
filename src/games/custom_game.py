@@ -32,11 +32,9 @@ class CustomGame(Game):
         pass
 
     def rate_game(self):
-        timeLimit = len(self.trueSkillPlayers) * 60
-        if time.time() - self.createDate < timeLimit:
-            self.setInvalid("Score are invalid: Play time was not long enough (under %i seconds)" % timeLimit)
-            self._logger.debug("Game is invalid: Play time was not long enough (under %i seconds)" % timeLimit)
+        limit = len(self.trueSkillPlayers) * 60
+        if time.time() - self.createDate < limit:
+            self.setInvalid("Score are invalid: Play time was not long enough (under %i seconds)" % limit)
         if self.valid:
-            tsresults = self.compute_rating()
-            tsplayers = self.trueSkillPlayers
-            self.trueSkillUpdate(tsresults, tsplayers, logger, db, players, sendScore = False)
+            new_ratings = self.compute_rating()
+            self.persist_rating_change_stats(new_ratings)

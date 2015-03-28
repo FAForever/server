@@ -84,6 +84,11 @@ class ladder1V1Game(Game):
 
             self.recombineTeams()
 
+    def rate_game(self):
+        if self.valid:
+            new_ratings = self.compute_rating()
+            self.persist_rating_change_stats(new_ratings, rating='ladder1v1')
+
     def specialEnding(self, logger, db, players):
         if len(self.invalidPlayers) == 2:
             self.setInvalid("Scores not validated. Possible reason: Disconnection between players.")
@@ -208,18 +213,6 @@ class ladder1V1Game(Game):
 
     def setHostInGame(self, state):
         self.hosted = state        
-
-    def computeScoreFor1v1(self):
-        results = []
-        for teams in self.finalTeams1v1:
-            curScore = 0
-            for player in teams.players():
-                if player.id in str(self.gameResult):
-                    resultPlayer = self.gameResult[str(player.id)]
-                    curScore = curScore + resultPlayer
-
-            results.append(curScore)
-            self.results = results
 
     def updateTrueskillFor1v1(self):
         """ Update all scores from the DB before updating the results"""
