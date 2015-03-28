@@ -4,7 +4,7 @@ python:
   - "3.4"
 
 install:
-  - "sh ./.travis.sh"
+  - "cp passwords.py.example passwords.py"
   - "sudo apt-get install libqt4-dev"
   - "pip install PySide --no-index --find-links=http://content.dev.faforever.com/wheel/"
   - python ~/virtualenv/python${TRAVIS_PYTHON_VERSION}/bin/pyside_postinstall.py -install
