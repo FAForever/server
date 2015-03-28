@@ -2404,9 +2404,6 @@ Thanks,\n\
             except:
                 return
 
-    def command_invalid(self, msg):
-        self.log.warning("User sent an invalid command: %r" % msg)
-
     @timed()
     def receiveJSON(self, data_string, stream):
         """
@@ -2414,16 +2411,16 @@ Thanks,\n\
         """
         try:
             message = json.loads(data_string)
-        except:
-            self.log.exception("awful : can't decode a json string")
-            self.log.exception(data_string)
-            message = ""
-
-        cmd = "command_" + str(message.get("command", "invalid"))
-        if not data_string:
-            cmd = 'command_invalid'
-        if hasattr(self, cmd):
-            getattr(self, cmd)(message)
+            cmd = message['command']
+            if not isinstance(cmd, str):
+                raise ValueError("Command is not a string")
+            if hasattr(self, 'command_{}'.format(cmd)):
+                getattr(self, cmd)(message)
+            else:
+                raise ValueError("Command not found")
+        except (KeyError, ValueError) as ex:
+            self.log.warning("Garbage input from client: {}".format(data_string))
+            self.log.exception(ex)
 
     def done(self):
         if self.uid:
