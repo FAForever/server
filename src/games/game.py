@@ -210,7 +210,11 @@ class Game(BaseGame):
         results = {}
         for player in self.players:
             army = self.get_player_option(player.id, 'Army')
-            results[player] = self.get_army_result(army)
+            try:
+                results[player] = self.get_army_result(army)
+            except KeyError:
+                # Default to -1 if there is no result
+                results[player] = -1
         query = QSqlQuery(self.db)
         query.prepare("INSERT INTO game_player_stats (gameId, playerId, score, scoreTime) "
                       "VALUES (?, ?, ?, NOW())")
@@ -556,16 +560,18 @@ class Game(BaseGame):
         assert self.state == GameState.LIVE or self.state == GameState.ENDED
         team_scores = {}
         for player in self.players:
+            team = self.get_player_option(player.id, 'Team')
+            army = self.get_player_option(player.id, 'Army')
+            if not team:
+                raise GameError("Missing team for player id: {}".format(player.id))
+            if team not in team_scores:
+                team_scores[team] = []
             try:
-                team = self.get_player_option(player.id, 'Team')
-                army = self.get_player_option(player.id, 'Army')
-                if not team:
-                    raise GameError("Missing team for player id: {}".format(player.id))
-                if team not in team_scores:
-                    team_scores[team] = []
                 team_scores[team] += [self.get_army_result(army)]
             except KeyError:
-                raise GameError("Missing game result for player: {player}".format(player=player))
+                team_scores[team] += [0]
+                self._logger.info("Missing game result for {army}: {player}".format(army=army,
+                                                                                    player=player))
         ranks = [score for team, score in sorted(team_scores.items())]
         rating_groups = []
         for team in sorted(self.teams):
