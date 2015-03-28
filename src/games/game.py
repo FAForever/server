@@ -203,7 +203,29 @@ class Game(BaseGame):
         query.prepare("UPDATE game_stats set `EndTime` = NOW() where `id` = ?")
         query.addBindValue(self.id)
         query.exec_()
+        self.persist_results()
         self.rate_game()
+
+    def persist_results(self):
+        results = {}
+        for player in self.players:
+            army = self.get_player_option(player.id, 'Army')
+            results[player] = self.get_army_result(army)
+        query = QSqlQuery(self.db)
+        query.prepare("INSERT INTO game_player_stats (gameId, playerId, score, scoreTime) "
+                      "VALUES (?, ?, ?, NOW())")
+        game_ids = []
+        player_ids = []
+        scores = []
+        for player, result in results.items():
+            game_ids.append(self.id)
+            player_ids.append(player.id)
+            scores.append(result)
+        query.addBindValue(game_ids)
+        query.addBindValue(player_ids)
+        query.addBindValue(scores)
+        if not query.execBatch():
+            self._logger.critical("Error persisting scores to database: {}".format(query.lastError()))
 
     def set_player_option(self, id, key, value):
         """

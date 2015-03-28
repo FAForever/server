@@ -622,12 +622,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 if self.game.desync > 20:
                     self.game.setInvalid("Too many desyncs")
 
-                if hasattr(self.game, "noStats"):
-                    if not self.game.noStats:
-                        self.registerScore(self.game.gameResult)
-                else:
-                    self.registerScore(self.game.gameResult)
-
                 for playerTS in self.game.trueSkillPlayers:
                     name = playerTS.getPlayer()
                     for player in self.listUsers.getAllPlayers():
@@ -729,45 +723,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.games.mark_dirty(self.game.uuid)
         except:
             self.log.exception("Something awful happened in a sendinfo thread!")
-
-    def registerScore(self, gameResult):
-        try:
-            gameId = self.game.uuid
-            query = QSqlQuery(self.parent.db)
-            for player in gameResult:
-
-                score = gameResult[player]
-                uid = -1
-                if self.game.isAI(player):
-                    nameAI = player.rstrip(string.digits)
-
-                    query.prepare("SELECT id FROM AI_names WHERE login = ?")
-                    query.addBindValue(nameAI)
-                    query.exec_()
-                    if query.size() > 0:
-                        query.first()
-                        uid = int(query.value(0))
-
-                else:
-                    query.prepare("SELECT id FROM login WHERE login = ?")
-                    query.addBindValue(player)
-                    query.exec_()
-                    if query.size() > 0:
-                        query.first()
-                        uid = int(query.value(0))
-
-                if uid != -1:
-                    query.prepare("UPDATE game_player_stats set `score` = ? where `gameId` = ? AND `playerId` = ?")
-                    query.addBindValue(score)
-                    query.addBindValue(gameId)
-                    query.addBindValue(uid)
-                    query.exec_()
-
-
-        except:
-            self.log.exception("Something awful happened in a game  thread (registerScore) !")
-            ##self.log.debug(self.logGame + "register scores done")
-
 
     def addAi(self, name, place, team):
         inGameName = name + str(place)
