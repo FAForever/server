@@ -356,11 +356,6 @@ class Game(BaseGame):
                 #if the player don't register, chances are that he died or something
                 self.gameResult[player] = -1
 
-    def checkScore(self, player):
-        if not player in self.gameResult:
-            self.gameResult[player] = -1
-        return
-
     def getInvalidReason(self):
         return self.invalidReason
 
