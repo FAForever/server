@@ -206,10 +206,16 @@ class Game(BaseGame):
         query.prepare("UPDATE game_stats set `EndTime` = NOW() where `id` = ?")
         query.addBindValue(self.id)
         query.exec_()
+
         self.persist_results()
         self.rate_game()
 
     def persist_results(self):
+        """
+        Persist game results (score) into the game_player_stats table
+        :return:
+        """
+        self._logger.info("Saving game scores")
         results = {}
         for player in self.players:
             army = self.get_player_option(player.id, 'Army')
