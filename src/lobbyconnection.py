@@ -2414,10 +2414,7 @@ Thanks,\n\
             cmd = message['command']
             if not isinstance(cmd, str):
                 raise ValueError("Command is not a string")
-            if hasattr(self, 'command_{}'.format(cmd)):
-                getattr(self, cmd)(message)
-            else:
-                raise ValueError("Command not found")
+            getattr(self, 'command_{}'.format(cmd))(message)
         except (KeyError, ValueError) as ex:
             self.log.warning("Garbage input from client: {}".format(data_string))
             self.log.exception(ex)
