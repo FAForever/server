@@ -605,19 +605,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 self.game.state = GameState.ENDED
                 self.sendGameInfo()
 
-                if hasattr(self.game, "noStats"):
-                    if not self.game.noStats:
-                        query = QSqlQuery(self.db)
-                        queryStr = (
-                            "UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(
-                                self.game.uuid))
-                        query.exec_(queryStr)
-                else:
-                    query = QSqlQuery(self.db)
-                    queryStr = (
-                        "UPDATE game_stats set `EndTime` = NOW() where `id` = " + str(self.game.uuid))
-                    query.exec_(queryStr)
-
                 if self.game.desync > 20:
                     self.game.setInvalid("Too many desyncs")
 
