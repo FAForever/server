@@ -41,8 +41,13 @@ def add_connected_player(game: Game, player):
 
 
 def add_connected_players(game: Game, players):
-    for player in players:
+    """
+    Utility to add players with army and StartSpot indexed by a list
+    """
+    for army, player in enumerate(players):
         add_connected_player(game, player)
+        game.set_player_option(player.id, 'Army', army)
+        game.set_player_option(player.id, 'StartSpot', army)
 
 
 def test_set_player_option(game, players, game_connection):
@@ -124,8 +129,6 @@ def test_compute_rating_computes_global_ratings(game: Game, players):
     players.hosting.global_rating = Rating(1500, 250)
     players.joining.global_rating = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
-    game.set_player_option(players.hosting.id, 'Army', 0)
-    game.set_player_option(players.joining.id, 'Army', 1)
     game.launch()
     game.add_result(players.hosting, 0, 'victory', 1)
     game.add_result(players.joining, 1, 'defeat', 0)
@@ -141,8 +144,6 @@ def test_compute_rating_computes_ladder_ratings(game: Game, players):
     players.hosting.ladder_rating = Rating(1500, 250)
     players.joining.ladder_rating = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
-    game.set_player_option(players.hosting.id, 'Army', 0)
-    game.set_player_option(players.joining.id, 'Army', 1)
     game.launch()
     game.add_result(players.hosting, 0, 'victory', 1)
     game.add_result(players.joining, 1, 'defeat', 0)

@@ -243,7 +243,7 @@ class Game(BaseGame):
 
     def get_player_option(self, id, key):
         """
-        Retrieve game-associative options for given player, by id
+        Retrieve game-associative options for given player, by their uid
         :param id:
         :type id: int
         :param key:
@@ -256,7 +256,7 @@ class Game(BaseGame):
 
     def set_army_option(self, id, key, value):
         """
-        Set game-associative options for given army, by id
+        Set game-associative options for given army, by id (StartSpot)
         :param id:
         :type id: int
         :param key:

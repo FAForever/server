@@ -62,7 +62,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.db = db
         self.log = logging.getLogger(__name__)
         self.initTime = time.time()
-        self.initDone = False
         self.proxies = {}
         self._player = None
         self.logGame = "\t"
@@ -684,7 +683,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.game.addPlayer(self.player)
             self.game.specialInit(self.player)
 
-            self.initDone = True
 
     def _send_host_game(self, mapname):
         """ Create a lobby with a specific map"""
