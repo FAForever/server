@@ -427,15 +427,6 @@ class Game(BaseGame):
                                 function(resPlayer)
                                 break
 
-                                # and we send the score
-
-                        if sendScore:
-                            results = self.getAllResults()
-                            self.sendMessageToPlayers(players, name, results)
-                    else:
-                        if sendScore:
-                            self.sendMessageToPlayers(players, name, "AI detected in game - No rating for humans.")
-
             else:
                 logger.debug("ERROR: No Valid TS results!")
 
@@ -468,70 +459,6 @@ class Game(BaseGame):
             if self.gameFaResult[player] == "victory" or self.gameFaResult[player] == "draw":
                 foundAVictory = True
         return foundAVictory
-
-    def getAllResults(self):
-        final = []
-        msg = 'GAME RESULTS : \n'
-        teamsResults = {}
-        i = 1
-        for teams in self.finalTeams:
-            curScore = 0
-            for players in teams.players():
-                id = str(players.getId())
-                if id in str(self.gameResult):
-                    resultPlayer = self.gameResult[str(id)]
-                    curScore = curScore + resultPlayer
-                else:
-                    return 0
-            teamsResults[i] = curScore
-            i += 1
-        winnerTeam = None
-        draw = False
-
-        for team in teamsResults:
-            if not winnerTeam:
-                winnerTeam = team
-            elif teamsResults[team] > teamsResults[winnerTeam]:
-                winnerTeam = team
-            elif teamsResults[team] == teamsResults[winnerTeam]:
-                draw = True
-
-        if winnerTeam:
-            i = 1
-            for teams in self.finalTeams:
-                memTeam = []
-                for players in teams.players():
-                    id = str(players.getId())
-                    memTeam.append(id)
-                msg = msg + "Team " + str(i) + " ("
-                members = ", ".join(memTeam)
-                msg = msg + members + ") : "
-
-                if draw:
-                    msg += "Draw \n"
-                elif i == winnerTeam:
-                    msg += "Win \n"
-                else:
-                    msg += "Lost \n"
-                i += 1
-
-        tsresults = self.compute_rating(False)
-        if tsresults != 0:
-            msg += "\nNew ratings :\n"
-
-            for playerTS in self.trueSkillPlayers:
-                name = playerTS.getPlayer()
-                if str(name) in tsresults.playersNames():
-                    mean = (tsresults.getRating(name).getMean() * self.partial) + (
-                        playerTS.getRating().getMean() * (1 - self.partial))
-                    dev = (tsresults.getRating(name).getStandardDeviation() * self.partial) + (
-                        playerTS.getRating().getStandardDeviation() * (1 - self.partial))
-
-                    msg = msg + name.getId() + ' : from ' + str(
-                        int(playerTS.getRating().getConservativeRating())) + ' to ' + str(int(mean - 3 * dev)) + "\n"
-
-        final.append(msg)
-        return final
 
     def get_army_result(self, army):
         """
@@ -579,18 +506,6 @@ class Game(BaseGame):
                             for player in self.players if
                             self.get_player_option(player.id, 'Team') == team}]
         return trueskill.rate(rating_groups, ranks)
-
-    def addResultPlayer(self, player, faresult, score):
-        if player in self.gameFaResult:
-            if self.gameFaResult[player] != "victory":
-                # the play got not decicive result yet, so we can apply it.
-                self.gameFaResult[player] = faresult
-                self.gameResult[player] = score
-        else:
-            self.gameFaResult[player] = faresult
-            self.gameResult[player] = score
-
-        return
 
     def returnKeyIndex(self, list, value):
         for d in list:
