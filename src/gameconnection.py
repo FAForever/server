@@ -456,32 +456,29 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 pass
 
             elif key == 'OperationComplete':
-                if self.game.valid:
-                    mission = -1
-                    if int(values[0]) == 1:
-                        self.log.debug(self.logGame + "Operation really Complete!")
-                        query = QSqlQuery(self.db)
-                        query.prepare(
-                            "SELECT id FROM coop_map WHERE filename LIKE '%/" + self.game.mapName + ".%'")
-                        query.exec_()
-                        if query.size() > 0:
-                            query.first()
-                            mission = int(query.value(0))
-                        else:
-                            self.log.debug(self.logGame + "can't find coop map " + self.game.mapName)
-                    if mission != -1:
+                mission = -1
+                if int(values[0]) == 1:
+                    self.log.debug(self.logGame + "Operation really Complete!")
+                    query = QSqlQuery(self.db)
+                    query.prepare(
+                        "SELECT id FROM coop_map WHERE filename LIKE '%/" + self.game.mapName + ".%'")
+                    query.exec_()
+                    if query.size() > 0:
+                        query.first()
+                        mission = int(query.value(0))
+                    else:
+                        self.log.debug(self.logGame + "can't find coop map " + self.game.mapName)
+                if mission != -1:
 
-                        query.prepare(
-                            "INSERT INTO `coop_leaderboard`(`mission`, `gameuid`, `secondary`, `time`) VALUES (?,?,?,?);")
-                        query.addBindValue(mission)
-                        query.addBindValue(self.game.uuid)
-                        query.addBindValue(int(values[1]))
-                        query.addBindValue(str(values[2]))
-                        if not query.exec_():
-                            self.log.warning(self.logGame + str(query.lastError()))
-                            self.log.warning(self.logGame + query.executedQuery())
-                else:
-                    self.log.debug(self.logGame + self.game.getInvalidReason())
+                    query.prepare(
+                        "INSERT INTO `coop_leaderboard`(`mission`, `gameuid`, `secondary`, `time`) VALUES (?,?,?,?);")
+                    query.addBindValue(mission)
+                    query.addBindValue(self.game.uuid)
+                    query.addBindValue(int(values[1]))
+                    query.addBindValue(str(values[2]))
+                    if not query.exec_():
+                        self.log.warning(self.logGame + str(query.lastError()))
+                        self.log.warning(self.logGame + query.executedQuery())
 
             elif key == 'ArmyCalled':
                 # this is for Galactic War!
