@@ -602,11 +602,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 allScoreHere = self.game.isAllScoresThere()
 
             if curplayers == 0 or allScoreHere:
-                self.game.state = GameState.ENDED
                 self.sendGameInfo()
-
-                if self.game.desyncs > 20:
-                    self.game.setInvalid("Too many desyncs")
 
                 for playerTS in self.game.trueSkillPlayers:
                     name = playerTS.getPlayer()
@@ -624,7 +620,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             getAction = self.player.getAction()
             if getAction == "HOST":
                 # if the player was the host (so, not playing), we remove his game
-                self.game.state = GameState.ENDED
                 self.sendGameInfo()
                 self.games.removeGame(self.game)
                 self._game = None
@@ -633,7 +628,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 minplayers = self.game.minPlayer
                 curplayers = len(self.game.players)
                 if minplayers == 2 or curplayers == 0:
-                    self.game.state = GameState.ENDED
                     self.sendGameInfo()
                     self.games.removeGame(self.game)
                     self._game = None

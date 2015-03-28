@@ -199,6 +199,9 @@ class Game(BaseGame):
     def on_game_end(self):
         self.state = GameState.ENDED
         self._logger.info("Game ended")
+        if self.desyncs > 20:
+            self.setInvalid("Too many desyncs")
+
         query = QSqlQuery(self.db)
         query.prepare("UPDATE game_stats set `EndTime` = NOW() where `id` = ?")
         query.addBindValue(self.id)
