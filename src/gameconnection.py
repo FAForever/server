@@ -379,7 +379,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 pass
 
             elif key == 'Desync':
-                self.game.addDesync()
+                self.game.desyncs += 1
 
             elif key == 'ProcessNatPacket':
                 pass
@@ -605,7 +605,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 self.game.state = GameState.ENDED
                 self.sendGameInfo()
 
-                if self.game.desync > 20:
+                if self.game.desyncs > 20:
                     self.game.setInvalid("Too many desyncs")
 
                 for playerTS in self.game.trueSkillPlayers:

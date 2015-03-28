@@ -101,7 +101,7 @@ class Game(BaseGame):
         self.gameType = 0
         self.AIs = []
         self.packetReceived = {}
-        self.desync = 0
+        self.desyncs = 0
         self.validGame = True
         self.invalidReason = None
         self.connecting = 0
@@ -338,9 +338,6 @@ class Game(BaseGame):
 
     def getInvalidReason(self):
         return self.invalidReason
-
-    def addDesync(self):
-        self.desync += 1
 
     def setInvalid(self, reason):
         self.validGame = False
