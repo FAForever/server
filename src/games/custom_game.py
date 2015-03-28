@@ -29,9 +29,7 @@ class CustomGame(Game):
         super(self.__class__, self).__init__(uuid, parent)
   
     def specialInit(self, player):
-        trueskill = player.getRating()
-        trueSkillCopy = deepcopy(trueskill)
-        self.addTrueSkillPlayer(trueSkillCopy)
+        pass
 
     def rate_game(self):
         timeLimit = len(self.trueSkillPlayers) * 60

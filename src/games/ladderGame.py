@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 from .game import Game
 
-from copy import deepcopy
 from PySide.QtSql import QSqlQuery
 import operator
 
@@ -48,25 +47,15 @@ class ladder1V1Game(Game):
     def setLeaguePlayer(self, player):
         self.leagues[player.getLogin()] = player.league
          
-
     def checkNoScore(self):
         for player in self.players :
-            if not player in self.gameResult :
+            if not player in self.gameResult:
                 #if the player don't register, we set his score to 0
                 self.gameResult[player] = 0
 
     def specialInit(self, player):          
-        trueskill = player.getRating()
-        trueSkillCopy = deepcopy(trueskill)
-        self.addTrueSkillPlayer(trueSkillCopy)
-        
-        trueskill1v1 = player.ladder1v1Skill
-        trueSkillCopy1v1 = deepcopy(trueskill1v1)
-        self.addTrueSkill1v1Player(trueSkillCopy1v1)
-
         if player.getAction() == "HOST":
-            playerToJoin = self.getPlayerToJoin()
-            playerToJoin.wantToConnectToGame = True
+            self.playerToJoin.wantToConnectToGame = True
             
             map = self.mapName
             
@@ -78,7 +67,7 @@ class ladder1V1Game(Game):
                 "mapname": map,
                 "args": ["/players 2", "/team 2"]
             }
-            playerToJoin.lobbyThread.sendJSON(json)
+            self.playerToJoin.lobbyThread.sendJSON(json)
 
             self.set_player_option(player.id, 'Team', 1)
             self.set_player_option(player.id, 'Army', 0)
@@ -96,9 +85,7 @@ class ladder1V1Game(Game):
             self.recombineTeams1v1()
             self.recombineTeams()
 
-
     def specialEnding(self, logger, db, players):
-        
         if len(self.invalidPlayers) == 2:
             self.setInvalid("Scores not validated. Possible reason: Disconnection between players.")
         
@@ -217,90 +204,11 @@ class ladder1V1Game(Game):
             return True
         return False       
   
-    def isWinner(self, player):
-        if self.isDraw() :
-            return 0
-        elif max(self.gameResult, key=self.gameResult.get) == str(player) :
-            return 1
-        else :
-            return 0
-    
-    def isAllScoresThere(self):
-        if len(self.gameFaResult) != self.numPlayers or len(self.gameResult) != self.numPlayers :
-            return False
-        
-        foundAVictory = False
-        for player in self.gameFaResult :
-            if  self.gameFaResult[player] == "score" :
-                return False
-            if self.gameFaResult[player] == "victory" or self.gameFaResult[player] == "draw" :
-                foundAVictory = True 
-        return foundAVictory
-
-    def getAllResults(self):
-        final = []
-        msg = 'Game outcome: '
-    
-        for player in self.gameResult :
-            
-            if self.isDraw()  :
-                msg = msg + player + " : Draw \n"
-            
-            else :
-                if self.isWinner(player) == 1 :
-                    msg = msg + player + " : Victory \n"
-                else :
-                    msg = msg + player + " : Defeat \n"
-                
-        final.append(msg) 
-        
- 
-        return final
-
-    def getTrueSkill1v1Players(self):
-        return self.trueSkill1v1Players
-
-    def addTrueSkill1v1Player(self, player):
-        self.trueSkill1v1Players.append(player)
-        
     def hostInGame(self):
         return self.hosted 
 
     def setHostInGame(self, state):
         self.hosted = state        
-
-    def addResultPlayer(self, player, faresult, score):
-
-        
-        if player in self.gameFaResult :
-            if  self.gameFaResult[player] == "score" :
-                # the play got not decicive result yet, so we can apply it.
-                self.gameFaResult[player] = faresult
-                #self.gameResult[player] = score
-            else :
-                if faresult == "defeat" and self.gameFaResult[player] == "victory" :
-                    if not player in self.invalidPlayers :
-                        self.invalidPlayers.append(player)
-                    #if we try to set a defeat, but the player was victory.. We've got a disparity problem !
-                    #
-                else :
-                    if faresult != "score" :
-                        self.gameFaResult[player] = faresult
-                        if faresult == "defeat" :
-                            self.gameResult[player] = -1
-                        if faresult == "victory" :
-                            self.gameResult[player] = 1
-                        if faresult == "draw" :       
-                            self.gameResult[player] = -1                 
-        else :
-            if faresult != "score" :
-                self.gameFaResult[player] = faresult
-                if faresult == "defeat" :
-                    self.gameResult[player] = -1
-                if faresult == "victory" :
-                    self.gameResult[player] = 1
-                if faresult == "draw" :       
-                    self.gameResult[player] = -1                
 
     def computeScoreFor1v1(self):
         results = []
