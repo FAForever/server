@@ -556,14 +556,6 @@ class Game(BaseGame):
                 for j in self.permutations(items[:i] + items[i + 1:]):
                     yield [items[i]] + j
 
-    def getTeamsCount(self):
-        result = 0
-        for team in self.teamAssign:
-            if len(self.teamAssign[team]) != 0:
-                if team != 0:
-                    result += 1
-        return result
-
     def updateTrueskill(self):
         """ Update all scores from the DB before updating the results"""
         self._logger.debug("updating ratings")

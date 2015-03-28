@@ -82,7 +82,6 @@ class ladder1V1Game(Game):
             self.set_player_option(player.id, 'Faction', player.faction)
             self.set_player_option(player.id, 'Color', 2)
 
-            self.recombineTeams1v1()
             self.recombineTeams()
 
     def specialEnding(self, logger, db, players):
@@ -270,32 +269,3 @@ class ladder1V1Game(Game):
             return 0
 
 
-
-    def recombineTeams1v1(self):
-        teamsRecomb = []
-        for team in self.teamAssign :
-            if len(self.teamAssign[team]) != 0 and team != -1 :
-                
-                if team == 0 :
-                    for player in self.teamAssign[team] :
-                        curTeam = Team()
-                        for playerTS in self.trueSkill1v1Players :
-
-                            if str(playerTS.getPlayer()) == str(player) :
-
-                                curTeam.addPlayer(playerTS.getPlayer(), playerTS.getRating())
-                                
-                                teamsRecomb.append(curTeam)
-                else :
-                    curTeam = Team()
-                    for player in self.teamAssign[team] :
-                        for playerTS in self.trueSkill1v1Players :
-                            if str(playerTS.getPlayer()) == str(player) :
-                                curTeam.addPlayer(playerTS.getPlayer(), playerTS.getRating())
-                    teamsRecomb.append(curTeam)
-
-        self.finalTeams1v1 = teamsRecomb
-
-        return self.finalTeams1v1
-        
-    
