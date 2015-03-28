@@ -456,7 +456,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 pass
 
             elif key == 'OperationComplete':
-                if self.game.isValid():
+                if self.game.valid:
                     mission = -1
                     if int(values[0]) == 1:
                         self.log.debug(self.logGame + "Operation really Complete!")

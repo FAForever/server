@@ -102,9 +102,8 @@ class ladder1V1Game(Game):
         if len(self.invalidPlayers) == 2:
             self.setInvalid("Scores not validated. Possible reason: Disconnection between players.")
         
-        if self.isValid():
-            
-            if self.isDraw() :
+        if self.valid:
+            if self.isDraw():
                 query = QSqlQuery(db)
                 queryStr = ("SELECT id FROM table_map WHERE filename LIKE '%"+self.mapName+"%'")
                 query.exec_(queryStr)

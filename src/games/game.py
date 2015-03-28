@@ -97,12 +97,12 @@ class Game(BaseGame):
         self._players = []
         self.size = 0
         self.options = []
+        self.valid = True
         self.modsVersion = {}
         self.gameType = 0
         self.AIs = []
         self.packetReceived = {}
         self.desyncs = 0
-        self.validGame = True
         self.invalidReason = None
         self.connecting = 0
         self.trueSkillPlayers = []
@@ -333,14 +333,12 @@ class Game(BaseGame):
             self.gameResult[player] = -1
         return
 
-    def isValid(self):
-        return self.validGame
-
     def getInvalidReason(self):
         return self.invalidReason
 
     def setInvalid(self, reason):
-        self.validGame = False
+        self._logger.info("marked as invalid because: {}".format(reason))
+        self.valid = False
         self.invalidReason = reason
 
     def specialInit(self, player):

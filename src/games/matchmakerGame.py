@@ -110,7 +110,7 @@ class matchmakerGame(Game):
         if time.time() - self.createDate < timeLimit :
             self.setInvalid("Score are invalid : Play time was not long enough (under %i seconds)" % timeLimit)
             logger.debug("Game is invalid : Play time was not long enough (under %i seconds)" % timeLimit)
-        if self.isValid() :
+        if self.valid:
             tsresults = self.compute_rating()
             tsplayers = self.trueSkillPlayers
             self.trueSkillUpdate(tsresults, tsplayers, logger, db, players, sendScore = False)
