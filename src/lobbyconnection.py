@@ -767,6 +767,8 @@ Thanks,\n\
                 self.player.setAction("NOTHING")
                 self.player.gameThread.abort()
             else:
+                login = stream.readQString()
+                session = stream.readQString()
                 self.receiveJSON(action, stream)
         except:
             self.log.exception("Something awful happened in a lobby thread !")
@@ -2410,10 +2412,6 @@ Thanks,\n\
         """
         A fairly pythonic way to process received strings as JSON messages.
         """
-        # Incredibly evil hack to work around what is presumably a client bug.
-        if data_string == "":
-            return
-
         try:
             message = json.loads(data_string)
         except:
@@ -2422,10 +2420,9 @@ Thanks,\n\
             message = ""
 
         cmd = "command_" + str(message.get("command", "invalid"))
+        if not data_string:
+            cmd = 'command_invalid'
         if hasattr(self, cmd):
-            login = stream.readQString()
-            session = stream.readQString()
-
             getattr(self, cmd)(message)
 
     def done(self):
