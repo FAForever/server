@@ -240,7 +240,7 @@ class Game(BaseGame):
         if not query.execBatch():
             self._logger.critical("Error persisting scores to database: {}".format(query.lastError()))
 
-    def persist_rating_change_stats(self, rating_groups):
+    def persist_rating_change_stats(self, rating_groups, rating='global'):
         """
         Persist computed ratings to the respective players' selected rating
         :param rating_groups: of the form returned by Game.compute_rating
@@ -250,10 +250,14 @@ class Game(BaseGame):
         new_ratings = []
         for team, players in rating_groups:
             new_ratings += players
-        query = QSqlQuery(self.db)
-        query.prepare("UPDATE game_player_stats "
-                      "SET after_mean = ?, after_deviation = ? "
-                      "WHERE gameId = ? AND playerId = ?")
+        game_stats_query = QSqlQuery(self.db)
+        game_stats_query.prepare("UPDATE game_player_stats "
+                                 "SET after_mean = ?, after_deviation = ?, scoreTime = NOW() "
+                                 "WHERE gameId = ? AND playerId = ?")
+        rating_query = QSqlQuery(self.db)
+        rating_query.prepare("UPDATE {}_rating "
+                             "SET mean = ?, deviation = ?, numGames = (numGames + 1) "
+                             "WHERE id = ?".format(rating))
         results = [[], [], [], []]
         for player, new_rating in new_ratings:
             results[0] += [new_rating.mu]
@@ -261,9 +265,17 @@ class Game(BaseGame):
             results[2] += [self.id]
             results[3] += [player.id]
         for col in results:
-            query.addBindValue(col)
-        if not query.execBatch():
-            self._logger.critical("Error persisting ratings to database: {}".format(query.lastError()))
+            game_stats_query.addBindValue(col)
+
+        for col in [results[0], results[1], results[3]]:
+            rating_query.addBindValue(col)
+
+        if not game_stats_query.execBatch():
+            self._logger.critical("Error persisting ratings to game_player_stats: {}".format(game_stats_query.lastError()))
+
+        if not rating_query.execBatch():
+            self._logger.critical("Error persisting ratings to {}_rating: {}".format(rating, game_stats_query.lastError()))
+
 
     def set_player_option(self, id, key, value):
         """
