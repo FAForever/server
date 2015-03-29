@@ -121,25 +121,26 @@ def test_mod_vault_like_invalid_uid(mock_config, mock_query, connected_socket, m
     # call, method:attributes, attribute_index
     assert server_thread.sendJSON.mock_calls == []
 
-# def test_mod_vault_download(connected_socket,
-#                         mock_lobby_server):
-#     server_thread = LobbyConnection(connected_socket, mock_lobby_server)
-#     server_thread.command_modvault({'type': 'download',
-#                                     'uid': None})
-#     server_thread.query = mock.Mock()
-#     server_thread.query.addBindValue.assert_called_with(None)
+@mock.patch('src.lobbyconnection.QSqlQuery')
+def test_mod_vault_download(mock_query, connected_socket, mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'type': 'download',
+                                    'uid': None})
+    mock_query.return_value.prepare.assert_called_with("UPDATE `table_mod` SET downloads=downloads+1 WHERE uid = ?")
 
-# def test_mod_vault_addcomment(connected_socket,
-#                               mock_lobby_server):
-#     server_thread = LobbyConnection(connected_socket, mock_lobby_server)
-#     server_thread.command_modvault({'type': 'addcomment'})
-#
-# def test_mod_vault_invalid_type(connected_socket,
-#                                 mock_lobby_server):
-#     server_thread = LobbyConnection(connected_socket, mock_lobby_server)
-#     server_thread.command_modvault({'type': 'DragonfireNegativeTest'})
+# TODO: implement it
+def test_mod_vault_addcomment(connected_socket, mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'type': 'addcomment'})
 
-# def test_mod_vault_no_type(connected_socket,
-#                            mock_lobby_server):
-#     server_thread = LobbyConnection(connected_socket, mock_lobby_server)
-#     server_thread.command_modvault({'invalidKey': None})
+def test_mod_vault_invalid_type(connected_socket,
+                                mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'type': 'DragonfireNegativeTest'})
+    # TODO: what to check?
+
+def test_mod_vault_no_type(connected_socket,
+                           mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'invalidKey': None})
+    # TODO: what to check?
