@@ -2308,11 +2308,11 @@ Thanks,\n\
             canLike = True
             uid = message["uid"]
             query = QSqlQuery(self.parent.db)
-            query.prepare("SELECT * FROM `table_mod` WHERE uid = ?")
+            query.prepare("SELECT * FROM `table_mod` WHERE uid = ? LIMIT 1")
             query.addBindValue(uid)
             if not query.exec_():
                 self.log.debug(query.lastError())
-            if query.size() != 0:
+            if query.size() == 1:
                 query.first()
                 uid = str(query.value(1))
                 name = str(query.value(2))
@@ -2348,13 +2348,13 @@ Thanks,\n\
                         likers.append(self.uid)
                 except:
                     likers = []
-            if canLike:
-                query = QSqlQuery(self.parent.db)
-                query.prepare("UPDATE `table_mod` SET likes=likes+1, likers=? WHERE uid = ?")
-                query.addBindValue(json.dumps(likers))
-                query.addBindValue(uid)
-                query.exec_()
-                self.sendJSON(out)
+                if canLike:
+                    query = QSqlQuery(self.parent.db)
+                    query.prepare("UPDATE `table_mod` SET likes=likes+1, likers=? WHERE uid = ?")
+                    query.addBindValue(json.dumps(likers))
+                    query.addBindValue(uid)
+                    query.exec_()
+                    self.sendJSON(out)
 
 
 
