@@ -345,6 +345,7 @@ class Game(BaseGame):
         self.on_game_launched()
 
     def on_game_launched(self):
+        self.update_ratings()
         self.update_game_stats()
         self.update_game_player_stats()
 
@@ -521,78 +522,21 @@ class Game(BaseGame):
                             self.get_player_option(player.id, 'Team') == team}]
         return trueskill.rate(rating_groups, ranks)
 
-    def returnKeyIndex(self, list, value):
-        for d in list:
-            if value in list[d]:
-                return d
-        return None
-
-    def getPlayerFaction(self, player):
-        if player in self.playerFaction:
-            return self.playerFaction[player]
-
-    def setPlayerFaction(self, player, faction):
-        self.playerFaction[player] = faction
-
-    def getPlayerColor(self, player):
-        if player in self.playerColor:
-            return self.playerColor[player]
-
-    def setPlayerColor(self, player, color):
-        self.playerColor[player] = color
-
-    def placePlayer(self, player, position):
-        # check if the player is already somewhere
-        key = self.returnKeyIndex(self.playerPosition, player)
-        # if so, delete his old place.
-        if key is not None:
-            del self.playerPosition[key]
-
-        if position is not None:
-            self.playerPosition[position] = str(player)
-
-    def isAI(self, name):
-        if name in self.AIs:
-            return True
-        else:
-            return False
-
-    def getPositionOfPlayer(self, player):
-        for pos in self.playerPosition:
-            if self.playerPosition[pos] == player:
-                return pos
-        return -1
-
-    def permutations(self, items):
-        """Yields all permutations of the items."""
-        if items == []:
-            yield []
-        else:
-            for i in range(len(items)):
-                for j in self.permutations(items[:i] + items[i + 1:]):
-                    yield [items[i]] + j
-
-    def updateTrueskill(self):
+    def update_ratings(self):
         """ Update all scores from the DB before updating the results"""
         self._logger.debug("updating ratings")
-        try:
-            for team in self.finalTeams:
-                for member in team.players():
-                    query = QSqlQuery(self.db)
-                    query.prepare(
-                        "SELECT mean, deviation FROM global_rating WHERE id = (SELECT id FROM login WHERE login = ?)")
-                    query.addBindValue(member.getId())
-                    query.exec_()
-                    self._logger.debug("updating a player")
-                    if query.size() > 0:
-                        query.first()
-                        team.getRating(member).setMean(query.value(0))
-                        team.getRating(member).setStandardDeviation(query.value(1))
-                    else:
-                        self._logger.debug("error updating a player")
-                        self._logger.debug(member.getId())
-        except:
-            self._logger.exception("Something awful happened while updating trueskill!")
+        for player in self.players:
+            query = QSqlQuery(self.db)
+            query.prepare(
+                "SELECT mean, deviation FROM global_rating WHERE id = ?")
+            query.addBindValue(player.id)
+            query.exec_()
+            if query.size() > 0:
+                query.first()
+                player.global_rating = (query.value(0), query.value(1))
+            else:
+                self._logger.debug("error updating a player")
+                self._logger.debug(player.id)
 
     @property
     def created_at(self):
