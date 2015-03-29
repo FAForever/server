@@ -454,9 +454,6 @@ class Game(BaseGame):
         self.valid = False
         self.invalidReason = reason
 
-    def specialInit(self, player):
-        pass
-
     def sendMessageToPlayers(self, players, name, message):
         for player in players.players():
 

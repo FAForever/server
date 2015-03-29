@@ -607,9 +607,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
         self.send_CreateLobby(self.game.init_mode, port, login, uid, 1)
 
-        if self.game:
-            self.game.specialInit(self.player)
-
     def _send_host_game(self, mapname):
         """ Create a lobby with a specific map"""
         self.game.hostPlayerFull = self.player
