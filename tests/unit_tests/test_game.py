@@ -81,6 +81,16 @@ def test_add_game_connection_throws_if_not_connected_to_host(game: Game, players
     assert players.hosting not in game.players
 
 
+def test_add_game_connection_throws_if_not_lobby_state(game: Game, players, game_connection):
+    game.state = GameState.INITIALIZING
+    game_connection.player = players.hosting
+    game_connection.state = GameConnectionState.CONNECTED_TO_HOST
+    with pytest.raises(GameError):
+        game.add_game_connection(game_connection)
+
+    assert players.hosting not in game.players
+
+
 def test_remove_game_connection(game: Game, players, game_connection):
     game.state = GameState.LOBBY
     game_connection.player = players.hosting
