@@ -16,7 +16,7 @@ before_script:
 
 script:
   - export QUAMASH_QTIMPL=PySide
-  - py.test --cov-report term-missing --cov=src --cov=challonge --cov=games --cov=stats --cov=steam --cov=teams --cov=tournament --cov=updater
+  - py.test --cov-report term-missing --cov=src --cov=challonge --cov=stats --cov=steam --cov=teams --cov=tournament --cov=updater
   - pyflakes . || true
 
 after_success:
