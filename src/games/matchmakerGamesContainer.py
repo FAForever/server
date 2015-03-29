@@ -522,7 +522,7 @@ class MatchmakerGamesContainer(GamesContainer):
         ngame.setGameHostUuid(host.id)
         ngame.setGameHostPort(host.gamePort)
         ngame.setGameHostLocalPort(host.gamePort)
-        ngame.setGameName(gameName)
+        ngame.name = gameName
 
         place = 1
         for player in players1 :

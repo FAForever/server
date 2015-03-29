@@ -55,7 +55,7 @@ class Game(BaseGame):
     init_mode = InitMode.NORMAL_LOBBY
 
     def __init__(self, uuid, parent, host=None, hostId=0, hostIp=None, hostLocalIp=None, hostPort=6112,
-                 hostLocalPort=6112, gameName='None', map='SCMP_007', mode=0, minPlayer=1):
+                 hostLocalPort=6112, name='None', map='SCMP_007', mode=0, minPlayer=1):
         """
         Initializes a new game
         :type uuid int
@@ -66,7 +66,7 @@ class Game(BaseGame):
         :type hostPort: int
         :type hostLocalPort: int
         :type state: str
-        :type gameName: str
+        :type name: str
         :type map: str
         :type mode: int
         :type minPlayer: int
@@ -92,7 +92,7 @@ class Game(BaseGame):
         self.hostlocalip = hostLocalIp
         self.hostport = hostPort
         self.hostlocalport = hostLocalPort
-        self.gameName = gameName
+        self.name = name
         self.mapName = map
         self.password = None
         self._players = []
@@ -388,7 +388,7 @@ class Game(BaseGame):
         query.addBindValue(str(self.gameType))
         query.addBindValue(modId)
         query.addBindValue(mapId)
-        query.addBindValue(self.gameName)
+        query.addBindValue(self.name)
         query.addBindValue(self.uuid)
         if not query.exec_():
             self._logger.debug("Error updating game_stats:")
@@ -447,9 +447,6 @@ class Game(BaseGame):
 
     def getGamemod(self):
         return self.parent.gameTypeName
-
-    def addAI(self, name):
-        self.AIs.append(name)
 
     def setInvalid(self, reason):
         self._logger.info("marked as invalid because: {}".format(reason))
@@ -603,36 +600,6 @@ class Game(BaseGame):
         :rtype : time
         """
         return self.createDate
-
-    def addPlayer(self, player):
-        """Add a player to the game"""
-        if player == '':
-            return 0
-        self.players.append(player)
-        return 1
-
-    def isPlayerInGame(self, player):
-        for p in self.players:
-            if player == p.getLogin():
-                return True
-        return False
-
-    def removePlayer(self, player):
-        """Remove a player from the game"""
-        if player == '':
-            return 0
-        for curPlayer in self.players:
-            if curPlayer.getLogin() == player.getLogin():
-                self._players.remove(curPlayer)
-                return 1
-
-        return 0
-
-    def setGameName(self, name):
-        if name == '':
-            return None
-        else:
-            self.gameName = name
 
     def setHostIP(self, ip):
         if ip == '':

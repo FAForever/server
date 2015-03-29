@@ -601,16 +601,14 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         login = self.player.getLogin()
         uid = int(self.player.getId())
 
-        if not self.game.gameName is None:
-            if self.game.gameName.startswith('#'):
+        if not self.game.name is None:
+            if self.game.name.startswith('#'):
                 self.sendToRelay("P2PReconnect", [])
 
         self.send_CreateLobby(self.game.init_mode, port, login, uid, 1)
 
         if self.game:
-            self.game.addPlayer(self.player)
             self.game.specialInit(self.player)
-
 
     def _send_host_game(self, mapname):
         """ Create a lobby with a specific map"""
@@ -675,34 +673,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 return True
         return False
 
-
     def fillAIStats(self, AIs):
-        if len(AIs) == 0:
-            return
-        queryStr = ""
-
-        for AI in AIs:
-            place = self.game.getPositionOfPlayer(AI)
-            color = self.game.getPlayerColor(place)
-            faction = self.game.getPlayerFaction(place)
-            team = self.game.getTeamOfPlayer(AI)
-
-            rating = None
-
-            for playerTS in self.game.trueSkillPlayers:
-                if str(playerTS.getPlayer()) == str(AI):
-                    rating = playerTS.getRating()
-                    break
-
-            mean = rating.getMean()
-            dev = rating.getStandardDeviation()
-            nameAI = str(AI).rstrip(string.digits)
-            queryStr += (
-                            "INSERT INTO `game_player_stats`(`AI`, `gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) VALUES (1, %s, (SELECT id FROM AI_names WHERE login = '%s'), %s, %s, %s, %i, %f, %f);") % (
-                            str(self.game.id), nameAI, faction, color, team, place, mean, dev )
-
-        query = QSqlQuery(self.parent.db)
-        query.exec_(queryStr)
+        pass
 
     def disconnection(self):
         try:
