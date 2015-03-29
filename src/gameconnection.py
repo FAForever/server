@@ -526,14 +526,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             if self.player.getAction() == "HOST":
                 self.game.launch()
 
-                if hasattr(self.game, "noStats"):
-                    if not self.game.noStats:
-                        self.fillGameStats()
-                else:
-                    self.fillGameStats()
-
-                self.game.fixPlayerPosition()
-
                 self.fillPlayerStats(self.game.players)
                 self.fillAIStats(self.game.AIs)
                 for player in self.game.players:
@@ -541,8 +533,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
                 if not all((i.count()) == self.game.finalTeams[0].count() for i in self.game.finalTeams):
                     self.game.setInvalid("All Teams don't the same number of players.")
-
-                self.game.setTime()
 
                 self.sendGameInfo()
 
@@ -579,8 +569,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                         query.addBindValue(uid)
                         query.exec_()
 
-                for playerTS in self.game.trueSkillPlayers:
-                    if playerTS.getRating().getMean() < -1000:
+                for player in self.game.players:
+                    if player.global_rating.mu < -1000 or \
+                       player.ladder_rating.mu < -1000:
                         self.game.setInvalid("You are playing with a smurfer.")
 
     def doEnd(self):
@@ -694,42 +685,11 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     def sendMessage(self, m):
         self.lobby.sendJSON(dict(command="notice", style="scores", text=str(m)))
 
-    def sendGameInfo(self, skipDuration=False):
+    def sendGameInfo(self):
         try:
             self.games.mark_dirty(self.game.uuid)
         except:
             self.log.exception("Something awful happened in a sendinfo thread!")
-
-    def addAi(self, name, place, team):
-        inGameName = name + str(place)
-
-        self.game.addAI(inGameName)
-
-        query = QSqlQuery(self.parent.db)
-        # if the AI in the table ?
-        queryStr = "INSERT INTO AI_names (login) VALUES ('%s')" % name
-        query.exec_(queryStr)
-
-        # get his rating
-        queryStr = "SELECT mean, deviation FROM AI_rating WHERE id = (SELECT id FROM AI_names WHERE login = '%s')" % (
-            name)
-        query.exec_(queryStr)
-        if query.size() != 1:
-
-            # we dont have a mean yet, set default values
-            trueSkill = faPlayer(Player(inGameName), Rating(1500, 500))
-            queryStr = (
-                           "INSERT INTO AI_rating (id, mean, deviation) values ((SELECT id FROM AI_names WHERE AI_names.login = '%s'),1500,500)") % (
-                           name)
-            query.exec_(queryStr)
-        else:
-            query.first()
-            mean = query.value(0)
-            dev = query.value(1)
-            trueSkill = faPlayer(Player(inGameName), Rating(mean, dev))
-        self.game.addTrueSkillPlayer(trueSkill)
-        self.game.placePlayer(inGameName, place)
-
 
     def parsePlayerOption(self, value):
         options = value.split(' ')
@@ -740,67 +700,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         place = int(options[length - 2])
         value = int(options[length - 1])
         return atype, name, place, value
-
-    def registerTime(self, player):
-        if self.game.isAI(player):
-            table = "AI_names"
-            player_name = player.rstrip(string.digits)
-        else:
-            table = "login"
-            player_name = player
-
-        query = QSqlQuery(self.parent.db)
-        query.prepare("UPDATE game_player_stats set `scoreTime` = NOW() where `gameId` = ? AND `playerId` = (SELECT id FROM %s WHERE login = ?)" % table)
-        query.addBindValue(self.game.uuid)
-        query.addBindValue(player_name)
-        query.exec_()
-        query.finish()
-
-    def fillGameStats(self):
-        mapId = 0
-        modId = 0
-
-        # What the actual fucking fuck?
-        if "thermo" in self.game.mapName.lower():
-            self.game.setInvalid("This map is not ranked.")
-
-        query = QSqlQuery(self.parent.db)
-        # Everyone loves table sacns!
-        queryStr = ("SELECT id FROM table_map WHERE filename LIKE '%/" + self.game.mapName + ".%'")
-        query.exec_(queryStr)
-        if query.size() > 0:
-            query.first()
-            mapId = query.value(0)
-
-        if mapId != 0:
-            query.prepare("SELECT * FROM table_map_unranked WHERE id = ?")
-            query.addBindValue(mapId)
-            query.exec_()
-            if query.size() > 0:
-                self.game.setInvalid("This map is not ranked.")
-
-        # Why can't this be rephrased to use equality?
-        queryStr = ("SELECT id FROM game_featuredMods WHERE gamemod LIKE '%s'" % self.game.getGamemod() )
-        query.exec_(queryStr)
-
-        if query.size() == 1:
-            query.first()
-            modId = query.value(0)
-        query = QSqlQuery(self.parent.db)
-        query.prepare(
-            "UPDATE game_stats set `startTime` = NOW(), gameType = ?, gameMod = ?, mapId = ?, gameName = ? WHERE id = ?")
-        query.addBindValue(str(self.game.gameType))
-        query.addBindValue(modId)
-        query.addBindValue(mapId)
-        query.addBindValue(self.game.gameName)
-        query.addBindValue(self.game.uuid)
-        if not query.exec_():
-            self.log.debug("fillGameStats error: ")
-            self.log.debug(query.lastError())
-            self.log.debug(self.game.mapName.lower())
-
-        queryStr = ("UPDATE table_map_features set times_played = (times_played +1) WHERE map_id LIKE " + str(mapId))
-        query.exec_(queryStr)
 
     def isModRanked(self, uidmod):
         query = QSqlQuery(self.parent.db)
@@ -841,53 +740,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             nameAI = str(AI).rstrip(string.digits)
             queryStr += (
                             "INSERT INTO `game_player_stats`(`AI`, `gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) VALUES (1, %s, (SELECT id FROM AI_names WHERE login = '%s'), %s, %s, %s, %i, %f, %f);") % (
-                            str(self.game.uuid), nameAI, faction, color, team, place, mean, dev )
+                            str(self.game.id), nameAI, faction, color, team, place, mean, dev )
 
         query = QSqlQuery(self.parent.db)
         query.exec_(queryStr)
-
-    def fillPlayerStats(self, players):
-        queryStr = ""
-        mean = 0.0
-        dev = 0.0
-
-        for player in players:
-
-            name = player.getLogin()
-
-            team = self.game.getTeamOfPlayer(name)
-
-            if team != -1:
-
-                place = int(self.game.getPositionOfPlayer(name))
-                color = self.game.getPlayerColor(place)
-                faction = self.game.getPlayerFaction(place)
-                if color is None or faction is None:
-                    self.log.error("wrong faction or color for place " + str(place) + " of player " + name)
-
-                rating = None
-
-                for playerTS in self.game.trueSkillPlayers:
-                    if str(playerTS.getPlayer()) == str(name):
-                        rating = playerTS.getRating()
-                        break
-
-                if rating is not None:
-                    mean = rating.getMean()
-                    dev = rating.getStandardDeviation()
-
-                queryStr += (
-                                "INSERT INTO `game_player_stats`(`gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) VALUES (%s, %s, %s, %s, %s, %i, %f, %f);") % (
-                                str(self.game.uuid), str(player.id), faction, color, team, place, mean, dev)
-
-        if queryStr != "":
-            query = QSqlQuery(self.parent.db)
-            if not query.exec_(queryStr):
-                self.log.error("player staterror")
-                self.log.error(query.lastError())
-                self.log.error(queryStr)
-        else:
-            self.log.error(self.logGame + "No player stat :(")
 
     def disconnection(self):
         try:
@@ -944,4 +800,3 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def __str__(self):
         return "GameConnection(Player({}),Game({}))".format(self.player.id, self.game)
-

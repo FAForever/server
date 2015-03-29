@@ -21,6 +21,7 @@ import logging
 import time
 
 from PySide.QtSql import QSqlQuery
+import functools
 import trueskill
 from src.abc.base_game import GameConnectionState, BaseGame, InitMode
 from src.players import Player
@@ -341,6 +342,89 @@ class Game(BaseGame):
         self._players = self.players
         self.state = GameState.LIVE
         self._logger.info("Game launched")
+        self.on_game_launched()
+
+    def on_game_launched(self):
+        self.update_game_stats()
+        self.update_game_player_stats()
+
+    def update_game_stats(self):
+        mapId = 0
+        modId = 0
+
+        # What the actual fucking fuck?
+        if "thermo" in self.mapName.lower():
+            self.setInvalid("This map is not ranked.")
+
+        query = QSqlQuery(self.parent.db)
+        # Everyone loves table sacns!
+        queryStr = ("SELECT id FROM table_map WHERE filename LIKE '%/" + self.mapName + ".%'")
+        query.exec_(queryStr)
+        if query.size() > 0:
+            query.first()
+            mapId = query.value(0)
+
+        if mapId != 0:
+            query.prepare("SELECT * FROM table_map_unranked WHERE id = ?")
+            query.addBindValue(mapId)
+            query.exec_()
+            if query.size() > 0:
+                self.setInvalid("This map is not ranked.")
+
+        # Why can't this be rephrased to use equality?
+        queryStr = ("SELECT id FROM game_featuredMods WHERE gamemod LIKE '%s'" % self.getGamemod())
+        query.exec_(queryStr)
+
+        if query.size() == 1:
+            query.first()
+            modId = query.value(0)
+        query = QSqlQuery(self.parent.db)
+        query.prepare("UPDATE game_stats set `startTime` = NOW(),"
+                      "gameType = ?,"
+                      "gameMod = ?,"
+                      "mapId = ?,"
+                      "gameName = ? "
+                      "WHERE id = ?")
+        query.addBindValue(str(self.gameType))
+        query.addBindValue(modId)
+        query.addBindValue(mapId)
+        query.addBindValue(self.gameName)
+        query.addBindValue(self.uuid)
+        if not query.exec_():
+            self._logger.debug("Error updating game_stats:")
+            self._logger.debug(query.lastError())
+            self._logger.debug(self.mapName.lower())
+
+        queryStr = ("UPDATE table_map_features set times_played = (times_played +1) WHERE map_id LIKE " + str(mapId))
+        query.exec_(queryStr)
+
+    def update_game_player_stats(self):
+        queryStr = ""
+        for player in self.players:
+            player_option = functools.partial(self.get_player_option, player.id)
+            team, place, color, faction = [player_option(value)
+                                           for value in ['Team', 'StartSpot', 'Color', 'Faction']]
+
+            if team != -1:
+                if color is None or faction is None:
+                    self._logger.error("wrong faction or color for place {}, {} for player {}".format(color, place, faction))
+                if self.getGamemod() == 'ladder1v1':
+                    mean, dev = player.ladder_rating.mu, player.ladder_rating.sigma
+                else:
+                    mean, dev = player.global_rating.mu, player.global_rating.sigma
+                queryStr += ("INSERT INTO `game_player_stats` "
+                             "(`gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) "
+                             "VALUES (%s, %s, %s, %s, %s, %i, %f, %f);"
+                             .format(str(self.id), str(player.id), faction, color, team, place, mean, dev))
+
+        if queryStr != "":
+            query = QSqlQuery(self.parent.db)
+            if not query.exec_(queryStr):
+                self._logger.error("player staterror")
+                self._logger.error(query.lastError())
+                self._logger.error(queryStr)
+        else:
+            self._logger.error("No player stat :(")
 
     def setAccess(self, access):
         self.access = access
