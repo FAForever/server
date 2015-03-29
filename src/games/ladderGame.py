@@ -82,8 +82,6 @@ class ladder1V1Game(Game):
             self.set_player_option(player.id, 'Faction', player.faction)
             self.set_player_option(player.id, 'Color', 2)
 
-            self.recombineTeams()
-
     def rate_game(self):
         if self.valid:
             new_ratings = self.compute_rating()
@@ -113,7 +111,7 @@ class ladder1V1Game(Game):
             # and for the ladder !
             evenLeague = True
             maxleague = max(iter(self.leagues.items()), key=operator.itemgetter(1))[1]
-            if len(set(self.leagues.values())) != 1 :
+            if len(set(self.leagues.values())) != 1:
                 evenLeague = False
                 
             if not self.isDraw():
@@ -191,7 +189,7 @@ class ladder1V1Game(Game):
                                         query.first()
                                         p.setLeague(league)
                                         p.division = str(query.value(0))
-        else :
+        else:
             tsplayers = self.trueSkillPlayers
             for playerTS in tsplayers : 
                 name = playerTS.getPlayer()

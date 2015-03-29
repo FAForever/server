@@ -251,13 +251,7 @@ class LobbyConnection(QObject):
 
     @timed()
     def checkOldGamesFromPlayer(self):
-
-        game = self.player.getGame()
-        if game:
-            realGame = self.parent.games.find_by_id(self.player.getGame())
-            if realGame:
-                realGame.removeFromAllPlayersToConnect(self.player)
-                realGame.removeTrueSkillPlayer(self.player)
+        pass
 
 
     @timed()

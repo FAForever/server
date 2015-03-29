@@ -276,7 +276,6 @@ class Game(BaseGame):
         if not rating_query.execBatch():
             self._logger.critical("Error persisting ratings to {}_rating: {}".format(rating, game_stats_query.lastError()))
 
-
     def set_player_option(self, id, key, value):
         """
         Set game-associative options for given player, by id
@@ -616,77 +615,12 @@ class Game(BaseGame):
         except:
             self._logger.exception("Something awful happened while updating trueskill!")
 
-
-    def recombineTeams(self):
-
-        try:
-            teamsRecomb = []
-            for team in self.teamAssign:
-                if team != -1:
-                    if len(self.teamAssign[team]) != 0:
-                        if team == 0:
-                            for player in self.teamAssign[team]:
-                                if self.getPositionOfPlayer(player) != -1:
-                                    curTeam = Team()
-                                    for playerTS in self.trueSkillPlayers:
-                                        if str(playerTS.getPlayer()) == str(player):
-                                            curTeam.addPlayer(playerTS.getPlayer(), playerTS.getRating())
-                                            teamsRecomb.append(curTeam)
-                        else:
-                            curTeam = Team()
-                            for player in self.teamAssign[team]:
-                                if self.getPositionOfPlayer(player) != -1:
-                                    for playerTS in self.trueSkillPlayers:
-                                        if str(playerTS.getPlayer()) == str(player):
-                                            curTeam.addPlayer(playerTS.getPlayer(), playerTS.getRating())
-                            teamsRecomb.append(curTeam)
-
-            self.finalTeams = teamsRecomb
-
-            return self.finalTeams
-        except:
-            self._logger.exception("Something awful happened in a recombing function!")
-
-
-    def addTrueSkillPlayer(self, player):
-        self.trueSkillPlayers.append(player)
-
-    def removeTrueSkillAI(self, name):
-        for team in self.trueSkillPlayers:
-            if str(name) == str(team.getPlayer()):
-                self.trueSkillPlayers.remove(team)
-                return 1
-        return 0
-
-    def removeTrueSkillPlayer(self, player):
-        for team in self.trueSkillPlayers:
-            if str(player.getLogin()) == str(team.getPlayer()):
-                self.trueSkillPlayers.remove(team)
-                return 1
-        return 0
-
     @property
     def created_at(self):
         """
         :rtype : time
         """
         return self.createDate
-
-
-    def removeFromAllPlayersToConnect(self, playerToRemove):
-        """Remove playerToRemove from all lists of connections"""
-        # for all the players in the game
-        for player in self.players:
-            # if the player has a connection list
-            if player.getLogin() in self.connections:
-                # we should remove the leaving player of the connection list of that player
-                self.removeFromConnect(player, playerToRemove)
-        # We should also remove the connection list of that leaving player !
-        if playerToRemove.getLogin() in self.connections:
-            del self.connections[playerToRemove.getLogin()]
-
-        if playerToRemove.getLogin() in self.packetReceived:
-            del self.packetReceived[playerToRemove.getLogin()]
 
     def addPlayer(self, player):
         """Add a player to the game"""
