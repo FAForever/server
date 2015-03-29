@@ -119,7 +119,9 @@ def test_mod_vault_like_invalid_uid(mock_config, mock_query, connected_socket, m
     server_thread.command_modvault({'type': 'like',
                                     'uid': 'something_invalid'})
     # call, method:attributes, attribute_index
-    assert server_thread.sendJSON.mock_calls == []
+    (response, ), _ = server_thread.sendJSON.call_args
+    assert response['command'] == 'notice'
+    assert response['style'] == 'error'
 
 @mock.patch('src.lobbyconnection.QSqlQuery')
 def test_mod_vault_download(mock_query, connected_socket, mock_lobby_server):
