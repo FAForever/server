@@ -175,7 +175,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         if action == "HOST":
             self.game.state = GameState.INITIALIZING
             self.game.setHostIP(self.player.getIp())
-            self.game.setHostLocalIP(self.player.getLocalIp())
             self.game.proxy = proxy_map.ProxyMap()
             strlog = (
                 "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.uuid), str(self.game.getGamemod())))

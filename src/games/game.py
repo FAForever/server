@@ -89,9 +89,7 @@ class Game(BaseGame):
         self.hostPlayer = host
         self.hostuuid = hostId
         self.hostip = hostIp
-        self.hostlocalip = hostLocalIp
         self.hostport = hostPort
-        self.hostlocalport = hostLocalPort
         self.name = name
         self.mapName = map
         self.password = None
@@ -548,13 +546,6 @@ class Game(BaseGame):
         else:
             self.hostip = ip
 
-    def setHostLocalIP(self, ip):
-        if ip == '':
-            return 0
-        else:
-            self.hostlocalip = ip
-
-
     def setGameMap(self, map):
         if map == '':
             return False
@@ -587,9 +578,6 @@ class Game(BaseGame):
 
     def getGameAddress(self):
         return "%s:%s" % (str(self.hostip), str(self.hostport))
-
-    def getGameLocalAddress(self):
-        return "%s:%s" % (str(self.hostlocalip), str(self.hostlocalport))
 
     def __str__(self):
         return "Game({})".format(self.uuid)
