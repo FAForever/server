@@ -47,13 +47,7 @@ class ladder1V1Game(Game):
     def setLeaguePlayer(self, player):
         self.leagues[player.getLogin()] = player.league
          
-    def checkNoScore(self):
-        for player in self.players :
-            if not player in self.gameResult:
-                #if the player don't register, we set his score to 0
-                self.gameResult[player] = 0
-
-    def specialInit(self, player):          
+    def specialInit(self, player):
         if player.getAction() == "HOST":
             self.playerToJoin.wantToConnectToGame = True
             
@@ -132,7 +126,7 @@ class ladder1V1Game(Game):
             else:
                 # if not even league:
                 scoreToRemove = 0.5
-                if not evenLeague :
+                if not evenLeague:
                     if self.leagues[player] == maxleague:
                         scoreToRemove = 1
                     else :
