@@ -451,15 +451,6 @@ class Game(BaseGame):
     def addAI(self, name):
         self.AIs.append(name)
 
-    def checkNoScore(self):
-        for player in self.players:
-            if not player in self.gameResult:
-                #if the player don't register, chances are that he died or something
-                self.gameResult[player] = -1
-
-    def getInvalidReason(self):
-        return self.invalidReason
-
     def setInvalid(self, reason):
         self._logger.info("marked as invalid because: {}".format(reason))
         self.valid = False
@@ -467,87 +458,6 @@ class Game(BaseGame):
 
     def specialInit(self, player):
         pass
-
-    def trueSkillUpdate(self, tsresults, tsplayers, logger, db, players, playerFnc="setRating", table="global_rating",
-                        winner=False, sendScore=True):
-
-        noHumanResult = False
-        if len(self.AIs) > 0:
-            noHumanResult = True
-
-        for playerTS in tsplayers:
-            name = playerTS.getPlayer()
-            nameAI = None
-            AI = False
-            if str(name) in self.AIs:
-                logger.debug("This is an AI")
-                nameAI = str(name).rstrip(string.digits)
-                AI = True
-            if tsresults != 0:
-                # if the player was really in a playing team 
-                if str(name) in tsresults.playersNames():
-                    mean = (tsresults.getRating(name).getMean() * self.partial) + (
-                        playerTS.getRating().getMean() * (1 - self.partial))
-                    dev = (tsresults.getRating(name).getStandardDeviation() * self.partial) + (
-                        playerTS.getRating().getStandardDeviation() * (1 - self.partial))
-
-                    resPlayer = tsresults.getRating(name)
-                    resPlayer.setMean(mean)
-                    resPlayer.setStandardDeviation(dev)
-
-                    query = QSqlQuery(db)
-
-                    if winner:
-                        query.prepare("UPDATE %s set mean = ?, deviation = ?, numGames = (numGames + 1) WHERE id = (SELECT id FROM login WHERE login.login = ?)" % table)
-                        query.addBindValue(mean)
-                        query.addBindValue(dev)
-                        query.addBindValue(str(name))
-                        query.exec_()
-                        query.finish()
-                    else:
-                        if AI:
-                            query.prepare("UPDATE AI_rating set mean = ?, deviation = ?, numGames = (numGames +1) WHERE id = (SELECT id FROM AI_names WHERE AI_names.login = ?)")
-                            query.addBindValue(mean)
-                            query.addBindValue(dev)
-                            query.addBindValue(nameAI)
-                            query.exec_()
-                            query.finish()
-
-                            query.prepare("UPDATE game_player_stats set `after_mean` = ?, `after_deviation` = ? WHERE `gameId` = ? AND `playerId` = (SELECT id FROM AI_names WHERE login = ?)")
-                            query.addBindValue(mean)
-                            query.addBindValue(dev)
-                            query.addBindValue(str(self.uuid))
-                            query.addBindValue(nameAI)
-                            query.exec_()
-                            query.finish()
-                        else:
-                            if not noHumanResult:
-                                query.prepare("UPDATE %s set mean = ?, deviation = ?, numGames = (numGames +1) WHERE id = (SELECT id FROM login WHERE login.login = ?)" % table)
-                                query.addBindValue(mean)
-                                query.addBindValue(dev)
-                                query.addBindValue(str(name))
-                                query.exec_()
-                                query.finish()
-
-                                query.prepare("UPDATE game_player_stats set `after_mean` = ?, `after_deviation` = ? WHERE `gameId` = ? AND `playerId` = (SELECT id FROM AI_names WHERE login = ?)")
-                                query.addBindValue(mean)
-                                query.addBindValue(dev)
-                                query.addBindValue(str(self.uuid))
-                                query.addBindValue(str(name))
-                                query.exec_()
-                                query.finish()
-
-                    # if the player is still online, we update his rating
-                    if not noHumanResult:
-                        for player in players.players():
-                            if str(player.getLogin()) == str(name):
-                                logger.debug("found player online")
-                                function = getattr(player, playerFnc)
-                                function(resPlayer)
-                                break
-
-            else:
-                logger.debug("ERROR: No Valid TS results!")
 
     def sendMessageToPlayers(self, players, name, message):
         for player in players.players():
@@ -566,18 +476,6 @@ class Game(BaseGame):
                     pass
 
                 break
-
-    def isAllScoresThere(self):
-        if len(self.gameFaResult) != self.numPlayers or len(self.gameResult) != self.numPlayers:
-            return False
-
-        foundAVictory = False
-        for player in self.gameFaResult:
-            if self.gameFaResult[player] == "score":
-                return False
-            if self.gameFaResult[player] == "victory" or self.gameFaResult[player] == "draw":
-                foundAVictory = True
-        return foundAVictory
 
     def get_army_result(self, army):
         """

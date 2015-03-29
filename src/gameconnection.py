@@ -582,47 +582,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         else:
             self._state = GameConnectionState.ENDED
 
-        state = self.game.state
-        if state == GameState.LIVE:
-            curplayers = len(self.game.players)
-            allScoreHere = False
-            if hasattr(self.game, "isAllScoresThere"):
-                allScoreHere = self.game.isAllScoresThere()
-
-            if curplayers == 0 or allScoreHere:
-                self.sendGameInfo()
-
-                for playerTS in self.game.trueSkillPlayers:
-                    name = playerTS.getPlayer()
-                    for player in self.listUsers.getAllPlayers():
-                        if player is not None:
-                            if str(name) == player.getLogin():
-                                for conn in self.parent.parent.FALobby.recorders:
-                                    conn.sendJSON(self.parent.parent.jsonPlayer(player))
-
-                self.games.removeGame(self.game)
-                self._game = None
-
-        # if game in lobby state
-        if state != GameState.LIVE:
-            getAction = self.player.getAction()
-            if getAction == "HOST":
-                # if the player was the host (so, not playing), we remove his game
-                self.sendGameInfo()
-                self.games.removeGame(self.game)
-                self._game = None
-
-            elif getAction == 'JOIN':
-                minplayers = self.game.minPlayer
-                curplayers = len(self.game.players)
-                if minplayers == 2 or curplayers == 0:
-                    self.sendGameInfo()
-                    self.games.removeGame(self.game)
-                    self._game = None
-        # if the game was in play.
-        else:
-            self.sendGameInfo()
-
     def _send_create_lobby(self):
         """
         Used for initializing the game to start listening on UDP
