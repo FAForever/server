@@ -146,3 +146,26 @@ def test_mod_vault_no_type(mock_query,
     # call, method:attributes, attribute_index
     assert server_thread.sendJSON.mock_calls == []
 
+@mock.patch('src.lobbyconnection.QSqlQuery')
+def test_mod_vault_download(mock_query, connected_socket, mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'type': 'download',
+                                    'uid': None})
+    mock_query.return_value.prepare.assert_called_with("UPDATE `table_mod` SET downloads=downloads+1 WHERE uid = ?")
+
+# TODO: implement it
+def test_mod_vault_addcomment(connected_socket, mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'type': 'addcomment'})
+
+def test_mod_vault_invalid_type(connected_socket,
+                                mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'type': 'DragonfireNegativeTest'})
+    # TODO: what to check?
+
+def test_mod_vault_no_type(connected_socket,
+                           mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'invalidKey': None})
+    # TODO: what to check?
