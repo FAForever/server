@@ -212,51 +212,15 @@ class ladder1V1Game(Game):
     def setHostInGame(self, state):
         self.hosted = state        
 
-    def updateTrueskillFor1v1(self):
-        """ Update all scores from the DB before updating the results"""
-        try :
-            for team in self.finalTeams1v1 :
-                for member in team.players() :
-                    query = QSqlQuery(self.parent.db)
-                    query.prepare("SELECT mean, deviation FROM ladder1v1_rating WHERE id = (SELECT id FROM login WHERE login = ?)")
-                    query.addBindValue(member.getId())
-                    query.exec_()
-                    self._logger.debug("updating a player")
-                    if query.size() > 0:
-                        query.first()
-                        team.getRating(member).setMean(query.value(0))
-                        team.getRating(member).setStandardDeviation(query.value(1))
-                    else :
-                        self._logger.debug("error updating a player")
-                        self._logger.debug(member.getId())
-        except :
-            self._logger.exception("Something awful happened while updating trueskill!")
-
-    # here we only take result, not score.
-    def compute_rating(self, update=True):
-        if update :
-            self.updateTrueskill()
-        
-        
-        self.computeScoreFor1v1()
-        gameInfo = GameInfo()
-        calculator = FactorGraphTrueSkillCalculator()
-        try :
-            newRatings = calculator.calculateNewRatings(gameInfo, self.finalTeams, self.results)
-            return newRatings
-        except :
-            return 0
-    
-    def computeResults1v1(self):
-        self.updateTrueskillFor1v1()
-        self.computeScoreFor1v1()
-        gameInfo = GameInfo()
-        calculator = FactorGraphTrueSkillCalculator()
-        
-        try :
-            newRatings = calculator.calculateNewRatings(gameInfo, self.finalTeams1v1, self.results)
-            return newRatings
-        except :
-            return 0
+    def get_army_result(self, army):
+        """
+        The head-to-head matchup ranking uses only win/loss as a factor
+        :param army:
+        :return:
+        """
+        for result in self._results[army]:
+            if result[1] == 'victory':
+                return 1
+        return 0
 
 
