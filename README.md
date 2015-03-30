@@ -68,7 +68,7 @@ GPLv3. See the [license](license.txt) file.
 
 # Network Protocol
 
-WIP: JSON Protocol Overview based on [QStreamData](http://doc.qt.io/qt-5/qdatastream.html) (UTF-16, BigEndian)
+WIP: JSON Protocol Overview based on [QDataStream](http://doc.qt.io/qt-5/qdatastream.html) (UTF-16, BigEndian)
 
 ## Incoming Packages
 

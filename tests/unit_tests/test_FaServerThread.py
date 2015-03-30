@@ -153,19 +153,20 @@ def test_mod_vault_download(mock_query, connected_socket, mock_lobby_server):
                                     'uid': None})
     mock_query.return_value.prepare.assert_called_with("UPDATE `table_mod` SET downloads=downloads+1 WHERE uid = ?")
 
-# TODO: implement it
 def test_mod_vault_addcomment(connected_socket, mock_lobby_server):
     server_thread = LobbyConnection(connected_socket, mock_lobby_server)
-    server_thread.command_modvault({'type': 'addcomment'})
+    with pytest.raises(NotImplementedError):
+        server_thread.command_modvault({'type': 'addcomment'})
 
 def test_mod_vault_invalid_type(connected_socket,
                                 mock_lobby_server):
     server_thread = LobbyConnection(connected_socket, mock_lobby_server)
-    server_thread.command_modvault({'type': 'DragonfireNegativeTest'})
-    # TODO: what to check?
+    with pytest.raises(ValueError):
+        server_thread.command_modvault({'type': 'DragonfireNegativeTest'})
 
 def test_mod_vault_no_type(connected_socket,
                            mock_lobby_server):
     server_thread = LobbyConnection(connected_socket, mock_lobby_server)
-    server_thread.command_modvault({'invalidKey': None})
-    # TODO: what to check?
+    with pytest.raises(KeyError):
+        server_thread.command_modvault({'invalidKey': None})
+
