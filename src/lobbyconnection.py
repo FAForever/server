@@ -399,6 +399,12 @@ class LobbyConnection(QObject):
                 if not 'version' in message:
                     self.sendJSON(dict(command="notice", style="error", text="No mod version provided."))
                     return
+                if not 'big' in message:
+                    self.sendJSON(dict(command="notice", style="error", text="No big provided."))
+                    return
+                if not 'small' in message:
+                    self.sendJSON(dict(command="notice", style="error", text="No small provided."))
+                    return
 
                 name = message["name"]
                 name = name.replace("'", "\\'")

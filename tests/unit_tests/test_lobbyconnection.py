@@ -297,7 +297,7 @@ def test_handle_action_invalidData(fa_server_thread):
 @mock.patch('src.lobbyconnection.QSqlQuery')
 @mock.patch('src.lobbyconnection.QFile')
 @mock.patch('src.lobbyconnection.zipfile')
-def test_handle_action_upload_map(mock_zipfile, mock_qfile, mock_query, mock_config, fa_server_thread):
+def test_handle_action_upload_mod(mock_zipfile, mock_qfile, mock_query, mock_config, fa_server_thread):
     fa_server_thread.sendJSON = mock.Mock()
 
     stream = mock.Mock()
@@ -307,9 +307,87 @@ def test_handle_action_upload_map(mock_zipfile, mock_qfile, mock_query, mock_con
                         'small': '', 'big': ''})
     stream.readQString.side_effect = ['', '', zipMap, infos, 0, mock.Mock()]
 
+    # fake no db entry exists
     mock_query.return_value.exec_.return_value = True
     mock_query.return_value.size.return_value = 0
 
     fa_server_thread.handleAction('UPLOAD_MOD', stream)
     fa_server_thread.sendJSON.assert_called_once_with( \
         dict(command="notice", style="info", text="Mod correctly uploaded."))
+
+@mock.patch('src.lobbyconnection.Config')
+@mock.patch('src.lobbyconnection.QSqlQuery')
+@mock.patch('src.lobbyconnection.QFile')
+@mock.patch('src.lobbyconnection.zipfile')
+def test_handle_action_upload_mod_invalid_zip(mock_zipfile, mock_qfile, mock_query, mock_config, fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+
+    stream = mock.Mock()
+    zipMap = mock.MagicMock()
+    infos = json.dumps({'name': '', 'uid': '', 'description': '',
+                        'author': '', 'ui_only': '', 'version': '',
+                        'small': '', 'big': ''})
+    stream.readQString.side_effect = ['', '', zipMap, infos, 0, mock.Mock()]
+
+    # fake no db entry exists
+    mock_query.return_value.size.return_value = 0
+
+    # is invalid zip
+    mock_zipfile.is_zipfile.return_value = False
+
+    fa_server_thread.handleAction('UPLOAD_MOD', stream)
+    (response, ), _ = fa_server_thread.sendJSON.call_args
+    assert response['command'] == 'notice'
+    assert response['style'] == 'error'
+
+@mock.patch('src.lobbyconnection.Config')
+@mock.patch('src.lobbyconnection.QSqlQuery')
+@mock.patch('src.lobbyconnection.QFile')
+@mock.patch('src.lobbyconnection.zipfile')
+def test_handle_action_upload_mod_exists(mock_zipfile, mock_qfile, mock_query, mock_config, fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+
+    stream = mock.Mock()
+    zipMap = mock.MagicMock()
+    infos = json.dumps({'name': '', 'uid': '', 'description': '',
+                        'author': '', 'ui_only': '', 'version': '',
+                        'small': '', 'big': ''})
+    stream.readQString.side_effect = ['', '', zipMap, infos, 0, mock.Mock()]
+
+    # Mod allready exists
+    mock_query.return_value.size.return_value = 1
+
+    fa_server_thread.handleAction('UPLOAD_MOD', stream)
+    (response, ), _ = fa_server_thread.sendJSON.call_args
+    assert response['command'] == 'notice'
+    assert response['style'] == 'error'
+
+
+def test_handle_action_upload_mod_invalid_messages(fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+
+    zipMap = mock.MagicMock()
+    infos = {'name': '', 'uid': '', 'description': '',
+             'author': '', 'ui_only': '', 'version': '',
+             'small': '', 'big': ''}
+
+    error_messages = {'name': 'No mod name provided.',
+                      'uid': 'No uid provided.',
+                      'description': 'No description provided.',
+                      'author': 'No author provided.',
+                      'ui_only': 'No mod type provided.',
+                      'version': 'No mod version provided.',
+                      'big': 'No big provided.',
+                      'small': 'No small provided.'}
+
+    for key in infos:
+        stream = mock.Mock()
+        invalid_message = infos.copy()
+        del invalid_message[key]
+        stream.readQString.side_effect = ['', '', zipMap, json.dumps(invalid_message), 0, mock.Mock()]
+
+        fa_server_thread.handleAction('UPLOAD_MOD', stream)
+        (response, ), _ = fa_server_thread.sendJSON.call_args
+        assert response['command'] == 'notice'
+        assert response['style'] == 'error'
+        assert response['text'] == error_messages[key]
