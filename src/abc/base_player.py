@@ -18,7 +18,7 @@ class BasePlayer():
 
     @property
     def global_rating(self):
-        return Rating(*self._global_rating)
+        return self._global_rating
 
     @global_rating.setter
     def global_rating(self, value: Rating):
@@ -29,7 +29,7 @@ class BasePlayer():
 
     @property
     def ladder_rating(self):
-        return Rating(*self._ladder_rating)
+        return self._ladder_rating
 
     @ladder_rating.setter
     def ladder_rating(self, value: Rating):
