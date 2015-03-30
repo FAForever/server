@@ -39,6 +39,8 @@ from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QObject
 from PySide import QtNetwork
 from PySide.QtSql import QSqlQuery
 import pygeoip
+import trueskill
+from trueskill import Rating
 
 from src.decorators import timed
 from src.players import *
@@ -1775,7 +1777,7 @@ Thanks,\n\
             self.sendReplaySection()
 
             self.log.debug("sending new player")
-            for user in self.parent.listUsers.players():
+            for user in self.parent.listUsers.players:
 
                 if user.getLogin() != str(login):
 
@@ -1816,10 +1818,8 @@ Thanks,\n\
                     if player == self.player:
                         continue
                     #minimum game quality to start a match.
-                    trueSkill = self.player.ladder1v1Skill
-                    deviation = trueSkill.getRating().getStandardDeviation()
+                    (mean, deviation) = self.player.ladder_rating
 
-                    gameQuality = 0.8
                     if deviation > 450:
                         gameQuality = 0.01
                     elif deviation > 350:
@@ -1831,13 +1831,14 @@ Thanks,\n\
                     else:
                         gameQuality = 0.8
 
-                    curTrueSkill = player.ladder1v1Skill
+                    (match_mean, match_deviation) = player.ladder_rating
 
-                    if deviation > 350 and curTrueSkill.getRating().getConservativeRating() > 1600:
+                    if deviation > 350 and match_mean - 3 * match_deviation > 1600:
                         continue
 
-                    curMatchQuality = self.getMatchQuality(trueSkill, curTrueSkill)
-                    if curMatchQuality >= gameQuality:
+                    quality = trueskill.quality_1vs1(Rating(*self.player.ladder_rating),
+                                                     Rating(*player.ladder_rating))
+                    if quality >= gameQuality:
                         self.addPotentialPlayer(player.getLogin())
 
             if self in self.parent.recorders:
