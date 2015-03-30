@@ -53,9 +53,11 @@ def mock_lobby_server(db):
 
 def test_command_game_host_calls_host_game(connected_socket,
                                            mock_lobby_server,
-                                           test_game_info):
+                                           test_game_info,
+                                           players):
     mock_lobby_server.games.create_game = mock.Mock()
     server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.player = players.hosting
     server_thread.command_game_host(test_game_info)
     mock_lobby_server.games.create_game\
         .assert_called_with(test_game_info['access'],

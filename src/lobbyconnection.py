@@ -101,7 +101,7 @@ class LobbyConnection(QObject):
 
             self.addGameModes()
 
-            self.player = Player()
+            self.player = None
 
             self.initPing = True
             self.ponged = False
@@ -1351,7 +1351,6 @@ Thanks,\n\
             password = message['password']
             uniqueIdCoded = message['unique_id']
             uniqueId = None
-            localIp = message['local_ip']
             oldsession = message.get('session', None)
 
             try:
@@ -1522,8 +1521,15 @@ Thanks,\n\
                 self.log.error(query.lastError())
 
             if self.player is not None:
-                self.player.setupPlayer(self.session, str(login), self.ip, self.port, localIp, self.uid, trueSkill,
-                                        trueSkill1v1, numGames, self)
+                self.player = Player(str(login),
+                                     self.session,
+                                     self.ip,
+                                     self.port,
+                                     self.uid,
+                                     trueSkill,
+                                     trueSkill1v1,
+                                     numGames,
+                                     self)
                 self.player.lobbyVersion = version
                 self.player.resolvedAddress = self.player.getIp()
 
