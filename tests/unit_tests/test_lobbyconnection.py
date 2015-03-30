@@ -151,21 +151,24 @@ def test_social_teaminvite(fa_server_thread):
     fa_server_thread.parent.listUsers.findByName.return_value.lobbyThread.sendJSON \
         .assert_called_with(dict(command="team", action="teaminvitation", who="Team Leader"))
 
+
 # TODO: check in ingetration tests db state
 def test_social_friends(fa_server_thread):
     fa_server_thread.parent.listUsers.findByName = mock.Mock()
     assert fa_server_thread.friendList == []
-    friends = set(['Sheeo', 'Dragonfire', 'Spooky'])
+    friends = {'Sheeo', 'Dragonfire', 'Spooky'}
     fa_server_thread.command_social({'friends': friends})
     assert fa_server_thread.friendList == friends
+
 
 # TODO: check in ingetration tests db state
 def test_social_foes(fa_server_thread):
     fa_server_thread.parent.listUsers.findByName = mock.Mock()
     assert fa_server_thread.foeList == []
-    foes = set(['Cheater', 'Haxxor', 'Boom1234'])
+    foes = {'Cheater', 'Haxxor', 'Boom1234'}
     fa_server_thread.command_social({'foes': foes})
     assert fa_server_thread.foeList == foes
+
 
 # Ask Session
 # TODO: @sheeo add special cases with Timer
