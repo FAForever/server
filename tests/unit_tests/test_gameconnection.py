@@ -71,6 +71,17 @@ def test_handle_action_GameState_idle_adds_connection(game_connection, players, 
     game.add_game_connection.assert_called_with(game_connection)
 
 @asyncio.coroutine
+def test_handle_action_GameState_idle_non_searching_player(game_connection, players, game):
+    game_connection.player = players.hosting
+    game_connection.lobby = mock.Mock()
+    game_connection.abort = mock.Mock()
+    players.hosting.action = None
+    yield from game_connection.handle_action('GameState', ['Idle'])
+    game_connection.lobby.sendJSON.assert_called_with(dict(command='notice',
+                                                           style='kill'))
+    game_connection.abort.assert_any_call()
+
+@asyncio.coroutine
 def test_handle_action_GameState_idle_as_peer_sends_CreateLobby(game_connection, players, games, transport):
     """
     :type game_connection: GameConnection

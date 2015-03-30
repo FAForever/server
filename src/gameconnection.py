@@ -170,7 +170,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         assert self.game
         self.game.add_game_connection(self)
         self.send_Ping()
-        action = self.player.getAction()
+        action = self.player.action
 
         if action == "HOST":
             self.game.state = GameState.INITIALIZING
@@ -188,9 +188,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self._send_create_lobby()
 
         else:
-            # We tell the lobby that FA must be killed.
             self.lobby.sendJSON(dict(command="notice", style="kill"))
             self.log.debug("QUIT - No player action :(")
+            self.abort()
 
     def abort(self):
         """
