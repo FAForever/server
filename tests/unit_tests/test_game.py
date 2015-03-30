@@ -127,6 +127,16 @@ def test_game_launch_freezes_players(game: Game, players):
     assert game.players == {players.hosting, players.joining}
 
 
+def test_update_ratings(game: Game, players):
+    with patch('src.games.game.QSqlQuery') as query:
+        game.state = GameState.LOBBY
+        add_connected_player(game, players.hosting)
+        query().size.return_value = 1
+        query().value.side_effect = [2000, 125]
+        game.update_ratings()
+        assert players.hosting.global_rating == (2000, 125)
+
+
 def test_persist_rating_change_stats_by_game(game: Game, players):
     with patch('src.games.game.QSqlQuery') as query:
         game_stats_query = mock.Mock()
