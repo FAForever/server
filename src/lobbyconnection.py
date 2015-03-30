@@ -1526,9 +1526,6 @@ Thanks,\n\
                                      self.ip,
                                      self.port,
                                      self.uid,
-                                     trueSkill,
-                                     trueSkill1v1,
-                                     numGames,
                                      self)
                 self.player.lobbyVersion = version
                 self.player.resolvedAddress = self.player.getIp()

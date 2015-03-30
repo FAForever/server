@@ -70,8 +70,6 @@ class Player(BasePlayer):
         self.gamePort = port
         self.uuid = uuid
         self.lobbyThread = lobbyThread
-        self.globalSkill = globalSkill
-        self.ladder1v1Skill = trueSkill1v1
 
     def setGamePort(self, gamePort):
         if gamePort == 0 :
