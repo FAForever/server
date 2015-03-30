@@ -69,8 +69,6 @@ if __name__ == '__main__':
                 self.logger.error(self.db.lastError().text())
                 sys.exit(1)
 
-            self.db.close()
-
             self.dirtyGameList = []
             self.games = GamesService(self.players_online, self.db)
 
