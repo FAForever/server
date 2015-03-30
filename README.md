@@ -78,3 +78,9 @@ WIP: JSON Protocol Overview based on [QDataStream](http://doc.qt.io/qt-5/qdatast
 * `{command: modvault, type: like, uid: <uid>}`: check if user liked the mod, otherwise increase the like counter
 * `{command: modvault, type: download, uid: <uid>}`: notify server about an download (for downlaod counter), does not start the download
 * `{command: modvault, type: addcomment}`: not implemented
+
+###### Social
+Can be combined !, e.g. `{command: social, teaminvite: <...>, friends: <..>}`
+* `{command: social, teaminvite: }`: 
+* `{command: social, friends: }`:
+* `{command: social, foes: <list of ALL foes>}`: Find the delta and add/remove foes to db 
