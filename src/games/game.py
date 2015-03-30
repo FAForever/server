@@ -15,7 +15,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
-from enum import Enum
+from enum import Enum, IntEnum
 import string
 import logging
 import time
@@ -27,20 +27,29 @@ from src.abc.base_game import GameConnectionState, BaseGame, InitMode
 from src.players import Player
 
 
-class GameState(Enum):
+class GameState(IntEnum):
     INITIALIZING = 0
     LOBBY = 1
     LIVE = 2
     ENDED = 3
 
+
+class Victory(IntEnum):
+    DEMORALIZATION = 0
+    DOMINATION = 1
+    ERADICATION = 2
+    SANDBOX = 3
+
     @staticmethod
-    def from_gpgnet_state(value):
-        if value == 'Idle':
-            return GameState.INITIALIZING
-        if value == 'Lobby':
-            return GameState.LOBBY
-        if value == 'Launching':
-            return GameState.LIVE
+    def from_gpgnet_string(value):
+        if value == "demoralization":
+            return Victory.DEMORALIZATION
+        elif value == "domination":
+            return Victory.DOMINATION
+        elif value == "eradication":
+            return Victory.ERADICATION
+        elif value == "sandbox":
+            return Victory.SANDBOX
 
 
 class GameError(Exception):
@@ -115,8 +124,13 @@ class Game(BaseGame):
         self.playerColor = {}
         self.state = GameState.INITIALIZING
         self._connections = {}
-        self.gameOptions = {'FogOfWar': 'explored', 'GameSpeed': 'normal', 'CheatsEnabled': 'false',
-                            'PrebuiltUnits': 'Off', 'NoRushOption': 'Off', 'RestrictedCategories': 0}
+        self.gameOptions = {'FogOfWar': 'explored',
+                            'GameSpeed': 'normal',
+                            'Victory': 'demoralization',
+                            'CheatsEnabled': 'false',
+                            'PrebuiltUnits': 'Off',
+                            'NoRushOption': 'Off',
+                            'RestrictedCategories': 0}
 
         self.mods = []
         self._logger.info("{} created".format(self))
@@ -331,6 +345,28 @@ class Game(BaseGame):
         except KeyError:
             return None
 
+    def validate_game(self):
+        """
+        General rules for validation of game rankedness
+        """
+        if self.gameOptions['Victory'] != Victory.DEMORALIZATION and self.getGamemod() != 'coop':
+            self.setInvalid("Only assassination mode is ranked")
+
+        elif self.gameOptions["FogOfWar"] != "explored":
+            self.setInvalid("Fog of war not activated")
+
+        elif self.gameOptions["CheatsEnabled"] != "false":
+            self.setInvalid("Cheats were activated")
+
+        elif self.gameOptions["PrebuiltUnits"] != "Off":
+            self.setInvalid("Prebuilt was activated")
+
+        elif self.gameOptions["NoRushOption"] != "Off":
+            self.setInvalid("No rush games are not ranked")
+
+        elif self.gameOptions["RestrictedCategories"] != 0:
+            self.setInvalid("Restricted games are not ranked")
+
     def launch(self):
         """
         Mark the game as live.
@@ -342,6 +378,7 @@ class Game(BaseGame):
         self._players = self.players
         self.state = GameState.LIVE
         self._logger.info("Game launched")
+        self.validate_game()
         self.on_game_launched()
 
     def on_game_launched(self):

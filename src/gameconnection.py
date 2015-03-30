@@ -29,7 +29,7 @@ import functools
 
 from src.abc.base_game import GameConnectionState
 from src.connectivity import TestPeer, Connectivity
-from src.games.game import Game, GameState
+from src.games.game import Game, GameState, Victory
 from src.decorators import with_logger, timed
 from src.games_service import GamesService
 from src.protocol.gpgnet import GpgNetServerProtocol
@@ -389,7 +389,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
             elif key == 'GameOption':
 
-                if values[0] in self.game.gameOptions:
+                if values[0] == 'Victory':
+                    self.game.gameOptions['Victory'] = Victory.from_gpgnet_string(values[1])
+                elif values[0] in self.game.gameOptions:
                     self.game.gameOptions[values[0]] = values[1]
 
                 if values[0] == "Slots":
@@ -404,8 +406,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                         self.game.setGameMap(mapname)
                         self.sendGameInfo()
 
-                elif values[0] == 'Victory':
-                    self.game.setGameType(values[1])
 
             elif key == 'GameMods':
                 if values[0] == "activated":
@@ -525,35 +525,12 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             if self.player.getAction() == "HOST":
                 self.game.launch()
 
-                self.fillPlayerStats(self.game.players)
-                self.fillAIStats(self.game.AIs)
                 for player in self.game.players:
                     player.setAction("PLAYING")
 
-                if not all((i.count()) == self.game.finalTeams[0].count() for i in self.game.finalTeams):
-                    self.game.setInvalid("All Teams don't the same number of players.")
-
                 self.sendGameInfo()
 
-                if self.game.gameType != 0 and self.game.getGamemod() != "coop":
-                    self.game.setInvalid("Only assassination mode is ranked")
-
-                elif self.game.gameOptions["FogOfWar"] != "explored":
-                    self.game.setInvalid("Fog of war not activated")
-
-                elif self.game.gameOptions["CheatsEnabled"] != "false":
-                    self.game.setInvalid("Cheats were activated")
-
-                elif self.game.gameOptions["PrebuiltUnits"] != "Off":
-                    self.game.setInvalid("Prebuilt was activated")
-
-                elif self.game.gameOptions["NoRushOption"] != "Off":
-                    self.game.setInvalid("No rush games are not ranked")
-
-                elif self.game.gameOptions["RestrictedCategories"] != 0:
-                    self.game.setInvalid("Restricted games are not ranked")
-
-                elif len(self.game.mods) > 0:
+                if len(self.game.mods) > 0:
                     for uid in self.game.mods:
                         if not self.isModRanked(uid):
                             if uid == "e7846e9b-23a4-4b95-ae3a-fb69b289a585":
