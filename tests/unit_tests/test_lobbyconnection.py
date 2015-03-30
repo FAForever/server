@@ -292,7 +292,6 @@ def test_handle_action_invalidData(fa_server_thread):
 # TODO: for @ckitching or if pr #23 is merged
 
 # handle action - UPLOAD_MOD
-
 @mock.patch('src.lobbyconnection.Config')
 @mock.patch('src.lobbyconnection.QSqlQuery')
 @mock.patch('src.lobbyconnection.QFile')
@@ -308,7 +307,6 @@ def test_handle_action_upload_mod(mock_zipfile, mock_qfile, mock_query, mock_con
     stream.readQString.side_effect = ['', '', zipMap, infos, 0, mock.Mock()]
 
     # fake no db entry exists
-    mock_query.return_value.exec_.return_value = True
     mock_query.return_value.size.return_value = 0
 
     fa_server_thread.handleAction('UPLOAD_MOD', stream)
@@ -387,6 +385,103 @@ def test_handle_action_upload_mod_invalid_messages(fa_server_thread):
         stream.readQString.side_effect = ['', '', zipMap, json.dumps(invalid_message), 0, mock.Mock()]
 
         fa_server_thread.handleAction('UPLOAD_MOD', stream)
+        (response, ), _ = fa_server_thread.sendJSON.call_args
+        assert response['command'] == 'notice'
+        assert response['style'] == 'error'
+        assert response['text'] == error_messages[key]
+
+# handle action - UPLOAD_MAP
+@mock.patch('src.lobbyconnection.Config')
+@mock.patch('src.lobbyconnection.QSqlQuery')
+@mock.patch('src.lobbyconnection.QFile')
+@mock.patch('src.lobbyconnection.zipfile')
+def test_handle_action_upload_map(mock_zipfile, mock_qfile, mock_query, mock_config, fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+
+    stream = mock.Mock()
+    zipMap = mock.MagicMock()
+    infos = json.dumps({'name': '', 'description': '', 'max_players': '',
+                        'map_type': '', 'battle_type': '', 'map_size': {'0': '', '1': ''},
+                        'version': ''})
+    stream.readQString.side_effect = ['', '', zipMap, infos, 0, mock.Mock()]
+
+    # fake no db entry exists
+    mock_query.return_value.size.return_value = 0
+
+
+    fa_server_thread.handleAction('UPLOAD_MAP', stream)
+    fa_server_thread.sendJSON.assert_called_once_with( \
+        dict(command="notice", style="info", text="Map correctly uploaded."))
+
+@mock.patch('src.lobbyconnection.Config')
+@mock.patch('src.lobbyconnection.QSqlQuery')
+@mock.patch('src.lobbyconnection.QFile')
+@mock.patch('src.lobbyconnection.zipfile')
+def test_handle_action_upload_map_invalid_zip(mock_zipfile, mock_qfile, mock_query, mock_config, fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+
+    stream = mock.Mock()
+    zipMap = mock.MagicMock()
+    infos = json.dumps({'name': '', 'description': '', 'max_players': '',
+                        'map_type': '', 'battle_type': '', 'map_size': {'0': '', '1': ''},
+                        'version': ''})
+    stream.readQString.side_effect = ['', '', zipMap, infos, 0, mock.Mock()]
+
+    # fake no db entry exists
+    mock_query.return_value.size.return_value = 0
+
+    # is invalid zip
+    mock_zipfile.is_zipfile.return_value = False
+
+    fa_server_thread.handleAction('UPLOAD_MAP', stream)
+    fa_server_thread.sendJSON.assert_called_once_with( \
+        dict(command="notice", style="error", text="Cannot unzip map. Upload error ?"))
+
+@mock.patch('src.lobbyconnection.Config')
+@mock.patch('src.lobbyconnection.QSqlQuery')
+@mock.patch('src.lobbyconnection.QFile')
+@mock.patch('src.lobbyconnection.zipfile')
+def test_handle_action_upload_map_exists(mock_zipfile, mock_qfile, mock_query, mock_config, fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+
+    stream = mock.Mock()
+    zipMap = mock.MagicMock()
+    infos = json.dumps({'name': '', 'description': '', 'max_players': '',
+                        'map_type': '', 'battle_type': '', 'map_size': {'0': '', '1': ''},
+                        'version': ''})
+    stream.readQString.side_effect = ['', '', zipMap, infos, 0, mock.Mock()]
+
+    # map allready exists
+    mock_query.return_value.size.return_value = 1
+
+    fa_server_thread.handleAction('UPLOAD_MAP', stream)
+    (response, ), _ = fa_server_thread.sendJSON.call_args
+    assert response['command'] == 'notice'
+    assert response['style'] == 'error'
+
+def test_handle_action_upload_map_invalid_messages(fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+
+    zipMap = mock.MagicMock()
+    infos = {'name': '', 'description': '', 'max_players': '',
+             'map_type': '', 'battle_type': '', 'map_size': {'0': '', '1': ''},
+             'version': ''}
+
+    error_messages = {'name': 'No map name provided.',
+                      'description': 'No map description provided.',
+                      'max_players': 'No max players provided.',
+                      'map_type': 'No map type provided.',
+                      'battle_type': 'No battle type provided.',
+                      'map_size': 'No map size provided.',
+                      'version': 'No version provided.'}
+
+    for key in infos:
+        stream = mock.Mock()
+        invalid_message = infos.copy()
+        del invalid_message[key]
+        stream.readQString.side_effect = ['', '', zipMap, json.dumps(invalid_message), 0, mock.Mock()]
+
+        fa_server_thread.handleAction('UPLOAD_MAP', stream)
         (response, ), _ = fa_server_thread.sendJSON.call_args
         assert response['command'] == 'notice'
         assert response['style'] == 'error'
