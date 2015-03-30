@@ -56,9 +56,9 @@ Set the `QUAMASH_QTIMPL` environment variable to `PySide`.
 
     export QUAMASH_QTIMPL=PySide
 
-Also create the `passwords.py` file. This can be done by executing `.travis.sh`.
+Also create the `passwords.py` file. This can be done by copying `passwords.py.example`.
 
-    bash .travis.sh
+    cp passwords.py.example passwords.py
 
 Use `py.test` to execute the unit tests.
 
