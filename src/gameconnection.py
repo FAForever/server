@@ -188,7 +188,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self._send_create_lobby()
 
         else:
-            self.lobby.sendJSON(dict(command="notice", style="kill"))
             self.log.debug("QUIT - No player action :(")
             self.abort()
 
@@ -568,20 +567,20 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         """
         if self.game is None:
             text = "You were unable to connect to the host because he has left the game."
-            self.lobby.sendJSON(dict(command="notice", style="kill"))
-            self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
+            self.lobby.sendJSON(dict(command="notice",
+                                     style="info",
+                                     text=str(text)))
             self.abort()
             return
 
-        port = self.player.gamePort
-        login = self.player.getLogin()
-        uid = int(self.player.getId())
-
-        if not self.game.name is None:
+        if self.game.name is not None:
             if self.game.name.startswith('#'):
                 self.sendToRelay("P2PReconnect", [])
 
-        self.send_CreateLobby(self.game.init_mode, port, login, uid, 1)
+        self.send_CreateLobby(self.game.init_mode,
+                              self.player.gamePort,
+                              self.player.login,
+                              self.player.id, 1)
 
     def _send_host_game(self, mapname):
         """ Create a lobby with a specific map"""

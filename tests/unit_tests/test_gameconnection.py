@@ -77,8 +77,6 @@ def test_handle_action_GameState_idle_non_searching_player(game_connection, play
     game_connection.abort = mock.Mock()
     players.hosting.action = None
     yield from game_connection.handle_action('GameState', ['Idle'])
-    game_connection.lobby.sendJSON.assert_called_with(dict(command='notice',
-                                                           style='kill'))
     game_connection.abort.assert_any_call()
 
 @asyncio.coroutine
