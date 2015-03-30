@@ -1138,7 +1138,7 @@ Thanks,\n\
 
     @timed()
     def command_social(self, message):
-
+        success = False
         if "teaminvite" in message:
             who = message['teaminvite']
             player = self.parent.listUsers.findByName(who)
@@ -1149,6 +1149,8 @@ Thanks,\n\
                 if player.getLogin() != self.player.getLogin():
                     player.lobbyThread.sendJSON(
                         dict(command="team", action="teaminvitation", who=self.player.getLogin()))
+
+            success = True
 
         if "friends" in message:
             friendlist = message['friends']
@@ -1176,6 +1178,7 @@ Thanks,\n\
                     query.exec_()
 
             self.friendList = friendlist
+            success = True
 
         if "foes" in message:
             foelist = message['foes']
@@ -1203,7 +1206,10 @@ Thanks,\n\
                     query.exec_()
 
             self.foeList = foelist
+            success = True
 
+        if not success:
+            raise KeyError('no valid social action')
 
     @timed()
     def resendMail(self, login):

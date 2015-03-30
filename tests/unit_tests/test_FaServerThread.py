@@ -130,3 +130,32 @@ def test_mod_vault_no_type(fa_server_thread):
     with pytest.raises(KeyError):
         fa_server_thread.command_modvault({'invalidKey': None})
 
+# Social
+def test_social_invalid(fa_server_thread):
+    with pytest.raises(KeyError):
+        fa_server_thread.command_social({'invalidKey': None})
+
+def test_social_teaminvite(fa_server_thread):
+    fa_server_thread.parent.listUsers.findByName = mock.Mock()
+    fa_server_thread.player = mock.Mock()
+    fa_server_thread.player.getLogin.return_value = "Team Leader"
+    fa_server_thread.command_social({'teaminvite': 'Dragonfire'})
+    fa_server_thread.parent.listUsers.findByName.assert_called_with('Dragonfire')
+    fa_server_thread.parent.listUsers.findByName.return_value.lobbyThread.sendJSON \
+        .assert_called_with(dict(command="team", action="teaminvitation", who="Team Leader"))
+
+# TODO: check in ingetration tests db state
+def test_social_friends(fa_server_thread):
+    fa_server_thread.parent.listUsers.findByName = mock.Mock()
+    assert fa_server_thread.friendList == []
+    friends = set(['Sheeo', 'Dragonfire', 'Spooky'])
+    fa_server_thread.command_social({'friends': friends})
+    assert fa_server_thread.friendList == friends
+
+# TODO: check in ingetration tests db state
+def test_social_foes(fa_server_thread):
+    fa_server_thread.parent.listUsers.findByName = mock.Mock()
+    assert fa_server_thread.foeList == []
+    foes = set(['Cheater', 'Haxxor', 'Boom1234'])
+    fa_server_thread.command_social({'foes': foes})
+    assert fa_server_thread.foeList == foes
