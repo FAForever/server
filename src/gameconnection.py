@@ -360,10 +360,12 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 return
 
             elif key == 'Connected':
-                pass  # This message is deprecated
+                # This message is deprecated, since we tell players to connect to all peers at once
+                pass  # pragma: no cover
 
             elif key == 'ConnectedToHost':
-                pass  # This message is deprecated, since we tell players to connect to all peers at once
+                # This message is deprecated, since we tell players to connect to all peers at once
+                pass  # pragma: no cover
 
             elif key == 'Score':
                 pass
@@ -380,6 +382,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 self.game.desyncs += 1
 
             elif key == 'ProcessNatPacket':
+                # This is handled by subscription listeners
                 pass
 
             elif key == 'GameState':
@@ -387,7 +390,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 yield from self.handle_game_state(state)
 
             elif key == 'GameOption':
-
                 if values[0] == 'Victory':
                     self.game.gameOptions['Victory'] = Victory.from_gpgnet_string(values[1])
                 elif values[0] in self.game.gameOptions:
@@ -404,7 +406,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     if curMap != mapname:
                         self.game.setGameMap(mapname)
                         self.sendGameInfo()
-
 
             elif key == 'GameMods':
                 if values[0] == "activated":
