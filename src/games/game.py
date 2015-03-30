@@ -454,24 +454,6 @@ class Game(BaseGame):
         self.valid = False
         self.invalidReason = reason
 
-    def sendMessageToPlayers(self, players, name, message):
-        for player in players.players():
-
-            if str(player.getLogin()) == str(name):
-                lobby = player.lobbyThread
-                try:
-                    if type(message) == list:
-                        for part in message:
-                            lobby.sendJSON(dict(command="notice", style="scores", text=str(part)))
-
-                    else:
-                        lobby.sendJSON(dict(command="notice", style="scores", text=str(message)))
-
-                except:
-                    pass
-
-                break
-
     def get_army_result(self, army):
         """
         Since we log multiple results from multiple sources, we have to pick one.
