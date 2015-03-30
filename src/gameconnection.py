@@ -616,10 +616,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.lobby.sendJSON(dict(command="notice", style="scores", text=str(m)))
 
     def sendGameInfo(self):
-        try:
-            self.games.mark_dirty(self.game.uuid)
-        except:
-            self.log.exception("Something awful happened in a sendinfo thread!")
+        self.games.mark_dirty(self.game.uuid)
 
     def parsePlayerOption(self, value):
         options = value.split(' ')

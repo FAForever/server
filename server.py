@@ -110,33 +110,17 @@ if __name__ == '__main__':
 
         def jsonPlayer(self, player):
             """ infos about a player"""
-            jsonToSend = {}
-            rating      = player.globalSkill
-            rating1v1   = player.ladder1v1Skill
-            jsonToSend["command"] = "player_info"
-            jsonToSend["login"] = player.getLogin()
-            jsonToSend["rating_mean"] = rating.getRating().getMean()
-            jsonToSend["rating_deviation"] = rating.getRating().getStandardDeviation()
-
-            jsonToSend["ladder_rating_mean"] = rating1v1.getRating().getMean()
-            jsonToSend["ladder_rating_deviation"] = rating1v1.getRating().getStandardDeviation()
-            jsonToSend["number_of_games"] = player.numGames
-            jsonToSend["avatar"] = player.avatar
-
-            if hasattr(player, "leagueInfo") :
-                jsonToSend["league"] = player.leagueInfo
-
-            if hasattr(player, "country") :
-                if player.country is not None:
-                    jsonToSend["country"] = player.country
-
-            clan = player.clan
-            if clan is not None:
-                jsonToSend["clan"] = player.clan
-            else:
-                jsonToSend["clan"] = ""
-
-            return jsonToSend
+            return {"command": "player_info",
+                    "login": player.getLogin(),
+                    "rating_mean": player.global_rating[0],
+                    "rating_deviation": player.global_rating[1],
+                    "ladder_rating_mean": player.ladder_rating[0],
+                    "ladder_rating_deviation": player.ladder_rating[1],
+                    "number_of_games": player.numGames,
+                    "avatar": player.avatar,
+                    "league": getattr(player, 'leagueInfo', ''),
+                    "country": getattr(player, 'country', ''),
+                    "clan": getattr(player, 'clan', '')}
 
     try:
         app = QtCore.QCoreApplication(sys.argv)
