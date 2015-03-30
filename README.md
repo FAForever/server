@@ -72,15 +72,24 @@ WIP: JSON Protocol Overview based on [QDataStream](http://doc.qt.io/qt-5/qdatast
 
 ## Incoming Packages
 
-###### Mod Vault
+##### Mod Vault
 
 * `{command: modvault, type: start}`: show the last 100 mods
 * `{command: modvault, type: like, uid: <uid>}`: check if user liked the mod, otherwise increase the like counter
 * `{command: modvault, type: download, uid: <uid>}`: notify server about an download (for downlaod counter), does not start the download
 * `{command: modvault, type: addcomment}`: not implemented
 
-###### Social
+##### Social
 Can be combined !, e.g. `{command: social, teaminvite: <...>, friends: <..>}`
-* `{command: social, teaminvite: }`: 
-* `{command: social, friends: }`:
-* `{command: social, foes: <list of ALL foes>}`: Find the delta and add/remove foes to db 
+* `{command: social, teaminvite: <player_name>}`: Invite a Player to a Team 
+* `{command: social, friends: <list of ALL friends>}`: Update the friends on the db
+* `{command: social, foes: <list of ALL foes>}`: Update the foe (muted players) on the db
+
+##### Avatar
+* `{command: avatar, action: upload_avatar, name: <avatar_name>, file: <file_content>, description: <desc>}`: Admin Command to upload an avatar
+* `{command: avatar, action: list_avatar}`: Send a list of available avatars
+* `{command: avatar, action: select, avatar: <avatar_url>}`: Select a valid avatar for the player
+
+##### Misc
+
+* `{command: ask_session}`: response with an welcome commannd and an valid session (can be delyed)
