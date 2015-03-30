@@ -1727,10 +1727,6 @@ Thanks,\n\
             self.log.debug("Welcome")
             self.sendJSON(dict(command="welcome", email=str(self.email)))
 
-
-            if len(self.player.modManager) > 0:
-                self.sendJSON(dict(command="mod_manager", action="list", mods=self.player.modManager))
-
             tourneychannel = self.getPlayerTournament(self.player)
             if len(tourneychannel) > 0:
                 channels = channels + tourneychannel
@@ -1852,6 +1848,8 @@ Thanks,\n\
             self.log.debug("done")
         except Exception as ex:
             self.log.exception(ex)
+            self.socket.abort()
+            self.parent.removeRecorder(self)
             self.sendJSON(dict(command="notice", style="error",
                                text="Something went wrong during sign in"))
 
