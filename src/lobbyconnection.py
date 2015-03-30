@@ -1698,25 +1698,20 @@ Thanks,\n\
                 avatar = {"url": str(query.value(0)), "tooltip": str(query.value(1))}
                 self.player.avatar = avatar
 
-            if self.player is not None:
-                #remove ghost
-                for p in self.parent.listUsers.players:
-                    if p.getLogin() == self.player.getLogin():
-                        if p.lobbyThread.socket:
-                            p.lobbyThread.command_quit_team(dict(command="quit_team"))
-                            p.lobbyThread.socket.abort()
+            for p in self.parent.listUsers.players:
+                if p.login == self.player.login:
+                    if hasattr(p, 'lobbyThread'):
+                        p.lobbyThread.command_quit_team(dict(command="quit_team"))
+                        p.lobbyThread.socket.abort()
 
-                        if p in self.parent.listUsers.players:
-                            self.parent.listUsers.players.remove(p)
+                    if p in self.parent.listUsers.players:
+                        self.parent.listUsers.players.remove(p)
 
-                for p in self.parent.listUsers.logins:
-                    if p == self.player.getLogin():
-                        self.parent.listUsers.logins.remove(p)
+            for p in self.parent.listUsers.logins:
+                if p == self.player.getLogin():
+                    self.parent.listUsers.logins.remove(p)
 
-                gameSocket, lobbySocket = self.parent.listUsers.addUser(self.player)
-
-            else:
-                return
+            gameSocket, lobbySocket = self.parent.listUsers.addUser(self.player)
 
             self.log.debug("Closing users")
 
