@@ -80,7 +80,7 @@ def test_command_game_host_calls_host_game_invalid_title(fa_server_thread,
     mock_lobby_server.games.create_game = mock.Mock()
     fa_server_thread.command_game_host(test_game_info_invalid)
     assert mock_lobby_server.games.create_game.mock_calls == []
-    fa_server_thread.sendJSON.assert_called_with(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
+    fa_server_thread.sendJSON.assert_called_once_with(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
 
 # ModVault
 @mock.patch('src.lobbyconnection.QSqlQuery')
@@ -166,3 +166,92 @@ def test_social_foes(fa_server_thread):
     foes = set(['Cheater', 'Haxxor', 'Boom1234'])
     fa_server_thread.command_social({'foes': foes})
     assert fa_server_thread.foeList == foes
+
+# Ask Session
+# TODO: @sheeo add special cases with Timer
+def test_ask_session(fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+    fa_server_thread.command_ask_session({})
+    (response, ), _ = fa_server_thread.sendJSON.call_args
+    assert response['command'] == 'welcome'
+
+# Avatar
+@mock.patch('zlib.decompress')
+@mock.patch('src.lobbyconnection.Config')
+@mock.patch('src.lobbyconnection.QFile')
+@mock.patch('src.lobbyconnection.QSqlQuery')
+def test_avatar_upload_admin(mock_query, mock_file, mock_config, mock_zlib, fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+    fa_server_thread.player = mock.Mock()
+    fa_server_thread.player.admin.return_value = True
+    fa_server_thread.command_avatar({'action': 'upload_avatar',\
+     'name': '', 'file': '', 'description': ''})
+    fa_server_thread.sendJSON.assert_called_once_with( \
+        dict(command="notice", style="info", text="Avatar uploaded."))
+
+
+def test_avatar_upload_admin_invalid_file(fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+    fa_server_thread.player = mock.Mock()
+    fa_server_thread.player.admin.return_value = True
+    with pytest.raises(KeyError):
+        fa_server_thread.command_avatar({'action': 'upload_avatar', \
+                                     'name': '', 'file': '', 'description': ''})
+
+@mock.patch('zlib.decompress')
+@mock.patch('src.lobbyconnection.Config')
+@mock.patch('src.lobbyconnection.QFile')
+@mock.patch('src.lobbyconnection.QSqlQuery')
+def test_avatar_upload_admin_db_error(mock_query, mock_file, mock_config, mock_zlib, fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+    fa_server_thread.player = mock.Mock()
+    fa_server_thread.player.admin.return_value = True
+    mock_query.return_value.exec_.return_value = False
+    fa_server_thread.command_avatar({'action': 'upload_avatar', \
+                                     'name': '', 'file': '', 'description': ''})
+    fa_server_thread.sendJSON.assert_called_once_with( \
+        dict(command="notice", style="error", text="Avatar not correctly uploaded."))
+
+def test_avatar_upload_user(fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+    fa_server_thread.player = mock.Mock()
+    fa_server_thread.player.admin.return_value = False
+    with pytest.raises(KeyError):
+        fa_server_thread.command_avatar({'action': 'upload_avatar', \
+                                     'name': '', 'file': '', 'description': ''})
+
+@mock.patch('src.lobbyconnection.QSqlQuery')
+def test_avatar_list_avatar(mock_query, fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+    mock_query.return_value.size.return_value = 1
+    mock_query.return_value.next.side_effect = [True, True, False]
+    fa_server_thread.command_avatar({'action': 'list_avatar'})
+    (response, ), _ = fa_server_thread.sendJSON.call_args
+    assert response['command'] == 'avatar'
+    assert len(response['avatarlist']) == 2
+
+# TODO: @sheeo return JSON message on empty avatar list?
+@mock.patch('src.lobbyconnection.QSqlQuery')
+def test_avatar_list_avatar_empty(mock_query, fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+    mock_query.return_value.size.return_value = 0
+    fa_server_thread.command_avatar({'action': 'list_avatar'})
+    assert fa_server_thread.sendJSON.mock_calls == []
+
+@mock.patch('src.lobbyconnection.QSqlQuery')
+def test_avatar_select(mock_query, fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+    fa_server_thread.command_avatar({'action': 'select', 'avatar': ''})
+    assert mock_query.return_value.exec_.call_count == 2
+
+@mock.patch('src.lobbyconnection.QSqlQuery')
+def test_avatar_select_remove(mock_query, fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+    fa_server_thread.command_avatar({'action': 'select', 'avatar': None})
+    assert mock_query.return_value.exec_.call_count == 1
+
+@mock.patch('src.lobbyconnection.QSqlQuery')
+def test_avatar_select_no_avatar(mock_query, fa_server_thread):
+    with pytest.raises(KeyError):
+        fa_server_thread.command_avatar({'action': 'select'})
+

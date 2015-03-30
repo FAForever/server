@@ -1964,7 +1964,10 @@ Thanks,\n\
 
         if action == "upload_avatar" and self.player.admin:
             name = message["name"]
-            avatarDatas = (zlib.decompress(base64.b64decode(message["file"])))
+            try:
+                avatarDatas = (zlib.decompress(base64.b64decode(message["file"])))
+            except:
+                raise KeyError('invalid file')
             description = message["description"]
 
             writeFile = QFile(Config['global']['content_path'] + "avatars/%s" % name)
@@ -1980,12 +1983,11 @@ Thanks,\n\
             query.addBindValue(description)
             query.addBindValue(description)
 
-            self.sendJSON(dict(command="notice", style="info", text="Avatar uploaded."))
-
             if not query.exec_():
                 logger.error("Failed to execute DB : " + query.lastQuery())
                 self.sendJSON(dict(command="notice", style="error", text="Avatar not correctly uploaded."))
-
+            else:
+                self.sendJSON(dict(command="notice", style="info", text="Avatar uploaded."))
         elif action == "list_avatar":
             avatarList = []
             if self.leagueAvatar:
@@ -2011,6 +2013,7 @@ Thanks,\n\
 
             query = QSqlQuery(self.parent.db)
 
+            # remove old avatar
             query.prepare(
                 "UPDATE `avatars` SET `selected` = 0 WHERE `idUser` = ?")
             query.addBindValue(self.uid)
@@ -2022,7 +2025,8 @@ Thanks,\n\
                 query.addBindValue(avatar)
                 query.addBindValue(self.uid)
                 query.exec_()
-
+        else:
+            raise KeyError('invalid action')
 
     @timed
     def command_game_join(self, message):
