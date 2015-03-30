@@ -1732,7 +1732,7 @@ Thanks,\n\
                 channels = channels + tourneychannel
 
             reply = QByteArray()
-            for user in self.parent.listUsers.players():
+            for user in self.parent.listUsers.players:
                 reply.append(self.prepareBigJSON(self.parent.parent.jsonPlayer(user)))
 
             self.sendArray(reply)
