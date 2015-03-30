@@ -108,7 +108,7 @@ def sqlquery():
     query.exec_ = lambda: 0
     query.size = lambda: 0
     query.lastInsertId = lambda: 1
-    query.prepare = lambda q: None
+    query.prepare = mock.MagicMock()
     query.addBindValue = lambda v: None
     return query
 

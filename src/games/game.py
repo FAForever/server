@@ -246,9 +246,11 @@ class Game(BaseGame):
         :return: None
         """
         self._logger.info("Saving rating change stats")
-        new_ratings = []
-        for team, players in rating_groups:
-            new_ratings += players
+        new_ratings = {
+            player: new_rating
+            for team in rating_groups
+            for player, new_rating in team.items()
+        }
         game_stats_query = QSqlQuery(self.db)
         game_stats_query.prepare("UPDATE game_player_stats "
                                  "SET after_mean = ?, after_deviation = ?, scoreTime = NOW() "
@@ -258,7 +260,7 @@ class Game(BaseGame):
                              "SET mean = ?, deviation = ?, numGames = (numGames + 1) "
                              "WHERE id = ?".format(rating))
         results = [[], [], [], []]
-        for player, new_rating in new_ratings:
+        for player, new_rating in new_ratings.items():
             results[0] += [new_rating.mu]
             results[1] += [new_rating.sigma]
             results[2] += [self.id]

@@ -1,5 +1,6 @@
 import logging
 from unittest import mock
+from unittest.mock import patch, call
 
 import pytest
 from trueskill import Rating
@@ -124,6 +125,53 @@ def test_game_launch_freezes_players(game: Game, players):
     assert game.players == {players.hosting, players.joining}
     game.remove_game_connection(conn1)
     assert game.players == {players.hosting, players.joining}
+
+
+def test_persist_rating_change_stats_by_game(game: Game, players):
+    with patch('src.games.game.QSqlQuery') as query:
+        game_stats_query = mock.Mock()
+        rating_query = mock.Mock()
+        query.side_effect = [game_stats_query, rating_query]
+        game.persist_rating_change_stats([
+            {players.hosting: Rating(1500, 250)},
+            {players.joining: Rating(1250, 125)}
+        ])
+        game_stats_query.prepare.assert_any_call(mock.ANY)
+        rating_query.prepare.assert_any_call(mock.ANY)
+        # Yeeaaaahhhh....
+        (((new_means,), _),
+         ((new_deviations,), _),
+         ((game_ids,), _),
+         ((player_ids,), _)) = game_stats_query.addBindValue.call_args_list
+        assert 1500 in new_means
+        assert 1250 in new_means
+        assert 250 in new_deviations
+        assert 125 in new_deviations
+        assert game.id in game_ids
+        assert players.hosting.id in player_ids
+        assert players.joining.id in player_ids
+
+
+def test_persist_rating_change_stats_by_player(game: Game, players):
+    with patch('src.games.game.QSqlQuery') as query:
+        game_stats_query = mock.Mock()
+        rating_query = mock.Mock()
+        query.side_effect = [game_stats_query, rating_query]
+        game.persist_rating_change_stats([
+            {players.hosting: Rating(1500, 250)},
+            {players.joining: Rating(1250, 125)}
+        ])
+        rating_query.prepare.assert_any_call(mock.ANY)
+        # Yeeaaaahhhh....
+        (((new_means,), _),
+         ((new_deviations,), _),
+         ((player_ids,), _)) = rating_query.addBindValue.call_args_list
+        assert 1500 in new_means
+        assert 1250 in new_means
+        assert 250 in new_deviations
+        assert 125 in new_deviations
+        assert players.hosting.id in player_ids
+        assert players.joining.id in player_ids
 
 
 def test_game_teams_represents_active_teams(game: Game, players):
