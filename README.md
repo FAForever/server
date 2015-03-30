@@ -95,3 +95,14 @@ Can be combined !, e.g. `{command: social, teaminvite: <...>, friends: <..>}`
 ##### Misc
 
 * `{command: ask_session}`: response with an welcome commannd and an valid session (can be delyed)
+
+## Stream
+
+It is possible to send data directly as Stream to the server. The response is normally a JSON Packet.
+
+* `PING`: response with a `PONG`
+* `PONG`: internal state changed to ponged
+* `FA_CLOSED`: internal cleanup of the player
+* `UPLOAD_MOD, login, session, zipmap, infos, size, fileDaatas`: Upload a mod
+* `UPLOAD_MAP, login, session, zipmap, infos, size, fileDatas`: Upload a map
+* `CREATE_ACCOUNT, login, email, password_hash`: Send an email with a registration link

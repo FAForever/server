@@ -1,4 +1,5 @@
 from PySide import QtNetwork
+import json
 import pytest
 import mock
 
@@ -258,3 +259,57 @@ def test_avatar_select_no_avatar(mock_query, fa_server_thread):
     with pytest.raises(KeyError):
         fa_server_thread.command_avatar({'action': 'select'})
 
+# handle action
+def test_handle_action_ping(fa_server_thread):
+    fa_server_thread.sendReply = mock.Mock()
+    fa_server_thread.handleAction('PING', mock.Mock())
+    fa_server_thread.sendReply.assert_called_once_with('PONG')
+
+def test_handle_action_pong(fa_server_thread):
+    assert fa_server_thread.ponged == False
+    fa_server_thread.handleAction('PONG', mock.Mock())
+    assert fa_server_thread.ponged == True
+
+def test_handle_action_faclosed(fa_server_thread):
+    fa_server_thread.player = mock.Mock()
+    fa_server_thread.handleAction('FA_CLOSED', mock.Mock())
+    fa_server_thread.player.setAction.assert_called_once_with('NOTHING')
+    fa_server_thread.player.gameThread.abort.assert_called_once_with()
+
+def test_handle_action_unknownData(fa_server_thread):
+    fa_server_thread.receiveJSON = mock.Mock()
+    stream = mock.Mock()
+    fa_server_thread.handleAction('CrazyThing', stream)
+    fa_server_thread.receiveJSON.assert_called_once_with(\
+        'CrazyThing', stream)
+
+def test_handle_action_invalidData(fa_server_thread):
+    fa_server_thread.log = mock.Mock()
+    fa_server_thread.handleAction(None, None)
+    assert fa_server_thread.log.exception.call_count == 1
+
+# handle action - Create Account
+# TODO: for @ckitching or if pr #23 is merged
+
+# handle action - UPLOAD_MOD
+
+@mock.patch('src.lobbyconnection.Config')
+@mock.patch('src.lobbyconnection.QSqlQuery')
+@mock.patch('src.lobbyconnection.QFile')
+@mock.patch('src.lobbyconnection.zipfile')
+def test_handle_action_upload_map(mock_zipfile, mock_qfile, mock_query, mock_config, fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+
+    stream = mock.Mock()
+    zipMap = mock.MagicMock()
+    infos = json.dumps({'name': '', 'uid': '', 'description': '',
+                        'author': '', 'ui_only': '', 'version': '',
+                        'small': '', 'big': ''})
+    stream.readQString.side_effect = ['', '', zipMap, infos, 0, mock.Mock()]
+
+    mock_query.return_value.exec_.return_value = True
+    mock_query.return_value.size.return_value = 0
+
+    fa_server_thread.handleAction('UPLOAD_MOD', stream)
+    fa_server_thread.sendJSON.assert_called_once_with( \
+        dict(command="notice", style="info", text="Mod correctly uploaded."))
