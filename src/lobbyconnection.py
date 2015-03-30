@@ -1520,30 +1520,27 @@ Thanks,\n\
             if not query.exec_():
                 self.log.error(query.lastError())
 
-            if self.player is not None:
-                self.player = Player(str(login),
-                                     self.session,
-                                     self.ip,
-                                     self.port,
-                                     self.uid,
-                                     self)
-                self.player.lobbyVersion = version
-                self.player.resolvedAddress = self.player.getIp()
+            self.player = Player(str(login),
+                                 self.session,
+                                 self.ip,
+                                 self.port,
+                                 self.uid,
+                                 self)
+            self.player.lobbyVersion = version
+            self.player.resolvedAddress = self.player.getIp()
 
-                self.player.faction = random.randint(1, 4)
+            self.player.faction = random.randint(1, 4)
 
+            try:
+                hostname = socket.getfqdn(self.player.getIp())
                 try:
-                    hostname = socket.getfqdn(self.player.getIp())
-                    try:
-                        socket.gethostbyname(hostname)
-                        self.player.resolvedAddress = self.player.getIp()
-                    except:
-                        self.player.resolvedAddress = self.player.getIp()
-
+                    socket.gethostbyname(hostname)
+                    self.player.resolvedAddress = self.player.getIp()
                 except:
                     self.player.resolvedAddress = self.player.getIp()
-            else:
-                return
+
+            except:
+                self.player.resolvedAddress = self.player.getIp()
 
             ## Clan informations
             query = QSqlQuery(self.parent.db)
@@ -1853,8 +1850,10 @@ Thanks,\n\
                     self.pingTimer.start(61000)
 
             self.log.debug("done")
-        except:
-            self.log.exception("awful : can't decode a json string")
+        except Exception as ex:
+            self.log.exception(ex)
+            self.sendJSON(dict(command="notice", style="error",
+                               text="Something went wrong during sign in"))
 
     @timed
     def getLastSeason(self):
