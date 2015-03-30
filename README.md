@@ -65,3 +65,16 @@ Use `py.test` to execute the unit tests.
 # License
 
 GPLv3. See the [license](license.txt) file.
+
+# Network Protocol
+
+WIP: JSON Protocol Overview based on [QStreamData](http://doc.qt.io/qt-5/qdatastream.html) (UTF-16, BigEndian)
+
+## Incoming Packages
+
+###### Mod Vault
+
+* `{command: modvault, type: start}`: show the last 100 mods
+* `{command: modvault, type: like, uid: <uid>}`: check if user liked the mod, otherwise increase the like counter
+* `{command: modvault, type: download, uid: <uid>}`: notify server about an download (for downlaod counter), does not start the download
+* `{command: modvault, type: addcomment}`: not implemented

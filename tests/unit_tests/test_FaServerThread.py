@@ -78,3 +78,74 @@ def test_command_game_host_calls_host_game_invalid_title(connected_socket,
     server_thread.command_game_host(test_game_info_invalid)
     assert mock_lobby_server.games.create_game.mock_calls == []
     server_thread.sendJSON.assert_called_with(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
+
+# ModVault
+
+# TODO: find a better way
+OneTimeTrue = False
+def one_time_true():
+    global OneTimeTrue
+    if OneTimeTrue:
+        return False
+    OneTimeTrue = True
+    return True
+
+@mock.patch('src.lobbyconnection.QSqlQuery')
+@mock.patch('src.lobbyconnection.Config')
+def test_mod_vault_start(mock_config, mock_query, connected_socket, mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.sendJSON = mock.Mock()
+    mock_query.return_value.size.return_value = 1
+    mock_query.return_value.next = one_time_true
+    server_thread.command_modvault({'type': 'start'})
+    server_thread.sendJSON.assert_called_once()
+    # call, method:attributes, attribute_index
+    assert server_thread.sendJSON.mock_calls[0][1][0]['command'] == 'modvault_info'
+
+@mock.patch('src.lobbyconnection.QSqlQuery')
+@mock.patch('src.lobbyconnection.Config')
+def test_mod_vault_like(mock_config, mock_query, connected_socket, mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.sendJSON = mock.Mock()
+    mock_query.return_value.size.return_value = 1
+    server_thread.command_modvault({'type': 'like',
+                                    'uid': 'a valid one'})
+    # call, method:attributes, attribute_index
+    assert server_thread.sendJSON.mock_calls[0][1][0]['command'] == 'modvault_info'
+
+@mock.patch('src.lobbyconnection.QSqlQuery')
+@mock.patch('src.lobbyconnection.Config')
+def test_mod_vault_like_invalid_uid(mock_config, mock_query, connected_socket, mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.sendJSON = mock.Mock()
+    mock_query.return_value.size.return_value = 0
+    server_thread.command_modvault({'type': 'like',
+                                    'uid': 'something_invalid'})
+    # call, method:attributes, attribute_index
+    (response, ), _ = server_thread.sendJSON.call_args
+    assert response['command'] == 'notice'
+    assert response['style'] == 'error'
+
+@mock.patch('src.lobbyconnection.QSqlQuery')
+def test_mod_vault_download(mock_query, connected_socket, mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'type': 'download',
+                                    'uid': None})
+    mock_query.return_value.prepare.assert_called_with("UPDATE `table_mod` SET downloads=downloads+1 WHERE uid = ?")
+
+# TODO: implement it
+def test_mod_vault_addcomment(connected_socket, mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'type': 'addcomment'})
+
+def test_mod_vault_invalid_type(connected_socket,
+                                mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'type': 'DragonfireNegativeTest'})
+    # TODO: what to check?
+
+def test_mod_vault_no_type(connected_socket,
+                           mock_lobby_server):
+    server_thread = LobbyConnection(connected_socket, mock_lobby_server)
+    server_thread.command_modvault({'invalidKey': None})
+    # TODO: what to check?
