@@ -955,7 +955,7 @@ Thanks,\n\
 
         reply = QByteArray()
 
-        for key, container in self.parent.games.gamesContainer:
+        for key, container in self.parent.games.gamesContainer.items():
             self.log.debug("sending games of container " + container.gameNiceName)
             if container.listable or container.live:
                 for game in container.games:
