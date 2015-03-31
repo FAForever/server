@@ -94,14 +94,19 @@ Can be combined !, e.g. `{command: social, teaminvite: <...>, friends: <..>}`
 
 ##### Misc
 
-* `{command: ask_session}`: response with an welcome commannd and an valid session (can be delyed)
+* [deprecated] `{command: ask_session}`: response with an welcome commannd and an valid session (can be delyed)
+* `{command: fa_state, state: <on|...>}`: notify the server if the game has launched or closed
+* `{command: ladder_maps, maps: <map_ids>}`: select user specific maps for the ladder
+* `{command: quit_team}`: Leave a team
+* `{command: accept_team_proposal, leader: <leader_name>}`: Accept Team Invitation
+* `{command: hello, version: <...>, login: <...>, password: <...>, unique_id: <...>, (session: <...>)}`: Accept Team Invitation
 
-## Stream
+##  Stream
 
 It is possible to send data directly as Stream to the server. The response is normally a JSON Packet.
 
-* `PING`: response with a `PONG`
-* `PONG`: internal state changed to ponged
+* [deprecated] `PING`: response with a `PONG`
+* [deprecated] `PONG`: internal state changed to ponged
 * `FA_CLOSED`: internal cleanup of the player
 * `UPLOAD_MOD, login, session, zipmap, infos, size, fileDaatas`: Upload a mod
 * `UPLOAD_MAP, login, session, zipmap, infos, size, fileDatas`: Upload a map

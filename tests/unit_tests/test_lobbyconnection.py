@@ -260,11 +260,13 @@ def test_avatar_select_no_avatar(mock_query, fa_server_thread):
         fa_server_thread.command_avatar({'action': 'select'})
 
 # handle action
+# TODO: do it better
 def test_handle_action_ping(fa_server_thread):
     fa_server_thread.sendReply = mock.Mock()
     fa_server_thread.handleAction('PING', mock.Mock())
     fa_server_thread.sendReply.assert_called_once_with('PONG')
 
+# TODO: do it better
 def test_handle_action_pong(fa_server_thread):
     assert fa_server_thread.ponged == False
     fa_server_thread.handleAction('PONG', mock.Mock())
@@ -276,7 +278,8 @@ def test_handle_action_faclosed(fa_server_thread):
     fa_server_thread.player.setAction.assert_called_once_with('NOTHING')
     fa_server_thread.player.gameThread.abort.assert_called_once_with()
 
-def test_handle_action_unknownData(fa_server_thread):
+# TODO: should we really forward this to commands?
+def test_handle_action_possible_json_commannd(fa_server_thread):
     fa_server_thread.receiveJSON = mock.Mock()
     stream = mock.Mock()
     fa_server_thread.handleAction('CrazyThing', stream)
@@ -292,6 +295,8 @@ def test_handle_action_invalidData(fa_server_thread):
 # TODO: for @ckitching or if pr #23 is merged
 
 # handle action - UPLOAD_MOD
+# TODO: move to web api
+# TODO: check if params are valid
 @mock.patch('src.lobbyconnection.Config')
 @mock.patch('src.lobbyconnection.QSqlQuery')
 @mock.patch('src.lobbyconnection.QFile')
@@ -391,6 +396,8 @@ def test_handle_action_upload_mod_invalid_messages(fa_server_thread):
         assert response['text'] == error_messages[key]
 
 # handle action - UPLOAD_MAP
+# TODO: move to web api
+# TODO: check if params are valid
 @mock.patch('src.lobbyconnection.Config')
 @mock.patch('src.lobbyconnection.QSqlQuery')
 @mock.patch('src.lobbyconnection.QFile')
@@ -486,3 +493,190 @@ def test_handle_action_upload_map_invalid_messages(fa_server_thread):
         assert response['command'] == 'notice'
         assert response['style'] == 'error'
         assert response['text'] == error_messages[key]
+
+
+def test_fa_state(fa_server_thread):
+    fa_server_thread.player = mock.Mock()
+    fa_server_thread.player.getAction.return_value = 'NOTHING'
+    message = {'state': 'on'}
+    assert fa_server_thread.player.setAction.call_count == 0
+    fa_server_thread.command_fa_state(message)
+    fa_server_thread.player.setAction.assert_called_once_with('FA_LAUNCHED')
+    assert fa_server_thread.player.setAction.call_count == 1
+    # if called again action is not set
+    fa_server_thread.player.getAction.return_value = 'FA_LAUNCHED'
+    fa_server_thread.command_fa_state(message)
+    assert fa_server_thread.player.setAction.call_count == 1
+    # reset state
+    fa_server_thread.command_fa_state({'state': 'off'})
+    fa_server_thread.player.setAction.assert_called_with('NOTHING')
+    assert fa_server_thread.player.setAction.call_count == 2
+    # test if launching is working after reset
+    fa_server_thread.player.getAction.return_value = 'NOTHING'
+    fa_server_thread.command_fa_state(message)
+    fa_server_thread.player.setAction.assert_called_with('FA_LAUNCHED')
+    assert fa_server_thread.player.setAction.call_count == 3
+
+def test_fa_state_reset(fa_server_thread):
+    fa_server_thread.player = mock.Mock()
+    reset_values = {None, '', 'ON', 'off'}
+    for val in reset_values:
+        fa_server_thread.command_fa_state({'state': val})
+        fa_server_thread.player.setAction.assert_called_with('NOTHING')
+
+def test_fa_state_invalid(fa_server_thread):
+    with pytest.raises(KeyError):
+        fa_server_thread.command_ladder_maps({})
+        fa_server_thread.command_ladder_maps(None)
+
+def test_ladder_maps(fa_server_thread):
+    maps = [42, -1, 2341, -123, 123]
+    fa_server_thread.command_ladder_maps({'maps' : maps})
+    assert fa_server_thread.ladderMapList == maps
+    # reset map selection
+    maps = []
+    fa_server_thread.command_ladder_maps({'maps' : maps})
+    assert fa_server_thread.ladderMapList == maps
+
+def test_ladder_maps_invalid_message(fa_server_thread):
+    with pytest.raises(KeyError):
+        fa_server_thread.command_ladder_maps({})
+        fa_server_thread.command_ladder_maps(None)
+
+# TODO: missing JSON send for me as player who left
+def test_quit_team_as_member(fa_server_thread):
+    fa_server_thread.lobbyThread = mock.Mock()
+    fa_server_thread.player = mock.Mock()
+    fa_server_thread.parent = mock.Mock()
+    all_members = ['PlayerA', 'me', 'PlayerB']
+    new_members = ['PlayerA', 'PlayerB']
+    leader = 'PlayerB'
+    fa_server_thread.parent.teams.getAllMembers.side_effect = [all_members, new_members]
+    fa_server_thread.parent.teams.getSquadLeader.return_value = leader
+    player_sender = mock.Mock()
+    fa_server_thread.parent.listUsers.findByName.return_value = player_sender
+
+    fa_server_thread.command_quit_team(None)
+    # I was removed from team
+    assert fa_server_thread.parent.teams.removeFromSquad.call_count == 1
+    # notify players
+    player_sender.lobbyThread.sendJSON.assert_called_with(\
+        dict(command="team_info", leader=leader, members=new_members))
+    assert player_sender.lobbyThread.sendJSON.call_count == 2
+
+
+def test_quit_team_as_member_to_small_team(fa_server_thread):
+    fa_server_thread.lobbyThread = mock.Mock()
+    fa_server_thread.player = mock.Mock()
+    fa_server_thread.parent = mock.Mock()
+    all_members = ['PlayerA', 'me']
+    new_members = ['PlayerA']
+    leader = 'PlayerB'
+    fa_server_thread.parent.teams.getAllMembers.side_effect = [all_members, new_members]
+    fa_server_thread.parent.teams.getSquadLeader.return_value = leader
+    player_sender = mock.Mock()
+    fa_server_thread.parent.listUsers.findByName.return_value = player_sender
+
+    fa_server_thread.command_quit_team(None)
+    # I was removed from team
+    assert fa_server_thread.parent.teams.disbandSquad.call_count == 1
+    # notify NOT players
+    assert player_sender.lobbyThread.sendJSON.call_count == 0
+
+def test_quit_team_as_leader(fa_server_thread):
+    fa_server_thread.lobbyThread = mock.Mock()
+    fa_server_thread.player = mock.Mock()
+    fa_server_thread.parent = mock.Mock()
+    all_members = ['PlayerA', 'me', 'PlayerB']
+    leader = 'me'
+    fa_server_thread.player.getLogin.return_value = 'me'
+    fa_server_thread.parent.teams.getAllMembers.return_value = all_members
+    fa_server_thread.parent.teams.getSquadLeader.return_value = leader
+    player_sender = mock.Mock()
+    fa_server_thread.parent.listUsers.findByName.return_value = player_sender
+
+    fa_server_thread.command_quit_team(None)
+    # Team was removed
+    assert fa_server_thread.parent.teams.disbandSquad.call_count == 1
+    # notify players
+    player_sender.lobbyThread.sendJSON.assert_called_with(\
+        dict(command="team_info", leader="", members=[]))
+    assert player_sender.lobbyThread.sendJSON.call_count == 3
+
+
+def test_quit_team_without_in_a_team(fa_server_thread):
+    fa_server_thread.parent = mock.Mock()
+    fa_server_thread.player = mock.Mock()
+    fa_server_thread.parent.teams.getSquadLeader.return_value = False
+    fa_server_thread.command_quit_team(None)
+    # no notifications
+    assert fa_server_thread.parent.listUsers.findByName.lobbyThread.sendJSON.call_count == 0
+
+# TODO: check if squad invitied him? over crypto?
+def test_accept_team_proposal(fa_server_thread):
+    fa_server_thread.parent = mock.Mock()
+    fa_server_thread.player = mock.Mock()
+    player_sender = mock.Mock()
+    members = ['PlayerA', 'CoolLeaderName']
+    new_members = ['PlayerA', 'me', 'CoolLeaderName']
+    # possible to add us to the squad
+    fa_server_thread.parent.teams.getAllMembers.side_effect = [members, new_members]
+    fa_server_thread.parent.teams.addInSquad.return_value = True
+    fa_server_thread.parent.listUsers.findByName.return_value = player_sender
+
+    fa_server_thread.command_accept_team_proposal({'leader': 'CoolLeaderName'})
+    # check if all members get an notification
+    player_sender.lobbyThread.sendJSON.assert_called_with( \
+        dict(command="team_info", leader="CoolLeaderName", members=new_members))
+    assert player_sender.lobbyThread.sendJSON.call_count == 3
+
+def test_accept_team_is_full(fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+    fa_server_thread.parent = mock.Mock()
+    members = ['TeamIs', 'FullIf', 'FourOr', 'MorePlayers']
+    fa_server_thread.parent.teams.getAllMembers.return_value = members
+    fa_server_thread.command_accept_team_proposal({'leader': 'MockThisAway'})
+    fa_server_thread.sendJSON.assert_called_once_with( \
+        dict(command="notice", style="info", text="Sorry, the team is full."))
+
+def test_accept_team_your_have_allready_one_team(fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+    fa_server_thread.parent = mock.Mock()
+    fa_server_thread.player = mock.Mock()
+    members = ['PlayerA', 'CoolLeaderName']
+    new_members = ['PlayerA', 'me', 'CoolLeaderName']
+    # possible to add us to the squad
+    fa_server_thread.parent.teams.getAllMembers.side_effect = [members, new_members]
+    # You are allready in a squad
+    fa_server_thread.parent.teams.addInSquad.return_value = False
+
+    fa_server_thread.command_accept_team_proposal({'leader': 'MockThisAway'})
+    fa_server_thread.sendJSON.assert_called_once_with( \
+        dict(command="notice", style="info", text="Sorry, you cannot join the squad."))
+
+def test_accept_team_no_valid_leader(fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+    fa_server_thread.parent = mock.Mock()
+
+    # Leader is not in squad
+    fa_server_thread.parent.teams.isInSquad.return_value = False
+
+    fa_server_thread.command_accept_team_proposal({'leader': 'MockThisAway'})
+    fa_server_thread.sendJSON.assert_called_once_with( \
+        dict(command="notice", style="info", text="Leader is not in a squad."))
+
+def test_accept_team_given_leader_is_squad_but_no_leader(fa_server_thread):
+    fa_server_thread.sendJSON = mock.Mock()
+    fa_server_thread.parent = mock.Mock()
+
+    # Leader is not in squad
+    fa_server_thread.parent.teams.isLeader.return_value = False
+
+    fa_server_thread.command_accept_team_proposal({'leader': 'MockThisAway'})
+    fa_server_thread.sendJSON.assert_called_once_with( \
+        dict(command="notice", style="info", text="Squad not found. Wrong Loeader."))
+
+def test_accept_team_proposal_invalid_message(fa_server_thread):
+    with pytest.raises(KeyError):
+        fa_server_thread.command_accept_team_proposal({})
+        fa_server_thread.command_accept_team_proposal(None)

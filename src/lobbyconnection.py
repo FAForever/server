@@ -1104,8 +1104,10 @@ Thanks,\n\
 
             if len(newmembers) == 1:
                 self.parent.teams.disbandSquad(leader)
+                return
 
-            for member in members:
+            for member in newmembers:
+
                 player = self.parent.listUsers.findByName(member)
                 if player:
                     player.lobbyThread.sendJSON(dict(command="team_info", leader=leader, members=newmembers))
@@ -1116,13 +1118,15 @@ Thanks,\n\
         leader = message["leader"]
 
         # first, check if the leader is in a squad...
-        if self.parent.teams.isInSquad(leader):
-            # if so, check if he is the leader already
-            if not self.parent.teams.isLeader(leader):
-                #if he is not a leader, we can't accept.
-                self.sendJSON(dict(command="notice", style="info",
-                                   text="You are already in a team. You can't join another team."))
-                return
+        if not self.parent.teams.isInSquad(leader):
+            self.sendJSON(dict(command="notice", style="info",
+                               text="Leader is not in a squad."))
+            return
+        # if so, check if he is the leader already
+        if not self.parent.teams.isLeader(leader):
+            self.sendJSON(dict(command="notice", style="info",
+                               text="Squad not found. Wrong Loeader."))
+            return
 
         squadMembers = self.parent.teams.getAllMembers(leader)
         # check if the squad has place left
@@ -1138,6 +1142,9 @@ Thanks,\n\
                 player = self.parent.listUsers.findByName(member)
                 if player:
                     player.lobbyThread.sendJSON(dict(command="team_info", leader=leader, members=members))
+        else:
+            self.sendJSON(dict(command="notice", style="info",
+                               text="Sorry, you cannot join the squad."))
 
     @timed()
     def command_social(self, message):
