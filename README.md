@@ -60,7 +60,9 @@ Also create the `passwords.py` file. This can be done by copying `passwords.py.e
 
     cp passwords.py.example passwords.py
 
-Use `py.test` to execute the unit tests.
+Run `py.test`
+
+    py.test tests/
 
 # License
 
