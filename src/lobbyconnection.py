@@ -2434,8 +2434,9 @@ Thanks,\n\
                 raise ValueError("Command is not a string")
             getattr(self, 'command_{}'.format(cmd))(message)
         except (KeyError, ValueError) as ex:
-            self.log.warning("Garbage input from client: {}".format(data_string))
-            self.log.exception(ex)
+            if data_string != '':
+                self.log.warning("Garbage input from client: {}".format(data_string))
+                self.log.exception(ex)
 
     def done(self):
         if self.uid:
