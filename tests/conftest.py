@@ -8,8 +8,8 @@ import pytest
 import mock
 from PySide import QtCore, QtSql
 from trueskill import Rating
-from src.abc.base_game import InitMode
 
+from src.abc.base_game import InitMode
 from src.games_service import GamesService
 
 
@@ -20,7 +20,7 @@ from PySide.QtNetwork import QTcpSocket
 from src.players import PlayersOnline, Player
 from src.games import Game
 
-from src.JsonTransport import Transport
+from protocol.transport import Transport
 
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s',
@@ -37,7 +37,7 @@ def async_test(f):
         coro = asyncio.coroutine(f)
         future = coro(*args, **kwargs)
         loop = asyncio.get_event_loop()
-        loop.run_until_complete()
+        loop.run_until_complete(future)
     return wrapper
 
 def pytest_pycollect_makeitem(collector, name, obj):
@@ -67,13 +67,14 @@ def pytest_pyfunc_call(pyfuncitem):
     testargs = {}
     for arg in pyfuncitem._fixtureinfo.argnames:
         testargs[arg] = funcargs[arg]
-    coro = testfn(**testargs)
+    coro = asyncio.wait_for(testfn(**testargs), 5)
 
     loop = testargs.get('loop', asyncio.get_event_loop())
     try:
         loop.run_until_complete(coro)
     except RuntimeError as err:
         logging.warning(err)
+        raise err
     return True
 
 @pytest.fixture(scope='session')
@@ -103,7 +104,7 @@ def loop(request, application):
                 ):
                     # ignore Invalid Handle Errors
                     continue
-                #raise exc['exception']
+                raise exc['exception']
     def except_handler(loop, ctx):
         additional_exceptions.append(ctx)
     def excepthook(type, *args):

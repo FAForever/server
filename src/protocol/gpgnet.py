@@ -2,6 +2,7 @@ from abc import ABCMeta, abstractmethod
 
 from src.abc.base_game import InitMode
 
+
 class GpgNetServerProtocol():
     __metaclass__ = ABCMeta
 

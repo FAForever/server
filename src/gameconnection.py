@@ -17,15 +17,14 @@
 # -------------------------------------------------------------------------------
 
 import asyncio
-import string
 import time
 import json
 import logging
+import functools
 
 from PySide import QtNetwork
 from PySide.QtNetwork import QTcpSocket, QAbstractSocket
 from PySide.QtSql import *
-import functools
 
 from src.abc.base_game import GameConnectionState
 from src.connectivity import TestPeer, Connectivity
@@ -40,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 from src import proxy_map
 
-from src.JsonTransport import QDataStreamJsonTransport
+from protocol.transport import QDataStreamJsonTransport
 
 from config import Config
 

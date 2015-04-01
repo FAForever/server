@@ -7,7 +7,7 @@ import pytest
 from src import proxy_map
 from src.connectivity import Connectivity
 from src.gameconnection import GameConnection
-from src.JsonTransport import Transport
+from src.protocol.transport import Transport
 from src.games import Game
 
 slow = pytest.mark.slow
