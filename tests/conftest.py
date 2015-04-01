@@ -40,10 +40,22 @@ def async_test(f):
         loop.run_until_complete()
     return wrapper
 
-
 def pytest_pycollect_makeitem(collector, name, obj):
     if name.startswith('test_') and asyncio.iscoroutinefunction(obj):
         return list(collector._genfunctions(name, obj))
+
+def pytest_addoption(parser):
+    parser.addoption('--slow', action='store_true', default=False,
+                     help='Also run slow tests')
+
+def pytest_runtest_setup(item):
+    """
+    Skip tests if they are marked slow, and --slow isn't given on the commandline
+    :param item:
+    :return:
+    """
+    if getattr(item.obj, 'slow', None) and not item.config.getvalue('slow'):
+        pytest.skip("slow test")
 
 def pytest_pyfunc_call(pyfuncitem):
     testfn = pyfuncitem.obj

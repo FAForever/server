@@ -1,10 +1,13 @@
 import asyncio
 from unittest import mock
+import pytest
 
 from src.connectivity import TestPeer, Connectivity
 
+slow = pytest.mark.slow
 
 @asyncio.coroutine
+@slow
 def test_TestPeer_tests_public(loop):
     identifier = '2'
     game_connection = mock.Mock()
@@ -15,6 +18,7 @@ def test_TestPeer_tests_public(loop):
         assert connectivity.result() == Connectivity.PUBLIC
 
 @asyncio.coroutine
+@slow
 def test_TestPeer_tests_stun(loop):
     identifier = '2'
     game_connection = mock.Mock()
@@ -25,6 +29,7 @@ def test_TestPeer_tests_stun(loop):
         assert connectivity.result() == Connectivity.STUN
 
 @asyncio.coroutine
+@slow
 def test_TestPeer_tests_proxy(loop):
     identifier = '2'
     game_connection = mock.Mock()

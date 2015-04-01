@@ -11,6 +11,7 @@ from src.FaGamesServer import FAServer
 from .testclient import TestGPGClient
 import config
 
+slow = pytest.mark.slow
 
 @coroutine
 def wait_call(mock, call, timeout=0.5):
@@ -30,6 +31,7 @@ def run_server(address, loop, player_service, games):
         yield from asyncio.wait_for(server.done, 2)
 
 @asyncio.coroutine
+@slow
 def test_public_host(loop, qtbot, players, player_service, games):
     player = players.hosting
     server = asyncio.async(run_server('127.0.0.1', loop, player_service, games))
@@ -50,6 +52,7 @@ def test_public_host(loop, qtbot, players, player_service, games):
 
 
 @asyncio.coroutine
+@slow
 def test_stun_host(loop, qtbot, players, player_service, games):
     player = players.hosting
     server = asyncio.async(run_server('127.0.0.1', loop, player_service, games))

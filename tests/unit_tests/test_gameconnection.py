@@ -2,7 +2,7 @@ import asyncio
 
 from PySide.QtNetwork import QTcpSocket
 import mock
-from src.abc.base_game import InitMode
+import pytest
 
 from src import proxy_map
 from src.connectivity import Connectivity
@@ -10,6 +10,7 @@ from src.gameconnection import GameConnection
 from src.JsonTransport import Transport
 from src.games import Game
 
+slow = pytest.mark.slow
 
 def test_accepts_valid_socket(game_connection, connected_game_socket):
     """
@@ -110,6 +111,7 @@ def test_handle_action_GameState_idle_as_host_sends_CreateLobby(game_connection,
                                                          1]})
 
 
+@slow
 def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, patch_connectivity, players, game, transport):
     """
     :type game_connection: GameConnection
