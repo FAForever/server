@@ -70,7 +70,20 @@ GPLv3. See the [license](license.txt) file.
 
 # Network Protocol
 
-WIP: JSON Protocol Overview based on [QDataStream](http://doc.qt.io/qt-5/qdatastream.html) (UTF-16, BigEndian)
+The protocol is mainly JSON-encoded maps, containing at minimum a `command` key, representing the command to dispatch.
+
+The wire format uses [QDataStream](http://doc.qt.io/qt-5/qdatastream.html) (UTF-16, BigEndian).
+
+For the lobbyconnection, each message is of the form:
+
+    ACTION: QString
+
+With most carrying a footer containing:
+
+    LOGIN: QString
+    SESSION: QString
+
+With a few message-types (`UPLOAD_MOD`, `UPLOAD_MAP`), there are more fields.
 
 ## Incoming Packages
 
@@ -78,7 +91,7 @@ WIP: JSON Protocol Overview based on [QDataStream](http://doc.qt.io/qt-5/qdatast
 
 * `{command: modvault, type: start}`: show the last 100 mods
 * `{command: modvault, type: like, uid: <uid>}`: check if user liked the mod, otherwise increase the like counter
-* `{command: modvault, type: download, uid: <uid>}`: notify server about an download (for downlaod counter), does not start the download
+* `{command: modvault, type: download, uid: <uid>}`: notify server about an download (for download counter), does not start the download
 * `{command: modvault, type: addcomment}`: not implemented
 
 ##### Social
@@ -94,7 +107,7 @@ Can be combined !, e.g. `{command: social, teaminvite: <...>, friends: <..>}`
 
 ##### Misc
 
-* [deprecated] `{command: ask_session}`: response with an welcome commannd and an valid session (can be delyed)
+* [deprecated] `{command: ask_session}`: response with an welcome command and an valid session (can be delayed)
 * `{command: fa_state, state: <on|...>}`: notify the server if the game has launched or closed
 * `{command: ladder_maps, maps: <map_ids>}`: select user specific maps for the ladder
 * `{command: quit_team}`: Leave a team
@@ -103,10 +116,10 @@ Can be combined !, e.g. `{command: social, teaminvite: <...>, friends: <..>}`
 
 ##  Stream
 
-It is possible to send data directly as Stream to the server. The response is normally a JSON Packet.
+The stream API is deprecated, but currently the following message types are supported:
 
-* [deprecated] `PING`: response with a `PONG`
-* [deprecated] `PONG`: internal state changed to ponged
+* `PING`: response with a `PONG`
+* `PONG`: internal state changed to ponged
 * `FA_CLOSED`: internal cleanup of the player
 * `UPLOAD_MOD, login, session, zipmap, infos, size, fileDaatas`: Upload a mod
 * `UPLOAD_MAP, login, session, zipmap, infos, size, fileDatas`: Upload a map
