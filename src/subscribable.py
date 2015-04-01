@@ -91,9 +91,7 @@ class Subscription():
 
     For use as a context manager
     """
-    def __init__(self, source: Subscribable, receiver: object, command_ids: [str]=None, filter=None):
-        if not command_ids:
-            command_ids = ['_all']
+    def __init__(self, source: Subscribable, receiver: object, command_ids: [str], filter=None):
         if not filter:
             filter = lambda args: True
         self.receiver = receiver
