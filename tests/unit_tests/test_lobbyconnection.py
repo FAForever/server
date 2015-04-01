@@ -259,18 +259,18 @@ def test_avatar_select_no_avatar(mock_query, fa_server_thread):
     with pytest.raises(KeyError):
         fa_server_thread.command_avatar({'action': 'select'})
 
-# handle action
-# TODO: do it better
+
 def test_handle_action_ping(fa_server_thread):
     fa_server_thread.sendReply = mock.Mock()
     fa_server_thread.handleAction('PING', mock.Mock())
     fa_server_thread.sendReply.assert_called_once_with('PONG')
 
-# TODO: do it better
+
 def test_handle_action_pong(fa_server_thread):
-    assert fa_server_thread.ponged == False
+    assert fa_server_thread.ponged is False
     fa_server_thread.handleAction('PONG', mock.Mock())
-    assert fa_server_thread.ponged == True
+    assert fa_server_thread.ponged is True
+
 
 def test_handle_action_faclosed(fa_server_thread):
     fa_server_thread.player = mock.Mock()
@@ -278,13 +278,14 @@ def test_handle_action_faclosed(fa_server_thread):
     fa_server_thread.player.setAction.assert_called_once_with('NOTHING')
     fa_server_thread.player.gameThread.abort.assert_called_once_with()
 
-# TODO: should we really forward this to commands?
+
 def test_handle_action_possible_json_commannd(fa_server_thread):
     fa_server_thread.receiveJSON = mock.Mock()
     stream = mock.Mock()
     fa_server_thread.handleAction('CrazyThing', stream)
     fa_server_thread.receiveJSON.assert_called_once_with(\
         'CrazyThing', stream)
+
 
 def test_handle_action_invalidData(fa_server_thread):
     fa_server_thread.log = mock.Mock()
@@ -357,7 +358,7 @@ def test_handle_action_upload_mod_exists(mock_zipfile, mock_qfile, mock_query, m
                         'small': '', 'big': ''})
     stream.readQString.side_effect = ['', '', zipMap, infos, 0, mock.Mock()]
 
-    # Mod allready exists
+    # Mod already exists
     mock_query.return_value.size.return_value = 1
 
     fa_server_thread.handleAction('UPLOAD_MOD', stream)
@@ -466,6 +467,7 @@ def test_handle_action_upload_map_exists(mock_zipfile, mock_qfile, mock_query, m
     assert response['command'] == 'notice'
     assert response['style'] == 'error'
 
+
 def test_handle_action_upload_map_invalid_messages(fa_server_thread):
     fa_server_thread.sendJSON = mock.Mock()
 
@@ -517,6 +519,7 @@ def test_fa_state(fa_server_thread):
     fa_server_thread.player.setAction.assert_called_with('FA_LAUNCHED')
     assert fa_server_thread.player.setAction.call_count == 3
 
+
 def test_fa_state_reset(fa_server_thread):
     fa_server_thread.player = mock.Mock()
     reset_values = {None, '', 'ON', 'off'}
@@ -524,10 +527,12 @@ def test_fa_state_reset(fa_server_thread):
         fa_server_thread.command_fa_state({'state': val})
         fa_server_thread.player.setAction.assert_called_with('NOTHING')
 
+
 def test_fa_state_invalid(fa_server_thread):
     with pytest.raises(KeyError):
         fa_server_thread.command_ladder_maps({})
         fa_server_thread.command_ladder_maps(None)
+
 
 def test_ladder_maps(fa_server_thread):
     maps = [42, -1, 2341, -123, 123]
@@ -538,10 +543,12 @@ def test_ladder_maps(fa_server_thread):
     fa_server_thread.command_ladder_maps({'maps' : maps})
     assert fa_server_thread.ladderMapList == maps
 
+
 def test_ladder_maps_invalid_message(fa_server_thread):
     with pytest.raises(KeyError):
         fa_server_thread.command_ladder_maps({})
         fa_server_thread.command_ladder_maps(None)
+
 
 # TODO: missing JSON send for me as player who left
 def test_quit_team_as_member(fa_server_thread):
@@ -583,6 +590,7 @@ def test_quit_team_as_member_to_small_team(fa_server_thread):
     # notify NOT players
     assert player_sender.lobbyThread.sendJSON.call_count == 0
 
+
 def test_quit_team_as_leader(fa_server_thread):
     fa_server_thread.lobbyThread = mock.Mock()
     fa_server_thread.player = mock.Mock()
@@ -612,7 +620,8 @@ def test_quit_team_without_in_a_team(fa_server_thread):
     # no notifications
     assert fa_server_thread.parent.listUsers.findByName.lobbyThread.sendJSON.call_count == 0
 
-# TODO: check if squad invitied him? over crypto?
+
+# TODO: check if squad invited him? over crypto?
 def test_accept_team_proposal(fa_server_thread):
     fa_server_thread.parent = mock.Mock()
     fa_server_thread.player = mock.Mock()
@@ -630,6 +639,7 @@ def test_accept_team_proposal(fa_server_thread):
         dict(command="team_info", leader="CoolLeaderName", members=new_members))
     assert player_sender.lobbyThread.sendJSON.call_count == 3
 
+
 def test_accept_team_is_full(fa_server_thread):
     fa_server_thread.sendJSON = mock.Mock()
     fa_server_thread.parent = mock.Mock()
@@ -638,6 +648,7 @@ def test_accept_team_is_full(fa_server_thread):
     fa_server_thread.command_accept_team_proposal({'leader': 'MockThisAway'})
     fa_server_thread.sendJSON.assert_called_once_with( \
         dict(command="notice", style="info", text="Sorry, the team is full."))
+
 
 def test_accept_team_your_have_allready_one_team(fa_server_thread):
     fa_server_thread.sendJSON = mock.Mock()
@@ -654,6 +665,7 @@ def test_accept_team_your_have_allready_one_team(fa_server_thread):
     fa_server_thread.sendJSON.assert_called_once_with( \
         dict(command="notice", style="info", text="Sorry, you cannot join the squad."))
 
+
 def test_accept_team_no_valid_leader(fa_server_thread):
     fa_server_thread.sendJSON = mock.Mock()
     fa_server_thread.parent = mock.Mock()
@@ -665,6 +677,7 @@ def test_accept_team_no_valid_leader(fa_server_thread):
     fa_server_thread.sendJSON.assert_called_once_with( \
         dict(command="notice", style="info", text="Leader is not in a squad."))
 
+
 def test_accept_team_given_leader_is_squad_but_no_leader(fa_server_thread):
     fa_server_thread.sendJSON = mock.Mock()
     fa_server_thread.parent = mock.Mock()
@@ -675,6 +688,7 @@ def test_accept_team_given_leader_is_squad_but_no_leader(fa_server_thread):
     fa_server_thread.command_accept_team_proposal({'leader': 'MockThisAway'})
     fa_server_thread.sendJSON.assert_called_once_with( \
         dict(command="notice", style="info", text="Squad not found. Wrong Loeader."))
+
 
 def test_accept_team_proposal_invalid_message(fa_server_thread):
     with pytest.raises(KeyError):
