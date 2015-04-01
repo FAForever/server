@@ -13,8 +13,8 @@ class BasePlayer():
 
     def __init__(self):
         self._faction = 0
-        self._global_rating = (None, None)
-        self._ladder_rating = (None, None)
+        self._global_rating = (1500, 500)
+        self._ladder_rating = (1500, 500)
 
     @property
     def global_rating(self):
