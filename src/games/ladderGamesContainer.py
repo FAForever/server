@@ -20,9 +20,11 @@
 import random
 
 from PySide.QtSql import QSqlQuery
+import trueskill
 
 from .gamesContainer import  GamesContainer
 from .ladderGame import ladder1V1Game
+from players import Player
 
 
 class Ladder1V1GamesContainer(GamesContainer):
@@ -67,9 +69,8 @@ class Ladder1V1GamesContainer(GamesContainer):
 
             self.players.append(player)
             player.setAction("SEARCH_LADDER")
-            trueSkill = player.ladder1v1Skill
+            mean, deviation = player.ladder_rating
 
-            deviation = trueSkill.getRating().getStandardDeviation()
             if deviation > 490 :
                 player.lobbyThread.sendJSON(dict(command="notice", style="info", text="<i>Welcome to the matchmaker system.</i><br><br><b>You will be randomnly matched until the system learn and know enough about you.</b><br>After that, you will be only matched against someone of your level.<br><br><b>So don't worry if your first games are uneven, this will get better over time !</b>"))
             elif deviation > 250 :
@@ -87,13 +88,8 @@ class Ladder1V1GamesContainer(GamesContainer):
             return 1
         return 0
     
-    def getMatchQuality(self, player1, player2):
-        
-        matchup = [player1, player2]
-        
-        gameInfo = GameInfo()
-        calculator = FactorGraphTrueSkillCalculator()
-        return calculator.calculateMatchQuality(gameInfo, matchup)
+    def getMatchQuality(self, player1: Player, player2: Player):
+        return trueskill.quality_1vs1(player1.ladder_rating, player2.ladder_rating)
 
     def getSelectedLadderMaps(self, playerId):
         query = QSqlQuery(self.db)
@@ -214,57 +210,50 @@ class Ladder1V1GamesContainer(GamesContainer):
                 
             expandValue = player.expandLadder
 
-            trueSkill = player.ladder1v1Skill
+            mean, deviation = player.ladder_rating
 
-            deviation = trueSkill.getRating().getStandardDeviation()
-            
-            #minimum game quality to start a match.
-            gameQuality = 0.8
-            if deviation > 450 :
+            if deviation > 450:
                 gameQuality = 0.01               
-            elif deviation > 350 :
+            elif deviation > 350:
                 gameQuality = 0.1
-            elif deviation > 300 :
+            elif deviation > 300:
                 gameQuality = 0.7               
-            elif deviation > 250 :
+            elif deviation > 250:
                 gameQuality = 0.75
-            else :
+            else:
                 gameQuality = 0.8
             
             # expand search
             gameQuality = gameQuality - expandValue
-            if gameQuality < 0 :
+            if gameQuality < 0:
                 gameQuality = 0
                 
             
             maxQuality = 0
             bestMatchupPlayer = ''
 
-            for curPlayer in self.players :
+            for curPlayer in self.players:
                 
-                #check if we don't match again oursel
-                if curPlayer.getLogin() != player.getLogin() :
+                #check if we don't match again ourselves
+                if curPlayer != player:
                     #check if we don't match again a playing fella
-                    if curPlayer.getAction() == "SEARCH_LADDER" :
-                        curTrueSkill = curPlayer.ladder1v1Skill
+                    if curPlayer.getAction() == "SEARCH_LADDER":
+                        match_mean, match_dev = curPlayer.ladder_rating
 
-                        if deviation > 350 and curTrueSkill.getRating().getConservativeRating() > 1400 :
+                        if deviation > 350 and match_dev - 3* match_dev > 1400:
                             continue 
 
-                        curMatchQuality = self.getMatchQuality(trueSkill, curTrueSkill)
+                        curMatchQuality = self.getMatchQuality(curPlayer, player)
 
-                        if curMatchQuality > maxQuality :
+                        if curMatchQuality > maxQuality:
                             maxQuality = curMatchQuality
                             bestMatchupPlayer = curPlayer
-                #QtCore.QCoreApplication.processEvents()
-            
-            if maxQuality > gameQuality and bestMatchupPlayer != '' :
 
+            if maxQuality > gameQuality and bestMatchupPlayer != '':
                 #we've got a good matchup
                 self.removePlayer(player)
                 self.removePlayer(bestMatchupPlayer)
                
                 self.startGame(player, bestMatchupPlayer)
-                
 
         return 1

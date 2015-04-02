@@ -113,7 +113,6 @@ class Game(BaseGame):
         self.desyncs = 0
         self.invalidReason = None
         self.connecting = 0
-        self.trueSkillPlayers = []
         self.teamAssign = {}
         self.playerPosition = {}
         self.finalTeams = []

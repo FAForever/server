@@ -36,9 +36,6 @@ class ladder1V1Game(Game):
 
         self.hosted = False
         
-        self.trueSkill1v1Players = []
-        self.finalTeams1v1 = []
-        self.invalidPlayers = []
         self.results = []
         self.playerToJoin = None
         self.minPlayer = 2

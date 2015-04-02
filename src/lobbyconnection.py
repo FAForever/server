@@ -59,7 +59,6 @@ api.key.set(STEAM_APIKEY)
 
 from src.games.ladderGamesContainer import Ladder1V1GamesContainer
 from src.games.coopGamesContainer import CoopGamesContainer
-from src.games.matchmakerGamesContainer import MatchmakerGamesContainer
 from src.games.gamesContainer import GamesContainer
 
 
@@ -2230,10 +2229,8 @@ Thanks,\n\
             if player == self.player:
                 continue
                 #minimum game quality to start a match.
-            trueSkill = player.ladder1v1Skill
-            deviation = trueSkill.getRating().getStandardDeviation()
+            mean, deviation = player.ladder_rating
 
-            gameQuality = 0.8
             if deviation > 450:
                 gameQuality = 0.01
             elif deviation > 350:
@@ -2245,22 +2242,17 @@ Thanks,\n\
             else:
                 gameQuality = 0.8
 
-            curTrueSkill = self.player.ladder1v1Skill
-
-            if deviation > 350 and curTrueSkill.getRating().getConservativeRating() > 1600:
+            if deviation > 350 and mean - 3*deviation > 1600:
                 continue
 
-            curMatchQuality = self.getMatchQuality(trueSkill, curTrueSkill)
+            curMatchQuality = self.getMatchQuality(self.player, player)
             if curMatchQuality >= gameQuality:
                 if hasattr(player.lobbyThread, "addPotentialPlayer"):
                     player.lobbyThread.addPotentialPlayer(self.player.getLogin())
 
     @staticmethod
-    def getMatchQuality(player1, player2):
-        matchup = [player1, player2]
-        gameInfo = GameInfo()
-        calculator = FactorGraphTrueSkillCalculator()
-        return calculator.calculateMatchQuality(gameInfo, matchup)
+    def getMatchQuality(player1: Player, player2: Player):
+        return trueskill.quality_1vs1(player1.ladder_rating, player2.ladder_rating)
 
 
     def command_coop_list(self, message):

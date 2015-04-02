@@ -27,7 +27,7 @@ class Player(BasePlayer):
     information about players.
     """
     def __init__(self, login=None, session=None, ip=None, port=None, uuid=None,
-                 globalSkill=None, trueSkill1v1=None, numGames=None, lobbyThread=None):
+                 globalSkill=None, numGames=None, lobbyThread=None):
         super().__init__()
         
         self._action = ''

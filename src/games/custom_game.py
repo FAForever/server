@@ -32,7 +32,7 @@ class CustomGame(Game):
         pass
 
     def rate_game(self):
-        limit = len(self.trueSkillPlayers) * 60
+        limit = len(self.players) * 60
         if time.time() - self.createDate < limit:
             self.setInvalid("Score are invalid: Play time was not long enough (under %i seconds)" % limit)
         if self.valid:
