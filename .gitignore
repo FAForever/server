@@ -8,3 +8,4 @@ logs/
 py3env
 .vagrant
 *.iml
+htmlcov
