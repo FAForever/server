@@ -270,7 +270,7 @@ class Game(BaseGame):
                                  "WHERE gameId = ? AND playerId = ?")
         rating_query = QSqlQuery(self.db)
         rating_query.prepare("UPDATE {}_rating "
-                             "SET mean = ?, deviation = ?, numGames = (numGames + 1) "
+                             "SET mean = ?, is_active=1, deviation = ?, numGames = (numGames + 1) "
                              "WHERE id = ?".format(rating))
         results = [[], [], [], []]
         for player, new_rating in new_ratings.items():
