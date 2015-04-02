@@ -208,10 +208,6 @@ class LobbyConnection(QObject):
         if not self.parent.games.isaContainer("coop"):
             self.parent.games.addContainer("coop", CoopGamesContainer(self.parent.db, self.parent.games))
 
-        if not self.parent.games.isaContainer("matchmaker"):
-            self.parent.games.addContainer("matchmaker",
-                                           MatchmakerGamesContainer(self.parent.db, self.parent.games))
-
     @timed()
     def getRankColor(self, deviation):
         ##self.log.debug(self.logPrefix + "Get rank color")
