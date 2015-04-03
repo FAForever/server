@@ -88,7 +88,7 @@ class GamesContainer(object):
 
     def addGame(self, game):
         """Add a game to the list"""
-        if not game in self.games :
+        if game not in self.games :
             self.games.append(game)
             return 1
         return 0
@@ -126,7 +126,7 @@ class GamesContainer(object):
                 return True
 
     def addDirtyGame(self, game):
-        if not game in self.parent.dirtyGameList : 
+        if game not in self.parent.dirtyGameList :
             self.parent.dirtyGameList.append(game)           
             
     def removeOldGames(self):
