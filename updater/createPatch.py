@@ -41,6 +41,7 @@ class createPatch(QThread):
         self.process = None
         self.patches = patches
         self.parentDb = db
+        self.db = None
 
         
     def run(self) :
