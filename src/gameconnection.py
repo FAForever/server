@@ -76,6 +76,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.transport = None
         self.nat_packets = {}
         self.ping_task = None
+        self._connectivity_state = None
 
         self.connectivity_state = asyncio.Future()
 
