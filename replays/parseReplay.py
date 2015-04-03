@@ -372,7 +372,6 @@ class replayParser(object):
     
                 
                 datasValue = self.parseLua(offset)
-                value = ''
                 if datasValue is not None:
                     off, value = datasValue
                     offset =  off 
@@ -534,7 +533,6 @@ class replayParser(object):
         playerLastTurn = {}
         lastbeat = 0
         beatChecksum = {}
-        debug = False
         offset = self.offset
         beatDesync = 11450 
         while offset < len(self.bin):
@@ -638,8 +636,7 @@ class replayParser(object):
                     playerLastTurn[playerturn]=tick
             elif message_op == 22:
                 
-                fakeoffset = offset
-                fakeoffset, command = self.readLine(offset) 
+                fakeoffset, command = self.readLine(offset)
                 fakeoffset, table = self.parseLua(fakeoffset)
                 if debug:
                     print(command, table)

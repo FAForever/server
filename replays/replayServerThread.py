@@ -746,7 +746,6 @@ AND (-1 = ? OR mapId = ?) \n"
         """
         Simply dumps a dictionary into a string and feeds it into the QTCPSocket
         """
-        data_string = ""
         try :
             data_string = json.dumps(data_dictionary)
         except :
