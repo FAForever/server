@@ -2,9 +2,6 @@ import decimal
 import urllib.request
 import urllib.parse
 import urllib.error
-import urllib.request
-import urllib.error
-import urllib.parse
 
 try:
     from xml.etree import cElementTree as ElementTree
