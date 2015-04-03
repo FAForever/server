@@ -185,7 +185,6 @@ class schema(object):
     next = __next__
 
     def __getitem__(self, key):
-        realkey = None
         try: realkey = key["defindex"]
         except: realkey = key
 
