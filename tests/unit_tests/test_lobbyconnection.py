@@ -188,9 +188,9 @@ def test_avatar_upload_admin(mock_query, mock_file, mock_config, mock_zlib, fa_s
     fa_server_thread.sendJSON = mock.Mock()
     fa_server_thread.player = mock.Mock()
     fa_server_thread.player.admin.return_value = True
-    fa_server_thread.command_avatar({'action': 'upload_avatar',\
-     'name': '', 'file': '', 'description': ''})
-    fa_server_thread.sendJSON.assert_called_once_with( \
+    fa_server_thread.command_avatar({'action': 'upload_avatar',
+                                     'name': '', 'file': '', 'description': ''})
+    fa_server_thread.sendJSON.assert_called_once_with(
         dict(command="notice", style="info", text="Avatar uploaded."))
 
 
@@ -199,8 +199,8 @@ def test_avatar_upload_admin_invalid_file(fa_server_thread):
     fa_server_thread.player = mock.Mock()
     fa_server_thread.player.admin.return_value = True
     with pytest.raises(KeyError):
-        fa_server_thread.command_avatar({'action': 'upload_avatar', \
-                                     'name': '', 'file': '', 'description': ''})
+        fa_server_thread.command_avatar({'action': 'upload_avatar',
+                                         'name': '', 'file': '', 'description': ''})
 
 @mock.patch('zlib.decompress')
 @mock.patch('src.lobbyconnection.Config')
@@ -211,9 +211,9 @@ def test_avatar_upload_admin_db_error(mock_query, mock_file, mock_config, mock_z
     fa_server_thread.player = mock.Mock()
     fa_server_thread.player.admin.return_value = True
     mock_query.return_value.exec_.return_value = False
-    fa_server_thread.command_avatar({'action': 'upload_avatar', \
+    fa_server_thread.command_avatar({'action': 'upload_avatar',
                                      'name': '', 'file': '', 'description': ''})
-    fa_server_thread.sendJSON.assert_called_once_with( \
+    fa_server_thread.sendJSON.assert_called_once_with(
         dict(command="notice", style="error", text="Avatar not correctly uploaded."))
 
 def test_avatar_upload_user(fa_server_thread):
@@ -221,8 +221,8 @@ def test_avatar_upload_user(fa_server_thread):
     fa_server_thread.player = mock.Mock()
     fa_server_thread.player.admin.return_value = False
     with pytest.raises(KeyError):
-        fa_server_thread.command_avatar({'action': 'upload_avatar', \
-                                     'name': '', 'file': '', 'description': ''})
+        fa_server_thread.command_avatar({'action': 'upload_avatar',
+                                         'name': '', 'file': '', 'description': ''})
 
 @mock.patch('src.lobbyconnection.QSqlQuery')
 def test_avatar_list_avatar(mock_query, fa_server_thread):
@@ -283,7 +283,7 @@ def test_handle_action_possible_json_commannd(fa_server_thread):
     fa_server_thread.receiveJSON = mock.Mock()
     stream = mock.Mock()
     fa_server_thread.handleAction('CrazyThing', stream)
-    fa_server_thread.receiveJSON.assert_called_once_with(\
+    fa_server_thread.receiveJSON.assert_called_once_with(
         'CrazyThing', stream)
 
 
@@ -316,7 +316,7 @@ def test_handle_action_upload_mod(mock_zipfile, mock_qfile, mock_query, mock_con
     mock_query.return_value.size.return_value = 0
 
     fa_server_thread.handleAction('UPLOAD_MOD', stream)
-    fa_server_thread.sendJSON.assert_called_once_with( \
+    fa_server_thread.sendJSON.assert_called_once_with(
         dict(command="notice", style="info", text="Mod correctly uploaded."))
 
 @mock.patch('src.lobbyconnection.Config')
@@ -418,7 +418,7 @@ def test_handle_action_upload_map(mock_zipfile, mock_qfile, mock_query, mock_con
 
 
     fa_server_thread.handleAction('UPLOAD_MAP', stream)
-    fa_server_thread.sendJSON.assert_called_once_with( \
+    fa_server_thread.sendJSON.assert_called_once_with(
         dict(command="notice", style="info", text="Map correctly uploaded."))
 
 @mock.patch('src.lobbyconnection.Config')
@@ -442,7 +442,7 @@ def test_handle_action_upload_map_invalid_zip(mock_zipfile, mock_qfile, mock_que
     mock_zipfile.is_zipfile.return_value = False
 
     fa_server_thread.handleAction('UPLOAD_MAP', stream)
-    fa_server_thread.sendJSON.assert_called_once_with( \
+    fa_server_thread.sendJSON.assert_called_once_with(
         dict(command="notice", style="error", text="Cannot unzip map. Upload error ?"))
 
 @mock.patch('src.lobbyconnection.Config')
@@ -567,7 +567,7 @@ def test_quit_team_as_member(fa_server_thread):
     # I was removed from team
     assert fa_server_thread.parent.teams.removeFromSquad.call_count == 1
     # notify players
-    player_sender.lobbyThread.sendJSON.assert_called_with(\
+    player_sender.lobbyThread.sendJSON.assert_called_with(
         dict(command="team_info", leader=leader, members=new_members))
     assert player_sender.lobbyThread.sendJSON.call_count == 2
 
@@ -607,7 +607,7 @@ def test_quit_team_as_leader(fa_server_thread):
     # Team was removed
     assert fa_server_thread.parent.teams.disbandSquad.call_count == 1
     # notify players
-    player_sender.lobbyThread.sendJSON.assert_called_with(\
+    player_sender.lobbyThread.sendJSON.assert_called_with(
         dict(command="team_info", leader="", members=[]))
     assert player_sender.lobbyThread.sendJSON.call_count == 3
 
@@ -635,7 +635,7 @@ def test_accept_team_proposal(fa_server_thread):
 
     fa_server_thread.command_accept_team_proposal({'leader': 'CoolLeaderName'})
     # check if all members get an notification
-    player_sender.lobbyThread.sendJSON.assert_called_with( \
+    player_sender.lobbyThread.sendJSON.assert_called_with(
         dict(command="team_info", leader="CoolLeaderName", members=new_members))
     assert player_sender.lobbyThread.sendJSON.call_count == 3
 
@@ -646,7 +646,7 @@ def test_accept_team_is_full(fa_server_thread):
     members = ['TeamIs', 'FullIf', 'FourOr', 'MorePlayers']
     fa_server_thread.parent.teams.getAllMembers.return_value = members
     fa_server_thread.command_accept_team_proposal({'leader': 'MockThisAway'})
-    fa_server_thread.sendJSON.assert_called_once_with( \
+    fa_server_thread.sendJSON.assert_called_once_with(
         dict(command="notice", style="info", text="Sorry, the team is full."))
 
 
@@ -662,7 +662,7 @@ def test_accept_team_your_have_allready_one_team(fa_server_thread):
     fa_server_thread.parent.teams.addInSquad.return_value = False
 
     fa_server_thread.command_accept_team_proposal({'leader': 'MockThisAway'})
-    fa_server_thread.sendJSON.assert_called_once_with( \
+    fa_server_thread.sendJSON.assert_called_once_with(
         dict(command="notice", style="info", text="Sorry, you cannot join the squad."))
 
 
@@ -674,7 +674,7 @@ def test_accept_team_no_valid_leader(fa_server_thread):
     fa_server_thread.parent.teams.isInSquad.return_value = False
 
     fa_server_thread.command_accept_team_proposal({'leader': 'MockThisAway'})
-    fa_server_thread.sendJSON.assert_called_once_with( \
+    fa_server_thread.sendJSON.assert_called_once_with(
         dict(command="notice", style="info", text="Leader is not in a squad."))
 
 
@@ -686,7 +686,7 @@ def test_accept_team_given_leader_is_squad_but_no_leader(fa_server_thread):
     fa_server_thread.parent.teams.isLeader.return_value = False
 
     fa_server_thread.command_accept_team_proposal({'leader': 'MockThisAway'})
-    fa_server_thread.sendJSON.assert_called_once_with( \
+    fa_server_thread.sendJSON.assert_called_once_with(
         dict(command="notice", style="info", text="Squad not found. Wrong Loeader."))
 
 
