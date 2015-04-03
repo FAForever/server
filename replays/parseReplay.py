@@ -396,7 +396,7 @@ class replayParser(object):
         self.offset += 3
   
 
-        if supcomVersion.startswith("Supreme Commander v1") == False:
+        if not supcomVersion.startswith("Supreme Commander v1"):
             raise Exception("The file format of this replay is unknown")
 
         self.supcomVersion = supcomVersion
@@ -405,7 +405,7 @@ class replayParser(object):
         self.offset += 1
         
 
-        if replayVersion.startswith("Replay v1.9") == False:
+        if not replayVersion.startswith("Replay v1.9"):
             raise Exception("The file format of this replay is unknown")
         self.replayVersion = replayVersion
 
