@@ -110,7 +110,6 @@ class GamesContainer(object):
         ngame.setGameHostName(playerLogin)
         ngame.setGameHostUuid(playerUuid)
         ngame.setGameHostPort(gamePort)
-        ngame.setGameHostLocalPort(gamePort)
         ngame.name = name
         self.games.append(ngame)
         return ngame

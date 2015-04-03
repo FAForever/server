@@ -64,7 +64,7 @@ class Game(BaseGame):
     init_mode = InitMode.NORMAL_LOBBY
 
     def __init__(self, uuid, parent, host=None, hostId=0, hostIp=None, hostLocalIp=None, hostPort=6112,
-                 hostLocalPort=6112, name='None', map='SCMP_007', mode=0, minPlayer=1):
+                 name='None', map='SCMP_007', mode=0, minPlayer=1):
         """
         Initializes a new game
         :type uuid int
@@ -73,7 +73,6 @@ class Game(BaseGame):
         :type hostIp: str
         :type hostLocalIp: str
         :type hostPort: int
-        :type hostLocalPort: int
         :type state: str
         :type name: str
         :type map: str
@@ -577,12 +576,6 @@ class Game(BaseGame):
             return 0
         else:
             self.hostport = port
-
-    def setGameHostLocalPort(self, port):
-        if port == '':
-            return 0
-        else:
-            self.hostlocalport = port
 
     def setGameHostName(self, host):
         if host == '':

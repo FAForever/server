@@ -172,7 +172,6 @@ class Ladder1V1GamesContainer(GamesContainer):
         ngame.setGameHostName(player1.login)
         ngame.setGameHostUuid(player1.id)
         ngame.setGameHostPort(player1.gamePort)
-        ngame.setGameHostLocalPort(player1.gamePort)
         ngame.name = gameName
 
         ngame.set_player_option(player1.id, 'StartSpot', 1)
