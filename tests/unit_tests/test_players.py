@@ -1,3 +1,6 @@
+import gc
+
+from unittest import mock
 from trueskill import Rating
 from src.abc.faction import Faction
 from src.players import Player
@@ -32,3 +35,17 @@ def test_equality_by_id():
     p2 = Player('RandomSheeo', 42)
     assert p == p2
     assert p.__hash__() == p2.__hash__()
+
+
+def test_weak_references():
+    p = Player(login='Test')
+    weak_properties = ['lobby_connection', 'game_connection', 'game']
+    referent = mock.Mock()
+    for prop in weak_properties:
+        setattr(p, prop, referent)
+
+    del referent
+    gc.collect()
+
+    for prop in weak_properties:
+        assert getattr(p, prop) is None

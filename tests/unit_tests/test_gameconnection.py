@@ -55,19 +55,22 @@ def test_ping_hit(game_connection, transport):
         game_connection.ping()
     assert game_connection.abort.mock_calls == []
 
+
 def test_abort(game_connection, players, connected_game_socket):
     game_connection.player = players.hosting
     game_connection.socket = connected_game_socket
     game_connection.abort()
     connected_game_socket.abort.assert_any_call()
-    players.hosting.lobbyThread.sendJSON.assert_called_with(
+    players.hosting.lobby_connection.sendJSON.assert_called_with(
         dict(command='notice',
              style='kill')
     )
 
 @asyncio.coroutine
 def test_handle_action_GameState_idle_adds_connection(game_connection, players, game):
-    game_connection.player = players.joining
+    players.joining.game = game
+    game_connection.player = players.hosting
+    game_connection.game = game
     yield from game_connection.handle_action('GameState', ['Idle'])
     game.add_game_connection.assert_called_with(game_connection)
 
@@ -88,7 +91,6 @@ def test_handle_action_GameState_idle_as_peer_sends_CreateLobby(game_connection,
     """
     game_connection.player = players.joining
     yield from game_connection.handle_action('GameState', ['Idle'])
-    games.find_by_id.assert_called_once_with(players.joining.getGame())
     transport.send_message.assert_any_call({'key': 'CreateLobby',
                                             'commands': [0, players.joining.gamePort,
                                                          players.joining.login,
@@ -103,7 +105,6 @@ def test_handle_action_GameState_idle_as_host_sends_CreateLobby(game_connection,
     """
     game_connection.player = players.hosting
     yield from game_connection.handle_action('GameState', ['Idle'])
-    games.find_by_id.assert_called_once_with(players.hosting.getGame())
     transport.send_message.assert_any_call({'key': 'CreateLobby',
                                             'commands': [0, players.hosting.gamePort,
                                                          players.hosting.login,

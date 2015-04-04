@@ -276,7 +276,7 @@ def test_handle_action_faclosed(fa_server_thread):
     fa_server_thread.player = mock.Mock()
     fa_server_thread.handleAction('FA_CLOSED', mock.Mock())
     fa_server_thread.player.setAction.assert_called_once_with('NOTHING')
-    fa_server_thread.player.gameThread.abort.assert_called_once_with()
+    fa_server_thread.player.game_connection.abort.assert_called_once_with()
 
 
 def test_handle_action_possible_json_commannd(fa_server_thread):

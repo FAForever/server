@@ -707,6 +707,7 @@ Thanks,\n\
 
                 msg = MIMEText(text)
 
+
                 msg['Subject'] = 'Forged Alliance Forever - Account validation'
                 msg['From'] = email.utils.formataddr(('Forged Alliance Forever', MAIL_ADDRESS))
                 msg['To'] = email.utils.formataddr((login, em))
@@ -729,7 +730,7 @@ Thanks,\n\
                 login = stream.readQString()
                 session = stream.readQString()
                 self.player.setAction("NOTHING")
-                self.player.gameThread.abort()
+                self.player.game_connection.abort()
             else:
                 login = stream.readQString()
                 session = stream.readQString()
@@ -1394,14 +1395,10 @@ Thanks,\n\
                 #remove ghost
                 for p in self.parent.listUsers.players:
                     if p.getLogin() == login:
-                        if p.lobbyThread.socket:
+                        if p.lobbyThread and p.lobbyThread.socket:
                             p.lobbyThread.socket.abort()
                         if p in self.parent.listUsers.players:
                             self.parent.listUsers.players.remove(p)
-
-                for p in self.parent.listUsers.logins:
-                    if p == login:
-                        self.parent.listUsers.players.remove(p)
 
                 if session == oldsession:
                     self.session = oldsession
@@ -2081,7 +2078,8 @@ Thanks,\n\
             if mod == "ladder1v1":
                 if state == "stop":
                     for player in self.parent.listUsers.players:
-                        player.lobbyThread.removePotentialPlayer(self.player.getLogin())
+                        if player.lobbyThread:
+                            player.lobbyThread.removePotentialPlayer(self.player.getLogin())
 
                 elif state == "start":
                     gameport = message['gameport']
@@ -2365,7 +2363,8 @@ Thanks,\n\
             if data_dictionary["command"] == "game_launch":
                 # if we join a game, we are not a potential player anymore
                 for player in self.parent.listUsers.players:
-                    player.lobbyThread.removePotentialPlayer(self.player.getLogin())
+                    if player.lobbyThread:
+                        player.lobbyThread.removePotentialPlayer(self.player.getLogin())
 
         if not self.noSocket:
             try:

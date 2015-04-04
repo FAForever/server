@@ -15,6 +15,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
+import weakref
 
 from .abc.base_player import BasePlayer
 
@@ -53,10 +54,7 @@ class Player(BasePlayer):
         self.udpPacketPort = 0
 
         self.action = "NOTHING"
-        self.game = ''
-        self.lobbyThread = None
-        self.gameThread = None
-        
+
         self.globalSkill = None
         self.ladder1v1Skill = None
         self.expandLadder = 0
@@ -69,7 +67,13 @@ class Player(BasePlayer):
         self._ip = ip
         self.gamePort = port
         self.uuid = uuid
-        self.lobbyThread = lobbyThread
+
+        self._lobby_connection = lambda: None
+        if lobbyThread is not None:
+            self.lobby_connection = lobbyThread
+
+        self._game = lambda: None
+        self._game_connection = lambda: None
 
     def setGamePort(self, gamePort):
         if gamePort == 0:
@@ -118,6 +122,44 @@ class Player(BasePlayer):
     
     def getId(self):
         return self.uuid
+
+    @property
+    def lobbyThread(self):
+        return self.lobby_connection
+
+    @property
+    def lobby_connection(self):
+        """
+        Weak reference to the LobbyConnection of this player
+        """
+        return self._lobby_connection()
+
+    @lobby_connection.setter
+    def lobby_connection(self, value):
+        self._lobby_connection = weakref.ref(value)
+
+    @property
+    def game(self):
+        """
+        Weak reference to the Game object that this player wants to join or is currently in
+        """
+        return self._game()
+
+    @game.setter
+    def game(self, value):
+        self._game = weakref.ref(value)
+
+    @property
+    def game_connection(self):
+        """
+        Weak reference to the GameConnection object for this player
+        :return:
+        """
+        return self._game_connection()
+
+    @game_connection.setter
+    def game_connection(self, value):
+        self._game_connection = weakref.ref(value)
 
     @property
     def id(self):
@@ -209,7 +251,12 @@ class PlayersOnline(object):
         return 0
     
     def findByIp(self, ip):
+        """
+        Look up a user by IP
+        :param ip:
+        :rtype: Player
+        """
         for player in self.players:
-            if player.ip == ip and player.wantToConnectToGame:
+            if player.ip == ip and player.game is not None:
                 return player
         return None

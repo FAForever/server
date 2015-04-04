@@ -98,7 +98,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         """
         Accept a connected socket for this GameConnection
 
-        Will look up the user using the provided users service
+        Will look up the user using the provided users service,
+        followed by obtaining the Game object that the user wishes to join.
         :param socket: An initialised socket
         :type socket QTcpSocket
         :raise AssertionError
@@ -123,18 +124,22 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, ip, port))
 
         if self.player is None:
-            self._socket.abort()
             self.log.info("Player not found for IP: %s " % ip)
+            self.abort()
             return False
 
-        self.player.gameThread = self
-        # reset the udpPacket from server state
+        if self.player.game is None:
+            self.log.info("Player hasn't indicated that he wants to join a game")
+            self.abort()
+            return False
+
+        self.game = self.player.game
+        self.player.game_connection = self
+        self.lobby = self.player.lobby_connection
 
         self.player.setPort = False
         self.player.connectedToHost = False
 
-
-        self.lobby = self.player.lobbyThread
 
         strlog = ("%s\t" % str(self.player.getLogin()))
         self.logGame = strlog
@@ -166,7 +171,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         This message is sent by FA when it doesn't know what to do.
         :return: None
         """
-        self._game = self.player.game
         assert self.game
         self.send_Ping()
         action = self.player.action
@@ -203,7 +207,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.log.debug("{}.abort()".format(self))
         try:
             self.doEnd()
-            self.player.lobbyThread.sendJSON(dict(command="notice", style="kill"))
+            if self.player.lobby_connection:
+                self.player.lobby_connection.sendJSON(dict(command="notice", style="kill"))
         except Exception as ex:
             self.log.debug("Exception in abort(): {}".format(ex))
             pass
@@ -239,7 +244,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self._send_host_game(str(map))
         # if the player is joining, we connect him to host.
         elif playeraction == "JOIN":
-            yield from self.ConnectToHost(self.game.host.gameThread)
+            yield from self.ConnectToHost(self.game.hostPlayer.game_connection)
 
     @timed(limit=0.1)
     def handleAction2(self, action):
@@ -650,8 +655,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     def disconnection(self):
         try:
             if self.player:
-                self.player.gameThread = None
-
                 if self.game:
                     if hasattr(self.game, "proxy"):
                         if self.game.proxy.unmap(self.player.getLogin()):
@@ -701,4 +704,4 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self._player = val
 
     def __str__(self):
-        return "GameConnection(Player({}),Game({}))".format(self.player.id, self.game)
+        return "GameConnection(Player({}),Game({}))".format(self.player, self.game)
