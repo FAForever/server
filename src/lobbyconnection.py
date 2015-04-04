@@ -153,43 +153,26 @@ class LobbyConnection(QObject):
 
     @timed()
     def addGameModes(self):
-        self.parent.games.addContainer("faf", GamesContainer("faf", "Forged Alliance Forever", self.parent.db, self.parent.games))
-
-        self.parent.games.addContainer("ladder1v1", Ladder1V1GamesContainer(self.parent.db, self.parent.games))
-
-        self.parent.games.addContainer("nomads", GamesContainer("nomads", "The Nomads", self.parent.db, self.parent.games))
-
-        self.parent.games.addContainer("labwars",
-                                       GamesContainer("labwars", "LABwars", self.parent.db, self.parent.games))
-
-        self.parent.games.addContainer("murderparty",
-                                       GamesContainer("murderparty", "Murder Party", self.parent.db, self.parent.games))
-
-        self.parent.games.addContainer("blackops",
-                                       GamesContainer("blackops", "blackops", self.parent.db, self.parent.games))
-
-        self.parent.games.addContainer("xtremewars",
-                                       GamesContainer("xtremewars", "Xtreme Wars", self.parent.db, self.parent.games))
-
-        self.parent.games.addContainer("diamond",
-                                       GamesContainer("diamond", "Diamond", self.parent.db, self.parent.games))
-
-        self.parent.games.addContainer("phantomx",
-                                       GamesContainer("phantomx", "phantom-X", self.parent.db, self.parent.games))
-
-        self.parent.games.addContainer("vanilla",
-                                       GamesContainer("vanilla", "Vanilla", self.parent.db, self.parent.games))
-
-        self.parent.games.addContainer("civilians",
-                                       GamesContainer("civilians", "Civilians Defense", self.parent.db, self.parent.games))
-
-        self.parent.games.addContainer("koth", GamesContainer("koth", "King of the Hill", self.parent.db, self.parent.games))
-
-        self.parent.games.addContainer("claustrophobia",
-                                       GamesContainer("claustrophobia", "Claustrophobia", self.parent.db, self.parent.games))
-        self.parent.games.addContainer("supremedestruction",
-                                       GamesContainer("supremeDestruction", "Supreme Destruction", self.parent.db, self.parent.games))
-        self.parent.games.addContainer("coop", CoopGamesContainer(self.parent.db, self.parent.games))
+        game_modes = [
+            ('faf', 'Forged Alliance Forever', GamesContainer),
+            ('ladder1v1', 'Forged Alliance Forever', Ladder1V1GamesContainer),
+            ('labwars', 'LABwars', GamesContainer),
+            ('murderparty', 'Murder Party', GamesContainer),
+            ('blackops', 'blackops', GamesContainer),
+            ('xtremewars', 'Xtreme Wars', GamesContainer),
+            ('diamond', 'Diamond', GamesContainer),
+            ('vanilla', 'Vanilla', GamesContainer),
+            ('civilians', 'Civilians Defense', GamesContainer),
+            ('koth', 'King of the Hill', GamesContainer),
+            ('claustrophobia', 'Claustrophobia', GamesContainer),
+            ('supremedestruction', 'Supreme Destruction', GamesContainer),
+            ('coop', 'coop', CoopGamesContainer),
+        ]
+        for name, nice_name, container in game_modes:
+            self.parent.games.addContainer(name, container(name=name,
+                                                           nice_name=nice_name,
+                                                           db=self.parent.db,
+                                                           games_service=self.parent.games))
 
     @timed()
     def getRankColor(self, deviation):

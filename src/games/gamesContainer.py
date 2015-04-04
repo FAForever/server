@@ -28,7 +28,7 @@ class GamesContainer(object):
     """Class for containing games"""
     listable = True
 
-    def __init__(self, gameTypeName, gameNiceName, db, parent = None):
+    def __init__(self, name, nice_name, db, games_service=None):
 
         self.log = logging.getLogger(__name__)
 
@@ -44,9 +44,9 @@ class GamesContainer(object):
 
         self.desc = None
 
-        self.gameTypeName = gameTypeName
-        self.gameNiceName = gameNiceName
-        self.parent = parent
+        self.gameTypeName = name
+        self.gameNiceName = nice_name
+        self.parent = games_service
 
         self.options = []
 

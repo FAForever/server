@@ -23,8 +23,8 @@ class CoopGamesContainer(GamesContainer):
     """Class for custom claustrophobia games"""
     listable = False
 
-    def __init__(self, db, parent = None):
-        super(CoopGamesContainer, self).__init__("coop", "coop", db, parent)
+    def __init__(self, db, games_service=None, name='coop', nice_name='coop'):
+        super(CoopGamesContainer, self).__init__(name, nice_name, db, games_service)
 
         self.host = False
         self.join = False
