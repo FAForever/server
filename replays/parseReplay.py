@@ -176,41 +176,41 @@ class UNITCOMMAND(object):
     UNITCOMMAND_Move = 2
     UNITCOMMAND_Dive = 3
     UNITCOMMAND_FormMove = 4
-    UNITCOMMAND_BuildSiloTactical =5
-    UNITCOMMAND_BuildSiloNuke =6
-    UNITCOMMAND_BuildFactory =7
-    UNITCOMMAND_BuildMobile =8
-    UNITCOMMAND_BuildAssist =9
-    UNITCOMMAND_Attack =10
-    UNITCOMMAND_FormAttack =11
-    UNITCOMMAND_Nuke =12
-    UNITCOMMAND_Tactical =13
-    UNITCOMMAND_Teleport =14
-    UNITCOMMAND_Guard =15
-    UNITCOMMAND_Patrol =16
-    UNITCOMMAND_Ferry =17
-    UNITCOMMAND_FormPatrol =18
-    UNITCOMMAND_Reclaim =19
-    UNITCOMMAND_Repair =20
-    UNITCOMMAND_Capture =21
-    UNITCOMMAND_TransportLoadUnits =22
-    UNITCOMMAND_TransportReverseLoadUnits =23
-    UNITCOMMAND_TransportUnloadUnits =24
-    UNITCOMMAND_TransportUnloadSpecificUnits =25
-    UNITCOMMAND_DetachFromTransport =26
-    UNITCOMMAND_Upgrade =27
-    UNITCOMMAND_Script =28
-    UNITCOMMAND_AssistCommander =29
-    UNITCOMMAND_KillSelf =30
-    UNITCOMMAND_DestroySelf =31
-    UNITCOMMAND_Sacrifice =32
-    UNITCOMMAND_Pause =33
-    UNITCOMMAND_OverCharge =34
-    UNITCOMMAND_AggressiveMove =35
-    UNITCOMMAND_FormAggressiveMove =36
-    UNITCOMMAND_AssistMove =37
-    UNITCOMMAND_SpecialAction =38
-    UNITCOMMAND_Dock =39
+    UNITCOMMAND_BuildSiloTactical = 5
+    UNITCOMMAND_BuildSiloNuke = 6
+    UNITCOMMAND_BuildFactory = 7
+    UNITCOMMAND_BuildMobile = 8
+    UNITCOMMAND_BuildAssist = 9
+    UNITCOMMAND_Attack = 10
+    UNITCOMMAND_FormAttack = 11
+    UNITCOMMAND_Nuke = 12
+    UNITCOMMAND_Tactical = 13
+    UNITCOMMAND_Teleport = 14
+    UNITCOMMAND_Guard = 15
+    UNITCOMMAND_Patrol = 16
+    UNITCOMMAND_Ferry = 17
+    UNITCOMMAND_FormPatrol = 18
+    UNITCOMMAND_Reclaim = 19
+    UNITCOMMAND_Repair = 20
+    UNITCOMMAND_Capture = 21
+    UNITCOMMAND_TransportLoadUnits = 22
+    UNITCOMMAND_TransportReverseLoadUnits = 23
+    UNITCOMMAND_TransportUnloadUnits = 24
+    UNITCOMMAND_TransportUnloadSpecificUnits = 25
+    UNITCOMMAND_DetachFromTransport = 26
+    UNITCOMMAND_Upgrade = 27
+    UNITCOMMAND_Script = 28
+    UNITCOMMAND_AssistCommander = 29
+    UNITCOMMAND_KillSelf = 30
+    UNITCOMMAND_DestroySelf = 31
+    UNITCOMMAND_Sacrifice = 32
+    UNITCOMMAND_Pause = 33
+    UNITCOMMAND_OverCharge = 34
+    UNITCOMMAND_AggressiveMove = 35
+    UNITCOMMAND_FormAggressiveMove = 36
+    UNITCOMMAND_AssistMove = 37
+    UNITCOMMAND_SpecialAction = 38
+    UNITCOMMAND_Dock = 39
 
 
 '''
@@ -283,7 +283,7 @@ class replayParser(object):
 
         #f = open(inFile, 'rb')
         #self.bin = f.read()
-        self.offset= 0
+        self.offset = 0
         self.supcomVersion = ""
         self.replayVersion = ""
         self.players = []
@@ -293,7 +293,7 @@ class replayParser(object):
         line = ''
         while True:
             
-            char = struct.unpack("s", self.bin[offset:offset+1])
+            char = struct.unpack("s", self.bin[offset:offset + 1])
 
             offset += 1
             #print char
@@ -308,31 +308,31 @@ class replayParser(object):
         return offset, line
     
     def readInt(self, offset):
-        int = struct.unpack("i", self.bin[offset:offset+4])[0]
-        return offset+4, int
+        int = struct.unpack("i", self.bin[offset:offset + 4])[0]
+        return offset + 4, int
     
     def readUInt(self, offset):
-        int = struct.unpack("I", self.bin[offset:offset+4])[0]
-        return offset+4, int
+        int = struct.unpack("I", self.bin[offset:offset + 4])[0]
+        return offset + 4, int
 
     
     def readChar(self, offset):
-        char = struct.unpack("B", self.bin[offset:offset+1])[0]
-        return offset+1, char
+        char = struct.unpack("B", self.bin[offset:offset + 1])[0]
+        return offset + 1, char
 
     
     def readShort(self, offset):
-        int = struct.unpack("H", self.bin[offset:offset+2])[0]
-        return offset+2, int
+        int = struct.unpack("H", self.bin[offset:offset + 2])[0]
+        return offset + 2, int
     
     def readFloat(self, offset):
-        float = struct.unpack("f", self.bin[offset:offset+4])[0]
-        return offset+4, float
+        float = struct.unpack("f", self.bin[offset:offset + 4])[0]
+        return offset + 4, float
     
     
     def readBool(self, offset):
-        bool = struct.unpack("?", self.bin[offset:offset+1])[0]
-        return offset+1, bool
+        bool = struct.unpack("?", self.bin[offset:offset + 1])[0]
+        return offset + 1, bool
     
     
     def peekType(self, data):
@@ -341,7 +341,7 @@ class replayParser(object):
     
     def parseLua(self, offset):
     
-        type = struct.unpack("b", self.bin[offset:offset+1])[0]
+        type = struct.unpack("b", self.bin[offset:offset + 1])[0]
         offset += 1
         #type = struct.unpack("b", data[offset:offset+1])[0]
         
@@ -359,7 +359,7 @@ class replayParser(object):
         elif type == TABLE_BEGIN:
             table = []
             while True:
-                type = self.peekType(self.bin[offset:offset+1])
+                type = self.peekType(self.bin[offset:offset + 1])
                 if type == TABLE_END:
                     break
     
@@ -374,7 +374,7 @@ class replayParser(object):
                 datasValue = self.parseLua(offset)
                 if datasValue is not None:
                     off, value = datasValue
-                    offset =  off 
+                    offset = off 
                     pair = (key, value)
                     table.append(pair)
     
@@ -382,7 +382,7 @@ class replayParser(object):
                     offset += 1
     
             
-            return offset+1, table
+            return offset + 1, table
         
         elif type == TABLE_END:
             raise Exception("Error: unexpected end-of-table")
@@ -425,7 +425,7 @@ class replayParser(object):
         infos = replayInfos()
         
         
-        numSource = struct.unpack("b", self.bin[self.offset:self.offset+1])[0]
+        numSource = struct.unpack("b", self.bin[self.offset:self.offset + 1])[0]
         self.offset += 1
         
         for i in range(numSource):
@@ -433,13 +433,13 @@ class replayParser(object):
             self.offset, val = self.readInt(self.offset)
         
         
-        cheatsEnabled = struct.unpack("b", self.bin[self.offset:self.offset+1])[0]
+        cheatsEnabled = struct.unpack("b", self.bin[self.offset:self.offset + 1])[0]
         self.offset += 1
         
         infos.setCheat(cheatsEnabled)
         
         
-        numArmies = struct.unpack("b", self.bin[self.offset:self.offset+1])[0]
+        numArmies = struct.unpack("b", self.bin[self.offset:self.offset + 1])[0]
         self.offset += 1
         
         armies = replayArmyContainer()
@@ -455,7 +455,7 @@ class replayParser(object):
                 armies.add(newArmy)
             
             
-            b = struct.unpack("b", self.bin[self.offset:self.offset+1])[0]
+            b = struct.unpack("b", self.bin[self.offset:self.offset + 1])[0]
             self.offset += 1
             if b != -1:
                 #b = struct.unpack("b", self.bin[self.offset:self.offset+1])[0]
@@ -503,21 +503,21 @@ class replayParser(object):
                 if currentAction != tick or currentPlayer != playerturn:
                     currentAction = tick
                     currentPlayer = playerturn
-                    playerLastTurn[playerturn]=tick
+                    playerLastTurn[playerturn] = tick
             elif message_op == 12:
-                playerLastTurn[playerturn]=tick
+                playerLastTurn[playerturn] = tick
             elif message_op == 13:
-                playerLastTurn[playerturn]=tick                    
+                playerLastTurn[playerturn] = tick                    
             elif message_op == 19:
                 if currentAction != tick or currentPlayer != playerturn:
                     currentAction = tick
                     currentPlayer = playerturn
-                    playerLastTurn[playerturn]=tick
+                    playerLastTurn[playerturn] = tick
             elif message_op == 22:
                 if currentAction != tick or currentPlayer != playerturn:
                     currentAction = tick
                     currentPlayer = playerturn
-                    playerLastTurn[playerturn]=tick                                        
+                    playerLastTurn[playerturn] = tick                                        
             #skip all the data we don't need to look at we're just looking for the time in this function.
             offset = offset + message_length - 3 
         
@@ -540,7 +540,7 @@ class replayParser(object):
             offset, message_length = self.readShort(offset)
             
             
-            if lastbeat == beatDesync or lastbeat == beatDesync-50:
+            if lastbeat == beatDesync or lastbeat == beatDesync - 50:
 
                 if message_op != 1 and message_op != 3 and message_op != 12 and message_op != 22: 
                     print(message_op)
@@ -567,7 +567,7 @@ class replayParser(object):
                                                              
                 for _ in range(16):
 
-                    MD5Digest += (struct.unpack("s", self.bin[fakeoffset:fakeoffset+1])[0]).encode("hex")
+                    MD5Digest += (struct.unpack("s", self.bin[fakeoffset:fakeoffset + 1])[0]).encode("hex")
                     #MD5Digest =  MD5Digest + struct.unpack("B", self.bin[fakeoffset:fakeoffset+1])[0]
                     fakeoffset += 1
                 if debug:
@@ -589,7 +589,7 @@ class replayParser(object):
                 if currentAction != tick or currentPlayer != playerturn:
                     currentAction = tick
                     currentPlayer = playerturn
-                    playerLastTurn[playerturn]=tick
+                    playerLastTurn[playerturn] = tick
             elif message_op == 12:
                 if debug:
                     print("CMDST_IssueCommand for player", playerturn) 
@@ -615,7 +615,7 @@ class replayParser(object):
                             fakeoffset += 1 + 3 * 4 + 1 + 4
                         unitBluePrint = ""
                         for i in range(7):
-                            unitBluePrint =  unitBluePrint + struct.unpack("s", self.bin[fakeoffset:fakeoffset+1])[0]
+                            unitBluePrint = unitBluePrint + struct.unpack("s", self.bin[fakeoffset:fakeoffset + 1])[0]
                             fakeoffset += 1
                         print(unitBluePrint)
                     
@@ -624,16 +624,16 @@ class replayParser(object):
                     
                     currentAction = tick
                     currentPlayer = playerturn
-                    playerLastTurn[playerturn]=tick
+                    playerLastTurn[playerturn] = tick
                     pass
-                playerLastTurn[playerturn]=tick
+                playerLastTurn[playerturn] = tick
             elif message_op == 13:
-                playerLastTurn[playerturn]=tick                    
+                playerLastTurn[playerturn] = tick                    
             elif message_op == 19:
                 if currentAction != tick or currentPlayer != playerturn:
                     currentAction = tick
                     currentPlayer = playerturn
-                    playerLastTurn[playerturn]=tick
+                    playerLastTurn[playerturn] = tick
             elif message_op == 22:
                 
                 fakeoffset, command = self.readLine(offset)
@@ -643,7 +643,7 @@ class replayParser(object):
                 if currentAction != tick or currentPlayer != playerturn:
                     currentAction = tick
                     currentPlayer = playerturn
-                    playerLastTurn[playerturn]=tick                                        
+                    playerLastTurn[playerturn] = tick                                        
             #skip all the data we don't need to look at we're just looking for the time in this function.
             offset = offset + message_length - 3 
         
@@ -670,7 +670,7 @@ class replayParser(object):
                 if currentAction != tick or currentPlayer != playerturn:
                     currentAction = tick
                     currentPlayer = playerturn
-                    playerLastTurn[playerturn]=tick
+                    playerLastTurn[playerturn] = tick
             elif message_op == 12:
                 fakeoffset = offset
                 fakeoffset, numUnits = self.readInt(fakeoffset)
@@ -689,7 +689,7 @@ class replayParser(object):
                     
                     currentAction = tick
                     currentPlayer = playerturn
-                    playerLastTurn[playerturn]=tick
+                    playerLastTurn[playerturn] = tick
                     if commandType == 7 or  commandType == 8 or commandType == 27:
                         if STITarget == 0:
                             fakeoffset += 6
@@ -697,26 +697,26 @@ class replayParser(object):
                             fakeoffset += 1 + 3 * 4 + 1 + 4
                         unitBluePrint = ""
                         for i in range(7):
-                            unitBluePrint =  unitBluePrint + struct.unpack("s", self.bin[fakeoffset:fakeoffset+1])[0]
+                            unitBluePrint = unitBluePrint + struct.unpack("s", self.bin[fakeoffset:fakeoffset + 1])[0]
                             fakeoffset += 1
                         print(unitBluePrint)
 
                                 
                         
-                playerLastTurn[playerturn]=tick
+                playerLastTurn[playerturn] = tick
             elif message_op == 13:
-                playerLastTurn[playerturn]=tick                    
+                playerLastTurn[playerturn] = tick                    
             elif message_op == 19:
                 if currentAction != tick or currentPlayer != playerturn:
                     currentAction = tick
                     currentPlayer = playerturn
-                    playerLastTurn[playerturn]=tick
+                    playerLastTurn[playerturn] = tick
             elif message_op == 22:
 
                 if currentAction != tick or currentPlayer != playerturn:
                     currentAction = tick
                     currentPlayer = playerturn
-                    playerLastTurn[playerturn]=tick                                        
+                    playerLastTurn[playerturn] = tick                                        
             #skip all the data we don't need to look at we're just looking for the time in this function.
             offset = offset + message_length - 3         
 
@@ -729,11 +729,11 @@ inFile = r'c:\Users\nozon\Downloads\1265754.fafreplay'
 
 replay = replayParser(inFile)
 replay.readHeader()
-print("gametime", (float(replay.setGameTime()) /10.0) / 60.0, "minutes")
+print("gametime", (float(replay.setGameTime()) / 10.0) / 60.0, "minutes")
 
-lastTurns= replay.setPlayerLastTurn()
+lastTurns = replay.setPlayerLastTurn()
 for l in lastTurns:
-    print(replay.players[l], ((lastTurns[l] /10.0) / 60.0), "minutes")
+    print(replay.players[l], ((lastTurns[l] / 10.0) / 60.0), "minutes")
 
 replay.setDebugDesync()
 

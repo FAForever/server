@@ -94,7 +94,7 @@ class _interface_method(object):
         
         if self._iface.endswith("Service"):
             params = json.dumps(kwargs)
-            keys={}
+            keys = {}
             keys["format"] = "json"
             keys["key"] = key.get()
             

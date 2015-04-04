@@ -34,8 +34,8 @@ class tournamentServer(QtNetwork.QTcpServer):
         super(tournamentServer, self).__init__(parent)
         self.logger = logging.getLogger(__name__)
         self.parent = parent
-        self.threads    = []
-        self.updaters   = []
+        self.threads = []
+        self.updaters = []
         self.db = self.parent.db
 
         self.tournaments = {}
@@ -51,20 +51,20 @@ class tournamentServer(QtNetwork.QTcpServer):
         for t in challonge.tournaments.index():
                 uid = t["id"]
                 self.tournaments[uid] = {}
-                self.tournaments[uid]["name"]           = t["name"]
-                self.tournaments[uid]["url"]            = t["full-challonge-url"] 
-                self.tournaments[uid]["description"]    = t["description"]
-                self.tournaments[uid]["type"]           = t["tournament-type"]
-                self.tournaments[uid]["progress"]       = t["progress-meter"]
-                self.tournaments[uid]["state"]          = "open"
+                self.tournaments[uid]["name"] = t["name"]
+                self.tournaments[uid]["url"] = t["full-challonge-url"] 
+                self.tournaments[uid]["description"] = t["description"]
+                self.tournaments[uid]["type"] = t["tournament-type"]
+                self.tournaments[uid]["progress"] = t["progress-meter"]
+                self.tournaments[uid]["state"] = "open"
                 checkParticipants = False
                 
                 if t["started-at"] is not None:
-                    self.tournaments[uid]["state"]      = "started"
+                    self.tournaments[uid]["state"] = "started"
                     if t["progress-meter"] == 0:
                         checkParticipants = True
                 if t["completed-at"] is not None:
-                    self.tournaments[uid]["state"]      = "finished"
+                    self.tournaments[uid]["state"] = "finished"
                 
                 if t["open-signup"]:
                     ToClose.append(uid)
@@ -113,7 +113,7 @@ class tournamentServer(QtNetwork.QTcpServer):
                                         changed.append(p["id"])
                                     else:
                                         participant = {}
-                                        participant["id"]   = p["id"]
+                                        participant["id"] = p["id"]
                                         participant["name"] = p["name"]
                                         self.tournaments[uid]["participants"].append(participant)
                         else:
@@ -157,7 +157,7 @@ class tournamentServer(QtNetwork.QTcpServer):
 
 
                         participant = {}
-                        participant["id"]   = p["id"]
+                        participant["id"] = p["id"]
                         participant["name"] = name
                         self.tournaments[uid]["participants"].append(participant)
             

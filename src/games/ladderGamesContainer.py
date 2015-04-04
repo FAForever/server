@@ -75,7 +75,7 @@ class Ladder1V1GamesContainer(GamesContainer):
                 player.lobbyThread.sendJSON(dict(command="notice", style="info", text="<i>Welcome to the matchmaker system.</i><br><br><b>You will be randomnly matched until the system learn and know enough about you.</b><br>After that, you will be only matched against someone of your level.<br><br><b>So don't worry if your first games are uneven, this will get better over time !</b>"))
             elif deviation > 250:
                 progress = (500.0 - deviation) / 2.5
-                player.lobbyThread.sendJSON(dict(command="notice", style="info", text="The system is still learning you. <b><br><br>The learning phase is " + str(progress)+"% complete<b>"))
+                player.lobbyThread.sendJSON(dict(command="notice", style="info", text="The system is still learning you. <b><br><br>The learning phase is " + str(progress) + "% complete<b>"))
             
             return 1
         return 0
@@ -136,7 +136,7 @@ class Ladder1V1GamesContainer(GamesContainer):
             choice = random.randint(0, 2)
 
             if choice == 1 or choice == 2:
-                common_maps = common_maps + player_maps[choice-1][:missing_maps]
+                common_maps = common_maps + player_maps[choice - 1][:missing_maps]
 
 
         if len(common_maps) < 15:
@@ -239,7 +239,7 @@ class Ladder1V1GamesContainer(GamesContainer):
                     if curPlayer.getAction() == "SEARCH_LADDER":
                         match_mean, match_dev = curPlayer.ladder_rating
 
-                        if deviation > 350 and match_dev - 3* match_dev > 1400:
+                        if deviation > 350 and match_dev - 3 * match_dev > 1400:
                             continue 
 
                         curMatchQuality = self.getMatchQuality(curPlayer, player)

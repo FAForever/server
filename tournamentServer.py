@@ -57,7 +57,7 @@ class start(QObject):
             self.logger.error(self.db.lastError().text())  
  
         
-        self.updater =  tournamentServer(self)
+        self.updater = tournamentServer(self)
         if not self.updater.listen(QtNetwork.QHostAddress.Any, 11001):
             return        
         else:

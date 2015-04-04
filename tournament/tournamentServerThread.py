@@ -70,8 +70,8 @@ class tournamentServerThread(QObject):
         return
     
     def command_add_participant(self, message):
-        uid     = message["uid"]
-        login   = message["login"] 
+        uid = message["uid"]
+        login = message["login"] 
         
         challonge.participants.create(uid,login)
         
@@ -92,7 +92,7 @@ class tournamentServerThread(QObject):
         sortedSeed = sorted(iter(seeding.items()), key=operator.itemgetter(1), reverse=True)
 
         for i in range(len(sortedSeed)):
-            challonge.participants.update(uid, sortedSeed[i][0], seed=str(i+1))
+            challonge.participants.update(uid, sortedSeed[i][0], seed=str(i + 1))
 
         self.log.debug("player added, reloading data")
         self.parent.importTournaments()
