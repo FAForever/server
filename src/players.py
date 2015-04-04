@@ -81,18 +81,9 @@ class Player(BasePlayer):
     def setLogin(self, login):
         self._login = str(login)
     
-    def setGame(self, gameName):
-        if gameName == '':
-            return 0
-        self.game = gameName
-        return 1
-
     def getLocalGamePort(self):
         return self.localGamePort
     
-    def getGame(self):
-        return str(self.game)
-
     @property
     def action(self):
         return self._action

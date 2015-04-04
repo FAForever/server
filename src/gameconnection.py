@@ -166,14 +166,15 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         This message is sent by FA when it doesn't know what to do.
         :return: None
         """
-        self._game = self.games.find_by_id(self.player.getGame())
+        self._game = self.player.game
         assert self.game
-        self.game.add_game_connection(self)
         self.send_Ping()
         action = self.player.action
 
         if action == "HOST":
-            self.game.state = GameState.INITIALIZING
+            self.game.state = GameState.LOBBY
+            self._state = GameConnectionState.CONNECTED_TO_HOST
+            self.game.add_game_connection(self)
             self.game.setHostIP(self.player.getIp())
             self.game.proxy = proxy_map.ProxyMap()
             strlog = (
