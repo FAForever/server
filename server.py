@@ -18,6 +18,7 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 import asyncio
+
 import sys
 import logging
 from logging import handlers
@@ -43,6 +44,16 @@ if __name__ == '__main__':
         def __init__(self, loop):
             QtCore.QObject.__init__(self)
             asyncio.Future.__init__(self)
+
+            import argparse
+            parser = argparse.ArgumentParser(description='FAForever Server')
+            parser.add_argument('--nodb', help="don't use a database",
+                                          action='store_true')
+            parser.add_argument('--db', help="use given database type",
+                                        default='QMYSQL')
+            args = parser.parse_args()
+
+
             self.rootlogger = logging.getLogger("")
             self.logHandler = handlers.RotatingFileHandler(config.LOG_PATH + "server.log", backupCount=1024, maxBytes=16777216)
             self.logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
@@ -53,17 +64,20 @@ if __name__ == '__main__':
 
             self.players_online = PlayersOnline()
 
-            self.db = QtSql.QSqlDatabase("QMYSQL")
-            self.db.setHostName(DB_SERVER)
-            self.db.setPort(DB_PORT)
+            if args.nodb:
+                from unittest import mock
+                self.db = mock.Mock()
+            else:
+                self.db = QtSql.QSqlDatabase(args.db)
+                self.db.setHostName(DB_SERVER)
+                self.db.setPort(DB_PORT)
 
-            self.db.setDatabaseName(DB_TABLE)
-            self.db.setUserName(DB_LOGIN)
-            self.db.setPassword(DB_PASSWORD)
+                self.db.setDatabaseName(DB_TABLE)
+                self.db.setUserName(DB_LOGIN)
+                self.db.setPassword(DB_PASSWORD)
+                self.db.setConnectOptions("MYSQL_OPT_RECONNECT=1")
 
             self.privkey = PRIVATE_KEY
-
-            self.db.setConnectOptions("MYSQL_OPT_RECONNECT=1")
 
             if not self.db.open():
                 self.logger.error(self.db.lastError().text())
