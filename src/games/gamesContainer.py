@@ -126,9 +126,9 @@ class GamesContainer(object):
                 return True
 
     def addDirtyGame(self, game):
-        if game not in self.parent.dirtyGameList:
-            self.parent.dirtyGameList.append(game)
-
+        if game not in self.parent.dirty_games:
+            self.parent.mark_dirty(game)
+            
     def removeOldGames(self):
         """Remove old games (invalids and not started)"""
 
