@@ -686,7 +686,7 @@ class LobbyConnection(QObject):
 
                 exp = time.strftime("%Y-%m-%d %H:%m:%S", time.gmtime())
                 key = hashlib.md5()
-                key.update(login + '_' + em + str(random.randrange(0, 10000)) + exp + PW_SALT)
+                key.update((login + '_' + em + str(random.randrange(0, 10000)) + exp + PW_SALT).encode())
                 keyHex = key.hexdigest()
                 query.prepare("INSERT INTO `validate_account` (`UserID`,`Key`,`expDate`) VALUES (?,?,?)")
                 query.addBindValue(uid)
