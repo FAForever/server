@@ -1,4 +1,4 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright (c) 2014 Gael Honorez.
 # All rights reserved. This program and the accompanying materials
 # are made available under the terms of the GNU Public License v3.0
@@ -33,13 +33,13 @@ class GamesContainer(object):
         self.log = logging.getLogger(__name__)
 
         self.log.debug("initializing " + nice_name)
-        
+
         self.games = []
 
         self.host = True
         self.live = True
         self.join = True
-        
+
         self.type = 0
 
         self.desc = None
@@ -51,44 +51,46 @@ class GamesContainer(object):
         self.options = []
 
         self.db = db
-        
-        query = self.db.exec_("SELECT description FROM game_featuredMods WHERE gamemod = '%s'" % self.gameTypeName)
+
+        query = self.db.exec_(
+            "SELECT description FROM game_featuredMods WHERE gamemod = '%s'" % self.gameTypeName)
         if query.size() > 0:
             query.first()
-            self.desc = query.value(0)  
+            self.desc = query.value(0)
 
     def getGamemodVersion(self):
         tableMod = "updates_" + self.gameTypeName
         tableModFiles = tableMod + "_files"
         value = {}
         query = QtSql.QSqlQuery(self.db)
-        query.prepare("SELECT fileId, MAX(version) FROM `%s` LEFT JOIN %s ON `fileId` = %s.id GROUP BY fileId" % (tableModFiles, tableMod, tableMod))
+        query.prepare(
+            "SELECT fileId, MAX(version) FROM `%s` LEFT JOIN %s ON `fileId` = %s.id GROUP BY fileId" % (
+                tableModFiles, tableMod, tableMod))
         query.exec_()
-        if query.size() != 0 :
+        if query.size() != 0:
             while query.next():
-                value[int(query.value(0))] = int(query.value(1)) 
-        
+                value[int(query.value(0))] = int(query.value(1))
+
         return value
 
     def createUuid(self, playerId):
         query = QtSql.QSqlQuery(self.db)
         queryStr = ("INSERT INTO game_stats (`host`) VALUE ( %i )" % playerId)
-        query.exec_(queryStr)      
+        query.exec_(queryStr)
         uuid = query.lastInsertId()
-        
-        
+
         return uuid
 
     def findGameByUuid(self, uuid):
         """Find a game by the uuid"""
         for game in self.games:
-            if game.uuid == uuid :
+            if game.uuid == uuid:
                 return game
         return None
 
     def addGame(self, game):
         """Add a game to the list"""
-        if not game in self.games :
+        if game not in self.games:
             self.games.append(game)
             return 1
         return 0
@@ -118,7 +120,7 @@ class GamesContainer(object):
         """Remove a game from the list"""
 
         for game in reversed(self.games):
-            if game == gameToRemove :
+            if game == gameToRemove:
                 game.state = GameState.ENDED
                 self.addDirtyGame(game.uuid)
                 self.games.remove(game)
@@ -126,15 +128,16 @@ class GamesContainer(object):
                 return True
 
     def addDirtyGame(self, game):
-        if not game in self.parent.dirtyGameList : 
-            self.parent.dirtyGameList.append(game)           
-            
+        if game not in self.parent.dirtyGameList:
+            self.parent.dirtyGameList.append(game)
+
     def removeOldGames(self):
         """Remove old games (invalids and not started)"""
 
         now = time.time()
 
         ''' Returns true if a game should be kept alive, false if it should die '''
+
         def validateGame(game):
             diff = now - game.created_at
             if game.lobbyState == 'open':
@@ -152,7 +155,7 @@ class GamesContainer(object):
             if game.lobbyState == 'Idle' and diff > 60:
                 return False
 
-            if game.lobbyState == 'playing' and diff > 60 * 60 * 8 : #if the game is playing for more than 8 hours
+            if game.lobbyState == 'playing' and diff > 60 * 60 * 8:  #if the game is playing for more than 8 hours
                 return False
 
         for game in reversed(self.games):
