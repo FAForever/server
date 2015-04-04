@@ -136,6 +136,8 @@ if __name__ == '__main__':
 
     try:
         app = QtCore.QCoreApplication(sys.argv)
+        if config.LIBRARY_PATH:
+            app.addLibraryPath('C:\\Qt\\4.8.6\\plugins')
         loop = QEventLoop(app)
         asyncio.set_event_loop(loop)
         loop.run_until_complete(Start(loop))

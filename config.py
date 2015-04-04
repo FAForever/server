@@ -10,6 +10,10 @@ LOBBY_UDP_PORT = Config.get('lobby_udp_port', 30351)
 
 LOG_PATH = Config.get('logpath', './logs/')
 LOG_LEVEL = eval('logging.{}'.format(Config.get('loglevel', 'DEBUG')))
+
+# Use this for making Qt find plugins (eq. qmysql)
+LIBRARY_PATH = Config.get('library_path', None)
+
 logging.info("Setting default log level {}".format(LOG_LEVEL))
 logging.getLogger('quamash').setLevel(logging.INFO)
 logging.getLogger().setLevel(logging.DEBUG)
