@@ -155,7 +155,7 @@ class LobbyConnection(QObject):
     def addGameModes(self):
         game_modes = [
             ('faf', 'Forged Alliance Forever', GamesContainer),
-            ('ladder1v1', 'Forged Alliance Forever', Ladder1V1GamesContainer),
+            ('ladder1v1', 'Ladder 1 vs 1', Ladder1V1GamesContainer),
             ('labwars', 'LABwars', GamesContainer),
             ('murderparty', 'Murder Party', GamesContainer),
             ('blackops', 'blackops', GamesContainer),
