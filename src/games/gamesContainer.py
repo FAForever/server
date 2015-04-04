@@ -137,7 +137,7 @@ class GamesContainer(object):
         ''' Returns true if a game should be kept alive, false if it should die '''
         def validateGame(game):
             diff = now - game.created_at
-            if game.lobbyState == 'open':
+            if game.state == GameState.ENDED:
                 if len(game.players) == 0:
                     return False
 
@@ -149,10 +149,8 @@ class GamesContainer(object):
                     if hostPlayer.getAction() != "HOST":
                         return False
 
-            if game.lobbyState == 'Idle' and diff > 60:
-                return False
-
-            if game.lobbyState == 'playing' and diff > 60 * 60 * 8: #if the game is playing for more than 8 hours
+            #if the game is playing for more than 8 hours
+            if game.state == GameState.LIVE and diff > 60 * 60 * 8:
                 return False
 
         for game in reversed(self.games):
