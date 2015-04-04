@@ -20,7 +20,7 @@ from PySide.QtNetwork import QTcpSocket
 from src.players import PlayersOnline, Player
 from src.games import Game
 
-from protocol.transport import Transport
+from src.protocol.transport import Transport
 
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s',
