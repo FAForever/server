@@ -153,60 +153,43 @@ class LobbyConnection(QObject):
 
     @timed()
     def addGameModes(self):
-        if not self.parent.games.isaContainer("faf"):
-            self.parent.games.addContainer("faf", GamesContainer("faf", "Forged Alliance Forever", self.parent.db, self.parent.games))
+        self.parent.games.addContainer("faf", GamesContainer("faf", "Forged Alliance Forever", self.parent.db, self.parent.games))
 
-        if not self.parent.games.isaContainer("ladder1v1"):
-            self.parent.games.addContainer("ladder1v1", Ladder1V1GamesContainer(self.parent.db, self.parent.games))
+        self.parent.games.addContainer("ladder1v1", Ladder1V1GamesContainer(self.parent.db, self.parent.games))
 
-        if not self.parent.games.isaContainer("nomads"):
-            self.parent.games.addContainer("nomads", GamesContainer("nomads", "The Nomads", self.parent.db, self.parent.games))
+        self.parent.games.addContainer("nomads", GamesContainer("nomads", "The Nomads", self.parent.db, self.parent.games))
 
-        if not self.parent.games.isaContainer("labwars"):
-            self.parent.games.addContainer("labwars",
-                                           GamesContainer("labwars", "LABwars", self.parent.db, self.parent.games))
+        self.parent.games.addContainer("labwars",
+                                       GamesContainer("labwars", "LABwars", self.parent.db, self.parent.games))
 
-        if not self.parent.games.isaContainer("murderparty"):
-            self.parent.games.addContainer("murderparty",
-                                           GamesContainer("murderparty", "Murder Party", self.parent.db, self.parent.games))
+        self.parent.games.addContainer("murderparty",
+                                       GamesContainer("murderparty", "Murder Party", self.parent.db, self.parent.games))
 
-        if not self.parent.games.isaContainer("blackops"):
-            self.parent.games.addContainer("blackops",
-                                           GamesContainer("blackops", "blackops", self.parent.db, self.parent.games))
+        self.parent.games.addContainer("blackops",
+                                       GamesContainer("blackops", "blackops", self.parent.db, self.parent.games))
 
-        if not self.parent.games.isaContainer("xtremewars"):
-            self.parent.games.addContainer("xtremewars",
-                                           GamesContainer("xtremewars", "Xtreme Wars", self.parent.db, self.parent.games))
+        self.parent.games.addContainer("xtremewars",
+                                       GamesContainer("xtremewars", "Xtreme Wars", self.parent.db, self.parent.games))
 
-        if not self.parent.games.isaContainer("diamond"):
-            self.parent.games.addContainer("diamond",
-                                           GamesContainer("diamond", "Diamond", self.parent.db, self.parent.games))
+        self.parent.games.addContainer("diamond",
+                                       GamesContainer("diamond", "Diamond", self.parent.db, self.parent.games))
 
-        if not self.parent.games.isaContainer("phantomx"):
-            self.parent.games.addContainer("phantomx",
-                                           GamesContainer("phantomx", "phantom-X", self.parent.db, self.parent.games))
+        self.parent.games.addContainer("phantomx",
+                                       GamesContainer("phantomx", "phantom-X", self.parent.db, self.parent.games))
 
-        if not self.parent.games.isaContainer("vanilla"):
-            self.parent.games.addContainer("vanilla",
-                                           GamesContainer("vanilla", "Vanilla", self.parent.db, self.parent.games))
+        self.parent.games.addContainer("vanilla",
+                                       GamesContainer("vanilla", "Vanilla", self.parent.db, self.parent.games))
 
-        if not self.parent.games.isaContainer("civilians"):
-            self.parent.games.addContainer("civilians",
-                                           GamesContainer("civilians", "Civilians Defense", self.parent.db, self.parent.games))
+        self.parent.games.addContainer("civilians",
+                                       GamesContainer("civilians", "Civilians Defense", self.parent.db, self.parent.games))
 
-        if not self.parent.games.isaContainer("koth"):
-            self.parent.games.addContainer("koth", GamesContainer("koth", "King of the Hill", self.parent.db, self.parent.games))
+        self.parent.games.addContainer("koth", GamesContainer("koth", "King of the Hill", self.parent.db, self.parent.games))
 
-        if not self.parent.games.isaContainer("claustrophobia"):
-            self.parent.games.addContainer("claustrophobia",
-                                           GamesContainer("claustrophobia", "Claustrophobia", self.parent.db, self.parent.games))
-
-        if not self.parent.games.isaContainer("supremedestruction"):
-            self.parent.games.addContainer("supremedestruction",
-                                           GamesContainer("supremeDestruction", "Supreme Destruction", self.parent.db, self.parent.games))
-
-        if not self.parent.games.isaContainer("coop"):
-            self.parent.games.addContainer("coop", CoopGamesContainer(self.parent.db, self.parent.games))
+        self.parent.games.addContainer("claustrophobia",
+                                       GamesContainer("claustrophobia", "Claustrophobia", self.parent.db, self.parent.games))
+        self.parent.games.addContainer("supremedestruction",
+                                       GamesContainer("supremeDestruction", "Supreme Destruction", self.parent.db, self.parent.games))
+        self.parent.games.addContainer("coop", CoopGamesContainer(self.parent.db, self.parent.games))
 
     @timed()
     def getRankColor(self, deviation):

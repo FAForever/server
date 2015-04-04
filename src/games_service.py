@@ -48,12 +48,6 @@ class GamesService(object):
             return 1
         return 0
 
-    def isaContainer(self, name):
-        if name in self.gamesContainer :
-            return True
-        return False        
-
-
     def create_game(self, access, name, player, gameName, gamePort, mapname, password=None):
         container = self.getContainer(name)
         if container:
