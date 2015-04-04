@@ -32,7 +32,7 @@ class GamesContainer(object):
 
         self.log = logging.getLogger(__name__)
 
-        self.log.debug("initializing " + self.__class__.__name__)
+        self.log.debug("initializing " + nice_name)
         
         self.games = []
 
