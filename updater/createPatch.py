@@ -44,7 +44,7 @@ class createPatch(QThread):
         self.db = None
 
         
-    def run(self) :
+    def run(self):
  
         self.logger.debug("patcher started")
         for patch in self.patches:
@@ -69,7 +69,7 @@ class createPatch(QThread):
             patchdest = os.path.join(config['global']['content_path'] + r"xdelta/", curPatchGen)
             self.logger.debug(patchdest)            
             
-            if os.path.exists(source) and os.path.exists(target) : 
+            if os.path.exists(source) and os.path.exists(target): 
                         
                 executable = "python"
                 arguments = [config['global']['install_path'] + "patcher.py", source, target, patchdest]
@@ -80,7 +80,7 @@ class createPatch(QThread):
                 
                 process.start(executable, arguments)
 
-                if not process.waitForFinished(28800000) :
+                if not process.waitForFinished(28800000):
                     return
                 
                 self.db.open()
@@ -93,11 +93,11 @@ class createPatch(QThread):
         #self.done() 
 
     def done(self):
-        try :
+        try:
             conn = self.db.connectionName()
             self.db.close()
             del self.db
             QtSql.QSqlDatabase.removeDatabase(conn)        
             self.deleteLater()
-        except :
+        except:
             pass

@@ -18,7 +18,7 @@
 
 class replayInfos(object):
 
-    def __init__(self) :
+    def __init__(self):
 
         self.description = ''
         self.size = 0
@@ -54,15 +54,15 @@ class replayInfos(object):
         self.FogOfWar = options['FogOfWar']
         self.noRush = options['NoRushOption']
         self.UnitCap = options['UnitCap']
-        if options['PrebuiltUnits'] == 'Off' :
+        if options['PrebuiltUnits'] == 'Off':
             self.prebuilt = False
-        else : self.prebuild = True
+        else: self.prebuild = True
 #        self.teamSpawn = mapInfo['description']
 
     def setCheat(self, value):
-        if value == 0 :
+        if value == 0:
             self.cheat = False
-        else :
+        else:
             self.cheat = True
         
         

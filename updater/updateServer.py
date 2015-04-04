@@ -66,13 +66,13 @@ class updateServer(QtNetwork.QTcpServer):
     def done(self):
         self.logger.debug("thread done")
         
-        for thread in self.threads :
+        for thread in self.threads:
             if thread:
                 self.threads.remove(thread)
                 try:
                     if not thread.isRunning():
                         thread.done()
-                        if thread.isFinished() :
+                        if thread.isFinished():
                             self.patching = False
                             del thread
                 except:

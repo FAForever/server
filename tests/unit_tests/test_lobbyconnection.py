@@ -536,11 +536,11 @@ def test_fa_state_invalid(fa_server_thread):
 
 def test_ladder_maps(fa_server_thread):
     maps = [42, -1, 2341, -123, 123]
-    fa_server_thread.command_ladder_maps({'maps' : maps})
+    fa_server_thread.command_ladder_maps({'maps': maps})
     assert fa_server_thread.ladderMapList == maps
     # reset map selection
     maps = []
-    fa_server_thread.command_ladder_maps({'maps' : maps})
+    fa_server_thread.command_ladder_maps({'maps': maps})
     assert fa_server_thread.ladderMapList == maps
 
 

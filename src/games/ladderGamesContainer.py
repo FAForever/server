@@ -46,22 +46,22 @@ class Ladder1V1GamesContainer(GamesContainer):
         query.prepare("SELECT league FROM %s WHERE idUser = ?" % season)
         query.addBindValue(player.id)
         query.exec_()
-        if query.size() > 0 :
+        if query.size() > 0:
             query.first()
             return int(query.value(0))
         
         # place the player in his league !
-        else :              
+        else:              
             query.prepare("INSERT INTO %s (`idUser` ,`league` ,`score`) VALUES (?, 1, 0)" % season)
             query.addBindValue(player.id)
             query.exec_()
             return 1
 
-    def addPlayer(self, season, player) :
+    def addPlayer(self, season, player):
 
         self.season = season
 
-        if not player in self.players :
+        if not player in self.players:
             
             league = self.getLeague(season, player)
             
@@ -71,18 +71,18 @@ class Ladder1V1GamesContainer(GamesContainer):
             player.setAction("SEARCH_LADDER")
             mean, deviation = player.ladder_rating
 
-            if deviation > 490 :
+            if deviation > 490:
                 player.lobbyThread.sendJSON(dict(command="notice", style="info", text="<i>Welcome to the matchmaker system.</i><br><br><b>You will be randomnly matched until the system learn and know enough about you.</b><br>After that, you will be only matched against someone of your level.<br><br><b>So don't worry if your first games are uneven, this will get better over time !</b>"))
-            elif deviation > 250 :
+            elif deviation > 250:
                 progress = (500.0 - deviation) / 2.5
                 player.lobbyThread.sendJSON(dict(command="notice", style="info", text="The system is still learning you. <b><br><br>The learning phase is " + str(progress)+"% complete<b>"))
             
             return 1
         return 0
 
-    def removePlayer(self, player) :
+    def removePlayer(self, player):
         
-        if  player in self.players :
+        if  player in self.players:
             self.players.remove(player)
             player.setAction("NOTHING")
             return 1
@@ -200,11 +200,11 @@ class Ladder1V1GamesContainer(GamesContainer):
         
         player1.lobbyThread.sendJSON(json)
 
-    def searchForMatchup(self, player) :
+    def searchForMatchup(self, player):
         
-        if  player in self.players :
+        if  player in self.players:
         
-            if player.getAction() != "SEARCH_LADDER" :
+            if player.getAction() != "SEARCH_LADDER":
                 return
                 
             expandValue = player.expandLadder

@@ -66,12 +66,12 @@ class GamesService(object):
 
     def sendGamesList(self):
         games = []
-        for key, container in self.gamesContainer :
+        for key, container in self.gamesContainer:
             
-            if container.listable :
+            if container.listable:
 
-                for game in container.games :
-                    if game.lobbyState == "open" :
+                for game in container.games:
+                    if game.lobbyState == "open":
                         
                         json = {
                             "command": "game_info",
@@ -88,8 +88,8 @@ class GamesService(object):
                         teams = game.teamAssign
     
                         teamsToSend = {}
-                        for k, v in teams.items() :
-                            if len(v) != 0 :
+                        for k, v in teams.items():
+                            if len(v) != 0:
                                 teamsToSend[k] = v
     
                         json["teams"] = teamsToSend
@@ -99,23 +99,23 @@ class GamesService(object):
         return games
     
     def removeOldGames(self):
-        for container in self.gamesContainer :
+        for container in self.gamesContainer:
             self.gamesContainer[container].removeOldGames()
         return True
 
     def getContainer(self, name):
-        if name in self.gamesContainer :
+        if name in self.gamesContainer:
             return self.gamesContainer[name]
         return None
 
     def getGameContainer(self, game):
-        for container in self.gamesContainer :
-            if game in self.gamesContainer[container].getGames() :
+        for container in self.gamesContainer:
+            if game in self.gamesContainer[container].getGames():
                 return self.gamesContainer[container]
         return True        
 
     def removeGame(self, game):
-        for container in self.gamesContainer :
+        for container in self.gamesContainer:
             self.gamesContainer[container].removeGame(game)
         return True
 

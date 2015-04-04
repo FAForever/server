@@ -35,10 +35,10 @@ UNIT16 = 8
 class start(QObject):
 
     def __init__(self, parent=None):
-        try :
+        try:
             super(start, self).__init__(parent)
             self.rootlogger = logging.getLogger("")
-            self.logHandler = handlers.RotatingFileHandler(config.LOG_PATH + "serverUpdater.log", backupCount=15, maxBytes=524288 )
+            self.logHandler = handlers.RotatingFileHandler(config.LOG_PATH + "serverUpdater.log", backupCount=15, maxBytes=524288)
             self.logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
             self.logHandler.setFormatter(self.logFormatter)
             self.rootlogger.addHandler(self.logHandler)

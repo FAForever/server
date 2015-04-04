@@ -72,7 +72,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
 
     @timed()
     def addDirtyGame(self, game):
-        if not game in self.dirtyGameList : 
+        if not game in self.dirtyGameList: 
             self.dirtyGameList.append(game)
 
     @timed()

@@ -23,18 +23,18 @@ class replayArmyContainer(object):
         self.__armies = []
         self.__armyId = {}
         
-    def __iter__(self) :
-        for pair in iter(self.__armies) :
+    def __iter__(self):
+        for pair in iter(self.__armies):
             yield pair[1]
     
-    def __len__(self) :
+    def __len__(self):
         return len(self.__armies)
     
     def clear(self):
         self.__armies = []
         
     def add(self, army):
-        if id(army) in self.__armyId :
+        if id(army) in self.__armyId:
             return False
         key = self.key(army.id)
         bisect.insort_left(self.__armies, [key, army])

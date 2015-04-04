@@ -50,7 +50,7 @@ class replayServerThread(QObject):
         self.socket.setSocketDescriptor(socketId)
         self.parent = parent
         
-        if self.socket.state() == 3 and self.socket.isValid() :
+        if self.socket.state() == 3 and self.socket.isValid():
             
             self.nextBlockSize = 0
     
@@ -225,8 +225,8 @@ class replayServerThread(QObject):
         query.addBindValue(user)
         query.exec_()
         finalresult = []
-        if query.size() > 0 :
-            while next(query) :
+        if query.size() > 0:
+            while next(query):
                 selected = False 
                 if query.value(3) != 0:
                     selected = True
@@ -238,22 +238,22 @@ class replayServerThread(QObject):
 
         typeState = message['type']
         
-        if typeState == "divisions" :
+        if typeState == "divisions":
             league = message['league']
             query = QSqlQuery(self.parent.db)
             query.prepare("SELECT name FROM ladder_division WHERE `league` = ?")
             query.addBindValue(league)
             query.exec_()
             
-            if query.size() > 0 :
+            if query.size() > 0:
                 num = 0
                 finalresult = []
-                while next(query) :
+                while next(query):
                     finalresult.append((dict(number=num, division = str(query.value(0)), league = league)))
                     num += 1
                 self.sendJSON(dict(command = "stats", type = "divisions", league=league, values = finalresult))
 
-        elif typeState == "division_table" :
+        elif typeState == "division_table":
             league = message['league']
             division = message['division']
             query = QSqlQuery(self.parent.db)
@@ -262,7 +262,7 @@ class replayServerThread(QObject):
             
             query.addBindValue((5*(league-1)) +(division+1))
             query.exec_()
-            if query.size() > 0 :
+            if query.size() > 0:
                 query.first()
                 limit = int(query.value(0))
             
@@ -286,31 +286,31 @@ class replayServerThread(QObject):
             query.addBindValue(limitBasse)
             query.exec_()
             finalresult = []
-            if query.size() > 0 :
+            if query.size() > 0:
                 rank = 1
-                while next(query) :
+                while next(query):
                     score = float(query.value(1))
                     if score !=0:
-                        finalresult.append((dict(rank=rank, name = str(query.value(0)), score = score )))
+                        finalresult.append((dict(rank=rank, name = str(query.value(0)), score = score)))
                         rank += 1
                 
             self.sendJSON(dict(command = "stats", type = "division_table", division=message['division'], league=message['league'], values = finalresult))
 
 
-        elif typeState == "league_table" :
+        elif typeState == "league_table":
             league = message['league']
             query = QSqlQuery(self.parent.db)
             query.prepare("SELECT login, score FROM %s JOIN login ON %s.idUser=login.id  WHERE league = ? ORDER BY score DESC" % (self.season, self.season))
             query.addBindValue(league)
             query.exec_()
 
-            if query.size() > 0 :
+            if query.size() > 0:
                 finalresult = []
                 rank = 1
-                while next(query) :
+                while next(query):
                     score = float(query.value(1))
                     if score != 0:
-                        finalresult.append((dict(rank=rank, name = str(query.value(0)), score = score )))
+                        finalresult.append((dict(rank=rank, name = str(query.value(0)), score = score)))
                         rank += 1
   
                 self.sendJSON(dict(command = "stats", type = "league_table", league=league, values = finalresult))
@@ -318,7 +318,7 @@ class replayServerThread(QObject):
                 self.sendJSON(dict(command = "stats", type = "league_table", league=league, values = []))
 
 
-        elif typeState == "global_90_days" :
+        elif typeState == "global_90_days":
             name = message['player']
             query = QSqlQuery(self.parent.db)
                 
@@ -326,20 +326,20 @@ class replayServerThread(QObject):
             query.addBindValue(name)
             query.exec_()
 
-            if query.size() > 0 :
+            if query.size() > 0:
                 finalresult = []
-                while next(query) :
-                    if query.value(1) != 0 and query.value(2) != 0 : 
+                while next(query):
+                    if query.value(1) != 0 and query.value(2) != 0: 
                         date = query.value(0).toString("dd.MM.yyyy")
                         time = query.value(0).toString("hh:mm")
-                        if date == "" or time == "" : 
+                        if date == "" or time == "": 
                             continue                        
                         finalresult.append((dict(date=date, time = time, mean=query.value(1), dev=query.value(2))))
                    
-                if len(finalresult) > 0 :
+                if len(finalresult) > 0:
                     self.sendJSON(dict(command = "stats", type = "global_90_days", player=name, values = finalresult))
                     
-        elif typeState == "global_forever" :
+        elif typeState == "global_forever":
             name = message['player']
             query = QSqlQuery(self.parent.db)
                 
@@ -347,28 +347,28 @@ class replayServerThread(QObject):
             query.addBindValue(name)
             query.exec_()
 
-            if query.size() > 0 :
+            if query.size() > 0:
                 finalresult = []
-                while next(query) :
-                    if query.value(1) != 0 and query.value(2) != 0 :
+                while next(query):
+                    if query.value(1) != 0 and query.value(2) != 0:
                         date = query.value(0).toString("dd.MM.yyyy")
                         time = query.value(0).toString("hh:mm")
-                        if date == "" or time == "" : 
+                        if date == "" or time == "": 
                             continue
                         finalresult.append((dict(date=date, time = time, mean=query.value(1), dev=query.value(2))))
                    
-                if len(finalresult) > 0 :
+                if len(finalresult) > 0:
                     self.sendJSON(dict(command = "stats", type = "global_forever", player=name, values = finalresult))
               
-        elif typeState == "ladder_maps" :
+        elif typeState == "ladder_maps":
             query = QSqlQuery(self.parent.db)
                 
             query.prepare("SELECT `idmap` , table_map.name, filename FROM `ladder_map` LEFT JOIN table_map ON `idmap` = table_map.id")
             query.exec_()
             finalresult = []
-            if query.size() > 0 :
+            if query.size() > 0:
                 
-                while next(query) :  
+                while next(query):  
                     finalresult.append(dict(idmap = int(query.value(0)), mapname = query.value(1), maprealname = query.value(2)))
                 
                 
@@ -381,11 +381,11 @@ class replayServerThread(QObject):
             query.addBindValue(str(lastSeason))
             query.exec_()
             
-            if query.size() > 0 :
+            if query.size() > 0:
                 query.first()
                 self.sendJSON(dict(command = "stats", type = "ladder_maps", values = finalresult, gamesplayed = int(query.value(0))))
             
-        elif typeState == "ladder_map_stat" :
+        elif typeState == "ladder_map_stat":
             idmap = message["mapid"]
 
             
@@ -419,7 +419,7 @@ class replayServerThread(QObject):
             query.addBindValue(idmap)
             query.exec_()
             #self.logger.debug("map " + str(idmap))
-            if query.size() > 0 :
+            if query.size() > 0:
                 query.first()
                 stats["duration_max"] = int(query.value(0))
                 stats["duration_avg"] = int(query.value(1))
@@ -429,7 +429,7 @@ class replayServerThread(QObject):
             query.addBindValue(idmap)
             
             query.exec_()
-            if query.size() > 0 :
+            if query.size() > 0:
                 query.first()
                 stats["game_played"] = int(query.value(0))
                 
@@ -438,25 +438,25 @@ class replayServerThread(QObject):
             query.addBindValue(str(lastSeason))
             query.addBindValue(idmap)
             query.exec_()
-            if query.size() > 0 :
+            if query.size() > 0:
                 
-                while next(query) :
+                while next(query):
 
                     gameId = int(query.value(0))
                     faction = int(query.value(1))
-                    if faction == 1 :
+                    if faction == 1:
                         stats["uef_total"] += 1
-                    elif faction == 3 :
+                    elif faction == 3:
                         stats["cybran_total"] += 1
-                    elif faction == 2 :
+                    elif faction == 2:
                         stats["aeon_total"] += 1
-                    elif faction == 4 :
+                    elif faction == 4:
                         stats["sera_total"] += 1
                             
                     score = int(query.value(2))
 
                     player = "player2"
-                    if not gameId in games :
+                    if not gameId in games:
                         games[gameId] = {}
                         player = "player1"
 #                        
@@ -464,41 +464,41 @@ class replayServerThread(QObject):
                     games[gameId][player]["faction"] = faction
                     games[gameId][player]["score"] = score
 
-            for game in games :
-                if "player2" in  games[game] :
-                    if games[game]["player1"]["score"] == games[game]["player2"]["score"] :
+            for game in games:
+                if "player2" in  games[game]:
+                    if games[game]["player1"]["score"] == games[game]["player2"]["score"]:
                         stats["draws"] += 1
-                    else :
+                    else:
                         faction = 0
                         otherfaction = 0
-                        if games[game]["player1"]["score"] >  games[game]["player2"]["score"] :
+                        if games[game]["player1"]["score"] >  games[game]["player2"]["score"]:
                             faction = games[game]["player1"]["faction"]
                             otherfaction = games[game]["player2"]["faction"]
-                        else :
+                        else:
                             faction = games[game]["player2"]["faction"]
                             otherfaction = games[game]["player1"]["faction"]
 
                         
                            
-                        if faction == 1 :
-                            if otherfaction == faction :
+                        if faction == 1:
+                            if otherfaction == faction:
                                 stats["uef_ignore"] += 1
-                            else :
+                            else:
                                 stats["uef_win"] += 1
-                        elif faction == 3 :
-                            if otherfaction == faction :
+                        elif faction == 3:
+                            if otherfaction == faction:
                                 stats["cybran_ignore"] += 1
-                            else :
+                            else:
                                 stats["cybran_win"] += 1
-                        elif faction == 2 :
-                            if otherfaction == faction :
+                        elif faction == 2:
+                            if otherfaction == faction:
                                 stats["aeon_ignore"] += 1
-                            else :
+                            else:
                                 stats["aeon_win"] += 1
-                        elif faction == 4 :
-                            if otherfaction == faction :
+                        elif faction == 4:
+                            if otherfaction == faction:
                                 stats["sera_ignore"] += 1
-                            else :
+                            else:
                                 stats["sera_win"] += 1
                        
 
@@ -508,18 +508,18 @@ class replayServerThread(QObject):
     def getLastSeason(self):
         now = datetime.date.today()
 
-        if (now.month == 3 and now.day < 21) or now.month < 3 :
+        if (now.month == 3 and now.day < 21) or now.month < 3:
             previous = datetime.datetime(now.year-1, 12, 21)
             
-        elif (now.month == 6 and now.day < 21) or now.month < 6 :
+        elif (now.month == 6 and now.day < 21) or now.month < 6:
     
             previous = datetime.datetime(now.year, 0o3, 21)
             
-        elif (now.month == 9 and now.day < 21) or now.month < 9 :
+        elif (now.month == 9 and now.day < 21) or now.month < 9:
          
             previous = datetime.datetime(now.year, 0o6, 21)
             
-        else  :
+        else:
           
             previous = datetime.datetime(now.year, 9, 21)
         
@@ -537,7 +537,7 @@ class replayServerThread(QObject):
         if query.size() > 0:
             query.first()
             self.sendJSON(dict(command = "gw_game_info", table = str(query.value(1))))
-        else :
+        else:
             self.sendJSON(dict(command = "gw_game_info", table = ""))
         
     
@@ -557,7 +557,7 @@ class replayServerThread(QObject):
         query.exec_()
         if  query.size() > 0:
             replays = []
-            while next(query) :
+            while next(query):
                 replay = {}
                 replay["id"] = int(query.value(0))
                 replay["name"] = query.value(1)
@@ -584,25 +584,25 @@ class replayServerThread(QObject):
         query = QSqlQuery(self.parent.db)
         query.setForwardOnly(True)
 
-        if mapname != "" :
+        if mapname != "":
             query.prepare("SELECT id FROM `table_map` WHERE LOWER( `name` ) REGEXP ? LIMIT 1")
             mapname = "^" + mapname.lower().replace("*", ".*") +"$"
             query.addBindValue(mapname)
             query.exec_()
-            if query.size() != 0 :
+            if query.size() != 0:
                 query.first()
                 mapUid = int(query.value(0))
-            else :
+            else:
                 return
             
-        if mod != "All" :
+        if mod != "All":
             query.prepare("SELECT id FROM `game_featuredMods` WHERE gamemod = ? LIMIT 1")
             query.addBindValue(mod)
             query.exec_()
-            if query.size() != 0 :
+            if query.size() != 0:
                 query.first()
                 modUid = int(query.value(0))
-            else :
+            else:
                 return
 
         queryStr = "\
@@ -615,18 +615,18 @@ WHERE  (-1 = ? OR game_stats.gameMod = ?) \
 AND (mean - 3*deviation) >= ? \
 AND (-1 = ? OR mapId = ?) \n"
 
-        if player != "" :
+        if player != "":
             query.prepare("SELECT id from login where LOWER(login) REGEXP ?")
             query.addBindValue(player.lower())
             query.exec_()
-            if query.size() > 1 :
+            if query.size() > 1:
                 players = []
                 i = 0
-                while next(query) and i < 100 :
+                while next(query) and i < 100:
                     players.append(query.value(0))
                     i += 1
                 queryStr += "AND game_player_stats.playerId IN ("+reduce(lambda x, y: str(x)+","+str(y), players)+") "
-            elif query.size() == 1 :
+            elif query.size() == 1:
                 query.first()
                 playerId = query.value(0)
                 queryStr += "AND game_player_stats.playerId = " + str(playerId) + "\n"
@@ -645,7 +645,7 @@ AND (-1 = ? OR mapId = ?) \n"
             
         if query.size() > 0:
             replays = []
-            while next(query) :
+            while next(query):
                 replay = {}
                 replay["id"] = int(query.value(0))
                 replay["name"] = query.value(1)
@@ -678,19 +678,19 @@ AND (-1 = ? OR mapId = ?) \n"
         query.exec_()
         if  query.size() > 0:
             players = []
-            while next(query) : 
+            while next(query): 
                 player = {}
                 player["name"] = str(query.value(0))   
                 player["faction"] = query.value(1)
                 player["color"] = query.value(2)
                 player["team"] = query.value(3)
                 player["place"] = query.value(4)
-                if query.value(5) :
+                if query.value(5):
                     player["rating"] = max(0, int(round((query.value(5))/100.0)*100)) 
                     
 #                if query.value(6) :
 #                    player["after_rating"] = query.value(6)
-                if query.value(6) :
+                if query.value(6):
                     player["score"] = query.value(6)
     #                    if query.value(8) :
     #                        player["scoreTime"] = query.value(8)
@@ -707,7 +707,7 @@ AND (-1 = ? OR mapId = ?) \n"
 
     def readDatas(self):
         if self.socket is not None:
-            if self.socket.isValid() :
+            if self.socket.isValid():
                 ins = QDataStream(self.socket)
                 ins.setVersion(QDataStream.Qt_4_2)
                 loop = 0
@@ -715,27 +715,27 @@ AND (-1 = ? OR mapId = ?) \n"
                     QCoreApplication.processEvents()
                     loop += 1
                     if self.socket is not None:
-                        if self.socket.isValid() :
+                        if self.socket.isValid():
                             if self.blockSize == 0:
-                                if self.socket.isValid() :
+                                if self.socket.isValid():
                                     if self.socket.bytesAvailable() < 4:
                                         return
                                     self.blockSize = ins.readUInt32()
-                                else :
+                                else:
                                     return
-                            if self.socket.isValid() :
+                            if self.socket.isValid():
                                 if self.socket.bytesAvailable() < self.blockSize:
                                     bytesReceived = str(self.socket.bytesAvailable())
                                     return
                                 bytesReceived = str(self.socket.bytesAvailable())
-                            else :
+                            else:
                                 return  
                             action = ins.readQString()
                             self.handleAction(action, ins)
                             self.blockSize = 0
-                        else : 
+                        else: 
                             return    
-                    else :
+                    else:
                         return
                 return
 
@@ -746,9 +746,9 @@ AND (-1 = ? OR mapId = ?) \n"
         """
         Simply dumps a dictionary into a string and feeds it into the QTCPSocket
         """
-        try :
+        try:
             data_string = json.dumps(data_dictionary)
-        except :
+        except:
 
             return
 
@@ -768,9 +768,9 @@ AND (-1 = ? OR mapId = ?) \n"
             self.unlock()  
 
 
-    def sendReply(self, action, *args, **kwargs) :
+    def sendReply(self, action, *args, **kwargs):
         
-        try :
+        try:
             
             if hasattr(self, "socket"):
 
@@ -782,12 +782,12 @@ AND (-1 = ? OR mapId = ?) \n"
                 stream.writeQString(action)
 
     
-                for arg in args :
-                    if type(arg) is LongType :
+                for arg in args:
+                    if type(arg) is LongType:
                         stream.writeQString(str(arg))
                     if type(arg) is IntType:
                         stream.writeInt(int(arg))
-                    elif type(arg) is StringType  :
+                    elif type(arg) is StringType:
                         stream.writeQString(arg)
                     elif isinstance(arg, str):                       
                         stream.writeQString(arg) 
@@ -795,7 +795,7 @@ AND (-1 = ? OR mapId = ?) \n"
                         stream.writeFloat(arg)
                     elif type(arg) is ListType:
                         stream.writeQString(str(arg))                        
-                    elif type(arg) is QFile :
+                    elif type(arg) is QFile:
                         arg.open(QIODevice.ReadOnly)
                         fileDatas = QByteArray(arg.readAll())
                         stream.writeInt32(fileDatas.size())
@@ -808,10 +808,10 @@ AND (-1 = ? OR mapId = ?) \n"
                 self.socket.write(reply)
 
 
-        except :
+        except:
                 self.logger.exception("Something awful happened when sending reply !")  
   
-    def done(self) :
+    def done(self):
         if self.socket is not None:
             #self.parent.addSocketToDelete(self.socket)
             self.socket.readyRead.disconnect(self.readDatas)

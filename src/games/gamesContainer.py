@@ -64,7 +64,7 @@ class GamesContainer(object):
         query = QtSql.QSqlQuery(self.db)
         query.prepare("SELECT fileId, MAX(version) FROM `%s` LEFT JOIN %s ON `fileId` = %s.id GROUP BY fileId" % (tableModFiles, tableMod, tableMod))
         query.exec_()
-        if query.size() != 0 :
+        if query.size() != 0:
             while query.next():
                 value[int(query.value(0))] = int(query.value(1)) 
         
@@ -82,13 +82,13 @@ class GamesContainer(object):
     def findGameByUuid(self, uuid):
         """Find a game by the uuid"""
         for game in self.games:
-            if game.uuid == uuid :
+            if game.uuid == uuid:
                 return game
         return None
 
     def addGame(self, game):
         """Add a game to the list"""
-        if not game in self.games :
+        if not game in self.games:
             self.games.append(game)
             return 1
         return 0
@@ -118,7 +118,7 @@ class GamesContainer(object):
         """Remove a game from the list"""
 
         for game in reversed(self.games):
-            if game == gameToRemove :
+            if game == gameToRemove:
                 game.state = GameState.ENDED
                 self.addDirtyGame(game.uuid)
                 self.games.remove(game)
@@ -126,7 +126,7 @@ class GamesContainer(object):
                 return True
 
     def addDirtyGame(self, game):
-        if not game in self.parent.dirtyGameList : 
+        if not game in self.parent.dirtyGameList: 
             self.parent.dirtyGameList.append(game)           
             
     def removeOldGames(self):
@@ -152,7 +152,7 @@ class GamesContainer(object):
             if game.lobbyState == 'Idle' and diff > 60:
                 return False
 
-            if game.lobbyState == 'playing' and diff > 60 * 60 * 8 : #if the game is playing for more than 8 hours
+            if game.lobbyState == 'playing' and diff > 60 * 60 * 8: #if the game is playing for more than 8 hours
                 return False
 
         for game in reversed(self.games):

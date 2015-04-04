@@ -216,7 +216,7 @@ class item(object):
         """ Returns a list of attributes """
 
         overridden_attrs = self._attributes
-        sortmap = {"neutral" : 1, "positive": 2,
+        sortmap = {"neutral": 1, "positive": 2,
                    "negative": 3}
 
         sortedattrs = list(overridden_attrs.values())

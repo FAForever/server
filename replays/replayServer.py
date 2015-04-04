@@ -44,11 +44,11 @@ class replayServer(QtNetwork.QTcpServer):
         query.setForwardOnly(True)
         query.prepare("SELECT id, gamemod FROM `game_featuredMods` WHERE 1")
         query.exec_()
-        if query.size() != 0 : 
+        if query.size() != 0: 
             while next(query):
                 uid = int(query.value(0))
                 name = str(query.value(1))
-                if not uid in self.mods :
+                if not uid in self.mods:
                     self.mods[uid] = name       
 
     def incomingConnection(self, socketId):

@@ -75,20 +75,20 @@ class tournamentServer(QtNetwork.QTcpServer):
 
                 if checkParticipants:
                     changed = []
-                    for p in challonge.participants.index(uid) :
+                    for p in challonge.participants.index(uid):
                         fafuid = None
                         query = QSqlQuery(self.db)
                         query.prepare("SELECT id FROM login WHERE login = ?")
                         query.addBindValue(p["name"])
                         if query.exec_():
-                            if query.size() == 1 :
+                            if query.size() == 1:
                                 query.first()
                                 fafuid = int(query.value(0))
                         if fafuid is None:
                             query.prepare("SELECT user_id FROM name_history WHERE previous_name LIKE ?")
                             query.addBindValue(p["name"])
                             if query.exec_():
-                                if query.size() == 1 :
+                                if query.size() == 1:
                                     query.first() 
                                     fafuid = int(query.value(0))
                             
@@ -96,7 +96,7 @@ class tournamentServer(QtNetwork.QTcpServer):
                             query.prepare("SELECT login FROM login WHERE id =  ?")
                             query.addBindValue(fafuid)
                             if query.exec_():
-                                if query.size() == 1 :
+                                if query.size() == 1:
                                     query.first() 
                                     name = query.value(0)
                                     self.logger.debug("player is replaced by %s", name)
@@ -107,7 +107,7 @@ class tournamentServer(QtNetwork.QTcpServer):
                             query.prepare("SELECT session FROM login WHERE id = ?")
                             query.addBindValue(fafuid)
                             if query.exec_():
-                                if query.size() == 1 :
+                                if query.size() == 1:
                                     query.first()                        
                                     if int(query.value(0)) == 0:
                                         changed.append(p["id"])
@@ -126,14 +126,14 @@ class tournamentServer(QtNetwork.QTcpServer):
  
    
                 else:
-                    for p in challonge.participants.index(uid) :
+                    for p in challonge.participants.index(uid):
                         fafuid = None
                         name = p["name"]
                         query = QSqlQuery(self.db)
                         query.prepare("SELECT id FROM login WHERE login = ?")
                         query.addBindValue(p["name"])
                         if query.exec_():
-                            if query.size() == 1 :
+                            if query.size() == 1:
                                 query.first()
                                 fafuid = int(query.value(0))
                         
@@ -141,7 +141,7 @@ class tournamentServer(QtNetwork.QTcpServer):
                             query.prepare("SELECT user_id FROM name_history WHERE previous_name LIKE ?")
                             query.addBindValue(p["name"])
                             if query.exec_():
-                                if query.size() == 1 :
+                                if query.size() == 1:
                                     query.first() 
                                     fafuid = int(query.value(0))
 
@@ -149,7 +149,7 @@ class tournamentServer(QtNetwork.QTcpServer):
                             query.prepare("SELECT login FROM login WHERE id = ?")
                             query.addBindValue(fafuid)
                             if query.exec_():
-                                if query.size() == 1 :
+                                if query.size() == 1:
                                     query.first() 
                                     name = query.value(0)
                                     self.logger.debug("player is replaced by %s", name)

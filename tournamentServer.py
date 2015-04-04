@@ -36,11 +36,11 @@ class start(QObject):
 
         super(start, self).__init__(parent)
         self.rootlogger = logging.getLogger("")
-        self.logHandler = handlers.RotatingFileHandler(Config['global']['logpath'] + "tournamentServer.log", backupCount=15, maxBytes=524288 )
+        self.logHandler = handlers.RotatingFileHandler(Config['global']['logpath'] + "tournamentServer.log", backupCount=15, maxBytes=524288)
         self.logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
-        self.logHandler.setFormatter( self.logFormatter )
-        self.rootlogger.addHandler( self.logHandler )
-        self.rootlogger.setLevel( eval ("logging." + Config['tournamentServer']['loglevel'] ))
+        self.logHandler.setFormatter(self.logFormatter)
+        self.rootlogger.addHandler(self.logHandler)
+        self.rootlogger.setLevel(eval("logging." + Config['tournamentServer']['loglevel']))
         self.logger = logging.getLogger(__name__)
 
         self.db = QtSql.QSqlDatabase.addDatabase("QMYSQL")
@@ -61,7 +61,7 @@ class start(QObject):
         if not self.updater.listen(QtNetwork.QHostAddress.Any, 11001):
             return        
         else:
-            self.logger.info ("starting the update server on  %s:%i" % (self.updater.serverAddress().toString(),self.updater.serverPort()))  
+            self.logger.info("starting the update server on  %s:%i" % (self.updater.serverAddress().toString(),self.updater.serverPort()))  
 
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)

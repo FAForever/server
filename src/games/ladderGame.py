@@ -111,7 +111,7 @@ class ladder1V1Game(Game):
                 if not evenLeague:
                     if self.leagues[player] == maxleague:
                         scoreToAdd = 0.5
-                    else :
+                    else:
                         scoreToAdd = 1.5
 
                 query.prepare("UPDATE %s SET score = (score + ?) "
@@ -126,7 +126,7 @@ class ladder1V1Game(Game):
                 if not evenLeague:
                     if self.leagues[player] == maxleague:
                         scoreToRemove = 1
-                    else :
+                    else:
                         scoreToRemove = 0
 
                 query.prepare("UPDATE %s SET score = GREATEST(0,(score - ?))"
@@ -181,7 +181,7 @@ class ladder1V1Game(Game):
         return self.playerToJoin
   
     def isDraw(self):
-        if len(dict(list(zip(list(self.gameResult.values()),list(self.gameResult.keys()))))) == 1 :
+        if len(dict(list(zip(list(self.gameResult.values()),list(self.gameResult.keys()))))) == 1:
             return True
         return False       
   

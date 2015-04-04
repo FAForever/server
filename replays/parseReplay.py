@@ -291,19 +291,19 @@ class replayParser(object):
 
     def readLine(self, offset):
         line = ''
-        while True :
+        while True:
             
             char = struct.unpack("s", self.bin[offset:offset+1])
 
             offset += 1
             #print char
-            if char[0] == '\r' :
+            if char[0] == '\r':
                 #offset = offset + 2
                 break
-            elif char[0] == '\x00' :
+            elif char[0] == '\x00':
                 #offset = offset + 3
                 break
-            else :
+            else:
                 line = line + char[0]
         return offset, line
     
@@ -345,9 +345,9 @@ class replayParser(object):
         offset += 1
         #type = struct.unpack("b", data[offset:offset+1])[0]
         
-        if type == TYPE_NIL :
+        if type == TYPE_NIL:
             return None
-        elif type == TYPE_BOOLEAN :
+        elif type == TYPE_BOOLEAN:
             return self.readBool(offset)
     
         elif type == TYPE_STRING:
@@ -356,11 +356,11 @@ class replayParser(object):
         elif type == TYPE_NUMBER:
             return self.readFloat(offset)
             
-        elif type == TABLE_BEGIN :
+        elif type == TABLE_BEGIN:
             table = []
-            while True :
+            while True:
                 type = self.peekType(self.bin[offset:offset+1])
-                if type == TABLE_END :
+                if type == TABLE_END:
                     break
     
     
@@ -378,16 +378,16 @@ class replayParser(object):
                     pair = (key, value)
                     table.append(pair)
     
-                else :
+                else:
                     offset += 1
     
             
             return offset+1, table
         
-        elif type == TABLE_END :
+        elif type == TABLE_END:
             raise Exception("Error: unexpected end-of-table")
     
-        else :
+        else:
             raise Exception("Unknown lua data")
 
     def readHeader(self):
@@ -428,7 +428,7 @@ class replayParser(object):
         numSource = struct.unpack("b", self.bin[self.offset:self.offset+1])[0]
         self.offset += 1
         
-        for i in range(numSource) :
+        for i in range(numSource):
             self.offset, name = self.readLine(self.offset)
             self.offset, val = self.readInt(self.offset)
         
@@ -444,25 +444,25 @@ class replayParser(object):
         
         armies = replayArmyContainer()
         
-        for i in range(0,numArmies) :
+        for i in range(0,numArmies):
             self.offset, val = self.readInt(self.offset)
         
             self.offset, army = self.parseLua(self.offset)
             
             newArmy = ReplayArmy()
             newArmy.populate(army)
-            if newArmy.is_player() :
+            if newArmy.is_player():
                 armies.add(newArmy)
             
             
             b = struct.unpack("b", self.bin[self.offset:self.offset+1])[0]
             self.offset += 1
-            if b != -1 :
+            if b != -1:
                 #b = struct.unpack("b", self.bin[self.offset:self.offset+1])[0]
                 self.offset += 1
                 #print b
         
-        for army in armies :
+        for army in armies:
             self.players.append(army)
         
         self.offset, randomSeed = self.readInt(self.offset)
@@ -580,7 +580,7 @@ class replayParser(object):
                 beatChecksum[beat].append(beat)
                 if len(beatChecksum[beat]) == len(self.players):
                     #print "beats", beatChecksum[beat]
-                    if len( set( beatChecksum[beat] ) ) != 1:
+                    if len(set(beatChecksum[beat])) != 1:
                         
                         print("error on beat", beat, "tick", tick) 
 
@@ -732,7 +732,7 @@ replay.readHeader()
 print("gametime", (float(replay.setGameTime()) /10.0) / 60.0, "minutes")
 
 lastTurns= replay.setPlayerLastTurn()
-for l in lastTurns :
+for l in lastTurns:
     print(replay.players[l], ((lastTurns[l] /10.0) / 60.0), "minutes")
 
 replay.setDebugDesync()

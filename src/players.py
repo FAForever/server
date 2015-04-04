@@ -72,7 +72,7 @@ class Player(BasePlayer):
         self.lobbyThread = lobbyThread
 
     def setGamePort(self, gamePort):
-        if gamePort == 0 :
+        if gamePort == 0:
             gamePort = 6112
         self.gamePort = gamePort
 
@@ -82,7 +82,7 @@ class Player(BasePlayer):
         self._login = str(login)
     
     def setGame(self, gameName):
-        if gameName == '' :
+        if gameName == '':
             return 0
         self.game = gameName
         return 1
@@ -105,7 +105,7 @@ class Player(BasePlayer):
         return str(self._action)
 
     def setAction(self, action):
-        if action == '' :
+        if action == '':
             return 0
         self._action = action
         return 1
@@ -178,21 +178,21 @@ class PlayersOnline(object):
             self.logins.append(newplayer.getLogin())
             self.players.append(newplayer)
             return gamesocket, lobbySocket
-        else :
+        else:
             # login in current active player list !
             
             for player in self.players:
-                if newplayer.session == player.session :
+                if newplayer.session == player.session:
                     # uuid is the same, I don't know how it's possible, but we do nothing.
                     return gamesocket, lobbySocket
                 
                 if newplayer.getLogin() == player.getLogin():
                     # login exists, uuid not the same
-                    try :
+                    try:
                         lobbyThread = player.lobbyThread
                         if lobbyThread is not None:
                             lobbySocket = lobbyThread.socket
-                    except :
+                    except:
                         pass
                         
                     self.players.append(newplayer)
@@ -204,11 +204,11 @@ class PlayersOnline(object):
     def removeUser(self, player):
         if player.getLogin() in self.logins:
             self.logins.remove(player.login)
-            if player in self.players :
+            if player in self.players:
                 self.players.remove(player)
                 #del player
             return 1
-        else :
+        else:
             return 0
 
     def findByName(self, name):

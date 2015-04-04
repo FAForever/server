@@ -49,7 +49,7 @@ class tournamentServerThread(QObject):
         self.socket.setSocketDescriptor(socketId)
         self.parent = parent
         
-        if self.socket.state() == 3 and self.socket.isValid() :
+        if self.socket.state() == 3 and self.socket.isValid():
             
             self.nextBlockSize = 0
     
@@ -63,7 +63,7 @@ class tournamentServerThread(QObject):
             self.pingTimer.start(31000)
             self.pingTimer.timeout.connect(self.ping)
             
-    def ping(self) :
+    def ping(self):
         self.sendJSON(dict(command="ping"))
         
     def command_pong(self, message):
@@ -83,7 +83,7 @@ class tournamentServerThread(QObject):
             query.addBindValue(p["name"])
             rating = 0
             if query.exec_():
-                if query.size() == 1 :
+                if query.size() == 1:
                     query.first()
                     rating = float(query.value(0))
             
@@ -127,7 +127,7 @@ class tournamentServerThread(QObject):
 
     def readDatas(self):
         if self.socket is not None:
-            if self.socket.isValid() :
+            if self.socket.isValid():
                 ins = QDataStream(self.socket)
                 ins.setVersion(QDataStream.Qt_4_2)
                 loop = 0
@@ -198,8 +198,8 @@ class tournamentServerThread(QObject):
                 
                 stream.writeQString(action)
 
-                for arg in args :
-                    if type(arg) is LongType :
+                for arg in args:
+                    if type(arg) is LongType:
                         stream.writeQString(str(arg))
                     if type(arg) is IntType:
                         stream.writeInt(int(arg))
@@ -211,7 +211,7 @@ class tournamentServerThread(QObject):
                         stream.writeFloat(arg)
                     elif type(arg) is ListType:
                         stream.writeQString(str(arg))                        
-                    elif type(arg) is QFile :
+                    elif type(arg) is QFile:
                         arg.open(QIODevice.ReadOnly)
                         fileDatas = QByteArray(arg.readAll())
                         stream.writeInt32(fileDatas.size())

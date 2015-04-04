@@ -44,7 +44,7 @@ if __name__ == '__main__':
             QtCore.QObject.__init__(self)
             asyncio.Future.__init__(self)
             self.rootlogger = logging.getLogger("")
-            self.logHandler = handlers.RotatingFileHandler(config.LOG_PATH + "server.log", backupCount=1024, maxBytes=16777216 )
+            self.logHandler = handlers.RotatingFileHandler(config.LOG_PATH + "server.log", backupCount=1024, maxBytes=16777216)
             self.logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
             self.logHandler.setFormatter(self.logFormatter)
             self.rootlogger.addHandler(self.logHandler)
@@ -89,7 +89,7 @@ if __name__ == '__main__':
                 self.logger.error("Unable to start the server {}".format(self.FAGames.serverError()))
                 raise Exception("Unable to start the game server")
             else:
-                self.logger.info ("starting the game server on  %s:%i" % (self.FAGames.serverAddress().toString(),self.FAGames.serverPort()))
+                self.logger.info("starting the game server on  %s:%i" % (self.FAGames.serverAddress().toString(),self.FAGames.serverPort()))
 
 
             if not self.FALobby.listen(QtNetwork.QHostAddress.Any, 8001):
@@ -97,7 +97,7 @@ if __name__ == '__main__':
                 print("Unable to start the server {}".format(self.FALobby.serverError()))
                 raise Exception("Unable to start the lobby server")
             else:
-                self.logger.info ("starting the Lobby server on  %s:%i" % (self.FALobby.serverAddress().toString(),self.FALobby.serverPort()))
+                self.logger.info("starting the Lobby server on  %s:%i" % (self.FALobby.serverAddress().toString(),self.FALobby.serverPort()))
 
         def signal_handler(self, signal, frame):
             self.logger.info("Received signal, shutting down")
