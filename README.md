@@ -64,6 +64,17 @@ Run `py.test`
 
     py.test tests/
 
+# Contributing
+
+To contribute, please fork this repository and make pull requests to the develop branch.
+
+Use the normal git conventions for commit messages, with the following rules:
+ - Subject line shorter than 80 characters
+ - Proper capitalized sentence as subject line, with no trailing period
+ - For non-trivial commits, always include a commit message body, describing the change in detail
+ - If there are related issues, reference them in the commit message footer
+
+
 # License
 
 GPLv3. See the [license](license.txt) file.
