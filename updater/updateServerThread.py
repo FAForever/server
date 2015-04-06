@@ -79,7 +79,7 @@ class updateServerThread(QObject):
         fd = open(fileName, "rb")
         while True:
             #read the file in 1 MiB chunks, this requires less memory in case one day we need to read something big, like textures.scd or units.scd
-            content = fd.read(1024*1024) 
+            content = fd.read(1024 * 1024) 
             if not content: break
             m.update(content)
         fd.close()
@@ -88,7 +88,7 @@ class updateServerThread(QObject):
 
     def updateMd5Db(self, table):
         query = QSqlQuery(self.parent.db)
-        query.prepare("SELECT `name` FROM %s WHERE `md5` = ''"% table)
+        query.prepare("SELECT `name` FROM %s WHERE `md5` = ''" % table)
         query.exec_()
         
         if  query.size() > 0:
@@ -244,8 +244,8 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
             if myFile is None:
                 self.sendReply("UP_TO_DATE", file)
             else:
-                patchFileUrl =  config['global']['content_url'] + "updaterNew/" + self.tableModFiles + "/" + myFile    
-                patchFilePath =  os.path.join(config['global']['content_path'] + r"updaterNew/", self.tableModFiles, myFile)
+                patchFileUrl = config['global']['content_url'] + "updaterNew/" + self.tableModFiles + "/" + myFile    
+                patchFilePath = os.path.join(config['global']['content_path'] + r"updaterNew/", self.tableModFiles, myFile)
     
                
                 if os.path.isfile(patchFilePath):
@@ -275,8 +275,8 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
             
             fileVersion = self.getFileVersion(f, version, exact=True)
             if self.tableModFiles and fileVersion:
-                patchFileUrl =  config['global']['content_url'] + "updaterNew/" + self.tableModFiles + "/" + fileVersion     
-                patchFilePath =  os.path.join(config['global']['content_path'] + r"updaterNew", self.tableModFiles, fileVersion)
+                patchFileUrl = config['global']['content_url'] + "updaterNew/" + self.tableModFiles + "/" + fileVersion     
+                patchFilePath = os.path.join(config['global']['content_path'] + r"updaterNew", self.tableModFiles, fileVersion)
     
                
                 if os.path.isfile(patchFilePath):
@@ -292,8 +292,8 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
             path = stream.readQString()
             file = stream.readQString()
             ##self.log.debug("requesting file %s" % file)
-            patchFileUrl =  config['global']['content_url'] + "updaterNew/" + self.tableModFiles + "/" + self.getLatestFile(file)    
-            patchFilePath =  os.path.join(config['global']['content_path'] + r"updaterNew", self.tableModFiles, self.getLatestFile(file))
+            patchFileUrl = config['global']['content_url'] + "updaterNew/" + self.tableModFiles + "/" + self.getLatestFile(file)    
+            patchFilePath = os.path.join(config['global']['content_path'] + r"updaterNew", self.tableModFiles, self.getLatestFile(file))
             
             
             if os.path.isfile(patchFilePath):
@@ -332,7 +332,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
                         if  query.size() >= 1: 
                             query.first()
                             patch = str(query.value(0))                           
-                            patchFileUrl =  config['global']['content_url'] + "xdelta/" + str(patch)
+                            patchFileUrl = config['global']['content_url'] + "xdelta/" + str(patch)
                             self.sendReply("SEND_PATCH_URL", dir, file, patchFileUrl)
                         else:
                             query.prepare("SELECT `name` FROM `%s` WHERE md5 = ?" % self.tableModFiles)
@@ -395,7 +395,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
                         if  query.size() >= 1: 
                             query.first()
                             patch = str(query.value(0))                           
-                            patchFileUrl =  config['global']['content_url'] + "xdelta/" + str(patch)
+                            patchFileUrl = config['global']['content_url'] + "xdelta/" + str(patch)
                             self.sendReply("SEND_PATCH_URL", dir, file, patchFileUrl)
                         else:
                             query.prepare("SELECT `name` FROM `%s` WHERE md5 = ?" % self.tableModFiles)
@@ -446,7 +446,7 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
                         if  query.size() >= 1: 
                             query.first()
                             patch = str(query.value(0))                           
-                            patchFileUrl =  config['global']['content_url'] + "xdelta/" + str(patch)
+                            patchFileUrl = config['global']['content_url'] + "xdelta/" + str(patch)
                             self.sendReply("SEND_PATCH_URL", dir, file, patchFileUrl)
                         else:
                             query.prepare("SELECT `name` FROM `%s` WHERE md5 = ?" % self.tableModFiles)

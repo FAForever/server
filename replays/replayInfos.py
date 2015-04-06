@@ -26,7 +26,7 @@ class replayInfos(object):
         self.cheats = False
         self.teamLock = False
         self.score = True
-        self.victory =  'demoralization'
+        self.victory = 'demoralization'
         self.civilian = 'enemy'
         self.Timeouts = -1
         self.FogOfWar = 'explored'
@@ -48,7 +48,7 @@ class replayInfos(object):
         options = dict(mapInfo['Options'])
         self.teamLock = options['TeamLock']
         self.score = options['Score']        
-        self.victory =  options['Victory']
+        self.victory = options['Victory']
         self.civilian = options['CivilianAlliance']
         self.Timeouts = options['Timeouts']
         self.FogOfWar = options['FogOfWar']

@@ -83,7 +83,7 @@ class replayServerThread(QObject):
         typemod = message["typemod"]
         search = message["search"]
         
-        descriptionField =  ".*[[:space:]]"+search+"[[:space:]].*"
+        descriptionField = ".*[[:space:]]" + search + "[[:space:]].*"
         nameField = "%" + search + "%"
         
         query = QSqlQuery(self.parent.db)
@@ -203,7 +203,7 @@ class replayServerThread(QObject):
                 uid = query.value(2)
                 if not uid in missions:
                     missions[uid] = {}
-                    missions[uid]= dict(rank = rank, players=[], time= query.value(2).toString("HH:mm:ss"), gameuid = query.value(1), secondary = query.value(3))
+                    missions[uid] = dict(rank = rank, players=[], time= query.value(2).toString("HH:mm:ss"), gameuid = query.value(1), secondary = query.value(3))
                     rank += 1
                 
                 players = missions[uid]["players"]
@@ -260,7 +260,7 @@ class replayServerThread(QObject):
             limit = 0
             query.prepare("SELECT `limit` FROM ladder_division WHERE id = ?")
             
-            query.addBindValue((5*(league-1)) +(division+1))
+            query.addBindValue((5 * (league - 1)) + (division + 1))
             query.exec_()
             if query.size() > 0:
                 query.first()
@@ -290,7 +290,7 @@ class replayServerThread(QObject):
                 rank = 1
                 while next(query):
                     score = float(query.value(1))
-                    if score !=0:
+                    if score != 0:
                         finalresult.append((dict(rank=rank, name = str(query.value(0)), score = score)))
                         rank += 1
                 
@@ -471,7 +471,7 @@ class replayServerThread(QObject):
                     else:
                         faction = 0
                         otherfaction = 0
-                        if games[game]["player1"]["score"] >  games[game]["player2"]["score"]:
+                        if games[game]["player1"]["score"] > games[game]["player2"]["score"]:
                             faction = games[game]["player1"]["faction"]
                             otherfaction = games[game]["player2"]["faction"]
                         else:
@@ -509,7 +509,7 @@ class replayServerThread(QObject):
         now = datetime.date.today()
 
         if (now.month == 3 and now.day < 21) or now.month < 3:
-            previous = datetime.datetime(now.year-1, 12, 21)
+            previous = datetime.datetime(now.year - 1, 12, 21)
             
         elif (now.month == 6 and now.day < 21) or now.month < 6:
     
@@ -573,10 +573,10 @@ class replayServerThread(QObject):
         
         
     def command_search(self, message):
-        mod     = message["mod"]
+        mod = message["mod"]
         mapname = message["map"]
-        player  = message["player"]
-        rating  = message.get("rating", 0)
+        player = message["player"]
+        rating = message.get("rating", 0)
 
         modUid = -1
         mapUid = -1
@@ -586,7 +586,7 @@ class replayServerThread(QObject):
 
         if mapname != "":
             query.prepare("SELECT id FROM `table_map` WHERE LOWER( `name` ) REGEXP ? LIMIT 1")
-            mapname = "^" + mapname.lower().replace("*", ".*") +"$"
+            mapname = "^" + mapname.lower().replace("*", ".*") + "$"
             query.addBindValue(mapname)
             query.exec_()
             if query.size() != 0:
@@ -625,7 +625,7 @@ AND (-1 = ? OR mapId = ?) \n"
                 while next(query) and i < 100:
                     players.append(query.value(0))
                     i += 1
-                queryStr += "AND game_player_stats.playerId IN ("+reduce(lambda x, y: str(x)+","+str(y), players)+") "
+                queryStr += "AND game_player_stats.playerId IN (" + reduce(lambda x, y: str(x) + "," + str(y), players) + ") "
             elif query.size() == 1:
                 query.first()
                 playerId = query.value(0)
@@ -686,7 +686,7 @@ AND (-1 = ? OR mapId = ?) \n"
                 player["team"] = query.value(3)
                 player["place"] = query.value(4)
                 if query.value(5):
-                    player["rating"] = max(0, int(round((query.value(5))/100.0)*100)) 
+                    player["rating"] = max(0, int(round((query.value(5)) / 100.0) * 100)) 
                     
 #                if query.value(6) :
 #                    player["after_rating"] = query.value(6)

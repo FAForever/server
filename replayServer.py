@@ -47,7 +47,7 @@ class start(QObject):
         self.logger = logging.getLogger(__name__)
 
 
-        self.db= QtSql.QSqlDatabase.addDatabase("QMYSQL")  
+        self.db = QtSql.QSqlDatabase.addDatabase("QMYSQL")  
         self.db.setHostName(DB_SERVER)  
         self.db.setPort(DB_PORT)
 
@@ -61,7 +61,7 @@ class start(QObject):
             self.logger.error(self.db.lastError().text())  
  
         
-        self.updater =  replayServer(self)
+        self.updater = replayServer(self)
         if not self.updater.listen(QtNetwork.QHostAddress.Any, 11002):
             return        
         else:

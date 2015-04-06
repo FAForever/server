@@ -2204,7 +2204,7 @@ Thanks,\n\
             else:
                 gameQuality = 0.8
 
-            if deviation > 350 and mean - 3*deviation > 1600:
+            if deviation > 350 and mean - 3 * deviation > 1600:
                 continue
 
             curMatchQuality = self.getMatchQuality(self.player, player)
