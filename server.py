@@ -27,10 +27,10 @@ import signal
 from quamash import QEventLoop
 from PySide import QtSql, QtCore, QtNetwork
 from PySide.QtCore import QTimer
+from gameconnection import GameConnection
 
 from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
 from server.FaLobbyServer import FALobbyServer
-from server.FaGamesServer import FAServer
 from server.games_service import GamesService
 from server.players import *
 import config
@@ -87,7 +87,12 @@ if __name__ == '__main__':
             self.games = GamesService(self.players_online, self.db)
 
             self.FALobby = FALobbyServer(self.players_online, self.games, self.db, self)
-            self.FAGames = FAServer(loop, self.players_online, self.games, self.db, self)
+            self.game_server = loop.create_server(lambda:
+                                                  GameConnection(loop,
+                                                                 self.players_online,
+                                                                 self.games,
+                                                                 self.db,),
+                                                  '', 8000)
 
             # Make sure we can shutdown gracefully
             signal.signal(signal.SIGTERM, self.signal_handler)
@@ -97,13 +102,6 @@ if __name__ == '__main__':
             timer = QTimer(self)
             timer.timeout.connect(poll_signal)
             timer.start(200)
-
-
-            if not self.FAGames.run(QtNetwork.QHostAddress.Any):
-                self.logger.error("Unable to start the server {}".format(self.FAGames.serverError()))
-                raise Exception("Unable to start the game server")
-            else:
-                self.logger.info("starting the game server on  %s:%i" % (self.FAGames.serverAddress().toString(),self.FAGames.serverPort()))
 
 
             if not self.FALobby.listen(QtNetwork.QHostAddress.Any, 8001):
@@ -117,7 +115,7 @@ if __name__ == '__main__':
             self.logger.info("Received signal, shutting down")
             self.set_result(0)
             self.FALobby.close()
-            self.FAGames.close()
+            self.game_server.close()
             self._loop.stop()
 
         def jsonPlayer(self, player):

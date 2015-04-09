@@ -23,7 +23,6 @@ import logging
 import functools
 
 from PySide import QtNetwork
-from PySide.QtNetwork import QTcpSocket, QAbstractSocket
 from PySide.QtSql import *
 
 from server.abc.base_game import GameConnectionState
@@ -39,7 +38,6 @@ logger = logging.getLogger(__name__)
 
 from server import proxy_map
 
-from server.protocol.transport import QDataStreamJsonTransport
 from server.protocol.protocol import QDataStreamProtocol
 
 from config import Config
@@ -52,8 +50,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
     Responsible for the games protocol.
     """
 
-    def __init__(self, loop, users, games: GamesService, db, server):
+    def __init__(self, loop, users, games: GamesService, db):
         Subscribable.__init__(self)
+        QDataStreamProtocol.__init__(self)
+        self._logger.info('GameConnection initializing')
         self._state = GameConnectionState.INITIALIZING
         self.loop = loop
         self.users = users
@@ -73,7 +73,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
         self.player = None
         self._socket = None
         self.lobby = None
-        self.transport = None
+        self._transport = None
         self.nat_packets = {}
         self.ping_task = None
         self._connectivity_state = None
@@ -95,32 +95,19 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
     def game(self, value):
         self._game = value
 
-    def accept(self, socket):
+    def on_connection_made(self, peer_name):
         """
         Accept a connected socket for this GameConnection
 
         Will look up the user using the provided users service,
         followed by obtaining the Game object that the user wishes to join.
-        :param socket: An initialised socket
-        :type socket QTcpSocket
         :raise AssertionError
         :return: bool
         """
-        assert socket.isValid()
-        assert socket.state() == QAbstractSocket.ConnectedState
-        self.log.debug("Accepting connection from %r" % socket.peerAddress())
-        self._socket = socket
-        self._socket.setSocketOption(QTcpSocket.KeepAliveOption, 1)
-        self._socket.disconnected.connect(self.disconnection)
-        self._socket.error.connect(self.on_error)
-        self._socket.stateChanged.connect(self.on_socket_state_change)
-
-        self.transport = QDataStreamJsonTransport(self._socket)
-        self.transport.messageReceived.connect(self.handleAction2)
+        self._logger.debug("Accepting connection from {}".format(peer_name))
 
         self.lobby = None
-        ip = self._socket.peerAddress().toString()
-        port = self._socket.peerPort()
+        ip, port = peer_name
         self.player = self.users.findByIp(ip)
         self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, ip, port))
 
@@ -152,7 +139,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
 
     def sendToRelay(self, action, commands):
         message = {"key": action, "commands": commands}
-        self.transport.send_message(message)
+        self.send_message(json.dumps(message))
 
     @asyncio.coroutine
     def ping(self):
@@ -248,25 +235,25 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
             yield from self.ConnectToHost(self.game.hostPlayer.game_connection)
 
     @timed(limit=0.1)
-    def handleAction2(self, action):
+    def on_message_received(self, message):
         """
         This code is starting to get messy...
         This function was created when the FA protocol was moved to the lobby itself
         """
         try:
-            message = json.loads(action)
+            message = json.loads(message)
             message["command_id"] = message['action']
             message["arguments"] = message['chuncks']
             self.notify(message)
             asyncio.async(self.handle_action(message["action"], message["chuncks"]))
         except ValueError as ex:
-            self.log.error("Garbage JSON {} {}".format(ex, action))
+            self.log.error("Garbage JSON {} {}".format(ex, message))
 
-    def handle_ProcessServerNatPacket(self, message, host, port):
+    def handle_ProcessServerNatPacket(self, arguments):
         self.log.debug("handle_ProcessServerNatPacket {}".format(self))
         self.notify({
             'command_id': 'ProcessServerNatPacket',
-            'arguments': [host, port, message]
+            'arguments': arguments
         })
 
     @asyncio.coroutine

@@ -19,16 +19,20 @@ class NatPacketServer(Subscribable):
         self._socket = s
         self._subscribers = {}
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.loop.remove_reader(self._recv)
+    def close(self):
+        self.loop.remove_reader(self._recv())
         try:
             self._socket.shutdown(socket.SHUT_RDWR)
             self._socket.close()
         except OSError:
             pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.loop.remove_reader(self._recv)
+        self.close()
 
     def _recv(self):
         try:

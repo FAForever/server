@@ -16,9 +16,9 @@ def lobbythread():
 
 @pytest.fixture
 def game_connection(game, loop, player_service, players, games, transport, connected_game_socket):
-    conn = GameConnection(loop=loop, users=player_service, games=games, db=None, server=None)
+    conn = GameConnection(loop=loop, users=player_service, games=games, db=None)
     conn._socket = connected_game_socket
-    conn.transport = transport
+    conn._transport = transport
     conn.player = players.hosting
     conn.game = game
     game_connection.lobby = mock.Mock(spec=LobbyConnection)
@@ -28,10 +28,10 @@ def game_connection(game, loop, player_service, players, games, transport, conne
 @pytest.fixture
 def connections(loop, player_service, games, transport, game):
     def make_connection(player, connectivity):
-        conn = GameConnection(loop=loop, users=player_service, games=games, db=None, server=None)
+        conn = GameConnection(loop=loop, users=player_service, games=games, db=None)
         conn.player = player
         conn.game = game
-        conn.transport = transport
+        conn._transport = transport
         conn.connectivity_state.set_result(connectivity)
         return conn
 

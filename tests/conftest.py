@@ -20,8 +20,6 @@ from PySide.QtNetwork import QTcpSocket
 from server.players import PlayersOnline, Player
 from server.games import Game
 
-from server.protocol import Transport
-
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s',
                                        '%M:%S'))
@@ -152,7 +150,7 @@ def connected_game_socket():
 
 @pytest.fixture
 def transport():
-    return mock.Mock(spec=Transport)
+    return mock.Mock(spec=asyncio.Transport)
 
 @pytest.fixture
 def game(players, db):
