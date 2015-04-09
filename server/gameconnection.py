@@ -221,15 +221,15 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
         with TestPeer(self,
                       self.player.getIp(),
                       self.player.gamePort,
-                      self.player.getId()) as peer_test:
-            self._connectivity_state = yield from asyncio.async(peer_test.determine_connectivity())
+                      self.player.id) as peer_test:
+            self._connectivity_state = yield from peer_test.determine_connectivity()
             self.sendToRelay('ConnectivityState', [self.player.getId(),
                                                    self._connectivity_state.value])
 
-        playeraction = self.player.getAction()
+        playeraction = self.player.action
         if playeraction == "HOST":
             map = self.game.mapName
-            self._send_host_game(str(map))
+            self.send_HostGame(map)
         # if the player is joining, we connect him to host.
         elif playeraction == "JOIN":
             yield from self.ConnectToHost(self.game.hostPlayer.game_connection)
@@ -576,12 +576,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                               self.player.gamePort,
                               self.player.login,
                               self.player.id, 1)
-
-    def _send_host_game(self, mapname):
-        """ Create a lobby with a specific map"""
-        self.game.hostPlayerFull = self.player
-        self.game.setGameMap(mapname.lower())
-        self.sendToRelay("HostGame", [mapname])
 
     def ConnectThroughProxy(self, peer, recurse=True):
         try:

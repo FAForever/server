@@ -48,6 +48,9 @@ class GpgNetServerProtocol():
     def send_JoinGame(self, address_and_port: str, as_observer: bool, remote_player_name: str, remote_player_uid: int):
         self.send_gpgnet_message('JoinGame', [address_and_port, as_observer, remote_player_name, remote_player_uid])
 
+    def send_HostGame(self, map):
+        self.send_gpgnet_message('HostGame', [str(map)])
+
     def send_SendNatPacket(self, address_and_port: str, message: str):
         self.send_gpgnet_message('SendNatPacket', [address_and_port, message])
 
