@@ -132,16 +132,6 @@ def db(sqlquery):
     return db
 
 @pytest.fixture
-def patch_connectivity(monkeypatch):
-    def set_to(level):
-        @asyncio.coroutine
-        def setter():
-            yield from asyncio.sleep(0.001)
-            return level
-        monkeypatch.setattr('connectivity.TestPeer.determine_connectivity', setter)
-    return set_to
-
-@pytest.fixture
 def connected_game_socket():
     game_socket = mock.Mock(spec=QTcpSocket)
     game_socket.state = mock.Mock(return_value=QTcpSocket.ConnectedState)
