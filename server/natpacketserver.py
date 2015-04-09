@@ -41,7 +41,7 @@ class NatPacketServer(Subscribable):
                     'command_id': 'ProcessServerNatPacket',
                     'arguments': ["{}:{}".format(addr[0], addr[1]), data[1:].decode()]
                 })
-        except WindowsError as ex:
+        except OSError as ex:
             if ex.errno == socket.EWOULDBLOCK:
                 pass
             else:
