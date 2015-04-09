@@ -605,16 +605,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
     def sendGameInfo(self):
         self.games.mark_dirty(self.game.uuid)
 
-    def parsePlayerOption(self, value):
-        options = value.split(' ')
-        length = len(options)
-        atype = options[0]
-        name = " ".join(options[1:length - 2])
-        name = name.encode('utf-8')
-        place = int(options[length - 2])
-        value = int(options[length - 1])
-        return atype, name, place, value
-
     def isModRanked(self, uidmod):
         query = QSqlQuery(self.parent.db)
         query.prepare("SELECT ranked FROM table_mod WHERE uid LIKE ?")
