@@ -16,25 +16,15 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from copy import deepcopy
-import time
+import logging
+logger = logging.getLogger(__name__)
 
-from .game import Game
-from src.decorators import with_logger
+from server.games.gamesContainer import GamesContainer
+# derived
+from server.games.ladderGamesContainer import Ladder1V1GamesContainer # ladder games
 
-
-@with_logger
-class CustomGame(Game):
-    def __init__(self, uuid, parent):
-        super(self.__class__, self).__init__(uuid, parent)
-  
-    def specialInit(self, player):
-        pass
-
-    def rate_game(self):
-        limit = len(self.players) * 60
-        if time.time() - self.createDate < limit:
-            self.setInvalid("Score are invalid: Play time was not long enough (under %i seconds)" % limit)
-        if self.valid:
-            new_ratings = self.compute_rating()
-            self.persist_rating_change_stats(new_ratings, rating='global')
+# game entity
+from server.games.game import Game
+# derived
+from server.games.ladderGame import ladder1V1Game #ladder 1v1
+from server.games.custom_game import CustomGame #custom

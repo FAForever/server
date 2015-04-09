@@ -1,6 +1,6 @@
 import mock
 
-from src.proxy_map import ProxyMap
+from server.proxy_map import ProxyMap
 
 
 def test_map_dup():

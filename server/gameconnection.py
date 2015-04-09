@@ -26,27 +26,28 @@ from PySide import QtNetwork
 from PySide.QtNetwork import QTcpSocket, QAbstractSocket
 from PySide.QtSql import *
 
-from src.abc.base_game import GameConnectionState
-from src.connectivity import TestPeer, Connectivity
-from src.games.game import Game, GameState, Victory
-from src.decorators import with_logger, timed
-from src.games_service import GamesService
-from src.protocol.gpgnet import GpgNetServerProtocol
-from src.subscribable import Subscribable
+from server.abc.base_game import GameConnectionState
+from server.connectivity import TestPeer, Connectivity
+from server.games.game import Game, GameState, Victory
+from server.decorators import with_logger, timed
+from server.games_service import GamesService
+from server.protocol.gpgnet import GpgNetServerProtocol
+from server.subscribable import Subscribable
 
 
 logger = logging.getLogger(__name__)
 
-from src import proxy_map
+from server import proxy_map
 
-from protocol.transport import QDataStreamJsonTransport
+from server.protocol.transport import QDataStreamJsonTransport
+from server.protocol.protocol import QDataStreamProtocol
 
 from config import Config
 
 proxyServer = QtNetwork.QHostAddress("127.0.0.1")
 
 @with_logger
-class GameConnection(Subscribable, GpgNetServerProtocol):
+class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
     """
     Responsible for the games protocol.
     """

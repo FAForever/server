@@ -5,7 +5,7 @@ from PySide.QtCore import Signal, QObject
 from PySide.QtNetwork import QTcpSocket, QUdpSocket
 import mock
 
-from protocol.transport import QDataStreamJsonTransport
+from server.protocol.transport import QDataStreamJsonTransport
 
 
 class TestGPGClient(QObject):

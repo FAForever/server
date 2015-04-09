@@ -21,7 +21,7 @@ import logging
 
 from PySide import QtSql
 
-from src.games.game import Game, GameState
+from server.games.game import Game, GameState
 
 
 class GamesContainer(object):

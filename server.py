@@ -29,10 +29,10 @@ from PySide import QtSql, QtCore, QtNetwork
 from PySide.QtCore import QTimer
 
 from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
-from src.FaLobbyServer import FALobbyServer
-from src.FaGamesServer import FAServer
-from src.games_service import GamesService
-from src.players import *
+from server.FaLobbyServer import FALobbyServer
+from server.FaGamesServer import FAServer
+from server.games_service import GamesService
+from server.players import *
 import config
 
 

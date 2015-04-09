@@ -2,7 +2,7 @@ import asyncio
 from unittest import mock
 import pytest
 
-from src.connectivity import TestPeer, Connectivity
+from server.connectivity import TestPeer, Connectivity
 
 slow = pytest.mark.slow
 

@@ -23,8 +23,8 @@ import time
 from PySide.QtSql import QSqlQuery
 import functools
 import trueskill
-from src.abc.base_game import GameConnectionState, BaseGame, InitMode
-from src.players import Player
+from server.abc.base_game import GameConnectionState, BaseGame, InitMode
+from server.players import Player
 
 
 class GameState(IntEnum):

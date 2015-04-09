@@ -3,7 +3,7 @@ import asyncio
 import mock
 import pytest
 
-from src.subscribable import Subscribable
+from server.subscribable import Subscribable
 
 
 @pytest.fixture

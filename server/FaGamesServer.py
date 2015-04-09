@@ -19,11 +19,11 @@ import asyncio
 
 from PySide.QtNetwork import QTcpServer, QTcpSocket
 
-from src.gameconnection import GameConnection
+from server.gameconnection import GameConnection
 import config
-from src.games_service import GamesService
-from src.natpacketserver import NatPacketServer
-from src.decorators import with_logger
+from server.games_service import GamesService
+from server.natpacketserver import NatPacketServer
+from server.decorators import with_logger
 
 
 @with_logger

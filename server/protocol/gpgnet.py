@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
-from src.abc.base_game import InitMode
+from server.abc.base_game import InitMode
 
 
 class GpgNetServerProtocol():
@@ -37,7 +37,7 @@ class GpgNetServerProtocol():
         :type natTraversalProvider: int
         :return:
         """
-        self.send_gpgnet_message('CreateLobby', [init_mode.value, port, login, uid, natTraversalProvider])
+        self.send_gpgnet_message('CreateLobby', [int(init_mode.value), port, login, uid, natTraversalProvider])
 
     def send_ConnectToPeer(self, address_and_port: str, player_name: str, player_uid: int):
         self.send_gpgnet_message('ConnectToPeer', [address_and_port, player_name, player_uid])

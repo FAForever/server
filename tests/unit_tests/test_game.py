@@ -5,8 +5,8 @@ from unittest.mock import patch, call
 import pytest
 from trueskill import Rating
 
-from src.games.game import Game, GameState, GameError
-from src.gameconnection import GameConnection, GameConnectionState
+from server.games.game import Game, GameState, GameError
+from server.gameconnection import GameConnection, GameConnectionState
 
 
 @pytest.fixture()
@@ -128,7 +128,7 @@ def test_game_launch_freezes_players(game: Game, players):
 
 
 def test_update_ratings(game: Game, players):
-    with patch('src.games.game.QSqlQuery') as query:
+    with patch('server.games.game.QSqlQuery') as query:
         game.state = GameState.LOBBY
         add_connected_player(game, players.hosting)
         query().size.return_value = 1
@@ -138,7 +138,7 @@ def test_update_ratings(game: Game, players):
 
 
 def test_persist_rating_change_stats_by_game(game: Game, players):
-    with patch('src.games.game.QSqlQuery') as query:
+    with patch('server.games.game.QSqlQuery') as query:
         game_stats_query = mock.Mock()
         rating_query = mock.Mock()
         query.side_effect = [game_stats_query, rating_query]
@@ -163,7 +163,7 @@ def test_persist_rating_change_stats_by_game(game: Game, players):
 
 
 def test_persist_rating_change_stats_by_player(game: Game, players):
-    with patch('src.games.game.QSqlQuery') as query:
+    with patch('server.games.game.QSqlQuery') as query:
         game_stats_query = mock.Mock()
         rating_query = mock.Mock()
         query.side_effect = [game_stats_query, rating_query]

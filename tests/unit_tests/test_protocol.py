@@ -1,7 +1,7 @@
 from unittest import mock
 from unittest.mock import call
 from PySide.QtCore import QByteArray, QDataStream, QIODevice
-from src.protocol import QDataStreamProtocol
+from server.protocol import QDataStreamProtocol
 
 
 def preparePacket(action, *args, **kwargs):

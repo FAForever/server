@@ -2,8 +2,8 @@ from unittest import mock
 
 import pytest
 
-from src.gameconnection import GameConnection
-from src.lobbyconnection import LobbyConnection
+from server.gameconnection import GameConnection
+from server.lobbyconnection import LobbyConnection
 
 
 

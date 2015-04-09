@@ -1,5 +1,5 @@
-from src.games import GamesContainer
-from src.games_service import GamesService
+from server.games import GamesContainer
+from server.games_service import GamesService
 
 
 def test_initialization(players, db):

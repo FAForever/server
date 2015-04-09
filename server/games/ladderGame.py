@@ -17,7 +17,7 @@
 #-------------------------------------------------------------------------------
 
 import logging
-from src.abc.base_game import InitMode
+from server.abc.base_game import InitMode
 
 logger = logging.getLogger(__name__)
 

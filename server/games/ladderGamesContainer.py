@@ -24,7 +24,7 @@ import trueskill
 
 from .gamesContainer import  GamesContainer
 from .ladderGame import ladder1V1Game
-from src.players import Player
+from server.players import Player
 
 
 class Ladder1V1GamesContainer(GamesContainer):

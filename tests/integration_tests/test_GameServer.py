@@ -7,8 +7,8 @@ from PySide.QtNetwork import QHostAddress
 from mock import call
 import pytest
 
-from src.FaGamesServer import FAServer
-from .testclient import TestGPGClient
+from server.FaGamesServer import FAServer
+from tests.integration_tests.testclient import TestGPGClient
 import config
 
 slow = pytest.mark.slow

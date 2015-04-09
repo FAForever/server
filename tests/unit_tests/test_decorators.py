@@ -2,7 +2,7 @@ import logging
 
 import mock
 
-from src.decorators import with_logger, timed
+from server.decorators import with_logger, timed
 
 
 def test_with_logger():

@@ -42,8 +42,8 @@ import pygeoip
 import trueskill
 from trueskill import Rating
 
-from src.decorators import timed
-from src.players import *
+from server.decorators import timed
+from server.players import *
 from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS
 from config import Config
 
@@ -57,9 +57,9 @@ from steam import api
 
 api.key.set(STEAM_APIKEY)
 
-from src.games.ladderGamesContainer import Ladder1V1GamesContainer
-from src.games.coopGamesContainer import CoopGamesContainer
-from src.games.gamesContainer import GamesContainer
+from server.games.ladderGamesContainer import Ladder1V1GamesContainer
+from server.games.coopGamesContainer import CoopGamesContainer
+from server.games.gamesContainer import GamesContainer
 
 
 TIMEOUT_SECONDS = 300
@@ -173,14 +173,6 @@ class LobbyConnection(QObject):
                                                            nice_name=nice_name,
                                                            db=self.parent.db,
                                                            games_service=self.parent.games))
-
-    @timed()
-    def getRankColor(self, deviation):
-        ##self.log.debug(self.logPrefix + "Get rank color")
-        normalized = min((deviation / 400.0), 1.0)
-        col = int(255 + normalized * (0 - 255))
-        ##self.log.debug("Get rank color done")
-        return '%02x%02x%02x%02x' % (col, col, col, col)
 
     @timed()
     def removeLobbySocket(self):

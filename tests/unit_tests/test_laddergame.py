@@ -1,10 +1,10 @@
 from unittest import mock
 import pytest
 
-from src.games import ladder1V1Game
-from src.games.game import GameState
+from server.games import ladder1V1Game
+from server.games.game import GameState
 
-from .test_game import add_connected_players
+from tests.unit_tests.test_game import add_connected_players
 
 @pytest.fixture()
 def laddergame(db):

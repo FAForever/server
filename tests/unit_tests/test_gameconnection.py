@@ -4,11 +4,11 @@ from PySide.QtNetwork import QTcpSocket
 import mock
 import pytest
 
-from src import proxy_map
-from src.connectivity import Connectivity
-from src.gameconnection import GameConnection
-from src.protocol.transport import Transport
-from src.games import Game
+from server import proxy_map
+from server.connectivity import Connectivity
+from server.gameconnection import GameConnection
+from server.protocol.transport import Transport
+from server.games import Game
 
 slow = pytest.mark.slow
 

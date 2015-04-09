@@ -18,7 +18,7 @@
 
 import logging
 
-from src.games import Game
+from server.games import Game
 
 
 class GamesService(object):

@@ -81,13 +81,13 @@ class Player(BasePlayer):
         self.gamePort = gamePort
 
         return 1
-    
+
     def setLogin(self, login):
         self._login = str(login)
-    
+
     def getLocalGamePort(self):
         return self.localGamePort
-    
+
     @property
     def action(self):
         return self._action

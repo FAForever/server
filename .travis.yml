@@ -15,6 +15,7 @@ before_script:
   - "sh -e /etc/init.d/xvfb start"
 
 script:
+  - pip install -e .
   - export QUAMASH_QTIMPL=PySide
   - py.test --slow --cov-report term-missing --cov=src --cov=challonge --cov=stats --cov=steam --cov=teams --cov=tournament --cov=updater
   - pyflakes . || true

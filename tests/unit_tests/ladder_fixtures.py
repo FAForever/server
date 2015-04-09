@@ -3,8 +3,8 @@ from unittest import mock
 from PySide import QtSql
 import pytest
 
-from src.games import Ladder1V1GamesContainer
-from src.players import Player
+from server.games import Ladder1V1GamesContainer
+from server.players import Player
 
 
 @pytest.fixture()

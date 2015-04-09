@@ -4,7 +4,7 @@ import logging
 
 import mock
 
-from src.natpacketserver import NatPacketServer
+from server.natpacketserver import NatPacketServer
 
 
 @asyncio.coroutine

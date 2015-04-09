@@ -9,18 +9,18 @@ import mock
 from PySide import QtCore, QtSql
 from trueskill import Rating
 
-from src.abc.base_game import InitMode
-from src.games_service import GamesService
+from server.abc.base_game import InitMode
+from server.games_service import GamesService
 
 
 if not hasattr(QtCore, 'Signal'):
     QtCore.Signal = QtCore.pyqtSignal
 
 from PySide.QtNetwork import QTcpSocket
-from src.players import PlayersOnline, Player
-from src.games import Game
+from server.players import PlayersOnline, Player
+from server.games import Game
 
-from src.protocol.transport import Transport
+from server.protocol import Transport
 
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s',

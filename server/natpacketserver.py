@@ -1,6 +1,6 @@
 import socket
 
-from src.subscribable import Subscribable
+from server.subscribable import Subscribable
 from .decorators import with_logger
 
 

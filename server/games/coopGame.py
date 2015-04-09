@@ -15,16 +15,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
+from server.abc.base_game import InitMode
 
-import logging
-logger = logging.getLogger(__name__)
+from .game import Game
 
-from src.games.gamesContainer import GamesContainer
-# derived
-from src.games.ladderGamesContainer import Ladder1V1GamesContainer # ladder games
+class coopGame(Game):
+    """Class forcoop game"""
 
-# game entity
-from src.games.game import Game
-# derived
-from src.games.ladderGame import ladder1V1Game #ladder 1v1
-from src.games.custom_game import CustomGame #custom
+    init_mode = InitMode.NORMAL_LOBBY
+
+    def __init__(self, uuid, parent = None):
+        super(self.__class__, self).__init__(uuid, parent)

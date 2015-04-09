@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 from enum import Enum, IntEnum
-from src.players import Player
+from server.players import Player
 
 
 class GameConnectionState(Enum):

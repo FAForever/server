@@ -22,9 +22,9 @@ import time
 
 from PySide import QtCore, QtNetwork
 
-from src import lobbyconnection
-from src.decorators import with_logger, timed
-from src.games_service import GamesService
+from server import lobbyconnection
+from server.decorators import with_logger, timed
+from server.games_service import GamesService
 
 
 logger = logging.getLogger(__name__)

@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractproperty
 
 from trueskill import Rating
 
-from src.abc.faction import Faction
+from server.abc.faction import Faction
 
 
 class BasePlayer():
