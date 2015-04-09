@@ -23,6 +23,7 @@ import time
 from PySide.QtSql import QSqlQuery
 import functools
 import trueskill
+from server.proxy_map import ProxyMap
 from server.abc.base_game import GameConnectionState, BaseGame, InitMode
 from server.players import Player
 
@@ -121,6 +122,7 @@ class Game(BaseGame):
         self.playerFaction = {}
         self.playerColor = {}
         self.state = GameState.INITIALIZING
+        self._proxy = ProxyMap()
         self._connections = {}
         self.gameOptions = {'FogOfWar': 'explored',
                             'GameSpeed': 'normal',
@@ -165,6 +167,10 @@ class Game(BaseGame):
     def teams(self):
         return frozenset({self.get_player_option(player.id, 'Team')
                           for player in self.players})
+
+    @property
+    def proxy(self):
+        return self._proxy
 
     def add_result(self, reporter, army, result_type, score):
         """

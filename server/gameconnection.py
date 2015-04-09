@@ -17,6 +17,7 @@
 # -------------------------------------------------------------------------------
 
 import asyncio
+from socket import socket
 import time
 import json
 import logging
@@ -36,13 +37,12 @@ from server.subscribable import Subscribable
 
 logger = logging.getLogger(__name__)
 
-from server import proxy_map
 
 from server.protocol.protocol import QDataStreamProtocol
 
 from config import Config
 
-proxyServer = QtNetwork.QHostAddress("127.0.0.1")
+PROXY_SERVER = ('127.0.0.1', 12000)
 
 @with_logger
 class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
@@ -167,8 +167,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
             self.game.state = GameState.LOBBY
             self._state = GameConnectionState.CONNECTED_TO_HOST
             self.game.add_game_connection(self)
-            self.game.setHostIP(self.player.getIp())
-            self.game.proxy = proxy_map.ProxyMap()
+            self.game.setHostIP(self.player.ip)
             strlog = (
                 "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.uuid), str(self.game.getGamemod())))
             self.logGame = strlog
@@ -631,24 +630,20 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                 return True
         return False
 
-    def fillAIStats(self, AIs):
-        pass
-
-    def disconnection(self):
+    def on_connection_lost(self, exc):
         try:
-            if self.player:
-                if self.game:
-                    if hasattr(self.game, "proxy"):
-                        if self.game.proxy.unmap(self.player.getLogin()):
-                            self.parent.parent.udpSocket.writeDatagram(
-                                json.dumps(dict(command="cleanup", sourceip=self.player.getIp())), proxyServer, 12000)
-                if self.connectivity_state.result() == Connectivity.PROXY:
-                    wiki_link = "{}index.php?title=Connection_issues_and_solutions".format(Config['global']['wiki_url'])
-                    text = "Your network is not setup right.<br>The server had to make you connect to other players by proxy.<br>Please visit <a href='{}'>{}</a>" + \
-                           "to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs,".format(wiki_link, wiki_link)
+            if self.game.proxy.unmap(self.player.login):
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.connect(PROXY_SERVER)
+                s.sendall(json.dumps(dict(command="cleanup", sourceip=self.player.ip)))
+                s.close()
+            if self.connectivity_state.result() == Connectivity.PROXY:
+                wiki_link = "{}index.php?title=Connection_issues_and_solutions".format(Config['global']['wiki_url'])
+                text = "Your network is not setup right.<br>The server had to make you connect to other players by proxy.<br>Please visit <a href='{}'>{}</a>" + \
+                       "to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs,".format(wiki_link, wiki_link)
 
-                    self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
-                self.player.game = None
+                self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
+            self.player.game = None
         except:
             pass
         finally:
