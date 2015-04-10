@@ -27,13 +27,15 @@ import signal
 from quamash import QEventLoop
 from PySide import QtSql, QtCore, QtNetwork
 from PySide.QtCore import QTimer
-from gameconnection import GameConnection
 
 from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
 from server.FaLobbyServer import FALobbyServer
 from server.games_service import GamesService
+
 from server.players import *
 import config
+
+import server
 
 
 logger = logging.getLogger(__name__)
@@ -87,12 +89,8 @@ if __name__ == '__main__':
             self.games = GamesService(self.players_online, self.db)
 
             self.FALobby = FALobbyServer(self.players_online, self.games, self.db, self)
-            self.game_server = loop.create_server(lambda:
-                                                  GameConnection(loop,
-                                                                 self.players_online,
-                                                                 self.games,
-                                                                 self.db,),
-                                                  '', 8000)
+
+            self.nat_packet_server, self.game_server = server.run_game_server()
 
             # Make sure we can shutdown gracefully
             signal.signal(signal.SIGTERM, self.signal_handler)

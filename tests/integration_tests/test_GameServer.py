@@ -1,14 +1,12 @@
 from asyncio import coroutine, sleep
 import asyncio
-from concurrent.futures import CancelledError
 import json
 import time
 
-from PySide.QtNetwork import QHostAddress
 from mock import call
 import pytest
-from server.natpacketserver import NatPacketServer
-from server.gameconnection import GameConnection
+
+from server import run_game_server
 
 from tests.integration_tests.testclient import TestGPGClient
 import config
@@ -25,20 +23,11 @@ def wait_call(mock, call, timeout=0.5):
         yield from sleep(0.1)
     assert call in mock.mock_calls
 
-def run_server(loop, player_service, games, db):
-    nat_packet_server = NatPacketServer(loop, config.LOBBY_UDP_PORT)
-    def initialize_connection():
-        gc = GameConnection(loop, player_service, games, db)
-        nat_packet_server.subscribe(gc, ['ProcessServerNatPacket'])
-        return gc
-    return nat_packet_server, loop.create_server(initialize_connection,
-                                  '127.0.0.1', 8000)
-
 @asyncio.coroutine
 @slow
 def test_public_host(loop, qtbot, players, player_service, games, db):
     player = players.hosting
-    nat_server, server = run_server(loop, player_service, games, db)
+    nat_server, server = run_game_server(loop, player_service, games, db)
     server = yield from server
     with TestGPGClient('127.0.0.1', 8000, player.gamePort, process_nat_packets=True) as client:
         with qtbot.waitSignal(client.connected):
@@ -61,7 +50,7 @@ def test_public_host(loop, qtbot, players, player_service, games, db):
 @slow
 def test_stun_host(loop, qtbot, players, player_service, games, db):
     player = players.hosting
-    nat_server, server = run_server(loop, player_service, games, db)
+    nat_server, server = run_game_server(loop, player_service, games, db)
     server = yield from server
     with TestGPGClient('127.0.0.1', 8000, player.gamePort, process_nat_packets=False) as client:
         with qtbot.waitSignal(client.connected):
