@@ -1,4 +1,6 @@
 import asyncio
+from asyncio import Transport
+
 import json
 
 from PySide.QtNetwork import QTcpSocket
@@ -8,7 +10,6 @@ import pytest
 from server import proxy_map
 from server.connectivity import Connectivity
 from server.gameconnection import GameConnection
-from server.protocol.transport import Transport
 from server.games import Game
 
 slow = pytest.mark.slow

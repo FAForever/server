@@ -20,11 +20,11 @@ from PySide.QtNetwork import QTcpSocket
 from server.players import PlayersOnline, Player
 from server.games import Game
 
-handler = logging.StreamHandler()
-handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s',
-                                       '%M:%S'))
+#handler = logging.StreamHandler()
+#handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s',
+#                                       '%M:%S'))
 logging.getLogger('quamash').setLevel(logging.INFO)
-logging.getLogger().addHandler(handler)
+#logging.getLogger().addHandler(handler)
 logging.getLogger().setLevel(logging.DEBUG)
 
 import quamash
