@@ -69,5 +69,13 @@ class GpgNetServerProtocol():
         pass  # pragma: no cover
 
 
-class GpgNetClientProtocol():
-    pass
+class GpgNetClientProtocol(metaclass=ABCMeta):
+    def send_GameState(self, arguments):
+        self.send_gpgnet_message('GameState', arguments)
+
+    def send_ProcessNatPacket(self, arguments):
+        self.send_gpgnet_message('ProcessNatPacket', arguments)
+
+    @abstractmethod
+    def send_gpgnet_message(self, command_id, arguments):
+        pass  # pragma: no cover
