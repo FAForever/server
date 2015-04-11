@@ -31,7 +31,6 @@ class NatPacketServer(Subscribable):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.loop.remove_reader(self._recv)
         self.close()
 
     def _recv(self):
