@@ -82,7 +82,6 @@ class QDataStreamProtocol(BaseStatefulProtocol):
 
     def data_received(self, data):
         try:
-            print(len(data))
             for msg in self.read_blocks(data):
                 self.on_message_received(msg)
         except Exception as ex:
