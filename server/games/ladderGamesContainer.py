@@ -91,25 +91,23 @@ class Ladder1V1GamesContainer(GamesContainer):
     def getMatchQuality(self, player1: Player, player2: Player):
         return trueskill.quality_1vs1(player1.ladder_rating, player2.ladder_rating)
 
-    def getSelectedLadderMaps(self, playerId):
+    def selected_maps(self, playerId):
         query = QSqlQuery(self.db)
         query.prepare("SELECT idMap FROM ladder_map_selection WHERE idUser = ?")
         query.addBindValue(playerId)
         query.exec_()
-        maps = []
-        if query.size() > 0:
-            while next(query):
-                maps.append(int(query.value(0)))
+        maps = set()
+        while query.next():
+            maps |= int(query.value(0))
         return maps
 
-    def getPopularLadderMaps(self, count):
+    def popular_maps(self, count=50):
         query = QSqlQuery()
         query.prepare("SELECT `idMap` FROM `ladder_map_selection` GROUP BY `idMap` ORDER BY count(`idUser`) DESC LIMIT %i" % count)
         query.exec_()
-        maps = []
-        if query.size() > 0:
-            while next(query):
-                maps.append(int(query.value(0)))
+        maps = set()
+        while query.next():
+            maps |= int(query.value(0))
         return maps
 
     def getMapName(self, mapId):
@@ -123,27 +121,47 @@ class Ladder1V1GamesContainer(GamesContainer):
         else:
             return None
 
+    def get_recent_maps(self, player1, player2, count=5):
+        """
+        Find the `count` most recently played maps from players
+        :param players: iterable of Player objects
+        :return:
+        """
+        query = QSqlQuery()
+        query.prepare('SELECT game_stats.mapId FROM game_player_stats '
+                      'INNER JOIN game_stats on game_stats.id = game_player_stats.gameId '
+                      'WHERE game_player_stats.playerId = ? '
+                      'ORDER BY gameId DESC LIMIT 5 '
+                      'UNION DISTINCT '
+                      'SELECT game_stats.mapId FROM game_player_stats '
+                      'INNER JOIN game_stats on game_stats.id = game_player_stats.gameId '
+                      'WHERE game_player_stats.playerId = ? '
+                      'ORDER BY gameID DESC LIMIT 5')
+        query.addBindValue(player1.id)
+        query.addBindValue(player2.id)
+        query.exec_()
+        maps = set()
+        while query.next():
+            maps |= query.value(0)
+        return maps
+
     def choose_ladder_map_pool(self, player1, player2):
-        player_maps = [
-            self.getSelectedLadderMaps(player1.id),
-            self.getSelectedLadderMaps(player2.id)
+        potential_maps = [
+            self.selected_maps(player1.id),
+            self.selected_maps(player2.id),
+            self.popular_maps()
         ]
 
-        common_maps = list(set(player_maps[0]).intersection(set(player_maps[1])))
+        pool = potential_maps[0] & potential_maps[1]
 
-        if len(common_maps) < 15:
-            missing_maps = 15 - len(common_maps)
-            choice = random.randint(0, 2)
+        if len(pool) < 15:
+            expansion_pool = random.choice(potential_maps)
+            pool |= set(random.sample(expansion_pool, min(len(expansion_pool), 15 - len(pool))))
 
-            if choice == 1 or choice == 2:
-                common_maps = common_maps + player_maps[choice-1][:missing_maps]
+        if len(pool) < 15:
+            pool |= set(random.sample(potential_maps[2], min(len(potential_maps[2]), 15 - len(pool))))
 
-
-        if len(common_maps) < 15:
-            missing_maps = 15 - len(common_maps)
-            common_maps = common_maps + self.getPopularLadderMaps(missing_maps)[:missing_maps]
-
-        return common_maps
+        return pool - self.get_recent_maps(player1, player2)
 
     def startGame(self, player1, player2):
         gameName = str(player1.getLogin() + " Vs " + player2.getLogin())
@@ -155,7 +173,7 @@ class Ladder1V1GamesContainer(GamesContainer):
 
         map_pool = self.choose_ladder_map_pool(player1, player2)
 
-        mapChosen = random.choice(map_pool)
+        mapChosen = random.choice(tuple(map_pool))
         map = self.getMapName(mapChosen)
 
         ngame = ladder1V1Game(gameUuid, self)

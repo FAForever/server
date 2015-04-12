@@ -9,17 +9,17 @@ from server.players import Player
 
 @pytest.fixture()
 def popular_maps():
-    return [1, 5, 10, 12, 15]
+    return {1, 5, 10, 12, 15}
 
 
 @pytest.fixture()
 def player1_maps():
-    return [1, 3, 5, 7, 8]
+    return {1, 3, 5, 6, 7, 8}
 
 
 @pytest.fixture()
 def player2_maps():
-    return [2, 4, 6, 9]
+    return {2, 4, 6, 9}
 
 
 def playerMock(lobbythread, id):
@@ -50,6 +50,7 @@ def ladder_setup(player1, player2, player1_maps, player2_maps, popular_maps):
         'player2': player2,
         'player1_maps': player1_maps,
         'player2_maps': player2_maps,
+        'recently_played': {1, 4, 6, 8, 10},
         'popular_maps': popular_maps
     }
 
