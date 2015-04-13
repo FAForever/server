@@ -3,7 +3,6 @@ from asyncio import Transport
 
 import ujson
 
-from PySide.QtNetwork import QTcpSocket
 import mock
 import pytest
 
@@ -18,7 +17,6 @@ slow = pytest.mark.slow
 def test_on_new_connections_valid_socket(game_connection):
     """
     :type game_connection: GameConnection
-    :type connected_game_socket QTcpSocket
     """
     assert game_connection.on_connection_made(('127.0.0.1', 5123)) is True
 
