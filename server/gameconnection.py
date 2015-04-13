@@ -510,14 +510,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                0: The game uses lobby.lua
         :return: None
         """
-        if self.game is None:
-            text = "You were unable to connect to the host because he has left the game."
-            self.lobby.sendJSON(dict(command="notice",
-                                     style="info",
-                                     text=str(text)))
-            self.abort()
-            return
-
+        assert self.game is not None
         if self.game.name is not None:
             if self.game.name.startswith('#'):
                 self.sendToRelay("P2PReconnect", [])
