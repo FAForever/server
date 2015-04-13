@@ -17,6 +17,7 @@
 # -------------------------------------------------------------------------------
 
 import asyncio
+from concurrent.futures import CancelledError
 from socket import socket
 import time
 import json
@@ -147,11 +148,16 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
         """
         while True:
             if time.time() - self.last_pong > 30:
-                self.log.debug("{} Missed ping - removing player {}"
-                               .format(self.logGame, self._socket.peerAddress().toString()))
+                self._logger.debug('Missed ping, terminating')
                 self.abort()
+                break
             self.send_Ping()
-            yield from asyncio.sleep(20)
+            try:
+                yield from asyncio.sleep(20)
+            # quamash will yield a runtime error if the qtimer was already deleted
+            # asyncio yields a cancelled error which we use to break the loop
+            except (RuntimeError, CancelledError):
+                break
 
     def _handle_idle_state(self):
         """

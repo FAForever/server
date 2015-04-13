@@ -65,7 +65,6 @@ def test_abort(game_connection, players, connected_game_socket):
     game_connection.player = players.hosting
     game_connection.socket = connected_game_socket
     game_connection.abort()
-    connected_game_socket.abort.assert_any_call()
     players.hosting.lobby_connection.sendJSON.assert_called_with(
         dict(command='notice',
              style='kill')

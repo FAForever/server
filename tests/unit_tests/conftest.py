@@ -15,13 +15,15 @@ def lobbythread():
 
 
 @pytest.fixture
-def game_connection(game, loop, player_service, players, games, transport, connected_game_socket):
+def game_connection(request, game, loop, player_service, players, games, transport, connected_game_socket):
     conn = GameConnection(loop=loop, users=player_service, games=games, db=None)
-    conn._socket = connected_game_socket
     conn._transport = transport
     conn.player = players.hosting
     conn.game = game
-    game_connection.lobby = mock.Mock(spec=LobbyConnection)
+    conn.lobby = mock.Mock(spec=LobbyConnection)
+    def fin():
+        conn.abort()
+    request.addfinalizer(fin)
     return conn
 
 
