@@ -16,6 +16,6 @@ def run_game_server(address, player_service, games, db):
         gc = GameConnection(loop, player_service, games, db)
         nat_packet_server.subscribe(gc, ['ProcessServerNatPacket'])
         return gc
-
-    return nat_packet_server, loop.create_server(initialize_connection,
-                                                address[0], address[1])
+    server_fut = asyncio.async(loop.create_server(initialize_connection,
+                                                  address[0], address[1]))
+    return nat_packet_server, server_fut

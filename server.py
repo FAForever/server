@@ -55,7 +55,6 @@ if __name__ == '__main__':
                                         default='QMYSQL')
             args = parser.parse_args()
 
-
             self.rootlogger = logging.getLogger("")
             self.logHandler = handlers.RotatingFileHandler(config.LOG_PATH + "server.log", backupCount=1024, maxBytes=16777216)
             self.logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
