@@ -248,7 +248,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
             message["arguments"] = message['chuncks']
             self.notify(message)
             asyncio.async(self.handle_action(message["action"], message["chuncks"]))
-        except ValueError as ex:
+        except ValueError as ex:  # pragma: no cover
             self.log.error("Garbage JSON {} {}".format(ex, message))
 
     def handle_ProcessServerNatPacket(self, arguments):
@@ -533,10 +533,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                 self.log.debug(self.logGame + "Maximum proxies used")  # pragma: no cover
         except Exception as e:  # pragma: no cover
             self.log.exception(e)
-
-
-    def sendMessage(self, m):
-        self.lobby.sendJSON(dict(command="notice", style="scores", text=str(m)))
 
     def sendGameInfo(self):
         self.games.mark_dirty(self.game.uuid)
