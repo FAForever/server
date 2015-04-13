@@ -1,10 +1,10 @@
 from asyncio import coroutine, sleep
 import asyncio
-import json
 import time
 
 from mock import call
 import pytest
+import ujson
 import config
 
 from server import run_game_server
@@ -41,7 +41,7 @@ def test_public_host(loop, players, player_service, games, db):
         client.proto.send_ProcessNatPacket(["%s:%s" % (player.getIp(), player.gamePort),
                                       "Are you public? %s" % player.id])
         yield from wait_call(client.messages,
-                    call(json.dumps({"key": "ConnectivityState",
+                    call(ujson.dumps({"key": "ConnectivityState",
                     "commands": [player.id, "PUBLIC"]})), 2)
     server.close()
     nat_server.close()
@@ -59,14 +59,14 @@ def test_stun_host(loop, qtbot, players, player_service, games, db):
         client.proto.send_GameState(['Idle'])
         client.proto.send_GameState(['Lobby'])
         yield from wait_call(client.messages,
-                      call(json.dumps({"key": "SendNatPacket",
+                      call(ujson.dumps({"key": "SendNatPacket",
                             "commands": ["%s:%s" % (config.LOBBY_IP, config.LOBBY_UDP_PORT),
                                          "Hello %s" % player.id]})), 2)
 #
         client.send_udp_natpacket('Hello {}'.format(player.id), '127.0.0.1', config.LOBBY_UDP_PORT)
 #
         yield from wait_call(client.messages,
-                      call(json.dumps({"key": "ConnectivityState",
+                      call(ujson.dumps({"key": "ConnectivityState",
                                        "commands": [player.id, "STUN"]})), 2)
     server.close()
     nat_server.close()

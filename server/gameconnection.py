@@ -20,11 +20,11 @@ import asyncio
 from concurrent.futures import CancelledError
 from socket import socket
 import time
-import json
 import logging
 import functools
 
 from PySide.QtSql import *
+import ujson
 import config
 
 from server.abc.base_game import GameConnectionState
@@ -251,7 +251,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
         This function was created when the FA protocol was moved to the lobby itself
         """
         try:
-            message = json.loads(message)
+            message = ujson.loads(message)
             message["command_id"] = message['action']
             message["arguments"] = message['chuncks']
             self.notify(message)
@@ -565,7 +565,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
             if self.game.proxy.unmap(self.player.login):
                 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 s.connect(PROXY_SERVER)
-                s.sendall(json.dumps(dict(command="cleanup", sourceip=self.player.ip)))
+                s.sendall(ujson.dumps(dict(command="cleanup", sourceip=self.player.ip)))
                 s.close()
             if self.connectivity_state.result() == Connectivity.PROXY:
                 wiki_link = "{}index.php?title=Connection_issues_and_solutions".format(config.WIKI_LINK)

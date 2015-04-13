@@ -1,7 +1,7 @@
 import asyncio
 from asyncio import Transport
 
-import json
+import ujson
 
 from PySide.QtNetwork import QTcpSocket
 import mock
@@ -63,7 +63,7 @@ def test_ping_hit(game_connection):
     asyncio.async(game_connection.ping())
     yield from asyncio.sleep(0.1)
 
-    game_connection.send_message.assert_any_call(json.dumps({
+    game_connection.send_message.assert_any_call(ujson.dumps({
         'key': 'ping',
         'commands': []
     }))
@@ -118,7 +118,7 @@ def test_handle_action_GameState_idle_as_peer_sends_CreateLobby(game_connection,
 
     yield from game_connection.handle_action('GameState', ['Idle'])
 
-    game_connection.send_message.assert_any_call(json.dumps({'key': 'CreateLobby',
+    game_connection.send_message.assert_any_call(ujson.dumps({'key': 'CreateLobby',
                                                             'commands': [0, players.joining.gamePort,
                                                              players.joining.login,
                                                              players.joining.id,
@@ -135,7 +135,7 @@ def test_handle_action_GameState_idle_as_host_sends_CreateLobby(game_connection,
 
     yield from game_connection.handle_action('GameState', ['Idle'])
 
-    game_connection.send_message.assert_any_call(json.dumps({'key': 'CreateLobby',
+    game_connection.send_message.assert_any_call(ujson.dumps({'key': 'CreateLobby',
                                             'commands': [0, players.hosting.gamePort,
                                                          players.hosting.login,
                                                          players.hosting.id,
@@ -159,7 +159,7 @@ def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, pla
         result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
         loop.run_until_complete(result)
 
-        game_connection.send_message.assert_any_call(json.dumps({'key': 'HostGame',
+        game_connection.send_message.assert_any_call(ujson.dumps({'key': 'HostGame',
                                                       'commands': [game.mapName]}))
 
 
@@ -239,7 +239,7 @@ def test_on_connection_lost_proxy_cleanup(game_connection, players):
     with mock.patch('server.gameconnection.socket') as socket:
         game_connection.on_connection_lost(None)
 
-        socket.socket().sendall.assert_called_with(json.dumps(dict(command='cleanup', sourceip=players.hosting.ip)))
+        socket.socket().sendall.assert_called_with(ujson.dumps(dict(command='cleanup', sourceip=players.hosting.ip)))
 
 
 

@@ -1,3 +1,4 @@
+ujson
 trueskill
 mock
 pytest
