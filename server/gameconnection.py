@@ -193,11 +193,11 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
         Abort the connection, calling doEnd() first
         :return:
         """
-        if self._state is GameConnectionState.ABORTED or self._state is GameConnectionState.ENDED:
-            return
-        self._state = GameConnectionState.ABORTED
-        self.log.debug("{}.abort()".format(self))
         try:
+            if self._state is GameConnectionState.ABORTED or self._state is GameConnectionState.ENDED:
+                return
+            self._state = GameConnectionState.ABORTED
+            self.log.debug("{}.abort()".format(self))
             self.doEnd()
             if self.player.lobby_connection:
                 self.player.lobby_connection.sendJSON(dict(command="notice", style="kill"))
