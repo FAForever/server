@@ -94,6 +94,14 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
     def game(self, value):
         self._game = value
 
+    @property
+    def player(self):
+        return self._player
+
+    @player.setter
+    def player(self, val):
+        self._player = val
+
     def on_connection_made(self, peer_name):
         """
         Accept a connected socket for this GameConnection
@@ -136,9 +144,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
         self._state = GameConnectionState.INITIALIZED
         return True
 
-    def sendToRelay(self, action, commands):
+    def send_gpgnet_message(self, action, commands):
         message = {"key": action, "commands": commands}
-        self.send_message(json.dumps(message))
+        self.send_message(ujson.dumps(message))
 
     @asyncio.coroutine
     def ping(self):
@@ -225,7 +233,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                       self.player.gamePort,
                       self.player.id) as peer_test:
             self._connectivity_state = yield from peer_test.determine_connectivity()
-            self.sendToRelay('ConnectivityState', [self.player.getId(),
+            self.send_gpgnet_message('ConnectivityState', [self.player.getId(),
                                                    self._connectivity_state.value])
 
         playeraction = self.player.action
@@ -505,7 +513,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
         assert self.game is not None
         if self.game.name is not None:
             if self.game.name.startswith('#'):
-                self.sendToRelay("P2PReconnect", [])
+                self.send_gpgnet_message("P2PReconnect", [])
 
         self.send_CreateLobby(self.game.init_mode,
                               self.player.gamePort,
@@ -517,7 +525,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
             numProxy = self.game.proxy.map(self.player.login, peer.player.login)
 
             if numProxy is not None:
-                self.sendToRelay("DisconnectFromPeer", int(peer.player.id))
+                self.send_gpgnet_message("DisconnectFromPeer", int(peer.player.id))
                 self.send_ConnectToProxy(numProxy, peer.player.getIp(), str(peer.player.login), int(peer.player.id))
 
                 if self.game:
@@ -577,17 +585,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
 
     def address_and_port(self):
         return "{}:{}".format(self.player.getIp(), self.player.gamePort)
-
-    def send_gpgnet_message(self, command_id, arguments):
-        self.sendToRelay(command_id, arguments)
-
-    @property
-    def player(self):
-        return self._player
-
-    @player.setter
-    def player(self, val):
-        self._player = val
 
     def __str__(self):
         return "GameConnection(Player({}),Game({}))".format(self.player, self.game)

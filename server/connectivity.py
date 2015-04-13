@@ -144,7 +144,7 @@ class TestPeer():
     def test_stun(self):
         self._logger.debug("Testing STUN")
         for i in range(0, 3):
-            self.connection.sendToRelay('SendNatPacket', ["%s:%s" % (config.LOBBY_IP,
+            self.connection.send_gpgnet_message('SendNatPacket', ["%s:%s" % (config.LOBBY_IP,
                                                                      config.LOBBY_UDP_PORT),
                                                           "Hello %s" % self.identifier])
             if self.received_server_packet():
