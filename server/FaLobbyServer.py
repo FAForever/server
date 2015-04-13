@@ -29,7 +29,6 @@ from server.games_service import GamesService
 
 logger = logging.getLogger(__name__)
 
-import teams
 
 @with_logger
 class FALobbyServer(QtNetwork.QTcpServer):
@@ -39,7 +38,6 @@ class FALobbyServer(QtNetwork.QTcpServer):
         self.parent = parent
         self._logger.debug("Starting lobby server")
 
-        self.teams = teams.Teams(self)
 
         self.listUsers = listUsers
         self.games = games

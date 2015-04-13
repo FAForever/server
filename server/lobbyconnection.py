@@ -1034,88 +1034,9 @@ Thanks,\n\
 
         self.ladderMapList = maplist
 
-
-    def command_quit_team(self, message):
-        """We want to quit our team"""
-        #inform all members
-        leader = self.parent.teams.getSquadLeader(self.player.getLogin())
-        if not leader:
-            return
-        members = self.parent.teams.getAllMembers(leader)
-
-        if leader == self.player.getLogin():
-            self.parent.teams.disbandSquad(leader)
-
-            for member in members:
-                player = self.parent.listUsers.findByName(member)
-                if player:
-                    player.lobbyThread.sendJSON(dict(command="team_info", leader="", members=[]))
-
-        else:
-            self.parent.teams.removeFromSquad(leader, self.player.getLogin())
-
-            newmembers = self.parent.teams.getAllMembers(leader)
-
-            if len(newmembers) == 1:
-                self.parent.teams.disbandSquad(leader)
-                return
-
-            for member in newmembers:
-
-                player = self.parent.listUsers.findByName(member)
-                if player:
-                    player.lobbyThread.sendJSON(dict(command="team_info", leader=leader, members=newmembers))
-
-
-    def command_accept_team_proposal(self, message):
-        """we have accepted a team proposal"""
-        leader = message["leader"]
-
-        # first, check if the leader is in a squad...
-        if not self.parent.teams.isInSquad(leader):
-            self.sendJSON(dict(command="notice", style="info",
-                               text="Leader is not in a squad."))
-            return
-        # if so, check if he is the leader already
-        if not self.parent.teams.isLeader(leader):
-            self.sendJSON(dict(command="notice", style="info",
-                               text="Squad not found. Wrong Loeader."))
-            return
-
-        squadMembers = self.parent.teams.getAllMembers(leader)
-        # check if the squad has place left
-        if len(squadMembers) >= 4:
-            self.sendJSON(dict(command="notice", style="info", text="Sorry, the team is full."))
-            return
-
-        if self.parent.teams.addInSquad(leader, self.player.getLogin()):
-
-            # success, we can inform all the squad members
-            members = self.parent.teams.getAllMembers(leader)
-            for member in members:
-                player = self.parent.listUsers.findByName(member)
-                if player:
-                    player.lobbyThread.sendJSON(dict(command="team_info", leader=leader, members=members))
-        else:
-            self.sendJSON(dict(command="notice", style="info",
-                               text="Sorry, you cannot join the squad."))
-
     @timed()
     def command_social(self, message):
         success = False
-        if "teaminvite" in message:
-            who = message['teaminvite']
-            player = self.parent.listUsers.findByName(who)
-            if player:
-                if self.parent.teams.isInSquad(self.player.getLogin()):
-                    self.sendJSON(dict(command="notice", style="info", text="The player is already in a team."))
-                    return
-                if player.getLogin() != self.player.getLogin():
-                    player.lobbyThread.sendJSON(
-                        dict(command="team", action="teaminvitation", who=self.player.getLogin()))
-
-            success = True
-
         if "friends" in message:
             friendlist = message['friends']
             toAdd = set(friendlist) - set(self.friendList)
@@ -2093,71 +2014,6 @@ Thanks,\n\
                     rate = message['rate']
                     self.player.expandLadder = rate
                     container.searchForMatchup(self.player)
-
-            if mod == "matchmaker":
-                if state == "faction":
-                    self.player.faction = message["factionchosen"]
-
-                elif state == "port":
-                    port = message["port"]
-                    self.player.setGamePort(port)
-
-                elif state == "askingtostart":
-                    players = message["players"]
-                    port = message["port"]
-                    self.player.setGamePort(port)
-                    if self.parent.teams.isInSquad(self.player.getLogin()):
-                        if not self.parent.teams.isLeader(self.player.getLogin()):
-                            self.sendJSON(
-                                dict(command="notice", style="error", text="Only the team leader can start searching."))
-                            return
-                        members = self.parent.teams.getAllMembers(self.player.getLogin())
-                        if len(members) > players:
-                            self.sendJSON(dict(command="notice", style="error",
-                                               text="Too many players in your team for a %ivs%i game." % (
-                                                   players, players)))
-                            return
-                        onlinePlayers = []
-                        anyoneOffline = False
-                        for member in members:
-                            player = self.parent.listUsers.findByName(member)
-                            if player:
-                                player.lobbyThread.sendJSON(
-                                    dict(command="matchmaker_info", action="startSearching", players=players))
-                                onlinePlayers.append(player)
-
-                            else:
-                                self.parent.teams.removeFromSquad(self.player.getLogin(), member)
-                                anyoneOffline = True
-
-                        if anyoneOffline:
-                            for player in onlinePlayers:
-                                player.lobbyThread.sendJSON(
-                                    dict(command="team_info", leader=self.player.getLogin(), members=onlinePlayers))
-
-                        container.addPlayers(players, onlinePlayers)
-
-                    else:
-                        self.sendJSON(dict(command="matchmaker_info", action="startSearching", players=players))
-                        container.addPlayers(players, [self.player])
-
-                if state == "askingtostop":
-                    if self.parent.teams.isInSquad(self.player.getLogin()):
-                        if not self.parent.teams.isLeader(self.player.getLogin()):
-                            self.sendJSON(
-                                dict(command="notice", style="error", text="Only the team leader can stop searching."))
-                            return
-                        members = self.parent.teams.getAllMembers(self.player.getLogin())
-                        for member in members:
-                            player = self.parent.listUsers.findByName(member)
-                            if player:
-                                player.lobbyThread.sendJSON(
-                                    dict(command="matchmaker_info", action="stopSearching"))
-
-
-                    else:
-                        self.sendJSON(dict(command="matchmaker_info", action="stopSearching"))
-
 
     def addPotentialPlayer(self, player):
         if player in self.ladderPotentialPlayers:

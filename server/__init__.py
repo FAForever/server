@@ -8,6 +8,7 @@ import config
 def run_game_server(address, player_service, games, db):
     """
     Start the game server
+    :param address: (host, port) tuple
     """
     loop = asyncio.get_event_loop()
     nat_packet_server = NatPacketServer(loop, config.LOBBY_UDP_PORT)
