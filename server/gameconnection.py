@@ -70,8 +70,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
 
         self.last_pong = time.time()
 
-        self.player = None
-        self._socket = None
+        self._player = None
         self.lobby = None
         self._transport = None
         self.nat_packets = {}
@@ -108,7 +107,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
 
         self.lobby = None
         ip, port = peer_name
-        self.player = self.users.findByIp(ip)
+        self._player = self.users.findByIp(ip)
         self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, ip, port))
 
         if self.player is None:
@@ -200,13 +199,12 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
             self.log.debug("Exception in abort(): {}".format(ex))
             pass
         finally:
-            if self._socket is not None:
-                self._socket.abort()
             if self.ping_task is not None:
                 self.ping_task.cancel()
-            del self._socket
-            del self._player
-            del self._game
+            if hasattr(self, '_player'):
+                del self._player
+            if hasattr(self, '_game'):
+                del self._game
 
 
     @asyncio.coroutine
