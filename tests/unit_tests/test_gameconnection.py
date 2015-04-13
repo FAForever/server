@@ -45,13 +45,6 @@ def test_on_connection_made_no_game(game_connection, players):
 
     game_connection.abort.assert_any_call()
 
-
-def test_test_doEnd(game_connection, game):
-    game_connection.doEnd()
-
-    game.remove_game_connection.assert_called_with(game_connection)
-
-
 @asyncio.coroutine
 def test_ping_miss(game_connection):
     game_connection.abort = mock.Mock()
@@ -80,12 +73,14 @@ def test_ping_hit(game_connection):
     assert game_connection.abort.mock_calls == []
 
 
-def test_abort(game_connection, players, connected_game_socket):
+def test_abort(game_connection, game, players, connected_game_socket):
     game_connection.player = players.hosting
+    game_connection.game = game
     game_connection.socket = connected_game_socket
 
     game_connection.abort()
 
+    game.remove_game_connection.assert_called_with(game_connection)
     players.hosting.lobby_connection.sendJSON.assert_called_with(
         dict(command='notice',
              style='kill')

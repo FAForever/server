@@ -8,7 +8,6 @@ class GameConnectionState(Enum):
     INITIALIZED = 1
     CONNECTED_TO_HOST = 2
     ENDED = 3
-    ABORTED = 4
 
 
 class InitMode(IntEnum):

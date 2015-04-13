@@ -189,15 +189,15 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
 
     def abort(self):
         """
-        Abort the connection, calling doEnd() first
+        Abort the connection
         :return:
         """
         try:
-            if self._state is GameConnectionState.ABORTED or self._state is GameConnectionState.ENDED:
+            if self._state is GameConnectionState.ENDED:
                 return
-            self._state = GameConnectionState.ABORTED
+            self._state = GameConnectionState.ENDED
+            self.game.remove_game_connection(self)
             self.log.debug("{}.abort()".format(self))
-            self.doEnd()
             if self.player.lobby_connection:
                 self.player.lobby_connection.sendJSON(dict(command="notice", style="kill"))
         except Exception as ex:  # pragma: no cover
@@ -493,14 +493,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                     if player.global_rating.mu < -1000 or \
                        player.ladder_rating.mu < -1000:
                         self.game.setInvalid("You are playing with a smurfer.")
-
-    def doEnd(self):
-        """ bybye player :("""
-        self.game.remove_game_connection(self)
-        if self._state is GameConnectionState.ENDED:
-            return
-        else:
-            self._state = GameConnectionState.ENDED
 
     def _send_create_lobby(self):
         """
