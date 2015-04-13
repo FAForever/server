@@ -156,7 +156,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                 yield from asyncio.sleep(20)
             # quamash will yield a runtime error if the qtimer was already deleted
             # asyncio yields a cancelled error which we use to break the loop
-            except (RuntimeError, CancelledError):
+            except (RuntimeError, CancelledError):  # pragma: no cover
                 break
 
     def _handle_idle_state(self):
@@ -201,7 +201,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
             self.doEnd()
             if self.player.lobby_connection:
                 self.player.lobby_connection.sendJSON(dict(command="notice", style="kill"))
-        except Exception as ex:
+        except Exception as ex:  # pragma: no cover
             self.log.debug("Exception in abort(): {}".format(ex))
             pass
         finally:
@@ -346,41 +346,12 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
         """
         self.log.debug("handle_action %s:%s" % (key, values))
         try:
-            if key == 'ping':
-                return
-
-            elif key == 'Disconnected':
-                return
-
-            elif key == 'pong':
+            if key == 'pong':
                 self.last_pong = time.time()
                 return
 
-            elif key == 'Connected':
-                # This message is deprecated, since we tell players to connect to all peers at once
-                pass  # pragma: no cover
-
-            elif key == 'ConnectedToHost':
-                # This message is deprecated, since we tell players to connect to all peers at once
-                pass  # pragma: no cover
-
-            elif key == 'Score':
-                pass
-
-            elif key == 'Bottleneck':
-                # TODO: Use this for p2p reconnect
-                pass
-
-            elif key == 'BottleneckCleared':
-                # TODO: Use this for p2p reconnect
-                pass
-
             elif key == 'Desync':
                 self.game.desyncs += 1
-
-            elif key == 'ProcessNatPacket':
-                # This is handled by subscription listeners
-                pass
 
             elif key == 'GameState':
                 state = values[0]
@@ -436,20 +407,12 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                 try:
                     if not any(map(functools.partial(str.startswith, result),
                             ['score', 'default', 'victory', 'draw'])):
-                        raise ValueError()
+                        raise ValueError()  # pragma: no cover
                     result = result.split(' ')
                     self.game.add_result(self.player, army, result[0], int(result[1]))
-                except (KeyError, ValueError):
+                except (KeyError, ValueError):  # pragma: no cover
                     self.log.warn("Invalid result for {} reported: {}".format(army, result))
                     pass
-
-            elif key == 'Stats':
-                # TODO: Log these
-                pass
-
-            elif key == 'Chat':
-                # TODO: Send this to IRC for the game?
-                pass
 
             elif key == 'OperationComplete':
                 mission = -1
@@ -476,22 +439,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                         self.log.warning(self.logGame + str(query.lastError()))
                         self.log.warning(self.logGame + query.executedQuery())
 
-            elif key == 'ArmyCalled':
-                # this is for Galactic War!
-                playerResult = self.game.getPlayerAtPosition(int(values[0]))
-                if playerResult is not None:
-                    group = values[1]
-                    query = QSqlQuery(self.db)
-                    query.prepare(
-                        "DELETE FROM `galacticwar`.`reinforcements_groups` WHERE `userId` = (SELECT id FROM `faf_lobby`.`login` WHERE login.login = ?) AND `group` = ?")
-                    query.addBindValue(playerResult)
-                    query.addBindValue(group)
-                    if query.exec_():
-                        self.game.deleteGroup(group, playerResult)
-
             else:
                 pass
-        except:
+        except Exception as e:  # pragma: no cover
+            self.log.exception(e)
             self.log.exception(self.logGame + "Something awful happened in a game thread!")
             self.abort()
 
@@ -519,11 +470,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
 
         elif state == 'Launching':
             # game launch, the user is playing !
-            if self.player.getAction() == "HOST":
+            if self.player.action == "HOST":
                 self.game.launch()
-
-                for player in self.game.players:
-                    player.setAction("PLAYING")
 
                 self.sendGameInfo()
 

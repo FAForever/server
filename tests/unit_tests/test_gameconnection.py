@@ -23,17 +23,32 @@ def test_on_new_connections_valid_socket(game_connection):
     assert game_connection.on_connection_made(('127.0.0.1', 5123)) is True
 
 
-def test_on_new_connection_no_player_aborts(game_connection):
+def test_on_connection_made_no_player(game_connection):
     mock_users = mock.Mock()
     mock_users.findByIp = mock.Mock(return_value=None)
     game_connection.users = mock_users
     game_connection.abort = mock.Mock()
+
     game_connection.on_connection_made(('127.0.0.1', 5123))
+
+    game_connection.abort.assert_any_call()
+
+
+def test_on_connection_made_no_game(game_connection, players):
+    mock_users = mock.Mock()
+    mock_users.findByIp = mock.Mock(return_value=players.hosting)
+    players.hosting.game = None
+    game_connection.users = mock_users
+    game_connection.abort = mock.Mock()
+
+    game_connection.on_connection_made(('127.0.0.1', 5123))
+
     game_connection.abort.assert_any_call()
 
 
 def test_test_doEnd(game_connection, game):
     game_connection.doEnd()
+
     game.remove_game_connection.assert_called_with(game_connection)
 
 
@@ -41,16 +56,20 @@ def test_test_doEnd(game_connection, game):
 def test_ping_miss(game_connection):
     game_connection.abort = mock.Mock()
     game_connection.last_pong = 0
+
     asyncio.async(game_connection.ping())
     yield from asyncio.sleep(0.1)
+
     game_connection.abort.assert_any_call()
 
 @asyncio.coroutine
 def test_ping_hit(game_connection):
     game_connection.abort = mock.Mock()
     game_connection.send_message = mock.Mock()
+
     asyncio.async(game_connection.ping())
     yield from asyncio.sleep(0.1)
+
     game_connection.send_message.assert_any_call(json.dumps({
         'key': 'ping',
         'commands': []
@@ -64,7 +83,9 @@ def test_ping_hit(game_connection):
 def test_abort(game_connection, players, connected_game_socket):
     game_connection.player = players.hosting
     game_connection.socket = connected_game_socket
+
     game_connection.abort()
+
     players.hosting.lobby_connection.sendJSON.assert_called_with(
         dict(command='notice',
              style='kill')
@@ -75,7 +96,9 @@ def test_handle_action_GameState_idle_adds_connection(game_connection, players, 
     players.joining.game = game
     game_connection.player = players.hosting
     game_connection.game = game
+
     yield from game_connection.handle_action('GameState', ['Idle'])
+
     game.add_game_connection.assert_called_with(game_connection)
 
 @asyncio.coroutine
@@ -84,7 +107,9 @@ def test_handle_action_GameState_idle_non_searching_player(game_connection, play
     game_connection.lobby = mock.Mock()
     game_connection.abort = mock.Mock()
     players.hosting.action = None
+
     yield from game_connection.handle_action('GameState', ['Idle'])
+
     game_connection.abort.assert_any_call()
 
 @asyncio.coroutine
@@ -95,7 +120,9 @@ def test_handle_action_GameState_idle_as_peer_sends_CreateLobby(game_connection,
     """
     game_connection.send_message = mock.Mock()
     game_connection.player = players.joining
+
     yield from game_connection.handle_action('GameState', ['Idle'])
+
     game_connection.send_message.assert_any_call(json.dumps({'key': 'CreateLobby',
                                                             'commands': [0, players.joining.gamePort,
                                                              players.joining.login,
@@ -110,7 +137,9 @@ def test_handle_action_GameState_idle_as_host_sends_CreateLobby(game_connection,
     """
     game_connection.send_message = mock.Mock()
     game_connection.player = players.hosting
+
     yield from game_connection.handle_action('GameState', ['Idle'])
+
     game_connection.send_message.assert_any_call(json.dumps({'key': 'CreateLobby',
                                             'commands': [0, players.hosting.gamePort,
                                                          players.hosting.login,
@@ -119,7 +148,7 @@ def test_handle_action_GameState_idle_as_host_sends_CreateLobby(game_connection,
 
 
 @slow
-def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, players, game, transport):
+def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, players, game):
     """
     :type game_connection: GameConnection
     :type transport Transport
@@ -137,6 +166,41 @@ def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, pla
 
         game_connection.send_message.assert_any_call(json.dumps({'key': 'HostGame',
                                                       'commands': [game.mapName]}))
+
+
+def test_handle_action_GameState_lobby_calls_ConnectToHost(game_connection, loop, players, game):
+    """
+    :type game_connection: GameConnection
+    :type transport Transport
+    """
+    with mock.patch('server.gameconnection.TestPeer') as peer_test:
+        fut = asyncio.Future()
+        fut.set_result(Connectivity.PUBLIC)
+        peer_test().__enter__().determine_connectivity.return_value = fut
+        game_connection.send_message = mock.MagicMock()
+        game_connection.ConnectToHost = mock.Mock()
+        game_connection.player = players.joining
+        players.joining.game = game
+        game.hostPlayer = players.hosting
+        game.mapName = 'some_map'
+
+        result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
+        loop.run_until_complete(result)
+
+        game_connection.ConnectToHost.assert_called_with(players.hosting.game_connection)
+
+def test_handle_action_GameState_launching_calls_launch(game_connection, loop, players, game):
+    """
+    :type game_connection: GameConnection
+    :type transport Transport
+    """
+    game_connection.player = players.hosting
+    game_connection.game = game
+
+    result = asyncio.async(game_connection.handle_action('GameState', ['Launching']))
+    loop.run_until_complete(result)
+
+    game.launch.assert_any_call()
 
 
 def test_handle_action_PlayerOption(game, loop, game_connection):

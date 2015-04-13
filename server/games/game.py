@@ -386,6 +386,8 @@ class Game(BaseGame):
         self.on_game_launched()
 
     def on_game_launched(self):
+        for player in self.players:
+            player.action = 'PLAYING'
         self.update_ratings()
         self.update_game_stats()
         self.update_game_player_stats()
