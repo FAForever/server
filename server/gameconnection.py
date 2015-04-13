@@ -585,24 +585,11 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
 
                 self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
             self.player.game = None
-        except:
+        except Exception as e:  # pragma: no cover
+            self._logger.exception(e)
             pass
         finally:
             self.abort()
-
-    def on_socket_state_change(self, socketState):
-        self.log.debug("State changed to {}".format(socketState))
-
-    def on_error(self, socketError):
-        if socketError == QtNetwork.QAbstractSocket.RemoteHostClosedError:
-            self.log.debug("RemoteHostClosedError")
-        elif socketError == QtNetwork.QAbstractSocket.HostNotFoundError:
-            self.log.debug("HostNotFoundError")
-        elif socketError == QtNetwork.QAbstractSocket.ConnectionRefusedError:
-            self.log.debug("ConnectionRefusedError")
-        else:
-            self.log.debug("The following error occurred: %s." % self._socket.errorString())
-        self.abort()
 
     def connectivity_state(self):
         return self._connectivity_state

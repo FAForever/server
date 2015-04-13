@@ -234,6 +234,20 @@ def test_handle_action_GameResult_calls_add_result(game, loop, game_connection):
     game.add_result.assert_called_once_with(game_connection.player, 0, 'score', -5)
 
 
+def test_on_connection_lost_proxy_cleanup(game_connection, players):
+    game_connection.game = mock.Mock()
+    game_connection.game.proxy = mock.Mock()
+    game_connection.game.proxy.unmap.return_value = True
+    game_connection.player = players.hosting
+    game_connection.connectivity_state.set_result(Connectivity.PROXY)
+
+    with mock.patch('server.gameconnection.socket') as socket:
+        game_connection.on_connection_lost(None)
+
+        socket.socket().sendall.assert_called_with(json.dumps(dict(command='cleanup', sourceip=players.hosting.ip)))
+
+
+
 @asyncio.coroutine
 def test_ConnectToHost_public_public(connections, players):
     host_conn = connections.make_connection(players.hosting, Connectivity.PUBLIC)
