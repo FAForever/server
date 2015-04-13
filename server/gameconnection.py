@@ -81,6 +81,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
 
     @property
     def state(self):
+        """
+        :rtype: GameConnectionState
+        """
         return self._state
 
     @property
@@ -198,7 +201,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
     def abort(self):
         """
         Abort the connection
-        :return:
+
+        Removes the GameConnection object from the any associated Game object,
+        and deletes references to Player and Game held by this object.
         """
         try:
             if self._state is GameConnectionState.ENDED:
