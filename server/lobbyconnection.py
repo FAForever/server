@@ -2248,10 +2248,9 @@ Thanks,\n\
 
         self.noSocket = True
         if self.player:
-            self.command_quit_team(dict(command="quit_team"))
-
             for player in self.parent.listUsers.players:
-                player.lobbyThread.removePotentialPlayer(self.player.getLogin())
+                if player.lobbyThread:
+                    player.lobbyThread.removePotentialPlayer(self.player.getLogin())
             self.checkOldGamesFromPlayer()
             self.parent.listUsers.removeUser(self.player)
 
