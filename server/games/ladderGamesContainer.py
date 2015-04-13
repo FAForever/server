@@ -124,21 +124,21 @@ class Ladder1V1GamesContainer(GamesContainer):
     def get_recent_maps(self, player1, player2, count=5):
         """
         Find the `count` most recently played maps from players
-        :param players: iterable of Player objects
-        :return:
         """
         query = QSqlQuery()
-        query.prepare('SELECT game_stats.mapId FROM game_player_stats '
+        query.prepare('(SELECT game_stats.mapId FROM game_player_stats '
                       'INNER JOIN game_stats on game_stats.id = game_player_stats.gameId '
                       'WHERE game_player_stats.playerId = ? '
-                      'ORDER BY gameId DESC LIMIT 5 '
+                      'ORDER BY gameId DESC LIMIT ?) '
                       'UNION DISTINCT '
-                      'SELECT game_stats.mapId FROM game_player_stats '
+                      '(SELECT game_stats.mapId FROM game_player_stats '
                       'INNER JOIN game_stats on game_stats.id = game_player_stats.gameId '
                       'WHERE game_player_stats.playerId = ? '
-                      'ORDER BY gameID DESC LIMIT 5')
+                      'ORDER BY gameID DESC LIMIT ?)')
         query.addBindValue(player1.id)
+        query.addBindValue(count)
         query.addBindValue(player2.id)
+        query.addBindValue(count)
         query.exec_()
         maps = set()
         while query.next():
@@ -155,11 +155,15 @@ class Ladder1V1GamesContainer(GamesContainer):
         pool = potential_maps[0] & potential_maps[1]
 
         if len(pool) < 15:
-            expansion_pool = random.choice(potential_maps)
+            expansion_pool = random.choice(potential_maps) - pool
             pool |= set(random.sample(expansion_pool, min(len(expansion_pool), 15 - len(pool))))
 
         if len(pool) < 15:
-            pool |= set(random.sample(potential_maps[2], min(len(potential_maps[2]), 15 - len(pool))))
+            expansion_pool = potential_maps[2] - pool
+            pool |= set(random.sample(expansion_pool, min(len(expansion_pool), 15 - len(pool))))
+
+        # Invariant: len(pool) >= 15, given that any potential pool has 15 or more
+        # Since we select from top 50 popular maps, this should hold
 
         return pool - self.get_recent_maps(player1, player2)
 
