@@ -19,3 +19,8 @@ logging.getLogger('quamash').setLevel(logging.INFO)
 logging.getLogger().setLevel(logging.DEBUG)
 
 trueskill.setup(mu=1500, sigma=500, beta=250, tau=5, draw_probability=0.10)
+
+try:
+    WIKI_LINK = Config['global']['wiki_url']
+except KeyError:
+    WIKI_LINK = 'http://wiki.faforever.com'

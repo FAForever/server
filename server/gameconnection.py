@@ -24,8 +24,8 @@ import json
 import logging
 import functools
 
-from PySide import QtNetwork
 from PySide.QtSql import *
+import config
 
 from server.abc.base_game import GameConnectionState
 from server.connectivity import TestPeer, Connectivity
@@ -41,7 +41,6 @@ logger = logging.getLogger(__name__)
 
 from server.protocol.protocol import QDataStreamProtocol
 
-from config import Config
 
 PROXY_SERVER = ('127.0.0.1', 12000)
 
@@ -580,7 +579,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                 s.sendall(json.dumps(dict(command="cleanup", sourceip=self.player.ip)))
                 s.close()
             if self.connectivity_state.result() == Connectivity.PROXY:
-                wiki_link = "{}index.php?title=Connection_issues_and_solutions".format(Config['global']['wiki_url'])
+                wiki_link = "{}index.php?title=Connection_issues_and_solutions".format(config.WIKI_LINK)
                 text = "Your network is not setup right.<br>The server had to make you connect to other players by proxy.<br>Please visit <a href='{}'>{}</a>" + \
                        "to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs,".format(wiki_link, wiki_link)
 
