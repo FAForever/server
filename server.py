@@ -90,7 +90,10 @@ if __name__ == '__main__':
 
             self.FALobby = FALobbyServer(self.players_online, self.games, self.db, self)
 
-            self.nat_packet_server, self.game_server = server.run_game_server()
+            self.nat_packet_server, self.game_server = server.run_game_server(('', 8000),
+                                                                              self.players_online,
+                                                                              self.games,
+                                                                              self.db)
 
             # Make sure we can shutdown gracefully
             signal.signal(signal.SIGTERM, self.signal_handler)
