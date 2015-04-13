@@ -102,7 +102,7 @@ def test_handle_action_GameState_idle_adds_connection(game_connection, players, 
     game.add_game_connection.assert_called_with(game_connection)
 
 @asyncio.coroutine
-def test_handle_action_GameState_idle_non_searching_player(game_connection, players, game):
+def test_handle_action_GameState_idle_non_searching_player_aborts(game_connection, players, game):
     game_connection.player = players.hosting
     game_connection.lobby = mock.Mock()
     game_connection.abort = mock.Mock()

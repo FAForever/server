@@ -538,9 +538,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                 if recurse:
                     peer.ConnectThroughProxy(self, False)
             else:
-                self.log.debug(self.logGame + "Maximum proxies used")
-        except:
-            self.log.exception(self.logGame + "Something awful happened in a connect proxy thread!")
+                self.log.debug(self.logGame + "Maximum proxies used")  # pragma: no cover
+        except Exception as e:  # pragma: no cover
+            self.log.exception(e)
 
 
     def sendMessage(self, m):
