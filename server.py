@@ -118,20 +118,6 @@ if __name__ == '__main__':
             self.game_server.close()
             self._loop.stop()
 
-        def jsonPlayer(self, player):
-            """ infos about a player"""
-            return {"command": "player_info",
-                    "login": player.getLogin(),
-                    "rating_mean": player.global_rating[0],
-                    "rating_deviation": player.global_rating[1],
-                    "ladder_rating_mean": player.ladder_rating[0],
-                    "ladder_rating_deviation": player.ladder_rating[1],
-                    "number_of_games": player.numGames,
-                    "avatar": player.avatar,
-                    "league": getattr(player, 'leagueInfo', ''),
-                    "country": getattr(player, 'country', ''),
-                    "clan": getattr(player, 'clan', '')}
-
     try:
         app = QtCore.QCoreApplication(sys.argv)
         if config.LIBRARY_PATH:

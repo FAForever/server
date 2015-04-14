@@ -28,7 +28,7 @@ class Player(BasePlayer):
     information about players.
     """
     def __init__(self, login=None, session=None, ip=None, port=None, uuid=None,
-                 globalSkill=None, numGames=None, lobbyThread=None):
+                 global_rating=None, ladder_rating=None, clan=None, numGames=None, lobbyThread=None):
         super().__init__()
         
         self._action = ''
@@ -38,11 +38,16 @@ class Player(BasePlayer):
         self._ip = ''
         self.localIp = ''
 
+        self.global_rating = global_rating
+        self.ladder_rating = ladder_rating
+
         #social
         self.avatar = None
-        self.clan = None
-      
+        self.clan = clan
+        self.country = None
+
         self.league = None
+        self.leagueInfo = None
       
         self.admin = False
         self.mod = False
@@ -184,6 +189,28 @@ class Player(BasePlayer):
     @login.setter
     def login(self, value):
         self._login = value
+
+    def serialize_to_player_info(self):
+        """
+        Return a dictionary representing this player object
+        :return:
+        """
+        def filter_none(t):
+            _, v = t
+            return v is not None
+        return dict(filter(filter_none, (
+            ('command', 'player_info'),
+            ('login', self.login),
+            ('rating_mean', self.global_rating[0]),
+            ('rating_deviation', self.global_rating[1]),
+            ('ladder_rating_mean', self.ladder_rating[0]),
+            ('ladder_rating_deviation', self.ladder_rating[1]),
+            ('number_of_games', self.numGames),
+            ('avatar', self.avatar),
+            ('league', self.leagueInfo),
+            ('country', self.country),
+            ('clan', self.clan)
+        )))
 
     def __hash__(self):
         return self.id

@@ -49,3 +49,20 @@ def test_weak_references():
 
     for prop in weak_properties:
         assert getattr(p, prop) is None
+
+def test_serialize():
+    p = Player(login='Something',
+               global_rating=(1234, 68),
+               ladder_rating=(1500, 230),
+               clan='TOAST',
+               numGames=542)
+    assert p.serialize_to_player_info() == {
+        "command": "player_info",
+                    "login": 'Something',
+                    "rating_mean": 1234,
+                    "rating_deviation": 68,
+                    "ladder_rating_mean": 1500,
+                    "ladder_rating_deviation": 230,
+                    "number_of_games": 542,
+                    "clan": 'TOAST'
+    }

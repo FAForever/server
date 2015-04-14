@@ -1620,7 +1620,7 @@ Thanks,\n\
 
             reply = QByteArray()
             for user in self.parent.listUsers.players:
-                reply.append(self.prepareBigJSON(self.parent.parent.jsonPlayer(user)))
+                reply.append(self.prepareBigJSON(user.serialize_to_player_info()))
 
             self.sendArray(reply)
 
@@ -1668,7 +1668,7 @@ Thanks,\n\
 
                     lobby = user.lobbyThread
                     if lobby is not None:
-                        lobby.sendJSON(self.parent.parent.jsonPlayer(self.player))
+                        lobby.sendJSON(self.player.serialize_to_player_info())
 
             if self.player.mod:
                 channels.append("#moderators")
