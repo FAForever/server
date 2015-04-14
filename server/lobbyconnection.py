@@ -1591,7 +1591,6 @@ Thanks,\n\
             for p in self.parent.listUsers.players:
                 if p.login == self.player.login:
                     if hasattr(p, 'lobbyThread'):
-                        p.lobbyThread.command_quit_team(dict(command="quit_team"))
                         p.lobbyThread.socket.abort()
 
                     if p in self.parent.listUsers.players:
