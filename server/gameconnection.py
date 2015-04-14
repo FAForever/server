@@ -239,6 +239,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                       self.player.gamePort,
                       self.player.id) as peer_test:
             self._connectivity_state = yield from peer_test.determine_connectivity()
+            self.connectivity_state.set_result(self._connectivity_state)
             self.send_gpgnet_message('ConnectivityState', [self.player.getId(),
                                                    self._connectivity_state.value])
 
