@@ -1469,7 +1469,7 @@ Thanks,\n\
             ## Country
             ## ----------
 
-            country = gi.country_name_by_addr(self.socket.peerAddress().toString())
+            country = gi.country_code_by_addr(self.socket.peerAddress().toString())
             if country is not None:
                 self.player.country = str(country)
 
