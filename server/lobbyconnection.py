@@ -1412,12 +1412,12 @@ Thanks,\n\
             if not query.exec_():
                 self.log.error(query.lastError())
 
-            self.player = Player(str(login),
-                                 self.session,
-                                 self.ip,
-                                 self.port,
-                                 self.uid,
-                                 self)
+            self.player = Player(login=str(login),
+                                 session=self.session,
+                                 ip=self.ip,
+                                 port=self.port,
+                                 uuid=self.uid,
+                                 lobbyThread=self)
             self.player.lobbyVersion = version
             self.player.resolvedAddress = self.player.getIp()
 
