@@ -85,7 +85,6 @@ class Game(BaseGame):
         self.db = parent.db
         self.parent = parent
         self._player_options = {}
-        self._army_options = {}
         self.createDate = time.time()
         self.receiveUdpHost = False
         self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, uuid))
@@ -319,33 +318,6 @@ class Game(BaseGame):
         """
         try:
             return self._player_options[id][key]
-        except KeyError:
-            return None
-
-    def set_army_option(self, id, key, value):
-        """
-        Set game-associative options for given army, by id (StartSpot)
-        :param id:
-        :type id: int
-        :param key:
-        :type key: str
-        :param value:
-        :return:
-        """
-        if id not in self._army_options:
-            self._army_options[id] = {}
-        self._army_options[id][key] = value
-
-    def get_army_option(self, id, key):
-        """
-        Retrieve game-associative options for given army, by id
-        :param id: army identity
-        :param key: army option key
-        :type key: str
-        :return:
-        """
-        try:
-            return self._army_options[id][key]
         except KeyError:
             return None
 
