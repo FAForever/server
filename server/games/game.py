@@ -450,6 +450,7 @@ class Game(BaseGame):
 
     def update_game_player_stats(self):
         queryStr = ""
+        bind_values = []
         for player in self.players:
             player_option = functools.partial(self.get_player_option, player.id)
             options = {key: player_option(key)
@@ -469,16 +470,18 @@ class Game(BaseGame):
                     mean, dev = player.global_rating
                 queryStr += ("INSERT INTO `game_player_stats` "
                              "(`gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) "
-                             "VALUES (%s, %s, %s, %s, %s, %i, %f, %f);"
-                             .format(str(self.id),
-                                     str(player.id),
-                                     options['Faction'],
-                                     options['Color'],
-                                     options['Team'],
-                                     options['StartSpot'], mean, dev))
+                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?);")
+                bind_values += [self.id,
+                                str(player.id),
+                                options['Faction'],
+                                options['Color'],
+                                options['Team'],
+                                options['StartSpot'], mean, dev]
 
         if queryStr != "":
             query = QSqlQuery(self.parent.db)
+            for val in bind_values:
+                query.addBindValue(val)
             if not query.exec_(queryStr):
                 self._logger.error(query.lastError())
                 self._logger.error(queryStr)
