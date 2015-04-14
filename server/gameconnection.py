@@ -593,7 +593,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                        "to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs,".format(wiki_link, wiki_link)
 
                 self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
-            self.player.game = None
         except Exception as e:  # pragma: no cover
             self._logger.exception(e)
             pass
