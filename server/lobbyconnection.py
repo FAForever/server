@@ -280,7 +280,7 @@ class LobbyConnection(QObject):
         if game:
             uuid = game.uuid
 
-            self.player.setAction("HOST")
+            self.player.action = "HOST"
             self.player.wantToConnectToGame = True
             self.player.game = game
             self.player.setGamePort(gamePort)
