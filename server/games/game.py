@@ -348,9 +348,12 @@ class Game(BaseGame):
                 self.set_player_option(player.id, 'Army', -1)
                 self.set_player_option(player.id, 'StartSpot', -1)
 
+        to_remove = []
         for ai in self.AIs:
             if self.AIs[ai]['StartSpot'] == slot_index:
-                del self.AIs[ai]
+                to_remove.append(ai)
+        for item in to_remove:
+            del self.AIs[item]
 
     def validate_game(self):
         """
