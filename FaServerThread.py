@@ -1695,6 +1695,7 @@ Thanks,\n\
                 if not self.steamChecked:
                     if uniqueId == None :
                         self.sendJSON(dict(command="notice", style="error", text="Unique Id found for another user.<br>Multiple accounts are not allowed.<br><br>Try SteamLink: <a href='" + config['global']['app_url'] + "faf/steam.php'>" + config['global']['app_url'] + "faf/steam.php</a>"))
+                        self.log.info("UniqueID blocked user: {}".format(login))
                         return                    
                     # the user is not steam Checked.
                     query = QSqlQuery(self.parent.db)
