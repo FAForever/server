@@ -314,6 +314,7 @@ class LobbyConnection(QObject):
     @timed()
     def handleAction(self, action, stream):
         try:
+            self.log.debug('handleAction: {}'.format(action))
             if action == "PING":
                 self.sendReply("PONG")
 
