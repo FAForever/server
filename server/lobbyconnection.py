@@ -43,6 +43,7 @@ import trueskill
 from trueskill import Rating
 
 from server.decorators import timed
+from server.games.game import GameState
 from server.players import *
 from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS
 from config import Config
@@ -922,7 +923,7 @@ Thanks,\n\
             if container.listable or container.live:
                 for game in container.games:
 
-                    if game.lobbyState == "open" or game.lobbyState == "playing":
+                    if game.state == GameState.LOBBY or game.state == GameState.LIVE:
                         reply.append(self.prepareBigJSON(self.parent.jsonGame(game)))
 
             self.log.debug("done")
