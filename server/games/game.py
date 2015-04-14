@@ -452,20 +452,26 @@ class Game(BaseGame):
         queryStr = ""
         for player in self.players:
             player_option = functools.partial(self.get_player_option, player.id)
-            team, place, color, faction = [player_option(value)
-                                           for value in ['Team', 'StartSpot', 'Color', 'Faction']]
+            options = [(key, player_option(key))
+                       for key in ['Team', 'StartSpot', 'Color', 'Faction']]
+            valid = True
+            for key, val in options:
+                if val is None:
+                    self._logger.error("PlayerOption {} not set for {}".format(key, player))
+                    valid = False
+            if not valid:
+                continue
 
-            if team != -1:
-                if color is None or faction is None:
-                    self._logger.error("wrong faction or color for place {}, {} for player {}".format(color, place, faction))
+            team, start_spot, color, faction = options
+            if team > 0 and start_spot > 0:
                 if self.getGamemod() == 'ladder1v1':
-                    mean, dev = player.ladder_rating.mu, player.ladder_rating.sigma
+                    mean, dev = player.ladder_rating
                 else:
-                    mean, dev = player.global_rating.mu, player.global_rating.sigma
+                    mean, dev = player.global_rating
                 queryStr += ("INSERT INTO `game_player_stats` "
                              "(`gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) "
                              "VALUES (%s, %s, %s, %s, %s, %i, %f, %f);"
-                             .format(str(self.id), str(player.id), faction, color, team, place, mean, dev))
+                             .format(str(self.id), str(player.id), faction, color, team, start_spot, mean, dev))
 
         if queryStr != "":
             query = QSqlQuery(self.parent.db)
