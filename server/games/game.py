@@ -452,18 +452,17 @@ class Game(BaseGame):
         queryStr = ""
         for player in self.players:
             player_option = functools.partial(self.get_player_option, player.id)
-            options = [(key, player_option(key))
-                       for key in ['Team', 'StartSpot', 'Color', 'Faction']]
+            options = {key: player_option(key)
+                       for key in ['Team', 'StartSpot', 'Color', 'Faction']}
             valid = True
-            for key, val in options:
+            for key, val in options.items():
                 if val is None:
                     self._logger.error("PlayerOption {} not set for {}".format(key, player))
                     valid = False
             if not valid:
                 continue
 
-            team, start_spot, color, faction = options
-            if team > 0 and start_spot > 0:
+            if options['Team'] > 0 and options['StartSpot'] > 0:
                 if self.getGamemod() == 'ladder1v1':
                     mean, dev = player.ladder_rating
                 else:
@@ -471,12 +470,16 @@ class Game(BaseGame):
                 queryStr += ("INSERT INTO `game_player_stats` "
                              "(`gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) "
                              "VALUES (%s, %s, %s, %s, %s, %i, %f, %f);"
-                             .format(str(self.id), str(player.id), faction, color, team, start_spot, mean, dev))
+                             .format(str(self.id),
+                                     str(player.id),
+                                     options['Faction'],
+                                     options['Color'],
+                                     options['Team'],
+                                     options['StartSpot'], mean, dev))
 
         if queryStr != "":
             query = QSqlQuery(self.parent.db)
             if not query.exec_(queryStr):
-                self._logger.error("player staterror")
                 self._logger.error(query.lastError())
                 self._logger.error(queryStr)
         else:
