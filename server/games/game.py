@@ -333,6 +333,25 @@ class Game(BaseGame):
             self.AIs[name] = {}
         self.AIs[name][key] = value
 
+    def clear_slot(self, slot_index):
+        """
+        A somewhat awkward message while we're still half-slot-associated with a bunch of data.
+
+        Just makes sure that any players associated with this
+        slot aren't assigned an army or team, and deletes any AI's.
+        :param slot_index:
+        :return:
+        """
+        for player in self.players:
+            if self.get_player_option(player.id, 'StartSpot') == slot_index:
+                self.set_player_option(player.id, 'Team', -1)
+                self.set_player_option(player.id, 'Army', -1)
+                self.set_player_option(player.id, 'StartSpot', -1)
+
+        for ai in self.AIs:
+            if self.AIs[ai]['StartSpot'] == slot_index:
+                del self.AIs[ai]
+
     def validate_game(self):
         """
         General rules for validation of game rankedness
