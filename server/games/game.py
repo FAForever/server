@@ -107,7 +107,7 @@ class Game(BaseGame):
         self.valid = True
         self.modsVersion = {}
         self.gameType = 0
-        self.AIs = []
+        self.AIs = {}
         self.packetReceived = {}
         self.desyncs = 0
         self.invalidReason = None
@@ -320,6 +320,18 @@ class Game(BaseGame):
             return self._player_options[id][key]
         except KeyError:
             return None
+
+    def set_ai_option(self, name, key, value):
+        """
+        This is a noop for now
+        :param name: Name of the AI
+        :param key: option key string
+        :param value: option value
+        :return:
+        """
+        if not name in self.AIs:
+            self.AIs[name] = {}
+        self.AIs[name][key] = value
 
     def validate_game(self):
         """

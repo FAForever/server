@@ -413,6 +413,14 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                     self.game.set_player_option(id, key, value)
                     self.sendGameInfo()
 
+            elif key == 'AIOption':
+                if self.player.action == "HOST":
+                    name = values[0]
+                    key = values[1]
+                    value = values[2]
+                    self.game.set_ai_option(name, key, value)
+                    self.sendGameInfo()
+
             elif key == 'GameResult':
                 army = int(values[0])
                 result = str(values[1])
