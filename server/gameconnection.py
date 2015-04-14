@@ -406,7 +406,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                             self.game.mods[uid] = "Unknown sim mod"
 
             elif key == 'PlayerOption':
-                if self.player.getAction() == "HOST":
+                if self.player.action == "HOST":
                     id = values[0]
                     key = values[1]
                     value = values[2]
