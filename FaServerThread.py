@@ -1593,7 +1593,8 @@ Thanks,\n\
 
             try :
                 uniqueId = decodeUniqueId(self, uniqueIdCoded, login)
-
+                if not uniqueId:
+                    self.log.info("UniqueID is None for {}".format(login))
             except :
                 self.sendJSON(dict(command="notice", style="error", text="We are not able to log you. Try updating your lobby."))
                 self.log.info(self.logPrefix + "unable to decypher !!")
