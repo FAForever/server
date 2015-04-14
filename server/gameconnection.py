@@ -514,8 +514,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                         query.exec_()
 
                 for player in self.game.players:
-                    if player.global_rating.mu < -1000 or \
-                       player.ladder_rating.mu < -1000:
+                    if player.global_rating[0] < -1000 or \
+                       player.ladder_rating[0] < -1000:
                         self.game.setInvalid("You are playing with a smurfer.")
 
     def _send_create_lobby(self):
