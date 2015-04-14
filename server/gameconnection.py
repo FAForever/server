@@ -220,6 +220,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
             if self.ping_task is not None:
                 self.ping_task.cancel()
             if hasattr(self, '_player'):
+                self._player.action = 'NONE'
                 del self._player
             if hasattr(self, '_game'):
                 del self._game
