@@ -412,7 +412,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                     id = values[0]
                     key = values[1]
                     value = values[2]
-                    self.game.set_player_option(id, key, value)
+                    self.game.set_player_option(int(id), key, value)
                     self.sendGameInfo()
 
             elif key == 'AIOption':
@@ -420,7 +420,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                     name = values[0]
                     key = values[1]
                     value = values[2]
-                    self.game.set_ai_option(name, key, value)
+                    self.game.set_ai_option(str(name), key, value)
                     self.sendGameInfo()
 
             elif key == 'ClearSlot':
