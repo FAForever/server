@@ -79,8 +79,8 @@ class FALobbyServer(QtNetwork.QTcpServer):
             "command": "game_info",
             "access": game.access,
             "uid": game.uuid,
-            "title": game.gameName,
-            "state": game.lobbyState,
+            "title": game.name,
+            "state": str(game.GameState),
             "featured_mod": game.getGamemod(),
             "featured_mod_versions": game.getGamemodVersion(),
             "sim_mods": game.mods,
@@ -120,7 +120,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
             
             for uid in self.games.dirty_games:
         
-                game = self.parent.games.find_by_id(uid)
+                game = self.games.find_by_id(uid)
                 if game is not None:
                     reply.append(json.dumps(self.jsonGame(game)))
                 else:
