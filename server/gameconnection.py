@@ -562,7 +562,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
         self.games.mark_dirty(self.game.uuid)
 
     def isModRanked(self, uidmod):
-        query = QSqlQuery(self.parent.db)
+        query = QSqlQuery(self.db)
         query.prepare("SELECT ranked FROM table_mod WHERE uid LIKE ?")
         query.addBindValue(uidmod)
 
