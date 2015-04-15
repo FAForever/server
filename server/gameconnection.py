@@ -182,6 +182,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
             self.game.state = GameState.LOBBY
             self._state = GameConnectionState.CONNECTED_TO_HOST
             self.game.add_game_connection(self)
+            self.games.mark_dirty(self.game.id)
             self.game.setHostIP(self.player.ip)
             strlog = (
                 "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.uuid), str(self.game.getGamemod())))
