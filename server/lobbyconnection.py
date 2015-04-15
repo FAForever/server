@@ -1930,18 +1930,16 @@ Thanks,\n\
 
     def check_cheaters(self):
         """ When someone is cancelling a ladder game on purpose..."""
-        game = self.player.getGame()
+        game = self.player.game
         if game:
-            realGame = self.parent.games.find_by_id(self.player.getGame())
-            if realGame:
-                if realGame.initMode == 1 and realGame.lobbyState != "playing":
-                    # player has a laddergame that isn't playing, so we suspect he is a canceller....
-                    self.log.debug("Having a ladder and cancelling it...")
+            if game.getGameMod() == 'ladder1v1' and game.state != GameState.LIVE:
+                # player has a laddergame that isn't playing, so we suspect he is a canceller....
+                self.log.debug("Detected cancelled ladder for {} {}".format(self.player, game))
 
-                    query = QSqlQuery(self.parent.db)
-                    query.prepare("UPDATE `login` SET `ladderCancelled`= `ladderCancelled`+1  WHERE id = ?")
-                    query.addBindValue(self.uid)
-                    query.exec_()
+                query = QSqlQuery(self.parent.db)
+                query.prepare("UPDATE `login` SET `ladderCancelled`= `ladderCancelled`+1  WHERE id = ?")
+                query.addBindValue(self.uid)
+                query.exec_()
 
             else:
                 self.log.debug("No real game found...")
@@ -2009,7 +2007,6 @@ Thanks,\n\
                     self.player.faction = faction
 
                     self.warnPotentialOpponent()
-
 
                 elif state == "expand":
                     rate = message['rate']
