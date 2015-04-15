@@ -463,7 +463,7 @@ class Game(BaseGame):
             if not valid:
                 continue
 
-            if options['Team'] > 0 and options['StartSpot'] > 0:
+            if options['Team'] > 0 and options['StartSpot'] >= 0:
                 if self.getGamemod() == 'ladder1v1':
                     mean, dev = player.ladder_rating
                 else:
@@ -476,13 +476,16 @@ class Game(BaseGame):
                                 options['Faction'],
                                 options['Color'],
                                 options['Team'],
-                                options['StartSpot'], mean, dev]
+                                options['StartSpot'],
+                                mean,
+                                dev]
 
         if queryStr != "":
             query = QSqlQuery(self.parent.db)
+            query.prepare(queryStr)
             for val in bind_values:
                 query.addBindValue(val)
-            if not query.exec_(queryStr):
+            if not query.exec_():
                 self._logger.error(query.lastError())
                 self._logger.error(queryStr)
         else:
