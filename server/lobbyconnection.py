@@ -1296,6 +1296,7 @@ Thanks,\n\
             self.email = str(query.value(2))
             self.steamChecked = int(query.value(3))
             session = int(query.value(4))
+            self.loginDone = True
 
             if validated == 0:
                 reason = "Your account is not validated. Please visit <a href='" + Config['global'][
