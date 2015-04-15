@@ -24,6 +24,7 @@ from PySide import QtCore, QtNetwork
 
 from server import lobbyconnection
 from server.decorators import with_logger, timed
+from server.games.game import GameState
 from server.games_service import GamesService
 
 
@@ -75,12 +76,19 @@ class FALobbyServer(QtNetwork.QTcpServer):
 
     @timed()
     def jsonGame(self, game):
+        client_state = {
+            GameState.LOBBY: 'open',
+            GameState.LIVE: 'open',
+            GameState.ENDED: 'closed',
+            GameState.INITIALIZING: 'closed',
+
+        }.get(game.state, 'closed')
         jsonToSend = {
             "command": "game_info",
             "access": game.access,
             "uid": game.uuid,
             "title": game.name,
-            "state": str(game.GameState),
+            "state": client_state,
             "featured_mod": game.getGamemod(),
             "featured_mod_versions": game.getGamemodVersion(),
             "sim_mods": game.mods,
