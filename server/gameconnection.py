@@ -211,6 +211,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
                 return
             self._state = GameConnectionState.ENDED
             self.game.remove_game_connection(self)
+            self.games.mark_dirty(self.game.id)
             self.log.debug("{}.abort()".format(self))
             if self.player.lobby_connection:
                 self.player.lobby_connection.sendJSON(dict(command="notice", style="kill"))
@@ -247,6 +248,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
         # if the player is joining, we connect him to host.
         elif playeraction == "JOIN":
             yield from self.ConnectToHost(self.game.hostPlayer.game_connection)
+            self.games.mark_dirty(self.game.id)
 
     @timed(limit=0.1)
     def on_message_received(self, message):
