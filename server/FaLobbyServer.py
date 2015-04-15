@@ -17,15 +17,19 @@
 #-------------------------------------------------------------------------------
 
 import logging
+
 import json
 import time
 
 from PySide import QtCore, QtNetwork
+import ujson
 
 from server import lobbyconnection
 from server.decorators import with_logger, timed
 from server.games.game import GameState
 from server.games_service import GamesService
+
+from server.protocol.protocol import QDataStreamProtocol
 
 
 logger = logging.getLogger(__name__)
@@ -116,6 +120,10 @@ class FALobbyServer(QtNetwork.QTcpServer):
 
     @timed
     def dirtyGameCheck(self):
+        def encode(dictionary):
+            return QDataStreamProtocol.pack_block(
+                QDataStreamProtocol.pack_qstring(ujson.dumps(dictionary))
+            )
         if time.time() - self.lastDirty > 5.2 and self.skippedDirty < 2:
             self._logger.debug("Not checking for dirty games")
             self.lastDirty = time.time()
@@ -130,7 +138,7 @@ class FALobbyServer(QtNetwork.QTcpServer):
         
                 game = self.games.find_by_id(uid)
                 if game is not None:
-                    reply.append(json.dumps(self.jsonGame(game)))
+                    reply.append(encode(self.jsonGame(game)))
                 else:
                     # If no game was found, send a bogus object to ensure client state updates
                     jsonToSend = {"command": "game_info",
@@ -149,10 +157,11 @@ class FALobbyServer(QtNetwork.QTcpServer):
                                   "teams": {},
                                   "options": []}
 
-                    reply.append(json.dumps(jsonToSend))
+                    reply.append(encode(jsonToSend))
                                        
                 self.games.clear_dirty()
 
             for connection in self.recorders:
-                connection.sendArray(reply)
+                if connection.loginDone:
+                    connection.sendArray(reply)
 
