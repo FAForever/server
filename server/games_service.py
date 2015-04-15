@@ -124,7 +124,7 @@ class GamesService(object):
         :rtype: Game
         """
         for container in self.gamesContainer:
-            game = self.gamesContainer[container].findGameByUuid(str(uuid))
+            game = self.gamesContainer[container].findGameByUuid(uuid)
             if game is not None:
                 return game
         return None    
