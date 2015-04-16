@@ -544,7 +544,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
             numProxy = self.game.proxy.map(self.player.login, peer.player.login)
 
             if numProxy is not None:
-                self.send_gpgnet_message("DisconnectFromPeer", int(peer.player.id))
                 self.send_ConnectToProxy(numProxy, peer.player.getIp(), str(peer.player.login), int(peer.player.id))
 
                 if self.game:
