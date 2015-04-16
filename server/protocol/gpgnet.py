@@ -3,8 +3,10 @@ from abc import ABCMeta, abstractmethod
 from server.abc.base_game import InitMode
 
 
-class GpgNetServerProtocol():
-    __metaclass__ = ABCMeta
+class GpgNetServerProtocol(metaclass=ABCMeta):
+    """
+    Defines an interface for the server side GPGNet protocol
+    """
 
     @property
     @abstractmethod
@@ -24,40 +26,76 @@ class GpgNetServerProtocol():
         """
         pass  # pragma: no cover
 
-    @player.setter
-    def player(self, val):
-        pass  # pragma: no cover
-
-    def send_CreateLobby(self, init_mode, port, login, uid, natTraversalProvider):
+    def send_CreateLobby(self, init_mode: InitMode, port: int, login: str, uid: int, natTraversalProvider: int):
         """
-        :type init_mode: InitMode
-        :type port: int
-        :type login: str
-        :type uid: int
-        :type natTraversalProvider: int
-        :return:
+        Tells the client to create a new LobbyComm instance and have it listen on the given port number
+        :type init_mode: Whether to use ranked or ladder mode for the in game lobby
+        :type port: The port number for the client to listen on
+        :type login: The username of the player
+        :type uid: The identifier of the player
+        :type natTraversalProvider: A number representing the nat-traversal-provider, typically 1
         """
         self.send_gpgnet_message('CreateLobby', [int(init_mode.value), port, login, uid, natTraversalProvider])
 
     def send_ConnectToPeer(self, address_and_port: str, player_name: str, player_uid: int):
+        """
+        Tells a client that has a listening LobbyComm instance to connect to the given peer
+        :param address_and_port: String of the form "adress:port"
+        :param player_name: Remote player name
+        :param player_uid: Remote player identifier
+        """
         self.send_gpgnet_message('ConnectToPeer', [address_and_port, player_name, player_uid])
 
     def send_ConnectToProxy(self, local_proxy_port: int, ip: str, player_name: str, player_uid: int):
+        """
+        Tells the FAF client to connect to the given peer by proxy
+        :param local_proxy_port: Which local proxy port to use
+        :param ip: remote address
+        :param player_name: Remote player name
+        :param player_uid: Remote player identifier
+        """
         self.send_gpgnet_message('ConnectToProxy', [local_proxy_port, ip, player_name, player_uid])
 
     def send_JoinGame(self, address_and_port: str, as_observer: bool, remote_player_name: str, remote_player_uid: int):
+        """
+        Tells the game to join the given peer by address_and_port
+        :param address_and_port:
+        :param as_observer:
+        :param remote_player_name:
+        :param remote_player_uid:
+        """
         self.send_gpgnet_message('JoinGame', [address_and_port, as_observer, remote_player_name, remote_player_uid])
 
     def send_HostGame(self, map):
+        """
+        Tells the game to start listening for incoming connections as a host
+        :param map: Which scenario to use
+        """
         self.send_gpgnet_message('HostGame', [str(map)])
 
     def send_SendNatPacket(self, address_and_port: str, message: str):
+        """
+        Instructs the game to send a nat-traversal UDP packet to the given remote address and port.
+
+        The game will send the message verbatim as UDP-datagram prefixed with a \0x08 byte.
+        :param address_and_port:
+        :param message:
+        """
         self.send_gpgnet_message('SendNatPacket', [address_and_port, message])
 
     def send_Ping(self):
+        """
+        Heartbeat pinging used between the FAF client and server
+        :return:
+        """
         self.send_gpgnet_message('ping', [])
 
     def handle_ProcessNatPacket(self, arguments):
+        """
+        Handle incoming ProcessNatPacket messages
+
+        :param arguments: Tuple of ("address:port", message) describing the received nat packet
+        """
         self.on_ProcessNatPacket(arguments[0], arguments[1])
 
     @abstractmethod
@@ -71,9 +109,19 @@ class GpgNetServerProtocol():
 
 class GpgNetClientProtocol(metaclass=ABCMeta):
     def send_GameState(self, arguments):
+        """
+        Sent by the client when the state of LobbyComm changes
+        :param arguments:
+        :return:
+        """
         self.send_gpgnet_message('GameState', arguments)
 
     def send_ProcessNatPacket(self, arguments):
+        """
+        Sent by the client when it received a nat packet
+        :param arguments:
+        :return:
+        """
         self.send_gpgnet_message('ProcessNatPacket', arguments)
 
     @abstractmethod

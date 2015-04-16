@@ -1,7 +1,8 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 import struct
 import asyncio
 from server.decorators import with_logger
+
 
 @with_logger
 class BaseStatefulProtocol(asyncio.Protocol, metaclass=ABCMeta):

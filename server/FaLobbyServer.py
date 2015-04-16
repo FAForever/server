@@ -61,6 +61,10 @@ class FALobbyServer(QtNetwork.QTcpServer):
         self.skippedDirty = 0
     
     def incomingConnection(self, socket_id):
+        """
+        :param int socket_id: socket identifier
+        :return:
+        """
         socket = QtNetwork.QTcpSocket()
         if socket.setSocketDescriptor(socket_id):
             self.recorders.append(lobbyconnection.LobbyConnection(socket, self))
