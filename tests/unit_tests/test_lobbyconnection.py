@@ -278,12 +278,6 @@ def test_handle_action_possible_json_commannd(fa_server_thread):
     fa_server_thread.receiveJSON.assert_called_once_with(
         'CrazyThing', stream)
 
-
-def test_handle_action_invalidData(fa_server_thread):
-    fa_server_thread.log = mock.Mock()
-    fa_server_thread.handleAction(None, None)
-    assert fa_server_thread.log.exception.call_count == 1
-
 # handle action - Create Account
 # TODO: for @ckitching or if pr #23 is merged
 
