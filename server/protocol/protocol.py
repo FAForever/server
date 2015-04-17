@@ -1,51 +1,24 @@
 from abc import ABCMeta
-import struct
+from asyncio import StreamReader
 import asyncio
+import struct
+import ujson
 from server.decorators import with_logger
 
 
 @with_logger
-class BaseStatefulProtocol(asyncio.Protocol, metaclass=ABCMeta):
-    connections = []
-
-    def __init__(self):
-        super().__init__()
-        self._transport = None
-        self._logger.info("Stateful protocol initialized")
-
-    def connection_made(self, transport):
-        self._logger.info("Connection Made")
-        self._transport = transport
-        self.connections.append(self)
-        try:
-            self.on_connection_made(transport.get_extra_info('peername'))
-        except Exception as ex:
-            self._logger.warning("Error during on_connection_made")
-            self._logger.exception(ex)
-
-    def connection_lost(self, exc):
-        self.connections.remove(self)
-        try:
-            self.on_connection_lost(exc)
-        except Exception as ex:
-            self._logger.warning("Error during on_connection_lost")
-            self._logger.exception(ex)
-
-    def on_message_received(self, message):
-        pass  # pragma: no cover
-
-    def on_connection_made(self, peername):
-        pass  # pragma: no cover
-
-    def on_connection_lost(self, exc):
-        pass  # pragma: no cover
-
-
-@with_logger
-class QDataStreamProtocol(BaseStatefulProtocol):
+class QDataStreamProtocol(metaclass=ABCMeta):
     """
-    Base class for implementing the legacy QDataStream-based encoding scheme
+    Implements the legacy QDataStream-based encoding scheme
     """
+    def __init__(self, reader: StreamReader):
+        """
+        Initialize the protocol
+
+        :param StreamReader reader: asyncio stream to read from
+        """
+        self.reader = reader
+
     @staticmethod
     def read_qstring(message):
         """
@@ -58,7 +31,7 @@ class QDataStreamProtocol(BaseStatefulProtocol):
         (message_size, ) = struct.unpack('!I', message[:4])
         if len(message[4:]) < message_size:
             raise ValueError("Malformed QString: Claims length {} but actually {}"
-                             .format(len(message[4:]), message_size))
+                             .format(message_size, len(message[4:])))
         return message_size, (message[4:4 + message_size]).decode('UTF-16BE')
 
     @staticmethod
@@ -71,36 +44,53 @@ class QDataStreamProtocol(BaseStatefulProtocol):
         return struct.pack('!I', len(block)) + block
 
     @staticmethod
+    def read_block(data):
+        while len(data) > 0:
+            str_length, msg = QDataStreamProtocol.read_qstring(data)
+            data = data[4 + str_length:]
+            yield msg
+
+
+    @staticmethod
     def read_blocks(data):
         while len(data) >= 4:
             (length, ) = struct.unpack('!I', data[:4])
             message = data[4:4 + length]
-            while len(message) > 0:
-                str_length, msg = QDataStreamProtocol.read_qstring(message)
-                message = message[4 + str_length:]
-                yield msg
+            yield QDataStreamProtocol.read_block(message)
             data = data[4 + length:]
 
-    def data_received(self, data):
-        try:
-            for msg in self.read_blocks(data):
-                self.on_message_received(msg)
-        except Exception as ex:
-            self._logger.warning("Error during on_message_received")
-            self._logger.exception(ex)
-            self._transport.write_eof()
+    @asyncio.coroutine
+    def read_message(self):
+        """
+        Read a message from the stream
 
-    def send_legacy(self, message, *args):
+        On malformed stream, raises IncompleteReadError
+        """
+        (block_length, ) = struct.unpack('!I', (yield from self.reader.readexactly(4)))
+        block = yield from self.reader.readexactly(block_length)
+        # FIXME: New protocol will remove the need for this
+        message = {'legacy': []}
+        for part in self.read_block(block):
+            try:
+                message_part = ujson.loads(part)
+                message.update(message_part)
+            except (ValueError, TypeError):
+                message['legacy'].append(part)
+        return message
+
+
+    @staticmethod
+    def pack_message(message, *args):
         """
         For sending a bunch of QStrings packed together in a 'block'
         """
-        msg = self.pack_qstring(message)
+        msg = QDataStreamProtocol.pack_qstring(message)
         for arg in args:
             if isinstance(arg, str):
-                msg += self.pack_qstring(arg)
+                msg += QDataStreamProtocol.pack_qstring(arg)
             else:
                 raise NotImplementedError("Only string serialization is supported")
-        self._transport.write(self.pack_block(msg))
+        return QDataStreamProtocol.pack_block(msg)
 
     def send_message(self, message):
         self._transport.write(self.pack_block(self.pack_qstring(message)))

@@ -1,6 +1,7 @@
-from unittest import mock
-from unittest.mock import call
+from asyncio import StreamReader
+import asyncio
 from PySide.QtCore import QByteArray, QDataStream, QIODevice
+import pytest
 from server.protocol import QDataStreamProtocol
 
 
@@ -21,54 +22,49 @@ def preparePacket(action, *args, **kwargs):
 
     return reply
 
-
-def test_QDataStreamProtocol_recv_small_message():
-    protocol = QDataStreamProtocol()
-    protocol.on_message_received = mock.Mock()
-
-    protocol.data_received(QDataStreamProtocol.pack_block(b''.join(
-                                                        [QDataStreamProtocol.pack_qstring('Hello'),
-                                                         QDataStreamProtocol.pack_qstring('Goodbye')])))
-
-    assert protocol.on_message_received.mock_calls == [call('Hello'), call('Goodbye')]
+@pytest.fixture
+def reader(loop):
+    return StreamReader(loop=loop)
 
 
-def test_QDataStreamProtocol_recv_malformed_message():
-    protocol = QDataStreamProtocol()
-    protocol.on_message_received = mock.Mock()
-    protocol._transport = mock.Mock()
+@asyncio.coroutine
+def test_QDataStreamProtocol_recv_small_message(reader):
+    data = QDataStreamProtocol.pack_block(b''.join([QDataStreamProtocol.pack_qstring('Hello'),
+                                                    QDataStreamProtocol.pack_qstring('Goodbye')]))
+    reader.feed_data(data)
+    protocol = QDataStreamProtocol(reader)
 
-    protocol.data_received(QDataStreamProtocol.pack_block(b'\0\0absatars'))
+    message = yield from protocol.read_message()
 
-    assert protocol.on_message_received.mock_calls == []
-    protocol._transport.write_eof.assert_called_with()
+    assert message == {'legacy': ['Hello', 'Goodbye']}
 
 
-def test_QDataStreamProtocol_recv_large_array():
-    protocol = QDataStreamProtocol()
-    protocol.on_message_received = mock.Mock()
+@asyncio.coroutine
+def test_QDataStreamProtocol_recv_malformed_message(reader):
+    reader.feed_data(b'\0')
+    reader.feed_eof()
+    protocol = QDataStreamProtocol(reader)
 
-    block = QDataStreamProtocol.pack_block(b''.join([QDataStreamProtocol.pack_qstring(str(i)) for i in range(1520)]))
-    protocol.data_received(block)
+    with pytest.raises(asyncio.IncompleteReadError):
+        yield from protocol.read_message()
 
-    assert protocol.on_message_received.mock_calls == [call(str(i)) for i in range(1520)]
+
+@asyncio.coroutine
+def test_QDataStreamProtocol_recv_large_array(reader):
+    protocol = QDataStreamProtocol(reader)
+
+    reader.feed_data(QDataStreamProtocol.pack_block(b''.join([QDataStreamProtocol.pack_qstring(str(i)) for i in range(1520)])))
+    reader.feed_eof()
+    message = yield from protocol.read_message()
+
+    assert message == {'legacy': [str(i) for i in range(1520)]}
 
 
 def test_QDataStreamProtocol_send_equality_reference():
-    protocol = QDataStreamProtocol()
-    protocol._transport = mock.Mock()
-
-    protocol.send_message('{some_json: true}')
-
-    expected_bytes = preparePacket('{some_json: true}')
-    protocol._transport.write.assert_called_with(expected_bytes)
+    test = '{some_json: true}'
+    assert QDataStreamProtocol.pack_message('{some_json: true}') == preparePacket(test)
 
 
 def test_QDataStreamProtocol_send_equality_reference_legacy():
-    protocol = QDataStreamProtocol()
-    protocol._transport = mock.Mock()
-
-    protocol.send_legacy('{some_json: true}', 'login', '123')
-
-    expected_bytes = preparePacket('{some_json: true}', 'login', '123')
-    protocol._transport.write.assert_called_with(expected_bytes)
+    args = ['{some_json: true}', 'login', '123']
+    assert QDataStreamProtocol.pack_message(*args) == preparePacket('{some_json: true}', 'login', '123')
