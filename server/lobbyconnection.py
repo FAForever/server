@@ -42,7 +42,7 @@ import pygeoip
 import trueskill
 from trueskill import Rating
 
-from server.decorators import timed
+from server.decorators import timed, with_logger
 from server.games.game import GameState
 from server.players import *
 from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS
@@ -68,15 +68,14 @@ TIMEOUT_SECONDS = 300
 logger = logging.getLogger(__name__)
 
 
+@with_logger
 class LobbyConnection(QObject):
     @timed()
     def __init__(self, socket, parent=None):
         super(LobbyConnection, self).__init__(parent)
         self.parent = parent
 
-        self.log = logging.getLogger(__name__)
-
-        self.log.debug("Incoming lobby socket started")
+        self._logger.debug("LobbyConnection intializing")
 
         self.season = LADDER_SEASON
 
@@ -137,15 +136,15 @@ class LobbyConnection(QObject):
             self.session = int(random.getrandbits(16))
 
         else:
-            self.log.warning("We are not connected")
+            self._logger.warning("We are not connected")
             self.socket.abort()
 
     @timed()
     def initNotDone(self):
         self.initTimer.stop()
-        self.log.warning("Init not done for this IP : " + self.socket.peerAddress().toString())
+        self._logger.warning("Init not done for this IP : " + self.socket.peerAddress().toString())
         if not self.loginDone:
-            self.log.warning("aborting socket")
+            self._logger.warning("aborting socket")
             self.socket.abort()
         try:
             self.socket.readyRead.disconnect(self.readData)
@@ -187,7 +186,7 @@ class LobbyConnection(QObject):
                 # if last ping didn't answer, we can assume that the guy is gone.
                 if self.ponged == False and self.initPing == False:
                     if self.missedPing > 2:
-                        self.log.debug(
+                        self._logger.debug(
                             self.logPrefix + " Missed 2 ping - Removing user IP " + self.socket.peerAddress().toString())
 
                         if self in self.parent.recorders:
@@ -314,7 +313,7 @@ class LobbyConnection(QObject):
     @timed()
     def handleAction(self, action, stream):
         try:
-            self.log.debug('handleAction: {}'.format(action))
+            self._logger.debug('handleAction: {}'.format(action))
             if action == "PING":
                 self.sendReply("PONG")
 
@@ -432,7 +431,7 @@ class LobbyConnection(QObject):
                             query.addBindValue(icon)
 
                             if not query.exec_():
-                                self.log.debug(query.lastError())
+                                self._logger.debug(query.lastError())
 
                         zip.close()
 
@@ -606,7 +605,7 @@ class LobbyConnection(QObject):
                             query.addBindValue(gmuid)
 
                             if not query.exec_():
-                                self.log.debug(query.lastError())
+                                self._logger.debug(query.lastError())
 
                             uuid = query.lastInsertId()
 
@@ -614,13 +613,13 @@ class LobbyConnection(QObject):
                             query.addBindValue(uuid)
                             query.addBindValue(self.player.id)
                             if not query.exec_():
-                                self.log.debug(query.lastError())
+                                self._logger.debug(query.lastError())
 
                             if unranked:
                                 query.prepare("INSERT INTO `table_map_unranked`(`id`) VALUES (?)")
                                 query.addBindValue(uuid)
                                 if not query.exec_():
-                                    self.log.debug(query.lastError())
+                                    self._logger.debug(query.lastError())
 
                         zip.close()
 
@@ -655,13 +654,13 @@ class LobbyConnection(QObject):
                 query.prepare("SELECT id FROM `login` WHERE LOWER(`login`) = ?")
                 query.addBindValue(login.lower())
                 if not query.exec_():
-                    self.log.debug("Error inserting login %s", login)
-                    self.log.debug(query.lastError())
+                    self._logger.debug("Error inserting login %s", login)
+                    self._logger.debug(query.lastError())
                     self.sendReply("LOGIN_AVAILABLE", "no", login)
                     return
 
                 if query.size() != 0:
-                    self.log.debug("Login not available: %s", login)
+                    self._logger.debug("Login not available: %s", login)
                     self.sendReply("LOGIN_AVAILABLE", "no", login)
                     return
 
@@ -671,8 +670,8 @@ class LobbyConnection(QObject):
                 query.addBindValue(em)
 
                 if not query.exec_():
-                    self.log.debug("Error inserting login %s", login)
-                    self.log.debug(query.lastError())
+                    self._logger.debug("Error inserting login %s", login)
+                    self._logger.debug(query.lastError())
                     self.sendReply("LOGIN_AVAILABLE", "no", login)
                     return
 
@@ -687,7 +686,7 @@ class LobbyConnection(QObject):
                 query.addBindValue(keyHex)
                 query.addBindValue(exp)
                 query.exec_()
-                self.log.debug("Sending registration mail")
+                self._logger.debug("Sending registration mail")
                 link = {'a': 'validate', 'email': keyHex, 'u': base64.b64encode(str(uid))}
                 passwordLink = Config['global']['app_url'] + "validateAccount.php?" + urllib.parse.urlencode(link)
 
@@ -706,7 +705,7 @@ Thanks,\n\
                 msg['From'] = email.utils.formataddr(('Forged Alliance Forever', MAIL_ADDRESS))
                 msg['To'] = email.utils.formataddr((login, em))
 
-                self.log.debug("sending mail to " + em)
+                self._logger.debug("sending mail to " + em)
                 #self.log.debug(msg.as_string())
                 #s = smtplib.SMTP(config['global']['smtp_server'])
                 s = smtplib.SMTP_SSL(Config['global']['smtp_server'], 465, Config['global']['smtp_server'],
@@ -718,7 +717,7 @@ Thanks,\n\
 
                 self.sendJSON(dict(command="notice", style="info",
                                    text="A e-mail has been sent with the instructions to validate your account"))
-                self.log.debug("sent mail")
+                self._logger.debug("sent mail")
                 self.sendReply("LOGIN_AVAILABLE", "yes", login)
             elif action == "FA_CLOSED":
                 login = stream.readQString()
@@ -730,7 +729,7 @@ Thanks,\n\
                 session = stream.readQString()
                 self.receiveJSON(action, stream)
         except:
-            self.log.exception("Something awful happened in a lobby thread !")
+            self._logger.exception("Something awful happened in a lobby thread !")
 
 
     @timed()
@@ -739,7 +738,7 @@ Thanks,\n\
         if self.initTimer:
             packetSize = self.socket.bytesAvailable()
             if packetSize > 120:
-                self.log.warning("invalid handshake ! - Packet too big (" + str(
+                self._logger.warning("invalid handshake ! - Packet too big (" + str(
                     packetSize) + " ) " + self.socket.peerAddress().toString())
                 self.socket.abort()
                 return
@@ -761,7 +760,7 @@ Thanks,\n\
                         if self.noSocket == False and self.socket.isValid():
                             if self.socket.bytesAvailable() < 4:
                                 if self.initTimer:
-                                    self.log.warning(
+                                    self._logger.warning(
                                         "invalid handshake ! - no valid packet size " + self.socket.peerAddress().toString())
                                     self.socket.abort()
                                     return
@@ -771,7 +770,7 @@ Thanks,\n\
                             self.blockSize = ins.readUInt32()
                             if self.initTimer:
                                 if (packetSize - 4) != self.blockSize:
-                                    self.log.warning(
+                                    self._logger.warning(
                                         "invalid handshake ! - packet not fit ! " + self.socket.peerAddress().toString())
                                     self.socket.abort()
                                     return
@@ -920,14 +919,14 @@ Thanks,\n\
         reply = QByteArray()
 
         for key, container in self.parent.games.gamesContainer.items():
-            self.log.debug("sending games of container " + container.gameNiceName)
+            self._logger.debug("sending games of container " + container.gameNiceName)
             if container.listable or container.live:
                 for game in container.games:
 
                     if game.state == GameState.LOBBY or game.state == GameState.LIVE:
                         reply.append(self.prepareBigJSON(self.parent.jsonGame(game)))
 
-            self.log.debug("done")
+            self._logger.debug("done")
 
         self.sendArray(reply)
 
@@ -997,7 +996,7 @@ Thanks,\n\
                 if self.socket.isValid() and self.socket.state() == 3:
 
                     if self.socket.write(reply) == -1:
-                        self.log.debug("error socket write")
+                        self._logger.debug("error socket write")
                         self.socket.abort()
                         self.noSocket = True
                 else:
@@ -1022,7 +1021,7 @@ Thanks,\n\
                 query.addBindValue(self.uid)
                 query.addBindValue(uid)
                 if not query.exec_():
-                    self.log.debug(query.lastError())
+                    self._logger.debug(query.lastError())
 
         toRemove = set(self.ladderMapList) - set(maplist)
         if len(toRemove) > 0:
@@ -1032,7 +1031,7 @@ Thanks,\n\
                 query.addBindValue(self.uid)
                 query.addBindValue(uid)
                 if not query.exec_():
-                    self.log.debug(query.lastError())
+                    self._logger.debug(query.lastError())
 
         self.ladderMapList = maplist
 
@@ -1256,7 +1255,7 @@ Thanks,\n\
             except:
                 self.sendJSON(
                     dict(command="notice", style="error", text="We are not able to log you. Try updating your lobby."))
-                self.log.info(self.logPrefix + "unable to decypher !!")
+                self._logger.info(self.logPrefix + "unable to decypher !!")
 
             query = QSqlQuery(self.parent.db)
             queryStr = "SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1"
@@ -1366,7 +1365,7 @@ Thanks,\n\
                     idFound = int(query.value(0))
                     otherName = str(query.value(1))
 
-                    self.log.debug("%i (%s) is a smurf of %s" % (self.uid, login, otherName))
+                    self._logger.debug("%i (%s) is a smurf of %s" % (self.uid, login, otherName))
                     self.sendJSON(dict(command="notice", style="error",
                                        text="This computer is tied to this account : %s.<br>Multiple accounts are not allowed.<br>You can free this computer by logging in with that account (%s) on another computer.<br><br>Or Try SteamLink: <a href='" +
                                             Config['global']['app_url'] + "faf/steam.php'>" +
@@ -1413,7 +1412,7 @@ Thanks,\n\
             query.addBindValue("md5:" + str(m.hexdigest()))
             query.addBindValue(login)
             if not query.exec_():
-                self.log.error(query.lastError())
+                self._logger.error(query.lastError())
 
             self.player = Player(login=str(login),
                                  session=self.session,
@@ -1443,7 +1442,7 @@ Thanks,\n\
                 "SELECT `clan_tag` FROM `fafclans`.`clan_tags` LEFT JOIN `fafclans`.players_list ON `fafclans`.players_list.player_id = `fafclans`.`clan_tags`.player_id WHERE `faf_id` = ?")
             query.addBindValue(self.uid)
             if not query.exec_():
-                self.log.warning(query.lastError())
+                self._logger.warning(query.lastError())
             if query.size() > 0:
                 query.first()
                 self.player.clan = str(query.value(0))
@@ -1605,7 +1604,7 @@ Thanks,\n\
 
             gameSocket, lobbySocket = self.parent.listUsers.addUser(self.player)
 
-            self.log.debug("Closing users")
+            self._logger.debug("Closing users")
 
             if gameSocket is not None:
                 gameSocket.abort()
@@ -1613,7 +1612,7 @@ Thanks,\n\
             if lobbySocket is not None:
                 lobbySocket.abort()
 
-            self.log.debug("Welcome")
+            self._logger.debug("Welcome")
             self.sendJSON(dict(command="welcome", email=str(self.email)))
 
             tourneychannel = self.getPlayerTournament(self.player)
@@ -1663,7 +1662,7 @@ Thanks,\n\
             self.sendGameList()
             self.sendReplaySection()
 
-            self.log.debug("sending new player")
+            self._logger.debug("sending new player")
             for user in self.parent.listUsers.players:
 
                 if user.getLogin() != str(login):
@@ -1733,9 +1732,9 @@ Thanks,\n\
                     self.pingTimer.stop()
                     self.pingTimer.start(61000)
 
-            self.log.debug("done")
+            self._logger.debug("done")
         except Exception as ex:
-            self.log.exception(ex)
+            self._logger.exception(ex)
             self.socket.abort()
             self.parent.removeRecorder(self)
             self.sendJSON(dict(command="notice", style="error",
@@ -1935,7 +1934,7 @@ Thanks,\n\
         if game:
             if game.getGameMod() == 'ladder1v1' and game.state != GameState.LIVE:
                 # player has a laddergame that isn't playing, so we suspect he is a canceller....
-                self.log.debug("Detected cancelled ladder for {} {}".format(self.player, game))
+                self._logger.debug("Detected cancelled ladder for {} {}".format(self.player, game))
 
                 query = QSqlQuery(self.parent.db)
                 query.prepare("UPDATE `login` SET `ladderCancelled`= `ladderCancelled`+1  WHERE id = ?")
@@ -1943,7 +1942,7 @@ Thanks,\n\
                 query.exec_()
 
             else:
-                self.log.debug("No real game found...")
+                self._logger.debug("No real game found...")
 
             query = QSqlQuery(self.parent.db)
             query.prepare("SELECT `ladderCancelled` FROM `login` WHERE id = ?")
@@ -1955,7 +1954,7 @@ Thanks,\n\
                     if attempts >= 10:
                         return False
                 else:
-                    self.log.debug("Not getting the value properly a ladder and cancelling it...")
+                    self._logger.debug("Not getting the value properly a ladder and cancelling it...")
 
         return True
 
@@ -2130,7 +2129,7 @@ Thanks,\n\
             query.prepare("SELECT * FROM `table_mod` WHERE uid = ? LIMIT 1")
             query.addBindValue(uid)
             if not query.exec_():
-                self.log.debug(query.lastError())
+                self._logger.debug(query.lastError())
             if query.size() == 1:
                 query.first()
                 uid = str(query.value(1))
@@ -2235,8 +2234,8 @@ Thanks,\n\
             getattr(self, 'command_{}'.format(cmd))(message)
         except (KeyError, ValueError) as ex:
             if data_string != '':
-                self.log.warning("Garbage input from client: {}".format(data_string))
-                self.log.exception(ex)
+                self._logger.warning("Garbage input from client: {}".format(data_string))
+                self._logger.exception(ex)
 
     def done(self):
         if self.uid:
@@ -2271,12 +2270,12 @@ Thanks,\n\
 
     def displayError(self, socketError):
         if socketError == QtNetwork.QAbstractSocket.RemoteHostClosedError:
-            self.log.warning(self.logPrefix + "RemoteHostClosedError")
+            self._logger.warning(self.logPrefix + "RemoteHostClosedError")
 
         elif socketError == QtNetwork.QAbstractSocket.HostNotFoundError:
-            self.log.warning(self.logPrefix + "HostNotFoundError")
+            self._logger.warning(self.logPrefix + "HostNotFoundError")
         elif socketError == QtNetwork.QAbstractSocket.ConnectionRefusedError:
-            self.log.warning(self.logPrefix + "ConnectionRefusedError")
+            self._logger.warning(self.logPrefix + "ConnectionRefusedError")
         else:
-            self.log.warning(self.logPrefix + "The following Error occurred: %s." % self.socket.errorString())
+            self._logger.warning(self.logPrefix + "The following Error occurred: %s." % self.socket.errorString())
 
