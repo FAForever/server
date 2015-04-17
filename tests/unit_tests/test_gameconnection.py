@@ -18,7 +18,8 @@ def test_on_new_connections_valid_socket(game_connection):
     """
     :type game_connection: GameConnection
     """
-    assert game_connection.on_connection_made(('127.0.0.1', 5123)) is True
+    protocol = mock.Mock()
+    assert game_connection.on_connection_made(protocol, ('127.0.0.1', 5123)) is True
 
 
 def test_on_connection_made_no_player(game_connection):
@@ -27,7 +28,7 @@ def test_on_connection_made_no_player(game_connection):
     game_connection.users = mock_users
     game_connection.abort = mock.Mock()
 
-    game_connection.on_connection_made(('127.0.0.1', 5123))
+    game_connection.on_connection_made(mock.Mock(), ('127.0.0.1', 5123))
 
     game_connection.abort.assert_any_call()
 
@@ -39,7 +40,7 @@ def test_on_connection_made_no_game(game_connection, players):
     game_connection.users = mock_users
     game_connection.abort = mock.Mock()
 
-    game_connection.on_connection_made(('127.0.0.1', 5123))
+    game_connection.on_connection_made(mock.Mock(), ('127.0.0.1', 5123))
 
     game_connection.abort.assert_any_call()
 
@@ -56,15 +57,16 @@ def test_ping_miss(game_connection):
 @asyncio.coroutine
 def test_ping_hit(game_connection):
     game_connection.abort = mock.Mock()
-    game_connection.send_message = mock.Mock()
+    protocol = mock.Mock()
+    game_connection.protocol = protocol
 
     asyncio.async(game_connection.ping())
     yield from asyncio.sleep(0.1)
 
-    game_connection.send_message.assert_any_call(ujson.dumps({
+    protocol.send_message.assert_any_call({
         'key': 'ping',
         'commands': []
-    }))
+    })
     for i in range(1, 3):
         game_connection.handle_action('pong', [])
         game_connection.ping()
@@ -87,6 +89,7 @@ def test_abort(game_connection, game, players, connected_game_socket):
 @asyncio.coroutine
 def test_handle_action_GameState_idle_adds_connection(game_connection, players, game):
     players.joining.game = game
+    game_connection.protocol = mock.Mock()
     game_connection.player = players.hosting
     game_connection.game = game
 
@@ -111,16 +114,17 @@ def test_handle_action_GameState_idle_as_peer_sends_CreateLobby(game_connection,
     :type game_connection: GameConnection
     :type transport Transport
     """
-    game_connection.send_message = mock.Mock()
+    protocol = mock.Mock()
+    game_connection.protocol = protocol
     game_connection.player = players.joining
 
     yield from game_connection.handle_action('GameState', ['Idle'])
 
-    game_connection.send_message.assert_any_call(ujson.dumps({'key': 'CreateLobby',
-                                                            'commands': [0, players.joining.gamePort,
-                                                             players.joining.login,
-                                                             players.joining.id,
-                                                             1]}))
+    protocol.send_message.assert_any_call({'key': 'CreateLobby',
+                                           'commands': [0, players.joining.gamePort,
+                                            players.joining.login,
+                                            players.joining.id,
+                                            1]})
 
 @asyncio.coroutine
 def test_handle_action_GameState_idle_as_host_sends_CreateLobby(game_connection, players, games, transport):
@@ -128,16 +132,17 @@ def test_handle_action_GameState_idle_as_host_sends_CreateLobby(game_connection,
     :type game_connection: GameConnection
     :type transport Transport
     """
-    game_connection.send_message = mock.Mock()
+    protocol = mock.Mock()
+    game_connection.protocol = protocol
     game_connection.player = players.hosting
 
     yield from game_connection.handle_action('GameState', ['Idle'])
 
-    game_connection.send_message.assert_any_call(ujson.dumps({'key': 'CreateLobby',
-                                            'commands': [0, players.hosting.gamePort,
-                                                         players.hosting.login,
-                                                         players.hosting.id,
-                                                         1]}))
+    protocol.send_message.assert_any_call({'key': 'CreateLobby',
+                                           'commands': [0, players.hosting.gamePort,
+                                                        players.hosting.login,
+                                                        players.hosting.id,
+                                                        1]})
 
 
 @slow
@@ -150,15 +155,16 @@ def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, pla
         fut = asyncio.Future()
         fut.set_result(Connectivity.PUBLIC)
         peer_test().__enter__().determine_connectivity.return_value = fut
-        game_connection.send_message = mock.MagicMock()
+        protocol = mock.Mock()
+        game_connection.protocol = protocol
         game_connection.player = players.hosting
         game.mapName = 'some_map'
 
         result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
         loop.run_until_complete(result)
 
-        game_connection.send_message.assert_any_call(ujson.dumps({'key': 'HostGame',
-                                                      'commands': [game.mapName]}))
+        protocol.send_message.assert_any_call({'key': 'HostGame',
+                                               'commands': [game.mapName]})
 
 
 def test_handle_action_GameState_lobby_calls_ConnectToHost(game_connection, loop, players, game):

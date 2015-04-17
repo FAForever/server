@@ -1,11 +1,9 @@
 from abc import ABCMeta, abstractmethod
-import ujson
 
 from server.abc.base_game import InitMode
-from server.protocol import QDataStreamProtocol
 
 
-class GpgNetServerProtocol(QDataStreamProtocol, metaclass=ABCMeta):
+class GpgNetServerProtocol(metaclass=ABCMeta):
     """
     Defines an interface for the server side GPGNet protocol
     """
@@ -83,7 +81,15 @@ class GpgNetServerProtocol(QDataStreamProtocol, metaclass=ABCMeta):
 
     def send_gpgnet_message(self, command_id, arguments):
         message = {"key": command_id, "commands": arguments}
-        self.send_message(ujson.dumps(message))
+        self.send_message(message)
+
+    @abstractmethod
+    def send_message(self, message):
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def on_ProcessNatPacket(self, sender, message):
+        pass  # pragma: no cover
 
 
 class GpgNetClientProtocol(metaclass=ABCMeta):

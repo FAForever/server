@@ -1,6 +1,7 @@
-from asyncio import StreamReader
+from asyncio import StreamReader, StreamWriter
 import asyncio
 from PySide.QtCore import QByteArray, QDataStream, QIODevice
+import mock
 import pytest
 from server.protocol import QDataStreamProtocol
 
@@ -26,13 +27,20 @@ def preparePacket(action, *args, **kwargs):
 def reader(loop):
     return StreamReader(loop=loop)
 
+@pytest.fixture
+def writer():
+    return mock.Mock()
+
+@pytest.fixture
+def protocol(reader, writer):
+    return QDataStreamProtocol(reader, writer)
+
 
 @asyncio.coroutine
-def test_QDataStreamProtocol_recv_small_message(reader):
+def test_QDataStreamProtocol_recv_small_message(protocol,reader):
     data = QDataStreamProtocol.pack_block(b''.join([QDataStreamProtocol.pack_qstring('Hello'),
                                                     QDataStreamProtocol.pack_qstring('Goodbye')]))
     reader.feed_data(data)
-    protocol = QDataStreamProtocol(reader)
 
     message = yield from protocol.read_message()
 
@@ -40,19 +48,16 @@ def test_QDataStreamProtocol_recv_small_message(reader):
 
 
 @asyncio.coroutine
-def test_QDataStreamProtocol_recv_malformed_message(reader):
+def test_QDataStreamProtocol_recv_malformed_message(protocol, reader):
     reader.feed_data(b'\0')
     reader.feed_eof()
-    protocol = QDataStreamProtocol(reader)
 
     with pytest.raises(asyncio.IncompleteReadError):
         yield from protocol.read_message()
 
 
 @asyncio.coroutine
-def test_QDataStreamProtocol_recv_large_array(reader):
-    protocol = QDataStreamProtocol(reader)
-
+def test_QDataStreamProtocol_recv_large_array(protocol, reader):
     reader.feed_data(QDataStreamProtocol.pack_block(b''.join([QDataStreamProtocol.pack_qstring(str(i)) for i in range(1520)])))
     reader.feed_eof()
     message = yield from protocol.read_message()

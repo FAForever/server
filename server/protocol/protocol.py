@@ -1,23 +1,23 @@
 from abc import ABCMeta
-from asyncio import StreamReader
+from asyncio import StreamReader, StreamWriter
 import asyncio
 import struct
 import ujson
 from server.decorators import with_logger
-
 
 @with_logger
 class QDataStreamProtocol(metaclass=ABCMeta):
     """
     Implements the legacy QDataStream-based encoding scheme
     """
-    def __init__(self, reader: StreamReader):
+    def __init__(self, reader: StreamReader, writer: StreamWriter):
         """
         Initialize the protocol
 
         :param StreamReader reader: asyncio stream to read from
         """
         self.reader = reader
+        self.writer = writer
 
     @staticmethod
     def read_qstring(message):
@@ -59,6 +59,19 @@ class QDataStreamProtocol(metaclass=ABCMeta):
             yield QDataStreamProtocol.read_block(message)
             data = data[4 + length:]
 
+    @staticmethod
+    def pack_message(message, *args):
+        """
+        For sending a bunch of QStrings packed together in a 'block'
+        """
+        msg = QDataStreamProtocol.pack_qstring(message)
+        for arg in args:
+            if isinstance(arg, str):
+                msg += QDataStreamProtocol.pack_qstring(arg)
+            else:
+                raise NotImplementedError("Only string serialization is supported")
+        return QDataStreamProtocol.pack_block(msg)
+
     @asyncio.coroutine
     def read_message(self):
         """
@@ -78,23 +91,9 @@ class QDataStreamProtocol(metaclass=ABCMeta):
                 message['legacy'].append(part)
         return message
 
-
-    @staticmethod
-    def pack_message(message, *args):
-        """
-        For sending a bunch of QStrings packed together in a 'block'
-        """
-        msg = QDataStreamProtocol.pack_qstring(message)
-        for arg in args:
-            if isinstance(arg, str):
-                msg += QDataStreamProtocol.pack_qstring(arg)
-            else:
-                raise NotImplementedError("Only string serialization is supported")
-        return QDataStreamProtocol.pack_block(msg)
-
-    def send_message(self, message):
-        self._transport.write(self.pack_block(self.pack_qstring(message)))
+    def send_message(self, message: dict):
+        self.writer.write(self.pack_message(ujson.dumps(message)))
 
     def send_messages(self, messages):
         payload = [self.pack_block(self.pack_qstring(msg)) for msg in messages]
-        self._transport.writelines(payload)
+        self.writer.writelines(payload)

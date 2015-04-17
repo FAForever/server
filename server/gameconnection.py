@@ -39,18 +39,16 @@ from server.subscribable import Subscribable
 logger = logging.getLogger(__name__)
 
 
-from server.protocol.protocol import QDataStreamProtocol
-
-
 PROXY_SERVER = ('127.0.0.1', 12000)
 
 @with_logger
 class GameConnection(Subscribable, GpgNetServerProtocol):
     """
-    Responsible for the games protocol.
+    Responsible for connections to the game, using the GPGNet protocol
     """
     def __init__(self, loop, users, games: GamesService, db):
         super().__init__()
+        self.protocol = None
         self._logger.info('GameConnection initializing')
         self._state = GameConnectionState.INITIALIZING
         self.loop = loop
@@ -103,7 +101,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     def player(self, val):
         self._player = val
 
-    def on_connection_made(self, peer_name):
+    def on_connection_made(self, protocol, peer_name):
         """
         Accept a connected socket for this GameConnection
 
@@ -113,7 +111,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         :return: bool
         """
         self._logger.debug("Accepting connection from {}".format(peer_name))
-
+        self.protocol = protocol
         self.lobby = None
         ip, port = peer_name
         self._player = self.users.findByIp(ip)
@@ -145,9 +143,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self._state = GameConnectionState.INITIALIZED
         return True
 
-    def send_gpgnet_message(self, action, commands):
-        message = {"key": action, "commands": commands}
-        self.send_message(ujson.dumps(message))
+    def send_message(self, message):
+        self.protocol.send_message(message)
 
     @asyncio.coroutine
     def ping(self):
@@ -256,7 +253,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         :return:
         """
         try:
-            message = ujson.loads(message)
             message["command_id"] = message['action']
             message["arguments"] = message['chuncks']
             self.notify(message)

@@ -30,19 +30,20 @@ def wait_call(mock, call, timeout=0.5):
 @slow
 def test_public_host(loop, players, player_service, games, db):
     player = players.hosting
-    nat_server, server = run_game_server(TEST_ADDRESS, player_service, games, db)
+    nat_server, server = run_game_server(TEST_ADDRESS, player_service, games, db, loop=loop)
     server = yield from server
-    with TestGPGClient('127.0.0.1', 8000, player.gamePort, loop=loop, process_nat_packets=True) as client:
-        yield from client.client_pair
+    with TestGPGClient(player.gamePort, loop=loop, process_nat_packets=True) as client:
+        yield from client.connect('127.0.0.1', 8000)
         client.proto.send_GameState(['Idle'])
         client.proto.send_GameState(['Lobby'])
-        yield from wait_call(client.udp_messages,
-                              call("\x08Are you public? %s" % player.id), 2)
-        client.proto.send_ProcessNatPacket(["%s:%s" % (player.getIp(), player.gamePort),
-                                      "Are you public? %s" % player.id])
-        yield from wait_call(client.messages,
-                    call(ujson.dumps({"key": "ConnectivityState",
-                    "commands": [player.id, "PUBLIC"]})), 2)
+        yield from client.read_until('ConnectivityState')
+        assert call("\x08Are you public? %s" % player.id)\
+               in client.udp_messages.mock_calls
+        assert call({"key": "ConnectivityState",
+                    "legacy": [],
+                    "commands": [player.id, "PUBLIC"]})\
+               in client.messages.mock_calls
+        client.proto.write_eof()
     server.close()
     nat_server.close()
     yield from server.wait_closed()
@@ -50,24 +51,28 @@ def test_public_host(loop, players, player_service, games, db):
 
 @asyncio.coroutine
 @slow
-def test_stun_host(loop, qtbot, players, player_service, games, db):
+def test_stun_host(loop, players, player_service, games, db):
     player = players.hosting
-    nat_server, server = run_game_server(TEST_ADDRESS, player_service, games, db)
+    nat_server, server = run_game_server(TEST_ADDRESS, player_service, games, db, loop=loop)
     server = yield from server
-    with TestGPGClient('127.0.0.1', 8000, player.gamePort, loop=loop, process_nat_packets=False) as client:
-        yield from client.client_pair
+    with TestGPGClient(player.gamePort, loop=loop, process_nat_packets=False) as client:
+        yield from client.connect('127.0.0.1', 8000)
         client.proto.send_GameState(['Idle'])
         client.proto.send_GameState(['Lobby'])
-        yield from wait_call(client.messages,
-                      call(ujson.dumps({"key": "SendNatPacket",
-                            "commands": ["%s:%s" % (config.LOBBY_IP, config.LOBBY_UDP_PORT),
-                                         "Hello %s" % player.id]})), 2)
-#
+        yield from client.read_until('SendNatPacket')
+        assert call({"key": "SendNatPacket",
+                "legacy": [],
+                "commands": ["%s:%s" % (config.LOBBY_IP, config.LOBBY_UDP_PORT),
+                             "Hello %s" % player.id]})\
+               in client.messages.mock_calls
+
         client.send_udp_natpacket('Hello {}'.format(player.id), '127.0.0.1', config.LOBBY_UDP_PORT)
-#
-        yield from wait_call(client.messages,
-                      call(ujson.dumps({"key": "ConnectivityState",
-                                       "commands": [player.id, "STUN"]})), 2)
+        yield from client.read_until('ConnectivityState')
+        assert call({'key': 'ConnectivityState',
+                     'legacy': [],
+                     'commands': [player.id, 'STUN']})\
+               in client.messages.mock_calls
+        client.proto.write_eof()
     server.close()
     nat_server.close()
     yield from server.wait_closed()

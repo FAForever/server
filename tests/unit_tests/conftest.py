@@ -31,6 +31,7 @@ def game_connection(request, game, loop, player_service, players, games, transpo
 def connections(loop, player_service, games, transport, game):
     def make_connection(player, connectivity):
         conn = GameConnection(loop=loop, users=player_service, games=games, db=None)
+        conn.protocol = mock.Mock()
         conn.player = player
         conn.game = game
         conn._transport = transport

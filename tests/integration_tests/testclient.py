@@ -1,4 +1,4 @@
-import json
+import asyncio
 import socket
 
 from PySide.QtCore import QObject
@@ -9,24 +9,48 @@ from server.protocol import QDataStreamProtocol
 from server.protocol.gpgnet import GpgNetClientProtocol
 
 
-class ClientProtocol(QDataStreamProtocol, GpgNetClientProtocol):
-    def send_gpgnet_message(self, command_id, arguments):
-        self.send_message(json.dumps({'action': command_id, 'chuncks': arguments}))
-
-    def __init__(self, receiver):
-        QDataStreamProtocol.__init__(self)
+@with_logger
+class GpgClientProtocol(GpgNetClientProtocol):
+    def __init__(self, receiver, reader, writer):
+        super().__init__()
         self.receiver = receiver
+        self.reader = reader
+        self.writer = writer
+        self.protocol = QDataStreamProtocol(reader, writer)
+
+    def read_message(self):
+        try:
+            msg = yield from self.protocol.read_message()
+            self.on_message_received(msg)
+            return msg
+        except Exception as ex:
+            self._logger.exception(ex)
+            self.writer.close()
+            raise
+
+    def write_eof(self):
+        self.writer.write_eof()
+
+    def close(self):
+        self.writer.close()
 
     def on_message_received(self, message):
         self.receiver.on_message_received(message)
+
+    def send_gpgnet_message(self, command_id, arguments):
+        self.protocol.send_message({'action': command_id, 'chuncks': arguments})
+
 
 
 @with_logger
 class TestGPGClient(QObject):
     """
     Client used for acting as a GPGNet client.
+    This means communicating with the GameServer
+    through the GpgClientProtocol, and being able to
+    send/receive out-of-band UDP messages.
     """
-    def __init__(self, address, port, udp_port, loop, process_nat_packets=True, parent=None):
+    def __init__(self, udp_port, loop, process_nat_packets=True, parent=None):
         """
         Initialize the test client
         :param loop: asyncio event loop:
@@ -41,21 +65,41 @@ class TestGPGClient(QObject):
         """
         super(TestGPGClient, self).__init__(parent)
         self.process_nat_packets = process_nat_packets
-        self._logger.debug("Connecting to %s: %s" % (address, port))
         self._logger.debug("Listening for UDP on: %s" % udp_port)
         self.messages = mock.MagicMock()
         self.udp_messages = mock.MagicMock()
-
+        self.loop = loop
         self.udp_socket = QUdpSocket()
         self.udp_socket.connected.connect(self._on_connected)
         self.udp_socket.error.connect(self._on_error)
         self.udp_socket.stateChanged.connect(self._on_state_change)
         self.udp_socket.readyRead.connect(self._on_udp_message)
 
-        self.proto = ClientProtocol(self)
-        self.client_pair = loop.create_connection(lambda: self.proto,
-                                                  address, port)
+        self.proto = None
+        self.client_pair = None
         self.udp_socket.bind(udp_port)
+
+    @asyncio.coroutine
+    def connect(self, host, port):
+        self._logger.debug("Connecting to %s: %s" % (host, port))
+        self.client_pair = yield from asyncio.open_connection(host, port)
+        self.proto = GpgClientProtocol(self, *self.client_pair)
+
+    @asyncio.coroutine
+    def read_until(self, value=None):
+        while True:
+            msg = yield from self.proto.read_message()
+            if 'key' in msg and msg['key'] == value:
+                return
+
+
+    @asyncio.coroutine
+    def read_until_eof(self):
+        try:
+            while True:
+                yield from self.proto.read_message()
+        except Exception as ex:
+            self._logger.debug(ex)
 
     def on_message_received(self, message):
         self.messages(message)
@@ -64,6 +108,7 @@ class TestGPGClient(QObject):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.proto.close()
         self.udp_socket.abort()
 
     def _on_udp_message(self):
