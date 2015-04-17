@@ -1,31 +1,14 @@
 from abc import ABCMeta, abstractmethod
+import ujson
 
 from server.abc.base_game import InitMode
+from server.protocol import QDataStreamProtocol
 
 
-class GpgNetServerProtocol(metaclass=ABCMeta):
+class GpgNetServerProtocol(QDataStreamProtocol, metaclass=ABCMeta):
     """
     Defines an interface for the server side GPGNet protocol
     """
-
-    @property
-    @abstractmethod
-    def connectivity_state(self):
-        """
-        The connectivity state of the peer this connection represents
-        :rtype Connectivity
-        """
-        pass  # pragma: no cover
-
-    @property
-    @abstractmethod
-    def player(self):
-        """
-        The connectivity state of the peer this connection represents
-        :rtype Player
-        """
-        pass  # pragma: no cover
-
     def send_CreateLobby(self, init_mode: InitMode, port: int, login: str, uid: int, natTraversalProvider: int):
         """
         Tells the client to create a new LobbyComm instance and have it listen on the given port number
@@ -98,13 +81,9 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
         """
         self.on_ProcessNatPacket(arguments[0], arguments[1])
 
-    @abstractmethod
-    def on_ProcessNatPacket(self, address_and_port, message):
-        pass  # pragma: no cover
-
-    @abstractmethod
     def send_gpgnet_message(self, command_id, arguments):
-        pass  # pragma: no cover
+        message = {"key": command_id, "commands": arguments}
+        self.send_message(ujson.dumps(message))
 
 
 class GpgNetClientProtocol(metaclass=ABCMeta):

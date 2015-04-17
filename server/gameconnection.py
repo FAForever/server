@@ -45,14 +45,12 @@ from server.protocol.protocol import QDataStreamProtocol
 PROXY_SERVER = ('127.0.0.1', 12000)
 
 @with_logger
-class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
+class GameConnection(Subscribable, GpgNetServerProtocol):
     """
     Responsible for the games protocol.
     """
-
     def __init__(self, loop, users, games: GamesService, db):
-        Subscribable.__init__(self)
-        QDataStreamProtocol.__init__(self)
+        super().__init__()
         self._logger.info('GameConnection initializing')
         self._state = GameConnectionState.INITIALIZING
         self.loop = loop
@@ -253,8 +251,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol, QDataStreamProtocol):
     @timed(limit=0.1)
     def on_message_received(self, message):
         """
-        This code is starting to get messy...
-        This function was created when the FA protocol was moved to the lobby itself
+        Main entry point when reading messages
+        :param message:
+        :return:
         """
         try:
             message = ujson.loads(message)
