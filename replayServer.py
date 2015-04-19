@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #-------------------------------------------------------------------------------
 # Copyright (c) 2014 Gael Honorez.
@@ -21,7 +21,8 @@
 
 from logging import handlers
 
-from PySide.QtCore import QObject
+from PySide.QtCore import QObject, QCoreApplication
+from PySide import QtSql, QtNetwork
 from configobj import ConfigObj
 
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
@@ -56,26 +57,24 @@ class start(QObject):
         self.db.setPassword(DB_PASSWORD)
         
 
-        
         if not self.db.open():  
             self.logger.error(self.db.lastError().text())  
  
-        
         self.updater =  replayServer(self)
         if not self.updater.listen(QtNetwork.QHostAddress.Any, 11002):
-            return        
+            return
         else:
             self.logger.info("starting the replay server on  %s:%i" % (self.updater.serverAddress().toString(),self.updater.serverPort()))  
 
 
 if __name__ == '__main__':
+    logging.basicConfig(format='%(asctime)-15s %(message)s')
     logger = logging.getLogger(__name__)
     import sys
     
 
     try:
-        
-        app = QtCore.QCoreApplication(sys.argv)
+        app = QCoreApplication(sys.argv)
         server = start()
         app.exec_()
     
