@@ -126,7 +126,7 @@ class replayServerThread(QObject):
         
         query.exec_()
         if query.size() != 0:
-            while next(query):
+            while query.next():
                 uid = str(query.value(1))
                 name = str(query.value(2))
                 version = int(query.value(3))
@@ -199,7 +199,7 @@ class replayServerThread(QObject):
         missions = {}
         if query.size() > 0:
             rank = 0
-            while next(query):
+            while query.next():
                 uid = query.value(2)
                 if not uid in missions:
                     missions[uid] = {}
@@ -226,7 +226,7 @@ class replayServerThread(QObject):
         query.exec_()
         finalresult = []
         if query.size() > 0:
-            while next(query):
+            while query.next():
                 selected = False 
                 if query.value(3) != 0:
                     selected = True
@@ -248,7 +248,7 @@ class replayServerThread(QObject):
             if query.size() > 0:
                 num = 0
                 finalresult = []
-                while next(query):
+                while query.next():
                     finalresult.append((dict(number=num, division = str(query.value(0)), league = league)))
                     num += 1
                 self.sendJSON(dict(command = "stats", type = "divisions", league=league, values = finalresult))
@@ -288,7 +288,7 @@ class replayServerThread(QObject):
             finalresult = []
             if query.size() > 0:
                 rank = 1
-                while next(query):
+                while query.next():
                     score = float(query.value(1))
                     if score !=0:
                         finalresult.append((dict(rank=rank, name = str(query.value(0)), score = score)))
@@ -307,7 +307,7 @@ class replayServerThread(QObject):
             if query.size() > 0:
                 finalresult = []
                 rank = 1
-                while next(query):
+                while query.next():
                     score = float(query.value(1))
                     if score != 0:
                         finalresult.append((dict(rank=rank, name = str(query.value(0)), score = score)))
@@ -328,7 +328,7 @@ class replayServerThread(QObject):
 
             if query.size() > 0:
                 finalresult = []
-                while next(query):
+                while query.next():
                     if query.value(1) != 0 and query.value(2) != 0: 
                         date = query.value(0).toString("dd.MM.yyyy")
                         time = query.value(0).toString("hh:mm")
@@ -349,7 +349,7 @@ class replayServerThread(QObject):
 
             if query.size() > 0:
                 finalresult = []
-                while next(query):
+                while query.next():
                     if query.value(1) != 0 and query.value(2) != 0:
                         date = query.value(0).toString("dd.MM.yyyy")
                         time = query.value(0).toString("hh:mm")
@@ -368,7 +368,7 @@ class replayServerThread(QObject):
             finalresult = []
             if query.size() > 0:
                 
-                while next(query):  
+                while query.next():
                     finalresult.append(dict(idmap = int(query.value(0)), mapname = query.value(1), maprealname = query.value(2)))
                 
                 
@@ -440,7 +440,7 @@ class replayServerThread(QObject):
             query.exec_()
             if query.size() > 0:
                 
-                while next(query):
+                while query.next():
 
                     gameId = int(query.value(0))
                     faction = int(query.value(1))
@@ -557,7 +557,7 @@ class replayServerThread(QObject):
         query.exec_()
         if  query.size() > 0:
             replays = []
-            while next(query):
+            while query.next():
                 replay = {}
                 replay["id"] = int(query.value(0))
                 replay["name"] = query.value(1)
@@ -622,7 +622,7 @@ AND (-1 = ? OR mapId = ?) \n"
             if query.size() > 1:
                 players = []
                 i = 0
-                while next(query) and i < 100:
+                while query.next() and i < 100:
                     players.append(query.value(0))
                     i += 1
                 queryStr += "AND game_player_stats.playerId IN ("+reduce(lambda x, y: str(x)+","+str(y), players)+") "
@@ -645,7 +645,7 @@ AND (-1 = ? OR mapId = ?) \n"
             
         if query.size() > 0:
             replays = []
-            while next(query):
+            while query.next():
                 replay = {}
                 replay["id"] = int(query.value(0))
                 replay["name"] = query.value(1)
@@ -678,7 +678,7 @@ AND (-1 = ? OR mapId = ?) \n"
         query.exec_()
         if  query.size() > 0:
             players = []
-            while next(query): 
+            while query.next():
                 player = {}
                 player["name"] = str(query.value(0))   
                 player["faction"] = query.value(1)
