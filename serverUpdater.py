@@ -21,7 +21,8 @@
 
 from logging import handlers
 
-from PySide.QtCore import QObject
+from PySide.QtCore import QObject, QCoreApplication
+from PySide import QtNetwork,QtSql
 
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
 import config
@@ -78,7 +79,7 @@ if __name__ == '__main__':
 
     try:
 
-        app = QtCore.QCoreApplication(sys.argv)
+        app = QCoreApplication(sys.argv)
         server = start()
         app.exec_()
 
