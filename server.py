@@ -113,7 +113,8 @@ if __name__ == '__main__':
 
         def signal_handler(self, signal, frame):
             self.logger.info("Received signal, shutting down")
-            self.set_result(0)
+            if not self.done():
+                self.set_result(0)
             self.FALobby.close()
             self.game_server.close()
             self._loop.stop()
