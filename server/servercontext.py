@@ -31,12 +31,12 @@ class ServerContext():
 
     @asyncio.coroutine
     def client_connected(self, stream_reader, stream_writer):
+        self._logger.info("Client connected")
+        protocol = QDataStreamProtocol(stream_reader, stream_writer)
+        connection = self._connection_factory(protocol)
+        connection.on_connection_made(protocol, stream_writer.get_extra_info('peername'))
+        self.connections.append(connection)
         try:
-            self._logger.info("Client connected")
-            protocol = QDataStreamProtocol(stream_reader, stream_writer)
-            connection = self._connection_factory(protocol)
-            connection.on_connection_made(protocol, stream_writer.get_extra_info('peername'))
-            self.connections.append(connection)
             while True:
                 message = yield from protocol.read_message()
                 connection.on_message_received(message)
@@ -47,4 +47,5 @@ class ServerContext():
         except Exception as ex:
             self._logger.exception(ex)
         finally:
+            self.connections.remove(connection)
             connection.on_connection_lost()
