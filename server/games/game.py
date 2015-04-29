@@ -581,6 +581,44 @@ class Game(BaseGame):
                 self._logger.debug("error updating a player")
                 self._logger.debug(player.id)
 
+    def to_dict(self):
+        client_state = {
+            GameState.LOBBY: 'open',
+            GameState.LIVE: 'open',
+            GameState.ENDED: 'closed',
+            GameState.INITIALIZING: 'closed',
+
+        }.get(self.state, 'closed')
+        jsonToSend = {
+            "command": "self_info",
+            "access": self.access,
+            "uid": self.uuid,
+            "title": self.name,
+            "state": client_state,
+            "featured_mod": self.getGamemod(),
+            "featured_mod_versions": self.getGamemodVersion(),
+            "sim_mods": self.mods,
+            "mapname": self.mapName.lower(),
+            "host": self.hostPlayer,
+            "num_players": len(self.players),
+            "self_type": self.selfType,
+            "self_time": self.created_at,
+            "options": self.options,
+            "max_players": self.maxPlayer
+        }
+
+        teams = self.teamAssign
+
+        teamsToSend = {}
+        for k, v in teams.items():
+            if len(v) != 0:
+                teamsToSend[k] = v
+
+
+        jsonToSend["teams"] = teamsToSend
+
+        return jsonToSend
+
     @property
     def created_at(self):
         """

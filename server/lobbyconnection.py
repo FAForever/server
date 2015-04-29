@@ -928,7 +928,7 @@ Thanks,\n\
                 for game in container.games:
 
                     if game.state == GameState.LOBBY or game.state == GameState.LIVE:
-                        reply.append(self.prepareBigJSON(self.parent.jsonGame(game)))
+                        reply.append(self.prepareBigJSON(game.to_dict()))
 
             self._logger.debug("done")
 

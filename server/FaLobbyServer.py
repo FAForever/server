@@ -82,46 +82,6 @@ class FALobbyServer(QtNetwork.QTcpServer):
         if not game in self.dirtyGameList: 
             self.dirtyGameList.append(game)
 
-    @timed()
-    def jsonGame(self, game):
-        client_state = {
-            GameState.LOBBY: 'open',
-            GameState.LIVE: 'open',
-            GameState.ENDED: 'closed',
-            GameState.INITIALIZING: 'closed',
-
-        }.get(game.state, 'closed')
-        jsonToSend = {
-            "command": "game_info",
-            "access": game.access,
-            "uid": game.uuid,
-            "title": game.name,
-            "state": client_state,
-            "featured_mod": game.getGamemod(),
-            "featured_mod_versions": game.getGamemodVersion(),
-            "sim_mods": game.mods,
-            "mapname": game.mapName.lower(),
-            "host": game.hostPlayer,
-            "num_players": len(game.players),
-            "game_type": game.gameType,
-            "game_time": game.created_at,
-            "options": game.options,
-            "max_players": game.maxPlayer
-        }
-
-        teams = game.teamAssign
-
-        teamsToSend = {}
-        for k, v in teams.items():
-            if len(v) != 0:
-                teamsToSend[k] = v
-
-
-        jsonToSend["teams"] = teamsToSend
-
-        return jsonToSend
-
-
     @timed
     def dirtyGameCheck(self):
         def encode(dictionary):
