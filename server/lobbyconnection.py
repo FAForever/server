@@ -1744,7 +1744,6 @@ Thanks,\n\
         except Exception as ex:
             self._logger.exception(ex)
             self.socket.abort()
-            self.parent.removeRecorder(self)
             self.sendJSON(dict(command="notice", style="error",
                                text="Something went wrong during sign in"))
 
@@ -2271,7 +2270,6 @@ Thanks,\n\
                 self.socket.abort()
                 self.socket.deleteLater()
 
-            self.parent.removeRecorder(self)
 
     def stateChange(self, socketState):
         pass
