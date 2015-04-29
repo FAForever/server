@@ -30,7 +30,7 @@ def run_lobby_server(address: (str, int),
         conn.on_connection_made(protocol, protocol.writer.get_extra_info('peername'))
         return conn
     ctx = ServerContext(initialize_connection, loop)
-    return ctx.listen(address[0], address[1])
+    return ctx.listen(*address)
 
 
 def run_game_server(address: (str, int),
@@ -51,5 +51,5 @@ def run_game_server(address: (str, int),
         nat_packet_server.subscribe(gc, ['ProcessServerNatPacket'])
         return gc
     ctx = ServerContext(initialize_connection, loop)
-    server = ctx.listen(address[0], address[1])
+    server = ctx.listen(*address)
     return nat_packet_server, server
