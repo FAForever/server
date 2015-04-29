@@ -71,11 +71,13 @@ logger = logging.getLogger(__name__)
 @with_logger
 class LobbyConnection(QObject):
     @timed()
-    def __init__(self, socket, parent=None, db=None):
+    def __init__(self, socket, parent=None, games=None, db=None):
         super(LobbyConnection, self).__init__(parent)
         self.parent = parent
         if hasattr(self.parent, 'db'):
             self.db = self.parent.db
+        if hasattr(self.parent, 'games'):
+            self.games = self.parent.games
 
         self._logger.debug("LobbyConnection intializing")
 
@@ -171,10 +173,10 @@ class LobbyConnection(QObject):
             ('coop', 'coop', CoopGamesContainer),
         ]
         for name, nice_name, container in game_modes:
-            self.parent.games.addContainer(name, container(name=name,
+            self.games.addContainer(name, container(name=name,
                                                     nice_name=nice_name,
                                                     db=self.db,
-                                                    games_service=self.parent.games))
+                                                    games_service=self.games))
 
     @timed()
     def removeLobbySocket(self):
@@ -214,12 +216,12 @@ class LobbyConnection(QObject):
     @timed()
     def joinGame(self, uuid, gamePort, password=None):
         self.checkOldGamesFromPlayer()
-        self.parent.games.removeOldGames()
+        self.games.removeOldGames()
 
         if gamePort == '' or gamePort == 0 or gamePort is None:
             gamePort = 6112
 
-        game = self.parent.games.find_by_id(uuid)
+        game = self.games.find_by_id(uuid)
 
         if game is not None:
             if game.lobbyState == "open":
@@ -234,7 +236,7 @@ class LobbyConnection(QObject):
                 self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
                 return
 
-            container = self.parent.games.getGameContainer(game)
+            container = self.games.getGameContainer(game)
             mod = container.gameTypeName.lower()
 
             if self.player is not None:
@@ -268,7 +270,7 @@ class LobbyConnection(QObject):
                  options=[]):
         mod = mod.lower()
         self.checkOldGamesFromPlayer()
-        self.parent.games.removeOldGames()
+        self.games.removeOldGames()
 
         if not gameName:
             gameName = self.player.login
@@ -278,7 +280,7 @@ class LobbyConnection(QObject):
 
         jsonToSend = {}
 
-        game = self.parent.games.create_game(access, mod, self.player, gameName, gamePort, map, password)
+        game = self.games.create_game(access, mod, self.player, gameName, gamePort, map, password)
         if game:
             uuid = game.uuid
 
@@ -299,7 +301,7 @@ class LobbyConnection(QObject):
             if len(options) != 0:
                 game.options = options
                 jsonToSend["options"] = []
-                numOptions = len(self.parent.games.getGameContainer(game).options)
+                numOptions = len(self.games.getGameContainer(game).options)
                 if numOptions == len(options):
                     jsonToSend["options"] = options
                 else:
@@ -815,10 +817,10 @@ Thanks,\n\
     @timed()
     def getPlayerTournament(self, player):
         tojoin = []
-        for container in self.parent.games.gamesContainer:
+        for container in self.games.gamesContainer:
 
-            if self.parent.games.gamesContainer[container].type == 1:
-                for tournament in self.parent.games.gamesContainer[container].getTournaments():
+            if self.games.gamesContainer[container].type == 1:
+                for tournament in self.games.gamesContainer[container].getTournaments():
                     if tournament.state == "playing":
                         if player.getLogin() in tournament.players:
                             tojoin.append("#" + tournament.name.replace(" ", "_"))
@@ -882,9 +884,9 @@ Thanks,\n\
     def sendModList(self):
         reply = QByteArray()
 
-        for containerName in self.parent.games.gamesContainer:
+        for containerName in self.games.gamesContainer:
 
-            container = self.parent.games.gamesContainer[containerName]
+            container = self.games.gamesContainer[containerName]
 
             jsonToSend = {
                 "command": "mod_info",
@@ -920,7 +922,7 @@ Thanks,\n\
 
         reply = QByteArray()
 
-        for key, container in self.parent.games.gamesContainer.items():
+        for key, container in self.games.gamesContainer.items():
             self._logger.debug("sending games of container " + container.gameNiceName)
             if container.listable or container.live:
                 for game in container.games:
@@ -1700,7 +1702,7 @@ Thanks,\n\
 
             # for matchmaker match...
 
-            container = self.parent.games.getContainer("ladder1v1")
+            container = self.games.getContainer("ladder1v1")
             if container is not None:
                 for player in container.players:
                     if player == self.player:
@@ -1985,7 +1987,7 @@ Thanks,\n\
 
         self.checkOldGamesFromPlayer()
 
-        container = self.parent.games.getContainer(mod)
+        container = self.games.getContainer(mod)
 
         if container is not None:
 
