@@ -71,13 +71,15 @@ logger = logging.getLogger(__name__)
 @with_logger
 class LobbyConnection(QObject):
     @timed()
-    def __init__(self, socket, parent=None, games=None, db=None):
+    def __init__(self, socket, parent=None, games=None, players=None, db=None):
         super(LobbyConnection, self).__init__(parent)
         self.parent = parent
         if hasattr(self.parent, 'db'):
             self.db = self.parent.db
         if hasattr(self.parent, 'games'):
             self.games = self.parent.games
+        if hasattr(self.parent, 'listUsers'):
+            self.players = self.parent.listUsers
 
         self._logger.debug("LobbyConnection intializing")
 
@@ -1152,7 +1154,7 @@ Thanks,\n\
         if action == "closeFA" and self.player.admin:
             who = message['user']
 
-            player = self.parent.listUsers.findByName(who)
+            player = self.players.findByName(who)
             if player:
                 player.lobbyThread.sendJSON(dict(command="notice", style="info",
                                    text="Your game was closed by an administrator ({admin_name})."
@@ -1166,14 +1168,14 @@ Thanks,\n\
             channel = message['channel']
 
             for who in whos:
-                player = self.parent.listUsers.findByName(who)
+                player = self.players.findByName(who)
                 if player:
                     player.lobbyThread.sendJSON(dict(command="social", autojoin=[channel]))
 
         elif action == "closelobby" and self.player.admin:
             who = message['user']
 
-            player = self.parent.listUsers.findByName(who)
+            player = self.players.findByName(who)
             if player:
                 player.lobbyThread.sendJSON(dict(command="notice", style="info",
                                    text="Your client was closed by an administrator ({admin_name})."
@@ -1312,12 +1314,12 @@ Thanks,\n\
 
             if session != 0:
                 #remove ghost
-                for p in self.parent.listUsers.players:
+                for p in self.players.players:
                     if p.getLogin() == login:
                         if p.lobbyThread and p.lobbyThread.socket:
                             p.lobbyThread.socket.abort()
-                        if p in self.parent.listUsers.players:
-                            self.parent.listUsers.players.remove(p)
+                        if p in self.players.players:
+                            self.players.players.remove(p)
 
                 if session == oldsession:
                     self.session = oldsession
@@ -1594,19 +1596,19 @@ Thanks,\n\
                 avatar = {"url": str(query.value(0)), "tooltip": str(query.value(1))}
                 self.player.avatar = avatar
 
-            for p in self.parent.listUsers.players:
+            for p in self.players.players:
                 if p.login == self.player.login:
                     if hasattr(p, 'lobbyThread'):
                         p.lobbyThread.socket.abort()
 
-                    if p in self.parent.listUsers.players:
-                        self.parent.listUsers.players.remove(p)
+                    if p in self.players.players:
+                        self.players.players.remove(p)
 
-            for p in self.parent.listUsers.logins:
+            for p in self.players.logins:
                 if p == self.player.getLogin():
-                    self.parent.listUsers.logins.remove(p)
+                    self.players.logins.remove(p)
 
-            gameSocket, lobbySocket = self.parent.listUsers.addUser(self.player)
+            gameSocket, lobbySocket = self.players.addUser(self.player)
 
             self._logger.debug("Closing users")
 
@@ -1624,7 +1626,7 @@ Thanks,\n\
                 channels = channels + tourneychannel
 
             reply = QByteArray()
-            for user in self.parent.listUsers.players:
+            for user in self.players.players:
                 reply.append(self.prepareBigJSON(user.serialize_to_player_info()))
 
             self.sendArray(reply)
@@ -1667,7 +1669,7 @@ Thanks,\n\
             self.sendReplaySection()
 
             self._logger.debug("sending new player")
-            for user in self.parent.listUsers.players:
+            for user in self.players.players:
 
                 if user.getLogin() != str(login):
 
@@ -1993,7 +1995,7 @@ Thanks,\n\
 
             if mod == "ladder1v1":
                 if state == "stop":
-                    for player in self.parent.listUsers.players:
+                    for player in self.players.players:
                         if player.lobbyThread:
                             player.lobbyThread.removePotentialPlayer(self.player.getLogin())
 
@@ -2035,7 +2037,7 @@ Thanks,\n\
             self.warned = False
 
     def warnPotentialOpponent(self):
-        for player in self.parent.listUsers.players:
+        for player in self.players.players:
             if player == self.player:
                 continue
                 #minimum game quality to start a match.
@@ -2212,7 +2214,7 @@ Thanks,\n\
         if "command" in data_dictionary:
             if data_dictionary["command"] == "game_launch":
                 # if we join a game, we are not a potential player anymore
-                for player in self.parent.listUsers.players:
+                for player in self.players.players:
                     if player.lobbyThread:
                         player.lobbyThread.removePotentialPlayer(self.player.getLogin())
 
@@ -2250,11 +2252,11 @@ Thanks,\n\
 
         self.noSocket = True
         if self.player:
-            for player in self.parent.listUsers.players:
+            for player in self.players.players:
                 if player.lobbyThread:
                     player.lobbyThread.removePotentialPlayer(self.player.getLogin())
             self.checkOldGamesFromPlayer()
-            self.parent.listUsers.removeUser(self.player)
+            self.players.removeUser(self.player)
 
         if self in self.parent.recorders:
             if self.pingTimer:
