@@ -170,9 +170,9 @@ class LobbyConnection(QObject):
         ]
         for name, nice_name, container in game_modes:
             self.parent.games.addContainer(name, container(name=name,
-                                                           nice_name=nice_name,
-                                                           db=self.parent.db,
-                                                           games_service=self.parent.games))
+                                                    nice_name=nice_name,
+                                                    db=self.parent.db,
+                                                    games_service=self.parent.games))
 
     @timed()
     def removeLobbySocket(self):
