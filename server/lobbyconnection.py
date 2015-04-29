@@ -71,9 +71,11 @@ logger = logging.getLogger(__name__)
 @with_logger
 class LobbyConnection(QObject):
     @timed()
-    def __init__(self, socket, parent=None):
+    def __init__(self, socket, parent=None, db=None):
         super(LobbyConnection, self).__init__(parent)
         self.parent = parent
+        if hasattr(self.parent, 'db'):
+            self.db = self.parent.db
 
         self._logger.debug("LobbyConnection intializing")
 
@@ -171,7 +173,7 @@ class LobbyConnection(QObject):
         for name, nice_name, container in game_modes:
             self.parent.games.addContainer(name, container(name=name,
                                                     nice_name=nice_name,
-                                                    db=self.parent.db,
+                                                    db=self.db,
                                                     games_service=self.parent.games))
 
     @timed()
@@ -373,7 +375,7 @@ class LobbyConnection(QObject):
                 small = message["small"]
                 icon = ""
 
-                query = QSqlQuery(self.parent.db)
+                query = QSqlQuery(self.db)
                 query.prepare("SELECT * FROM table_mod WHERE uid = ?")
                 query.addBindValue(uid)
                 query.exec_()
@@ -416,7 +418,7 @@ class LobbyConnection(QObject):
                             #add the datas in the db
                             filename = "mods/%s" % zipmap
 
-                            query = QSqlQuery(self.parent.db)
+                            query = QSqlQuery(self.db)
                             query.prepare(
                                 "INSERT INTO `table_mod`(`uid`, `name`, `version`, `author`, `ui`, `big`, `small`, `description`, `filename`, `icon`) VALUES (?,?,?,?,?,?,?,?,?,?)")
                             query.addBindValue(uid)
@@ -499,7 +501,7 @@ class LobbyConnection(QObject):
                 map_size_Y = str(map_size["1"])
                 version = message["version"]
 
-                query = QSqlQuery(self.parent.db)
+                query = QSqlQuery(self.db)
                 query.prepare("SELECT * FROM table_map WHERE name = ? and version = ?")
                 query.addBindValue(name)
                 query.addBindValue(version)
@@ -571,7 +573,7 @@ class LobbyConnection(QObject):
 
                             # check if the map name is already there
                             gmuid = 0
-                            query = QSqlQuery(self.parent.db)
+                            query = QSqlQuery(self.db)
                             query.prepare("SELECT mapuid FROM table_map WHERE name = ?")
                             query.addBindValue(name)
                             query.exec_()
@@ -580,7 +582,7 @@ class LobbyConnection(QObject):
                                 gmuid = int(query.value(0))
 
                             else:
-                                query = QSqlQuery(self.parent.db)
+                                query = QSqlQuery(self.db)
                                 query.prepare("SELECT MAX(mapuid) FROM table_map")
                                 query.exec_()
                                 if query.size() != 0:
@@ -590,7 +592,7 @@ class LobbyConnection(QObject):
                             #add the data in the db
                             filename = "maps/%s" % zipmap
 
-                            query = QSqlQuery(self.parent.db)
+                            query = QSqlQuery(self.db)
                             query.prepare(
                                 "INSERT INTO table_map(name,description,max_players,map_type,battle_type,map_sizeX,map_sizeY,version,filename, mapuid) VALUES (?,?,?,?,?,?,?,?,?,?)")
                             query.addBindValue(name)
@@ -650,7 +652,7 @@ class LobbyConnection(QObject):
                     self.sendReply("LOGIN_AVAILABLE", "no", login)
                     return
 
-                query = QSqlQuery(self.parent.db)
+                query = QSqlQuery(self.db)
                 query.prepare("SELECT id FROM `login` WHERE LOWER(`login`) = ?")
                 query.addBindValue(login.lower())
                 if not query.exec_():
@@ -829,7 +831,7 @@ Thanks,\n\
     def sendReplaySection(self):
         reply = QByteArray()
 
-        query = QSqlQuery(self.parent.db)
+        query = QSqlQuery(self.db)
         query.prepare("SELECT `section`,`description` FROM `tutorial_sections`")
         query.exec_()
         if query.size() > 0:
@@ -853,7 +855,7 @@ Thanks,\n\
     def sendCoopList(self):
         reply = QByteArray()
 
-        query = QSqlQuery(self.parent.db)
+        query = QSqlQuery(self.db)
         query.prepare("SELECT name, description, filename, type, id FROM `coop_map`")
         query.exec_()
         if query.size() > 0:
@@ -1016,7 +1018,7 @@ Thanks,\n\
         toAdd = set(maplist) - set(self.ladderMapList)
         if len(toAdd) > 0:
             for uid in toAdd:
-                query = QSqlQuery(self.parent.db)
+                query = QSqlQuery(self.db)
                 query.prepare("INSERT INTO ladder_map_selection (idUser, idMap) values (?,?)")
                 query.addBindValue(self.uid)
                 query.addBindValue(uid)
@@ -1026,7 +1028,7 @@ Thanks,\n\
         toRemove = set(self.ladderMapList) - set(maplist)
         if len(toRemove) > 0:
             for uid in toRemove:
-                query = QSqlQuery(self.parent.db)
+                query = QSqlQuery(self.db)
                 query.prepare("DELETE FROM ladder_map_selection WHERE idUser = ? and idMap = ?")
                 query.addBindValue(self.uid)
                 query.addBindValue(uid)
@@ -1045,7 +1047,7 @@ Thanks,\n\
             if len(toAdd) > 0:
 
                 for friend in toAdd:
-                    query = QSqlQuery(self.parent.db)
+                    query = QSqlQuery(self.db)
                     query.prepare(
                         "INSERT INTO friends (idUser, idFriend) values (?,(SELECT id FROM login WHERE login.login = ?))")
                     query.addBindValue(self.uid)
@@ -1056,7 +1058,7 @@ Thanks,\n\
 
             if len(toRemove) > 0:
                 for friend in toRemove:
-                    query = QSqlQuery(self.parent.db)
+                    query = QSqlQuery(self.db)
                     query.prepare(
                         "DELETE FROM friends WHERE idFriend = (SELECT id FROM login WHERE login.login = ?) AND idUser = ?")
                     query.addBindValue(friend)
@@ -1073,7 +1075,7 @@ Thanks,\n\
             if len(toAdd) > 0:
 
                 for foe in toAdd:
-                    query = QSqlQuery(self.parent.db)
+                    query = QSqlQuery(self.db)
                     query.prepare(
                         "INSERT INTO foes (idUser, idFoe) values (?,(SELECT id FROM login WHERE login.login = ?))")
                     query.addBindValue(self.uid)
@@ -1084,7 +1086,7 @@ Thanks,\n\
 
             if len(toRemove) > 0:
                 for foe in toRemove:
-                    query = QSqlQuery(self.parent.db)
+                    query = QSqlQuery(self.db)
                     query.prepare(
                         "DELETE FROM foes WHERE idFoe = (SELECT id FROM login WHERE login.login = ?) AND idUser = ?")
                     query.addBindValue(foe)
@@ -1100,7 +1102,7 @@ Thanks,\n\
     @timed()
     def resendMail(self, login):
         #self.log.debug("resending mail")       
-        query = QSqlQuery(self.parent.db)
+        query = QSqlQuery(self.db)
 
         query.prepare(
             "SELECT login.id, login, email, `validate_account`.Key FROM `validate_account` LEFT JOIN login ON `validate_account`.`UserID` = login.id WHERE login = ?")
@@ -1180,7 +1182,7 @@ Thanks,\n\
                 player.lobbyThread.socket.abort()
 
         elif action == "requestavatars" and self.player.admin:
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
             query.prepare("SELECT url, tooltip FROM `avatars_list`")
             query.exec_()
             if query.size() > 0:
@@ -1195,7 +1197,7 @@ Thanks,\n\
         elif action == "remove_avatar" and self.player.admin:
             idavatar = message["idavatar"]
             iduser = message["iduser"]
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
             query.prepare("DELETE FROM `avatars` WHERE `idUser` = ? AND `idAvatar` = ?")
             query.addBindValue(iduser)
             query.addBindValue(idavatar)
@@ -1205,7 +1207,7 @@ Thanks,\n\
         elif action == "list_avatar_users" and self.player.admin:
             avatar = message['avatar']
             if avatar is not None:
-                query = QSqlQuery(self.parent.db)
+                query = QSqlQuery(self.db)
                 query.prepare(
                     "SELECT `idUser`, `login`, `idAvatar` FROM `avatars` LEFT JOIN `login` ON `login`.`id` = `idUser`  WHERE `idAvatar` = (SELECT id FROM avatars_list WHERE avatars_list.url = ?)")
                 query.addBindValue(avatar)
@@ -1226,7 +1228,7 @@ Thanks,\n\
             who = message['user']
             avatar = message['avatar']
 
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
             if avatar is None:
                 query.prepare(
                     "DELETE FROM `avatars` WHERE `idUser` = (SELECT `id` FROM `login` WHERE `login`.`login` = ?)")
@@ -1257,7 +1259,7 @@ Thanks,\n\
                     dict(command="notice", style="error", text="We are not able to log you. Try updating your lobby."))
                 self._logger.info(self.logPrefix + "unable to decypher !!")
 
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
             queryStr = "SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1"
             query.exec_(queryStr)
 
@@ -1274,7 +1276,7 @@ Thanks,\n\
             self.logPrefix = login + "\t"
 
             channels = []
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
 
             # TODO: Hash passwords server-side so the hashing actually *does* something.
             query.prepare(
@@ -1318,7 +1320,7 @@ Thanks,\n\
                 if session == oldsession:
                     self.session = oldsession
                 else:
-                    query2 = QSqlQuery(self.parent.db)
+                    query2 = QSqlQuery(self.db)
                     query2.prepare("UPDATE login SET session = ? WHERE id = ?")
                     query2.addBindValue(session)
                     query2.addBindValue(int(self.uid))
@@ -1341,7 +1343,7 @@ Thanks,\n\
                                                 'app_url'] + "faf/steam.php</a>"))
                     return
                     # the user is not steam Checked.
-                query = QSqlQuery(self.parent.db)
+                query = QSqlQuery(self.db)
                 query.prepare("SELECT uniqueid FROM steam_uniqueid WHERE uniqueId = ?")
                 query.addBindValue(uniqueId)
                 query.exec_()
@@ -1353,7 +1355,7 @@ Thanks,\n\
                     return
 
                 # check for another account using the same uniqueId as us.
-                query = QSqlQuery(self.parent.db)
+                query = QSqlQuery(self.db)
                 query.prepare("SELECT id, login FROM login WHERE uniqueId = ? AND id != ?")
                 query.addBindValue(uniqueId)
                 query.addBindValue(self.uid)
@@ -1372,14 +1374,14 @@ Thanks,\n\
                                             Config['global']['app_url'] + "faf/steam.php</a>" % (
                                            otherName, otherName)))
 
-                    query2 = QSqlQuery(self.parent.db)
+                    query2 = QSqlQuery(self.db)
                     query2.prepare("INSERT INTO `smurf_table`(`origId`, `smurfId`) VALUES (?,?)")
                     query2.addBindValue(self.uid)
                     query2.addBindValue(idFound)
                     query2.exec_()
                     return
 
-                query = QSqlQuery(self.parent.db)
+                query = QSqlQuery(self.db)
                 query.prepare("UPDATE login SET ip = ?, uniqueId = ?, session = ? WHERE id = ?")
                 query.addBindValue(self.ip)
                 query.addBindValue(str(uniqueId))
@@ -1388,19 +1390,19 @@ Thanks,\n\
                 query.exec_()
             else:
                 # the user is steamchecked
-                query = QSqlQuery(self.parent.db)
+                query = QSqlQuery(self.db)
                 query.prepare("UPDATE login SET ip = ?, session = ? WHERE id = ?")
                 query.addBindValue(self.ip)
                 query.addBindValue(self.session)
                 query.addBindValue(self.uid)
                 query.exec_()
 
-                query = QSqlQuery(self.parent.db)
+                query = QSqlQuery(self.db)
                 query.prepare("INSERT INTO `steam_uniqueid`(`uniqueid`) VALUES (?)")
                 query.addBindValue(str(uniqueId))
                 query.exec_()
 
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
             query.prepare("UPDATE anope.anope_db_NickCore SET pass = ? WHERE display = ?")
             m = hashlib.md5()
             m.update(password.encode())
@@ -1437,7 +1439,7 @@ Thanks,\n\
                 self.player.resolvedAddress = self.player.getIp()
 
             ## Clan informations
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
             query.prepare(
                 "SELECT `clan_tag` FROM `fafclans`.`clan_tags` LEFT JOIN `fafclans`.players_list ON `fafclans`.players_list.player_id = `fafclans`.`clan_tags`.player_id WHERE `faf_id` = ?")
             query.addBindValue(self.uid)
@@ -1625,7 +1627,7 @@ Thanks,\n\
 
             self.sendArray(reply)
 
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
             query.prepare(
                 "SELECT login.login FROM friends JOIN login ON idFriend=login.id WHERE idUser = ?")
             query.addBindValue(self.uid)
@@ -1638,7 +1640,7 @@ Thanks,\n\
                 jsonToSend = {"command": "social", "friends": self.friendList}
                 self.sendJSON(jsonToSend)
 
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
             query.prepare("SELECT idMap FROM ladder_map_selection WHERE idUser = ?")
             query.addBindValue(self.uid)
             query.exec_()
@@ -1646,7 +1648,7 @@ Thanks,\n\
                 while query.next():
                     self.ladderMapList.append(int(query.value(0)))
 
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
             query.prepare(
                 "SELECT login.login FROM foes JOIN login ON idFoe=login.id WHERE idUser = ?")
             query.addBindValue(self.uid)
@@ -1786,7 +1788,7 @@ Thanks,\n\
         modFiles = []
         versionFiles = []
 
-        query = QSqlQuery(self.parent.db)
+        query = QSqlQuery(self.db)
         query.prepare("SELECT * FROM " + modTable)
 
         query.exec_()
@@ -1797,7 +1799,7 @@ Thanks,\n\
                 fileInfo = {"uid": query.value(0), "filename": query.value(1), "path": query.value(2)}
                 modFiles.append(fileInfo)
 
-        query = QSqlQuery(self.parent.db)
+        query = QSqlQuery(self.db)
         query.prepare("SELECT * FROM " + modTableFiles)
 
         query.exec_()
@@ -1825,7 +1827,7 @@ Thanks,\n\
             modTable = "updates_" + mod
             modTableFiles = modTable + "_files"
 
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
             query.prepare("INSERT INTO " + modTableFiles + "(fileid, version, name) VALUES (?, ?, ?)")
             query.addBindValue(fileuid)
             query.addBindValue(version)
@@ -1861,7 +1863,7 @@ Thanks,\n\
                 writeFile.write(avatarDatas)
             writeFile.close()
 
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
             query.prepare(
                 "INSERT INTO avatars_list (`url`,`tooltip`) VALUES (?,?) ON DUPLICATE KEY UPDATE `tooltip` = ?;")
             query.addBindValue(Config['global']['content_url'] + "faf/avatars/" + name)
@@ -1878,7 +1880,7 @@ Thanks,\n\
             if self.leagueAvatar:
                 avatarList.append(self.leagueAvatar)
 
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
             query.prepare(
                 "SELECT url, tooltip FROM `avatars` LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = ?")
             query.addBindValue(self.uid)
@@ -1896,7 +1898,7 @@ Thanks,\n\
         elif action == "select":
             avatar = message['avatar']
 
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
 
             # remove old avatar
             query.prepare(
@@ -1904,7 +1906,7 @@ Thanks,\n\
             query.addBindValue(self.uid)
             query.exec_()
             if avatar is not None:
-                query = QSqlQuery(self.parent.db)
+                query = QSqlQuery(self.db)
                 query.prepare(
                     "UPDATE `avatars` SET `selected` = 1 WHERE `idAvatar` = (SELECT id FROM avatars_list WHERE avatars_list.url = ?) and `idUser` = ?")
                 query.addBindValue(avatar)
@@ -1936,7 +1938,7 @@ Thanks,\n\
                 # player has a laddergame that isn't playing, so we suspect he is a canceller....
                 self._logger.debug("Detected cancelled ladder for {} {}".format(self.player, game))
 
-                query = QSqlQuery(self.parent.db)
+                query = QSqlQuery(self.db)
                 query.prepare("UPDATE `login` SET `ladderCancelled`= `ladderCancelled`+1  WHERE id = ?")
                 query.addBindValue(self.uid)
                 query.exec_()
@@ -1944,7 +1946,7 @@ Thanks,\n\
             else:
                 self._logger.debug("No real game found...")
 
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
             query.prepare("SELECT `ladderCancelled` FROM `login` WHERE id = ?")
             query.addBindValue(self.uid)
             query.exec_()
@@ -1971,7 +1973,7 @@ Thanks,\n\
                                    text="You are banned from the matchmaker (cancelling too many times). Please contact an admin."))
                 return
 
-        query = QSqlQuery(self.parent.db)
+        query = QSqlQuery(self.db)
         query.prepare(
             "SELECT * FROM matchmaker_ban WHERE `userid` = (SELECT `id` FROM `login` WHERE `login`.`login` = ?)")
         query.addBindValue(self.player.getLogin())
@@ -2089,7 +2091,7 @@ Thanks,\n\
     def command_modvault(self, message):
         type = message["type"]
         if type == "start":
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
             query.prepare("SELECT * FROM table_mod ORDER BY likes DESC LIMIT 0, 100")
             query.exec_()
             if query.size() != 0:
@@ -2125,7 +2127,7 @@ Thanks,\n\
             out = ""
             canLike = True
             uid = message["uid"]
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
             query.prepare("SELECT * FROM `table_mod` WHERE uid = ? LIMIT 1")
             query.addBindValue(uid)
             if not query.exec_():
@@ -2167,7 +2169,7 @@ Thanks,\n\
                 except:
                     likers = []
                 if canLike:
-                    query = QSqlQuery(self.parent.db)
+                    query = QSqlQuery(self.db)
                     query.prepare("UPDATE `table_mod` SET likes=likes+1, likers=? WHERE uid = ?")
                     query.addBindValue(json.dumps(likers))
                     query.addBindValue(uid)
@@ -2178,7 +2180,7 @@ Thanks,\n\
 
         elif type == "download":
             uid = message["uid"]
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
             query.prepare("UPDATE `table_mod` SET downloads=downloads+1 WHERE uid = ?")
             query.addBindValue(uid)
             query.exec_()
@@ -2239,7 +2241,7 @@ Thanks,\n\
 
     def done(self):
         if self.uid:
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.db)
             query.prepare("UPDATE login SET session = NULL WHERE id = ?")
             query.addBindValue(self.uid)
             query.exec_()
