@@ -71,7 +71,7 @@ logger = logging.getLogger(__name__)
 @with_logger
 class LobbyConnection(QObject):
     @timed()
-    def __init__(self, socket, parent=None, games=None, players=None, db=None):
+    def __init__(self, socket, parent=None, context=None, games=None, players=None, db=None):
         super(LobbyConnection, self).__init__(parent)
         self.parent = parent
         if hasattr(self.parent, 'db'):
@@ -80,6 +80,8 @@ class LobbyConnection(QObject):
             self.games = self.parent.games
         if hasattr(self.parent, 'listUsers'):
             self.players = self.parent.listUsers
+        if hasattr(self.parent, 'recorders'):
+            self.context = self.parent.recorders
 
         self._logger.debug("LobbyConnection intializing")
 
@@ -195,7 +197,7 @@ class LobbyConnection(QObject):
                         self._logger.debug(
                             self.logPrefix + " Missed 2 ping - Removing user IP " + self.socket.peerAddress().toString())
 
-                        if self in self.parent.recorders:
+                        if self in self.context:
                             self.removeLobbySocket()
 
                     else:
@@ -963,7 +965,7 @@ Thanks,\n\
     @timed()
     def sendArray(self, array):
 
-        if self in self.parent.recorders:
+        if self in self.context:
             if not self.noSocket:
                 if self.socket.bytesToWrite() > 16 * 1024 * 1024:
                     return
@@ -979,7 +981,7 @@ Thanks,\n\
 
     @timed()
     def sendReply(self, action, *args, **kwargs):
-        if self in self.parent.recorders:
+        if self in self.context:
             if not self.noSocket:
 
                 reply = QByteArray()
@@ -1733,7 +1735,7 @@ Thanks,\n\
                     if quality >= gameQuality:
                         self.addPotentialPlayer(player.getLogin())
 
-            if self in self.parent.recorders:
+            if self in self.context:
                 if self.pingTimer is not None and self.noSocket == False:
                     self.pingTimer.stop()
                     self.pingTimer.start(61000)
@@ -1776,7 +1778,7 @@ Thanks,\n\
             self.initTimer.stop()
             self.initTimer = None
 
-        if self in self.parent.recorders:
+        if self in self.context:
             self.pingTimer = QTimer(self)
             self.pingTimer.timeout.connect(self.ping)
             self.pingTimer.start(31000)
@@ -2258,7 +2260,7 @@ Thanks,\n\
             self.checkOldGamesFromPlayer()
             self.players.removeUser(self.player)
 
-        if self in self.parent.recorders:
+        if self in self.context:
             if self.pingTimer:
                 self.pingTimer.stop()
 
