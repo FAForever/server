@@ -29,6 +29,9 @@ class ServerContext():
     def close(self):
         self._server.close()
 
+    def __contains__(self, connection):
+        return connection in self.connections
+
     @asyncio.coroutine
     def client_connected(self, stream_reader, stream_writer):
         self._logger.info("Client connected")
