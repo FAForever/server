@@ -1,3 +1,4 @@
+docopt
 ujson
 trueskill
 mock

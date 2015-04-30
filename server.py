@@ -1,22 +1,13 @@
 #!/usr/bin/env python3
+"""
+Usage:
+    server.py [--nodb] [--db TYPE]
 
-#-------------------------------------------------------------------------------
-# Copyright (c) 2014 Gael Honorez.
-# All rights reserved. This program and the accompanying materials
-# are made available under the terms of the GNU Public License v3.0
-# which accompanies this distribution, and is available at
-# http://www.gnu.org/licenses/gpl.html
-# 
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-# 
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#-------------------------------------------------------------------------------
+Options:
+    --nodb      Don't use a database (Use a mock.Mock). Caution: Will break things.
+    --db TYPE   Use TYPE database driver [default: QMYSQL]
+"""
+
 import asyncio
 
 import sys
@@ -47,13 +38,8 @@ if __name__ == '__main__':
             QtCore.QObject.__init__(self)
             asyncio.Future.__init__(self)
 
-            import argparse
-            parser = argparse.ArgumentParser(description='FAForever Server')
-            parser.add_argument('--nodb', help="don't use a database",
-                                          action='store_true')
-            parser.add_argument('--db', help="use given database type",
-                                        default='QMYSQL')
-            args = parser.parse_args()
+            from docopt import docopt
+            args = docopt(__doc__, version='FAF Server')
 
             self.rootlogger = logging.getLogger("")
             self.logHandler = handlers.RotatingFileHandler(config.LOG_PATH + "server.log", backupCount=1024, maxBytes=16777216)
@@ -65,11 +51,11 @@ if __name__ == '__main__':
 
             self.players_online = PlayersOnline()
 
-            if args.nodb:
+            if args['--nodb']:
                 from unittest import mock
                 self.db = mock.Mock()
             else:
-                self.db = QtSql.QSqlDatabase(args.db)
+                self.db = QtSql.QSqlDatabase(args['--db'])
                 self.db.setHostName(DB_SERVER)
                 self.db.setPort(DB_PORT)
 
