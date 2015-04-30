@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Usage:
-    server.py [--nodb] [--db TYPE]
+    server.py [--nodb | --db TYPE]
 
 Options:
     --nodb      Don't use a database (Use a mock.Mock). Caution: Will break things.
