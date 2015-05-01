@@ -341,35 +341,19 @@ class LobbyConnection(QObject):
         fileDatas = msg['data']
         message = json.loads(infos)
 
-        if not 'name' in message:
-            self.sendJSON(dict(command="notice", style="error", text="No mod name provided."))
-            return
-
-        if not 'uid' in message:
-            self.sendJSON(dict(command="notice", style="error", text="No uid provided."))
-            return
-
-        if not 'description' in message:
-            self.sendJSON(dict(command="notice", style="error", text="No description provided."))
-            return
-
-        if not 'author' in message:
-            self.sendJSON(dict(command="notice", style="error", text="No author provided."))
-            return
-
-        if not 'ui_only' in message:
-            self.sendJSON(dict(command="notice", style="error", text="No mod type provided."))
-            return
-
-        if not 'version' in message:
-            self.sendJSON(dict(command="notice", style="error", text="No mod version provided."))
-            return
-        if not 'big' in message:
-            self.sendJSON(dict(command="notice", style="error", text="No big provided."))
-            return
-        if not 'small' in message:
-            self.sendJSON(dict(command="notice", style="error", text="No small provided."))
-            return
+        for key, readable in {
+            'name': "mod name",
+            'uid': "uid",
+            'description': "description",
+            'author': 'author',
+            'ui_only': 'mod type',
+            'version': 'version',
+            'big': 'big',
+            'small': 'small'
+        }.items():
+            if key not in message:
+                self.sendJSON(dict(command="notice", style="error", text="No {} provided.".format(readable)))
+                return
 
         name = message["name"]
         name = name.replace("'", "\\'")
@@ -395,64 +379,63 @@ class LobbyConnection(QObject):
 
         query.prepare("SELECT filename FROM table_mod WHERE filename LIKE '%" + zipmap + "%'")
         query.exec_()
-        if query.size() == 0:
-            writeFile = QFile(Config['global']['content_path'] + "vault/mods/%s" % zipmap)
-
-            if writeFile.open(QIODevice.WriteOnly):
-                writeFile.write(fileDatas)
-            writeFile.close()
-
-            if zipfile.is_zipfile(Config['global']['content_path'] + "vault/mods/%s" % zipmap):
-                zip = zipfile.ZipFile(Config['global']['content_path'] + "vault/mods/%s" % zipmap, "r",
-                                      zipfile.ZIP_DEFLATED)
-
-                if zip.testzip() is None:
-
-                    for member in zip.namelist():
-                        #QCoreApplication.processEvents()
-                        filename = os.path.basename(member)
-                        if not filename:
-                            continue
-                        if filename.endswith(".png"):
-                            source = zip.open(member)
-                            target = open(
-                                os.path.join(Config['global']['content_path'] + "vault/mods_thumbs/",
-                                             zipmap.replace(".zip", ".png")), "wb")
-                            icon = zipmap.replace(".zip", ".png")
-
-                            shutil.copyfileobj(source, target)
-                            source.close()
-                            target.close()
-
-                    #add the datas in the db
-                    filename = "mods/%s" % zipmap
-
-                    query = QSqlQuery(self.db)
-                    query.prepare(
-                        "INSERT INTO `table_mod`(`uid`, `name`, `version`, `author`, `ui`, `big`, `small`, `description`, `filename`, `icon`) VALUES (?,?,?,?,?,?,?,?,?,?)")
-                    query.addBindValue(uid)
-                    query.addBindValue(name)
-                    query.addBindValue(version)
-                    query.addBindValue(author)
-                    query.addBindValue(int(ui))
-                    query.addBindValue(int(big))
-                    query.addBindValue(int(small))
-                    query.addBindValue(description)
-                    query.addBindValue(filename)
-                    query.addBindValue(icon)
-
-                    if not query.exec_():
-                        self._logger.debug(query.lastError())
-
-                zip.close()
-
-                self.sendJSON(dict(command="notice", style="info", text="Mod correctly uploaded."))
-            else:
-                self.sendJSON(
-                    dict(command="notice", style="error", text="Cannot unzip mod. Upload error ?"))
-        else:
+        if query.size() != 0:
             self.sendJSON(dict(command="notice", style="error",
                                text="This file (%s) is already in the database !" % str(zipmap)))
+            return
+        writeFile = QFile(Config['global']['content_path'] + "vault/mods/%s" % zipmap)
+
+        if writeFile.open(QIODevice.WriteOnly):
+            writeFile.write(fileDatas)
+        writeFile.close()
+
+        if not zipfile.is_zipfile(Config['global']['content_path'] + "vault/mods/%s" % zipmap):
+            self.sendJSON(
+                dict(command="notice", style="error", text="Cannot unzip mod. Upload error ?"))
+            return
+        zip = zipfile.ZipFile(Config['global']['content_path'] + "vault/mods/%s" % zipmap, "r",
+                              zipfile.ZIP_DEFLATED)
+
+        if zip.testzip() is None:
+
+            for member in zip.namelist():
+                #QCoreApplication.processEvents()
+                filename = os.path.basename(member)
+                if not filename:
+                    continue
+                if filename.endswith(".png"):
+                    source = zip.open(member)
+                    target = open(
+                        os.path.join(Config['global']['content_path'] + "vault/mods_thumbs/",
+                                     zipmap.replace(".zip", ".png")), "wb")
+                    icon = zipmap.replace(".zip", ".png")
+
+                    shutil.copyfileobj(source, target)
+                    source.close()
+                    target.close()
+
+            #add the datas in the db
+            filename = "mods/%s" % zipmap
+
+            query = QSqlQuery(self.db)
+            query.prepare(
+                "INSERT INTO `table_mod`(`uid`, `name`, `version`, `author`, `ui`, `big`, `small`, `description`, `filename`, `icon`) VALUES (?,?,?,?,?,?,?,?,?,?)")
+            query.addBindValue(uid)
+            query.addBindValue(name)
+            query.addBindValue(version)
+            query.addBindValue(author)
+            query.addBindValue(int(ui))
+            query.addBindValue(int(big))
+            query.addBindValue(int(small))
+            query.addBindValue(description)
+            query.addBindValue(filename)
+            query.addBindValue(icon)
+
+            if not query.exec_():
+                self._logger.debug(query.lastError())
+        zip.close()
+
+        self.sendJSON(dict(command="notice", style="info", text="Mod correctly uploaded."))
 
 
     def command_upload_map(self, msg):

@@ -263,6 +263,7 @@ def test_handle_action_pong(fa_server_thread):
     fa_server_thread.handleAction('PONG', mock.Mock())
     assert fa_server_thread.ponged is True
 
+
 def test_fa_state(fa_server_thread):
     fa_server_thread.player = mock.Mock()
     fa_server_thread.player.getAction.return_value = 'NOTHING'
