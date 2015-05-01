@@ -263,13 +263,6 @@ def test_handle_action_pong(fa_server_thread):
     fa_server_thread.handleAction('PONG', mock.Mock())
     assert fa_server_thread.ponged is True
 
-
-def test_handle_action_faclosed(fa_server_thread):
-    fa_server_thread.player = mock.Mock()
-    fa_server_thread.handleAction('FA_CLOSED', mock.Mock())
-    fa_server_thread.player.setAction.assert_called_once_with('NOTHING')
-    fa_server_thread.player.game_connection.abort.assert_called_once_with()
-
 # handle action - Create Account
 # TODO: for @ckitching or if pr #23 is merged
 

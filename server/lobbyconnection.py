@@ -639,11 +639,6 @@ class LobbyConnection(QObject):
                     self.sendJSON(
                         dict(command="notice", style="error", text="This map is already in the database !"))
 
-            elif action == "FA_CLOSED":
-                login = stream.readQString()
-                session = stream.readQString()
-                self.player.setAction("NOTHING")
-                self.player.game_connection.abort()
             else:
                 login = stream.readQString()
                 session = stream.readQString()
