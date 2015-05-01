@@ -51,7 +51,6 @@ class QDataStreamProtocol(metaclass=ABCMeta):
     def read_block(data):
         buffer_pos = 0
         while len(data[buffer_pos:]) > 4:
-            print(buffer_pos)
             buffer_pos, msg = QDataStreamProtocol.read_qstring(data, buffer_pos)
             yield msg
 

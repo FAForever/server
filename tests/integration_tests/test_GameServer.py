@@ -26,7 +26,6 @@ def test_public_host(loop, players, player_service, games, db):
         assert call("\x08Are you public? %s" % player.id)\
                in client.udp_messages.mock_calls
         assert call({"key": "ConnectivityState",
-                    "legacy": [],
                     "commands": [player.id, "PUBLIC"]})\
                in client.messages.mock_calls
         client.proto.write_eof()
@@ -47,7 +46,6 @@ def test_stun_host(loop, players, player_service, games, db):
         client.proto.send_GameState(['Lobby'])
         yield from client.read_until('SendNatPacket')
         assert call({"key": "SendNatPacket",
-                "legacy": [],
                 "commands": ["%s:%s" % (config.LOBBY_IP, config.LOBBY_UDP_PORT),
                              "Hello %s" % player.id]})\
                in client.messages.mock_calls
@@ -55,7 +53,6 @@ def test_stun_host(loop, players, player_service, games, db):
         client.send_udp_natpacket('Hello {}'.format(player.id), '127.0.0.1', config.LOBBY_UDP_PORT)
         yield from client.read_until('ConnectivityState')
         assert call({'key': 'ConnectivityState',
-                     'legacy': [],
                      'commands': [player.id, 'STUN']})\
                in client.messages.mock_calls
         client.proto.write_eof()
