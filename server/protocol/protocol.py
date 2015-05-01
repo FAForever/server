@@ -93,6 +93,21 @@ class QDataStreamProtocol(metaclass=ABCMeta):
                 'email': email,
                 'password': password
             }
+        elif action == 'UPLOAD_MAP':
+            pos, login = self.read_qstring(block, pos)
+            pos, email = self.read_qstring(block, pos)
+            pos, name = self.read_qstring(block, pos)
+            pos, info = self.read_qstring(block, pos)
+            pos, size = self.read_int32(block, pos)
+            data = block[pos:size]
+            return {
+                'command': 'upload_map',
+                'name': name,
+                'email': email,
+                'info': ujson.loads(info),
+                'data': data
+            }
+
         else:
             for part in self.read_block(block):
                 try:
