@@ -26,7 +26,10 @@ def run_lobby_server(address: (str, int),
     :return ServerContext: A server object
     """
     def initialize_connection(protocol):
-        conn = LobbyConnection()
+        conn = LobbyConnection(context=ctx,
+                               games=games,
+                               players=player_service,
+                               db=db)
         conn.on_connection_made(protocol, protocol.writer.get_extra_info('peername'))
         return conn
     ctx = ServerContext(initialize_connection, loop)

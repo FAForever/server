@@ -71,17 +71,12 @@ logger = logging.getLogger(__name__)
 @with_logger
 class LobbyConnection(QObject):
     @timed()
-    def __init__(self, parent=None, context=None, games=None, players=None, db=None):
-        super(LobbyConnection, self).__init__(parent)
-        self.parent = parent
-        if hasattr(self.parent, 'db'):
-            self.db = self.parent.db
-        if hasattr(self.parent, 'games'):
-            self.games = self.parent.games
-        if hasattr(self.parent, 'listUsers'):
-            self.players = self.parent.listUsers
-        if hasattr(self.parent, 'recorders'):
-            self.context = self.parent.recorders
+    def __init__(self, context=None, games=None, players=None, db=None):
+        super(LobbyConnection, self).__init__()
+        self.db = db
+        self.games = games
+        self.players = players
+        self.context = context
 
         self._logger.debug("LobbyConnection intializing")
 
