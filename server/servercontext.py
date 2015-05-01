@@ -50,4 +50,5 @@ class ServerContext():
             self._logger.exception(ex)
         finally:
             self.connections.remove(connection)
+            protocol.writer.close()
             connection.on_connection_lost()

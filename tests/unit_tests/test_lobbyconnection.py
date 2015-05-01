@@ -53,8 +53,8 @@ def mock_lobby_server(db):
 
 
 @pytest.fixture
-def fa_server_thread(connected_socket, mock_lobby_server):
-    return LobbyConnection(connected_socket, mock_lobby_server)
+def fa_server_thread(mock_lobby_server):
+    return LobbyConnection(mock_lobby_server)
 
 
 def test_command_game_host_calls_host_game(fa_server_thread,

@@ -15,10 +15,10 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
+import asyncio
 import hashlib
 import zlib
 import cgi
-import socket
 import base64
 import json
 import urllib.parse
@@ -36,7 +36,6 @@ import email.utils
 
 from PySide.QtCore import QTimer
 from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QObject
-from PySide import QtNetwork
 from PySide.QtSql import QSqlQuery
 import pygeoip
 import trueskill
@@ -47,6 +46,7 @@ from server.games.game import GameState
 from server.players import *
 from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS
 from config import Config
+from server.protocol import QDataStreamProtocol
 
 
 gi = pygeoip.GeoIP('GeoIP.dat', pygeoip.MEMORY_CACHE)
@@ -71,7 +71,7 @@ logger = logging.getLogger(__name__)
 @with_logger
 class LobbyConnection(QObject):
     @timed()
-    def __init__(self, socket, parent=None, context=None, games=None, players=None, db=None):
+    def __init__(self, parent=None, context=None, games=None, players=None, db=None):
         super(LobbyConnection, self).__init__(parent)
         self.parent = parent
         if hasattr(self.parent, 'db'):
@@ -86,78 +86,52 @@ class LobbyConnection(QObject):
         self._logger.debug("LobbyConnection intializing")
 
         self.season = LADDER_SEASON
-
-        self.socket = socket
-
-        self.socket.disconnected.connect(self.disconnection)
-        self.socket.error.connect(self.displayError)
-        self.socket.stateChanged.connect(self.stateChange)
-
         self.ladderPotentialPlayers = []
         self.warned = False
-
         self.loginDone = False
+        self.initTimer = None
+        self.privkey = PRIVATE_KEY
+        self.noSocket = False
+        self.readingSocket = False
+        self.player = None
+        self.initPing = True
+        self.ponged = False
+        self.steamChecked = False
+        self.logPrefix = "\t"
+        self.missedPing = 0
+        self.friendList = []
+        self.foeList = []
+        self.ladderMapList = []
+        self.leagueAvatar = None
+        self.email = None
+        self.uid = None
+        self.ip = None
+        self.port = None
+        self.pingTimer = None
+        self.session = int(random.getrandbits(16))
+        self.protocol = None
 
+    def on_connection_made(self, protocol: QDataStreamProtocol, peername: (str, int)):
         self.initTimer = QTimer(self)
         self.initTimer.timeout.connect(self.initNotDone)
         self.initTimer.start(2000)
+        self.addGameModes()
+        self.protocol = protocol
+        self.ip, self.port = peername
 
-        if self.socket is not None and self.socket.state() == 3 and self.socket.isValid():
-            self.privkey = PRIVATE_KEY
+    def on_connection_lost(self):
+        pass
 
-            self.noSocket = False
-            self.readingSocket = False
-
-            self.addGameModes()
-
-            self.player = None
-
-            self.initPing = True
-            self.ponged = False
-            self.steamChecked = False
-
-            self.logPrefix = "\t"
-
-            self.missedPing = 0
-
-            self.nextBlockSize = 0
-
-            self.blockSize = 0
-
-            self.friendList = []
-            self.foeList = []
-            self.ladderMapList = []
-
-            self.leagueAvatar = None
-
-            self.email = None
-            self.uid = None
-
-            self.ip = self.socket.peerAddress().toString()
-            self.port = self.socket.peerPort()
-            self.peerName = self.socket.peerName()
-
-            self.socket.readyRead.connect(self.readData)
-
-            self.pingTimer = None
-
-            self.session = int(random.getrandbits(16))
-
-        else:
-            self._logger.warning("We are not connected")
-            self.socket.abort()
+    def abort(self):
+        self.protocol.writer.write_eof()
 
     @timed()
     def initNotDone(self):
         self.initTimer.stop()
-        self._logger.warning("Init not done for this IP : " + self.socket.peerAddress().toString())
+        self._logger.warning("Init not done for this IP : " + self.ip)
         if not self.loginDone:
             self._logger.warning("aborting socket")
-            self.socket.abort()
-        try:
-            self.socket.readyRead.disconnect(self.readData)
-        except:
-            pass
+            self.abort()
 
     @timed()
     def addGameModes(self):
@@ -183,11 +157,6 @@ class LobbyConnection(QObject):
                                                     games_service=self.games))
 
     @timed()
-    def removeLobbySocket(self):
-        if self.socket is not None:
-            self.socket.abort()
-
-    @timed()
     def ping(self):
         if hasattr(self, "socket"):
             if not self.noSocket:
@@ -195,7 +164,7 @@ class LobbyConnection(QObject):
                 if self.ponged == False and self.initPing == False:
                     if self.missedPing > 2:
                         self._logger.debug(
-                            self.logPrefix + " Missed 2 ping - Removing user IP " + self.socket.peerAddress().toString())
+                            self.logPrefix + " Missed 2 ping - Removing user IP " + self.ip)
 
                         if self in self.context:
                             self.removeLobbySocket()
@@ -707,84 +676,6 @@ Thanks,\n\
         self.sendReply("LOGIN_AVAILABLE", "yes", login)
 
     @timed()
-    def readData(self):
-        packetSize = 0
-        if self.initTimer:
-            packetSize = self.socket.bytesAvailable()
-            if packetSize > 120:
-                self._logger.warning("invalid handshake ! - Packet too big (" + str(
-                    packetSize) + " ) " + self.socket.peerAddress().toString())
-                self.socket.abort()
-                return
-
-        if self.noSocket == False and self.socket.isValid():
-
-            if self.socket.bytesAvailable() == 0:
-                self.socket.abort()
-                return
-
-            ins = QDataStream(self.socket)
-
-            ins.setVersion(QDataStream.Qt_4_2)
-            while not ins.atEnd():
-
-                if self.noSocket == False and self.socket.isValid():
-
-                    if self.blockSize == 0:
-                        if self.noSocket == False and self.socket.isValid():
-                            if self.socket.bytesAvailable() < 4:
-                                if self.initTimer:
-                                    self._logger.warning(
-                                        "invalid handshake ! - no valid packet size " + self.socket.peerAddress().toString())
-                                    self.socket.abort()
-                                    return
-
-                                return
-
-                            self.blockSize = ins.readUInt32()
-                            if self.initTimer:
-                                if (packetSize - 4) != self.blockSize:
-                                    self._logger.warning(
-                                        "invalid handshake ! - packet not fit ! " + self.socket.peerAddress().toString())
-                                    self.socket.abort()
-                                    return
-
-                        else:
-                            self.socket.abort()
-                            return
-
-                    if self.noSocket == False and self.socket.isValid():
-                        if self.socket.bytesAvailable() < self.blockSize:
-                            bytesReceived = str(self.socket.bytesAvailable())
-                            self.sendReply("ACK", bytesReceived)
-
-                            return
-
-                        bytesReceived = str(self.socket.bytesAvailable())
-                        self.sendReply("ACK", bytesReceived)
-
-
-                    else:
-                        self.socket.abort()
-                        return
-
-                    action = ins.readQString()
-                    self.handleAction(action, ins)
-
-                    self.blockSize = 0
-
-                else:
-                    self.socket.abort()
-                    return
-            return
-
-
-    @timed()
-    def disconnection(self):
-        self.noSocket = True
-        self.done()
-
-    @timed()
     def getPlayerTournament(self, player):
         tojoin = []
         for container in self.games.gamesContainer:
@@ -930,20 +821,7 @@ Thanks,\n\
 
     @timed()
     def sendArray(self, array):
-
-        if self in self.context:
-            if not self.noSocket:
-                if self.socket.bytesToWrite() > 16 * 1024 * 1024:
-                    return
-
-            if self.socket.isValid() and self.socket.state() == 3:
-
-                if self.socket.write(array) == -1:
-                    self.noSocket = True
-                    self.socket.abort()
-            else:
-                self.socket.abort()
-
+        asyncio.async(self.protocol.send_raw(array))
 
     @timed()
     def sendReply(self, action, *args, **kwargs):
@@ -967,14 +845,7 @@ Thanks,\n\
 
                 stream.writeUInt32(reply.size() - 4)
 
-                if self.socket.isValid() and self.socket.state() == 3:
-
-                    if self.socket.write(reply) == -1:
-                        self._logger.debug("error socket write")
-                        self.socket.abort()
-                        self.noSocket = True
-                else:
-                    self.socket.abort()
+                asyncio.async(self.protocol.send_raw(reply))
 
     def command_fa_state(self, message):
         state = message["state"]
@@ -1151,7 +1022,7 @@ Thanks,\n\
                                    .format(admin_name=self.player.login,
                                            rule_link=Config['lobbyconnection']['rule_link'])))
                 player.lobbyThread.sendJSON(dict(command="notice", style="kick"))
-                player.lobbyThread.socket.abort()
+                player.lobbyThread.abort()
 
         elif action == "requestavatars" and self.player.admin:
             query = QSqlQuery(self.db)
@@ -1284,8 +1155,8 @@ Thanks,\n\
                 #remove ghost
                 for p in self.players.players:
                     if p.getLogin() == login:
-                        if p.lobbyThread and p.lobbyThread.socket:
-                            p.lobbyThread.socket.abort()
+                        if p.lobbyThread:
+                            p.lobbyThread.abort()
                         if p in self.players.players:
                             self.players.players.remove(p)
 
@@ -1399,16 +1270,7 @@ Thanks,\n\
 
             self.player.faction = random.randint(1, 4)
 
-            try:
-                hostname = socket.getfqdn(self.player.getIp())
-                try:
-                    socket.gethostbyname(hostname)
-                    self.player.resolvedAddress = self.player.getIp()
-                except:
-                    self.player.resolvedAddress = self.player.getIp()
-
-            except:
-                self.player.resolvedAddress = self.player.getIp()
+            self.player.resolvedAddress = self.player.getIp()
 
             ## Clan informations
             query = QSqlQuery(self.db)
@@ -1445,7 +1307,7 @@ Thanks,\n\
             ## Country
             ## ----------
 
-            country = gi.country_code_by_addr(self.socket.peerAddress().toString())
+            country = gi.country_code_by_addr(self.ip)
             if country is not None:
                 self.player.country = str(country)
 
@@ -1567,7 +1429,7 @@ Thanks,\n\
             for p in self.players.players:
                 if p.login == self.player.login:
                     if hasattr(p, 'lobbyThread'):
-                        p.lobbyThread.socket.abort()
+                        p.lobbyThread.abort()
 
                     if p in self.players.players:
                         self.players.players.remove(p)
@@ -1709,7 +1571,7 @@ Thanks,\n\
             self._logger.debug("done")
         except Exception as ex:
             self._logger.exception(ex)
-            self.socket.abort()
+            self.abort()
             self.sendJSON(dict(command="notice", style="error",
                                text="Something went wrong during sign in"))
 
@@ -2229,25 +2091,5 @@ Thanks,\n\
             if self.pingTimer:
                 self.pingTimer.stop()
 
-            if self.socket:
-                self.socket.readyRead.disconnect(self.readData)
-                self.socket.disconnected.disconnect(self.disconnection)
-                self.socket.error.disconnect(self.displayError)
-                self.socket.abort()
-                self.socket.deleteLater()
 
-
-    def stateChange(self, socketState):
-        pass
-
-    def displayError(self, socketError):
-        if socketError == QtNetwork.QAbstractSocket.RemoteHostClosedError:
-            self._logger.warning(self.logPrefix + "RemoteHostClosedError")
-
-        elif socketError == QtNetwork.QAbstractSocket.HostNotFoundError:
-            self._logger.warning(self.logPrefix + "HostNotFoundError")
-        elif socketError == QtNetwork.QAbstractSocket.ConnectionRefusedError:
-            self._logger.warning(self.logPrefix + "ConnectionRefusedError")
-        else:
-            self._logger.warning(self.logPrefix + "The following Error occurred: %s." % self.socket.errorString())
 
