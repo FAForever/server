@@ -46,7 +46,6 @@ class ServerContext():
         except asyncio.IncompleteReadError as ex:
             if not stream_reader.at_eof():
                 self._logger.exception(ex)
-                raise
         except Exception as ex:
             self._logger.exception(ex)
         finally:
