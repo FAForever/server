@@ -322,18 +322,15 @@ class LobbyConnection(QObject):
     def handleAction(self, action, stream):
         try:
             self._logger.debug('handleAction: {}'.format(action))
-            if action == "PING":
-                self.sendReply("PONG")
-
-            elif action == "PONG":
-                self.ponged = True
-
-            else:
-                login = stream.readQString()
-                session = stream.readQString()
-                self.receiveJSON(action)
+            self.receiveJSON(action)
         except:
             self._logger.exception("Something awful happened in a lobby thread !")
+
+    def command_ping(self, msg):
+        self.sendReply('PONG')
+
+    def command_pong(self, msg):
+        self.ponged = True
 
     def command_upload_mod(self, msg):
         zipmap = msg['name']

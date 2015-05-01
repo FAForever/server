@@ -252,18 +252,6 @@ def test_avatar_select_no_avatar(mock_query, fa_server_thread):
         fa_server_thread.command_avatar({'action': 'select'})
 
 
-def test_handle_action_ping(fa_server_thread):
-    fa_server_thread.sendReply = mock.Mock()
-    fa_server_thread.handleAction('PING', mock.Mock())
-    fa_server_thread.sendReply.assert_called_once_with('PONG')
-
-
-def test_handle_action_pong(fa_server_thread):
-    assert fa_server_thread.ponged is False
-    fa_server_thread.handleAction('PONG', mock.Mock())
-    assert fa_server_thread.ponged is True
-
-
 def test_fa_state(fa_server_thread):
     fa_server_thread.player = mock.Mock()
     fa_server_thread.player.getAction.return_value = 'NOTHING'

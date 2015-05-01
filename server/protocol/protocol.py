@@ -80,7 +80,6 @@ class QDataStreamProtocol(metaclass=ABCMeta):
         (block_length, ) = struct.unpack('!I', (yield from self.reader.readexactly(4)))
         block = yield from self.reader.readexactly(block_length)
         # FIXME: New protocol will remove the need for this
-        message = {'legacy': []}
 
         pos, action = self.read_qstring(block)
         if action == 'CREATE_ACCOUNT':
@@ -106,12 +105,19 @@ class QDataStreamProtocol(metaclass=ABCMeta):
                 'info': ujson.loads(info),
                 'data': data
             }
+        elif action in ['PING', 'PONG']:
+            return {
+                'command': 'command_{}'.format(action.lower())
+            }
         else:
+            message = ujson.loads(action)
             for part in self.read_block(block):
                 try:
                     message_part = ujson.loads(part)
                     message.update(message_part)
                 except (ValueError, TypeError):
+                    if 'legacy' not in message:
+                        message['legacy'] = []
                     message['legacy'].append(part)
             return message
 
