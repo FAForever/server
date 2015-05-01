@@ -735,7 +735,7 @@ Thanks,\n\
             else:
                 login = stream.readQString()
                 session = stream.readQString()
-                self.receiveJSON(action, stream)
+                self.receiveJSON(action)
         except:
             self._logger.exception("Something awful happened in a lobby thread !")
 
@@ -2229,7 +2229,7 @@ Thanks,\n\
                 return
 
     @timed()
-    def receiveJSON(self, data_string, stream):
+    def receiveJSON(self, data_string):
         """
         A fairly pythonic way to process received strings as JSON messages.
         """

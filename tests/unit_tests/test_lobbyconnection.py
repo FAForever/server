@@ -270,14 +270,6 @@ def test_handle_action_faclosed(fa_server_thread):
     fa_server_thread.player.setAction.assert_called_once_with('NOTHING')
     fa_server_thread.player.game_connection.abort.assert_called_once_with()
 
-
-def test_handle_action_possible_json_commannd(fa_server_thread):
-    fa_server_thread.receiveJSON = mock.Mock()
-    stream = mock.Mock()
-    fa_server_thread.handleAction('CrazyThing', stream)
-    fa_server_thread.receiveJSON.assert_called_once_with(
-        'CrazyThing', stream)
-
 # handle action - Create Account
 # TODO: for @ckitching or if pr #23 is merged
 
