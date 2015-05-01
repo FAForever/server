@@ -20,19 +20,23 @@ class QDataStreamProtocol(metaclass=ABCMeta):
         self.writer = writer
 
     @staticmethod
-    def read_qstring(message):
+    def read_qstring(buffer, pos=0):
         """
-        Parse a serialized QString from message
+        Parse a serialized QString from buffer (A bytes like object) at given position
 
-        Requires len(message) > 4
-        :type message: bytes
-        :return: (message_size, message)
+        Requires len(buffer[pos:]) >= 4.
+
+        Pos is added to buffer_pos.
+
+        :type buffer: bytes
+        :return (int, str): (buffer_pos, message)
         """
-        (message_size, ) = struct.unpack('!I', message[:4])
-        if len(message[4:]) < message_size:
+        assert len(buffer[pos:pos + 4]) == 4
+        (size, ) = struct.unpack('!I', buffer[pos:pos + 4])
+        if len(buffer[pos + 4:]) < size:
             raise ValueError("Malformed QString: Claims length {} but actually {}"
-                             .format(message_size, len(message[4:])))
-        return message_size, (message[4:4 + message_size]).decode('UTF-16BE')
+                             .format(size, len(buffer[pos + 4:])))
+        return size + pos + 4, (buffer[pos + 4:pos + 4 + size]).decode('UTF-16BE')
 
     @staticmethod
     def pack_qstring(message):
@@ -45,19 +49,11 @@ class QDataStreamProtocol(metaclass=ABCMeta):
 
     @staticmethod
     def read_block(data):
-        while len(data) > 0:
-            str_length, msg = QDataStreamProtocol.read_qstring(data)
-            data = data[4 + str_length:]
+        buffer_pos = 0
+        while len(data[buffer_pos:]) > 4:
+            print(buffer_pos)
+            buffer_pos, msg = QDataStreamProtocol.read_qstring(data, buffer_pos)
             yield msg
-
-
-    @staticmethod
-    def read_blocks(data):
-        while len(data) >= 4:
-            (length, ) = struct.unpack('!I', data[:4])
-            message = data[4:4 + length]
-            yield QDataStreamProtocol.read_block(message)
-            data = data[4 + length:]
 
     @staticmethod
     def pack_message(message, *args):
@@ -78,18 +74,33 @@ class QDataStreamProtocol(metaclass=ABCMeta):
         Read a message from the stream
 
         On malformed stream, raises IncompleteReadError
+
+        :return dict: Parsed message
         """
         (block_length, ) = struct.unpack('!I', (yield from self.reader.readexactly(4)))
         block = yield from self.reader.readexactly(block_length)
         # FIXME: New protocol will remove the need for this
         message = {'legacy': []}
-        for part in self.read_block(block):
-            try:
-                message_part = ujson.loads(part)
-                message.update(message_part)
-            except (ValueError, TypeError):
-                message['legacy'].append(part)
-        return message
+
+        pos, action = self.read_qstring(block)
+        if action == 'CREATE_ACCOUNT':
+            pos, login = self.read_qstring(block, pos)
+            pos, email = self.read_qstring(block, pos)
+            pos, password = self.read_qstring(block, pos)
+            return {
+                'command': "create_account",
+                'login': login,
+                'email': email,
+                'password': password
+            }
+        else:
+            for part in self.read_block(block):
+                try:
+                    message_part = ujson.loads(part)
+                    message.update(message_part)
+                except (ValueError, TypeError):
+                    message['legacy'].append(part)
+            return message
 
     def send_message(self, message: dict):
         self.writer.write(self.pack_message(ujson.dumps(message)))

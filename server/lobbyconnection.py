@@ -639,94 +639,6 @@ class LobbyConnection(QObject):
                     self.sendJSON(
                         dict(command="notice", style="error", text="This map is already in the database !"))
 
-            elif action == "CREATE_ACCOUNT":
-                login = stream.readQString()
-                em = stream.readQString()
-                password = stream.readQString()
-
-                username_pattern = re.compile(r"^[^,]{1,20}$")
-                email_pattern = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$")
-                if not email_pattern.match(em):
-                    self.sendJSON(dict(command="notice", style="info",
-                                       text="Please use a valid email address."))
-                    self.sendReply("LOGIN_AVAILABLE", "no", login)
-                    return
-
-                if not username_pattern.match(login):
-                    self.sendJSON(dict(command="notice", style="info",
-                                       text="Please don't use \",\" in your username."))
-                    self.sendReply("LOGIN_AVAILABLE", "no", login)
-                    return
-
-                query = QSqlQuery(self.db)
-                query.prepare("SELECT id FROM `login` WHERE LOWER(`login`) = ?")
-                query.addBindValue(login.lower())
-                if not query.exec_():
-                    self._logger.debug("Error inserting login %s", login)
-                    self._logger.debug(query.lastError())
-                    self.sendReply("LOGIN_AVAILABLE", "no", login)
-                    return
-
-                if query.size() != 0:
-                    self._logger.debug("Login not available: %s", login)
-                    self.sendReply("LOGIN_AVAILABLE", "no", login)
-                    return
-
-                query.prepare("INSERT INTO login (login, password, email) VALUES (?,?,?)")
-                query.addBindValue(login)
-                query.addBindValue(password)
-                query.addBindValue(em)
-
-                if not query.exec_():
-                    self._logger.debug("Error inserting login %s", login)
-                    self._logger.debug(query.lastError())
-                    self.sendReply("LOGIN_AVAILABLE", "no", login)
-                    return
-
-                uid = query.lastInsertId()
-
-                exp = time.strftime("%Y-%m-%d %H:%m:%S", time.gmtime())
-                key = hashlib.md5()
-                key.update((login + '_' + em + str(random.randrange(0, 10000)) + exp + PW_SALT).encode())
-                keyHex = key.hexdigest()
-                query.prepare("INSERT INTO `validate_account` (`UserID`,`Key`,`expDate`) VALUES (?,?,?)")
-                query.addBindValue(uid)
-                query.addBindValue(keyHex)
-                query.addBindValue(exp)
-                query.exec_()
-                self._logger.debug("Sending registration mail")
-                link = {'a': 'validate', 'email': keyHex, 'u': base64.b64encode(str(uid))}
-                passwordLink = Config['global']['app_url'] + "validateAccount.php?" + urllib.parse.urlencode(link)
-
-                text = "Dear " + login + ",\n\n\
-Please visit the following link to validate your FAF account:\n\
------------------------\n\
-" + passwordLink + "\n\
------------------------\n\\n\
-Thanks,\n\
--- The FA Forever team"
-
-                msg = MIMEText(text)
-
-
-                msg['Subject'] = 'Forged Alliance Forever - Account validation'
-                msg['From'] = email.utils.formataddr(('Forged Alliance Forever', MAIL_ADDRESS))
-                msg['To'] = email.utils.formataddr((login, em))
-
-                self._logger.debug("sending mail to " + em)
-                #self.log.debug(msg.as_string())
-                #s = smtplib.SMTP(config['global']['smtp_server'])
-                s = smtplib.SMTP_SSL(Config['global']['smtp_server'], 465, Config['global']['smtp_server'],
-                                     timeout=5)
-                s.login(Config['global']['smtp_username'], Config['global']['smtp_password'])
-
-                s.sendmail(MAIL_ADDRESS, [em], msg.as_string())
-                s.quit()
-
-                self.sendJSON(dict(command="notice", style="info",
-                                   text="A e-mail has been sent with the instructions to validate your account"))
-                self._logger.debug("sent mail")
-                self.sendReply("LOGIN_AVAILABLE", "yes", login)
             elif action == "FA_CLOSED":
                 login = stream.readQString()
                 session = stream.readQString()
@@ -739,6 +651,94 @@ Thanks,\n\
         except:
             self._logger.exception("Something awful happened in a lobby thread !")
 
+    def command_create_account(self, message):
+        login = message['login']
+        email = message['email']
+        password = message['password']
+
+        username_pattern = re.compile(r"^[^,]{1,20}$")
+        email_pattern = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$")
+        if not email_pattern.match(email):
+            self.sendJSON(dict(command="notice", style="info",
+                               text="Please use a valid email address."))
+            self.sendReply("LOGIN_AVAILABLE", "no", login)
+            return
+
+        if not username_pattern.match(login):
+            self.sendJSON(dict(command="notice", style="info",
+                               text="Please don't use \",\" in your username."))
+            self.sendReply("LOGIN_AVAILABLE", "no", login)
+            return
+
+        query = QSqlQuery(self.db)
+        query.prepare("SELECT id FROM `login` WHERE LOWER(`login`) = ?")
+        query.addBindValue(login.lower())
+        if not query.exec_():
+            self._logger.debug("Error inserting login %s", login)
+            self._logger.debug(query.lastError())
+            self.sendReply("LOGIN_AVAILABLE", "no", login)
+            return
+
+        if query.size() != 0:
+            self._logger.debug("Login not available: %s", login)
+            self.sendReply("LOGIN_AVAILABLE", "no", login)
+            return
+
+        query.prepare("INSERT INTO login (login, password, email) VALUES (?,?,?)")
+        query.addBindValue(login)
+        query.addBindValue(password)
+        query.addBindValue(email)
+
+        if not query.exec_():
+            self._logger.debug("Error inserting login %s", login)
+            self._logger.debug(query.lastError())
+            self.sendReply("LOGIN_AVAILABLE", "no", login)
+            return
+
+        uid = query.lastInsertId()
+
+        exp = time.strftime("%Y-%m-%d %H:%m:%S", time.gmtime())
+        key = hashlib.md5()
+        key.update((login + '_' + email + str(random.randrange(0, 10000)) + exp + PW_SALT).encode())
+        keyHex = key.hexdigest()
+        query.prepare("INSERT INTO `validate_account` (`UserID`,`Key`,`expDate`) VALUES (?,?,?)")
+        query.addBindValue(uid)
+        query.addBindValue(keyHex)
+        query.addBindValue(exp)
+        query.exec_()
+        self._logger.debug("Sending registration mail")
+        link = {'a': 'validate', 'email': keyHex, 'u': base64.b64encode(str(uid))}
+        passwordLink = Config['global']['app_url'] + "validateAccount.php?" + urllib.parse.urlencode(link)
+
+        text = "Dear " + login + ",\n\n\
+Please visit the following link to validate your FAF account:\n\
+-----------------------\n\
+" + passwordLink + "\n\
+-----------------------\n\\n\
+Thanks,\n\
+-- The FA Forever team"
+
+        msg = MIMEText(text)
+
+
+        msg['Subject'] = 'Forged Alliance Forever - Account validation'
+        msg['From'] = email.utils.formataddr(('Forged Alliance Forever', MAIL_ADDRESS))
+        msg['To'] = email.utils.formataddr((login, email))
+
+        self._logger.debug("sending mail to " + email)
+        #self.log.debug(msg.as_string())
+        #s = smtplib.SMTP(config['global']['smtp_server'])
+        s = smtplib.SMTP_SSL(Config['global']['smtp_server'], 465, Config['global']['smtp_server'],
+                             timeout=5)
+        s.login(Config['global']['smtp_username'], Config['global']['smtp_password'])
+
+        s.sendmail(MAIL_ADDRESS, [email], msg.as_string())
+        s.quit()
+
+        self.sendJSON(dict(command="notice", style="info",
+                           text="A e-mail has been sent with the instructions to validate your account"))
+        self._logger.debug("sent mail")
+        self.sendReply("LOGIN_AVAILABLE", "yes", login)
 
     @timed()
     def readData(self):
