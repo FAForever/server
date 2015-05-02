@@ -29,7 +29,8 @@ def run_lobby_server(address: (str, int),
         conn = LobbyConnection(context=ctx,
                                games=games,
                                players=player_service,
-                               db=db)
+                               db=db,
+                               loop=loop)
         conn.on_connection_made(protocol, protocol.writer.get_extra_info('peername'))
         return conn
     ctx = ServerContext(initialize_connection, loop)

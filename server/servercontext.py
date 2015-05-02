@@ -37,8 +37,12 @@ class ServerContext():
         self._logger.info("Client connected")
         protocol = QDataStreamProtocol(stream_reader, stream_writer)
         connection = self._connection_factory(protocol)
-        connection.on_connection_made(protocol, stream_writer.get_extra_info('peername'))
-        self.connections.append(connection)
+        try:
+            connection.on_connection_made(protocol, stream_writer.get_extra_info('peername'))
+            self.connections.append(connection)
+        except Exception as ex:
+            self._logger.exception(ex)
+            return
         try:
             while True:
                 message = yield from protocol.read_message()

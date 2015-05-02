@@ -71,15 +71,13 @@ logger = logging.getLogger(__name__)
 @with_logger
 class LobbyConnection(QObject):
     @timed()
-    def __init__(self, context=None, games=None, players=None, db=None):
+    def __init__(self, context=None, games=None, players=None, db=None, loop=asyncio.get_event_loop()):
         super(LobbyConnection, self).__init__()
+        self.loop = loop
         self.db = db
         self.games = games
         self.players = players
         self.context = context
-
-        self._logger.debug("LobbyConnection intializing")
-
         self.season = LADDER_SEASON
         self.ladderPotentialPlayers = []
         self.warned = False
@@ -105,14 +103,13 @@ class LobbyConnection(QObject):
         self.pingTimer = None
         self.session = int(random.getrandbits(16))
         self.protocol = None
+        self._logger.debug("LobbyConnection initialized")
 
     def on_connection_made(self, protocol: QDataStreamProtocol, peername: (str, int)):
-        self.initTimer = QTimer(self)
-        self.initTimer.timeout.connect(self.initNotDone)
-        self.initTimer.start(2000)
         self.addGameModes()
         self.protocol = protocol
         self.ip, self.port = peername
+        self.loop.call_later(2, self.initNotDone)
 
     def on_connection_lost(self):
         pass
@@ -289,6 +286,9 @@ class LobbyConnection(QObject):
             self.receiveJSON(action)
         except:
             self._logger.exception("Something awful happened in a lobby thread !")
+
+    def on_message_received(self, message):
+        self.handleAction(message)
 
     def command_ping(self, msg):
         self.sendReply('PONG')
