@@ -230,6 +230,9 @@ class PlayersOnline(object):
     def __len__(self):
         return len(self.players)
 
+    def __iter__(self):
+        return self.players.__iter__()
+
     def addUser(self, newplayer):
         gamesocket = None
         lobbySocket = None

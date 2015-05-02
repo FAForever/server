@@ -2038,7 +2038,7 @@ Thanks,\n\
         if "command" in data_dictionary:
             if data_dictionary["command"] == "game_launch":
                 # if we join a game, we are not a potential player anymore
-                for player in self.players.players:
+                for player in self.players:
                     if player.lobbyThread:
                         player.lobbyThread.removePotentialPlayer(self.player.getLogin())
 
