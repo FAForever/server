@@ -2,6 +2,7 @@ from PySide import QtNetwork
 import json
 import pytest
 import mock
+from server import ServerContext
 
 from server.games_service import GamesService
 from server.lobbyconnection import LobbyConnection, PlayersOnline
@@ -53,18 +54,32 @@ def mock_lobby_server(db):
 
 
 @pytest.fixture
-def fa_server_thread(mock_lobby_server):
-    return LobbyConnection(mock_lobby_server)
+def mock_context():
+    return mock.create_autospec(ServerContext(lambda: None))
+
+@pytest.fixture
+def mock_players():
+    return mock.create_autospec(PlayersOnline())
+
+@pytest.fixture
+def mock_games(mock_players, db):
+    return mock.create_autospec(GamesService(mock_players, db))
+
+@pytest.fixture
+def fa_server_thread(mock_context, mock_games, mock_players, db):
+    return LobbyConnection(context=mock_context,
+                           games=mock_games,
+                           players=mock_players,
+                           db=db)
 
 
 def test_command_game_host_calls_host_game(fa_server_thread,
-                                           mock_lobby_server,
+                                           mock_games,
                                            test_game_info,
                                            players):
     fa_server_thread.player = players.hosting
-    mock_lobby_server.games.create_game = mock.Mock()
     fa_server_thread.command_game_host(test_game_info)
-    mock_lobby_server.games.create_game\
+    mock_games.create_game\
         .assert_called_with(test_game_info['access'],
                             test_game_info['mod'],
                             fa_server_thread.player,
@@ -145,18 +160,14 @@ def test_social_invalid(fa_server_thread):
         fa_server_thread.command_social({'invalidKey': None})
 
 
-# TODO: check in ingetration tests db state
 def test_social_friends(fa_server_thread):
-    fa_server_thread.parent.listUsers.findByName = mock.Mock()
     assert fa_server_thread.friendList == []
     friends = {'Sheeo', 'Dragonfire', 'Spooky'}
     fa_server_thread.command_social({'friends': friends})
     assert fa_server_thread.friendList == friends
 
 
-# TODO: check in ingetration tests db state
 def test_social_foes(fa_server_thread):
-    fa_server_thread.parent.listUsers.findByName = mock.Mock()
     assert fa_server_thread.foeList == []
     foes = {'Cheater', 'Haxxor', 'Boom1234'}
     fa_server_thread.command_social({'foes': foes})
