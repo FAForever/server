@@ -10,7 +10,7 @@ from tests.integration_tests.testclient import TestGPGClient
 
 slow = pytest.mark.slow
 
-TEST_ADDRESS = ('127.0.0.1', 8000)
+TEST_ADDRESS = ('127.0.0.1', None)
 
 @asyncio.coroutine
 @slow
@@ -19,7 +19,7 @@ def test_public_host(loop, players, player_service, games, db):
     nat_server, server = run_game_server(TEST_ADDRESS, player_service, games, db, loop=loop)
     server = yield from server
     with TestGPGClient(player.gamePort, loop=loop, process_nat_packets=True) as client:
-        yield from client.connect('127.0.0.1', 8000)
+        yield from client.connect(*server.sockets[0].getsockname())
         client.proto.send_GameState(['Idle'])
         client.proto.send_GameState(['Lobby'])
         yield from client.read_until('ConnectivityState')
@@ -41,7 +41,7 @@ def test_stun_host(loop, players, player_service, games, db):
     nat_server, server = run_game_server(TEST_ADDRESS, player_service, games, db, loop=loop)
     server = yield from server
     with TestGPGClient(player.gamePort, loop=loop, process_nat_packets=False) as client:
-        yield from client.connect('127.0.0.1', 8000)
+        yield from client.connect(*server.sockets[0].getsockname())
         client.proto.send_GameState(['Idle'])
         client.proto.send_GameState(['Lobby'])
         yield from client.read_until('SendNatPacket')
