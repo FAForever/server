@@ -1,5 +1,4 @@
 import asyncio
-from asyncio import Transport
 
 import ujson
 
@@ -98,7 +97,7 @@ def test_handle_action_GameState_idle_adds_connection(game_connection, players, 
     game.add_game_connection.assert_called_with(game_connection)
 
 @asyncio.coroutine
-def test_handle_action_GameState_idle_non_searching_player_aborts(game_connection, players, game):
+def test_handle_action_GameState_idle_non_searching_player_aborts(game_connection, players):
     game_connection.player = players.hosting
     game_connection.lobby = mock.Mock()
     game_connection.abort = mock.Mock()
@@ -109,10 +108,9 @@ def test_handle_action_GameState_idle_non_searching_player_aborts(game_connectio
     game_connection.abort.assert_any_call()
 
 @asyncio.coroutine
-def test_handle_action_GameState_idle_as_peer_sends_CreateLobby(game_connection, players, games, transport):
+def test_handle_action_GameState_idle_as_peer_sends_CreateLobby(game_connection, players):
     """
     :type game_connection: GameConnection
-    :type transport Transport
     """
     protocol = mock.Mock()
     game_connection.protocol = protocol
@@ -127,10 +125,9 @@ def test_handle_action_GameState_idle_as_peer_sends_CreateLobby(game_connection,
                                             1]})
 
 @asyncio.coroutine
-def test_handle_action_GameState_idle_as_host_sends_CreateLobby(game_connection, players, games, transport):
+def test_handle_action_GameState_idle_as_host_sends_CreateLobby(game_connection, players):
     """
     :type game_connection: GameConnection
-    :type transport Transport
     """
     protocol = mock.Mock()
     game_connection.protocol = protocol
@@ -149,7 +146,6 @@ def test_handle_action_GameState_idle_as_host_sends_CreateLobby(game_connection,
 def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, players, game):
     """
     :type game_connection: GameConnection
-    :type transport Transport
     """
     with mock.patch('server.gameconnection.TestPeer') as peer_test:
         fut = asyncio.Future()
@@ -170,7 +166,6 @@ def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, pla
 def test_handle_action_GameState_lobby_calls_ConnectToHost(game_connection, loop, players, game):
     """
     :type game_connection: GameConnection
-    :type transport Transport
     """
     with mock.patch('server.gameconnection.TestPeer') as peer_test:
         fut = asyncio.Future()
@@ -191,7 +186,6 @@ def test_handle_action_GameState_lobby_calls_ConnectToHost(game_connection, loop
 def test_handle_action_GameState_launching_calls_launch(game_connection, loop, players, game):
     """
     :type game_connection: GameConnection
-    :type transport Transport
     """
     game_connection.player = players.hosting
     game_connection.game = game

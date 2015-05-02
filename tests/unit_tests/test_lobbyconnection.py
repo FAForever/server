@@ -1,5 +1,4 @@
 from PySide import QtNetwork
-import json
 import pytest
 import mock
 from server import ServerContext
