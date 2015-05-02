@@ -92,8 +92,8 @@ class QDataStreamProtocol(metaclass=ABCMeta):
                 'password': password
             }
         elif action in ['UPLOAD_MAP', 'UPLOAD_MOD']:
-            pos, _ = self.read_qstring(block, pos) # login
-            pos, _ = self.read_qstring(block, pos) # session
+            pos, _ = self.read_qstring(block, pos)  # login
+            pos, _ = self.read_qstring(block, pos)  # session
             pos, name = self.read_qstring(block, pos)
             pos, info = self.read_qstring(block, pos)
             pos, size = self.read_int32(block, pos)
