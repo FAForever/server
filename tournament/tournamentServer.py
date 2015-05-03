@@ -165,7 +165,7 @@ class tournamentServer(QtNetwork.QTcpServer):
 
                         participant = {}
                         participant["id"]   = p["id"]
-                        participant["name"] = name
+                        participant["name"] = str(name)
                         self.tournaments[uid]["participants"].append(participant)
             
                 # if self.tournaments[uid]["state"] == "started":
