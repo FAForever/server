@@ -2,6 +2,7 @@ from concurrent.futures import CancelledError, TimeoutError
 import asyncio
 import logging
 from enum import Enum
+import socket
 
 from PySide.QtNetwork import QUdpSocket, QHostAddress
 
@@ -29,46 +30,12 @@ class Connectivity(Enum):
     PROXY = "PROXY"
 
 
-@with_logger
-class UdpMessage():
-    """
-    UDP datagram sender using QUdpSocket
-
-    Usage:
-    >>> with UdpMessage('127.0.0.1', 6112, "Hello there") as msg:
-    >>>     msg.send_payload()
-    >>>     # Optionally change message and send more
-    >>>     msg.message = "New hello"
-    >>>     msg.send_payload()
-
-    """
-
-    def __init__(self, remote_addr, remote_port, message=None):
-        self.message = message
-        if isinstance(remote_addr, QHostAddress):
-            self.remote_addr = remote_addr
-        else:
-            self.remote_addr = QHostAddress(remote_addr)
-        self.remote_port = remote_port
-        self.socket = QUdpSocket()
-        self.socket.connectToHost(remote_addr, remote_port)
-        self.socket.error.connect(self._on_error)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        try:
-            self.socket.abort()
-        except:
-            pass
-
-    def send_payload(self):
-        self._logger.debug("UDP(%s:%s)>> %s" % (self.remote_addr.toString(), self.remote_port, self.message.encode()))
-        self.socket.writeDatagram(self.message.encode(), self.remote_addr, self.remote_port)
-
-    def _on_error(self):
-        self._logger.debug("UDP socket error %s" % self.socket.errorString)
+def send_natpacket(addr, message):
+    logger.debug("UDP(%s,%s)>>: %s" % (addr[0], addr[1], message))
+    s = socket.socket(type=socket.SOCK_DGRAM)
+    s.setblocking(False)
+    s.sendto(b'\x08'+message.encode(), addr)
+    s.close()
 
 @with_logger
 class TestPeer():
@@ -127,11 +94,8 @@ class TestPeer():
         self._logger.debug("Testing PUBLIC")
         self._logger.debug(self.client_packets)
         for i in range(0, 3):
-            with UdpMessage(QHostAddress(self.remote_addr[0]),
-                            self.remote_addr[1],
-                            "\x08Are you public? %s" % self.identifier) as msg:
-                msg.send_payload()
-                yield from asyncio.sleep(0.2)
+            send_natpacket(self.remote_addr, 'Are you public? %s' % self.identifier)
+            yield from asyncio.sleep(0.2)
         return any(map(lambda args: "Are you public? %s" % self.identifier in args,
                        self.client_packets))
 

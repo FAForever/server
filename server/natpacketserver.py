@@ -23,9 +23,11 @@ class NatPacketServer(Subscribable):
         self.loop.remove_reader(self._recv())
         try:
             self._socket.shutdown(socket.SHUT_RDWR)
+        except OSError as ex:
+            self._logger.exception(ex)
+        finally:
             self._socket.close()
-        except OSError:
-            pass
+
 
     def __enter__(self):
         return self
