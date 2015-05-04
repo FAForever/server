@@ -280,7 +280,7 @@ class LobbyConnection(QObject):
 
 
     @timed()
-    def handleAction(self, action, stream):
+    def handleAction(self, action):
         try:
             self._logger.debug('handleAction: {}'.format(action))
             self.receiveJSON(action)
