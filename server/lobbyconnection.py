@@ -51,7 +51,6 @@ from server.protocol import QDataStreamProtocol
 
 gi = pygeoip.GeoIP('GeoIP.dat', pygeoip.MEMORY_CACHE)
 
-FA = 9420
 LADDER_SEASON = "ladder_season_5"
 
 from steam import api
@@ -62,8 +61,6 @@ from server.games.ladderGamesContainer import Ladder1V1GamesContainer
 from server.games.coopGamesContainer import CoopGamesContainer
 from server.games.gamesContainer import GamesContainer
 
-
-TIMEOUT_SECONDS = 300
 
 logger = logging.getLogger(__name__)
 
@@ -282,12 +279,26 @@ class LobbyConnection(QObject):
     def handleAction(self, action):
         try:
             self._logger.debug('handleAction: {}'.format(action))
-            self.receiveJSON(action)
+            self.on_message_received(action)
         except:
             self._logger.exception("Something awful happened in a lobby thread !")
 
     def on_message_received(self, message):
-        self.handleAction(message)
+        """
+        Dispatches incoming messages
+        """
+        try:
+            cmd = message['command']
+            if not isinstance(cmd, str):
+                raise ValueError("Command is not a string")
+            getattr(self, 'command_{}'.format(cmd))(message)
+        except (KeyError, ValueError) as ex:
+            self._logger.warning("Garbage command: {}".format(message))
+            self._logger.exception(ex)
+        except Exception as ex:
+            self.protocol.send_message({'command': 'invalid'})
+            self._logger.warning("Error processing command")
+            self._logger.exception(ex)
 
     def command_ping(self, msg):
         self.sendReply('PONG')
@@ -820,26 +831,24 @@ Thanks,\n\
     @timed()
     def sendReply(self, action, *args, **kwargs):
         if self in self.context:
-            if not self.noSocket:
+            reply = QByteArray()
+            stream = QDataStream(reply, QIODevice.WriteOnly)
+            stream.setVersion(QDataStream.Qt_4_2)
+            stream.writeUInt32(0)
 
-                reply = QByteArray()
-                stream = QDataStream(reply, QIODevice.WriteOnly)
-                stream.setVersion(QDataStream.Qt_4_2)
-                stream.writeUInt32(0)
+            stream.writeQString(action)
 
-                stream.writeQString(action)
+            for arg in args:
+                if isinstance(arg, int):
+                    stream.writeInt(arg)
+                elif isinstance(arg, str):
+                    stream.writeQString(arg)
 
-                for arg in args:
-                    if isinstance(arg, int):
-                        stream.writeInt(arg)
-                    elif isinstance(arg, str):
-                        stream.writeQString(arg)
+            stream.device().seek(0)
 
-                stream.device().seek(0)
+            stream.writeUInt32(reply.size() - 4)
 
-                stream.writeUInt32(reply.size() - 4)
-
-                asyncio.async(self.protocol.send_raw(reply))
+            asyncio.async(self.protocol.send_raw(reply))
 
     def command_fa_state(self, message):
         state = message["state"]
@@ -1123,6 +1132,7 @@ Thanks,\n\
             query.exec_()
 
             if query.size() != 1:
+                self._logger.info("Invalid login or password")
                 self.sendJSON(dict(command="notice", style="error",
                                    text="Login not found or password incorrect. They are case sensitive."))
                 return
@@ -2049,22 +2059,6 @@ Thanks,\n\
                     self.sendReply(data_string)
             except:
                 return
-
-    @timed()
-    def receiveJSON(self, data_string):
-        """
-        A fairly pythonic way to process received strings as JSON messages.
-        """
-        try:
-            message = json.loads(data_string)
-            cmd = message['command']
-            if not isinstance(cmd, str):
-                raise ValueError("Command is not a string")
-            getattr(self, 'command_{}'.format(cmd))(message)
-        except (KeyError, ValueError) as ex:
-            if data_string != '':
-                self._logger.warning("Garbage input from client: {}".format(data_string))
-                self._logger.exception(ex)
 
     def done(self):
         if self.uid:
