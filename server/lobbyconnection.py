@@ -106,7 +106,7 @@ class LobbyConnection(QObject):
         self.addGameModes()
         self.protocol = protocol
         self.ip, self.port = peername
-        self.loop.call_later(2, self.initNotDone)
+        self.loop.call_later(5, self.initNotDone)
 
     def on_connection_lost(self):
         pass
