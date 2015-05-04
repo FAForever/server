@@ -826,7 +826,7 @@ Thanks,\n\
 
     @timed()
     def sendArray(self, array):
-        asyncio.async(self.protocol.send_raw(array))
+        asyncio.async(self.protocol.send_raw(array.data()))
 
     @timed()
     def sendReply(self, action, *args, **kwargs):
@@ -2051,14 +2051,10 @@ Thanks,\n\
                     if player.lobbyThread:
                         player.lobbyThread.removePotentialPlayer(self.player.getLogin())
 
-        if not self.noSocket:
-            try:
-                data_string = json.dumps(data_dictionary)
-
-                if not self.noSocket:
-                    self.sendReply(data_string)
-            except:
-                return
+        try:
+            self.protocol.send_message(data_dictionary)
+        except Exception as ex:
+            self._logger.exception(ex)
 
     def done(self):
         if self.uid:
