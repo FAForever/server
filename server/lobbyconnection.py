@@ -1565,9 +1565,9 @@ Thanks,\n\
             self._logger.debug("done")
         except Exception as ex:
             self._logger.exception(ex)
-            self.abort()
             self.sendJSON(dict(command="notice", style="error",
                                text="Something went wrong during sign in"))
+            self.abort()
 
     @timed
     def getLastSeason(self):
