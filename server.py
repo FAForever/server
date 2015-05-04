@@ -16,11 +16,10 @@ from logging import handlers
 import signal
 
 from quamash import QEventLoop
-from PySide import QtSql, QtCore, QtNetwork
+from PySide import QtSql, QtCore
 from PySide.QtCore import QTimer
 
 from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
-from server.FaLobbyServer import FALobbyServer
 from server.games_service import GamesService
 
 from server.players import *
@@ -73,12 +72,14 @@ if __name__ == '__main__':
             self.dirtyGameList = []
             self.games = GamesService(self.players_online, self.db)
 
-            self.FALobby = FALobbyServer(self.players_online, self.games, self.db, self)
-
-            self.nat_packet_server, self.game_server = server.run_game_server(('', 8000),
-                                                                              self.players_online,
-                                                                              self.games,
-                                                                              self.db)
+            self.lobby_server = asyncio.async(server.run_lobby_server(('', 8001), self.players_online, self.games, self.db, loop))
+            self.nat_packet_server, self.game_server =\
+                server.run_game_server(('', 8000),
+                                       self.players_online,
+                                       self.games,
+                                       self.db,
+                                       loop)
+            asyncio.async(self.game_server)
 
             # Make sure we can shutdown gracefully
             signal.signal(signal.SIGTERM, self.signal_handler)
@@ -89,29 +90,24 @@ if __name__ == '__main__':
             timer.timeout.connect(poll_signal)
             timer.start(200)
 
-
-            if not self.FALobby.listen(QtNetwork.QHostAddress.Any, 8001):
-                self.logger.error("Unable to start the server {}".format(self.FALobby.serverError()))
-                print("Unable to start the server {}".format(self.FALobby.serverError()))
-                raise Exception("Unable to start the lobby server")
-            else:
-                self.logger.info("starting the Lobby server on  %s:%i" % (self.FALobby.serverAddress().toString(),self.FALobby.serverPort()))
-
         def signal_handler(self, signal, frame):
             self.logger.info("Received signal, shutting down")
             if not self.done():
                 self.set_result(0)
-            self.FALobby.close()
+            self.lobby_server.close()
             self.game_server.close()
             self._loop.stop()
 
     try:
         app = QtCore.QCoreApplication(sys.argv)
+
         if config.LIBRARY_PATH:
             app.addLibraryPath(config.LIBRARY_PATH)
+
         loop = QEventLoop(app)
         asyncio.set_event_loop(loop)
+
         loop.run_until_complete(Start(loop))
 
     except Exception as ex:
-        logger.exception("Something awful happened {}".format(ex))
+        logger.exception("Failure booting server {}".format(ex))
