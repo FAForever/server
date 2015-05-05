@@ -116,8 +116,8 @@ class LobbyConnection(QObject):
 
     @timed()
     def initNotDone(self):
-        self._logger.warning("Init not done for this IP : " + self.ip)
         if not self.loginDone:
+            self._logger.warning("Init not done for this IP: {}".format(self.ip))
             self._logger.warning("aborting socket")
             self.abort()
 
