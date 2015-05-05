@@ -17,7 +17,7 @@ before_script:
 script:
   - pip install -e .
   - export QUAMASH_QTIMPL=PySide
-  - py.test --slow --cov-report term-missing --cov=server --cov=challonge --cov=steam --cov=tournament --cov=updater
+  - py.test --slow --cov-report term-missing --cov=server --cov=steam --cov=updater
   - pyflakes . || true
 
 after_success:
