@@ -89,7 +89,6 @@ class LobbyConnection(QObject):
         self.uid = None
         self.ip = None
         self.port = None
-        self.pingTimer = None
         self.session = int(random.getrandbits(16))
         self.protocol = None
         self._logger.debug("LobbyConnection initialized")
@@ -111,33 +110,6 @@ class LobbyConnection(QObject):
             self._logger.warning("Init not done for this IP: {}".format(self.ip))
             self._logger.warning("aborting socket")
             self.abort()
-
-
-
-    @timed()
-    def ping(self):
-        if hasattr(self, "socket"):
-            if not self.noSocket:
-                # if last ping didn't answer, we can assume that the guy is gone.
-                if self.ponged == False and self.initPing == False:
-                    if self.missedPing > 2:
-                        self._logger.debug(
-                            self.logPrefix + " Missed 2 ping - Removing user IP " + self.ip)
-
-                        if self in self.context:
-                            self.removeLobbySocket()
-
-                    else:
-                        self.sendReply("PING")
-                        self.missedPing += 1
-                else:
-                    self.sendReply("PING")
-                    self.ponged = False
-                    self.missedPing = 0
-
-                if self.initPing:
-                    self.initPing = False
-
 
     @timed()
     def checkOldGamesFromPlayer(self):
@@ -1578,11 +1550,6 @@ Thanks,\n\
         if self.initTimer:
             self.initTimer.stop()
             self.initTimer = None
-
-        if self in self.context:
-            self.pingTimer = QTimer(self)
-            self.pingTimer.timeout.connect(self.ping)
-            self.pingTimer.start(31000)
 
         self.sendJSON(jsonToSend)
         #self.log.debug("asking session done")

@@ -17,7 +17,6 @@
 #-------------------------------------------------------------------------------
 
 import time
-import logging
 
 from PySide import QtSql
 from server.decorators import with_logger
