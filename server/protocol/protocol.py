@@ -111,14 +111,14 @@ class QDataStreamProtocol(metaclass=ABCMeta):
             pos, size = self.read_int32(block, pos)
             data = block[pos:size]
             return {
-                'command': 'command_{}'.format(action.lower()),
+                'command': action.lower(),
                 'name': name,
                 'info': ujson.loads(info),
                 'data': data
             }
         elif action in ['PING', 'PONG']:
             return {
-                'command': 'command_{}'.format(action.lower())
+                'command': action.lower()
             }
         else:
             message = ujson.loads(action)
