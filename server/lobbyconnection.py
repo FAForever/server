@@ -62,9 +62,6 @@ from server.games.coopGamesContainer import CoopGamesContainer
 from server.games.gamesContainer import GamesContainer
 
 
-logger = logging.getLogger(__name__)
-
-
 @with_logger
 class LobbyConnection(QObject):
     @timed()
@@ -1671,7 +1668,7 @@ Thanks,\n\
             query.addBindValue(fileUploaded)
 
             if not query.exec_():
-                logger.error("Failed to execute DB : " + query.lastQuery())
+                self._logger.error("Failed to execute DB : " + query.lastQuery())
                 self.sendJSON(dict(command="notice", style="error", text="Error updating the database."))
             else:
                 self.sendJSON(dict(command="notice", style="info", text="Database updated correctly."))
@@ -1708,7 +1705,7 @@ Thanks,\n\
             query.addBindValue(description)
 
             if not query.exec_():
-                logger.error("Failed to execute DB : " + query.lastQuery())
+                self._logger.error("Failed to execute DB : " + query.lastQuery())
                 self.sendJSON(dict(command="notice", style="error", text="Avatar not correctly uploaded."))
             else:
                 self.sendJSON(dict(command="notice", style="info", text="Avatar uploaded."))
