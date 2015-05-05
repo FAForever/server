@@ -110,7 +110,6 @@ class LobbyConnection(QObject):
 
     @timed()
     def joinGame(self, uuid, gamePort, password=None):
-        self.checkOldGamesFromPlayer()
         self.games.removeOldGames()
 
         if gamePort == '' or gamePort == 0 or gamePort is None:
@@ -1743,7 +1742,6 @@ Thanks,\n\
                                text="You are banned from the matchmaker. Contact an admin to have the reason."))
             return
 
-        self.checkOldGamesFromPlayer()
 
         container = self.games.getContainer(mod)
 
