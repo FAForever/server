@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 #-------------------------------------------------------------------------------
 # Copyright (c) 2014 Gael Honorez.
 # All rights reserved. This program and the accompanying materials
@@ -16,169 +18,64 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-import logging
 
-from PySide import QtCore, QtNetwork
-from PySide.QtSql import *
+from logging import handlers
 
-from . import tournamentServerThread
-from passwords import CHALLONGE_KEY, CHALLONGE_USER
-import challonge
+from PySide.QtCore import QObject
 
-challonge.set_credentials(CHALLONGE_USER, CHALLONGE_KEY)
+from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
+from config import Config
+from tournament.tournamentServer import *
 
 
+UNIT16 = 8
 
-class tournamentServer(QtNetwork.QTcpServer):
+class start(QObject):
+
     def __init__(self, parent=None):
-        super(tournamentServer, self).__init__(parent)
+
+        super(start, self).__init__(parent)
+        self.rootlogger = logging.getLogger("")
+        self.logHandler = handlers.RotatingFileHandler(Config['global']['logpath'] + "tournamentServer.log", backupCount=15, maxBytes=524288)
+        self.logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
+        self.logHandler.setFormatter(self.logFormatter)
+        self.rootlogger.addHandler(self.logHandler)
+        self.rootlogger.setLevel(eval("logging." + Config['tournamentServer']['loglevel']))
         self.logger = logging.getLogger(__name__)
-        self.parent = parent
-        self.threads    = []
-        self.updaters   = []
-        self.db = self.parent.db
 
-        self.tournaments = {}
-        self.importTournaments()
+        self.db = QtSql.QSqlDatabase.addDatabase("QMYSQL")
+        self.db.setHostName(DB_SERVER)  
+        self.db.setPort(DB_PORT)
+
+        self.db.setDatabaseName(DB_TABLE)  
+        self.db.setUserName(DB_LOGIN)  
+        self.db.setPassword(DB_PASSWORD)
         
-        self.updateTimer = QtCore.QTimer()
-        self.updateTimer.start(60000 * 5)
-        self.updateTimer.timeout.connect(self.importTournaments) 
+
         
-    def importTournaments(self):
-        self.tournaments = {}
-        ToClose = []
-        for t in challonge.tournaments.index():
-                uid = t["id"]
-                self.tournaments[uid] = {}
-                self.tournaments[uid]["name"]           = t["name"]
-                self.tournaments[uid]["url"]            = t["full-challonge-url"] 
-                self.tournaments[uid]["description"]    = t["description"]
-                self.tournaments[uid]["type"]           = t["tournament-type"]
-                self.tournaments[uid]["progress"]       = t["progress-meter"]
-                self.tournaments[uid]["state"]          = "open"
-                checkParticipants = False
-                
-                if t["started-at"] is not None:
-                    self.tournaments[uid]["state"]      = "started"
-                    if t["progress-meter"] == 0:
-                        checkParticipants = True
-                if t["completed-at"] is not None:
-                    self.tournaments[uid]["state"]      = "finished"
-                
-                if t["open-signup"]:
-                    ToClose.append(uid)
-                    
-                
-                self.tournaments[uid]["participants"] = []
-
-
-                if checkParticipants:
-                    changed = []
-                    for p in challonge.participants.index(uid):
-                        fafuid = None
-                        query = QSqlQuery(self.db)
-                        query.prepare("SELECT id FROM login WHERE login = ?")
-                        query.addBindValue(p["name"])
-                        if query.exec_():
-                            if query.size() == 1:
-                                query.first()
-                                fafuid = int(query.value(0))
-                        if fafuid is None:
-                            query.prepare("SELECT user_id FROM name_history WHERE previous_name LIKE ?")
-                            query.addBindValue(p["name"])
-                            if query.exec_():
-                                if query.size() == 1:
-                                    query.first() 
-                                    fafuid = int(query.value(0))
-                            
-                            self.logger.debug("player %s was not found", name)
-                            query.prepare("SELECT login FROM login WHERE id =  ?")
-                            query.addBindValue(fafuid)
-                            if query.exec_():
-                                if query.size() == 1:
-                                    query.first() 
-                                    name = query.value(0)
-                                    self.logger.debug("player is replaced by %s", name)
-                                    challonge.participants.update(uid, p["id"], name=str(name))                                    
-
-
-                        if fafuid:
-                            query.prepare("SELECT session FROM login WHERE id = ?")
-                            query.addBindValue(fafuid)
-                            if query.exec_():
-                                if query.size() == 1:
-                                    query.first()                        
-                                    if int(query.value(0)) == 0:
-                                        changed.append(p["id"])
-                                    else:
-                                        participant = {}
-                                        participant["id"]   = p["id"]
-                                        participant["name"] = p["name"]
-                                        self.tournaments[uid]["participants"].append(participant)
-                        else:
-                            changed.append(p["id"])                            
-
-
-                    if len(changed) != 0:
-                        for puid in changed:
-                            challonge.participants.destroy(uid, puid)
+        if not self.db.open():  
+            self.logger.error(self.db.lastError().text())  
  
-   
-                else:
-                    for p in challonge.participants.index(uid):
-                        fafuid = None
-                        name = p["name"]
-                        query = QSqlQuery(self.db)
-                        query.prepare("SELECT id FROM login WHERE login = ?")
-                        query.addBindValue(p["name"])
-                        if query.exec_():
-                            if query.size() == 1:
-                                query.first()
-                                fafuid = int(query.value(0))
-                        
-                        if fafuid is None:
-                            query.prepare("SELECT user_id FROM name_history WHERE previous_name LIKE ?")
-                            query.addBindValue(p["name"])
-                            if query.exec_():
-                                if query.size() == 1:
-                                    query.first() 
-                                    fafuid = int(query.value(0))
-
-                            self.logger.debug("player %s was not found", name)
-                            query.prepare("SELECT login FROM login WHERE id = ?")
-                            query.addBindValue(fafuid)
-                            if query.exec_():
-                                if query.size() == 1:
-                                    query.first() 
-                                    name = query.value(0)
-                                    self.logger.debug("player is replaced by %s", name)
-                                    challonge.participants.update(uid, p["id"], name=str(name))
-
-
-                        participant = {}
-                        participant["id"]   = p["id"]
-                        participant["name"] = name
-                        self.tournaments[uid]["participants"].append(participant)
-            
-                # if self.tournaments[uid]["state"] == "started":
-                #     for conn in self.updaters:
-                #         conn.sendJSON(dict(command="tournaments_info", data=self.tournaments))
-     
-        if len(ToClose) != 0:
-            for uid in ToClose:
-                challonge.tournaments.update(uid, open_signup="false")
-                
-    def incomingConnection(self, socketId):
         
-        reload(tournamentServerThread)
-        #self.logger.debug("Incoming tourney Connection")
-        self.updaters.append(tournamentServerThread.tournamentServerThread(socketId, self))    
+        self.updater =  tournamentServer(self)
+        if not self.updater.listen(QtNetwork.QHostAddress.Any, 11001):
+            return        
+        else:
+            self.logger.info("starting the update server on  %s:%i" % (self.updater.serverAddress().toString(),self.updater.serverPort()))  
+
+if __name__ == '__main__':
+    logger = logging.getLogger(__name__)
+    import sys
     
 
+    try:
         
-    def removeUpdater(self, updater):
-        if updater in self.updaters:
-            self.updaters.remove(updater)
-            updater.deleteLater()
+        app = QtCore.QCoreApplication(sys.argv)
+        server = start()
+        app.exec_()
     
+    except Exception as ex:
+        
+        logger.exception("Something awful happened!")
+        logger.debug("Finishing main")
+
