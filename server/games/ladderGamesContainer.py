@@ -65,7 +65,7 @@ class Ladder1V1GamesContainer(GamesContainer):
             
             league = self.getLeague(season, player)
             
-            player.setLeague(league)
+            player.league = league
 
             self.players.append(player)
             player.setAction("SEARCH_LADDER")
