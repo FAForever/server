@@ -98,9 +98,6 @@ class LobbyConnection(QObject):
         self.ip, self.port = peername
         self.loop.call_later(5, self.initNotDone)
 
-    def on_connection_lost(self):
-        pass
-
     def abort(self):
         self.protocol.writer.write_eof()
 
@@ -110,11 +107,6 @@ class LobbyConnection(QObject):
             self._logger.warning("Init not done for this IP: {}".format(self.ip))
             self._logger.warning("aborting socket")
             self.abort()
-
-    @timed()
-    def checkOldGamesFromPlayer(self):
-        pass
-
 
     @timed()
     def joinGame(self, uuid, gamePort, password=None):
@@ -172,7 +164,6 @@ class LobbyConnection(QObject):
     def hostGame(self, access, gameName, gamePort, version, mod="faf", map='SCMP_007', password=None, rating=1,
                  options=[]):
         mod = mod.lower()
-        self.checkOldGamesFromPlayer()
         self.games.removeOldGames()
 
         if not gameName:
@@ -1993,24 +1984,15 @@ Thanks,\n\
         except Exception as ex:
             self._logger.exception(ex)
 
-    def done(self):
-        if self.uid:
+    def on_connection_lost(self):
+        if self.player:
             query = QSqlQuery(self.db)
             query.prepare("UPDATE login SET session = NULL WHERE id = ?")
-            query.addBindValue(self.uid)
+            query.addBindValue(self.player.id)
             query.exec_()
 
-        self.noSocket = True
-        if self.player:
             for player in self.players.players:
                 if player.lobbyThread:
-                    player.lobbyThread.removePotentialPlayer(self.player.getLogin())
-            self.checkOldGamesFromPlayer()
-            self.players.removeUser(self.player)
-
-        if self in self.context:
-            if self.pingTimer:
-                self.pingTimer.stop()
-
-
+                    player.lobbyThread.removePotentialPlayer(self.player.login)
+            self.players.remove_player(self.player)
 

@@ -264,8 +264,8 @@ class PlayersOnline(object):
                     return gamesocket, lobbySocket
 
 
-    def removeUser(self, player):
-        if player.getLogin() in self.logins:
+    def remove_player(self, player):
+        if player.login in self.logins:
             self.logins.remove(player.login)
             if player in self.players:
                 self.players.remove(player)
