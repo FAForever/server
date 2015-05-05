@@ -27,77 +27,15 @@ import config
 
 import server
 
-
-
-UNIT16 = 8
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
-    class Start(QtCore.QObject, asyncio.Future):
-        def __init__(self, loop):
-            QtCore.QObject.__init__(self)
-            asyncio.Future.__init__(self)
-
-            from docopt import docopt
-            args = docopt(__doc__, version='FAF Server')
-
-            self.rootlogger = logging.getLogger("")
-            self.logHandler = handlers.RotatingFileHandler(config.LOG_PATH + "server.log", backupCount=1024, maxBytes=16777216)
-            self.logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
-            self.logHandler.setFormatter(self.logFormatter)
-            self.rootlogger.addHandler(self.logHandler)
-            self.rootlogger.setLevel(config.LOG_LEVEL)
-
-            self.players_online = PlayersOnline()
-
-            if args['--nodb']:
-                from unittest import mock
-                self.db = mock.Mock()
-            else:
-                self.db = QtSql.QSqlDatabase(args['--db'])
-                self.db.setHostName(DB_SERVER)
-                self.db.setPort(DB_PORT)
-
-                self.db.setDatabaseName(DB_TABLE)
-                self.db.setUserName(DB_LOGIN)
-                self.db.setPassword(DB_PASSWORD)
-                self.db.setConnectOptions("MYSQL_OPT_RECONNECT=1")
-
-            self.privkey = PRIVATE_KEY
-
-            if not self.db.open():
-                logger.error(self.db.lastError().text())
-                sys.exit(1)
-
-            self.dirtyGameList = []
-            self.games = GamesService(self.players_online, self.db)
-
-            self.lobby_server = asyncio.async(server.run_lobby_server(('', 8001), self.players_online, self.games, self.db, loop))
-            self.nat_packet_server, self.game_server =\
-                server.run_game_server(('', 8000),
-                                       self.players_online,
-                                       self.games,
-                                       self.db,
-                                       loop)
-            asyncio.async(self.game_server)
-
-            # Make sure we can shutdown gracefully
-            signal.signal(signal.SIGTERM, self.signal_handler)
-            signal.signal(signal.SIGINT, self.signal_handler)
-            def poll_signal():
-                pass
-            timer = QTimer(self)
-            timer.timeout.connect(poll_signal)
-            timer.start(200)
-
-        def signal_handler(self, signal, frame):
-            self.logger.info("Received signal, shutting down")
-            if not self.done():
-                self.set_result(0)
-            self.lobby_server.close()
-            self.game_server.close()
-            self._loop.stop()
-
     try:
+        def signal_handler(signal, frame):
+            logger.info("Received signal, shutting down")
+            if not done.done():
+                done.set_result(0)
+            loop.stop()
+
         app = QtCore.QCoreApplication(sys.argv)
 
         if config.LIBRARY_PATH:
@@ -106,7 +44,63 @@ if __name__ == '__main__':
         loop = QEventLoop(app)
         asyncio.set_event_loop(loop)
 
-        loop.run_until_complete(Start(loop))
+        done = asyncio.Future()
+
+        from docopt import docopt
+        args = docopt(__doc__, version='FAF Server')
+
+        rootlogger = logging.getLogger("")
+        logHandler = handlers.RotatingFileHandler(config.LOG_PATH + "server.log", backupCount=1024, maxBytes=16777216)
+        logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
+        logHandler.setFormatter(logFormatter)
+        rootlogger.addHandler(logHandler)
+        rootlogger.setLevel(config.LOG_LEVEL)
+
+        players_online = PlayersOnline()
+
+        if args['--nodb']:
+            from unittest import mock
+            db = mock.Mock()
+        else:
+            db = QtSql.QSqlDatabase(args['--db'])
+            db.setHostName(DB_SERVER)
+            db.setPort(DB_PORT)
+
+            db.setDatabaseName(DB_TABLE)
+            db.setUserName(DB_LOGIN)
+            db.setPassword(DB_PASSWORD)
+            db.setConnectOptions("MYSQL_OPT_RECONNECT=1")
+
+        privkey = PRIVATE_KEY
+
+        if not db.open():
+            logger.error(db.lastError().text())
+            sys.exit(1)
+
+        # Make sure we can shutdown gracefully
+        signal.signal(signal.SIGTERM, signal_handler)
+        signal.signal(signal.SIGINT, signal_handler)
+        def poll_signal():
+            pass
+        timer = QTimer()
+        timer.timeout.connect(poll_signal)
+        timer.start(200)
+
+        dirtyGameList = []
+        games = GamesService(players_online, db)
+
+        lobby_server = asyncio.async(
+            server.run_lobby_server(('', 8001),players_online, games, db, loop)
+        )
+        nat_packet_server, game_server = \
+            server.run_game_server(('', 8000),
+                                   players_online,
+                                   games,
+                                   db,
+                                   loop)
+        asyncio.async(game_server)
+
+        loop.run_until_complete(done)
 
     except Exception as ex:
         logger.exception("Failure booting server {}".format(ex))
