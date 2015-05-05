@@ -90,7 +90,11 @@ if __name__ == '__main__':
         games = GamesService(players_online, db)
 
         lobby_server = asyncio.async(
-            server.run_lobby_server(('', 8001),players_online, games, db, loop)
+            server.run_lobby_server(('', 8001),
+                                    players_online,
+                                    games,
+                                    db,
+                                    loop)
         )
         nat_packet_server, game_server = \
             server.run_game_server(('', 8000),

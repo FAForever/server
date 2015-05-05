@@ -20,20 +20,17 @@ import time
 import logging
 
 from PySide import QtSql
+from server.decorators import with_logger
 
 from server.games.game import Game, GameState
 
 
+@with_logger
 class GamesContainer(object):
     """Class for containing games"""
     listable = True
 
     def __init__(self, name, nice_name, db, games_service=None):
-
-        self.log = logging.getLogger(__name__)
-
-        self.log.debug("initializing " + nice_name)
-        
         self.games = []
 
         self.host = True
@@ -51,7 +48,8 @@ class GamesContainer(object):
         self.options = []
 
         self.db = db
-        
+        self._logger.debug("Initialized {}".format(nice_name))
+
         query = self.db.exec_("SELECT description FROM game_featuredMods WHERE gamemod = '%s'" % self.gameTypeName)
         if query.size() > 0:
             query.first()
