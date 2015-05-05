@@ -242,7 +242,7 @@ class LobbyConnection(QObject):
         zipmap = msg['name']
         infos = msg['info']
         fileDatas = msg['data']
-        message = json.loads(infos)
+        message = infos
 
         for key, readable in {
             'name': "mod name",
@@ -346,7 +346,7 @@ class LobbyConnection(QObject):
         infos = msg['info']
         fileDatas = msg['data']
 
-        message = json.loads(infos)
+        message = infos
 
         unranked = False
 
