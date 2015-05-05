@@ -28,10 +28,10 @@ import config
 import server
 
 
-logger = logging.getLogger(__name__)
 
 UNIT16 = 8
 if __name__ == '__main__':
+    logger = logging.getLogger(__name__)
     class Start(QtCore.QObject, asyncio.Future):
         def __init__(self, loop):
             QtCore.QObject.__init__(self)
@@ -46,7 +46,6 @@ if __name__ == '__main__':
             self.logHandler.setFormatter(self.logFormatter)
             self.rootlogger.addHandler(self.logHandler)
             self.rootlogger.setLevel(config.LOG_LEVEL)
-            self.logger = logging.getLogger(__name__)
 
             self.players_online = PlayersOnline()
 
@@ -66,7 +65,7 @@ if __name__ == '__main__':
             self.privkey = PRIVATE_KEY
 
             if not self.db.open():
-                self.logger.error(self.db.lastError().text())
+                logger.error(self.db.lastError().text())
                 sys.exit(1)
 
             self.dirtyGameList = []
