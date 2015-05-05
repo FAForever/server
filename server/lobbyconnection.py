@@ -1500,11 +1500,6 @@ Thanks,\n\
                     if quality >= gameQuality:
                         self.addPotentialPlayer(player.getLogin())
 
-            if self in self.context:
-                if self.pingTimer is not None and self.noSocket == False:
-                    self.pingTimer.stop()
-                    self.pingTimer.start(61000)
-
             self._logger.debug("done")
         except Exception as ex:
             self._logger.exception(ex)
