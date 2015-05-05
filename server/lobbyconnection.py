@@ -57,11 +57,6 @@ from steam import api
 
 api.key.set(STEAM_APIKEY)
 
-from server.games.ladderGamesContainer import Ladder1V1GamesContainer
-from server.games.coopGamesContainer import CoopGamesContainer
-from server.games.gamesContainer import GamesContainer
-
-
 @with_logger
 class LobbyConnection(QObject):
     @timed()
@@ -100,7 +95,6 @@ class LobbyConnection(QObject):
         self._logger.debug("LobbyConnection initialized")
 
     def on_connection_made(self, protocol: QDataStreamProtocol, peername: (str, int)):
-        self.addGameModes()
         self.protocol = protocol
         self.ip, self.port = peername
         self.loop.call_later(5, self.initNotDone)
@@ -118,28 +112,7 @@ class LobbyConnection(QObject):
             self._logger.warning("aborting socket")
             self.abort()
 
-    @timed()
-    def addGameModes(self):
-        game_modes = [
-            ('faf', 'Forged Alliance Forever', GamesContainer),
-            ('ladder1v1', 'Ladder 1 vs 1', Ladder1V1GamesContainer),
-            ('labwars', 'LABwars', GamesContainer),
-            ('murderparty', 'Murder Party', GamesContainer),
-            ('blackops', 'blackops', GamesContainer),
-            ('xtremewars', 'Xtreme Wars', GamesContainer),
-            ('diamond', 'Diamond', GamesContainer),
-            ('vanilla', 'Vanilla', GamesContainer),
-            ('civilians', 'Civilians Defense', GamesContainer),
-            ('koth', 'King of the Hill', GamesContainer),
-            ('claustrophobia', 'Claustrophobia', GamesContainer),
-            ('supremedestruction', 'Supreme Destruction', GamesContainer),
-            ('coop', 'coop', CoopGamesContainer),
-        ]
-        for name, nice_name, container in game_modes:
-            self.games.addContainer(name, container(name=name,
-                                                    nice_name=nice_name,
-                                                    db=self.db,
-                                                    games_service=self.games))
+
 
     @timed()
     def ping(self):

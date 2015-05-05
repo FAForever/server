@@ -4,6 +4,8 @@ from .gameconnection import GameConnection
 from .natpacketserver import NatPacketServer
 
 import config
+from server.games import GamesContainer, Ladder1V1GamesContainer
+from server.games.coopGamesContainer import CoopGamesContainer
 from server.lobbyconnection import LobbyConnection
 from server.servercontext import ServerContext
 from server.players import PlayersOnline

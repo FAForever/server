@@ -16,12 +16,16 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-import logging
+from server.decorators import with_logger
 
-from server.games import Game
+from server.games.game import Game
+from server.games.gamesContainer import GamesContainer
+from server.games.ladderGamesContainer import Ladder1V1GamesContainer
+from server.games.coopGamesContainer import CoopGamesContainer
 
 
-class GamesService(object):
+@with_logger
+class GamesService():
     """
     Utility class for maintaining lifecycle of games
     """
@@ -29,10 +33,8 @@ class GamesService(object):
         self._dirty_games = []
         self.players = players
         self.db = db
-        
-        self.log = logging.getLogger(__name__)
-
         self.gamesContainer = {}
+        self.add_game_modes()
 
     @property
     def dirty_games(self):
@@ -47,6 +49,28 @@ class GamesService(object):
             self.gamesContainer[name] = container
             return 1
         return 0
+
+    def add_game_modes(self):
+        game_modes = [
+            ('faf', 'Forged Alliance Forever', GamesContainer),
+            ('ladder1v1', 'Ladder 1 vs 1', Ladder1V1GamesContainer),
+            ('labwars', 'LABwars', GamesContainer),
+            ('murderparty', 'Murder Party', GamesContainer),
+            ('blackops', 'blackops', GamesContainer),
+            ('xtremewars', 'Xtreme Wars', GamesContainer),
+            ('diamond', 'Diamond', GamesContainer),
+            ('vanilla', 'Vanilla', GamesContainer),
+            ('civilians', 'Civilians Defense', GamesContainer),
+            ('koth', 'King of the Hill', GamesContainer),
+            ('claustrophobia', 'Claustrophobia', GamesContainer),
+            ('supremedestruction', 'Supreme Destruction', GamesContainer),
+            ('coop', 'coop', CoopGamesContainer),
+        ]
+        for name, nice_name, container in game_modes:
+            self.addContainer(name, container(name=name,
+                                                    nice_name=nice_name,
+                                                    db=self.db,
+                                                    games_service=self))
 
     def create_game(self, access, name, player, gameName, gamePort, mapname, password=None):
         container = self.getContainer(name)
