@@ -257,9 +257,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             message["command_id"] = message['action']
             message["arguments"] = message['chuncks']
             self.notify(message)
-            asyncio.async(self.handle_action(message["action"], message["chuncks"]))
+            yield from self.handle_action(message["action"], message["chuncks"])
         except ValueError as ex:  # pragma: no cover
-            self.log.error("Garbage JSON {} {}".format(ex, message))
+            self.log.error("Garbage command {} {}".format(ex, message))
 
     def handle_ProcessServerNatPacket(self, arguments):
         self.log.debug("handle_ProcessServerNatPacket {}".format(self))
@@ -488,7 +488,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             # port we told it to (self.player.gamePort)
             # We schedule an async task to determine their connectivity
             # and respond appropriately
-            yield from asyncio.async(self._handle_lobby_state())
+            #
+            # We do not yield from the task, since we
+            # need to keep processing other commands while it runs
+            asyncio.async(self._handle_lobby_state())
 
         elif state == 'Launching':
             # game launch, the user is playing !
