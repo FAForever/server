@@ -590,7 +590,7 @@ class Game(BaseGame):
 
         }.get(self.state, 'closed')
         jsonToSend = {
-            "command": "self_info",
+            "command": "game_info",
             "access": self.access,
             "uid": self.uuid,
             "title": self.name,
@@ -601,8 +601,8 @@ class Game(BaseGame):
             "mapname": self.mapName.lower(),
             "host": self.hostPlayer,
             "num_players": len(self.players),
-            "self_type": self.selfType,
-            "self_time": self.created_at,
+            "game_time": self.created_at,
+            "game_type": self.gameType,
             "options": self.options,
             "max_players": self.maxPlayer
         }
