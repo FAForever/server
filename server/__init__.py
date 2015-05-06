@@ -36,7 +36,8 @@ def run_lobby_server(address: (str, int),
                 QDataStreamProtocol.pack_qstring(ujson.dumps(game.to_dict()))
             )
         message = b''.join(map(encode, dirties))
-        ctx.broadcast_raw(message)
+        if len(message) > 0:
+            ctx.broadcast_raw(message, validate_fn=lambda lobby_conn: lobby_conn.loginDone)
         loop.call_later(5, report_dirty_games)
     def initialize_connection(protocol):
         conn = LobbyConnection(context=ctx,
