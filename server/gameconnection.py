@@ -573,7 +573,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 return True
         return False
 
-    def on_connection_lost(self, exc):
+    def on_connection_lost(self):
         try:
             if self.game.proxy.unmap(self.player.login):
                 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
