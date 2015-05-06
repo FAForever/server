@@ -13,4 +13,4 @@ def test_create_game(players, db):
     service.addContainer('faf', GamesContainer("faf", "Forged Alliance Forever", db, service))
     game = service.create_game("public", 'faf', players.hosting, 'Some_game_name', 6112, 'scmp_007')
     assert game is not None
-    assert game.id in service.dirty_games
+    assert game in service.dirty_games

@@ -179,7 +179,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.game.state = GameState.LOBBY
             self._state = GameConnectionState.CONNECTED_TO_HOST
             self.game.add_game_connection(self)
-            self.games.mark_dirty(self.game.id)
+            self._mark_dirty()
             self.game.setHostIP(self.player.ip)
             strlog = (
                 "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.uuid), str(self.game.getGamemod())))
@@ -208,7 +208,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 return
             self._state = GameConnectionState.ENDED
             self.game.remove_game_connection(self)
-            self.games.mark_dirty(self.game.id)
+            self._mark_dirty()
             self.log.debug("{}.abort()".format(self))
             if self.player.lobby_connection:
                 self.player.lobby_connection.sendJSON(dict(command="notice", style="kill"))
@@ -245,7 +245,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         # if the player is joining, we connect him to host.
         elif playeraction == "JOIN":
             yield from self.ConnectToHost(self.game.hostPlayer.game_connection)
-            self.games.mark_dirty(self.game.id)
+            self._mark_dirty()
 
     @asyncio.coroutine
     @timed(limit=0.1)
@@ -384,7 +384,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     curMap = self.game.mapName
                     if curMap != mapname:
                         self.game.setGameMap(mapname)
-                        self.sendGameInfo()
+                        self._mark_dirty()
 
             elif key == 'GameMods':
                 if values[0] == "activated":
@@ -410,7 +410,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     key = values[1]
                     value = values[2]
                     self.game.set_player_option(int(id), key, value)
-                    self.sendGameInfo()
+                    self._mark_dirty()
 
             elif key == 'AIOption':
                 if self.player.action == "HOST":
@@ -418,7 +418,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     key = values[1]
                     value = values[2]
                     self.game.set_ai_option(str(name), key, value)
-                    self.sendGameInfo()
+                    self._mark_dirty()
 
             elif key == 'ClearSlot':
                 if self.player.action == "HOST":
@@ -500,7 +500,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             if self.player.action == "HOST":
                 self.game.launch()
 
-                self.sendGameInfo()
+                self._mark_dirty()
 
                 if len(self.game.mods) > 0:
                     for uid in self.game.mods:
@@ -561,8 +561,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         except Exception as e:  # pragma: no cover
             self.log.exception(e)
 
-    def sendGameInfo(self):
-        self.games.mark_dirty(self.game.uuid)
+    def _mark_dirty(self):
+        self.games.mark_dirty(self.game)
 
     def isModRanked(self, uidmod):
         query = QSqlQuery(self.db)

@@ -117,7 +117,7 @@ class GamesContainer(object):
         for game in reversed(self.games):
             if game == gameToRemove:
                 game.state = GameState.ENDED
-                self.addDirtyGame(game.uuid)
+                self.addDirtyGame(game)
                 self.games.remove(game)
 
                 return True
@@ -154,5 +154,5 @@ class GamesContainer(object):
 
             if not validateGame(game):
                 game.state = GameState.ENDED
-                self.addDirtyGame(game.uuid)
+                self.addDirtyGame(game)
                 self.removeGame(game)

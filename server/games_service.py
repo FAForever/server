@@ -81,12 +81,12 @@ class GamesService():
                 game.setAccess(access)
                 if password is not None:
                     game.setPassword(password)
-                self.mark_dirty(game.id)
+                self.mark_dirty(game)
                 return game
         return None
 
-    def mark_dirty(self, game_id):
-        self._dirty_games.append(game_id)
+    def mark_dirty(self, game):
+        self._dirty_games.append(game)
 
     def sendGamesList(self):
         games = []
