@@ -659,5 +659,14 @@ class Game(BaseGame):
     def getGameAddress(self):
         return "%s:%s" % (str(self.hostip), str(self.hostport))
 
+    def __eq__(self, other):
+        if not isinstance(other, Game):
+            return False
+        else:
+            return self.id == other.id
+
+    def __hash__(self):
+        return self.id.__hash__()
+
     def __str__(self):
         return "Game({})".format(self.uuid)
