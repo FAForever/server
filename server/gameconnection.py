@@ -18,7 +18,7 @@
 
 import asyncio
 from concurrent.futures import CancelledError
-from socket import socket
+import socket
 import time
 import logging
 import functools
@@ -579,7 +579,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             if self.game.proxy.unmap(self.player.login):
                 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 s.connect(PROXY_SERVER)
-                s.sendall(ujson.dumps(dict(command="cleanup", sourceip=self.player.ip)))
+                s.sendall(ujson.dumps(dict(command="cleanup", sourceip=self.player.ip)).encode())
                 s.close()
             if self.connectivity_state.result() == Connectivity.PROXY:
                 wiki_link = "{}index.php?title=Connection_issues_and_solutions".format(config.WIKI_LINK)
