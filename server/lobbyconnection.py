@@ -1032,10 +1032,11 @@ Thanks,\n\
 
             try:
                 uniqueId = decodeUniqueId(self, uniqueIdCoded, login)
-            except:
+            except Exception as ex:
                 self.sendJSON(
-                    dict(command="notice", style="error", text="We are not able to log you. Try updating your lobby."))
-                self._logger.info(self.logPrefix + "unable to decypher !!")
+                    dict(command="notice", style="error", text="An error occurred while signing you in, please try again later."))
+                self._logger.info("UniqueID error: {}".format(ex))
+                return
 
             query = QSqlQuery(self.db)
             queryStr = "SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1"
