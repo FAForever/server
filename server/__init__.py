@@ -1,5 +1,6 @@
 import asyncio
 from asyncio import AbstractEventLoop
+import ujson
 from .gameconnection import GameConnection
 from .natpacketserver import NatPacketServer
 
@@ -30,9 +31,9 @@ def run_lobby_server(address: (str, int),
     """
     def report_dirty_games():
         dirties = games.dirty_games
-        def encode(dictionary):
+        def encode(game):
             return QDataStreamProtocol.pack_block(
-                QDataStreamProtocol.pack_qstring(dictionary)
+                QDataStreamProtocol.pack_qstring(ujson.dumps(game.to_dict()))
             )
         message = b''.join(map(encode, dirties))
         ctx.broadcast_raw(message)
