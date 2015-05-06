@@ -152,6 +152,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         Ping the relay server to check if the player is still there.
         """
         while True:
+            if self._state == GameConnectionState.ENDED:
+                break
             if time.time() - self.last_pong > 30:
                 self._logger.debug('Missed ping, terminating')
                 self.abort()
