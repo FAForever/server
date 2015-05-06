@@ -139,7 +139,5 @@ class QDataStreamProtocol(metaclass=ABCMeta):
         payload = [self.pack_block(self.pack_qstring(msg)) for msg in messages]
         self.writer.writelines(payload)
 
-    @asyncio.coroutine
     def send_raw(self, data):
         self.writer.write(data)
-        yield from self.writer.drain()

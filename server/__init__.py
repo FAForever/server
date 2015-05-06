@@ -7,6 +7,7 @@ import config
 from server.games import GamesContainer, Ladder1V1GamesContainer
 from server.games.coopGamesContainer import CoopGamesContainer
 from server.lobbyconnection import LobbyConnection
+from server.protocol import QDataStreamProtocol
 from server.servercontext import ServerContext
 from server.players import PlayersOnline
 from server.games_service import GamesService
@@ -27,6 +28,15 @@ def run_lobby_server(address: (str, int),
     :param loop: Event loop to use
     :return ServerContext: A server object
     """
+    def report_dirty_games():
+        dirties = games.dirty_games
+        def encode(dictionary):
+            return QDataStreamProtocol.pack_block(
+                QDataStreamProtocol.pack_qstring(dictionary)
+            )
+        message = b''.join(map(encode, dirties))
+        ctx.broadcast_raw(message)
+        loop.call_later(5, report_dirty_games)
     def initialize_connection(protocol):
         conn = LobbyConnection(context=ctx,
                                games=games,
@@ -36,6 +46,7 @@ def run_lobby_server(address: (str, int),
         conn.on_connection_made(protocol, protocol.writer.get_extra_info('peername'))
         return conn
     ctx = ServerContext(initialize_connection, name="LobbyServer", loop=loop)
+    loop.call_later(5, report_dirty_games)
     return ctx.listen(*address)
 
 

@@ -15,7 +15,7 @@ class ServerContext():
         self.name = name
         self._server = None
         self._connection_factory = connection_factory
-        self.connections = []
+        self.connections = {}
         self._transport = None
         self._logger.info("ServerContext({}) initialized".format(self))
 
@@ -34,7 +34,12 @@ class ServerContext():
         self._server.close()
 
     def __contains__(self, connection):
-        return connection in self.connections
+        return connection in self.connections.keys()
+
+    def broadcast_raw(self, message, validate_fn=lambda a: True):
+        for conn, proto in self.connections.items():
+            if validate_fn(conn):
+                proto.send_raw(message)
 
     @asyncio.coroutine
     def client_connected(self, stream_reader, stream_writer):
@@ -43,7 +48,7 @@ class ServerContext():
         connection = self._connection_factory(protocol)
         try:
             connection.on_connection_made(protocol, stream_writer.get_extra_info('peername'))
-            self.connections.append(connection)
+            self.connections[connection] = protocol
         except Exception as ex:
             self._logger.exception(ex)
             return
@@ -57,6 +62,6 @@ class ServerContext():
         except Exception as ex:
             self._logger.exception(ex)
         finally:
-            self.connections.remove(connection)
+            del self.connections[connection]
             protocol.writer.close()
             connection.on_connection_lost()

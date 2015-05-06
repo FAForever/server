@@ -763,7 +763,7 @@ Thanks,\n\
 
     @timed()
     def sendArray(self, array):
-        asyncio.async(self.protocol.send_raw(array.data()))
+        self.protocol.send_raw(array.data())
 
     @timed()
     def sendReply(self, action, *args, **kwargs):
