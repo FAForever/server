@@ -215,6 +215,7 @@ class LobbyConnection(QObject):
         except:
             self._logger.exception("Something awful happened in a lobby thread !")
 
+    @asyncio.coroutine
     def on_message_received(self, message):
         """
         Dispatches incoming messages
@@ -223,7 +224,11 @@ class LobbyConnection(QObject):
             cmd = message['command']
             if not isinstance(cmd, str):
                 raise ValueError("Command is not a string")
-            getattr(self, 'command_{}'.format(cmd))(message)
+            handler = getattr(self, 'command_{}'.format(cmd))
+            if asyncio.iscoroutinefunction(handler):
+                yield from handler(message)
+            else:
+                handler(message)
         except (KeyError, ValueError) as ex:
             self._logger.warning("Garbage command: {}".format(message))
             self._logger.exception(ex)

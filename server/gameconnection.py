@@ -245,6 +245,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             yield from self.ConnectToHost(self.game.hostPlayer.game_connection)
             self.games.mark_dirty(self.game.id)
 
+    @asyncio.coroutine
     @timed(limit=0.1)
     def on_message_received(self, message):
         """
