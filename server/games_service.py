@@ -30,7 +30,7 @@ class GamesService():
     Utility class for maintaining lifecycle of games
     """
     def __init__(self, players, db):
-        self._dirty_games = []
+        self._dirty_games = set()
         self.players = players
         self.db = db
         self.gamesContainer = {}
@@ -41,7 +41,7 @@ class GamesService():
         return self._dirty_games
 
     def clear_dirty(self):
-        self._dirty_games = []
+        self._dirty_games = set()
 
     def addContainer(self, name, container):
         """ add a game container class named <name>"""
@@ -86,7 +86,7 @@ class GamesService():
         return None
 
     def mark_dirty(self, game):
-        self._dirty_games.append(game)
+        self._dirty_games.add(game)
 
     def sendGamesList(self):
         games = []

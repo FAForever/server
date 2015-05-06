@@ -31,6 +31,7 @@ def run_lobby_server(address: (str, int),
     """
     def report_dirty_games():
         dirties = games.dirty_games
+        games.clear_dirty()
         def encode(game):
             return QDataStreamProtocol.pack_block(
                 QDataStreamProtocol.pack_qstring(ujson.dumps(game.to_dict()))
