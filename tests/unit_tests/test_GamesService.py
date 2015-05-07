@@ -4,7 +4,7 @@ from server.games_service import GamesService
 
 def test_initialization(players, db):
     service = GamesService(players, db)
-    assert service.dirty_games == []
+    assert len(service.dirty_games) == 0
 
 
 def test_create_game(players, db):
