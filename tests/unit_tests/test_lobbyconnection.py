@@ -5,7 +5,6 @@ from server import ServerContext
 
 from server.games_service import GamesService
 from server.lobbyconnection import LobbyConnection, PlayersOnline
-from server.FaLobbyServer import FALobbyServer
 
 
 @pytest.fixture()
@@ -44,14 +43,6 @@ def connected_socket():
     sock.isValid = mock.Mock(return_value=True)
     return sock
 
-
-@pytest.fixture
-def mock_lobby_server(db):
-    users = PlayersOnline()
-    hyper_container = GamesService(users, db)
-    return FALobbyServer(users, hyper_container, db)
-
-
 @pytest.fixture
 def mock_context():
     return mock.create_autospec(ServerContext(lambda: None))
@@ -89,12 +80,12 @@ def test_command_game_host_calls_host_game(fa_server_thread,
 
 
 def test_command_game_host_calls_host_game_invalid_title(fa_server_thread,
-                                                         mock_lobby_server,
+                                                         mock_games,
                                                          test_game_info_invalid):
     fa_server_thread.sendJSON = mock.Mock()
-    mock_lobby_server.games.create_game = mock.Mock()
+    mock_games.create_game = mock.Mock()
     fa_server_thread.command_game_host(test_game_info_invalid)
-    assert mock_lobby_server.games.create_game.mock_calls == []
+    assert mock_games.create_game.mock_calls == []
     fa_server_thread.sendJSON.assert_called_once_with(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
 
 # ModVault
