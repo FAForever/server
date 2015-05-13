@@ -94,6 +94,7 @@ if __name__ == '__main__':
                                     players_online,
                                     games,
                                     db,
+                                    db_pool,
                                     loop)
         )
         nat_packet_server, game_server = \
@@ -101,6 +102,7 @@ if __name__ == '__main__':
                                    players_online,
                                    games,
                                    db,
+                                   db_pool,
                                    loop)
         asyncio.async(game_server)
 

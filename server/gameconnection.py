@@ -46,7 +46,17 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     """
     Responsible for connections to the game, using the GPGNet protocol
     """
-    def __init__(self, loop, users, games: GamesService, db):
+    def __init__(self, loop, users, games: GamesService, db, db_pool):
+        """
+        Construct a new GameConnection
+
+        :param loop: asyncio event loop to use
+        :param users: PlayersOnline
+        :param games: GamesService
+        :param db: QSqlDatabase
+        :param db_pool: aiomysql connection pool
+        :return:
+        """
         super().__init__()
         self.protocol = None
         self._logger.info('GameConnection initializing')
@@ -56,6 +66,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.games = games
 
         self.db = db
+        self.db_pool = db_pool
         self.log = logging.getLogger(__name__)
         self.initTime = time.time()
         self.proxies = {}

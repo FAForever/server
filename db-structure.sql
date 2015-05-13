@@ -479,28 +479,6 @@ CREATE TABLE `game_stats_bak` (
 /*!50003 SET collation_connection  = utf8_general_ci */ ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = '' */ ;
-DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER  add_new_rating AFTER UPDATE ON `game_stats_bak` FOR EACH ROW
-BEGIN
-INSERT INTO game_min_rating (id, minRating)
-VALUES (
-NEW.id, 
-(
-SELECT MIN( mean -3 * deviation ) 
-FROM game_player_stats
-WHERE game_player_stats.gameId = NEW.id
-GROUP BY game_player_stats.gameId
-)
-)
-ON DUPLICATE KEY UPDATE `minRating` =
-(
-SELECT MIN( mean -3 * deviation ) 
-FROM game_player_stats
-WHERE game_player_stats.gameId = NEW.id
-GROUP BY game_player_stats.gameId
-);
-END */;;
-DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;

@@ -18,6 +18,7 @@ def run_lobby_server(address: (str, int),
                      player_service: PlayersOnline,
                      games: GamesService,
                      db,
+                     db_pool,
                      loop: AbstractEventLoop=asyncio.get_event_loop()):
     """
     Run the lobby server
@@ -25,7 +26,8 @@ def run_lobby_server(address: (str, int),
     :param address: Address to listen on
     :param player_service: Service to talk to about players
     :param games: Service to talk to about games
-    :param db: Database
+    :param db: QSqlDatabase
+    :param db_pool: aiomysql database pool
     :param loop: Event loop to use
     :return ServerContext: A server object
     """
@@ -45,6 +47,7 @@ def run_lobby_server(address: (str, int),
                                games=games,
                                players=player_service,
                                db=db,
+                               db_pool=db_pool,
                                loop=loop)
         conn.on_connection_made(protocol, protocol.writer.get_extra_info('peername'))
         return conn
@@ -57,6 +60,7 @@ def run_game_server(address: (str, int),
                     player_service: PlayersOnline,
                     games: GamesService,
                     db,
+                    db_pool,
                     loop: AbstractEventLoop=asyncio.get_event_loop()):
     """
     Run the game server
@@ -66,7 +70,7 @@ def run_game_server(address: (str, int),
     nat_packet_server = NatPacketServer(loop, config.LOBBY_UDP_PORT)
 
     def initialize_connection(protocol):
-        gc = GameConnection(loop, player_service, games, db)
+        gc = GameConnection(loop, player_service, games, db, db_pool)
         gc.on_connection_made(protocol, protocol.writer.get_extra_info('peername'))
         nat_packet_server.subscribe(gc, ['ProcessServerNatPacket'])
         return gc
