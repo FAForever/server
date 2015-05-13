@@ -31,6 +31,8 @@ def db_pool(request, loop):
     pool = loop.run_until_complete(aiomysql.create_pool(host=host,
                                                         user=user,
                                                         password=pw,
+                                                        db=db,
+                                                        autocommit=True,
                                                         loop=loop,
                                                         minsize=1,
                                                         maxsize=1))
@@ -40,17 +42,19 @@ def db_pool(request, loop):
         with (yield from pool) as conn:
             cur = yield from conn.cursor()
             with open('db-structure.sql', 'r') as data:
-                yield from cur.execute('DROP DATABASE IF EXISTS `%s`;', db)
-                yield from cur.execute('CREATE DATABASE IF NOT EXISTS `%s`;', db)
-                yield from cur.execute("USE `%s`;", opt('--mysql_database'))
+                yield from cur.execute('DROP DATABASE IF EXISTS `%s`;' % db)
+                yield from cur.execute('CREATE DATABASE IF NOT EXISTS `%s`;' % db)
+                yield from cur.execute("USE `%s`;" % db)
                 yield from cur.execute(data.read())
+                yield from cur.close()
 
     @asyncio.coroutine
     def teardown():
         with (yield from pool) as conn:
             cur = yield from conn.cursor()
-            yield from cur.execute('DROP DATABASE IF EXISTS `%s`;', db)
-            yield from cur.execute('CREATE DATABASE IF NOT EXISTS `%s`;', db)
+            yield from cur.execute('DROP DATABASE IF EXISTS `%s`;' % db)
+            yield from cur.execute('CREATE DATABASE IF NOT EXISTS `%s`;' % db)
+            yield from cur.close()
 
     def fin():
         loop.run_until_complete(teardown())

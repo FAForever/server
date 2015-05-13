@@ -1026,7 +1026,7 @@ Thanks,\n\
                 query.addBindValue(avatar)
                 query.exec_()
 
-    @timed()
+    @asyncio.coroutine
     def command_hello(self, message):
         try:
             version = message['version']
@@ -1063,33 +1063,28 @@ Thanks,\n\
             channels = []
             query = QSqlQuery(self.db)
 
-            # TODO: Hash passwords server-side so the hashing actually *does* something.
-            query.prepare(
-                "SELECT id, validated, email, steamchecked, session FROM login WHERE login = ? AND password = ?")
-            query.addBindValue(login)
-            query.addBindValue(password)
-            query.exec_()
+            with (yield from self.db_pool) as conn:
+                cursor = yield from conn.cursor()
+                # TODO: Hash passwords server-side so the hashing actually *does* something.
+                yield from cursor.execute("SELECT id, validated, email, steamchecked, session "
+                                          "FROM login WHERE login=%s AND password=%s", (login, password))
 
-            if query.size() != 1:
-                self._logger.info("Invalid login or password")
-                self.sendJSON(dict(command="notice", style="error",
-                                   text="Login not found or password incorrect. They are case sensitive."))
-                return
+                if cursor.rowcount != 1:
+                    self._logger.info("Invalid login or password")
+                    self.sendJSON(dict(command="notice", style="error",
+                                       text="Login not found or password incorrect. They are case sensitive."))
+                    return
 
-            query.first()
+                else:
+                    self.uid, validated, self.email, self.steamChecked, session = yield from cursor.fetchone()
 
-            self.uid = int(query.value(0))
-            validated = query.value(1)
-            self.email = str(query.value(2))
-            self.steamChecked = int(query.value(3))
-            session = int(query.value(4))
-            self.loginDone = True
+                self.loginDone = True
 
             if validated == 0:
-                reason = "Your account is not validated. Please visit <a href='" + Config['global'][
-                    'app_url'] + "faf/validateAccount.php'>" + Config['global'][
-                             'app_url'] + "faf/validateAccount.php</a>.<br>Please re-create an account if your email is not correct (<b>" + str(
-                    self.email) + "</b>)"
+                validate_account_url = "{}faf/validateAccount.php".format(Config['global']['app_url'])
+                reason = ("Your account is not validated. Please visit <a href='{}'>{}</a>. "
+                          "<br>Please re-create an account if your email is not correct (<b>{}</b>)"
+                          .format(validate_account_url, validate_account_url, self.email))
                 self.resendMail(login)
                 self.sendJSON(dict(command="notice", style="error", text=reason))
                 return
