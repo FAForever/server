@@ -14,6 +14,7 @@ import sys
 import logging
 from logging import handlers
 import signal
+import aiomysql
 
 from quamash import QEventLoop
 from PySide import QtSql, QtCore
@@ -89,7 +90,11 @@ if __name__ == '__main__':
         dirtyGameList = []
         games = GamesService(players_online, db)
 
-        lobby_server = asyncio.async(
+        db_pool = loop.run_until_complete(aiomysql.create_pool(host=DB_SERVER, port=DB_PORT,
+                                                               user=DB_LOGIN, password=DB_PASSWORD,
+                                                               db=DB_TABLE))
+
+        lobby_server = loop.run_until_complete(
             server.run_lobby_server(('', 8001),
                                     players_online,
                                     games,
@@ -104,7 +109,7 @@ if __name__ == '__main__':
                                    db,
                                    db_pool,
                                    loop)
-        asyncio.async(game_server)
+        game_server = loop.run_until_complete(game_server)
 
         loop.run_until_complete(done)
 

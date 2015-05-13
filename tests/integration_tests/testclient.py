@@ -18,6 +18,7 @@ class GpgClientProtocol(GpgNetClientProtocol):
         self.writer = writer
         self.protocol = QDataStreamProtocol(reader, writer)
 
+    @asyncio.coroutine
     def read_message(self):
         try:
             msg = yield from self.protocol.read_message()

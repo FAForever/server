@@ -1,25 +1,34 @@
 import asyncio
+import aiomysql
 from unittest import mock
 import pytest
 from server import run_lobby_server, GamesService, PlayersOnline
 from server.protocol import QDataStreamProtocol
 
-
 @pytest.fixture
-def mock_players():
-    return mock.create_autospec(PlayersOnline())
+def lobby_server(request, loop, db_pool, mock_players, mock_games, db):
+    server = loop.run_until_complete(run_lobby_server(('127.0.0.1', None),
+                                                      mock_players,
+                                                      mock_games,
+                                                      db,
+                                                      db_pool,
+                                                      loop))
 
-@pytest.fixture
-def mock_games(mock_players, db):
-    return mock.create_autospec(GamesService(mock_players, db))
+    def fin():
+        server.close()
+        loop.run_until_complete(server.wait_closed())
+    request.addfinalizer(fin)
+
+    return server
 
 @asyncio.coroutine
-def test_server_listen(loop, mock_players, mock_games, db):
+def test_server_listen(loop, mock_players, mock_games, db, mock_db_pool):
     with mock.patch('server.lobbyconnection.QSqlQuery') as query:
         server = yield from run_lobby_server(('127.0.0.1', None),
                                               mock_players,
                                               mock_games,
                                               db,
+                                              db_pool=mock_db_pool,
                                               loop=loop)
         (reader, writer) = yield from asyncio.open_connection(*server.sockets[0].getsockname())
         proto = QDataStreamProtocol(reader, writer)
