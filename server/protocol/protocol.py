@@ -136,7 +136,7 @@ class QDataStreamProtocol(metaclass=ABCMeta):
         self.writer.write(self.pack_message(ujson.dumps(message)))
 
     def send_messages(self, messages):
-        payload = [self.pack_block(self.pack_qstring(msg)) for msg in messages]
+        payload = [self.pack_message(ujson.dumps(msg)) for msg in messages]
         self.writer.writelines(payload)
 
     def send_raw(self, data):

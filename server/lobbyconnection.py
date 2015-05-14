@@ -1347,11 +1347,10 @@ Thanks,\n\
             if len(tourneychannel) > 0:
                 channels = channels + tourneychannel
 
-            reply = QByteArray()
-            for user in self.players.players:
-                reply.append(self.prepareBigJSON(user.serialize_to_player_info()))
-
-            self.sendArray(reply)
+            self.protocol.send_messages(
+                [player.serialize_to_player_info()
+                 for player in self.players.players]
+            )
 
             query = QSqlQuery(self.db)
             query.prepare(
