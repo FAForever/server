@@ -171,14 +171,6 @@ class LobbyConnection(QObject):
                       "version": version,
                       "flags": ["/numgames " + str(self.player.numGames)]})
 
-    @timed()
-    def handleAction(self, action):
-        try:
-            self._logger.debug('handleAction: {}'.format(action))
-            self.on_message_received(action)
-        except:
-            self._logger.exception("Something awful happened in a lobby thread !")
-
     @asyncio.coroutine
     def on_message_received(self, message):
         """
@@ -308,7 +300,6 @@ class LobbyConnection(QObject):
         zip.close()
 
         self.sendJSON(dict(command="notice", style="info", text="Mod correctly uploaded."))
-
 
     def command_upload_map(self, msg):
         zipmap = msg['name']
