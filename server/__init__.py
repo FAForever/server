@@ -1,3 +1,17 @@
+"""
+Forged Alliance Forever server project
+
+Copyright (c) 2014 Gael Honorez
+Copyright (c) 2015 Michael Søndergaard <sheeo@sheeo.dk>
+
+Distributed under GPLv3, see license.txt
+"""
+__version__ = '0.1'
+__author__ = 'Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard'
+__contact__ = 'admin@faforever.com'
+__license__ = 'GPLv3'
+__copyright__ = 'Copyright (c) 2011-2015' + __author__
+
 import asyncio
 from asyncio import AbstractEventLoop
 import ujson
@@ -12,6 +26,14 @@ from server.protocol import QDataStreamProtocol
 from server.servercontext import ServerContext
 from server.players import PlayersOnline
 from server.games_service import GamesService
+
+__all__ = [
+    'run_lobby_server',
+    'run_game_server',
+    'games',
+    'abc',
+    'protocol'
+]
 
 
 def run_lobby_server(address: (str, int),
