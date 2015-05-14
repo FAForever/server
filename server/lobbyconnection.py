@@ -110,55 +110,37 @@ class LobbyConnection(QObject):
             self.abort()
 
     @timed()
-    def joinGame(self, uuid, gamePort, password=None):
+    def joinGame(self, uuid, port=6112, password=None):
+        assert isinstance(self.player, Player)
         self.games.removeOldGames()
-
-        if gamePort == '' or gamePort == 0 or gamePort is None:
-            gamePort = 6112
 
         game = self.games.find_by_id(uuid)
 
-        if game is not None:
-            if game.lobbyState == "open":
-                gameExists = True
-            else:
-                return
-        else:
+        if not game or game.state != GameState.LOBBY:
             return
 
-        if gameExists:
-            if game.password != password:
-                self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
-                return
+        if game.password != password:
+            self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
+            return
 
-            container = self.games.getGameContainer(game)
-            mod = container.gameTypeName.lower()
+        container = self.games.getGameContainer(game)
+        mod = container.gameTypeName.lower()
 
-            if self.player is not None:
-                self.player.setAction("JOIN")
-                self.player.wantToConnectToGame = True
-                self.player.setGamePort(gamePort)
-                self.player.localGamePort = gamePort
-                self.player.setGame(uuid)
-            else:
-                return
+        self.player.setAction("JOIN")
+        self.player.wantToConnectToGame = True
+        self.player.setGamePort(port)
+        self.player.localGamePort = port
+        self.player.setGame(uuid)
 
-            jsonToSend = {"command": "game_launch", "mod": mod, "uid": uuid}
-            if len(game.mods) > 0:
-                jsonToSend["sim_mods"] = game.mods
-            if len(game.options) != 0:
-                jsonToSend["options"] = []
-                numOptions = len(container.options)
-                if numOptions == len(game.options):
-                    jsonToSend["options"] = game.options
-                else:
-                    for i in range(numOptions):
-                        jsonToSend["options"].append(True)
+        response = {"command": "game_launch",
+                      "mod": mod,
+                      "uid": uuid,
+                      "args": ["/numgames " + str(self.player.numGames)]}
 
-            flags = ["/numgames " + str(self.player.numGames)]
-            jsonToSend["args"] = flags
+        if len(game.mods) > 0:
+            response["sim_mods"] = game.mods
 
-            self.sendJSON(jsonToSend)
+        self.sendJSON(response)
 
     @timed()
     def hostGame(self, access, gameName, gamePort, version, mod="faf", map='SCMP_007', password=None, rating=1,
