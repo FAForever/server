@@ -5,6 +5,8 @@ import pytest
 from server import run_lobby_server, GamesService, PlayersOnline
 from server.protocol import QDataStreamProtocol
 
+slow = pytest.mark.slow
+
 @pytest.fixture
 def lobby_server(request, loop, db_pool, mock_players, mock_games, db):
     server = loop.run_until_complete(run_lobby_server(('127.0.0.1', None),
@@ -22,6 +24,7 @@ def lobby_server(request, loop, db_pool, mock_players, mock_games, db):
     return server
 
 @asyncio.coroutine
+@slow
 def test_server_listen(loop, mock_players, mock_games, db, db_pool):
     with mock.patch('server.lobbyconnection.QSqlQuery') as query:
         server = yield from run_lobby_server(('127.0.0.1', None),
@@ -47,6 +50,7 @@ def test_server_listen(loop, mock_players, mock_games, db, db_pool):
         yield from server.wait_closed()
 
 @asyncio.coroutine
+@slow
 def test_command_hello_unvalidated_account(loop, lobby_server, db_pool):
     with (yield from db_pool) as conn:
         cur = yield from conn.cursor()
