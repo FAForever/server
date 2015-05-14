@@ -143,12 +143,13 @@ class GamesService():
             self.gamesContainer[container].removeGame(game)
         return True
 
-    def find_by_id(self, uuid):
+    def find_by_id(self, id):
         """
+        Look up a game by ID
         :rtype: Game
         """
         for container in self.gamesContainer:
-            game = self.gamesContainer[container].findGameByUuid(uuid)
+            game = self.gamesContainer[container].findGameByUuid(id)
             if game is not None:
                 return game
         return None    
