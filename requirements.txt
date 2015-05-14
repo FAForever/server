@@ -1,11 +1,11 @@
 aiomysql
+configobj
 docopt
-ujson
-trueskill
 mock
+pygeoip
 pytest
 pytest-qt
-configobj
-pygeoip
 quamash
 steamodd
+trueskill
+ujson
