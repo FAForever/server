@@ -143,52 +143,33 @@ class LobbyConnection(QObject):
         self.sendJSON(response)
 
     @timed()
-    def hostGame(self, access, gameName, gamePort, version, mod="faf", map='SCMP_007', password=None, rating=1,
+    def hostGame(self, access, gameName, version, port=6112, mod="faf", map='SCMP_007', password=None, rating=1,
                  options=[]):
+        assert isinstance(self.player, Player)
         mod = mod.lower()
         self.games.removeOldGames()
 
-        if not gameName:
-            gameName = self.player.login
+        name = gameName if gameName else self.player.login
 
-        if not gamePort:
-            gamePort = 6112
 
-        jsonToSend = {}
-
-        game = self.games.create_game(access, mod, self.player, gameName, gamePort, map, password)
-        if game:
-            uuid = game.uuid
-
-            self.player.action = "HOST"
-            self.player.wantToConnectToGame = True
-            self.player.game = game
-            self.player.setGamePort(gamePort)
-            self.player.localGamePort = gamePort
-
-            jsonToSend["command"] = "game_launch"
-            jsonToSend["mod"] = mod
-            jsonToSend["uid"] = uuid
-            jsonToSend["version"] = version
-
-            flags = ["/numgames " + str(self.player.numGames)]
-            jsonToSend["args"] = flags
-
-            if len(options) != 0:
-                game.options = options
-                jsonToSend["options"] = []
-                numOptions = len(self.games.getGameContainer(game).options)
-                if numOptions == len(options):
-                    jsonToSend["options"] = options
-                else:
-                    for i in range(numOptions):
-                        jsonToSend["options"].append(True)
-
-            self.sendJSON(jsonToSend)
-
-        else:
+        game = self.games.create_game(access, mod, self.player, name, port, map, password)
+        if not game:
             self.sendJSON(dict(command="notice", style="error", text="You are already hosting a game"))
+            return
 
+        uuid = game.uuid
+
+        self.player.action = "HOST"
+        self.player.wantToConnectToGame = True
+        self.player.game = game
+        self.player.setGamePort(port)
+        self.player.localGamePort = port
+
+        self.sendJSON({"command": "game_launch",
+                      "mod": mod,
+                      "uid": uuid,
+                      "version": version,
+                      "flags": ["/numgames " + str(self.player.numGames)]})
 
     @timed()
     def handleAction(self, action):
@@ -1827,7 +1808,7 @@ Thanks,\n\
         lobby_rating = message.get('lobby_rating', 1)  # 0 = no rating inside the lobby. Default is 1.
         options = message.get('options', [])
 
-        self.hostGame(access, title, gameport, version, mod, mapname, password, lobby_rating, options)
+        self.hostGame(access, title, version, gameport, mod, mapname, password, lobby_rating, options)
 
 
     def command_modvault(self, message):
