@@ -10,7 +10,7 @@ from PySide import QtCore, QtSql
 from trueskill import Rating
 
 from server.abc.base_game import InitMode
-from server.games_service import GamesService
+from server.game_service import GameService
 
 
 if not hasattr(QtCore, 'Signal'):
@@ -192,6 +192,6 @@ def player_service(players):
 
 @pytest.fixture
 def games(game, players, db):
-    service = mock.create_autospec(GamesService(players, db))
+    service = mock.create_autospec(GameService(players, db))
     service.find_by_id.return_value = game
     return service

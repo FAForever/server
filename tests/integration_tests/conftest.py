@@ -2,7 +2,7 @@ from unittest import mock
 import aiomysql
 import asyncio
 import pytest
-from server import PlayerService, GamesService
+from server import PlayerService, GameService
 
 
 def pytest_addoption(parser):
@@ -17,7 +17,7 @@ def mock_players():
 
 @pytest.fixture
 def mock_games(mock_players, db):
-    return mock.create_autospec(GamesService(mock_players, db))
+    return mock.create_autospec(GameService(mock_players, db))
 
 @pytest.fixture
 def mock_db_pool():

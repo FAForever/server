@@ -21,7 +21,7 @@ from PySide import QtSql, QtCore
 from PySide.QtCore import QTimer
 
 from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
-from server.games_service import GamesService
+from server.game_service import GameService
 
 from server.players import *
 import config
@@ -88,7 +88,7 @@ if __name__ == '__main__':
         timer.start(200)
 
         dirtyGameList = []
-        games = GamesService(players_online, db)
+        games = GameService(players_online, db)
 
         db_pool = loop.run_until_complete(aiomysql.create_pool(host=DB_SERVER, port=DB_PORT,
                                                                user=DB_LOGIN, password=DB_PASSWORD,

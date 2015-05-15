@@ -31,7 +31,7 @@ from server.abc.base_game import GameConnectionState
 from server.connectivity import TestPeer, Connectivity
 from server.games.game import Game, GameState, Victory
 from server.decorators import with_logger, timed
-from server.games_service import GamesService
+from server.game_service import GameService
 from server.protocol.gpgnet import GpgNetServerProtocol
 from server.subscribable import Subscribable
 
@@ -46,7 +46,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     """
     Responsible for connections to the game, using the GPGNet protocol
     """
-    def __init__(self, loop, users, games: GamesService, db, db_pool):
+    def __init__(self, loop, users, games: GameService, db, db_pool):
         """
         Construct a new GameConnection
 

@@ -25,7 +25,7 @@ from server.lobbyconnection import LobbyConnection
 from server.protocol import QDataStreamProtocol
 from server.servercontext import ServerContext
 from server.players import PlayerService
-from server.games_service import GamesService
+from server.game_service import GameService
 
 __all__ = [
     'run_lobby_server',
@@ -38,7 +38,7 @@ __all__ = [
 
 def run_lobby_server(address: (str, int),
                      player_service: PlayerService,
-                     games: GamesService,
+                     games: GameService,
                      db,
                      db_pool,
                      loop: AbstractEventLoop=asyncio.get_event_loop()):
@@ -80,7 +80,7 @@ def run_lobby_server(address: (str, int),
 
 def run_game_server(address: (str, int),
                     player_service: PlayerService,
-                    games: GamesService,
+                    games: GameService,
                     db,
                     db_pool,
                     loop: AbstractEventLoop=asyncio.get_event_loop()):

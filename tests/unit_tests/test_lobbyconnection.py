@@ -3,7 +3,7 @@ import pytest
 import mock
 from server import ServerContext
 
-from server.games_service import GamesService
+from server.game_service import GameService
 from server.lobbyconnection import LobbyConnection, PlayerService
 
 
@@ -53,7 +53,7 @@ def mock_players():
 
 @pytest.fixture
 def mock_games(mock_players, db):
-    return mock.create_autospec(GamesService(mock_players, db))
+    return mock.create_autospec(GameService(mock_players, db))
 
 @pytest.fixture
 def fa_server_thread(mock_context, mock_games, mock_players, db):

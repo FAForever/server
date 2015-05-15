@@ -25,7 +25,7 @@ from server.games.coopGamesContainer import CoopGamesContainer
 
 
 @with_logger
-class GamesService():
+class GameService():
     """
     Utility class for maintaining lifecycle of games
     """
