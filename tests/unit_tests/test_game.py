@@ -252,3 +252,44 @@ def test_on_game_end_calls_rate_game(game):
     game.on_game_end()
     assert game.state == GameState.ENDED
     game.rate_game.assert_any_call()
+
+
+def test_to_dict(game, create_player):
+    game.state = GameState.LOBBY
+    players = [
+        (create_player(**info), result, team) for info, result, team in [
+            (dict(login='Paula_Bean', id=1, global_rating=Rating(1500, 250.7)), 0, 1),
+            (dict(login='Some_Guy', id=2, global_rating=Rating(1700, 120.1)), 0, 1),
+            (dict(login='Some_Other_Guy', id=3, global_rating=Rating(1200, 72.02)), 0, 2),
+            (dict(login='That_Person', id=4, global_rating=Rating(1200, 72.02)), 0, 2),
+        ]
+    ]
+    add_connected_players(game, [player for player, _, _ in players])
+    for player, _, team in players:
+        game.set_player_option(player.id, 'Team', team)
+        game.set_player_option(player.id, 'Army', player.id - 1)
+    game.launch()
+    data = game.to_dict()
+    expected = {
+        "command": "game_info",
+        "access": game.access,
+        "uid": game.id,
+        "title": game.name,
+        "state": 'closed',
+        "featured_mod": game.getGamemod(),
+        "featured_mod_versions": game.getGamemodVersion(),
+        "sim_mods": game.mods,
+        "mapname": game.mapName.lower(),
+        "host": game.hostPlayer,
+        "num_players": len(game.players),
+        "game_time": game.created_at,
+        "game_type": game.gameType,
+        "options": game.options,
+        "max_players": game.maxPlayer,
+        "teams": {
+            team: [player.login for player in game.players
+                   if game.get_player_option(player.id, 'Team') == team]
+            for team in game.teams
+        }
+    }
+    assert data == expected

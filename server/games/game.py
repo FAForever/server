@@ -606,7 +606,7 @@ class Game(BaseGame):
             "options": self.options,
             "max_players": self.maxPlayer,
             "teams": {
-                team: [player for player in self.players
+                team: [player.login for player in self.players
                        if self.get_player_option(player.id, 'Team') == team]
                 for team in self.teams
             }
