@@ -1,8 +1,9 @@
 from abc import ABCMeta
+
 from asyncio import StreamReader, StreamWriter
 import asyncio
 import struct
-import ujson
+import json
 from server.decorators import with_logger
 
 @with_logger
@@ -113,7 +114,7 @@ class QDataStreamProtocol(metaclass=ABCMeta):
             return {
                 'command': action.lower(),
                 'name': name,
-                'info': ujson.loads(info),
+                'info': json.loads(info),
                 'data': data
             }
         elif action in ['PING', 'PONG']:
@@ -121,10 +122,10 @@ class QDataStreamProtocol(metaclass=ABCMeta):
                 'command': action.lower()
             }
         else:
-            message = ujson.loads(action)
+            message = json.loads(action)
             for part in self.read_block(block):
                 try:
-                    message_part = ujson.loads(part)
+                    message_part = json.loads(part)
                     message.update(message_part)
                 except (ValueError, TypeError):
                     if 'legacy' not in message:
@@ -133,10 +134,10 @@ class QDataStreamProtocol(metaclass=ABCMeta):
             return message
 
     def send_message(self, message: dict):
-        self.writer.write(self.pack_message(ujson.dumps(message, escape_forward_slashes=False)))
+        self.writer.write(self.pack_message(json.dumps(message)))
 
     def send_messages(self, messages):
-        payload = [self.pack_message(ujson.dumps(msg, escape_forward_slashes=False)) for msg in messages]
+        payload = [self.pack_message(json.dumps(msg)) for msg in messages]
         self.writer.writelines(payload)
 
     def send_raw(self, data):
