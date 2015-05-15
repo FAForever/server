@@ -12,16 +12,16 @@ def pytest_addoption(parser):
     parser.addoption('--mysql_database', action='store', default='faf_test', help='mysql database to use for tests')
 
 @pytest.fixture
+def mock_db_pool(mock_db_pool):
+    return mock.create_autospec(aiomysql.create_pool())
+
+@pytest.fixture
 def mock_players():
-    return mock.create_autospec(PlayerService())
+    return mock.create_autospec(PlayerService(mock_db_pool))
 
 @pytest.fixture
 def mock_games(mock_players, db):
     return mock.create_autospec(GameService(mock_players, db))
-
-@pytest.fixture
-def mock_db_pool():
-    return mock.create_autospec(aiomysql.create_pool())
 
 @pytest.fixture
 def db_pool(request, loop):
