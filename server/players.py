@@ -28,7 +28,7 @@ class Player(BasePlayer):
     information about players.
     """
     def __init__(self, login=None, session=None, ip=None, port=None, uuid=0,
-                 global_rating=(1500, 500), ladder_rating=(1500, 500), clan=None, numGames=None, lobbyThread=None):
+                 global_rating=(1500, 500), ladder_rating=(1500, 500), clan=None, numGames=0, lobbyThread=None):
         super().__init__()
         
         self._action = ''
@@ -52,7 +52,7 @@ class Player(BasePlayer):
         self.admin = False
         self.mod = False
         
-        self.numGames = 0
+        self.numGames = numGames
         self.gamePort = 0
 
         self.localGamePort = 0
@@ -66,7 +66,6 @@ class Player(BasePlayer):
         self.faction = 1
         self.wantToConnectToGame = False
 
-        self.numGames = numGames
         self.session = session
         self._login = login
         self._ip = ip
