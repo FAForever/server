@@ -87,7 +87,6 @@ class LobbyConnection(QObject):
         self.ladderMapList = []
         self.leagueAvatar = None
         self.email = None
-        self.uid = None
         self.ip = None
         self.port = None
         self.session = int(random.getrandbits(16))
@@ -758,7 +757,7 @@ Thanks,\n\
             for uid in toAdd:
                 query = QSqlQuery(self.db)
                 query.prepare("INSERT INTO ladder_map_selection (idUser, idMap) values (?,?)")
-                query.addBindValue(self.uid)
+                query.addBindValue(self.player.id)
                 query.addBindValue(uid)
                 if not query.exec_():
                     self._logger.debug(query.lastError())
@@ -768,7 +767,7 @@ Thanks,\n\
             for uid in toRemove:
                 query = QSqlQuery(self.db)
                 query.prepare("DELETE FROM ladder_map_selection WHERE idUser = ? and idMap = ?")
-                query.addBindValue(self.uid)
+                query.addBindValue(self.player.id)
                 query.addBindValue(uid)
                 if not query.exec_():
                     self._logger.debug(query.lastError())
@@ -788,7 +787,7 @@ Thanks,\n\
                     query = QSqlQuery(self.db)
                     query.prepare(
                         "INSERT INTO friends (idUser, idFriend) values (?,(SELECT id FROM login WHERE login.login = ?))")
-                    query.addBindValue(self.uid)
+                    query.addBindValue(self.player.id)
                     query.addBindValue(friend)
                     query.exec_()
 
@@ -800,7 +799,7 @@ Thanks,\n\
                     query.prepare(
                         "DELETE FROM friends WHERE idFriend = (SELECT id FROM login WHERE login.login = ?) AND idUser = ?")
                     query.addBindValue(friend)
-                    query.addBindValue(self.uid)
+                    query.addBindValue(self.player.id)
                     query.exec_()
 
             self.friendList = friendlist
@@ -816,7 +815,7 @@ Thanks,\n\
                     query = QSqlQuery(self.db)
                     query.prepare(
                         "INSERT INTO foes (idUser, idFoe) values (?,(SELECT id FROM login WHERE login.login = ?))")
-                    query.addBindValue(self.uid)
+                    query.addBindValue(self.player.id)
                     query.addBindValue(foe)
                     query.exec_()
 
@@ -828,7 +827,7 @@ Thanks,\n\
                     query.prepare(
                         "DELETE FROM foes WHERE idFoe = (SELECT id FROM login WHERE login.login = ?) AND idUser = ?")
                     query.addBindValue(foe)
-                    query.addBindValue(self.uid)
+                    query.addBindValue(self.player.id)
                     query.exec_()
 
             self.foeList = foelist
@@ -1030,7 +1029,7 @@ Thanks,\n\
                     return
 
                 else:
-                    self.uid, validated, self.email, self.steamChecked, session = yield from cursor.fetchone()
+                    player_id, validated, self.email, self.steamChecked, session = yield from cursor.fetchone()
 
                 self.loginDone = True
 
@@ -1058,11 +1057,11 @@ Thanks,\n\
                     query2 = QSqlQuery(self.db)
                     query2.prepare("UPDATE login SET session = ? WHERE id = ?")
                     query2.addBindValue(session)
-                    query2.addBindValue(self.uid)
+                    query2.addBindValue(self.player.id)
                     query2.exec_()
 
             query.prepare("SELECT reason FROM lobby_ban WHERE idUser = ?")
-            query.addBindValue(self.uid)
+            query.addBindValue(player_id)
             query.exec_()
             if query.size() == 1:
                 query.first()
@@ -1093,7 +1092,7 @@ Thanks,\n\
                 query = QSqlQuery(self.db)
                 query.prepare("SELECT id, login FROM login WHERE uniqueId = ? AND id != ?")
                 query.addBindValue(uniqueId)
-                query.addBindValue(self.uid)
+                query.addBindValue(player_id)
                 query.exec_()
 
                 if query.size() == 1:
@@ -1102,7 +1101,7 @@ Thanks,\n\
                     idFound = int(query.value(0))
                     otherName = str(query.value(1))
 
-                    self._logger.debug("%i (%s) is a smurf of %s" % (self.uid, login, otherName))
+                    self._logger.debug("%i (%s) is a smurf of %s" % (self.player.id, login, otherName))
                     self.sendJSON(dict(command="notice", style="error",
                                        text="This computer is tied to this account : %s.<br>Multiple accounts are not allowed.<br>You can free this computer by logging in with that account (%s) on another computer.<br><br>Or Try SteamLink: <a href='" +
                                             Config['global']['app_url'] + "faf/steam.php'>" +
@@ -1111,7 +1110,7 @@ Thanks,\n\
 
                     query2 = QSqlQuery(self.db)
                     query2.prepare("INSERT INTO `smurf_table`(`origId`, `smurfId`) VALUES (?,?)")
-                    query2.addBindValue(self.uid)
+                    query2.addBindValue(player_id)
                     query2.addBindValue(idFound)
                     query2.exec_()
                     return
@@ -1121,7 +1120,7 @@ Thanks,\n\
                 query.addBindValue(self.ip)
                 query.addBindValue(str(uniqueId))
                 query.addBindValue(self.session)
-                query.addBindValue(self.uid)
+                query.addBindValue(player_id)
                 query.exec_()
             else:
                 # the user is steamchecked
@@ -1129,7 +1128,7 @@ Thanks,\n\
                 query.prepare("UPDATE login SET ip = ?, session = ? WHERE id = ?")
                 query.addBindValue(self.ip)
                 query.addBindValue(self.session)
-                query.addBindValue(self.uid)
+                query.addBindValue(player_id)
                 query.exec_()
 
                 query = QSqlQuery(self.db)
@@ -1155,7 +1154,7 @@ Thanks,\n\
                                  session=self.session,
                                  ip=self.ip,
                                  port=self.port,
-                                 uuid=self.uid,
+                                 uuid=player_id,
                                  lobbyThread=self)
             self.player.lobbyVersion = version
             self.player.resolvedAddress = self.player.getIp()
@@ -1169,7 +1168,7 @@ Thanks,\n\
             query = QSqlQuery(self.db)
             query.prepare(
                 "SELECT `clan_tag` FROM `fafclans`.`clan_tags` LEFT JOIN `fafclans`.players_list ON `fafclans`.players_list.player_id = `fafclans`.`clan_tags`.player_id WHERE `faf_id` = ?")
-            query.addBindValue(self.uid)
+            query.addBindValue(self.player.id)
             if not query.exec_():
                 self._logger.warning(query.lastError())
             if query.size() > 0:
@@ -1182,7 +1181,7 @@ Thanks,\n\
             self.player.admin = False
             self.player.mod = False
             query.prepare("SELECT `group` FROM `lobby_admin` WHERE `user_id` = ?")
-            query.addBindValue(self.uid)
+            query.addBindValue(self.player.id)
             query.exec_()
 
             if query.size() > 0:
@@ -1312,7 +1311,7 @@ Thanks,\n\
             ## -------------------
             query.prepare(
                 "SELECT url, tooltip FROM `avatars` LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = ? AND `selected` = 1")
-            query.addBindValue(self.uid)
+            query.addBindValue(self.player.id)
             query.exec_()
             if query.size() > 0:
                 query.first()
@@ -1356,7 +1355,7 @@ Thanks,\n\
             query = QSqlQuery(self.db)
             query.prepare(
                 "SELECT login.login FROM friends JOIN login ON idFriend=login.id WHERE idUser = ?")
-            query.addBindValue(self.uid)
+            query.addBindValue(self.player.id)
             query.exec_()
 
             if query.size() > 0:
@@ -1368,7 +1367,7 @@ Thanks,\n\
 
             query = QSqlQuery(self.db)
             query.prepare("SELECT idMap FROM ladder_map_selection WHERE idUser = ?")
-            query.addBindValue(self.uid)
+            query.addBindValue(self.player.id)
             query.exec_()
             if query.size() > 0:
                 while query.next():
@@ -1377,7 +1376,7 @@ Thanks,\n\
             query = QSqlQuery(self.db)
             query.prepare(
                 "SELECT login.login FROM foes JOIN login ON idFoe=login.id WHERE idUser = ?")
-            query.addBindValue(self.uid)
+            query.addBindValue(self.player.id)
             query.exec_()
             if query.size() > 0:
                 while query.next():
@@ -1598,7 +1597,7 @@ Thanks,\n\
             query = QSqlQuery(self.db)
             query.prepare(
                 "SELECT url, tooltip FROM `avatars` LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = ?")
-            query.addBindValue(self.uid)
+            query.addBindValue(self.player.id)
             query.exec_()
             if query.size() > 0:
 
@@ -1618,14 +1617,14 @@ Thanks,\n\
             # remove old avatar
             query.prepare(
                 "UPDATE `avatars` SET `selected` = 0 WHERE `idUser` = ?")
-            query.addBindValue(self.uid)
+            query.addBindValue(self.player.id)
             query.exec_()
             if avatar is not None:
                 query = QSqlQuery(self.db)
                 query.prepare(
                     "UPDATE `avatars` SET `selected` = 1 WHERE `idAvatar` = (SELECT id FROM avatars_list WHERE avatars_list.url = ?) and `idUser` = ?")
                 query.addBindValue(avatar)
-                query.addBindValue(self.uid)
+                query.addBindValue(self.player.id)
                 query.exec_()
         else:
             raise KeyError('invalid action')
@@ -1655,7 +1654,7 @@ Thanks,\n\
 
                 query = QSqlQuery(self.db)
                 query.prepare("UPDATE `login` SET `ladderCancelled`= `ladderCancelled`+1  WHERE id = ?")
-                query.addBindValue(self.uid)
+                query.addBindValue(self.player.id)
                 query.exec_()
 
             else:
@@ -1663,7 +1662,7 @@ Thanks,\n\
 
             query = QSqlQuery(self.db)
             query.prepare("SELECT `ladderCancelled` FROM `login` WHERE id = ?")
-            query.addBindValue(self.uid)
+            query.addBindValue(self.player.id)
             query.exec_()
             if query.size() != 0:
                 attempts = query.value(0)
@@ -1876,10 +1875,10 @@ Thanks,\n\
                 likerList = str(query.value(15))
                 try:
                     likers = json.loads(likerList)
-                    if self.uid in likers:
+                    if self.player.id in likers:
                         canLike = False
                     else:
-                        likers.append(self.uid)
+                        likers.append(self.player.id)
                 except:
                     likers = []
                 if canLike:
