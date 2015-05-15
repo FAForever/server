@@ -15,7 +15,7 @@ class PlayerService(object):
         return self.players.__iter__()
 
     @asyncio.coroutine
-    def update_rating(self, player, new_rating, rating='global'):
+    def update_rating(self, player, rating='global'):
         """
         Update the given rating for the given player
 

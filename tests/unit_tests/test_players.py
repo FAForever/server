@@ -56,7 +56,7 @@ def test_serialize():
                ladder_rating=(1500, 230),
                clan='TOAST',
                numGames=542)
-    assert p.serialize_to_player_info() == {
+    assert p.to_dict() == {
         "command": "player_info",
                     "login": 'Something',
                     "rating_mean": 1234,

@@ -1334,7 +1334,7 @@ Thanks,\n\
                 channels = channels + tourneychannel
 
             self.protocol.send_messages(
-                [player.serialize_to_player_info()
+                [player.to_dict()
                  for player in self.players.players]
             )
 
@@ -1375,14 +1375,12 @@ Thanks,\n\
             self.sendGameList()
             self.sendReplaySection()
 
-            self._logger.debug("sending new player")
-            for user in self.players.players:
-
-                if user.getLogin() != str(login):
-
-                    lobby = user.lobbyThread
+            player_info = self.player.to_dict()
+            for player in self.players.players:
+                if player != self.player:
+                    lobby = player.lobby_connection
                     if lobby is not None:
-                        lobby.sendJSON(self.player.serialize_to_player_info())
+                        lobby.sendJSON(player_info)
 
             if self.player.mod:
                 channels.append("#moderators")

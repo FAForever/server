@@ -188,7 +188,7 @@ class Player(BasePlayer):
     def login(self, value):
         self._login = value
 
-    def serialize_to_player_info(self):
+    def to_dict(self):
         """
         Return a dictionary representing this player object
         :return:
