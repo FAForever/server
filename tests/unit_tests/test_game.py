@@ -293,3 +293,9 @@ def test_to_dict(game, create_player):
         }
     }
     assert data == expected
+
+
+def test_equality(game):
+    assert game == game
+    assert game != Game(5, mock.Mock())
+    assert game != True
