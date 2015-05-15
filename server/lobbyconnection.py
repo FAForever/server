@@ -1057,7 +1057,7 @@ Thanks,\n\
                     query2 = QSqlQuery(self.db)
                     query2.prepare("UPDATE login SET session = ? WHERE id = ?")
                     query2.addBindValue(session)
-                    query2.addBindValue(self.player.id)
+                    query2.addBindValue(player_id)
                     query2.exec_()
 
             query.prepare("SELECT reason FROM lobby_ban WHERE idUser = ?")
