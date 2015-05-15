@@ -11,9 +11,3 @@ from server.players import Player
 def player_service(mock_db_pool):
     return mock.create_autospec(PlayerService(mock_db_pool))
 
-
-@asyncio.coroutine
-def test_update_rating(player_service: PlayerService):
-    test_player = mock.Mock(spec=Player)
-    yield from player_service.update_rating(test_player)
-

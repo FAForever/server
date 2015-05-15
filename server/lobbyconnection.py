@@ -1158,23 +1158,11 @@ Thanks,\n\
                                  lobbyThread=self)
             self.player.lobbyVersion = version
             self.player.resolvedAddress = self.player.getIp()
-            yield from self.players.update_rating(self.player)
+            yield from self.players.fetch_player_data(self.player)
 
             self.player.faction = random.randint(1, 4)
 
             self.player.resolvedAddress = self.player.getIp()
-
-            ## Clan informations
-            query = QSqlQuery(self.db)
-            query.prepare(
-                "SELECT `clan_tag` FROM `fafclans`.`clan_tags` LEFT JOIN `fafclans`.players_list ON `fafclans`.players_list.player_id = `fafclans`.`clan_tags`.player_id WHERE `faf_id` = ?")
-            query.addBindValue(self.player.id)
-            if not query.exec_():
-                self._logger.warning(query.lastError())
-            if query.size() > 0:
-                query.first()
-                self.player.clan = str(query.value(0))
-
 
             ## ADMIN
             ## --------------------

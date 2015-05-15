@@ -15,7 +15,7 @@ class PlayerService(object):
         return self.players.__iter__()
 
     @asyncio.coroutine
-    def update_rating(self, player, rating='global', new_rating=None):
+    def update_rating(self, player, new_rating, rating='global'):
         """
         Update the given rating for the given player
 
@@ -25,23 +25,33 @@ class PlayerService(object):
         """
         with (yield from self.db_pool) as conn:
             cursor = yield from conn.cursor()
-            if new_rating is None:
-                yield from cursor.execute('SELECT mean, deviation FROM `{}_rating` '
-                                          'WHERE id=%s'.format(rating), player.id)
-                mean, deviation = yield from cursor.fetchone()
-                if rating == 'global':
-                    player.global_rating = (mean, deviation)
-                else:
-                    player.ladder_rating = (mean, deviation)
+            if rating == 'global':
+                mean, deviation = player.global_rating
             else:
-                if rating == 'global':
-                    mean, deviation = player.global_rating
-                else:
-                    mean, deviation = player.ladder_rating
-                yield from cursor.execute('UPDATE `{}_rating` '
-                                          'SET mean=%s, deviation=%s '
-                                          'WHERE id=%s', (mean, deviation, player.id))
+                mean, deviation = player.ladder_rating
+            yield from cursor.execute('UPDATE `{}_rating` '
+                                      'SET mean=%s, deviation=%s '
+                                      'WHERE id=%s', (mean, deviation, player.id))
 
+    @asyncio.coroutine
+    def fetch_player_data(self, player):
+        with (yield from self.db_pool) as conn:
+            cur = yield from conn.cursor()
+            yield from cur.execute('SELECT mean, deviation FROM `global_rating` '
+                                   'WHERE id=%s', player.id)
+            player.global_rating = yield from cur.fetchone()
+            yield from cur.execute('SELECT mean, deviation FROM `ladder1v1_rating` '
+                                   'WHERE id=%s', player.id)
+            player.ladder_rating = yield from cur.fetchone()
+
+            ## Clan informations
+            yield from cur.execute(
+                "SELECT `clan_tag` "
+                "FROM `fafclans`.`clan_tags` "
+                "LEFT JOIN `fafclans`.players_list "
+                "ON `fafclans`.players_list.player_id = `fafclans`.`clan_tags`.player_id "
+                "WHERE `faf_id` = %s", player.id)
+            (player.clan, ) = yield from cur.fetchone()
 
     def addUser(self, newplayer):
         gamesocket = None
