@@ -6,6 +6,7 @@ from server import ServerContext
 from server.game_service import GameService
 from server.lobbyconnection import LobbyConnection
 from server.player_service import PlayerService
+from server.players import Player
 
 
 @pytest.fixture()
@@ -36,6 +37,9 @@ def test_game_info_invalid():
         'options': []
     }
 
+@pytest.fixture
+def mock_player():
+    return mock.create_autospec(Player(login='Dummy', uuid=42))
 
 @pytest.fixture(scope='function')
 def connected_socket():
@@ -57,11 +61,13 @@ def mock_games(mock_players, db):
     return mock.create_autospec(GameService(mock_players, db))
 
 @pytest.fixture
-def fa_server_thread(mock_context, mock_games, mock_players, db):
-    return LobbyConnection(context=mock_context,
+def fa_server_thread(mock_context, mock_games, mock_players, mock_player, db):
+    lc = LobbyConnection(context=mock_context,
                            games=mock_games,
                            players=mock_players,
                            db=db)
+    lc.player = mock_player
+    return lc
 
 
 def test_command_game_host_calls_host_game(fa_server_thread,
@@ -278,7 +284,6 @@ def test_fa_state(fa_server_thread):
 
 
 def test_fa_state_reset(fa_server_thread):
-    fa_server_thread.player = mock.Mock()
     reset_values = {None, '', 'ON', 'off'}
     for val in reset_values:
         fa_server_thread.command_fa_state({'state': val})
