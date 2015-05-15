@@ -589,7 +589,7 @@ class Game(BaseGame):
             GameState.INITIALIZING: 'closed',
 
         }.get(self.state, 'closed')
-        jsonToSend = {
+        return {
             "command": "game_info",
             "access": self.access,
             "uid": self.uuid,
@@ -604,20 +604,13 @@ class Game(BaseGame):
             "game_time": self.created_at,
             "game_type": self.gameType,
             "options": self.options,
-            "max_players": self.maxPlayer
+            "max_players": self.maxPlayer,
+            "teams": {
+                team: [player for player in self.players
+                       if self.get_player_option(player.id, 'Team') == team]
+                for team in self.teams
+            }
         }
-
-        teams = self.teamAssign
-
-        teamsToSend = {}
-        for k, v in teams.items():
-            if len(v) != 0:
-                teamsToSend[k] = v
-
-
-        jsonToSend["teams"] = teamsToSend
-
-        return jsonToSend
 
     @property
     def created_at(self):
