@@ -27,8 +27,8 @@ class PlayerService(object):
             cursor = yield from conn.cursor()
             if new_rating is None:
                 yield from cursor.execute('SELECT mean, deviation FROM `{}_rating` '
-                                          'WHERE id=%i'.format(rating), player.id)
-                mean, deviation = yield cursor.fetchone()
+                                          'WHERE id=%s'.format(rating), player.id)
+                mean, deviation = yield from cursor.fetchone()
                 if rating == 'global':
                     player.global_rating = (mean, deviation)
                 else:
@@ -39,8 +39,8 @@ class PlayerService(object):
                 else:
                     mean, deviation = player.ladder_rating
                 yield from cursor.execute('UPDATE `{}_rating` '
-                                          'SET mean=%f, deviation=%f '
-                                          'WHERE id=%i', (mean, deviation, player.id))
+                                          'SET mean=%s, deviation=%s '
+                                          'WHERE id=%s', (mean, deviation, player.id))
 
 
     def addUser(self, newplayer):
