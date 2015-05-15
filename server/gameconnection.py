@@ -190,7 +190,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.game.state = GameState.LOBBY
             self._state = GameConnectionState.CONNECTED_TO_HOST
             self.game.add_game_connection(self)
-            self._mark_dirty()
             self.game.setHostIP(self.player.ip)
             strlog = (
                 "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.uuid), str(self.game.getGamemod())))
@@ -256,7 +255,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         # if the player is joining, we connect him to host.
         elif playeraction == "JOIN":
             yield from self.ConnectToHost(self.game.hostPlayer.game_connection)
-            self._mark_dirty()
 
     @asyncio.coroutine
     @timed(limit=0.1)
@@ -378,6 +376,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             elif key == 'GameState':
                 state = values[0]
                 yield from self.handle_game_state(state)
+                self._mark_dirty()
 
             elif key == 'GameOption':
                 if values[0] == 'Victory':
@@ -395,7 +394,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     curMap = self.game.mapName
                     if curMap != mapname:
                         self.game.setGameMap(mapname)
-                        self._mark_dirty()
+                self._mark_dirty()
 
             elif key == 'GameMods':
                 if values[0] == "activated":
@@ -414,6 +413,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                             self.game.mods[uid] = str(query.value(0))
                         else:
                             self.game.mods[uid] = "Unknown sim mod"
+                self._mark_dirty()
 
             elif key == 'PlayerOption':
                 if self.player.action == "HOST":
@@ -435,6 +435,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 if self.player.action == "HOST":
                     slot = values[0]
                     self.game.clear_slot(slot)
+                self._mark_dirty()
 
             elif key == 'GameResult':
                 army = int(values[0])
@@ -474,8 +475,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                         self.log.warning(self.logGame + str(query.lastError()))
                         self.log.warning(self.logGame + query.executedQuery())
 
-            else:
-                pass
         except Exception as e:  # pragma: no cover
             self.log.exception(e)
             self.log.exception(self.logGame + "Something awful happened in a game thread!")
@@ -510,8 +509,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             # game launch, the user is playing !
             if self.player.action == "HOST":
                 self.game.launch()
-
-                self._mark_dirty()
 
                 if len(self.game.mods) > 0:
                     for uid in self.game.mods:
