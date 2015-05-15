@@ -584,7 +584,7 @@ class Game(BaseGame):
     def to_dict(self):
         client_state = {
             GameState.LOBBY: 'open',
-            GameState.LIVE: 'open',
+            GameState.LIVE: 'closed',
             GameState.ENDED: 'closed',
             GameState.INITIALIZING: 'closed',
 
