@@ -1157,12 +1157,10 @@ Thanks,\n\
                                  uuid=player_id,
                                  lobbyThread=self)
             self.player.lobbyVersion = version
-            self.player.resolvedAddress = self.player.getIp()
+            self.player.resolvedAddress = self.player.ip
             yield from self.players.fetch_player_data(self.player)
 
             self.player.faction = random.randint(1, 4)
-
-            self.player.resolvedAddress = self.player.getIp()
 
             ## ADMIN
             ## --------------------
