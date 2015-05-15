@@ -4,6 +4,7 @@ import os
 import sys
 
 from PySide.QtCore import QCoreApplication
+import aiomysql
 import pytest
 import mock
 from PySide import QtCore, QtSql
@@ -114,7 +115,7 @@ def loop(request, application):
     request.addfinalizer(finalize)
     return loop
 
-@pytest.fixture()
+@pytest.fixture
 def sqlquery():
     query = mock.MagicMock()
     query.exec_ = lambda: 0
@@ -124,13 +125,17 @@ def sqlquery():
     query.addBindValue = lambda v: None
     return query
 
-@pytest.fixture()
+@pytest.fixture
 def db(sqlquery):
     # Since PySide does strict type checking, we cannot mock this directly
     db = QtSql.QSqlDatabase()
     db.exec_ = lambda q: sqlquery
     db.isOpen = mock.Mock(return_value=True)
     return db
+
+@pytest.fixture
+def mock_db_pool(loop):
+    return mock.create_autospec(aiomysql.Pool(0, 10, False, loop))
 
 @pytest.fixture
 def connected_game_socket():
@@ -186,8 +191,8 @@ def players(create_player):
     )
 
 @pytest.fixture
-def player_service(players):
-    p = mock.Mock(spec=PlayerService())
+def player_service(players, mock_db_pool):
+    p = mock.Mock(spec=PlayerService(mock_db_pool))
     p.findByIp = mock.Mock(return_value=players.hosting)
     return p
 

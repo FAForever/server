@@ -1,13 +1,47 @@
+import aiomysql
+import asyncio
+
+
 class PlayerService(object):
-    def __init__(self):
+    def __init__(self, db_pool: aiomysql.Pool):
         self.players = []
         self.logins = []
+        self.db_pool = db_pool
 
     def __len__(self):
         return len(self.players)
 
     def __iter__(self):
         return self.players.__iter__()
+
+    @asyncio.coroutine
+    def update_rating(self, player, rating='global', new_rating=None):
+        """
+        Update the given rating for the given player
+
+        :param Player player: the player to update
+        :param rating: 'global' or 'ladder1v1'
+        :param new_rating: New rating, if None, fetches the rating from the database
+        """
+        with (yield from self.db_pool) as conn:
+            cursor = yield from conn.cursor()
+            if new_rating is None:
+                yield from cursor.execute('SELECT mean, deviation FROM `{}_rating` '
+                                          'WHERE id=%i'.format(rating), player.id)
+                mean, deviation = yield cursor.fetchone()
+                if rating == 'global':
+                    player.global_rating = (mean, deviation)
+                else:
+                    player.ladder_rating = (mean, deviation)
+            else:
+                if rating == 'global':
+                    mean, deviation = player.global_rating
+                else:
+                    mean, deviation = player.ladder_rating
+                yield from cursor.execute('UPDATE `{}_rating` '
+                                          'SET mean=%f, deviation=%f '
+                                          'WHERE id=%i', (mean, deviation, player.id))
+
 
     def addUser(self, newplayer):
         gamesocket = None

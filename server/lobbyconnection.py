@@ -1159,6 +1159,7 @@ Thanks,\n\
                                  lobbyThread=self)
             self.player.lobbyVersion = version
             self.player.resolvedAddress = self.player.getIp()
+            yield from self.players.update_rating(self.player)
 
             self.player.faction = random.randint(1, 4)
 

@@ -49,8 +49,8 @@ def mock_context():
     return mock.create_autospec(ServerContext(lambda: None))
 
 @pytest.fixture
-def mock_players():
-    return mock.create_autospec(PlayerService())
+def mock_players(mock_db_pool):
+    return mock.create_autospec(PlayerService(mock_db_pool))
 
 @pytest.fixture
 def mock_games(mock_players, db):

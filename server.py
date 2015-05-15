@@ -9,6 +9,7 @@ Options:
 """
 
 import asyncio
+
 import sys
 import logging
 from logging import handlers
@@ -21,7 +22,7 @@ from PySide.QtCore import QTimer
 
 from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
 from server.game_service import GameService
-from server.players import *
+from server.player_service import PlayerService
 import config
 import server
 
@@ -54,7 +55,6 @@ if __name__ == '__main__':
         rootlogger.addHandler(logHandler)
         rootlogger.setLevel(config.LOG_LEVEL)
 
-        players_online = PlayerService()
 
         if args['--nodb']:
             from unittest import mock
@@ -85,11 +85,12 @@ if __name__ == '__main__':
         timer.start(200)
 
         dirtyGameList = []
-        games = GameService(players_online, db)
-
         db_pool = loop.run_until_complete(aiomysql.create_pool(host=DB_SERVER, port=DB_PORT,
                                                                user=DB_LOGIN, password=DB_PASSWORD,
                                                                db=DB_TABLE))
+        players_online = PlayerService(db_pool)
+        games = GameService(players_online, db)
+
 
         lobby_server = loop.run_until_complete(
             server.run_lobby_server(('', 8001),
