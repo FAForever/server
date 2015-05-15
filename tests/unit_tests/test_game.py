@@ -299,3 +299,8 @@ def test_equality(game):
     assert game == game
     assert game != Game(5, mock.Mock())
     assert game != True
+
+
+def test_hashing(game):
+    # game.id == 42
+    assert {game: 1, Game(42, mock.Mock()): 1} == {game: 1}
