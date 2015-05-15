@@ -222,7 +222,7 @@ class Player(BasePlayer):
             return self.id == other.id
 
 
-class PlayersOnline(object):
+class PlayerService(object):
     def __init__(self):
         self.players = []
         self.logins = []

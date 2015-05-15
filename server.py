@@ -57,7 +57,7 @@ if __name__ == '__main__':
         rootlogger.addHandler(logHandler)
         rootlogger.setLevel(config.LOG_LEVEL)
 
-        players_online = PlayersOnline()
+        players_online = PlayerService()
 
         if args['--nodb']:
             from unittest import mock

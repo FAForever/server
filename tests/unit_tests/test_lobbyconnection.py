@@ -4,7 +4,7 @@ import mock
 from server import ServerContext
 
 from server.games_service import GamesService
-from server.lobbyconnection import LobbyConnection, PlayersOnline
+from server.lobbyconnection import LobbyConnection, PlayerService
 
 
 @pytest.fixture()
@@ -49,7 +49,7 @@ def mock_context():
 
 @pytest.fixture
 def mock_players():
-    return mock.create_autospec(PlayersOnline())
+    return mock.create_autospec(PlayerService())
 
 @pytest.fixture
 def mock_games(mock_players, db):

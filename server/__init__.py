@@ -24,7 +24,7 @@ from server.games.coopGamesContainer import CoopGamesContainer
 from server.lobbyconnection import LobbyConnection
 from server.protocol import QDataStreamProtocol
 from server.servercontext import ServerContext
-from server.players import PlayersOnline
+from server.players import PlayerService
 from server.games_service import GamesService
 
 __all__ = [
@@ -37,7 +37,7 @@ __all__ = [
 
 
 def run_lobby_server(address: (str, int),
-                     player_service: PlayersOnline,
+                     player_service: PlayerService,
                      games: GamesService,
                      db,
                      db_pool,
@@ -79,7 +79,7 @@ def run_lobby_server(address: (str, int),
 
 
 def run_game_server(address: (str, int),
-                    player_service: PlayersOnline,
+                    player_service: PlayerService,
                     games: GamesService,
                     db,
                     db_pool,
