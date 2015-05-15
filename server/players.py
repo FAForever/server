@@ -168,7 +168,7 @@ class Player(BasePlayer):
 
     @property
     def id(self):
-        return self.uuid
+        return int(self.uuid)
 
     @property
     def ip(self):
