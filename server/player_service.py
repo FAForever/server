@@ -37,9 +37,11 @@ class PlayerService(object):
     def fetch_player_data(self, player):
         with (yield from self.db_pool) as conn:
             cur = yield from conn.cursor()
-            yield from cur.execute('SELECT mean, deviation FROM `global_rating` '
+            yield from cur.execute('SELECT mean, deviation, numGames FROM `global_rating` '
                                    'WHERE id=%s', player.id)
-            player.global_rating = yield from cur.fetchone()
+            (mean, dev, num_games) = yield from cur.fetchone()
+            player.global_rating = (mean, dev)
+            player.numGames = num_games
             yield from cur.execute('SELECT mean, deviation FROM `ladder1v1_rating` '
                                    'WHERE id=%s', player.id)
             player.ladder_rating = yield from cur.fetchone()
