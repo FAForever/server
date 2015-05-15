@@ -24,7 +24,7 @@ from server.games.coopGamesContainer import CoopGamesContainer
 from server.lobbyconnection import LobbyConnection
 from server.protocol import QDataStreamProtocol
 from server.servercontext import ServerContext
-from server.players import PlayerService
+from server.player_service import PlayerService
 from server.game_service import GameService
 
 __all__ = [

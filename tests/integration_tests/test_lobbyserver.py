@@ -2,7 +2,8 @@ import asyncio
 import aiomysql
 from unittest import mock
 import pytest
-from server import run_lobby_server, GameService, PlayerService
+from server import run_lobby_server, GameService
+from server.player_service import PlayerService
 from server.protocol import QDataStreamProtocol
 
 slow = pytest.mark.slow

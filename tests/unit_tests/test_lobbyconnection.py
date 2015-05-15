@@ -4,7 +4,8 @@ import mock
 from server import ServerContext
 
 from server.game_service import GameService
-from server.lobbyconnection import LobbyConnection, PlayerService
+from server.lobbyconnection import LobbyConnection
+from server.player_service import PlayerService
 
 
 @pytest.fixture()

@@ -17,7 +17,8 @@ if not hasattr(QtCore, 'Signal'):
     QtCore.Signal = QtCore.pyqtSignal
 
 from PySide.QtNetwork import QTcpSocket
-from server.players import PlayerService, Player
+from server.players import Player
+from server.player_service import PlayerService
 from server.games import Game
 
 #handler = logging.StreamHandler()

@@ -9,23 +9,20 @@ Options:
 """
 
 import asyncio
-
 import sys
 import logging
 from logging import handlers
 import signal
-import aiomysql
 
+import aiomysql
 from quamash import QEventLoop
 from PySide import QtSql, QtCore
 from PySide.QtCore import QTimer
 
 from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
 from server.game_service import GameService
-
 from server.players import *
 import config
-
 import server
 
 if __name__ == '__main__':
