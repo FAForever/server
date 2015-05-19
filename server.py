@@ -10,10 +10,12 @@ Options:
 
 import asyncio
 
+
 import sys
 import logging
 from logging import handlers
 import signal
+import socket
 
 import aiomysql
 from quamash import QEventLoop
@@ -90,7 +92,6 @@ if __name__ == '__main__':
         players_online = PlayerService(db_pool)
         games = GameService(players_online, db)
 
-
         lobby_server = loop.run_until_complete(
             server.run_lobby_server(('', 8001),
                                     players_online,
@@ -99,6 +100,8 @@ if __name__ == '__main__':
                                     db_pool,
                                     loop)
         )
+        for sock in lobby_server.sockets:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
         nat_packet_server, game_server = \
             server.run_game_server(('', 8000),
                                    players_online,
