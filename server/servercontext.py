@@ -4,7 +4,7 @@ from server.protocol import QDataStreamProtocol
 
 
 @with_logger
-class ServerContext():
+class ServerContext:
     """
     Base class for managing connections and holding state about them.
     """
@@ -45,7 +45,7 @@ class ServerContext():
     def client_connected(self, stream_reader, stream_writer):
         self._logger.info("{}: Client connected".format(self))
         protocol = QDataStreamProtocol(stream_reader, stream_writer)
-        connection = self._connection_factory(protocol)
+        connection = self._connection_factory()
         try:
             connection.on_connection_made(protocol, stream_writer.get_extra_info('peername'))
             self.connections[connection] = protocol

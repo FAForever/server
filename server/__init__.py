@@ -56,6 +56,7 @@ def run_lobby_server(address: (str, int),
     def report_dirty_games():
         dirties = games.dirty_games
         games.clear_dirty()
+
         def encode(game):
             return QDataStreamProtocol.pack_block(
                 QDataStreamProtocol.pack_qstring(ujson.dumps(game.to_dict()))
@@ -64,15 +65,14 @@ def run_lobby_server(address: (str, int),
         if len(message) > 0:
             ctx.broadcast_raw(message, validate_fn=lambda lobby_conn: lobby_conn.loginDone)
         loop.call_later(5, report_dirty_games)
-    def initialize_connection(protocol):
-        conn = LobbyConnection(context=ctx,
+
+    def initialize_connection():
+        return LobbyConnection(context=ctx,
                                games=games,
                                players=player_service,
                                db=db,
                                db_pool=db_pool,
                                loop=loop)
-        conn.on_connection_made(protocol, protocol.writer.get_extra_info('peername'))
-        return conn
     ctx = ServerContext(initialize_connection, name="LobbyServer", loop=loop)
     loop.call_later(5, report_dirty_games)
     return ctx.listen(*address)
@@ -91,9 +91,8 @@ def run_game_server(address: (str, int),
     """
     nat_packet_server = NatPacketServer(loop, config.LOBBY_UDP_PORT)
 
-    def initialize_connection(protocol):
+    def initialize_connection():
         gc = GameConnection(loop, player_service, games, db, db_pool)
-        gc.on_connection_made(protocol, protocol.writer.get_extra_info('peername'))
         nat_packet_server.subscribe(gc, ['ProcessServerNatPacket'])
         return gc
     ctx = ServerContext(initialize_connection, name='GameServer', loop=loop)

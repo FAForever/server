@@ -151,7 +151,6 @@ class LobbyConnection(QObject):
 
         name = gameName if gameName else self.player.login
 
-
         game = self.games.create_game(access, mod, self.player, name, port, map, password)
         if not game:
             self.sendJSON(dict(command="notice", style="error", text="You are already hosting a game"))
