@@ -33,7 +33,6 @@ if __name__ == '__main__':
             logger.info("Received signal, shutting down")
             if not done.done():
                 done.set_result(0)
-            loop.stop()
 
         app = QtCore.QCoreApplication(sys.argv)
 
@@ -110,6 +109,7 @@ if __name__ == '__main__':
         game_server = loop.run_until_complete(game_server)
 
         loop.run_until_complete(done)
+        loop.close()
 
     except Exception as ex:
         logger.exception("Failure booting server {}".format(ex))
