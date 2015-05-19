@@ -17,10 +17,10 @@ class ServerContext():
         self._connection_factory = connection_factory
         self.connections = {}
         self._transport = None
-        self._logger.info("ServerContext({}) initialized".format(self))
+        self._logger.info("{} initialized".format(self))
 
     def __repr__(self):
-        return self.name
+        return "ServerContext({})".format(self.name)
 
     def listen(self, host, port):
         self._logger.info("ServerContext.listen({},{})".format(host, port))
@@ -43,7 +43,7 @@ class ServerContext():
 
     @asyncio.coroutine
     def client_connected(self, stream_reader, stream_writer):
-        self._logger.info("Client connected")
+        self._logger.info("{}: Client connected".format(self))
         protocol = QDataStreamProtocol(stream_reader, stream_writer)
         connection = self._connection_factory(protocol)
         try:

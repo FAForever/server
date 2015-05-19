@@ -1439,7 +1439,6 @@ Thanks,\n\
                     if quality >= gameQuality:
                         self.addPotentialPlayer(player.getLogin())
 
-            self._logger.debug("done")
         except Exception as ex:
             self._logger.exception(ex)
             self.sendJSON(dict(command="notice", style="error",
