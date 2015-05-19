@@ -66,6 +66,10 @@ def run_lobby_server(address: (str, int),
             ctx.broadcast_raw(message, validate_fn=lambda lobby_conn: lobby_conn.loginDone)
         loop.call_later(5, report_dirty_games)
 
+    def ping_broadcast():
+        ctx.broadcast_raw(QDataStreamProtocol.pack_block(QDataStreamProtocol.pack_qstring('PING')))
+        loop.call_later(45, ping_broadcast)
+
     def initialize_connection():
         return LobbyConnection(context=ctx,
                                games=games,
@@ -75,6 +79,7 @@ def run_lobby_server(address: (str, int),
                                loop=loop)
     ctx = ServerContext(initialize_connection, name="LobbyServer", loop=loop)
     loop.call_later(5, report_dirty_games)
+    loop.call_soon(ping_broadcast)
     return ctx.listen(*address)
 
 
