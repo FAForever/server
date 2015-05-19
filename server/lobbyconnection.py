@@ -1632,7 +1632,7 @@ Thanks,\n\
         """ When someone is cancelling a ladder game on purpose..."""
         game = self.player.game
         if game:
-            if game.getGameMod() == 'ladder1v1' and game.state != GameState.LIVE:
+            if game.gamemod == 'ladder1v1' and game.state != GameState.LIVE:
                 # player has a laddergame that isn't playing, so we suspect he is a canceller....
                 self._logger.debug("Detected cancelled ladder for {} {}".format(self.player, game))
 

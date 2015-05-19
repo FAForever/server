@@ -359,7 +359,7 @@ class Game(BaseGame):
         """
         General rules for validation of game rankedness
         """
-        if self.gameOptions['Victory'] != Victory.DEMORALIZATION and self.getGamemod() != 'coop':
+        if self.gameOptions['Victory'] != Victory.DEMORALIZATION and self.gamemod != 'coop':
             self.setInvalid("Only assassination mode is ranked")
 
         elif self.gameOptions["FogOfWar"] != "explored":
@@ -422,7 +422,7 @@ class Game(BaseGame):
                 self.setInvalid("This map is not ranked.")
 
         # Why can't this be rephrased to use equality?
-        queryStr = ("SELECT id FROM game_featuredMods WHERE gamemod LIKE '%s'" % self.getGamemod())
+        queryStr = ("SELECT id FROM game_featuredMods WHERE gamemod LIKE '%s'" % self.gamemod)
         query.exec_(queryStr)
 
         if query.size() == 1:
@@ -464,7 +464,7 @@ class Game(BaseGame):
                 continue
 
             if options['Team'] > 0 and options['StartSpot'] >= 0:
-                if self.getGamemod() == 'ladder1v1':
+                if self.gamemod == 'ladder1v1':
                     mean, dev = player.ladder_rating
                 else:
                     mean, dev = player.global_rating
@@ -510,7 +510,8 @@ class Game(BaseGame):
         elif type == "sandbox":
             self.gameType = 3
 
-    def getGamemod(self):
+    @property
+    def gamemod(self):
         return self.parent.gameTypeName
 
     def setInvalid(self, reason):
@@ -595,7 +596,7 @@ class Game(BaseGame):
             "uid": self.uuid,
             "title": self.name,
             "state": client_state,
-            "featured_mod": self.getGamemod(),
+            "featured_mod": self.gamemod,
             "featured_mod_versions": self.getGamemodVersion(),
             "sim_mods": self.mods,
             "mapname": self.mapName.lower(),

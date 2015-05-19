@@ -192,13 +192,13 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.game.add_game_connection(self)
             self.game.setHostIP(self.player.ip)
             strlog = (
-                "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.uuid), str(self.game.getGamemod())))
+                "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.uuid), str(self.game.gamemod)))
             self.logGame = strlog
             self._send_create_lobby()
 
         elif action == "JOIN":
             strlog = (
-                "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.uuid), str(self.game.getGamemod())))
+                "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.uuid), str(self.game.gamemod)))
             self.logGame = strlog
             self._send_create_lobby()
 

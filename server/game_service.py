@@ -102,7 +102,7 @@ class GameService():
                             "uid": game.uuid,
                             "title": game.gameName,
                             "state": game.lobbyState,
-                            "featured_mod": game.getGamemod(),
+                            "featured_mod": game.gamemod,
                             "mapname": game.mapName.lower(),
                             "host": game.hostPlayer,
                             "num_players": len(game.players),
