@@ -134,9 +134,9 @@ class LobbyConnection(QObject):
         self.player.setGame(uuid)
 
         response = {"command": "game_launch",
-                      "mod": mod,
-                      "uid": uuid,
-                      "args": ["/numgames " + str(self.player.numGames)]}
+                    "mod": mod,
+                    "uid": uuid,
+                    "args": ["/numgames " + str(self.player.numGames)]}
 
         if len(game.mods) > 0:
             response["sim_mods"] = game.mods
@@ -169,7 +169,7 @@ class LobbyConnection(QObject):
                       "mod": mod,
                       "uid": uuid,
                       "version": version,
-                      "flags": ["/numgames " + str(self.player.numGames)]})
+                      "args": ["/numgames " + str(self.player.numGames)]})
 
     @asyncio.coroutine
     def on_message_received(self, message):
