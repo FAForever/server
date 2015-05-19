@@ -41,7 +41,7 @@ def db_pool(request, loop):
     def setup():
         with (yield from pool) as conn:
             cur = yield from conn.cursor()
-            with open('db-structure.sql', 'r') as data:
+            with open('db-structure.sql', 'r', encoding='utf-8') as data:
                 yield from cur.execute('DROP DATABASE IF EXISTS `%s`;' % db)
                 yield from cur.execute('CREATE DATABASE IF NOT EXISTS `%s`;' % db)
                 yield from cur.execute("USE `%s`;" % db)
