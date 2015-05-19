@@ -1650,12 +1650,8 @@ Thanks,\n\
             query.exec_()
             if query.size() != 0:
                 attempts = query.value(0)
-                if attempts:
-                    if attempts >= 10:
-                        return False
-                else:
-                    self._logger.debug("Not getting the value properly a ladder and cancelling it...")
-
+                if attempts and attempts >= 10:
+                    return False
         return True
 
     @timed
