@@ -100,6 +100,7 @@ class LobbyConnection(QObject):
 
     def abort(self):
         self.protocol.writer.write_eof()
+        self.protocol.reader.feed_eof()
 
     @timed()
     def initNotDone(self):
