@@ -56,6 +56,10 @@ class ServerContext:
             while True:
                 message = yield from protocol.read_message()
                 yield from connection.on_message_received(message)
+        except ConnectionResetError:
+            pass
+        except ConnectionAbortedError:
+            pass
         except asyncio.IncompleteReadError as ex:
             if not stream_reader.at_eof():
                 self._logger.exception(ex)
