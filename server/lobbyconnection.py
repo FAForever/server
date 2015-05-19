@@ -99,6 +99,7 @@ class LobbyConnection(QObject):
         self.loop.call_later(5, self.initNotDone)
 
     def abort(self):
+        self.loginDone = False
         self.protocol.writer.write_eof()
         self.protocol.reader.feed_eof()
 
