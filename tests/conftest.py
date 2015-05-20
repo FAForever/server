@@ -1,3 +1,11 @@
+"""
+This module is the 'top level' configuration for all the unit tests.
+
+'Real world' fixtures are put here.
+If a test suite needs specific mocked versions of dependencies,
+these should be put in the ``conftest.py'' relative to it.
+"""
+
 import asyncio
 import logging
 import os
