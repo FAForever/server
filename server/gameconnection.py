@@ -376,6 +376,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 def queue_until_authed():
                     yield from self._authenticated
                     yield from self.handle_action(key, values)
+                asyncio.async(queue_until_authed())
                 return
             elif key == 'pong':
                 self.last_pong = time.time()
