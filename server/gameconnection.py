@@ -370,7 +370,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.log.debug("handle_action %s:%s" % (key, values))
         try:
             if key == 'Authenticate':
-                self._authenticated.set_result(values[0])
+                self._authenticated.set_result(int(values[0]))
             elif not self._authenticated.done():
                 @asyncio.coroutine
                 def queue_until_authed():
