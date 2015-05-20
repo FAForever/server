@@ -125,9 +125,6 @@ class LobbyConnection(QObject):
             self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
             return
 
-        container = self.games.getGameContainer(game)
-        mod = container.gameTypeName.lower()
-
         self.player.setAction("JOIN")
         self.player.wantToConnectToGame = True
         self.player.setGamePort(port)
@@ -135,7 +132,7 @@ class LobbyConnection(QObject):
         self.player.setGame(uuid)
 
         response = {"command": "game_launch",
-                    "mod": mod,
+                    "mod": game.gamemod,
                     "uid": uuid,
                     "args": ["/numgames " + str(self.player.numGames)]}
 
