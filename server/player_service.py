@@ -85,13 +85,12 @@ class PlayerService(object):
 
                     return gamesocket, lobbySocket
 
-
     def remove_player(self, player):
         if player.login in self.logins:
             self.logins.remove(player.login)
             if player in self.players:
                 self.players.remove(player)
-                #del player
+                # del player
             return 1
         else:
             return 0
@@ -110,5 +109,11 @@ class PlayerService(object):
         """
         for player in self.players:
             if player.ip == ip and player.game is not None:
+                return player
+        return None
+
+    def find_by_ip_and_session(self, ip, session):
+        for player in self.players:
+            if player.ip == ip and player.session == session and player.game is not None:
                 return player
         return None
