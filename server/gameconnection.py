@@ -126,8 +126,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         """
         self._logger.debug("Accepting connection from {}".format(peer_name))
         self.protocol = protocol
-        self.lobby = None
-        self.ip, self.port = peer_name
+        (self.ip, self.port) = peer_name
 
     @asyncio.coroutine
     def authenticate(self, session):
