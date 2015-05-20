@@ -193,7 +193,7 @@ def players(create_player):
 @pytest.fixture
 def player_service(players, mock_db_pool):
     p = mock.Mock(spec=PlayerService(mock_db_pool))
-    p.findByIp = mock.Mock(return_value=players.hosting)
+    p.find_by_ip_and_session = mock.Mock(return_value=players.hosting)
     return p
 
 @pytest.fixture
