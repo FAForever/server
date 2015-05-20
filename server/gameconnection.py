@@ -78,6 +78,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.last_pong = time.time()
 
         self._authenticated = asyncio.Future()
+        self.ip, self.port = None, None
         self._player = None
         self.lobby = None
         self._transport = None
@@ -126,15 +127,16 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self._logger.debug("Accepting connection from {}".format(peer_name))
         self.protocol = protocol
         self.lobby = None
-        ip, port = peer_name
+        self.ip, self.port = peer_name
 
+    @asyncio.coroutine
+    def authenticate(self, session):
         try:
-            session = yield from self._authenticated
-            self._player = self.users.find_by_ip_and_session(ip, session)
-            self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, ip, session))
+            self._player = self.users.find_by_ip_and_session(self.ip, session)
+            self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, self.ip, session))
 
             if self.player is None:
-                self.log.info("Player not found for IP: %s " % ip)
+                self.log.info("Player not found for IP: %s " % self.ip)
                 self.abort()
                 return
 
@@ -153,6 +155,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.ping_task = asyncio.async(self.ping())
             self.player.wantToConnectToGame = False
             self._state = GameConnectionState.INITIALIZED
+            self._authenticated.set_result(session)
         except (CancelledError, asyncio.InvalidStateError) as ex:
             self._logger.exception(ex)
             self.abort()
@@ -232,7 +235,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             if self.ping_task is not None:
                 self.ping_task.cancel()
             self._player.action = 'NONE'
-
 
     @asyncio.coroutine
     def _handle_lobby_state(self):
@@ -370,7 +372,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.log.debug("handle_action %s:%s" % (key, values))
         try:
             if key == 'Authenticate':
-                self._authenticated.set_result(int(values[0]))
+                yield from self.authenticate(int(values[0]))
             elif not self._authenticated.done():
                 @asyncio.coroutine
                 def queue_until_authed():
