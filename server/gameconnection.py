@@ -131,7 +131,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         try:
             session = yield from self._authenticated
             self._player = self.users.find_by_ip_and_session(ip, session)
-            self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, ip, port))
+            self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, ip, session))
 
             if self.player is None:
                 self.log.info("Player not found for IP: %s " % ip)

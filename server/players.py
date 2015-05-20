@@ -27,13 +27,13 @@ class Player(BasePlayer):
     In the context of a game, the Game object holds game-specific
     information about players.
     """
-    def __init__(self, login=None, session=None, ip=None, port=None, uuid=0,
+    def __init__(self, login=None, session=0, ip=None, port=None, uuid=0,
                  global_rating=(1500, 500), ladder_rating=(1500, 500), clan=None, numGames=0, lobbyThread=None):
         super().__init__()
         
         self._action = ''
         self.uuid = uuid
-        self.session = 0
+        self.session = session
         self._login = login
         self._ip = ''
         self.localIp = ''
@@ -66,7 +66,6 @@ class Player(BasePlayer):
         self.faction = 1
         self.wantToConnectToGame = False
 
-        self.session = session
         self._login = login
         self._ip = ip
         self.gamePort = port
