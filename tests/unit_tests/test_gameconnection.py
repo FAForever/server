@@ -12,34 +12,28 @@ from server.games import Game
 
 slow = pytest.mark.slow
 
-
-def test_on_new_connections_valid_socket(game_connection):
-    """
-    :type game_connection: GameConnection
-    """
-    protocol = mock.Mock()
-    assert game_connection.on_connection_made(protocol, ('127.0.0.1', 5123)) is True
-
-
+@asyncio.coroutine
 def test_on_connection_made_no_player(game_connection):
     mock_users = mock.Mock()
-    mock_users.findByIp = mock.Mock(return_value=None)
+    mock_users.find_by_ip_and_session = mock.Mock(return_value=None)
     game_connection.users = mock_users
     game_connection.abort = mock.Mock()
+    game_connection._authenticated.set_result(1234)
 
-    game_connection.on_connection_made(mock.Mock(), ('127.0.0.1', 5123))
+    yield from game_connection.on_connection_made(mock.Mock(), ('127.0.0.1', 5123))
 
     game_connection.abort.assert_any_call()
 
-
+@asyncio.coroutine
 def test_on_connection_made_no_game(game_connection, players):
     mock_users = mock.Mock()
-    mock_users.findByIp = mock.Mock(return_value=players.hosting)
+    mock_users.find_by_ip_and_session = mock.Mock(return_value=players.hosting)
     players.hosting.game = None
     game_connection.users = mock_users
     game_connection.abort = mock.Mock()
+    game_connection._authenticated.set_result(1234)
 
-    game_connection.on_connection_made(mock.Mock(), ('127.0.0.1', 5123))
+    yield from game_connection.on_connection_made(mock.Mock(), ('127.0.0.1', 5123))
 
     game_connection.abort.assert_any_call()
 

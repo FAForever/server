@@ -77,6 +77,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
         self.last_pong = time.time()
 
+        self._authenticated = asyncio.Future()
         self._player = None
         self.lobby = None
         self._transport = None
@@ -112,6 +113,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     def player(self, val):
         self._player = val
 
+    @asyncio.coroutine
     def on_connection_made(self, protocol, peer_name):
         """
         Accept a connected socket for this GameConnection
@@ -125,34 +127,35 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.protocol = protocol
         self.lobby = None
         ip, port = peer_name
-        self._player = self.users.findByIp(ip)
-        self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, ip, port))
 
-        if self.player is None:
-            self.log.info("Player not found for IP: %s " % ip)
+        try:
+            session = yield from self._authenticated
+            self._player = self.users.find_by_ip_and_session(ip, session)
+            self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, ip, port))
+
+            if self.player is None:
+                self.log.info("Player not found for IP: %s " % ip)
+                self.abort()
+                return
+
+            if self.player.game is None:
+                self.log.info("Player hasn't indicated that he wants to join a game")
+                self.abort()
+                return
+
+            self.game = self.player.game
+            self.player.game_connection = self
+            self.lobby = self.player.lobby_connection
+
+            self.player.setPort = False
+            self.player.connectedToHost = False
+
+            self.ping_task = asyncio.async(self.ping())
+            self.player.wantToConnectToGame = False
+            self._state = GameConnectionState.INITIALIZED
+        except (CancelledError, asyncio.InvalidStateError) as ex:
+            self._logger.exception(ex)
             self.abort()
-            return False
-
-        if self.player.game is None:
-            self.log.info("Player hasn't indicated that he wants to join a game")
-            self.abort()
-            return False
-
-        self.game = self.player.game
-        self.player.game_connection = self
-        self.lobby = self.player.lobby_connection
-
-        self.player.setPort = False
-        self.player.connectedToHost = False
-
-
-        strlog = ("%s\t" % str(self.player.getLogin()))
-        self.logGame = strlog
-
-        self.ping_task = asyncio.async(self.ping())
-        self.player.wantToConnectToGame = False
-        self._state = GameConnectionState.INITIALIZED
-        return True
 
     def send_message(self, message):
         self.protocol.send_message(message)

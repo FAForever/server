@@ -93,6 +93,7 @@ class LobbyConnection(QObject):
         self.protocol = None
         self._logger.debug("LobbyConnection initialized")
 
+    @asyncio.coroutine
     def on_connection_made(self, protocol: QDataStreamProtocol, peername: (str, int)):
         self.protocol = protocol
         self.ip, self.port = peername

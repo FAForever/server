@@ -10,6 +10,7 @@ def mock_server(loop):
         def __init__(self):
             self.protocol, self.peername = None, None
 
+        @asyncio.coroutine
         def on_connection_made(self, protocol, peername):
             self.protocol = protocol
             self.peername = peername
