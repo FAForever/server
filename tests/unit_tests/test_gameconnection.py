@@ -18,7 +18,6 @@ def test_on_connection_made_no_player(game_connection):
     mock_users.find_by_ip_and_session = mock.Mock(return_value=None)
     game_connection.users = mock_users
     game_connection.abort = mock.Mock()
-    game_connection._authenticated.set_result(1234)
 
     yield from game_connection.on_connection_made(mock.Mock(), ('127.0.0.1', 5123))
 
@@ -31,7 +30,6 @@ def test_on_connection_made_no_game(game_connection, players):
     players.hosting.game = None
     game_connection.users = mock_users
     game_connection.abort = mock.Mock()
-    game_connection._authenticated.set_result(1234)
 
     yield from game_connection.on_connection_made(mock.Mock(), ('127.0.0.1', 5123))
 
