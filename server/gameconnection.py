@@ -369,7 +369,15 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         """
         self.log.debug("handle_action %s:%s" % (key, values))
         try:
-            if key == 'pong':
+            if key == 'Authenticate':
+                self._authenticated.set_result(values[0])
+            elif not self._authenticated.done():
+                @asyncio.coroutine
+                def queue_until_authed():
+                    yield from self._authenticated
+                    yield from self.handle_action(key, values)
+                return
+            elif key == 'pong':
                 self.last_pong = time.time()
                 return
 
