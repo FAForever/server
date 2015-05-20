@@ -91,7 +91,6 @@ class GamesContainer(object):
         return 0
 
     def addBasicGame(self, player, name, gamePort):
-        playerLogin = player.getLogin()
         playerUuid = player.getId()
         playerState = player.action
         gameUuid = self.createUuid(playerUuid)
@@ -104,7 +103,7 @@ class GamesContainer(object):
             return False
 
         ngame = Game(gameUuid, self)
-        ngame.setGameHostName(playerLogin)
+        ngame.host = player
         ngame.setGameHostUuid(playerUuid)
         ngame.setGameHostPort(gamePort)
         ngame.name = name

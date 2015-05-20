@@ -47,7 +47,7 @@ class ServerContext:
         protocol = QDataStreamProtocol(stream_reader, stream_writer)
         connection = self._connection_factory()
         try:
-            asyncio.async(connection.on_connection_made(protocol, stream_writer.get_extra_info('peername')))
+            yield from connection.on_connection_made(protocol, stream_writer.get_extra_info('peername'))
             self.connections[connection] = protocol
         except Exception as ex:
             self._logger.exception(ex)

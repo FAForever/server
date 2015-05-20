@@ -117,7 +117,7 @@ class Subscription():
             self=self
         ))
         if self.filter(arguments):
-            if command_id in self._emissions:
+            if command_id in self._emissions and not self._emissions[command_id].done():
                 self._logger.debug('Setting {} as fired'.format(command_id))
                 self._emissions[command_id].set_result(True)
             if hasattr(self.receiver, cmd_name):
@@ -137,3 +137,4 @@ class Subscription():
         if command_id not in self._emissions:
             self._emissions[command_id] = asyncio.Future()
         yield from asyncio.wait_for(self._emissions[command_id], timeout=timeout)
+        self._emissions[command_id] = asyncio.Future()

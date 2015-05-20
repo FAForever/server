@@ -209,6 +209,12 @@ class Player(BasePlayer):
             ('clan', self.clan)
         )))
 
+    def __str__(self):
+        return "Player({}, {})".format(self.login, self.uuid)
+
+    def __repr__(self):
+        return self.__str__()
+
     def __hash__(self):
         return self.id
 

@@ -94,6 +94,7 @@ class Game(BaseGame):
         self.access = "public"
         self.minPlayer = minPlayer
         self.maxPlayer = 12
+        self.host = None
         self.hostPlayer = host
         self.hostuuid = hostId
         self.hostip = hostIp
@@ -600,7 +601,7 @@ class Game(BaseGame):
             "featured_mod_versions": self.getGamemodVersion(),
             "sim_mods": self.mods,
             "mapname": self.mapName.lower(),
-            "host": self.hostPlayer,
+            "host": self.host.login if self.host else '',
             "num_players": len(self.players),
             "game_time": self.created_at,
             "game_type": self.gameType,

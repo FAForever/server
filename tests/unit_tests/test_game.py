@@ -268,6 +268,7 @@ def test_to_dict(game, create_player):
     for player, _, team in players:
         game.set_player_option(player.id, 'Team', team)
         game.set_player_option(player.id, 'Army', player.id - 1)
+    game.host = players[0][0]
     game.launch()
     data = game.to_dict()
     expected = {
@@ -280,7 +281,7 @@ def test_to_dict(game, create_player):
         "featured_mod_versions": game.getGamemodVersion(),
         "sim_mods": game.mods,
         "mapname": game.mapName.lower(),
-        "host": game.hostPlayer,
+        "host": game.host.login,
         "num_players": len(game.players),
         "game_time": game.created_at,
         "game_type": game.gameType,

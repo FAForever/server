@@ -191,7 +191,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         
         ngame.setGameMap(map)
         
-        ngame.setGameHostName(player1.login)
+        ngame.host = player1
         ngame.setGameHostUuid(player1.id)
         ngame.setGameHostPort(player1.gamePort)
         ngame.name = gameName
@@ -210,7 +210,6 @@ class Ladder1V1GamesContainer(GamesContainer):
         
         self.addGame(ngame)
 
-        
         #warn both players
         json = {}
         json["command"] = "game_launch"

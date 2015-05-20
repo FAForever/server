@@ -37,15 +37,14 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
         """
         self.send_gpgnet_message('ConnectToProxy', [local_proxy_port, ip, player_name, player_uid])
 
-    def send_JoinGame(self, address_and_port: str, as_observer: bool, remote_player_name: str, remote_player_uid: int):
+    def send_JoinGame(self, address_and_port: str, remote_player_name: str, remote_player_uid: int):
         """
         Tells the game to join the given peer by address_and_port
         :param address_and_port:
-        :param as_observer:
         :param remote_player_name:
         :param remote_player_uid:
         """
-        self.send_gpgnet_message('JoinGame', [address_and_port, as_observer, remote_player_name, remote_player_uid])
+        self.send_gpgnet_message('JoinGame', [address_and_port, remote_player_name, remote_player_uid])
 
     def send_HostGame(self, map):
         """

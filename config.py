@@ -3,7 +3,7 @@ import logging
 import trueskill
 from configobj import ConfigObj
 
-Config = ConfigObj("/etc/faforever/faforever.conf")
+Config = ConfigObj("/etc/faforever/faforever.conf").get('global', {})
 
 LOBBY_IP = Config.get('lobby_ip', '127.0.0.1')
 LOBBY_UDP_PORT = Config.get('lobby_udp_port', 30351)
@@ -20,7 +20,4 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 trueskill.setup(mu=1500, sigma=500, beta=250, tau=5, draw_probability=0.10)
 
-try:
-    WIKI_LINK = Config['global']['wiki_url']
-except KeyError:
-    WIKI_LINK = 'http://wiki.faforever.com'
+WIKI_LINK = Config.get('wiki_url', 'http://wiki.faforever.com')

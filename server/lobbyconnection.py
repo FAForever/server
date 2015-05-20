@@ -129,7 +129,7 @@ class LobbyConnection(QObject):
         self.player.wantToConnectToGame = True
         self.player.setGamePort(port)
         self.player.localGamePort = port
-        self.player.setGame(uuid)
+        self.player.game = game
 
         response = {"command": "game_launch",
                     "mod": game.gamemod,
@@ -244,17 +244,17 @@ class LobbyConnection(QObject):
             self.sendJSON(dict(command="notice", style="error",
                                text="This file (%s) is already in the database !" % str(zipmap)))
             return
-        writeFile = QFile(Config['global']['content_path'] + "vault/mods/%s" % zipmap)
+        writeFile = QFile(Config['content_path'] + "vault/mods/%s" % zipmap)
 
         if writeFile.open(QIODevice.WriteOnly):
             writeFile.write(fileDatas)
         writeFile.close()
 
-        if not zipfile.is_zipfile(Config['global']['content_path'] + "vault/mods/%s" % zipmap):
+        if not zipfile.is_zipfile(Config['content_path'] + "vault/mods/%s" % zipmap):
             self.sendJSON(
                 dict(command="notice", style="error", text="Cannot unzip mod. Upload error ?"))
             return
-        zip = zipfile.ZipFile(Config['global']['content_path'] + "vault/mods/%s" % zipmap, "r",
+        zip = zipfile.ZipFile(Config['content_path'] + "vault/mods/%s" % zipmap, "r",
                               zipfile.ZIP_DEFLATED)
 
         if zip.testzip() is None:
@@ -267,7 +267,7 @@ class LobbyConnection(QObject):
                 if filename.endswith(".png"):
                     source = zip.open(member)
                     target = open(
-                        os.path.join(Config['global']['content_path'] + "vault/mods_thumbs/",
+                        os.path.join(Config['content_path'] + "vault/mods_thumbs/",
                                      zipmap.replace(".zip", ".png")), "wb")
                     icon = zipmap.replace(".zip", ".png")
 
@@ -363,14 +363,14 @@ class LobbyConnection(QObject):
         query.exec_()
 
         if query.size() == 0:
-            writeFile = QFile(Config['global']['content_path'] + "vault/maps/%s" % zipmap)
+            writeFile = QFile(Config['content_path'] + "vault/maps/%s" % zipmap)
 
             if writeFile.open(QIODevice.WriteOnly):
                 writeFile.write(fileDatas)
             writeFile.close()
 
-            if zipfile.is_zipfile(Config['global']['content_path'] + "vault/maps/%s" % zipmap):
-                zip = zipfile.ZipFile(Config['global']['content_path'] + "vault/maps/%s" % zipmap, "r",
+            if zipfile.is_zipfile(Config['content_path'] + "vault/maps/%s" % zipmap):
+                zip = zipfile.ZipFile(Config['content_path'] + "vault/maps/%s" % zipmap, "r",
                                       zipfile.ZIP_DEFLATED)
 
                 if zip.testzip() is None:
@@ -382,7 +382,7 @@ class LobbyConnection(QObject):
                         if filename.endswith(".small.png"):
                             source = zip.open(member)
                             target = open(
-                                os.path.join(Config['global']['content_path'] + "vault/map_previews/small/",
+                                os.path.join(Config['content_path'] + "vault/map_previews/small/",
                                              filename.replace(".small.png", ".png")), "wb")
 
                             shutil.copyfileobj(source, target)
@@ -391,7 +391,7 @@ class LobbyConnection(QObject):
                         elif filename.endswith(".large.png"):
                             source = zip.open(member)
                             target = open(
-                                os.path.join(Config['global']['content_path'] + "vault/map_previews/large/",
+                                os.path.join(Config['content_path'] + "vault/map_previews/large/",
                                              filename.replace(".large.png", ".png")), "wb")
 
                             shutil.copyfileobj(source, target)
@@ -537,7 +537,7 @@ class LobbyConnection(QObject):
         query.exec_()
         self._logger.debug("Sending registration mail")
         link = {'a': 'validate', 'email': keyHex, 'u': base64.b64encode(str(uid))}
-        passwordLink = Config['global']['app_url'] + "validateAccount.php?" + urllib.parse.urlencode(link)
+        passwordLink = Config['app_url'] + "validateAccount.php?" + urllib.parse.urlencode(link)
 
         text = "Dear " + login + ",\n\n\
 Please visit the following link to validate your FAF account:\n\
@@ -557,9 +557,9 @@ Thanks,\n\
         self._logger.debug("sending mail to " + email)
         #self.log.debug(msg.as_string())
         #s = smtplib.SMTP(config['global']['smtp_server'])
-        s = smtplib.SMTP_SSL(Config['global']['smtp_server'], 465, Config['global']['smtp_server'],
+        s = smtplib.SMTP_SSL(Config['smtp_server'], 465, Config['smtp_server'],
                              timeout=5)
-        s.login(Config['global']['smtp_username'], Config['global']['smtp_password'])
+        s.login(Config['smtp_username'], Config['smtp_password'])
 
         s.sendmail(MAIL_ADDRESS, [email], msg.as_string())
         s.quit()
@@ -852,7 +852,7 @@ Thanks,\n\
             key = str(query.value(3))
 
             link = {'a': 'validate', 'email': key, 'u': base64.b64encode(str(uid))}
-            passwordLink = Config['global']['app_url'] + "validateAccount.php?" + urllib.parse.urlencode(link)
+            passwordLink = Config['app_url'] + "validateAccount.php?" + urllib.parse.urlencode(link)
             text = "Dear " + login + ",\n\n\
 Please visit the following link to validate your FAF account:\n\
 -----------------------\n\
@@ -870,8 +870,8 @@ Thanks,\n\
             #self.log.debug("sending SMTP mail to " + em)
             #self.log.debug(msg.as_string())
             #s = smtplib.SMTP(config['global']['smtp_server'])
-            s = smtplib.SMTP_SSL(Config['global']['smtp_server'], 465, Config['global']['smtp_server'], timeout=5)
-            s.login(Config['global']['smtp_username'], Config['global']['smtp_password'])
+            s = smtplib.SMTP_SSL(Config['smtp_server'], 465, Config['smtp_server'], timeout=5)
+            s.login(Config['smtp_username'], Config['smtp_password'])
             s.sendmail(MAIL_ADDRESS, [em], msg.as_string())
             s.quit()
             self.sendJSON(dict(command="notice", style="info",
@@ -1032,7 +1032,7 @@ Thanks,\n\
                 self.loginDone = True
 
             if validated == 0:
-                validate_account_url = "{}faf/validateAccount.php".format(Config['global']['app_url'])
+                validate_account_url = "{}faf/validateAccount.php".format(Config['app_url'])
                 reason = ("Your account is not validated. Please visit <a href='{}'>{}</a>. "
                           "<br>Please re-create an account if your email is not correct (<b>{}</b>)"
                           .format(validate_account_url, validate_account_url, self.email))
@@ -1071,7 +1071,7 @@ Thanks,\n\
                 if uniqueId is None:
                     self.sendJSON(dict(command="notice", style="error",
                                        text="Unique Id found for another user.<br>Multiple accounts are not allowed.<br><br>Try SteamLink: <a href='" +
-                                            Config['global']['app_url'] + "faf/steam.php'>" + Config['global'][
+                                            Config['app_url'] + "faf/steam.php'>" + Config[
                                                 'app_url'] + "faf/steam.php</a>"))
                     return
                     # the user is not steam Checked.
@@ -1082,7 +1082,7 @@ Thanks,\n\
                 if query.size() > 0:
                     self.sendJSON(dict(command="notice", style="error",
                                        text="This computer has been used by a steam account.<br>You have to authentify your account on steam too in order to use it on this computer :<br>SteamLink: <a href='" +
-                                            Config['global']['app_url'] + "faf/steam.php'>" + Config['global'][
+                                            Config['app_url'] + "faf/steam.php'>" + Config[
                                                 'app_url'] + "faf/steam.php</a>"))
                     return
 
@@ -1102,8 +1102,8 @@ Thanks,\n\
                     self._logger.debug("%i (%s) is a smurf of %s" % (self.player.id, login, otherName))
                     self.sendJSON(dict(command="notice", style="error",
                                        text="This computer is tied to this account : %s.<br>Multiple accounts are not allowed.<br>You can free this computer by logging in with that account (%s) on another computer.<br><br>Or Try SteamLink: <a href='" +
-                                            Config['global']['app_url'] + "faf/steam.php'>" +
-                                            Config['global']['app_url'] + "faf/steam.php</a>" % (
+                                            Config['app_url'] + "faf/steam.php'>" +
+                                            Config['app_url'] + "faf/steam.php</a>" % (
                                            otherName, otherName)))
 
                     query2 = QSqlQuery(self.db)
@@ -1245,7 +1245,7 @@ Thanks,\n\
                                 continue
 
                             avatar = {
-                                "url": str(Config['global']['content_url'] + "avatars/div" + str(i) + ".png")
+                                "url": str(Config['content_url'] + "avatars/div" + str(i) + ".png")
                             }
                             if i == 1:
                                 avatar.tooltip = "First in my division!"
@@ -1275,7 +1275,7 @@ Thanks,\n\
                                 continue
 
                             avatar = {
-                                "url": str(Config['global']['content_url'] + "avatars/league" + str(i) + ".png")
+                                "url": str(Config['content_url'] + "avatars/league" + str(i) + ".png")
                             }
                             if i == 1:
                                 avatar.tooltip = "First in my League!"
@@ -1552,7 +1552,7 @@ Thanks,\n\
                 raise KeyError('invalid file')
             description = message["description"]
 
-            writeFile = QFile(Config['global']['content_path'] + "avatars/%s" % name)
+            writeFile = QFile(Config['content_path'] + "avatars/%s" % name)
 
             if writeFile.open(QIODevice.WriteOnly):
                 writeFile.write(avatarDatas)
@@ -1561,7 +1561,7 @@ Thanks,\n\
             query = QSqlQuery(self.db)
             query.prepare(
                 "INSERT INTO avatars_list (`url`,`tooltip`) VALUES (?,?) ON DUPLICATE KEY UPDATE `tooltip` = ?;")
-            query.addBindValue(Config['global']['content_url'] + "faf/avatars/" + name)
+            query.addBindValue(Config['content_url'] + "faf/avatars/" + name)
             query.addBindValue(description)
             query.addBindValue(description)
 
@@ -1800,11 +1800,11 @@ Thanks,\n\
                     description = str(query.value(12))
                     comments = []
                     bugreports = []
-                    link = Config['global']['content_url'] + "vault/" + str(query.value(13))
+                    link = Config['content_url'] + "vault/" + str(query.value(13))
                     icon = str(query.value(14))
                     thumbstr = ""
                     if icon != "":
-                        thumbstr = Config['global']['content_url'] + "vault/mods_thumbs/" + urllib.parse.quote(icon)
+                        thumbstr = Config['content_url'] + "vault/mods_thumbs/" + urllib.parse.quote(icon)
 
                     out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=bugreports,
                                comments=comments, description=description, played=played, likes=likes,
@@ -1838,11 +1838,11 @@ Thanks,\n\
                 description = str(query.value(12))
                 comments = []
                 bugreports = []
-                link = Config['global']['content_url'] + "vault/" + str(query.value(13))
+                link = Config['content_url'] + "vault/" + str(query.value(13))
                 icon = str(query.value(14))
                 thumbstr = ""
                 if icon != "":
-                    thumbstr = Config['global']['content_url'] + "vault/mods_thumbs/" + urllib.parse.quote(icon)
+                    thumbstr = Config['content_url'] + "vault/mods_thumbs/" + urllib.parse.quote(icon)
 
                 out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=bugreports,
                            comments=comments, description=description, played=played, likes=likes + 1,
