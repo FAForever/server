@@ -30,11 +30,6 @@ from server.players import Player
 from server.player_service import PlayerService
 from server.games import Game
 
-#handler = logging.StreamHandler()
-#handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s',
-#                                       '%M:%S'))
-logging.getLogger('quamash').setLevel(logging.INFO)
-#logging.getLogger().addHandler(handler)
 logging.getLogger().setLevel(logging.DEBUG)
 
 import quamash
@@ -55,6 +50,16 @@ def pytest_pycollect_makeitem(collector, name, obj):
 def pytest_addoption(parser):
     parser.addoption('--slow', action='store_true', default=False,
                      help='Also run slow tests')
+    parser.addoption('--aiodebug', action='store_true', default=False,
+                     help='Enable asyncio debugging')
+
+def pytest_configure(config):
+    if config.getoption('--aiodebug'):
+        logging.getLogger('quamash').setLevel(logging.DEBUG)
+        logging.captureWarnings(True)
+    else:
+        logging.getLogger('quamash').setLevel(logging.INFO)
+
 
 def pytest_runtest_setup(item):
     """
