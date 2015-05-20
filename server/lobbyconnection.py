@@ -114,9 +114,9 @@ class LobbyConnection(QObject):
     @timed()
     def joinGame(self, uuid, port=6112, password=None):
         assert isinstance(self.player, Player)
-        self.games.removeOldGames()
-
+        self._logger.debug("joinGame: {}:{} with pw: {}".format(uuid, port, password))
         game = self.games.find_by_id(uuid)
+        self._logger.debug("joinGame resolved: {}".format(game))
 
         if not game or game.state != GameState.LOBBY:
             return
@@ -149,7 +149,6 @@ class LobbyConnection(QObject):
                  options=[]):
         assert isinstance(self.player, Player)
         mod = mod.lower()
-        self.games.removeOldGames()
 
         name = gameName if gameName else self.player.login
 
