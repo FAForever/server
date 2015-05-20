@@ -131,6 +131,12 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     @asyncio.coroutine
     def authenticate(self, session):
+        """
+        Perform very rudimentary authentication.
+
+        For now, this exists primarily to avoid conditions with players,
+        behind the same public address which would cause problems with the old design.
+        """
         try:
             self._player = self.users.find_by_ip_and_session(self.ip, session)
             self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, self.ip, session))
