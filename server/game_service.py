@@ -86,6 +86,21 @@ class GameService:
             games += g.games
         return games
 
+    def all_game_modes(self):
+        modes = []
+        for c, g in self._containers.items():
+            modes.append({
+                'command': 'mod_info',
+                'name': g.gameTypeName,
+                'fullname': g.gameNiceName,
+                'icon': None,
+                'host': g.host,
+                'join': g.join,
+                'live': g.live,
+                'desc': g.desc
+            })
+        return modes
+
     def find_by_id(self, id):
         """
         Look up a game by ID

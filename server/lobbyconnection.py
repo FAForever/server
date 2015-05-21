@@ -636,28 +636,8 @@ Thanks,\n\
         self.protocol.send_messages(maps)
 
     @timed()
-    def sendModList(self):
-        reply = QByteArray()
-
-        for containerName in self.games.gamesContainer:
-
-            container = self.games.gamesContainer[containerName]
-
-            jsonToSend = {
-                "command": "mod_info",
-                "name": container.gameTypeName,
-                "fullname": container.gameNiceName,
-                "icon": None,
-                "host": container.host,
-                "join": container.join,
-                "live": container.live,
-                "desc": container.desc,
-                "options": container.options
-            }
-
-            reply.append(self.prepareBigJSON(jsonToSend))
-
-        self.sendArray(reply)
+    def send_mod_list(self):
+        self.protocol.send_messages(self.games.all_game_modes())
 
     @timed()
     def jsonTourney(self, tourney):
@@ -1356,7 +1336,7 @@ Thanks,\n\
                 jsonToSend = {"command": "social", "foes": self.foeList}
                 self.sendJSON(jsonToSend)
 
-            self.sendModList()
+            self.send_mod_list()
             self.send_game_list()
             self.sendReplaySection()
 

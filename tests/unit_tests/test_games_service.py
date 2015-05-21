@@ -1,3 +1,4 @@
+import server
 from server.game_service import GameService
 
 
@@ -29,3 +30,11 @@ def test_all_games(players, db):
                                password=None,
                                version=None)
     assert game in service.all_games()
+
+def test_all_game_modes(players, db):
+    service = GameService(players, db)
+    game_modes = service.all_game_modes()
+
+    for info in game_modes:
+        assert info['name'] in map(lambda f: f[0], server.games.game_modes)
+        assert info['fullname'] in map(lambda f: f[1], server.games.game_modes)

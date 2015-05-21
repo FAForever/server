@@ -363,3 +363,9 @@ def test_send_coop_maps(mocker, fa_server_thread):
          'uid': 42}
     ])
 
+def test_send_mod_list(mocker, fa_server_thread, mock_games):
+    protocol = mocker.patch.object(fa_server_thread, 'protocol')
+
+    fa_server_thread.send_mod_list()
+
+    protocol.send_messages.assert_called_with(mock_games.all_game_modes())
