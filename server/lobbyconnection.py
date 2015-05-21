@@ -644,34 +644,6 @@ Thanks,\n\
         self.protocol.send_messages([game.to_dict() for game in self.games.all_games()])
 
     @timed()
-    def preparePacket(self, action, *args, **kwargs):
-
-        reply = QByteArray()
-        stream = QDataStream(reply, QIODevice.WriteOnly)
-        stream.setVersion(QDataStream.Qt_4_2)
-        stream.writeUInt32(0)
-
-        stream.writeQString(action)
-
-        for arg in args:
-            if isinstance(arg, int):
-                stream.writeInt32(arg)
-            elif isinstance(arg, float):
-                stream.writeQString(str(arg))
-            elif isinstance(arg, str):
-                stream.writeFloat(arg)
-
-        stream.device().seek(0)
-
-        stream.writeUInt32(reply.size() - 4)
-
-        return reply
-
-    @timed()
-    def sendArray(self, array):
-        self.protocol.send_raw(array.data())
-
-    @timed()
     def sendReply(self, action, *args, **kwargs):
         if self in self.context:
             reply = QByteArray()
@@ -1832,16 +1804,6 @@ Thanks,\n\
             raise NotImplementedError('addcomment not implemented')
         else:
             raise ValueError('invalid type argument')
-
-    def prepareBigJSON(self, data_dictionary):
-        """
-        Simply dumps a dictionary into a string and feeds it into the QTCPSocket
-        """
-        try:
-            data_string = json.dumps(data_dictionary)
-        except:
-            return
-        return self.preparePacket(data_string)
 
     @timed()
     def sendJSON(self, data_dictionary):
