@@ -22,5 +22,5 @@ from server.games.coopGamesContainer import CoopGamesContainer  # ladder games
 # game entity
 from server.games.game import Game
 # derived
-from server.games.ladderGame import ladder1V1Game
+from server.games.ladderGame import Ladder1V1Game
 from server.games.custom_game import CustomGame

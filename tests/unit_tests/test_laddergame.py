@@ -1,7 +1,7 @@
 from unittest import mock
 import pytest
 
-from server.games import ladder1V1Game
+from server.games import Ladder1V1Game
 from server.games.game import GameState
 
 from tests.unit_tests.test_game import add_connected_players
@@ -10,7 +10,7 @@ from tests.unit_tests.test_game import add_connected_players
 def laddergame(db):
     mock_parent = mock.Mock()
     mock_parent.db = db
-    return ladder1V1Game(1, mock_parent)
+    return Ladder1V1Game(1, mock_parent)
 
 
 def test_results_ranked_by_victory(laddergame, players):

@@ -23,7 +23,7 @@ from PySide.QtSql import QSqlQuery
 import trueskill
 
 from .gamesContainer import  GamesContainer
-from .ladderGame import ladder1V1Game
+from .ladderGame import Ladder1V1Game
 from server.players import Player
 
 
@@ -180,7 +180,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         mapChosen = random.choice(tuple(map_pool))
         map = self.getMapName(mapChosen)
 
-        ngame = ladder1V1Game(gameUuid, self)
+        ngame = Ladder1V1Game(gameUuid, self)
 
         uuid = ngame.uuid
 

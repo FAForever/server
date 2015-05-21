@@ -27,7 +27,7 @@ from PySide.QtSql import QSqlQuery
 import operator
 
 
-class ladder1V1Game(Game):
+class Ladder1V1Game(Game):
     """Class for 1v1 ladder game"""
     init_mode = InitMode.AUTO_LOBBY
     
