@@ -15,12 +15,12 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
-from server.games.gamesContainer import GamesContainer
-from server.games.ladderGamesContainer import Ladder1V1GamesContainer
-from server.games.CoopGamesContainer import CoopGamesContainer
-from server.games.game import Game
-from server.games.ladderGame import Ladder1V1Game
-from server.games.custom_game import CustomGame
+from .gamesContainer import GamesContainer
+from .ladderGamesContainer import Ladder1V1GamesContainer
+from .CoopGamesContainer import CoopGamesContainer
+from .game import Game
+from .ladderGame import Ladder1V1Game
+from .custom_game import CustomGame
 
 game_modes = [
     ('faf', 'Forged Alliance Forever', GamesContainer),

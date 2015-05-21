@@ -16,7 +16,7 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 
-from .gamesContainer import GamesContainer
+from . import GamesContainer
 
 
 class CoopGamesContainer(GamesContainer):
