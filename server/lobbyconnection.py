@@ -640,19 +640,6 @@ Thanks,\n\
         self.protocol.send_messages(self.games.all_game_modes())
 
     @timed()
-    def jsonTourney(self, tourney):
-        jsonToSend = {"command": "tournament_info", "type": tourney.type, "state": tourney.getState(),
-                      "uid": tourney.getid(), "title": tourney.getName(), "host": tourney.host,
-                      "min_players": tourney.minPlayers, "max_players": tourney.maxPlayers,
-                      "min_rating": tourney.minRating, "max_rating": tourney.maxRating,
-                      "description": tourney.description, "players": tourney.seededplayers, "date": tourney.date}
-        if tourney.state != "open":
-            jsonToSend["action"] = "brackets"
-            jsonToSend["result"] = tourney.getDisplayInfos()
-
-        return jsonToSend
-
-    @timed()
     def send_game_list(self):
         self.protocol.send_messages([game.to_dict() for game in self.games.all_games()])
 
