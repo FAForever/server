@@ -586,8 +586,8 @@ Thanks,\n\
         return tojoin
 
     @timed()
-    def sendReplaySection(self):
-        reply = QByteArray()
+    def send_tutorial_section(self):
+        reply = []
 
         query = QSqlQuery(self.db)
         query.prepare("SELECT `section`,`description` FROM `tutorial_sections`")
@@ -595,7 +595,7 @@ Thanks,\n\
         if query.size() > 0:
             while query.next():
                 jsonToSend = {"command": "tutorials_info", "section": query.value(0), "description": query.value(1)}
-                reply.append(self.prepareBigJSON(jsonToSend))
+                reply.append(jsonToSend)
 
         query.prepare(
             "SELECT tutorial_sections.`section`,`name`,`url`, `tutorials`.`description`, `map` FROM `tutorials` LEFT JOIN  tutorial_sections ON tutorial_sections.id = tutorials.section ORDER BY `tutorials`.`section`, name")
@@ -605,9 +605,9 @@ Thanks,\n\
                 jsonToSend = {"command": "tutorials_info", "tutorial": query.value(1), "url": query.value(2),
                               "tutorial_section": query.value(0), "description": query.value(3),
                               "mapname": query.value(4)}
-                reply.append(self.prepareBigJSON(jsonToSend))
+                reply.append(jsonToSend)
 
-        self.sendArray(reply)
+        self.protocol.send_messages(reply)
 
     @timed()
     def send_coop_maps(self):
@@ -1325,7 +1325,7 @@ Thanks,\n\
 
             self.send_mod_list()
             self.send_game_list()
-            self.sendReplaySection()
+            self.send_tutorial_section()
 
             player_info = self.player.to_dict()
             for player in self.players.players:

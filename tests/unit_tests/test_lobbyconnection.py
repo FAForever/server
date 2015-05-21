@@ -369,3 +369,33 @@ def test_send_mod_list(mocker, fa_server_thread, mock_games):
     fa_server_thread.send_mod_list()
 
     protocol.send_messages.assert_called_with(mock_games.all_game_modes())
+
+
+def test_send_tutorial_section(mocker, fa_server_thread):
+    query = mocker.patch('server.lobbyconnection.QSqlQuery').return_value
+    protocol = mocker.patch.object(fa_server_thread, 'protocol')
+
+    query.size.return_value = 1
+    query.next.side_effect = [True, False, True, False]
+    query.value.side_effect = ['some section',
+                               'some description',
+                               'some tutorial title',
+                               'http://example.com',
+                               'some section',
+                               'some description',
+                               'some_mapname']
+
+    fa_server_thread.send_tutorial_section()
+
+    protocol.send_messages.assert_called_with([
+        {'command': 'tutorials_info',
+         'section': 'some section',
+         'description': 'some description'
+        },
+        {'command': 'tutorials_info',
+         'tutorial': 'some tutorial title',
+         'url': 'http://example.com',
+         'tutorial_section': 'some section',
+         'description': 'some description',
+         'mapname': 'some_mapname'}
+    ])
