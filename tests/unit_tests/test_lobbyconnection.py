@@ -343,3 +343,23 @@ def test_send_game_list(mocker, fa_server_thread):
 
     protocol.send_messages.assert_any_call([game1.to_dict(), game2.to_dict()])
 
+def test_send_coop_maps(mocker, fa_server_thread):
+    query = mocker.patch('server.lobbyconnection.QSqlQuery').return_value
+    protocol = mocker.patch.object(fa_server_thread, 'protocol')
+
+    query.size.return_value = 1
+    query.next.side_effect = [True, False]
+    query.value.side_effect = ['test map', 'test description', 'mapname', 0, 42]
+
+    fa_server_thread.send_coop_maps()
+
+    protocol.send_messages.assert_called_with([
+        {'command': 'coop_info',
+         'name': 'test map',
+         'description': 'test description',
+         'filename': 'mapname',
+         'type': 'FA Campaign',
+         'featured_mod': 'coop',
+         'uid': 42}
+    ])
+

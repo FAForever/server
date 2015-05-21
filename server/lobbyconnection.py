@@ -610,12 +610,11 @@ Thanks,\n\
         self.sendArray(reply)
 
     @timed()
-    def sendCoopList(self):
-        reply = QByteArray()
-
+    def send_coop_maps(self):
         query = QSqlQuery(self.db)
         query.prepare("SELECT name, description, filename, type, id FROM `coop_map`")
         query.exec_()
+        maps = []
         if query.size() > 0:
             while query.next():
                 jsonToSend = {"command": "coop_info", "name": query.value(0), "description": query.value(1),
@@ -632,9 +631,9 @@ Thanks,\n\
                 else:
                     jsonToSend["type"] = "Unknown"
                 jsonToSend["uid"] = query.value(4)
-                reply.append(self.prepareBigJSON(jsonToSend))
+                maps.append(jsonToSend)
 
-        self.sendArray(reply)
+        self.protocol.send_messages(maps)
 
     @timed()
     def sendModList(self):
@@ -1742,7 +1741,7 @@ Thanks,\n\
 
     def command_coop_list(self, message):
         """ requestion coop lists"""
-        self.sendCoopList()
+        self.send_coop_maps()
 
     @timed()
     def command_game_host(self, message):
