@@ -1689,7 +1689,6 @@ Thanks,\n\
                     gameport = message['gameport']
                     faction = message['faction']
 
-                    container.removeOldGames()
                     self.player.setGamePort(gameport)
                     container.addPlayer(self.season, self.player)
                     container.searchForMatchup(self.player)
