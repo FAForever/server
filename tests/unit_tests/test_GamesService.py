@@ -1,4 +1,3 @@
-from server.games import GamesContainer
 from server.game_service import GameService
 
 

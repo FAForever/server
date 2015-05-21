@@ -44,6 +44,7 @@ from trueskill import Rating
 from server.decorators import timed, with_logger
 from server.games.game import GameState
 from server.players import *
+from .game_service import GameService
 from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS
 from config import Config
 from server.protocol import QDataStreamProtocol
@@ -60,7 +61,7 @@ api.key.set(STEAM_APIKEY)
 @with_logger
 class LobbyConnection(QObject):
     @timed()
-    def __init__(self, context=None, games=None, players=None, db=None, db_pool=None, loop=asyncio.get_event_loop()):
+    def __init__(self, context=None, games: GameService=None, players=None, db=None, db_pool=None, loop=asyncio.get_event_loop()):
         super(LobbyConnection, self).__init__()
         self.loop = loop
         self.db = db
@@ -142,19 +143,21 @@ class LobbyConnection(QObject):
         self.sendJSON(response)
 
     @timed()
-    def hostGame(self, access, gameName, version, port=6112, mod="faf", map='SCMP_007', password=None, rating=1,
-                 options=[]):
+    def hostGame(self, access, gameName, version, port=6112, mod="faf", map='SCMP_007', password=None):
         assert isinstance(self.player, Player)
-        mod = mod.lower()
-
-        name = gameName if gameName else self.player.login
-
-        game = self.games.create_game(access, mod, self.player, name, port, map, password)
-        if not game:
-            self.sendJSON(dict(command="notice", style="error", text="You are already hosting a game"))
+        if self.player.in_game:
+            self.sendJSON(dict(command="notice", style="error", text="You are already in a game"))
             return
 
-        uuid = game.uuid
+        game = self.games.create_game(**{
+            'visibility': access,
+            'game_mode': mod.lower(),
+            'host': self.player,
+            'name': gameName if gameName else self.player.login,
+            'mapname': map,
+            'password': password,
+            'version': None
+        })
 
         self.player.action = "HOST"
         self.player.wantToConnectToGame = True
@@ -164,7 +167,7 @@ class LobbyConnection(QObject):
 
         self.sendJSON({"command": "game_launch",
                       "mod": mod,
-                      "uid": uuid,
+                      "uid": game.uuid,
                       "version": version,
                       "args": ["/numgames " + str(self.player.numGames)]})
 
@@ -1771,10 +1774,8 @@ Thanks,\n\
 
         mapname = message.get('mapname')
         password = message.get('password')
-        lobby_rating = message.get('lobby_rating', 1)  # 0 = no rating inside the lobby. Default is 1.
-        options = message.get('options', [])
 
-        self.hostGame(access, title, version, gameport, mod, mapname, password, lobby_rating, options)
+        self.hostGame(access, title, version, gameport, mod, mapname, password)
 
 
     def command_modvault(self, message):

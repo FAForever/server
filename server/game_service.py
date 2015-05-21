@@ -48,13 +48,20 @@ class GameService:
                                                db=self.db,
                                                games_service=self)
 
-    def create_game(self, access, name, player, gameName, gamePort, mapname, password=None):
-        container = self.getContainer(name)
+    def create_game(self,
+                    visibility='public',
+                    game_mode=None,
+                    host=None,
+                    name=None,
+                    mapname=None,
+                    password=None,
+                    version=None):
+        container = self.getContainer(game_mode)
         if container:
-            game = container.addBasicGame(player, gameName, gamePort)
+            game = container.addBasicGame(host, name)
             if game:
                 game.setGameMap(mapname)
-                game.setAccess(access)
+                game.setAccess(visibility)
                 if password is not None:
                     game.setPassword(password)
                 self.mark_dirty(game)

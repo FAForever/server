@@ -176,6 +176,10 @@ class Player(BasePlayer):
         return self._login
 
     @property
+    def in_game(self):
+        return self.game is not None
+
+    @property
     def game_port(self):
         return self.gamePort
 

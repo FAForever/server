@@ -75,15 +75,20 @@ def test_command_game_host_calls_host_game(fa_server_thread,
                                            test_game_info,
                                            players):
     fa_server_thread.player = players.hosting
+    players.hosting.in_game = False
+    fa_server_thread.protocol = mock.Mock()
     fa_server_thread.command_game_host(test_game_info)
+    expected_call = {
+        'visibility': test_game_info['access'],
+        'game_mode': test_game_info['mod'],
+        'name': test_game_info['title'],
+        'host': players.hosting,
+        'password': test_game_info['password'],
+        'mapname': test_game_info['mapname'],
+        'version': test_game_info['version']
+    }
     mock_games.create_game\
-        .assert_called_with(test_game_info['access'],
-                            test_game_info['mod'],
-                            fa_server_thread.player,
-                            test_game_info['title'],
-                            test_game_info['gameport'],
-                            test_game_info['mapname'],
-                            test_game_info['version'])
+        .assert_called_with(**expected_call)
 
 
 def test_command_game_host_calls_host_game_invalid_title(fa_server_thread,
