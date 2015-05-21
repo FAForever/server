@@ -56,17 +56,21 @@ class GameService:
                     mapname=None,
                     password=None,
                     version=None):
-        container = self.getContainer(game_mode)
-        if container:
-            game = container.addBasicGame(host, name)
-            if game:
-                game.setGameMap(mapname)
-                game.setAccess(visibility)
-                if password is not None:
-                    game.setPassword(password)
-                self.mark_dirty(game)
-                return game
-        return None
+        if game_mode not in self._containers:
+            raise KeyError("Unknown gamemode: {}".format(game_mode))
+        game = self._containers[game_mode].addBasicGame(host, name)
+        if not game:
+            raise ValueError('Container {} refused to make game: {}'.format(game_mode, game))
+
+        game.setGameMap(mapname)
+        game.setAccess(visibility)
+        game.version = version
+
+        if password is not None:
+            game.setPassword(password)
+
+        self.mark_dirty(game)
+        return game
 
     def mark_dirty(self, game):
         self._dirty_games.add(game)
@@ -75,6 +79,12 @@ class GameService:
         if name in self._containers:
             return self._containers[name]
         return None
+
+    def all_games(self):
+        games = []
+        for c, g in self._containers.items():
+            games += g.games
+        return games
 
     def find_by_id(self, id):
         """

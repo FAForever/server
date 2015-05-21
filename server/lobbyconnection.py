@@ -674,21 +674,8 @@ Thanks,\n\
         return jsonToSend
 
     @timed()
-    def sendGameList(self):
-
-        reply = QByteArray()
-
-        for key, container in self.games.gamesContainer.items():
-            self._logger.debug("sending games of container " + container.gameNiceName)
-            if container.listable or container.live:
-                for game in container.games:
-
-                    if game.state == GameState.LOBBY or game.state == GameState.LIVE:
-                        reply.append(self.prepareBigJSON(game.to_dict()))
-
-            self._logger.debug("done")
-
-        self.sendArray(reply)
+    def send_game_list(self):
+        self.protocol.send_messages([game.to_dict() for game in self.games.all_games()])
 
     @timed()
     def preparePacket(self, action, *args, **kwargs):
@@ -1371,7 +1358,7 @@ Thanks,\n\
                 self.sendJSON(jsonToSend)
 
             self.sendModList()
-            self.sendGameList()
+            self.send_game_list()
             self.sendReplaySection()
 
             player_info = self.player.to_dict()

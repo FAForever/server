@@ -90,18 +90,7 @@ class GamesContainer(object):
         return 0
 
     def addBasicGame(self, player, name):
-        playerUuid = player.getId()
-        playerState = player.action
-        gameUuid = self.createUuid(playerUuid)
-
-        if playerState == "PLAYING":
-            return False
-        elif playerState == "HOST":
-            return False
-        elif playerState == "JOIN":
-            return False
-
-        ngame = Game(gameUuid, self)
+        ngame = Game(self.createUuid(player.id), self)
         ngame.host = player
         ngame.name = name
         self.games.append(ngame)
