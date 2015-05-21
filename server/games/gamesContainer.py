@@ -72,8 +72,7 @@ class GamesContainer(object):
         queryStr = ("INSERT INTO game_stats (`host`) VALUE ( %i )" % playerId)
         query.exec_(queryStr)      
         uuid = query.lastInsertId()
-        
-        
+
         return uuid
 
     def findGameByUuid(self, uuid):
@@ -110,48 +109,3 @@ class GamesContainer(object):
         self.games.append(ngame)
         return ngame
 
-    def removeGame(self, gameToRemove):
-        """Remove a game from the list"""
-
-        for game in reversed(self.games):
-            if game == gameToRemove:
-                game.state = GameState.ENDED
-                self.addDirtyGame(game)
-                self.games.remove(game)
-
-                return True
-
-    def addDirtyGame(self, game):
-        if game not in self.parent.dirty_games:
-            self.parent.mark_dirty(game)
-            
-    def removeOldGames(self):
-        """Remove old games (invalids and not started)"""
-
-        now = time.time()
-
-        ''' Returns true if a game should be kept alive, false if it should die '''
-        def validateGame(game):
-            diff = now - game.created_at
-            if game.state == GameState.ENDED:
-                if len(game.players) == 0:
-                    return False
-
-                hostPlayer = self.parent.players.findByName(game.hostPlayer)
-
-                if hostPlayer == 0:
-                    return False
-                else:
-                    if hostPlayer.getAction() != "HOST":
-                        return False
-
-            #if the game is playing for more than 8 hours
-            if game.state == GameState.LIVE and diff > 60 * 60 * 8:
-                return False
-
-        for game in reversed(self.games):
-
-            if not validateGame(game):
-                game.state = GameState.ENDED
-                self.addDirtyGame(game)
-                self.removeGame(game)
