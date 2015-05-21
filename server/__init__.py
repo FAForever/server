@@ -19,8 +19,7 @@ from .gameconnection import GameConnection
 from .natpacketserver import NatPacketServer
 
 import config
-from server.games import GamesContainer, Ladder1V1GamesContainer
-from server.games.CoopGamesContainer import CoopGamesContainer
+from server.games import GamesContainer, Ladder1V1GamesContainer, CoopGamesContainer
 from server.lobbyconnection import LobbyConnection
 from server.protocol import QDataStreamProtocol
 from server.servercontext import ServerContext

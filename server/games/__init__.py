@@ -17,7 +17,7 @@
 #-------------------------------------------------------------------------------
 from .gamesContainer import GamesContainer
 from .ladderGamesContainer import Ladder1V1GamesContainer
-from .CoopGamesContainer import CoopGamesContainer
+from .coop import CoopGamesContainer
 from .game import Game
 from .ladderGame import Ladder1V1Game
 from .custom_game import CustomGame
