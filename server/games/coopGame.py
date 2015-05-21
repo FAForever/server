@@ -19,7 +19,7 @@ from server.abc.base_game import InitMode
 
 from .game import Game
 
-class coopGame(Game):
+class CoopGame(Game):
     """Class forcoop game"""
 
     init_mode = InitMode.NORMAL_LOBBY

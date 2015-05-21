@@ -16,11 +16,24 @@
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
 from server.games.gamesContainer import GamesContainer
-# derived
-from server.games.ladderGamesContainer import Ladder1V1GamesContainer  # ladder games
-from server.games.coopGamesContainer import CoopGamesContainer  # ladder games
-# game entity
+from server.games.ladderGamesContainer import Ladder1V1GamesContainer
+from server.games.CoopGamesContainer import CoopGamesContainer
 from server.games.game import Game
-# derived
 from server.games.ladderGame import Ladder1V1Game
 from server.games.custom_game import CustomGame
+
+game_modes = [
+    ('faf', 'Forged Alliance Forever', GamesContainer),
+    ('ladder1v1', 'Ladder 1 vs 1', Ladder1V1GamesContainer),
+    ('labwars', 'LABwars', GamesContainer),
+    ('murderparty', 'Murder Party', GamesContainer),
+    ('blackops', 'blackops', GamesContainer),
+    ('xtremewars', 'Xtreme Wars', GamesContainer),
+    ('diamond', 'Diamond', GamesContainer),
+    ('vanilla', 'Vanilla', GamesContainer),
+    ('civilians', 'Civilians Defense', GamesContainer),
+    ('koth', 'King of the Hill', GamesContainer),
+    ('claustrophobia', 'Claustrophobia', GamesContainer),
+    ('supremedestruction', 'Supreme Destruction', GamesContainer),
+    ('coop', 'coop', CoopGamesContainer),
+]

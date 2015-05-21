@@ -15,13 +15,11 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #-------------------------------------------------------------------------------
+from server import games
 
 from server.decorators import with_logger
 
 from server.games.game import Game
-from server.games.gamesContainer import GamesContainer
-from server.games.ladderGamesContainer import Ladder1V1GamesContainer
-from server.games.coopGamesContainer import CoopGamesContainer
 
 
 @with_logger
@@ -44,22 +42,7 @@ class GameService:
         self._dirty_games = set()
 
     def add_game_modes(self):
-        game_modes = [
-            ('faf', 'Forged Alliance Forever', GamesContainer),
-            ('ladder1v1', 'Ladder 1 vs 1', Ladder1V1GamesContainer),
-            ('labwars', 'LABwars', GamesContainer),
-            ('murderparty', 'Murder Party', GamesContainer),
-            ('blackops', 'blackops', GamesContainer),
-            ('xtremewars', 'Xtreme Wars', GamesContainer),
-            ('diamond', 'Diamond', GamesContainer),
-            ('vanilla', 'Vanilla', GamesContainer),
-            ('civilians', 'Civilians Defense', GamesContainer),
-            ('koth', 'King of the Hill', GamesContainer),
-            ('claustrophobia', 'Claustrophobia', GamesContainer),
-            ('supremedestruction', 'Supreme Destruction', GamesContainer),
-            ('coop', 'coop', CoopGamesContainer),
-        ]
-        for name, nice_name, container in game_modes:
+        for name, nice_name, container in games.game_modes:
             self._containers[name] = container(name=name,
                                                nice_name=nice_name,
                                                db=self.db,
