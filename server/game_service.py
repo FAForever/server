@@ -33,7 +33,7 @@ class GameService:
         self._dirty_games = set()
         self.players = players
         self.db = db
-        self.gamesContainer = {}
+        self._containers = {}
         self.add_game_modes()
 
     @property
@@ -42,13 +42,6 @@ class GameService:
 
     def clear_dirty(self):
         self._dirty_games = set()
-
-    def addContainer(self, name, container):
-        """ add a game container class named <name>"""
-        if not name in self.gamesContainer:
-            self.gamesContainer[name] = container
-            return 1
-        return 0
 
     def add_game_modes(self):
         game_modes = [
@@ -67,10 +60,10 @@ class GameService:
             ('coop', 'coop', CoopGamesContainer),
         ]
         for name, nice_name, container in game_modes:
-            self.addContainer(name, container(name=name,
-                                                    nice_name=nice_name,
-                                                    db=self.db,
-                                                    games_service=self))
+            self._containers[name] = container(name=name,
+                                               nice_name=nice_name,
+                                               db=self.db,
+                                               games_service=self)
 
     def create_game(self, access, name, player, gameName, gamePort, mapname, password=None):
         container = self.getContainer(name)
@@ -89,8 +82,8 @@ class GameService:
         self._dirty_games.add(game)
 
     def getContainer(self, name):
-        if name in self.gamesContainer:
-            return self.gamesContainer[name]
+        if name in self._containers:
+            return self._containers[name]
         return None
 
     def find_by_id(self, id):
@@ -98,8 +91,8 @@ class GameService:
         Look up a game by ID
         :rtype: Game
         """
-        for container in self.gamesContainer:
-            game = self.gamesContainer[container].findGameByUuid(id)
+        for container in self._containers:
+            game = self._containers[container].findGameByUuid(id)
             if game is not None:
                 return game
         return None    
