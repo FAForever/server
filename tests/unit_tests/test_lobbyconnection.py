@@ -1,7 +1,8 @@
 from PySide import QtNetwork
+
 import pytest
-import mock
-from server import ServerContext
+from unittest import mock
+from server import ServerContext, QDataStreamProtocol
 
 from server.game_service import GameService
 from server.lobbyconnection import LobbyConnection
@@ -61,12 +62,17 @@ def mock_games(mock_players, db):
     return mock.create_autospec(GameService(mock_players, db))
 
 @pytest.fixture
-def fa_server_thread(mock_context, mock_games, mock_players, mock_player, db):
+def mock_protocol():
+    return mock.create_autospec(QDataStreamProtocol(mock.Mock(), mock.Mock()))
+
+@pytest.fixture
+def fa_server_thread(mock_context, mock_protocol, mock_games, mock_players, mock_player, db):
     lc = LobbyConnection(context=mock_context,
-                           games=mock_games,
-                           players=mock_players,
-                           db=db)
+                         games=mock_games,
+                         players=mock_players,
+                         db=db)
     lc.player = mock_player
+    lc.protocol = mock_protocol
     return lc
 
 
@@ -101,9 +107,10 @@ def test_command_game_host_calls_host_game_invalid_title(fa_server_thread,
     fa_server_thread.sendJSON.assert_called_once_with(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
 
 # ModVault
-@mock.patch('server.lobbyconnection.QSqlQuery')
-@mock.patch('server.lobbyconnection.Config')
-def test_mod_vault_start(mock_config, mock_query, fa_server_thread):
+def test_mod_vault_start(mocker, fa_server_thread):
+    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
+    mocker.patch('server.lobbyconnection.Config')
+
     fa_server_thread.sendJSON = mock.Mock()
     mock_query.return_value.size.return_value = 1
     mock_query.return_value.next.side_effect = [True, False]
@@ -113,9 +120,10 @@ def test_mod_vault_start(mock_config, mock_query, fa_server_thread):
     (response, ), _ = fa_server_thread.sendJSON.call_args
     assert response['command'] == 'modvault_info'
 
-@mock.patch('server.lobbyconnection.QSqlQuery')
-@mock.patch('server.lobbyconnection.Config')
-def test_mod_vault_like(mock_config, mock_query, fa_server_thread):
+def test_mod_vault_like(mocker, fa_server_thread):
+    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
+    mocker.patch('server.lobbyconnection.Config')
+
     fa_server_thread.sendJSON = mock.Mock()
     mock_query.return_value.size.return_value = 1
     fa_server_thread.command_modvault({'type': 'like',
@@ -124,9 +132,10 @@ def test_mod_vault_like(mock_config, mock_query, fa_server_thread):
     (response, ), _ = fa_server_thread.sendJSON.call_args
     assert response['command'] == 'modvault_info'
 
-@mock.patch('server.lobbyconnection.QSqlQuery')
-@mock.patch('server.lobbyconnection.Config')
-def test_mod_vault_like_invalid_uid(mock_config, mock_query, fa_server_thread):
+def test_mod_vault_like_invalid_uid(mocker, fa_server_thread):
+    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
+    mocker.patch('server.lobbyconnection.Config')
+
     fa_server_thread.sendJSON = mock.Mock()
     mock_query.return_value.size.return_value = 0
     fa_server_thread.command_modvault({'type': 'like',
@@ -134,8 +143,9 @@ def test_mod_vault_like_invalid_uid(mock_config, mock_query, fa_server_thread):
     # call, method:attributes, attribute_index
     assert fa_server_thread.sendJSON.mock_calls == []
 
-@mock.patch('server.lobbyconnection.QSqlQuery')
-def test_mod_vault_download(mock_query, fa_server_thread):
+def test_mod_vault_download(mocker, fa_server_thread):
+    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
+
     fa_server_thread.command_modvault({'type': 'download',
                                     'uid': None})
     mock_query.return_value.prepare.assert_called_with("UPDATE `table_mod` SET downloads=downloads+1 WHERE uid = ?")
@@ -185,11 +195,12 @@ def test_ask_session(fa_server_thread):
     assert response['command'] == 'welcome'
 
 # Avatar
-@mock.patch('zlib.decompress')
-@mock.patch('server.lobbyconnection.Config')
-@mock.patch('server.lobbyconnection.QFile')
-@mock.patch('server.lobbyconnection.QSqlQuery')
-def test_avatar_upload_admin(mock_query, mock_file, mock_config, mock_zlib, fa_server_thread):
+def test_avatar_upload_admin(mocker, fa_server_thread):
+    mocker.patch('zlib.decompress')
+    mocker.patch('server.lobbyconnection.Config')
+    mocker.patch('server.lobbyconnection.QFile')
+    mocker.patch('server.lobbyconnection.QSqlQuery')
+
     fa_server_thread.sendJSON = mock.Mock()
     fa_server_thread.player = mock.Mock()
     fa_server_thread.player.admin.return_value = True
@@ -207,11 +218,12 @@ def test_avatar_upload_admin_invalid_file(fa_server_thread):
         fa_server_thread.command_avatar({'action': 'upload_avatar',
                                          'name': '', 'file': '', 'description': ''})
 
-@mock.patch('zlib.decompress')
-@mock.patch('server.lobbyconnection.Config')
-@mock.patch('server.lobbyconnection.QFile')
-@mock.patch('server.lobbyconnection.QSqlQuery')
-def test_avatar_upload_admin_db_error(mock_query, mock_file, mock_config, mock_zlib, fa_server_thread):
+def test_avatar_upload_admin_db_error(mocker, fa_server_thread):
+    mocker.patch('zlib.decompress')
+    mocker.patch('server.lobbyconnection.Config')
+    mocker.patch('server.lobbyconnection.QFile')
+    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
+
     fa_server_thread.sendJSON = mock.Mock()
     fa_server_thread.player = mock.Mock()
     fa_server_thread.player.admin.return_value = True
@@ -229,8 +241,9 @@ def test_avatar_upload_user(fa_server_thread):
         fa_server_thread.command_avatar({'action': 'upload_avatar',
                                          'name': '', 'file': '', 'description': ''})
 
-@mock.patch('server.lobbyconnection.QSqlQuery')
-def test_avatar_list_avatar(mock_query, fa_server_thread):
+def test_avatar_list_avatar(mocker, fa_server_thread):
+    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
+
     fa_server_thread.sendJSON = mock.Mock()
     mock_query.return_value.size.return_value = 1
     mock_query.return_value.next.side_effect = [True, True, False]
@@ -240,27 +253,30 @@ def test_avatar_list_avatar(mock_query, fa_server_thread):
     assert len(response['avatarlist']) == 2
 
 # TODO: @sheeo return JSON message on empty avatar list?
-@mock.patch('server.lobbyconnection.QSqlQuery')
-def test_avatar_list_avatar_empty(mock_query, fa_server_thread):
+def test_avatar_list_avatar_empty(mocker, fa_server_thread):
+    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
+
     fa_server_thread.sendJSON = mock.Mock()
     mock_query.return_value.size.return_value = 0
     fa_server_thread.command_avatar({'action': 'list_avatar'})
     assert fa_server_thread.sendJSON.mock_calls == []
 
-@mock.patch('server.lobbyconnection.QSqlQuery')
-def test_avatar_select(mock_query, fa_server_thread):
+def test_avatar_select(mocker, fa_server_thread):
+    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
+
     fa_server_thread.sendJSON = mock.Mock()
     fa_server_thread.command_avatar({'action': 'select', 'avatar': ''})
     assert mock_query.return_value.exec_.call_count == 2
 
-@mock.patch('server.lobbyconnection.QSqlQuery')
-def test_avatar_select_remove(mock_query, fa_server_thread):
+def test_avatar_select_remove(mocker, fa_server_thread):
+    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
+
     fa_server_thread.sendJSON = mock.Mock()
     fa_server_thread.command_avatar({'action': 'select', 'avatar': None})
     assert mock_query.return_value.exec_.call_count == 1
 
-@mock.patch('server.lobbyconnection.QSqlQuery')
-def test_avatar_select_no_avatar(mock_query, fa_server_thread):
+def test_avatar_select_no_avatar(mocker, fa_server_thread):
+    mocker.patch('server.lobbyconnection.QSqlQuery')
     with pytest.raises(KeyError):
         fa_server_thread.command_avatar({'action': 'select'})
 

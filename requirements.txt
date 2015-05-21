@@ -1,9 +1,9 @@
 aiomysql
 configobj
 docopt
-mock
 pygeoip
 pytest
+pytest-mock
 pytest-qt
 quamash
 steamodd

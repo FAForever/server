@@ -29,12 +29,10 @@ import shutil
 import random
 import re
 import time
-import logging
 import smtplib
 from email.mime.text import MIMEText
 import email.utils
 
-from PySide.QtCore import QTimer
 from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QObject
 from PySide.QtSql import QSqlQuery
 import pygeoip
