@@ -571,21 +571,6 @@ Thanks,\n\
         self.sendReply("LOGIN_AVAILABLE", "yes", login)
 
     @timed()
-    def getPlayerTournament(self, player):
-        tojoin = []
-        for container in self.games.gamesContainer:
-
-            if self.games.gamesContainer[container].type == 1:
-                for tournament in self.games.gamesContainer[container].getTournaments():
-                    if tournament.state == "playing":
-                        if player.getLogin() in tournament.players:
-                            tojoin.append("#" + tournament.name.replace(" ", "_"))
-                        elif player.getLogin() == tournament.host:
-                            tojoin.append("#" + tournament.name.replace(" ", "_"))
-
-        return tojoin
-
-    @timed()
     def send_tutorial_section(self):
         reply = []
 
@@ -1252,10 +1237,6 @@ Thanks,\n\
 
             self._logger.debug("Welcome")
             self.sendJSON(dict(command="welcome", email=str(self.email)))
-
-            tourneychannel = self.getPlayerTournament(self.player)
-            if len(tourneychannel) > 0:
-                channels = channels + tourneychannel
 
             self.protocol.send_messages(
                 [player.to_dict()
