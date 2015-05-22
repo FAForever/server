@@ -151,6 +151,10 @@ class Player(BasePlayer):
     def game(self, value):
         self._game = weakref.ref(value)
 
+    @game.deleter
+    def game(self):
+        self._game = lambda: None
+
     @property
     def game_connection(self):
         """
@@ -162,6 +166,10 @@ class Player(BasePlayer):
     @game_connection.setter
     def game_connection(self, value):
         self._game_connection = weakref.ref(value)
+
+    @game_connection.deleter
+    def game_connection(self):
+        self._game_connection = lambda: None
 
     @property
     def id(self):
