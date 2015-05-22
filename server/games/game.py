@@ -237,7 +237,9 @@ class Game(BaseGame):
         for player in self.players:
             army = self.get_player_option(player.id, 'Army')
             try:
-                results[player] = self.get_army_result(army)
+                result = self.get_army_result(army)
+                results[player] = result
+                self._logger.info('Result for army {}: {}'.format(army, result))
             except KeyError:
                 # Default to -1 if there is no result
                 results[player] = -1
@@ -248,6 +250,7 @@ class Game(BaseGame):
         player_ids = []
         scores = []
         for player, result in results.items():
+            self._logger.info("Result for player {}: {}".format(player, result))
             game_ids.append(self.id)
             player_ids.append(player.id)
             scores.append(result)
