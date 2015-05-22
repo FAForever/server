@@ -97,7 +97,8 @@ class GameService:
                 'host': g.host,
                 'join': g.join,
                 'live': g.live,
-                'desc': g.desc
+                'desc': g.desc,
+                'options': []
             })
         return modes
 
