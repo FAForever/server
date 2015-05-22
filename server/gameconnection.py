@@ -266,6 +266,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         # if the player is joining, we connect him to host.
         elif playeraction == "JOIN":
             yield from self.ConnectToHost(self.game.host.game_connection)
+            self.game.add_game_connection(self)
 
     @asyncio.coroutine
     @timed(limit=0.1)
