@@ -52,7 +52,6 @@ class Subscribable():
         :param message:
         :return:
         """
-        self._logger.debug("{sender}.notify({message})".format(sender=self, message=message))
         command_id = message.get("command_id")
         assert isinstance(command_id, str)
         if command_id in self._subscriptions:

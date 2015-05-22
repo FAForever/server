@@ -380,7 +380,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         :type values list
         :return: None
         """
-        self.log.debug("%s.handle_action %s:%s" % (self, key, values))
         try:
             if key == 'Authenticate':
                 yield from self.authenticate(int(values[0]))
