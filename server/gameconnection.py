@@ -232,8 +232,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.game.remove_game_connection(self)
             self._mark_dirty()
             self.log.debug("{}.abort()".format(self))
-            if self.player.lobby_connection:
-                self.player.lobby_connection.sendJSON(dict(command="notice", style="kill"))
             del self.player.game
             del self.player.game_connection
         except Exception as ex:  # pragma: no cover

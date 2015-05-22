@@ -75,10 +75,6 @@ def test_abort(game_connection, game, players, connected_game_socket):
     game_connection.abort()
 
     game.remove_game_connection.assert_called_with(game_connection)
-    players.hosting.lobby_connection.sendJSON.assert_called_with(
-        dict(command='notice',
-             style='kill')
-    )
 
 @asyncio.coroutine
 def test_handle_action_GameState_idle_adds_connection(game_connection, players, game):
