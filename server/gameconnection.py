@@ -202,7 +202,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.game.state = GameState.LOBBY
             self._state = GameConnectionState.CONNECTED_TO_HOST
             self.game.add_game_connection(self)
-            self.game.setHostIP(self.player.ip)
+            self.game.host = self.player
             strlog = (
                 "%s.%s.%s\t" % (str(self.player.getLogin()), str(self.game.uuid), str(self.game.gamemod)))
             self.logGame = strlog

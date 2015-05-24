@@ -618,38 +618,11 @@ class Game(BaseGame):
         """
         return self.createDate
 
-    def setHostIP(self, ip):
-        if ip == '':
-            return 0
-        else:
-            self.hostip = ip
-
     def setGameMap(self, map):
         if map == '':
             return False
         else:
             self.mapName = map
-
-    def setGameHostPort(self, port):
-        if port == '':
-            return 0
-        else:
-            self.hostport = port
-
-    def setGameHostName(self, host):
-        if host == '':
-            return 0
-        else:
-            self.hostPlayer = host
-
-    def setGameHostUuid(self, uuid):
-        if uuid == '':
-            return 0
-        else:
-            self.hostuuid = uuid
-
-    def getGameAddress(self):
-        return "%s:%s" % (str(self.hostip), str(self.hostport))
 
     def __eq__(self, other):
         if not isinstance(other, Game):
