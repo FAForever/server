@@ -63,11 +63,11 @@ class GameService:
             raise ValueError('Container {} refused to make game: {}'.format(game_mode, game))
 
         game.setGameMap(mapname)
-        game.setAccess(visibility)
+        game.access = visibility
         game.version = version
 
         if password is not None:
-            game.setPassword(password)
+            game.password = password
 
         self.mark_dirty(game)
         return game

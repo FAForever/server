@@ -495,12 +495,6 @@ class Game(BaseGame):
         else:
             self._logger.error("No player stat :(")
 
-    def setAccess(self, access):
-        self.access = access
-
-    def setPassword(self, password):
-        self.password = password
-
     def getGamemodVersion(self):
         return self.parent.getGamemodVersion()
 
