@@ -40,7 +40,7 @@ class GamesContainer(object):
 
         self.desc = None
 
-        self.gameTypeName = name
+        self.game_mode = name
         self.gameNiceName = nice_name
         self.parent = games_service
 
@@ -49,13 +49,13 @@ class GamesContainer(object):
         self.db = db
         self._logger.debug("Initialized {}".format(nice_name))
 
-        query = self.db.exec_("SELECT description FROM game_featuredMods WHERE gamemod = '%s'" % self.gameTypeName)
+        query = self.db.exec_("SELECT description FROM game_featuredMods WHERE gamemod = '%s'" % self.game_mode)
         if query.size() > 0:
             query.first()
             self.desc = query.value(0)  
 
     def getGamemodVersion(self):
-        tableMod = "updates_" + self.gameTypeName
+        tableMod = "updates_" + self.game_mode
         tableModFiles = tableMod + "_files"
         value = {}
         query = QtSql.QSqlQuery(self.db)

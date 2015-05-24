@@ -91,7 +91,7 @@ class GameService:
         for c, g in self._containers.items():
             modes.append({
                 'command': 'mod_info',
-                'name': g.gameTypeName,
+                'name': g.game_mode,
                 'fullname': g.gameNiceName,
                 'icon': None,
                 'host': g.host,

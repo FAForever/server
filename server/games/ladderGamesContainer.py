@@ -213,7 +213,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         #warn both players
         json = {}
         json["command"] = "game_launch"
-        json["mod"] = self.gameTypeName
+        json["mod"] = self.game_mode
         json["mapname"] = str(map)
         json["reason"] = "ranked"
         json["uid"] = uuid
