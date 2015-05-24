@@ -25,11 +25,13 @@ from server.protocol import QDataStreamProtocol
 from server.servercontext import ServerContext
 from server.player_service import PlayerService
 from server.game_service import GameService
+from server.control import init as run_control_server
 
 __all__ = [
     'run_lobby_server',
     'run_game_server',
     'games',
+    'control',
     'abc',
     'protocol'
 ]

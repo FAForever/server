@@ -94,6 +94,8 @@ if __name__ == '__main__':
         players_online = PlayerService(db_pool)
         games = GameService(players_online, db)
 
+        ctrl_server = loop.run_until_complete(server.run_control_server(loop, players_online, games))
+
         lobby_server = loop.run_until_complete(
             server.run_lobby_server(('', 8001),
                                     players_online,
