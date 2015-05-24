@@ -111,4 +111,3 @@ class GameService:
             game = self._containers[container].findGameByUuid(id)
             if game is not None:
                 return game
-        return None    
