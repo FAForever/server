@@ -217,7 +217,7 @@ class Game(BaseGame):
         self.state = GameState.ENDED
         self._logger.info("Game ended")
         if self.desyncs > 20:
-            self.setInvalid("Too many desyncs")
+            self.mark_invalid("Too many desyncs")
 
         query = QSqlQuery(self.db)
         query.prepare("UPDATE game_stats set `EndTime` = NOW() where `id` = ?")
@@ -364,22 +364,22 @@ class Game(BaseGame):
         General rules for validation of game rankedness
         """
         if self.gameOptions['Victory'] != Victory.DEMORALIZATION and self.gamemod != 'coop':
-            self.setInvalid("Only assassination mode is ranked")
+            self.mark_invalid("Only assassination mode is ranked")
 
         elif self.gameOptions["FogOfWar"] != "explored":
-            self.setInvalid("Fog of war not activated")
+            self.mark_invalid("Fog of war not activated")
 
         elif self.gameOptions["CheatsEnabled"] != "false":
-            self.setInvalid("Cheats were activated")
+            self.mark_invalid("Cheats were activated")
 
         elif self.gameOptions["PrebuiltUnits"] != "Off":
-            self.setInvalid("Prebuilt was activated")
+            self.mark_invalid("Prebuilt was activated")
 
         elif self.gameOptions["NoRushOption"] != "Off":
-            self.setInvalid("No rush games are not ranked")
+            self.mark_invalid("No rush games are not ranked")
 
         elif self.gameOptions["RestrictedCategories"] != 0:
-            self.setInvalid("Restricted games are not ranked")
+            self.mark_invalid("Restricted games are not ranked")
 
     def launch(self):
         """
@@ -408,7 +408,7 @@ class Game(BaseGame):
 
         # What the actual fucking fuck?
         if "thermo" in self.mapName.lower():
-            self.setInvalid("This map is not ranked.")
+            self.mark_invalid("This map is not ranked.")
 
         query = QSqlQuery(self.parent.db)
         # Everyone loves table sacns!
@@ -423,7 +423,7 @@ class Game(BaseGame):
             query.addBindValue(mapId)
             query.exec_()
             if query.size() > 0:
-                self.setInvalid("This map is not ranked.")
+                self.mark_invalid("This map is not ranked.")
 
         # Why can't this be rephrased to use equality?
         queryStr = ("SELECT id FROM game_featuredMods WHERE gamemod LIKE '%s'" % self.gamemod)
@@ -512,7 +512,7 @@ class Game(BaseGame):
     def gamemod(self):
         return self.parent.gameTypeName
 
-    def setInvalid(self, reason):
+    def mark_invalid(self, reason):
         self._logger.info("marked as invalid because: {}".format(reason))
         self.valid = False
         self.invalidReason = reason

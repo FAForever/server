@@ -547,10 +547,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                         if not self.isModRanked(uid):
                             if uid == "e7846e9b-23a4-4b95-ae3a-fb69b289a585":
                                 if not "scca_coop_e02" in self.game.mapName.lower():
-                                    self.game.setInvalid("Sim mods are not ranked")
+                                    self.game.mark_invalid("Sim mods are not ranked")
 
                             else:
-                                self.game.setInvalid("Sim mods are not ranked")
+                                self.game.mark_invalid("Sim mods are not ranked")
 
                         query = QSqlQuery(self.db)
                         query.prepare("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid = ?")
@@ -560,7 +560,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 for player in self.game.players:
                     if player.global_rating[0] < -1000 or \
                        player.ladder_rating[0] < -1000:
-                        self.game.setInvalid("You are playing with a smurfer.")
+                        self.game.mark_invalid("You are playing with a smurfer.")
 
     def _send_create_lobby(self):
         """
