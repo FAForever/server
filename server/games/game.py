@@ -94,6 +94,7 @@ class Game(BaseGame):
         self.parent = parent
         self._player_options = {}
         self.createDate = time.time()
+        self.launched_at = None
         self.receiveUdpHost = False
         self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, uuid))
         self.uuid = uuid
@@ -397,6 +398,7 @@ class Game(BaseGame):
         :return: None
         """
         assert self.state == GameState.LOBBY
+        self.launched_at = time.time()
         self._players = self.players
         self.state = GameState.LIVE
         self._logger.info("Game launched")

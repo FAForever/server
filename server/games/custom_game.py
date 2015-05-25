@@ -33,7 +33,7 @@ class CustomGame(Game):
   
     def rate_game(self):
         limit = len(self.players) * 60
-        if time.time() - self.createDate < limit:
+        if time.time() - self.launched_at < limit:
             self.mark_invalid("Score are invalid: Play time was not long enough (under %i seconds)" % limit)
         if self.valid:
             new_ratings = self.compute_rating()
