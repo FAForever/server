@@ -87,6 +87,11 @@ class GameService:
             games += g.games
         return games
 
+    def remove_game(self, game: Game):
+        for c, g in self._containers.items():
+            if game in g.games:
+                g.games.remove(game)
+
     def all_game_modes(self):
         modes = []
         for c, g in self._containers.items():

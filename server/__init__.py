@@ -6,6 +6,8 @@ Copyright (c) 2015 Michael Søndergaard <sheeo@sheeo.dk>
 
 Distributed under GPLv3, see license.txt
 """
+from server.games.game import GameState
+
 __version__ = '0.1'
 __author__ = 'Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard'
 __contact__ = 'admin@faforever.com'
@@ -62,6 +64,9 @@ def run_lobby_server(address: (str, int),
             return QDataStreamProtocol.pack_block(
                 QDataStreamProtocol.pack_qstring(ujson.dumps(game.to_dict()))
             )
+        for game in dirties:
+            if game.state == GameState.ENDED:
+                games.remove_game(game)
         message = b''.join(map(encode, dirties))
         if len(message) > 0:
             ctx.broadcast_raw(message, validate_fn=lambda lobby_conn: lobby_conn.loginDone)
