@@ -64,8 +64,16 @@ class Game(BaseGame):
     """
     init_mode = InitMode.NORMAL_LOBBY
 
-    def __init__(self, uuid, parent, host=None, hostId=0, hostIp=None, hostLocalIp=None, hostPort=6112,
-                 name='None', map='SCMP_007', mode=0, minPlayer=1):
+    def __init__(self, uuid, parent,
+                 host=None,
+                 hostId=0,
+                 hostIp=None,
+                 hostLocalIp=None,
+                 hostPort=6112,
+                 name='None',
+                 map='SCMP_007',
+                 mode=0,
+                 minPlayer=1):
         """
         Initializes a new game
         :type uuid int
@@ -510,7 +518,7 @@ class Game(BaseGame):
 
     @property
     def gamemod(self):
-        return self.parent.gameTypeName
+        return self.parent.game_mode
 
     def mark_invalid(self, reason):
         self._logger.info("marked as invalid because: {}".format(reason))
