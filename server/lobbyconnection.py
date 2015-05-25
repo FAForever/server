@@ -626,7 +626,7 @@ Thanks,\n\
 
     @timed()
     def send_game_list(self):
-        self.protocol.send_messages([game.to_dict() for game in self.games.all_games()])
+        self.protocol.send_messages([game.to_dict() for game in self.games.active_games])
 
     @timed()
     def sendReply(self, action, *args, **kwargs):

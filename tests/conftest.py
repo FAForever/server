@@ -7,6 +7,7 @@ these should be put in the ``conftest.py'' relative to it.
 """
 
 import asyncio
+
 import logging
 import os
 import sys
@@ -14,7 +15,7 @@ import sys
 from PySide.QtCore import QCoreApplication
 import aiomysql
 import pytest
-import mock
+from unittest import mock
 from PySide import QtCore, QtSql
 from trueskill import Rating
 

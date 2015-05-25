@@ -80,7 +80,8 @@ class GameService:
             return self._containers[name]
         return None
 
-    def all_games(self):
+    @property
+    def active_games(self):
         games = []
         for c, g in self._containers.items():
             games += g.games

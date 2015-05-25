@@ -337,7 +337,7 @@ def test_send_game_list(mocker, fa_server_thread):
     protocol = mocker.patch.object(fa_server_thread, 'protocol')
     games = mocker.patch.object(fa_server_thread, 'games')
     game1, game2 = mock.create_autospec(Game(42, mock.Mock())), mock.create_autospec(Game(22, mock.Mock()))
-    games.all_games.return_value = [game1, game2]
+    games.active_games = [game1, game2]
 
     fa_server_thread.send_game_list()
 

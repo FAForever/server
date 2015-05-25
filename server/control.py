@@ -15,7 +15,7 @@ def make_handler(player_service: PlayerService, game_service: GameService):
         body = """
 Current amount of users: {}
 Current amount of games: {}
-    """.format(len(player_service.players), len(game_service.all_games()))
+    """.format(len(player_service.players), len(game_service.active_games))
         return web.Response(body=body.encode('utf-8'))
     return handler
 

@@ -29,7 +29,7 @@ def test_all_games(players, db):
                                mapname='SCMP_007',
                                password=None,
                                version=None)
-    assert game in service.all_games()
+    assert game in service.active_games
 
 def test_all_game_modes(players, db):
     service = GameService(players, db)
