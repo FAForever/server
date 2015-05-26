@@ -20,6 +20,7 @@ from server import games
 from server.decorators import with_logger
 
 from server.games.game import Game
+from server.players import Player
 
 
 @with_logger
@@ -38,6 +39,9 @@ class GameService:
     def dirty_games(self):
         return self._dirty_games
 
+    def mark_dirty(self, game):
+        self._dirty_games.add(game)
+
     def clear_dirty(self):
         self._dirty_games = set()
 
@@ -49,13 +53,16 @@ class GameService:
                                                games_service=self)
 
     def create_game(self,
-                    visibility='public',
-                    game_mode=None,
-                    host=None,
-                    name=None,
-                    mapname=None,
-                    password=None,
+                    visibility: str='public',
+                    game_mode: str=None,
+                    host: Player=None,
+                    name: str=None,
+                    mapname: str=None,
+                    password: str=None,
                     version=None):
+        """
+        Main entrypoint for creating new games
+        """
         if game_mode not in self._containers:
             raise KeyError("Unknown gamemode: {}".format(game_mode))
         game = self._containers[game_mode].addBasicGame(host, name)
@@ -71,9 +78,6 @@ class GameService:
 
         self.mark_dirty(game)
         return game
-
-    def mark_dirty(self, game):
-        self._dirty_games.add(game)
 
     def getContainer(self, name):
         if name in self._containers:
