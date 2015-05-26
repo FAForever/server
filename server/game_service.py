@@ -65,11 +65,14 @@ class GameService:
         """
         if game_mode not in self._containers:
             raise KeyError("Unknown gamemode: {}".format(game_mode))
-        game = self._containers[game_mode].addBasicGame(host, name)
+        try:
+            game = self._containers[game_mode].addBasicGame(host, name)
+        except AttributeError:
+            raise ValueError('Container {} cannot be used this way'.format(game_mode))
         if not game:
             raise ValueError('Container {} refused to make game: {}'.format(game_mode, game))
 
-        game.setGameMap(mapname)
+        game.mapName = mapname
         game.access = visibility
         game.version = version
 
