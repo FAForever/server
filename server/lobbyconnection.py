@@ -110,35 +110,6 @@ class LobbyConnection(QObject):
             self._logger.warning("aborting socket")
             self.abort()
 
-    @timed()
-    def hostGame(self, access, gameName, version, port=6112, mod="faf", map='SCMP_007', password=None):
-        assert isinstance(self.player, Player)
-        if self.player.in_game:
-            self.sendJSON(dict(command="notice", style="error", text="You are already in a game"))
-            return
-
-        game = self.games.create_game(**{
-            'visibility': access,
-            'game_mode': mod.lower(),
-            'host': self.player,
-            'name': gameName if gameName else self.player.login,
-            'mapname': map,
-            'password': password,
-            'version': None
-        })
-
-        self.player.action = "HOST"
-        self.player.wantToConnectToGame = True
-        self.player.game = game
-        self.player.setGamePort(port)
-        self.player.localGamePort = port
-
-        self.sendJSON({"command": "game_launch",
-                      "mod": mod,
-                      "uid": game.uuid,
-                      "version": version,
-                      "args": ["/numgames " + str(self.player.numGames)]})
-
     @asyncio.coroutine
     def on_message_received(self, message):
         """
@@ -1660,8 +1631,10 @@ Thanks,\n\
 
     @timed()
     def command_game_host(self, message):
+        assert isinstance(self.player, Player)
+
         title = cgi.escape(message.get('title', ''))
-        gameport = message.get('gameport')
+        port = message.get('gameport')
         access = message.get('access')
         mod = message.get('mod')
         version = message.get('version')
@@ -1671,11 +1644,34 @@ Thanks,\n\
             self.sendJSON(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
             return
 
+        if self.player.in_game:
+            self.sendJSON(dict(command="notice", style="error", text="You are already in a game"))
+            return
+
         mapname = message.get('mapname')
         password = message.get('password')
 
-        self.hostGame(access, title, version, gameport, mod, mapname, password)
+        game = self.games.create_game(**{
+            'visibility': access,
+            'game_mode': mod.lower(),
+            'host': self.player,
+            'name': title if title else self.player.login,
+            'mapname': mapname,
+            'password': password,
+            'version': None
+        })
 
+        self.player.action = "HOST"
+        self.player.wantToConnectToGame = True
+        self.player.game = game
+        self.player.setGamePort(port)
+        self.player.localGamePort = port
+
+        self.sendJSON({"command": "game_launch",
+                       "mod": mod,
+                       "uid": game.uuid,
+                       "version": version,
+                       "args": ["/numgames " + str(self.player.numGames)]})
 
     def command_modvault(self, message):
         type = message["type"]
