@@ -93,6 +93,7 @@ class GamesContainer(object):
         ngame = Game(self.createUuid(player.id), self)
         ngame.host = player
         ngame.name = name
+        ngame.game_mode = self.game_mode
         self.games.append(ngame)
         return ngame
 

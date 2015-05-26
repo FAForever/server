@@ -181,7 +181,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         map = self.getMapName(mapChosen)
 
         ngame = Ladder1V1Game(gameUuid, self)
-
+        ngame.game_mode = self.game_mode
         uuid = ngame.uuid
 
         player1.setGame(uuid)

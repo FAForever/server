@@ -111,36 +111,6 @@ class LobbyConnection(QObject):
             self.abort()
 
     @timed()
-    def joinGame(self, uuid, port=6112, password=None):
-        assert isinstance(self.player, Player)
-        self._logger.debug("joinGame: {}:{} with pw: {}".format(uuid, port, password))
-        game = self.games.find_by_id(uuid)
-        self._logger.debug("joinGame resolved: {}".format(game))
-
-        if not game or game.state != GameState.LOBBY:
-            return
-
-        if game.password != password:
-            self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
-            return
-
-        self.player.setAction("JOIN")
-        self.player.wantToConnectToGame = True
-        self.player.setGamePort(port)
-        self.player.localGamePort = port
-        self.player.game = game
-
-        response = {"command": "game_launch",
-                    "mod": game.gamemod,
-                    "uid": uuid,
-                    "args": ["/numgames " + str(self.player.numGames)]}
-
-        if len(game.mods) > 0:
-            response["sim_mods"] = game.mods
-
-        self.sendJSON(response)
-
-    @timed()
     def hostGame(self, access, gameName, version, port=6112, mod="faf", map='SCMP_007', password=None):
         assert isinstance(self.player, Player)
         if self.player.in_game:
@@ -1522,15 +1492,40 @@ Thanks,\n\
         """
         We are going to join a game.
         """
+        assert isinstance(self.player, Player)
 
         uuid = message['uid']
-        gameport = message['gameport']
+        port = message['gameport']
+        password = message.get('password', None)
 
-        password = None
-        if "password" in message:
-            password = message['password']
+        self._logger.debug("joining: {}:{} with pw: {}".format(uuid, port, password))
+        game = self.games.find_by_id(uuid)
+        self._logger.debug("game found: {}".format(game))
 
-        self.joinGame(uuid, gameport, password)
+        if not game or game.state != GameState.LOBBY:
+            self._logger.debug("Game not in lobby state: {}".format(game))
+            self.sendJSON(dict(command="notice", style="info", text="The game you are trying to join is not ready."))
+            return
+
+        if game.password != password:
+            self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
+            return
+
+        self.player.setAction("JOIN")
+        self.player.wantToConnectToGame = True
+        self.player.setGamePort(port)
+        self.player.localGamePort = port
+        self.player.game = game
+
+        response = {"command": "game_launch",
+                    "mod": game.game_mode,
+                    "uid": uuid,
+                    "args": ["/numgames " + str(self.player.numGames)]}
+
+        if len(game.mods) > 0:
+            response["sim_mods"] = game.mods
+
+        self.sendJSON(response)
 
     def check_cheaters(self):
         """ When someone is cancelling a ladder game on purpose..."""

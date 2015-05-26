@@ -128,6 +128,7 @@ class Game(BaseGame):
         self.gameScore = {}
         self.gameResult = {}
         self.gameFaResult = {}
+        self.game_mode = 'faf'
         self.playerFaction = {}
         self.playerColor = {}
         self.state = GameState.INITIALIZING

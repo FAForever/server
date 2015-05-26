@@ -2,7 +2,7 @@ from PySide import QtNetwork
 
 import pytest
 from unittest import mock
-from server import ServerContext, QDataStreamProtocol
+from server import ServerContext, QDataStreamProtocol, GameState
 
 from server.game_service import GameService
 from server.games import Game
@@ -77,10 +77,10 @@ def fa_server_thread(mock_context, mock_protocol, mock_games, mock_players, mock
     return lc
 
 
-def test_command_game_host_calls_host_game(fa_server_thread,
-                                           mock_games,
-                                           test_game_info,
-                                           players):
+def test_command_game_host_creates_game(fa_server_thread,
+                                        mock_games,
+                                        test_game_info,
+                                        players):
     fa_server_thread.player = players.hosting
     players.hosting.in_game = False
     fa_server_thread.protocol = mock.Mock()
@@ -96,6 +96,30 @@ def test_command_game_host_calls_host_game(fa_server_thread,
     }
     mock_games.create_game\
         .assert_called_with(**expected_call)
+
+def test_command_game_join_calls_join_game(mocker,
+                                           fa_server_thread,
+                                           mock_games,
+                                           test_game_info,
+                                           players):
+    mock_protocol = mocker.patch.object(fa_server_thread, 'protocol')
+    game = mock.create_autospec(Game(42, mock_games))
+    game.state = GameState.LOBBY
+    game.password = None
+    game.game_mode = 'faf'
+    mock_games.find_by_id.return_value = game
+    fa_server_thread.player = players.hosting
+    players.hosting.in_game = False
+    test_game_info['uid'] = 42
+
+    fa_server_thread.command_game_join(test_game_info)
+    expected_reply = {
+        'command': 'game_launch',
+        'mod': 'faf',
+        'uid': 42,
+        'args': ['/numgames {}'.format(players.hosting.numGames)]
+    }
+    mock_protocol.send_message.assert_called_with(expected_reply)
 
 
 def test_command_game_host_calls_host_game_invalid_title(fa_server_thread,
