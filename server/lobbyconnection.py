@@ -44,6 +44,7 @@ from server.games.game import GameState
 from server.players import *
 from .game_service import GameService
 from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS
+import config
 from config import Config
 from server.protocol import QDataStreamProtocol
 
@@ -596,7 +597,6 @@ Thanks,\n\
         if state == "on":
             if self.player.getAction() == "NOTHING":
                 self.player.setAction("FA_LAUNCHED")
-            pass
         else:
             self.player.setAction("NOTHING")
 
@@ -739,11 +739,12 @@ Thanks,\n\
 
             player = self.players.findByName(who)
             if player:
+                self._logger.info('Administrative action: {} closed game for {}'.format(self.player, player))
                 player.lobbyThread.sendJSON(dict(command="notice", style="info",
-                                   text="Your game was closed by an administrator ({admin_name})."
-                                        + "Please refer to our rules for the lobby/game here {rule_link}."
+                                   text=("Your game was closed by an administrator ({admin_name}). "
+                                         "Please refer to our rules for the lobby/game here {rule_link}."
                                    .format(admin_name=self.player.login,
-                                           rule_link=Config['lobbyconnection']['rule_link'])))
+                                           rule_link=config.RULE_LINK))))
                 player.lobbyThread.sendJSON(dict(command="notice", style="kill"))
 
         elif action == "join_channel" and self.player.mod:
@@ -760,11 +761,12 @@ Thanks,\n\
 
             player = self.players.findByName(who)
             if player:
+                self._logger.info('Administrative action: {} closed game for {}'.format(self.player, player))
                 player.lobbyThread.sendJSON(dict(command="notice", style="info",
-                                   text="Your client was closed by an administrator ({admin_name})."
-                                        + "Please refer to our rules for the lobby/game here {rule_link}."
+                                   text=("Your client was closed by an administrator ({admin_name}). "
+                                         "Please refer to our rules for the lobby/game here {rule_link}."
                                    .format(admin_name=self.player.login,
-                                           rule_link=Config['lobbyconnection']['rule_link'])))
+                                           rule_link=config.RULE_LINK))))
                 player.lobbyThread.sendJSON(dict(command="notice", style="kick"))
                 player.lobbyThread.abort()
 
@@ -790,7 +792,6 @@ Thanks,\n\
             query.addBindValue(idavatar)
             query.exec_()
 
-
         elif action == "list_avatar_users" and self.player.admin:
             avatar = message['avatar']
             if avatar is not None:
@@ -808,8 +809,6 @@ Thanks,\n\
 
             jsonToSend = {"command": "admin", "player_avatar_list": avatarList, "avatar_id": avatarid}
             self.sendJSON(jsonToSend)
-
-
 
         elif action == "add_avatar" and self.player.admin:
             who = message['user']
@@ -836,7 +835,6 @@ Thanks,\n\
             login = message['login'].strip()
             password = message['password']
             uniqueIdCoded = message['unique_id']
-            uniqueId = None
             oldsession = message.get('session', None)
 
             try:

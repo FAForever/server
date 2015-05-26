@@ -394,6 +394,59 @@ def test_send_mod_list(mocker, fa_server_thread, mock_games):
 
     protocol.send_messages.assert_called_with(mock_games.all_game_modes())
 
+def test_command_admin_closelobby(mocker, fa_server_thread):
+    mocker.patch.object(fa_server_thread, 'protocol')
+    mocker.patch.object(fa_server_thread, '_logger')
+    config = mocker.patch('server.lobbyconnection.config')
+    player = mocker.patch.object(fa_server_thread, 'player')
+    players = mocker.patch.object(fa_server_thread, 'players')
+    player.login = 'Sheeo'
+    tuna = mock.Mock()
+    players.findByName.return_value = tuna
+
+    fa_server_thread.command_admin({
+        'command': 'admin',
+        'action': 'closelobby',
+        'user': 'Totaltuna'
+    })
+
+    fa_server_thread._logger.info.assert_called_with('Administrative action: {} closed game for {}'.format(player, tuna))
+    tuna.lobbyThread.sendJSON.assert_any_call(dict(
+        command='notice',
+        style='info',
+        text=("Your client was closed by an administrator (Sheeo). "
+              "Please refer to our rules for the lobby/game here {rule_link}."
+              .format(rule_link=config.RULE_LINK))
+    ))
+
+def test_command_admin_closeFA(mocker, fa_server_thread):
+    mocker.patch.object(fa_server_thread, 'protocol')
+    mocker.patch.object(fa_server_thread, '_logger')
+    config = mocker.patch('server.lobbyconnection.config')
+    player = mocker.patch.object(fa_server_thread, 'player')
+    players = mocker.patch.object(fa_server_thread, 'players')
+    player.login = 'Sheeo'
+    player.id = 42
+    tuna = mock.Mock()
+    tuna.login = 'Totaltuna'
+    tuna.id = 55
+    players.findByName.return_value = tuna
+
+    fa_server_thread.command_admin({
+        'command': 'admin',
+        'action': 'closeFA',
+        'user': 'Totaltuna'
+    })
+
+    fa_server_thread._logger.info.assert_called_with('Administrative action: {} closed game for {}'.format(player, tuna))
+    tuna.lobbyThread.sendJSON.assert_any_call(dict(
+        command='notice',
+        style='info',
+        text=("Your game was closed by an administrator (Sheeo). "
+              "Please refer to our rules for the lobby/game here {rule_link}."
+              .format(rule_link=config.RULE_LINK))
+    ))
+
 
 def test_send_tutorial_section(mocker, fa_server_thread):
     query = mocker.patch('server.lobbyconnection.QSqlQuery').return_value
