@@ -1793,14 +1793,13 @@ Thanks,\n\
             self._logger.exception(ex)
 
     def on_connection_lost(self):
-        if self.player:
-            query = QSqlQuery(self.db)
-            query.prepare("UPDATE login SET session = NULL WHERE id = ?")
-            query.addBindValue(self.player.id)
-            query.exec_()
+        query = QSqlQuery(self.db)
+        query.prepare("UPDATE login SET session = NULL WHERE id = ?")
+        query.addBindValue(self.player.id)
+        query.exec_()
 
-            for player in self.players.players:
-                if player.lobbyThread:
-                    player.lobbyThread.removePotentialPlayer(self.player.login)
-            self.players.remove_player(self.player)
+        for player in self.players.players:
+            if player.lobbyThread:
+                player.lobbyThread.removePotentialPlayer(self.player.login)
+        self.players.remove_player(self.player)
 
