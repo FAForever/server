@@ -1,7 +1,0 @@
-#!/bin/bash
-set -e
-
-echo -e "\n--- Install Python Dependencies ---\n"
-apt-get -y install python3-pip python3-pyside
-pip3 install -r /vagrant/requirements.txt
-export QUAMASH_QTIMPL=PySide
