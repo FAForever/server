@@ -115,7 +115,7 @@ class GameService:
             })
         return modes
 
-    def find_by_id(self, id):
+    def find_by_id(self, id: int):
         """
         Look up a game by ID
         :rtype: Game

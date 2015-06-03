@@ -16,7 +16,7 @@ def game(db):
     return Game(42, mock_parent)
 
 
-def test_initialization(game):
+def test_initialization(game: Game):
     assert game.state == GameState.INITIALIZING
 
 
