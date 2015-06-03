@@ -1,10 +1,10 @@
 import logging
 from unittest import mock
-from unittest.mock import patch, call
+from unittest.mock import patch
 
 import pytest
-from trueskill import Rating
 
+from trueskill import Rating
 from server.games.game import Game, GameState, GameError
 from server.gameconnection import GameConnection, GameConnectionState
 
