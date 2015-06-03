@@ -71,8 +71,7 @@ class LobbyConnection(QObject):
         self.season = LADDER_SEASON
         self.ladderPotentialPlayers = []
         self.warned = False
-        self.loginDone = False
-        self.initTimer = None
+        self._authenticated = False
         self.privkey = PRIVATE_KEY
         self.noSocket = False
         self.readingSocket = False
@@ -97,19 +96,11 @@ class LobbyConnection(QObject):
     def on_connection_made(self, protocol: QDataStreamProtocol, peername: (str, int)):
         self.protocol = protocol
         self.ip, self.port = peername
-        self.loop.call_later(5, self.initNotDone)
 
     def abort(self):
-        self.loginDone = False
+        self._authenticated = False
         self.protocol.writer.write_eof()
         self.protocol.reader.feed_eof()
-
-    @timed()
-    def initNotDone(self):
-        if not self.loginDone:
-            self._logger.warning("Init not done for this IP: {}".format(self.ip))
-            self._logger.warning("aborting socket")
-            self.abort()
 
     @asyncio.coroutine
     def on_message_received(self, message):
@@ -120,6 +111,9 @@ class LobbyConnection(QObject):
             cmd = message['command']
             if not isinstance(cmd, str):
                 raise ValueError("Command is not a string")
+            if not self._authenticated:
+                if cmd not in ['hello', 'ask_session', 'create_account', 'ping', 'pong']:
+                    self.abort()
             handler = getattr(self, 'command_{}'.format(cmd))
             if asyncio.iscoroutinefunction(handler):
                 yield from handler(message)
@@ -879,7 +873,7 @@ Thanks,\n\
                 else:
                     player_id, validated, self.email, self.steamChecked, session = yield from cursor.fetchone()
 
-                self.loginDone = True
+                self._authenticated = True
 
             if validated == 0:
                 validate_account_url = "{}faf/validateAccount.php".format(Config['app_url'])
@@ -1311,15 +1305,8 @@ Thanks,\n\
 
     @timed
     def command_ask_session(self, message):
-        #self.log.debug("asking session")
         jsonToSend = {"command": "welcome", "session": self.session}
-
-        if self.initTimer:
-            self.initTimer.stop()
-            self.initTimer = None
-
         self.sendJSON(jsonToSend)
-        #self.log.debug("asking session done")
 
     @timed
     def sendModFiles(self, mod):
