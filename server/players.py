@@ -215,7 +215,7 @@ class Player(BasePlayer):
             ('ladder_rating_mean', self.ladder_rating[0]),
             ('ladder_rating_deviation', self.ladder_rating[1]),
             ('number_of_games', self.numGames),
-            ('avatar', self.avatar),
+            ('avatar', self.avatar or ''),
             ('league', self.leagueInfo),
             ('country', self.country),
             ('clan', self.clan)
