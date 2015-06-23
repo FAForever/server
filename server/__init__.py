@@ -12,7 +12,7 @@ __version__ = '0.1'
 __author__ = 'Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard'
 __contact__ = 'admin@faforever.com'
 __license__ = 'GPLv3'
-__copyright__ = 'Copyright (c) 2011-2015' + __author__
+__copyright__ = 'Copyright (c) 2011-2015 ' + __author__
 
 import asyncio
 from asyncio import AbstractEventLoop
