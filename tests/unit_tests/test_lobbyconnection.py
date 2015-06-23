@@ -43,13 +43,6 @@ def test_game_info_invalid():
 def mock_player():
     return mock.create_autospec(Player(login='Dummy', uuid=42))
 
-@pytest.fixture(scope='function')
-def connected_socket():
-    sock = mock.Mock(spec=QtNetwork.QTcpSocket)
-    sock.state = mock.Mock(return_value=3)
-    sock.isValid = mock.Mock(return_value=True)
-    return sock
-
 @pytest.fixture
 def mock_context():
     return mock.create_autospec(ServerContext(lambda: None))
