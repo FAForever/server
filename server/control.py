@@ -18,8 +18,8 @@ Users ({}):
 Games ({}):
 {}
     """.format(len(player_service.players),
-               len(game_service.active_games),
                player_service.players,
+               len(game_service.active_games),
                game_service.active_games)
         return web.Response(body=body.encode('utf-8'))
     return handler
