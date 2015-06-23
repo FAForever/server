@@ -72,5 +72,6 @@ def test_serialize():
                     "ladder_rating_mean": 1500,
                     "ladder_rating_deviation": 230,
                     "number_of_games": 542,
+                    "avatar": '',
                     "clan": 'TOAST'
     }
