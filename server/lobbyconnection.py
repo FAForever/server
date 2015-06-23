@@ -1160,8 +1160,6 @@ Thanks,\n\
 
             gameSocket, lobbySocket = self.players.addUser(self.player)
 
-            self._logger.debug("Closing users")
-
             if gameSocket is not None:
                 gameSocket.abort()
 
