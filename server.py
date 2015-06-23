@@ -22,7 +22,7 @@ from quamash import QEventLoop
 from PySide import QtSql, QtCore
 from PySide.QtCore import QTimer
 
-from passwords import PRIVATE_KEY, DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
+from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
 from server.game_service import GameService
 from server.player_service import PlayerService
 import config
@@ -56,7 +56,6 @@ if __name__ == '__main__':
         rootlogger.addHandler(logHandler)
         rootlogger.setLevel(config.LOG_LEVEL)
 
-
         if args['--nodb']:
             from unittest import mock
             db = mock.Mock()
@@ -70,8 +69,6 @@ if __name__ == '__main__':
             db.setPassword(DB_PASSWORD)
             db.setConnectOptions("MYSQL_OPT_RECONNECT=1")
 
-        privkey = PRIVATE_KEY
-
         if not db.open():
             logger.error(db.lastError().text())
             sys.exit(1)
@@ -79,6 +76,7 @@ if __name__ == '__main__':
         # Make sure we can shutdown gracefully
         signal.signal(signal.SIGTERM, signal_handler)
         signal.signal(signal.SIGINT, signal_handler)
+
         def poll_signal():
             pass
         timer = QTimer()
