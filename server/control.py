@@ -13,9 +13,14 @@ def make_handler(player_service: PlayerService, game_service: GameService):
     @asyncio.coroutine
     def handler(request):
         body = """
-Current amount of users: {}
-Current amount of games: {}
-    """.format(len(player_service.players), len(game_service.active_games))
+Users ({}):
+{}
+Games ({}):
+{}
+    """.format(len(player_service.players),
+               len(game_service.active_games),
+               player_service.players,
+               game_service.active_games)
         return web.Response(body=body.encode('utf-8'))
     return handler
 
@@ -28,5 +33,5 @@ def init(loop, player_service, game_service):
     app.router.add_route('GET', '/', make_handler(player_service, game_service))
 
     srv = yield from loop.create_server(app.make_handler(), '127.0.0.1', '4040')
-    logger.info("Control server listening oo http://127.0.0.1:4040")
+    logger.info("Control server listening on http://127.0.0.1:4040")
     return srv
