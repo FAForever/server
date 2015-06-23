@@ -71,7 +71,7 @@ class GameService:
             raise ValueError('Container {} cannot be used this way'.format(game_mode))
         if not game:
             raise ValueError('Container {} refused to make game: {}'.format(game_mode, game))
-
+        self._logger.info("{} created in {} container".format(game, game_mode))
         game.mapName = mapname
         game.access = visibility
         game.version = version
