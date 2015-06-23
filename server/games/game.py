@@ -645,4 +645,4 @@ class Game(BaseGame):
         return self.id.__hash__()
 
     def __str__(self):
-        return "Game({})".format(self.uuid)
+        return "Game({},{},{},{})".format(self.uuid, self.host.login if self.host else '', self.mapName, len(self.players))
