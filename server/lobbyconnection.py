@@ -92,6 +92,10 @@ class LobbyConnection(QObject):
         self.protocol = None
         self._logger.debug("LobbyConnection initialized")
 
+    @property
+    def authenticated(self):
+        return self._authenticated
+
     @asyncio.coroutine
     def on_connection_made(self, protocol: QDataStreamProtocol, peername: (str, int)):
         self.protocol = protocol

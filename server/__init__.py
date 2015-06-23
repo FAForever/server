@@ -69,7 +69,7 @@ def run_lobby_server(address: (str, int),
                 games.remove_game(game)
         message = b''.join(map(encode, dirties))
         if len(message) > 0:
-            ctx.broadcast_raw(message, validate_fn=lambda lobby_conn: lobby_conn.loginDone)
+            ctx.broadcast_raw(message, validate_fn=lambda lobby_conn: lobby_conn.authenticated)
         loop.call_later(5, report_dirty_games)
 
     def ping_broadcast():
