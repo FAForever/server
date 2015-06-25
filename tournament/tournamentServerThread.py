@@ -191,8 +191,8 @@ class tournamentServerThread(QObject):
         data_string = ""
         try :
             data_string = json.dumps(data_dictionary)
-        except :
-            self.log.warning("wrong data")
+        except Exception as ex:
+            self.log.exception(ex)
             self.socket.abort()
             return
 
