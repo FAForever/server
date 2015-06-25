@@ -8,22 +8,7 @@ master|develop
 [![Coverage Status](https://coveralls.io/repos/FAForever/server/badge.png?branch=master)](https://coveralls.io/r/FAForever/server?branch=master) | [![Coverage Status](https://coveralls.io/repos/FAForever/server/badge.png?branch=develop)](https://coveralls.io/r/FAForever/server?branch=develop)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/FAForever/server/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/FAForever/server/?branch=master) | [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/FAForever/server/badges/quality-score.png?b=develop)](https://scrutinizer-ci.com/g/FAForever/server/?branch=develop)
 
-## Installation - Automatic
-
-To setup the development environment automatic we use Vagrant and a VM.
-
-1. Install Vagrant: http://www.vagrantup.com/downloads
-2. Install VirtualBox: https://www.virtualbox.org/wiki/Downloads
-3. Clone this repository
-4. Open the command console and navigate to folder of this repository (check with `ls` or `dir` that `Vagrantfile` is present)
-5. Run `vagrant up`
-
-To login the vm use `vagrant ssh`.
-To shutdown the vm use `vagrant halt`.
-You find the data under `/vagrant` in the VM.
-This folder is autmatically synced from host to guest and back.
-
-## Installation - Manual
+## Installation
 
 Install Python 3.4 or later. Pre-requisites are listed in `requirements.txt`,
 install using `pip install -r requirements.txt`.
