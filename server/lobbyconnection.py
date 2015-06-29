@@ -88,7 +88,7 @@ class LobbyConnection(QObject):
         self.email = None
         self.ip = None
         self.port = None
-        self.session = int(random.getrandbits(16))
+        self.session = int(random.getrandbits(10))
         self.protocol = None
         self._logger.debug("LobbyConnection initialized")
 
