@@ -349,21 +349,22 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         (done, pending) = yield from asyncio.wait([own_addr, remote_addr])
         assert len(pending) == 0
         assert len(done) == 2
-        if own_addr.result() is not None:
+        own_addr, remote_addr = own_addr.result(), remote_addr.result()
+        if own_addr is not None:
             # Remote received our packet, we didn't receive theirs
             # Instruct remote to try our new address
             remote_addr = yield from peer.ProbePeerNAT(self, use_address=own_addr.result())
-        elif remote_addr.result() is not None:
+        elif remote_addr is not None:
             # Opposite of the above
             own_addr = yield from self.ProbePeerNAT(peer, use_address=remote_addr.result())
-        return own_addr.result(), remote_addr.result()
+        return own_addr, remote_addr
 
     @asyncio.coroutine
     def ProbePeerNAT(self, peer, use_address=None):
         """
         Instruct self to send an identifiable nat packet to peer
 
-        :return: (self, peer, resolved_address)
+        :return: resolved_address
         """
         nat_message = "Hello from {}".format(self.player.id)
         addr = peer.connectivity_state.result()[0] if not use_address else use_address
