@@ -1,10 +1,9 @@
+from collections import namedtuple
 from concurrent.futures import CancelledError, TimeoutError
 import asyncio
 import logging
 from enum import Enum
 import socket
-
-from PySide.QtNetwork import QUdpSocket, QHostAddress
 
 import config
 from .decorators import with_logger
@@ -13,7 +12,7 @@ from .decorators import with_logger
 logger = logging.getLogger(__name__)
 
 
-class Connectivity(Enum):
+class ConnectivityState(Enum):
     """
     Describes the connectivity level of a peer
     Three levels are defined:
@@ -29,6 +28,7 @@ class Connectivity(Enum):
     STUN = "STUN"
     PROXY = "PROXY"
 
+Connectivity = namedtuple('Connectivity', ['addr', 'state'])
 
 def send_natpacket(addr, message):
     logger.debug("UDP(%s,%s)>>: %s" % (addr[0], addr[1], message))
@@ -69,16 +69,22 @@ class TestPeer:
 
     @asyncio.coroutine
     def determine_connectivity(self):
+        """
+        Determine connectivity of peer
+
+        :return: Connectivity(addr, ConnectivityState)
+        """
         try:
             if (yield from self.test_public()):
-                return Connectivity.PUBLIC
-            elif (yield from self.test_stun()):
-                return Connectivity.STUN
+                return Connectivity(addr="{}:{}".format(*self.remote_addr), state=ConnectivityState.PUBLIC)
+            addr = yield from self.test_stun()
+            if addr:
+                return Connectivity(addr=addr, state=ConnectivityState.STUN)
             else:
-                return Connectivity.PROXY
+                return Connectivity(addr="{}:{}".format(*self.remote_addr), state=ConnectivityState.PROXY)
         except (TimeoutError, CancelledError):
             pass
-        return Connectivity.PROXY
+        return Connectivity(addr=None, state=ConnectivityState.PROXY)
 
     def handle_ProcessNatPacket(self, arguments):
         self._logger.debug("handle_ProcessNatPacket {}".format(arguments))
@@ -112,7 +118,7 @@ class TestPeer:
                                                           "Hello %s" % self.identifier])
             resolution = self.received_server_packet()
             if resolution:
-                self._logger("Resolved client to {}".format(resolution))
+                self._logger.info("Resolved client to {}".format(resolution))
                 return resolution
             yield from asyncio.sleep(0.1)
         return self.received_server_packet()

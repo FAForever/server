@@ -17,7 +17,6 @@
 # -------------------------------------------------------------------------------
 
 import asyncio
-
 from concurrent.futures import CancelledError
 import socket
 import time
@@ -29,7 +28,7 @@ import ujson
 import config
 
 from server.abc.base_game import GameConnectionState
-from server.connectivity import TestPeer, Connectivity
+from server.connectivity import TestPeer, ConnectivityState
 from server.games.game import Game, GameState, Victory
 from server.decorators import with_logger, timed
 from server.game_service import GameService
@@ -250,24 +249,27 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         We determine the connectivity of the peer and respond
         appropriately
         """
-        with TestPeer(self,
-                      self.player.getIp(),
-                      self.player.gamePort,
-                      self.player.id) as peer_test:
-            self._connectivity_state = yield from peer_test.determine_connectivity()
-            self.connectivity_state.set_result(self._connectivity_state)
-            self.send_gpgnet_message('ConnectivityState', [self.player.getId(),
-                                                   self._connectivity_state.value])
+        try:
+            with TestPeer(self,
+                          self.player.getIp(),
+                          self.player.gamePort,
+                          self.player.id) as peer_test:
+                self._connectivity_state = yield from peer_test.determine_connectivity()
+                self.connectivity_state.set_result(self._connectivity_state)
+                self.send_gpgnet_message('ConnectivityState', [self.player.getId(),
+                                                       self._connectivity_state.state.value])
 
-        playeraction = self.player.action
-        if playeraction == "HOST":
-            map = self.game.mapName
-            self.send_HostGame(map)
-        # if the player is joining, we connect him to host.
-        elif playeraction == "JOIN":
-            yield from self.ConnectToHost(self.game.host.game_connection)
-            self._state = GameConnectionState.CONNECTED_TO_HOST
-            self.game.add_game_connection(self)
+            playeraction = self.player.action
+            if playeraction == "HOST":
+                map = self.game.mapName
+                self.send_HostGame(map)
+            # if the player is joining, we connect him to host.
+            elif playeraction == "JOIN":
+                yield from self.ConnectToHost(self.game.host.game_connection)
+                self._state = GameConnectionState.CONNECTED_TO_HOST
+                self.game.add_game_connection(self)
+        except Exception as e:
+            self.log.exception(e)
 
     @asyncio.coroutine
     @timed(limit=0.1)
@@ -299,18 +301,22 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         :return:
         """
         assert peer.player.action == 'HOST'
-        ((own_state, peer_state), _) = yield from asyncio.wait([self.connectivity_state,
-                                                                peer.connectivity_state])
-        own_state, peer_state = own_state.result(), peer_state.result()
-        if peer_state == Connectivity.PUBLIC and own_state == Connectivity.PUBLIC:
+        own_state = self.connectivity_state
+        peer_state = peer.connectivity_state
+        (done, pending) = yield from asyncio.wait([own_state, peer_state])
+        if pending:
+            self._logger.debug("Aborting due to lack of connectivity")
+            self.abort()
+        ((own_addr, own_state), (peer_addr, peer_state)) = own_state.result(), peer_state.result()
+        if peer_state == ConnectivityState.PUBLIC and own_state == ConnectivityState.PUBLIC:
             self._logger.debug("Connecting {} to host {} directly".format(self, peer))
-            self.send_JoinGame(peer.player.address_and_port,
+            self.send_JoinGame(peer_addr,
                                peer.player.login,
                                peer.player.id)
-            peer.send_ConnectToPeer(self.player.address_and_port,
+            peer.send_ConnectToPeer(own_addr,
                                     self.player.login,
                                     self.player.id)
-        elif peer_state == Connectivity.STUN or own_state == Connectivity.STUN:
+        elif peer_state == ConnectivityState.STUN or own_state == ConnectivityState.STUN:
             self._logger.debug("Connecting {} to host {} using STUN".format(self, peer))
             (own_addr, peer_addr) = yield from self.STUN(peer)
             if peer_addr is None or own_addr is None:
@@ -367,7 +373,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         :return: (self, peer, resolved_address)
         """
         nat_message = "Hello from {}".format(self.player.id)
-        addr = peer.player.address_and_port if not use_address else use_address
+        addr = peer.connectivity_state.result()[0] if not use_address else use_address
         self._logger.debug("{} probing {} at {} with msg: {}".format(self, peer, addr, nat_message))
         for _ in range(2):
             self.send_SendNatPacket(addr, nat_message)
@@ -387,8 +393,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         """
         states = [self.connectivity_state, peer2.connectivity_state]
         yield from asyncio.wait(states)
-        if self.connectivity_state == Connectivity.PUBLIC:
-            if peer2.connectivity_state != Connectivity.PROXY:
+        if self.connectivity_state == ConnectivityState.PUBLIC:
+            if peer2.connectivity_state != ConnectivityState.PROXY:
                 peer2.send_ConnectToPeer(self.player.ip, peer2.player.login, peer2.player.id)
 
     @asyncio.coroutine
@@ -647,7 +653,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 s.sendall(ujson.dumps(dict(command="cleanup", sourceip=self.player.ip)).encode())
                 s.close()
             if self.connectivity_state.done()\
-                    and self.connectivity_state.result() == Connectivity.PROXY:
+                    and self.connectivity_state.result() == ConnectivityState.PROXY:
                 wiki_link = "{}index.php?title=Connection_issues_and_solutions".format(config.WIKI_LINK)
                 text = "Your network is not setup right.<br>The server had to make you connect to other players by proxy.<br>Please visit <a href='{}'>{}</a>" + \
                        "to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs,".format(wiki_link, wiki_link)

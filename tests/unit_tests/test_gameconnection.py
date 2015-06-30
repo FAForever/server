@@ -7,11 +7,15 @@ import pytest
 import time
 
 from server import proxy_map
-from server.connectivity import Connectivity
+from server.connectivity import Connectivity, ConnectivityState
 from server.gameconnection import GameConnection
 from server.games import Game
 
 slow = pytest.mark.slow
+
+LOCAL_PUBLIC = Connectivity(addr='127.0.0.1:6112', state=ConnectivityState.PUBLIC)
+LOCAL_STUN = Connectivity(addr='127.0.0.1:6112', state=ConnectivityState.STUN)
+LOCAL_PROXY = Connectivity(addr=None, state=ConnectivityState.PROXY)
 
 @asyncio.coroutine
 def test_on_connection_made_no_player(game_connection):
@@ -140,7 +144,7 @@ def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, pla
     """
     with mock.patch('server.gameconnection.TestPeer') as peer_test:
         fut = asyncio.Future()
-        fut.set_result(Connectivity.PUBLIC)
+        fut.set_result(Connectivity(addr='127.0.0.1:6112', state=ConnectivityState.PUBLIC))
         peer_test().__enter__().determine_connectivity.return_value = fut
         protocol = mock.Mock()
         game_connection.protocol = protocol
@@ -160,7 +164,7 @@ def test_handle_action_GameState_lobby_calls_ConnectToHost(game_connection, loop
     """
     with mock.patch('server.gameconnection.TestPeer') as peer_test:
         fut = asyncio.Future()
-        fut.set_result(Connectivity.PUBLIC)
+        fut.set_result(LOCAL_PUBLIC)
         peer_test().__enter__().determine_connectivity.return_value = fut
         game_connection.send_message = mock.MagicMock()
         game_connection.ConnectToHost = mock.Mock()
@@ -223,7 +227,7 @@ def test_on_connection_lost_proxy_cleanup(game_connection, players):
     game_connection.game.proxy = mock.Mock()
     game_connection.game.proxy.unmap.return_value = True
     game_connection.player = players.hosting
-    game_connection.connectivity_state.set_result(Connectivity.PROXY)
+    game_connection.connectivity_state.set_result(LOCAL_PROXY)
 
     with mock.patch('server.gameconnection.socket') as socket:
         game_connection.on_connection_lost()
@@ -234,8 +238,8 @@ def test_on_connection_lost_proxy_cleanup(game_connection, players):
 
 @asyncio.coroutine
 def test_ConnectToHost_public_public(connections, players):
-    host_conn = connections.make_connection(players.hosting, Connectivity.PUBLIC)
-    peer_conn = connections.make_connection(players.joining, Connectivity.PUBLIC)
+    host_conn = connections.make_connection(players.hosting, LOCAL_PUBLIC)
+    peer_conn = connections.make_connection(players.joining, LOCAL_PUBLIC)
     host_conn.send_ConnectToPeer = mock.Mock()
     peer_conn.send_JoinGame = mock.Mock()
     yield from peer_conn.ConnectToHost(host_conn)
@@ -248,8 +252,8 @@ def test_ConnectToHost_public_public(connections, players):
 
 @asyncio.coroutine
 def test_ConnectToHost_public_stun(loop, connections, players):
-    host_conn = connections.make_connection(players.hosting, Connectivity.PUBLIC)
-    peer_conn = connections.make_connection(players.joining, Connectivity.STUN)
+    host_conn = connections.make_connection(players.hosting, LOCAL_PUBLIC)
+    peer_conn = connections.make_connection(players.joining, LOCAL_STUN)
     host_conn.send_ConnectToPeer = mock.Mock()
     peer_conn.send_SendNatPacket = mock.Mock()
     host_conn.send_SendNatPacket = mock.Mock()
@@ -280,8 +284,8 @@ def test_ConnectToHost_public_stun(loop, connections, players):
 
 @asyncio.coroutine
 def test_ConnectToHost_public_proxy(connections, players):
-    host_conn = connections.make_connection(players.hosting, Connectivity.PUBLIC)
-    peer_conn = connections.make_connection(players.joining, Connectivity.PROXY)
+    host_conn = connections.make_connection(players.hosting, LOCAL_PUBLIC)
+    peer_conn = connections.make_connection(players.joining, LOCAL_PROXY)
     host_conn.send_ConnectToProxy = mock.Mock()
     peer_conn.send_ConnectToProxy = mock.Mock()
     host_conn.game.proxy = proxy_map.ProxyMap()
