@@ -4,7 +4,7 @@ from .decorators import with_logger
 
 
 @with_logger
-class Subscribable():
+class Subscribable:
     """
     Mixin for handling subscriptions to messages.
 
@@ -84,7 +84,7 @@ class Subscribable():
 
 
 @with_logger
-class Subscription():
+class Subscription:
     """
     Tracks a subscription and automatically cancels it if used as a context manager.
 
