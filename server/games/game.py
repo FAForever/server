@@ -170,6 +170,10 @@ class Game(BaseGame):
         return frozenset(result)
 
     @property
+    def connections(self):
+        return self._connections.values()
+
+    @property
     def id(self):
         return self.uuid
 

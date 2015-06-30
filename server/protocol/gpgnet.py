@@ -63,6 +63,16 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
         """
         self.send_gpgnet_message('SendNatPacket', [address_and_port, message])
 
+    def send_DisconnectFromPeer(self, id: int):
+        """
+        Instructs the game to disconnect from the peer given by id
+
+        :param id:
+        :return:
+        """
+        self.send_gpgnet_message('DisconnectFromPeer', [id])
+
+
     def send_Ping(self):
         """
         Heartbeat pinging used between the FAF client and server
