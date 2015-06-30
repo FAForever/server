@@ -332,12 +332,32 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     @asyncio.coroutine
     def STUN(self, peer):
-        results = [
-            asyncio.async(self.ProbePeerNAT(peer)),
-            asyncio.async(peer.ProbePeerNAT(self))
-        ]
-        yield from asyncio.wait(results)
-        return results[0].result(), results[1].result()
+        """
+        Perform a STUN sequence between self and peer
+
+        :param peer:
+        :return: (own_addr, remote_addr) | None
+        """
+        own_addr = asyncio.async(self.ProbePeerNAT(peer))
+        remote_addr = asyncio.async(peer.ProbePeerNAT(self))
+        (done, pending) = yield from asyncio.wait([own_addr, remote_addr])
+        if len(pending) == 2:
+            # Neither peer successfully received a packet
+            return None
+        elif not pending:
+            # Both peers got it on first try
+            return own_addr.result(), remote_addr.result()
+        elif own_addr.result() is not None:
+            # Remote received our packet, we didn't receive theirs
+            # Instruct remote to try our new address
+            remote_addr = yield from peer.ProbePeerNAT(self, use_address=own_addr.result())
+        elif remote_addr.result() is not None:
+            # Opposite of the above
+            own_addr = yield from self.ProbePeerNAT(peer, use_address=remote_addr.result())
+        return own_addr.result(), remote_addr.result()
+
+
+
 
     @asyncio.coroutine
     def ProbePeerNAT(self, peer, use_address=None):
@@ -360,7 +380,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             return None
 
     @asyncio.coroutine
-    def ConnectToPeer(self, peer2: GpgNetServerProtocol):
+    def ConnectToPeer(self, peer2):
         """
         Connect two peers
         :return: None

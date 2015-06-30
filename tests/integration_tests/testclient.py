@@ -93,7 +93,6 @@ class TestGPGClient(QObject):
             if 'key' in msg and msg['key'] == value:
                 return
 
-
     @asyncio.coroutine
     def read_until_eof(self):
         try:
