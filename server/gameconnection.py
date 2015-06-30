@@ -353,10 +353,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         if own_addr is not None:
             # Remote received our packet, we didn't receive theirs
             # Instruct remote to try our new address
-            remote_addr = yield from peer.ProbePeerNAT(self, use_address=own_addr.result())
+            remote_addr = yield from peer.ProbePeerNAT(self, use_address=own_addr)
         elif remote_addr is not None:
             # Opposite of the above
-            own_addr = yield from self.ProbePeerNAT(peer, use_address=remote_addr.result())
+            own_addr = yield from self.ProbePeerNAT(peer, use_address=remote_addr)
         return own_addr, remote_addr
 
     @asyncio.coroutine
