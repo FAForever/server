@@ -81,7 +81,7 @@ class TestPeer:
             if addr:
                 return Connectivity(addr=addr, state=ConnectivityState.STUN)
             else:
-                return Connectivity(addr="{}:{}".format(*self.remote_addr), state=ConnectivityState.PROXY)
+                return Connectivity(addr=None, state=ConnectivityState.PROXY)
         except (TimeoutError, CancelledError):
             pass
         return Connectivity(addr=None, state=ConnectivityState.PROXY)
@@ -106,7 +106,8 @@ class TestPeer:
 
     def received_server_packet(self):
         for packet in self.server_packets:
-            if packet[1] == "Hello {}".format(self.identifier):
+            print(packet)
+            if len(packet) >= 2 and packet[1] == "Hello {}".format(self.identifier):
                 return packet[0]
 
     @asyncio.coroutine

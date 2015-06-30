@@ -24,7 +24,7 @@ def test_TestPeer_tests_stun(loop):
     game_connection = mock.Mock()
     with TestPeer(game_connection, '127.0.0.1', 6112, identifier) as peer_test:
         connectivity = asyncio.async(peer_test.determine_connectivity())
-        peer_test.handle_ProcessServerNatPacket(['Hello {}'.format(identifier)])
+        peer_test.handle_ProcessServerNatPacket(['127.0.0.1:6112', 'Hello {}'.format(identifier)])
         yield from connectivity
         assert connectivity.result() == Connectivity(addr='127.0.0.1:6112', state=ConnectivityState.STUN)
 
