@@ -38,7 +38,7 @@ def send_natpacket(addr, message):
     s.close()
 
 @with_logger
-class TestPeer():
+class TestPeer:
     """
     Determine the connectivity state of a single peer.
     """
@@ -66,7 +66,6 @@ class TestPeer():
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.connection.unsubscribe(self, ['ProcessNatPacket', 'ProcessServerNatPacket'])
-
 
     @asyncio.coroutine
     def determine_connectivity(self):
@@ -101,8 +100,8 @@ class TestPeer():
 
     def received_server_packet(self):
         for packet in self.server_packets:
-            if "Hello {}".format(self.identifier) in packet:
-                return True
+            if packet[1] == "Hello {}".format(self.identifier):
+                return packet[0]
 
     @asyncio.coroutine
     def test_stun(self):
@@ -111,8 +110,10 @@ class TestPeer():
             self.connection.send_gpgnet_message('SendNatPacket', ["%s:%s" % (config.LOBBY_IP,
                                                                      config.LOBBY_UDP_PORT),
                                                           "Hello %s" % self.identifier])
-            if self.received_server_packet():
-                return True
+            resolution = self.received_server_packet()
+            if resolution:
+                self._logger("Resolved client to {}".format(resolution))
+                return resolution
             yield from asyncio.sleep(0.1)
         return self.received_server_packet()
 
