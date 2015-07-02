@@ -1171,7 +1171,7 @@ Thanks,\n\
                 lobbySocket.abort()
 
             self._logger.debug("Welcome")
-            self.sendJSON(dict(command="welcome", email=str(self.email)))
+            self.sendJSON(dict(command="welcome", email=str(self.email), id=self.player.id))
 
             self.protocol.send_messages(
                 [player.to_dict()
