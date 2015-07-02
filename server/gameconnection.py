@@ -263,11 +263,14 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             if playeraction == "HOST":
                 map = self.game.mapName
                 self.send_HostGame(map)
-            # if the player is joining, we connect him to host.
+            # If the player is joining, we connect him to host
+            # followed by the rest of the players.
             elif playeraction == "JOIN":
                 yield from self.ConnectToHost(self.game.host.game_connection)
                 self._state = GameConnectionState.CONNECTED_TO_HOST
                 self.game.add_game_connection(self)
+                for peer in self.game.connections:
+                    asyncio.async(self.ConnectToPeer(peer))
         except Exception as e:
             self.log.exception(e)
 
