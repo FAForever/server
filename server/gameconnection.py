@@ -301,6 +301,43 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         :return:
         """
         assert peer.player.action == 'HOST'
+        connection, own_addr, peer_addr = yield from self.EstablishConnection(peer)
+        if connection == ConnectivityState.PUBLIC or connection == ConnectivityState.STUN:
+            self.send_JoinGame(peer_addr,
+                               peer.player.login,
+                               peer.player.id)
+            peer.send_ConnectToPeer(own_addr,
+                                    self.player.login,
+                                    self.player.id)
+        else:
+            self.ConnectThroughProxy(peer)
+
+    @asyncio.coroutine
+    def ConnectToPeer(self, peer):
+        """
+        Connect two peers
+        :return: None
+        """
+        connection, own_addr, peer_addr = yield from self.EstablishConnection(peer)
+        if connection == ConnectivityState.PUBLIC or connection == ConnectivityState.STUN:
+            self.send_ConnectToPeer(peer_addr,
+                                    peer.player.login,
+                                    peer.player.id)
+            peer.send_ConnectToPeer(own_addr,
+                                    self.player.login,
+                                    self.player.id)
+        else:
+            self.ConnectThroughProxy(peer)
+
+    @asyncio.coroutine
+    def EstablishConnection(self, peer):
+        """
+        Attempt to establish a full duplex UDP connection
+        between self and peer.
+
+        :param peer: Client to connect to
+        :return: (ConnectivityState, own_addr, remote_addr)
+        """
         own_state = self.connectivity_state
         peer_state = peer.connectivity_state
         (done, pending) = yield from asyncio.wait([own_state, peer_state])
@@ -310,31 +347,20 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         ((own_addr, own_state), (peer_addr, peer_state)) = own_state.result(), peer_state.result()
         if peer_state == ConnectivityState.PUBLIC and own_state == ConnectivityState.PUBLIC:
             self._logger.debug("Connecting {} to host {} directly".format(self, peer))
-            self.send_JoinGame(peer_addr,
-                               peer.player.login,
-                               peer.player.id)
-            peer.send_ConnectToPeer(own_addr,
-                                    self.player.login,
-                                    self.player.id)
+            return ConnectivityState.PUBLIC, own_addr, peer_addr
         elif peer_state == ConnectivityState.STUN or own_state == ConnectivityState.STUN:
             self._logger.debug("Connecting {} to host {} using STUN".format(self, peer))
             (own_addr, peer_addr) = yield from self.STUN(peer)
             if peer_addr is None or own_addr is None:
-                self._logger.debug("Connecting {} to host {} through proxy because STUN failed".format(self, peer))
+                self._logger.debug("STUN between {} {} failed".format(self, peer))
                 self._logger.debug("Resolved addresses: {}, {}".format(peer_addr, own_addr))
-                self.ConnectThroughProxy(peer)
+                self._logger.debug("Own nat packets: {}".format(self.nat_packets))
+                self._logger.debug("Peer nat packets: {}".format(peer.nat_packets))
             else:
-                self._logger.debug("Using {} for join".format(peer_addr))
-                self.send_JoinGame(peer_addr,
-                                   peer.player.login,
-                                   peer.player.id)
-                self._logger.debug("Telling {} to connect to {}".format(peer, own_addr))
-                peer.send_ConnectToPeer(own_addr,
-                                        self.player.login,
-                                        self.player.id)
+                return ConnectivityState.STUN, own_addr, peer_addr
         else:
             self._logger.debug("Connecting {} to host {} through proxy".format(self, peer))
-            self.ConnectThroughProxy(peer)
+            return ConnectivityState.PROXY, None, None
 
     @asyncio.coroutine
     def STUN(self, peer):
@@ -381,18 +407,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             return received_message.result()
         except (CancelledError, asyncio.TimeoutError):
             return None
-
-    @asyncio.coroutine
-    def ConnectToPeer(self, peer2):
-        """
-        Connect two peers
-        :return: None
-        """
-        states = [self.connectivity_state, peer2.connectivity_state]
-        yield from asyncio.wait(states)
-        if self.connectivity_state == ConnectivityState.PUBLIC:
-            if peer2.connectivity_state != ConnectivityState.PROXY:
-                peer2.send_ConnectToPeer(self.player.ip, peer2.player.login, peer2.player.id)
 
     @asyncio.coroutine
     def handle_action(self, key, values):
