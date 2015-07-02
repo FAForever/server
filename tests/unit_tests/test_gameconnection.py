@@ -264,12 +264,12 @@ def test_ConnectToHost_public_stun(loop, connections, players):
 
     result = asyncio.async(peer_conn.ConnectToHost(host_conn))
     yield from asyncio.sleep(0.5)
-    yield from host_conn.handle_action('ProcessNatPacket',
+    asyncio.async(host_conn.handle_action('ProcessNatPacket',
                             [peer_conn.player.address_and_port,
-                             "Hello from {}".format(peer_conn.player.id)])
-    yield from peer_conn.handle_action('ProcessNatPacket',
+                             "Hello from {}".format(peer_conn.player.id)]))
+    asyncio.async(peer_conn.handle_action('ProcessNatPacket',
                             [host_conn.player.address_and_port,
-                             "Hello from {}".format(host_conn.player.id)])
+                             "Hello from {}".format(host_conn.player.id)]))
     yield from result
     peer_conn.send_SendNatPacket.assert_called_with(host_conn.player.address_and_port,
                                                     "Hello from {}".format(peer_conn.player.id))

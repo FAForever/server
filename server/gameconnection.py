@@ -350,6 +350,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         assert len(pending) == 0
         assert len(done) == 2
         own_addr, remote_addr = own_addr.result(), remote_addr.result()
+        if own_addr is not None and remote_addr is not None:
+            # Both peers got it the first time
+            return own_addr, remote_addr
         if own_addr is not None:
             # Remote received our packet, we didn't receive theirs
             # Instruct remote to try our new address
