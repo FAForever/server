@@ -377,6 +377,10 @@ class Game(BaseGame):
         """
         General rules for validation of game rankedness
         """
+        for id in self.mods:
+            if not self.mod_ranked(id):
+                self.mark_invalid("Mod {} isn't ranked".format(id))
+
         if self.gameOptions['Victory'] != Victory.DEMORALIZATION and self.gamemod != 'coop':
             self.mark_invalid("Only assassination mode is ranked")
 
@@ -394,6 +398,20 @@ class Game(BaseGame):
 
         elif self.gameOptions["RestrictedCategories"] != 0:
             self.mark_invalid("Restricted games are not ranked")
+
+    def mod_ranked(self, id):
+        query = QSqlQuery(self.db)
+        query.prepare("SELECT ranked FROM table_mod WHERE uid LIKE ?")
+        query.addBindValue(id)
+
+        if not query.exec_():
+            self._logger.exception(query.lastError())
+
+        if query.size() != 0:
+            query.first()
+            if query.value(0) == 1:
+                return True
+        return False
 
     def launch(self):
         """

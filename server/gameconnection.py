@@ -553,20 +553,11 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             asyncio.async(self._handle_lobby_state())
 
         elif state == 'Launching':
-            # game launch, the user is playing !
             if self.player.action == "HOST":
                 self.game.launch()
 
                 if len(self.game.mods) > 0:
                     for uid in self.game.mods:
-                        if not self.isModRanked(uid):
-                            if uid == "e7846e9b-23a4-4b95-ae3a-fb69b289a585":
-                                if not "scca_coop_e02" in self.game.mapName.lower():
-                                    self.game.mark_invalid("Sim mods are not ranked")
-
-                            else:
-                                self.game.mark_invalid("Sim mods are not ranked")
-
                         query = QSqlQuery(self.db)
                         query.prepare("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid = ?")
                         query.addBindValue(uid)
@@ -619,20 +610,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     def _mark_dirty(self):
         self.games.mark_dirty(self.game)
 
-    def isModRanked(self, uidmod):
-        query = QSqlQuery(self.db)
-        query.prepare("SELECT ranked FROM table_mod WHERE uid LIKE ?")
-        query.addBindValue(uidmod)
-
-        if not query.exec_():
-            self.log.debug("error isModRanked: ")
-            self.log.debug(query.lastError())
-
-        if query.size() != 0:
-            query.first()
-            if query.value(0) == 1:
-                return True
-        return False
 
     def abort(self):
         """
