@@ -79,7 +79,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
         self._authenticated = asyncio.Future()
         self.ip, self.port = None, None
-        self._player = None
         self.lobby = None
         self._transport = None
         self.nat_packets = {}
@@ -216,30 +215,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         else:
             self.log.debug("QUIT - No player action :(")
             self.abort()
-
-    def abort(self):
-        """
-        Abort the connection
-
-        Removes the GameConnection object from the any associated Game object,
-        and deletes references to Player and Game held by this object.
-        """
-        try:
-            if self._state is GameConnectionState.ENDED:
-                return
-            self._state = GameConnectionState.ENDED
-            self.game.remove_game_connection(self)
-            self._mark_dirty()
-            self.log.debug("{}.abort()".format(self))
-            del self.player.game
-            del self.player.game_connection
-        except Exception as ex:  # pragma: no cover
-            self.log.debug("Exception in abort(): {}".format(ex))
-            pass
-        finally:
-            if self.ping_task is not None:
-                self.ping_task.cancel()
-            self._player.action = 'NONE'
 
     @asyncio.coroutine
     def _handle_lobby_state(self):
@@ -658,6 +633,31 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             if query.value(0) == 1:
                 return True
         return False
+
+    def abort(self):
+        """
+        Abort the connection
+
+        Removes the GameConnection object from the any associated Game object,
+        and deletes references to Player and Game held by this object.
+        """
+        try:
+            if self._state is GameConnectionState.ENDED:
+                return
+            self._state = GameConnectionState.ENDED
+            self.game.remove_game_connection(self)
+            self._mark_dirty()
+            self.log.debug("{}.abort()".format(self))
+            del self.player.game
+            del self.player.game_connection
+        except Exception as ex:  # pragma: no cover
+            self.log.debug("Exception in abort(): {}".format(ex))
+            pass
+        finally:
+            if self.ping_task is not None:
+                self.ping_task.cancel()
+            if self._player:
+                self._player.action = 'NONE'
 
     def on_connection_lost(self):
         try:
