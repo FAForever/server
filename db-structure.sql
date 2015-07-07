@@ -394,20 +394,6 @@ CREATE TABLE `game_player_stats_bak` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `game_replays`
---
-
-DROP TABLE IF EXISTS `game_replays`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `game_replays` (
-  `UID` bigint(20) unsigned NOT NULL,
-  `file` longblob NOT NULL,
-  PRIMARY KEY (`UID`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for table `game_replays_old`
 --
 
