@@ -394,21 +394,6 @@ CREATE TABLE `game_player_stats_bak` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `game_replays_old`
---
-
-DROP TABLE IF EXISTS `game_replays_old`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `game_replays_old` (
-  `UID` bigint(20) unsigned NOT NULL,
-  `file` longblob NOT NULL,
-  PRIMARY KEY (`UID`),
-  CONSTRAINT `game_replays_old_ibfk_1` FOREIGN KEY (`UID`) REFERENCES `game_stats_bak` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for table `game_stats`
 --
 
@@ -1202,19 +1187,6 @@ CREATE TABLE `test2` (
 ) ENGINE=MEMORY DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `test_game_replays`
---
-
-DROP TABLE IF EXISTS `test_game_replays`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `test_game_replays` (
-  `UID` bigint(20) unsigned NOT NULL,
-  `file` longblob NOT NULL,
-  PRIMARY KEY (`UID`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `tutorial_sections`
@@ -2046,9 +2018,6 @@ CREATE TABLE `view_global_rating` (
 /*!50001 SET character_set_client      = utf8 */;
 /*!50001 SET character_set_results     = utf8 */;
 /*!50001 SET collation_connection      = utf8_general_ci */;
-/*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
-/*!50001 VIEW `search_player` AS select `game_player_stats`.`gameId` AS `id`,`game_player_stats`.`playerId` AS `playerid` from (`game_player_stats` left join `game_replays` on((`game_replays`.`UID` = `game_player_stats`.`gameId`))) where (`game_replays`.`file` is not null) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
