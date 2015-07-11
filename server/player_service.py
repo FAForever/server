@@ -53,7 +53,7 @@ class PlayerService(object):
                 "LEFT JOIN `fafclans`.players_list "
                 "ON `fafclans`.players_list.player_id = `fafclans`.`clan_tags`.player_id "
                 "WHERE `faf_id` = %s", player.id)
-            player.clan = yield from cur.fetchone()
+            player.clan, _ = yield from cur.fetchone()
 
     def addUser(self, newplayer):
         gamesocket = None
