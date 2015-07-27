@@ -28,7 +28,7 @@ class customGamesContainerClass(gamesContainerClass):
     '''Class for custom games'''
 
     def __init__(self, db, parent = None):
-        super(customGamesContainerClass, self).__init__("faf", "Forged Alliance Forever" , db, parent)
+        super(customGamesContainerClass, self).__init__("faf", "FAF" , db, parent)
       
         self.version = 10
         self.parent = parent

@@ -28,7 +28,7 @@ class balanceTestingGamesContainerClass(gamesContainerClass):
     '''Class for custom nomads games'''
 
     def __init__(self, db, parent = None):
-        super(balanceTestingGamesContainerClass, self).__init__("balancetesting", "Balance Testing", db, parent)
+        super(balanceTestingGamesContainerClass, self).__init__("balancetesting", "FAF (beta)", db, parent)
 
         self.host = True
         self.live = True

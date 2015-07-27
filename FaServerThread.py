@@ -236,6 +236,9 @@ class FAServerThread(QObject):
     @timed
     def addGameModes(self):
         ##self.log.debug("Add mods")
+        if not self.parent.games.isaContainer("balancetesting") :
+            self.parent.games.addContainer("balancetesting", balanceTestingGamesContainerClass(self.parent.db, self.parent.games))
+
         if not self.parent.games.isaContainer("faf") :
             self.parent.games.addContainer("faf", customGamesContainerClass(self.parent.db, self.parent.games))
         
@@ -262,9 +265,6 @@ class FAServerThread(QObject):
 
         if not self.parent.games.isaContainer("phantomx") :
             self.parent.games.addContainer("phantomx", customPhantomXGamesContainerClass(self.parent.db, self.parent.games))
-            
-#        if not self.parent.games.isaContainer("balancetesting") :
-#            self.parent.games.addContainer("balancetesting", balanceTestingGamesContainerClass(self.parent.db, self.parent.games))
 
         if not self.parent.games.isaContainer("vanilla") :
             self.parent.games.addContainer("vanilla", customVanillaGamesContainerClass(self.parent.db, self.parent.games))
