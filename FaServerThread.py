@@ -2038,7 +2038,7 @@ Thanks,\n\
                         lobbySocket.abort()
                 
                 self.log.debug("Welcome")
-                self.sendJSON(dict(command="welcome", email=str(self.email)))
+                self.sendJSON(dict(command="welcome", email=str(self.email), id=self.player.uuid))
                 
                 self.getPlayerPrivateAccess()
    
