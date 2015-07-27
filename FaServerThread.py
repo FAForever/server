@@ -1413,29 +1413,6 @@ Thanks,\n\
         
             self.foeList = foelist
 
-    @timed
-    def getPlayerPrivateAccess(self):
-
-        self.player.nomadsBeta = True
-        self.player.tourneyDirector = False
-        self.player.modManager = []
-        
-        # Tournament directors
-#        query = QSqlQuery(self.parent.db)   
-#        queryStr = "SELECT * FROM faf_forums.phpbb_user_group WHERE `user_id` = (SELECT `user_id` FROM faf_forums.phpbb_profile_fields_data WHERE `pf_fafusername` = '%s') AND `group_id` = 14" % (self.player.getLogin())
-#        query.exec_(queryStr)
-#        if  query.size() == 1:
-#            self.player.tourneyDirector = True            
-
-        # featured mod owners
-        query = QSqlQuery(self.parent.db)   
-        query.prepare("SELECT gamemod FROM featured_mods_owners LEFT JOIN game_featuredMods on `moduid` = game_featuredMods.id WHERE `uid` = ?")
-        query.addBindValue(self.player.getId())
-        query.exec_()      
-        if  query.size() > 0 :
-            while query.next() :
-                self.player.modManager.append(query.value(0))
-                    
 
             
     @timed
@@ -2039,13 +2016,6 @@ Thanks,\n\
                 
                 self.log.debug("Welcome")
                 self.sendJSON(dict(command="welcome", email=str(self.email), id=self.player.uuid))
-                
-                self.getPlayerPrivateAccess()
-   
-               
-                if len(self.player.modManager) > 0 :
-                    #self.log.debug(self.logPrefix + "adding mod management")
-                    self.sendJSON(dict(command="mod_manager", action="list", mods=self.player.modManager))
                 
                 tourneychannel = self.getPlayerTournament(self.player)
                 if len(tourneychannel) > 0 :
