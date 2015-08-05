@@ -611,7 +611,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     def _mark_dirty(self):
         self.games.mark_dirty(self.game)
 
-
     def abort(self):
         """
         Abort the connection
@@ -640,14 +639,15 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     def on_connection_lost(self):
         try:
             if self.state == GameConnectionState.CONNECTED_TO_HOST\
-                    and not self.game.state == GameState.LIVE:
+                    and self.game.state == GameState.LOBBY:
                 for peer in self.game.connections:
                     peer.send_DisconnectFromPeer(self.player.id)
-            if self.game.proxy.unmap(self.player.login):
-                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                s.connect(PROXY_SERVER)
-                s.sendall(json.dumps(dict(command="cleanup", sourceip=self.player.ip)).encode())
-                s.close()
+            if self.game:
+                if self.game.proxy.unmap(self.player.login):
+                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    s.connect(PROXY_SERVER)
+                    s.sendall(json.dumps(dict(command="cleanup", sourceip=self.player.ip)).encode())
+                    s.close()
             if self.connectivity_state.done()\
                     and self.connectivity_state.result() == ConnectivityState.PROXY:
                 wiki_link = "{}index.php?title=Connection_issues_and_solutions".format(config.WIKI_LINK)
