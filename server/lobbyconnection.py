@@ -876,6 +876,7 @@ Thanks,\n\
 
                 else:
                     player_id, validated, self.email, self.steamChecked, session = yield from cursor.fetchone()
+                    self._logger.debug("Login from: {}, {}, {}".format(player_id, self.email, self.session))
 
                 self._authenticated = True
 
