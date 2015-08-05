@@ -948,10 +948,9 @@ Thanks,\n\
                     return
 
                 query = QSqlQuery(self.db)
-                query.prepare("UPDATE login SET ip = ?, uniqueId = ?, session = ? WHERE id = ?")
+                query.prepare("UPDATE login SET ip = ?, uniqueId = ? WHERE id = ?")
                 query.addBindValue(self.ip)
                 query.addBindValue(str(uniqueId))
-                query.addBindValue(self.session)
                 query.addBindValue(player_id)
                 query.exec_()
             else:
