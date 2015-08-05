@@ -88,7 +88,7 @@ class LobbyConnection(QObject):
         self.email = None
         self.ip = None
         self.port = None
-        self.session = int(random.getrandbits(10))
+        self.session = int(random.randrange(0, 4294967295))
         self.protocol = None
         self._logger.debug("LobbyConnection initialized")
 
@@ -888,23 +888,9 @@ Thanks,\n\
                 self.sendJSON(dict(command="notice", style="error", text=reason))
                 return
 
-            if session != 0:
-                #remove ghost
-                for p in self.players.players:
-                    if p.getLogin() == login:
-                        if p.lobbyThread:
-                            p.lobbyThread.abort()
-                        if p in self.players.players:
-                            self.players.players.remove(p)
-
-                if session == oldsession:
-                    self.session = oldsession
-                else:
-                    query2 = QSqlQuery(self.db)
-                    query2.prepare("UPDATE login SET session = ? WHERE id = ?")
-                    query2.addBindValue(session)
-                    query2.addBindValue(player_id)
-                    query2.exec_()
+            with (yield from self.db_pool) as conn:
+                cursor = yield from conn.cursor()
+                yield from cursor.execute("UPDATE login SET session=%s WHERE id=%s", (self.session, player_id))
 
             query.prepare("SELECT reason FROM lobby_ban WHERE idUser = ?")
             query.addBindValue(player_id)
