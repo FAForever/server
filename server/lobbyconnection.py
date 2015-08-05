@@ -891,7 +891,7 @@ Thanks,\n\
             with (yield from self.db_pool) as conn:
                 cursor = yield from conn.cursor()
                 yield from cursor.execute("UPDATE login "
-                                          "SET session=%s, ip=%s "
+                                          "SET `session`=%s, ip=%s "
                                           "WHERE id=%s", (self.session, self.ip, player_id))
 
             query.prepare("SELECT reason FROM lobby_ban WHERE idUser = ?")
