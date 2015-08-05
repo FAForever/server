@@ -622,7 +622,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             if self._state is GameConnectionState.ENDED:
                 return
             self._state = GameConnectionState.ENDED
-            self.game.remove_game_connection(self)
+            if self.game:
+                self.game.remove_game_connection(self)
             self._mark_dirty()
             self.log.debug("{}.abort()".format(self))
             del self.player.game
