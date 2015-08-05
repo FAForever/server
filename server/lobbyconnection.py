@@ -890,7 +890,9 @@ Thanks,\n\
 
             with (yield from self.db_pool) as conn:
                 cursor = yield from conn.cursor()
-                yield from cursor.execute("UPDATE login SET session=%s WHERE id=%s", (self.session, player_id))
+                yield from cursor.execute("UPDATE login "
+                                          "SET session=%s, ip=%s "
+                                          "WHERE id=%s", (self.session, self.ip, player_id))
 
             query.prepare("SELECT reason FROM lobby_ban WHERE idUser = ?")
             query.addBindValue(player_id)
@@ -954,14 +956,6 @@ Thanks,\n\
                 query.addBindValue(player_id)
                 query.exec_()
             else:
-                # the user is steamchecked
-                query = QSqlQuery(self.db)
-                query.prepare("UPDATE login SET ip = ?, session = ? WHERE id = ?")
-                query.addBindValue(self.ip)
-                query.addBindValue(self.session)
-                query.addBindValue(player_id)
-                query.exec_()
-
                 query = QSqlQuery(self.db)
                 query.prepare("INSERT INTO `steam_uniqueid`(`uniqueid`) VALUES (?)")
                 query.addBindValue(str(uniqueId))
