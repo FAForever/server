@@ -1,6 +1,6 @@
 import asyncio
 
-import ujson
+import json
 
 import mock
 import pytest
@@ -232,7 +232,7 @@ def test_on_connection_lost_proxy_cleanup(game_connection, players):
     with mock.patch('server.gameconnection.socket') as socket:
         game_connection.on_connection_lost()
 
-        socket.socket().sendall.assert_called_with(ujson.dumps(dict(command='cleanup', sourceip=players.hosting.ip)).encode())
+        socket.socket().sendall.assert_called_with(json.dumps(dict(command='cleanup', sourceip=players.hosting.ip)).encode())
 
 
 

@@ -9,4 +9,3 @@ pytest-qt
 quamash
 steamodd
 trueskill
-ujson

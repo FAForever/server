@@ -16,7 +16,7 @@ __copyright__ = 'Copyright (c) 2011-2015 ' + __author__
 
 import asyncio
 from asyncio import AbstractEventLoop
-import ujson
+import json
 from .gameconnection import GameConnection
 from .natpacketserver import NatPacketServer
 
@@ -62,7 +62,7 @@ def run_lobby_server(address: (str, int),
 
         def encode(game):
             return QDataStreamProtocol.pack_block(
-                QDataStreamProtocol.pack_qstring(ujson.dumps(game.to_dict()))
+                QDataStreamProtocol.pack_qstring(json.dumps(game.to_dict()))
             )
         for game in dirties:
             if game.state == GameState.ENDED:
