@@ -1,13 +1,15 @@
+-f http://content.dev.faforever.com/wheel/
+PySide
 aiohttp
 aiomysql
 configobj
 docopt
+pycrypto
 pygeoip
 pytest
 pytest-mock
 pytest-qt
 quamash
+rsa
 steamodd
 trueskill
-rsa
-pycrypto
