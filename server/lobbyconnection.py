@@ -878,8 +878,6 @@ Thanks,\n\
             query.prepare("SELECT id, IFNULL(steamid,-1), steamchecked FROM login WHERE login.login = ?")
             query.addBindValue(login)
 
-            if not query.exec_() :
-                lobby.log.debug(query.lastQuery())
             if query.size() == 0 :
                 lobby.log.debug("can't find login")
                 lobby.sendJSON(dict(command="notice", style="error", text="Your login is invalid! (it's case sensitive)"))
