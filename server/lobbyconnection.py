@@ -832,15 +832,7 @@ Thanks,\n\
             version = message['version']
             login = message['login'].strip()
             password = message['password']
-            uniqueIdCoded = message['unique_id']
-
-            try:
-                uniqueId = decodeUniqueId(self, uniqueIdCoded, login)
-            except Exception as ex:
-                self.sendJSON(
-                    dict(command="notice", style="error", text="An error occurred while signing you in, please try again later."))
-                self._logger.info("UniqueID error: {}".format(ex))
-                return
+            uniqueId = decodeUniqueId(self, message['unique_id'], login)
 
             query = QSqlQuery(self.db)
             queryStr = "SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1"
