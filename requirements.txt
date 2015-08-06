@@ -10,3 +10,4 @@ quamash
 steamodd
 trueskill
 rsa
+crypto
