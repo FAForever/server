@@ -951,13 +951,6 @@ Thanks,\n\
                 lobby.sendJSON(dict(command="notice", style="error", text="Your session is corrupted. Try relogging"))
                 return None
 
-            if login == "en9dmp" or login == "acelenny" or login == "CybranKiller" or login == "RockaholicRaven" or login == "Pelikan":
-                ##These guy have the same uniqueid for some reason, they have a free pass.
-                m = hashlib.md5()
-                m.update(str(login))
-                return m.hexdigest()
-
-
             machine = jstring["machine"]
 
             UUID = machine.get('UUID', 0)
