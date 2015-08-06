@@ -23,7 +23,8 @@ from .ladderGame import Ladder1V1Game
 from .custom_game import CustomGame
 
 game_modes = [
-    ('faf', 'Forged Alliance Forever', GamesContainer),
+    ('faf', 'FAF', GamesContainer),
+    ('balancetesting', 'FAF (beta)', GamesContainer),
     ('ladder1v1', 'Ladder 1 vs 1', Ladder1V1GamesContainer),
     ('labwars', 'LABwars', GamesContainer),
     ('murderparty', 'Murder Party', GamesContainer),
