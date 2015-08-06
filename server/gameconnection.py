@@ -227,7 +227,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                           self.player.ip,
                           self.player.game_port,
                           self.player.id) as peer_test:
-                self._connectivity_state = yield from peer_test.determine_connectivity()
+                peer_status = yield from peer_test.determine_connectivity()
+                self._connectivity_state.set_result(peer_status)
                 self.send_gpgnet_message('ConnectivityState', [self.player.getId(),
                                                        self.connectivity_state.state.value])
 
