@@ -826,6 +826,7 @@ Thanks,\n\
                 query.addBindValue(avatar)
                 query.exec_()
 
+    @asyncio.coroutine
     def check_user_login(self, cursor, login, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.
         yield from cursor.execute("SELECT login.id as id, login.validated as validated,"
@@ -882,7 +883,7 @@ Thanks,\n\
                     self.sendJSON(dict(command="welcome", update=updateFile))
                     return
 
-                player_id = self.check_user_login(cursor, login, password)
+                player_id = yield from self.check_user_login(cursor, login, password)
 
                 # Login was not approved.
                 if not player_id:
