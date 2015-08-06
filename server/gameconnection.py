@@ -337,9 +337,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 self._logger.debug("Peer nat packets: {}".format(peer.nat_packets))
             else:
                 return ConnectivityState.STUN, own_addr, peer_addr
-        else:
-            self._logger.debug("Connecting {} to host {} through proxy".format(self, peer))
-            return ConnectivityState.PROXY, None, None
+        self._logger.debug("Connecting {} to host {} through proxy".format(self, peer))
+        return ConnectivityState.PROXY, None, None
 
     @asyncio.coroutine
     def STUN(self, peer):
