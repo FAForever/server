@@ -73,7 +73,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self._player = None
         self.logGame = "\t"
         self._game = None
-        self.proxyConnection = []
 
         self.last_pong = time.time()
 
@@ -596,9 +595,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 if self.game:
                     self.game._logger.debug("%s is connecting through proxy to %s on port %i" % (
                         self.player.login, peer.player.login, numProxy))
-
-                if peer.player.login not in self.proxyConnection:
-                    self.proxyConnection.append(peer.player.login)
 
                 if recurse:
                     peer.ConnectThroughProxy(self, False)
