@@ -885,7 +885,7 @@ Thanks,\n\
                 player_id = self.check_user_login(cursor, login, password)
 
                 # Login was not approved.
-                if player_id == None:
+                if not player_id:
                     return
 
                 yield from cursor.execute("UPDATE login "
