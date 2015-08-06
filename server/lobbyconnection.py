@@ -829,10 +829,15 @@ Thanks,\n\
     @asyncio.coroutine
     def check_user_login(self, cursor, login, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.
-        yield from cursor.execute("SELECT login.id as id, login.validated as validated,"
-                                  "login.email as email, login.steamchecked as steamchecked,"
-                                  "lobby_ban.reason as reason "
-                                  "FROM login LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser "
+        yield from cursor.execute("SELECT login.id as id,"
+                                  "login.validated as validated,"
+                                  "login.email as email,"
+                                  "login.steamchecked as steamchecked,"
+                                  "lobby_ban.reason as reason,"
+                                  "lobby_admin.group as admin_group "
+                                  "FROM login "
+                                  "LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser "
+                                  "LEFT JOIN lobby_admin ON login.id = lobby_admin.user_id "
                                   "WHERE login=%s AND password=%s", (login, password))
 
         if cursor.rowcount != 1:
@@ -841,7 +846,7 @@ Thanks,\n\
                                text="Login not found or password incorrect. They are case sensitive."))
             return
 
-        player_id, validated, self.email, self.steamChecked, ban_reason = yield from cursor.fetchone()
+        player_id, validated, self.email, self.steamChecked, ban_reason, permissionGroup = yield from cursor.fetchone()
         if ban_reason != None:
             reason = "You are banned from FAF.\n Reason :\n " + ban_reason
             self.sendJSON(dict(command="notice", style="error", text=reason))
@@ -859,7 +864,7 @@ Thanks,\n\
         self._logger.debug("Login from: {}, {}, {}".format(player_id, self.email, self.session))
         self._authenticated = True
 
-        return player_id
+        return player_id, permissionGroup
 
     @asyncio.coroutine
     def command_hello(self, message):
@@ -883,7 +888,7 @@ Thanks,\n\
                     self.sendJSON(dict(command="welcome", update=updateFile))
                     return
 
-                player_id = yield from self.check_user_login(cursor, login, password)
+                player_id, permissionGroup = yield from self.check_user_login(cursor, login, password)
 
                 # Login was not approved.
                 if not player_id:
@@ -970,32 +975,19 @@ Thanks,\n\
                                  ip=self.ip,
                                  port=self.port,
                                  uuid=player_id,
+                                 permissionGroup=permissionGroup,
                                  lobbyThread=self)
+
+            # If the user has any authority, tell them about it.
+            if self.player.mod:
+                self.sendJSON({"command": "social", "power": permissionGroup})
+
             self.player.lobbyVersion = version
             self.player.resolvedAddress = self.player.ip
             yield from self.players.fetch_player_data(self.player)
 
             self.player.faction = random.randint(1, 4)
 
-            ## ADMIN
-            ## --------------------
-            self.player.admin = False
-            self.player.mod = False
-            query.prepare("SELECT `group` FROM `lobby_admin` WHERE `user_id` = ?")
-            query.addBindValue(self.player.id)
-            query.exec_()
-
-            if query.size() > 0:
-                query.first()
-                # 2 for admins, 1 for mods.
-                permissionGroup = query.value(0)
-
-                if permissionGroup >= 2:
-                    self.player.admin = True
-                if permissionGroup >= 1:
-                    self.player.mod = True
-
-                self.sendJSON({"command": "social", "power": permissionGroup})
 
             ## Country
             ## ----------
