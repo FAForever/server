@@ -9,6 +9,8 @@ pygeoip
 pytest>=2.7.0
 pytest-mock
 pytest-qt
+pytest-cov
+pyflakes
 quamash
 rsa
 steamodd
