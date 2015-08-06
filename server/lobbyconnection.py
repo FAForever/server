@@ -1004,10 +1004,6 @@ Thanks,\n\
                 if not player_id:
                     return
 
-                yield from cursor.execute("UPDATE login "
-                                          "SET `session`=%s, ip=%s "
-                                          "WHERE id=%s", (self.session, self.ip, player_id))
-
             if not self.steamChecked:
                 # If this id is associated with a different steam account, explode.
                 query = QSqlQuery(self.db)
