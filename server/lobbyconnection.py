@@ -864,7 +864,7 @@ Thanks,\n\
         self._logger.debug("Login from: {}, {}, {}".format(player_id, self.email, self.session))
         self._authenticated = True
 
-        return player_id, permissionGroup
+        return player_id, permissionGroup or 0
 
     @asyncio.coroutine
     def command_hello(self, message):
