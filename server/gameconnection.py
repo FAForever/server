@@ -591,7 +591,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             numProxy = self.game.proxy.map(self.player.login, peer.player.login)
 
             if numProxy is not None:
-                self.send_ConnectToProxy(numProxy, peer.player.getIp(), str(peer.player.login), int(peer.player.id))
+                self.send_ConnectToProxy(numProxy,
+                                         peer.player.ip,
+                                         str(peer.player.login),
+                                         int(peer.player.id))
 
                 if self.game:
                     self.game._logger.debug("%s is connecting through proxy to %s on port %i" % (
@@ -601,6 +604,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     peer.ConnectThroughProxy(self, False)
             else:
                 self.log.debug(self.logGame + "Maximum proxies used")  # pragma: no cover
+                self.abort()
         except Exception as e:  # pragma: no cover
             self.log.exception(e)
 
