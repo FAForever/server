@@ -9,3 +9,4 @@ pytest-qt
 quamash
 steamodd
 trueskill
+rsa
