@@ -864,8 +864,11 @@ Thanks,\n\
             with (yield from self.db_pool) as conn:
                 cursor = yield from conn.cursor()
                 # TODO: Hash passwords server-side so the hashing actually *does* something.
-                yield from cursor.execute("SELECT id, validated, email, steamchecked, session "
-                                          "FROM login WHERE login=%s AND password=%s", (login, password))
+                yield from cursor.execute("SELECT login.id as id, login.validated as validated,"
+                                          "login.email as email, login.steamchecked as steamchecked,"
+                                          "login.session as session, lobby_ban.reason as reason"
+                                          "FROM login LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser"
+                                          "WHERE login=%s AND password=%s", (login, password))
 
                 if cursor.rowcount != 1:
                     self._logger.info("Invalid login or password")
@@ -873,10 +876,13 @@ Thanks,\n\
                                        text="Login not found or password incorrect. They are case sensitive."))
                     return
 
-                else:
-                    player_id, validated, self.email, self.steamChecked, session = yield from cursor.fetchone()
-                    self._logger.debug("Login from: {}, {}, {}".format(player_id, self.email, self.session))
+                player_id, validated, self.email, self.steamChecked, session, ban_reason = yield from cursor.fetchone()
+                if ban_reason != None:
+                    reason = "You are banned from FAF.\n Reason :\n " + ban_reason
+                    self.sendJSON(dict(command="notice", style="error", text=reason))
+                    return
 
+                self._logger.debug("Login from: {}, {}, {}".format(player_id, self.email, self.session))
                 self._authenticated = True
 
             if validated == 0:
@@ -893,15 +899,6 @@ Thanks,\n\
                 yield from cursor.execute("UPDATE login "
                                           "SET `session`=%s, ip=%s "
                                           "WHERE id=%s", (self.session, self.ip, player_id))
-
-            query.prepare("SELECT reason FROM lobby_ban WHERE idUser = ?")
-            query.addBindValue(player_id)
-            query.exec_()
-            if query.size() == 1:
-                query.first()
-                reason = "You are banned from FAF.\n Reason :\n " + query.value(0)
-                self.sendJSON(dict(command="notice", style="error", text=reason))
-                return
 
             if not self.steamChecked:
                 if uniqueId is None:
