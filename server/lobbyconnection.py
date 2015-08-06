@@ -834,26 +834,20 @@ Thanks,\n\
             password = message['password']
             uniqueId = decodeUniqueId(self, message['unique_id'], login)
 
-            query = QSqlQuery(self.db)
-            queryStr = "SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1"
-            query.exec_(queryStr)
+            self.logPrefix = login + "\t"
 
-            if query.size() == 1:
-                query.first()
-                versionDB = query.value(0)
-                file = query.value(1)
+            # Check their client is reporting the right version number.
+            # TODO: Do this somewhere less insane. (no need to query our db for this every login!)
+            with (yield from self.db_pool) as conn:
+                cursor = yield from conn.cursor()
+                yield from cursor.execute("SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1")
+                versionDB, updateFile = yield from cursor.fetchone()
 
                 # Version of zero represents a developer build.
                 if version < versionDB and version != 0:
-                    self.sendJSON(dict(command="welcome", update=file))
+                    self.sendJSON(dict(command="welcome", update=updateFile))
                     return
 
-            self.logPrefix = login + "\t"
-
-            channels = []
-
-            with (yield from self.db_pool) as conn:
-                cursor = yield from conn.cursor()
                 # TODO: Hash passwords server-side so the hashing actually *does* something.
                 yield from cursor.execute("SELECT login.id as id, login.validated as validated,"
                                           "login.email as email, login.steamchecked as steamchecked,"
@@ -1189,6 +1183,7 @@ Thanks,\n\
                     if lobby is not None:
                         lobby.sendJSON(player_info)
 
+            channels = []
             if self.player.mod:
                 channels.append("#moderators")
             # #channels.append("#techQuestions")
