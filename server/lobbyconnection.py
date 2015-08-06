@@ -156,8 +156,6 @@ class LobbyConnection(QObject):
             'author': 'author',
             'ui_only': 'mod type',
             'version': 'version',
-            'big': 'big',
-            'small': 'small'
         }.items():
             if key not in message:
                 self.sendJSON(dict(command="notice", style="error", text="No {} provided.".format(readable)))
@@ -172,8 +170,6 @@ class LobbyConnection(QObject):
         version = message["version"]
         author = message["author"]
         ui = message["ui_only"]
-        big = message["big"]
-        small = message["small"]
         icon = ""
 
         query = QSqlQuery(self.db)
@@ -227,14 +223,12 @@ class LobbyConnection(QObject):
 
             query = QSqlQuery(self.db)
             query.prepare(
-                "INSERT INTO `table_mod`(`uid`, `name`, `version`, `author`, `ui`, `big`, `small`, `description`, `filename`, `icon`) VALUES (?,?,?,?,?,?,?,?,?,?)")
+                "INSERT INTO `table_mod`(`uid`, `name`, `version`, `author`, `ui`, `description`, `filename`, `icon`) VALUES (?,?,?,?,?,?,?,?)")
             query.addBindValue(uid)
             query.addBindValue(name)
             query.addBindValue(version)
             query.addBindValue(author)
             query.addBindValue(int(ui))
-            query.addBindValue(int(big))
-            query.addBindValue(int(small))
             query.addBindValue(description)
             query.addBindValue(filename)
             query.addBindValue(icon)
@@ -1722,78 +1716,45 @@ Thanks,\n\
                        "version": version,
                        "args": ["/numgames " + str(self.player.numGames)]})
 
+    @asyncio.coroutine
     def command_modvault(self, message):
         type = message["type"]
-        if type == "start":
-            query = QSqlQuery(self.db)
-            query.prepare("SELECT * FROM table_mod ORDER BY likes DESC LIMIT 0, 100")
-            query.exec_()
-            if query.size() != 0:
-                while query.next():
-                    uid = str(query.value(1))
-                    name = str(query.value(2))
-                    version = int(query.value(3))
-                    author = str(query.value(4))
-                    isuimod = int(query.value(5))
-                    isbigmod = int(query.value(6))
-                    issmallmod = int(query.value(7))
-                    date = query.value(8).toTime_t()
-                    downloads = int(query.value(9))
-                    likes = int(query.value(10))
-                    played = int(query.value(11))
-                    description = str(query.value(12))
-                    comments = []
-                    bugreports = []
-                    link = Config['content_url'] + "vault/" + str(query.value(13))
-                    icon = str(query.value(14))
+
+        with (yield from self.db_pool) as conn:
+            cursor = yield from conn.cursor()
+            if type == "start":
+                yield from cursor.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon FROM table_mod ORDER BY likes DESC LIMIT 100")
+
+                for i in range(0, cursor.rowcount):
+                    uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = cursor.fetchone()
+                    date = date.toTime_t()
+                    link = Config['content_url'] + "vault/" + filename
                     thumbstr = ""
                     if icon != "":
                         thumbstr = Config['content_url'] + "vault/mods_thumbs/" + urllib.parse.quote(icon)
 
-                    out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=bugreports,
-                               comments=comments, description=description, played=played, likes=likes,
+                    out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
+                               comments=[], description=description, played=played, likes=likes,
                                downloads=downloads, date=date, uid=uid, name=name, version=version, author=author,
-                               ui=isuimod, big=isbigmod, small=issmallmod)
+                               ui=ui)
                     self.sendJSON(out)
 
-        elif type == "like":
-            likers = []
-            out = ""
-            canLike = True
-            uid = message["uid"]
-            query = QSqlQuery(self.db)
-            query.prepare("SELECT * FROM `table_mod` WHERE uid = ? LIMIT 1")
-            query.addBindValue(uid)
-            if not query.exec_():
-                self._logger.debug(query.lastError())
-            if query.size() == 1:
-                query.first()
-                uid = str(query.value(1))
-                name = str(query.value(2))
-                version = int(query.value(3))
-                author = str(query.value(4))
-                isuimod = int(query.value(5))
-                isbigmod = int(query.value(6))
-                issmallmod = int(query.value(7))
-                date = query.value(8).toTime_t()
-                downloads = int(query.value(9))
-                likes = int(query.value(10))
-                played = int(query.value(11))
-                description = str(query.value(12))
-                comments = []
-                bugreports = []
-                link = Config['content_url'] + "vault/" + str(query.value(13))
-                icon = str(query.value(14))
+            elif type == "like":
+                canLike = True
+                yield from cursor.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likers FROM `table_mod` WHERE uid = ? LIMIT 1")
+
+                uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = cursor.fetchone()
+                date = date.toTime_t()
+                link = Config['content_url'] + "vault/" + filename
                 thumbstr = ""
                 if icon != "":
                     thumbstr = Config['content_url'] + "vault/mods_thumbs/" + urllib.parse.quote(icon)
 
-                out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=bugreports,
-                           comments=comments, description=description, played=played, likes=likes + 1,
+                out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
+                           comments=[], description=description, played=played, likes=likes + 1,
                            downloads=downloads, date=date, uid=uid, name=name, version=version, author=author,
-                           ui=isuimod, big=isbigmod, small=issmallmod)
+                           ui=ui)
 
-                likerList = str(query.value(15))
                 try:
                     likers = json.loads(likerList)
                     if self.player.id in likers:
@@ -1802,29 +1763,22 @@ Thanks,\n\
                         likers.append(self.player.id)
                 except:
                     likers = []
+
+                # TODO: Avoid sending all the mod info in the world just because we liked it?
                 if canLike:
-                    query = QSqlQuery(self.db)
-                    query.prepare("UPDATE `table_mod` SET likes=likes+1, likers=? WHERE uid = ?")
-                    query.addBindValue(json.dumps(likers))
-                    query.addBindValue(uid)
-                    query.exec_()
+                    yield from cursor.execute("UPDATE `table_mod` SET likes=likes+1, likers=%s WHERE uid = %s", json.dumps(likers), uid)
                     self.sendJSON(out)
 
+            elif type == "download":
+                uid = message["uid"]
+                yield from cursor.execute("UPDATE `table_mod` SET downloads=downloads+1 WHERE uid = %s", uid)
+                # TODO: add response message
 
-
-        elif type == "download":
-            uid = message["uid"]
-            query = QSqlQuery(self.db)
-            query.prepare("UPDATE `table_mod` SET downloads=downloads+1 WHERE uid = ?")
-            query.addBindValue(uid)
-            query.exec_()
-            # TODO: add response message
-
-        elif type == "addcomment":
-            # TODO: implement
-            raise NotImplementedError('addcomment not implemented')
-        else:
-            raise ValueError('invalid type argument')
+            elif type == "addcomment":
+                # TODO: implement
+                raise NotImplementedError('addcomment not implemented')
+            else:
+                raise ValueError('invalid type argument')
 
     @timed()
     def sendJSON(self, data_dictionary):

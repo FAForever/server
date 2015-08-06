@@ -132,22 +132,20 @@ class replayServerThread(QObject):
                 version = int(query.value(3))
                 author = str(query.value(4))
                 isuimod = int(query.value(5))
-                isbigmod = int(query.value(6))
-                issmallmod = int(query.value(7))
-                date = query.value(8).toTime_t()                              
-                downloads = int(query.value(9))
-                likes = int(query.value(10))
-                played = int(query.value(11))
-                description = str(query.value(12))
+                date = query.value(6).toTime_t()
+                downloads = int(query.value(7))
+                likes = int(query.value(8))
+                played = int(query.value(9))
+                description = str(query.value(10))
                 comments = []
                 bugreports = []
-                link = config['global']['content_url'] + "vault/" + str(query.value(13))
-                icon = str(query.value(14))
+                link = config['global']['content_url'] + "vault/" + str(query.value(11))
+                icon = str(query.value(12))
                 thumbstr = ""
                 if icon != "":
                     thumbstr = config['global']['content_url'] + "vault/mods_thumbs/" + urllib.parse.quote(icon)
                 
-                modList.append(dict(thumbnail=thumbstr,link=link,bugreports=bugreports,comments=comments,description=description,played=played,likes=likes,downloads=downloads,date=date, uid=uid, name=name, version=version, author=author,ui=isuimod,big=isbigmod,small=issmallmod))
+                modList.append(dict(thumbnail=thumbstr,link=link,bugreports=bugreports,comments=comments,description=description,played=played,likes=likes,downloads=downloads,date=date, uid=uid, name=name, version=version, author=author,ui=isuimod))
 
         out = dict(command="modvault_list_info", modList = modList)
         self.sendJSON(out)
