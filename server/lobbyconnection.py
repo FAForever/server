@@ -833,7 +833,6 @@ Thanks,\n\
             login = message['login'].strip()
             password = message['password']
             uniqueIdCoded = message['unique_id']
-            oldsession = message.get('session', None)
 
             try:
                 uniqueId = decodeUniqueId(self, uniqueIdCoded, login)
