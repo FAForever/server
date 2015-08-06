@@ -244,7 +244,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 self._state = GameConnectionState.CONNECTED_TO_HOST
                 self.game.add_game_connection(self)
                 for peer in self.game.connections:
-                    if peer != self and peer != self.game.host:
+                    if peer != self and peer.player != self.game.host:
+                        self.log.debug("{} connecting to {}".format(self.player, peer))
                         asyncio.async(self.ConnectToPeer(peer))
         except Exception as e:
             self.log.exception(e)
