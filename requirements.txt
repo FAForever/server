@@ -15,3 +15,5 @@ quamash
 rsa
 steamodd
 trueskill
+pycrypto
+

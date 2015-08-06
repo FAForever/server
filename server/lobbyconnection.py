@@ -31,11 +31,15 @@ import re
 import rsa
 import time
 import smtplib
+import string
 from email.mime.text import MIMEText
 import email.utils
 
 from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QObject
 from PySide.QtSql import QSqlQuery
+from Crypto import Random
+from Crypto.Random.random import choice
+from Crypto.Cipher import Blowfish
 from Crypto.Cipher import AES
 import pygeoip
 import trueskill
@@ -45,7 +49,7 @@ from server.decorators import timed, with_logger
 from server.games.game import GameState
 from server.players import *
 from .game_service import GameService
-from passwords import PW_SALT, STEAM_APIKEY, STEAM_FA_ID, PRIVATE_KEY, MAIL_ADDRESS
+from passwords import STEAM_APIKEY, STEAM_FA_ID, PRIVATE_KEY, MAIL_ADDRESS, VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY
 import config
 from config import Config
 from server.protocol import QDataStreamProtocol
@@ -456,37 +460,58 @@ class LobbyConnection(QObject):
             self.sendReply("LOGIN_AVAILABLE", "no", login)
             return
 
-        query.prepare("INSERT INTO login (login, password, email) VALUES (?,?,?)")
-        query.addBindValue(login)
-        query.addBindValue(password)
-        query.addBindValue(email)
+        # We want the user to validate their email address before we create their account.
+        #
+        # We want to email them a link to click which will lead to their account being
+        # created, but without storing any data on the server in the meantime.
+        #
+        # This is done by sending a link of the form:
+        # *.php?data=E(username+password+email+expiry+nonce, K)&token=$VERIFICATION_CODE
+        # where E(P, K) is a symmetric encryption function with plaintext P and secret key K,
+        # and
+        # VERIFICATION_CODE = sha256(username + password + email + expiry + K + nonce)
+        #
+        # The receiving php script decrypts `data`, verifies it (username still free? etc.),
+        # recalculates the verification code, and creates the account if it matches up.
+        #
+        # As AES is not readily available for both Python and PHP, Blowfish is used.
+        #
+        # We thus avoid a SYN-flood-like attack on the registration system.
 
-        if not query.exec_():
-            self._logger.debug("Error inserting login %s", login)
-            self._logger.debug(query.lastError())
-            self.sendReply("LOGIN_AVAILABLE", "no", login)
-            return
+        expiry = str(time.time() + 3600 * 25)
 
-        uid = query.lastInsertId()
+        # Add nonce
+        rng = Random.new()
+        nonce = ''.join(choice(string.ascii_uppercase + string.digits) for _ in range(256))
 
-        exp = time.strftime("%Y-%m-%d %H:%m:%S", time.gmtime())
-        key = hashlib.md5()
-        key.update((login + '_' + email + str(random.randrange(0, 10000)) + exp + PW_SALT).encode())
-        keyHex = key.hexdigest()
-        query.prepare("INSERT INTO `validate_account` (`UserID`,`Key`,`expDate`) VALUES (?,?,?)")
-        query.addBindValue(uid)
-        query.addBindValue(keyHex)
-        query.addBindValue(exp)
-        query.exec_()
-        self._logger.debug("Sending registration mail")
-        link = {'a': 'validate', 'email': keyHex, 'u': base64.b64encode(str(uid))}
+        # The data payload we need on the PHP side
+        plaintext = (login + "," + password + "," + email + "," + expiry + "," + nonce).encode('utf-8')
+
+        bs = Blowfish.block_size
+        paddinglen = bs - divmod(len(plaintext), bs)[1]
+        padding = b',' * paddinglen
+
+        plaintext += padding
+
+        # Generate random IV of size one block.
+        iv = rng.read(bs)
+        cipher = Blowfish.new(VERIFICATION_SECRET_KEY, Blowfish.MODE_CBC, iv)
+        ciphertext = cipher.encrypt(plaintext)
+
+        # Generate the verification hash.
+        verification = hashlib.sha256()
+        verification.update(plaintext + VERIFICATION_HASH_SECRET.encode('utf-8'))
+        verify_hex = verification.hexdigest()
+
+        link = {'a': 'v', 'iv': base64.urlsafe_b64encode(iv), 'c': base64.urlsafe_b64encode(ciphertext), 'v': verify_hex}
+
         passwordLink = Config['app_url'] + "validateAccount.php?" + urllib.parse.urlencode(link)
 
         text = "Dear " + login + ",\n\n\
 Please visit the following link to validate your FAF account:\n\
 -----------------------\n\
 " + passwordLink + "\n\
------------------------\n\\n\
+-----------------------\n\n\
 Thanks,\n\
 -- The FA Forever team"
 
@@ -498,8 +523,6 @@ Thanks,\n\
         msg['To'] = email.utils.formataddr((login, email))
 
         self._logger.debug("sending mail to " + email)
-        #self.log.debug(msg.as_string())
-        #s = smtplib.SMTP(config['global']['smtp_server'])
         s = smtplib.SMTP_SSL(Config['smtp_server'], 465, Config['smtp_server'],
                              timeout=5)
         s.login(Config['smtp_username'], Config['smtp_password'])
@@ -687,50 +710,6 @@ Thanks,\n\
             raise KeyError('no valid social action')
 
     @timed()
-    def resendMail(self, login):
-        #self.log.debug("resending mail")       
-        query = QSqlQuery(self.db)
-
-        query.prepare(
-            "SELECT login.id, login, email, `validate_account`.Key FROM `validate_account` LEFT JOIN login ON `validate_account`.`UserID` = login.id WHERE login = ?")
-        query.addBindValue(login)
-
-        query.exec_()
-        if query.size() == 1:
-            query.first()
-
-            uid = str(query.value(0))
-            em = str(query.value(2))
-            key = str(query.value(3))
-
-            link = {'a': 'validate', 'email': key, 'u': base64.b64encode(str(uid))}
-            passwordLink = Config['app_url'] + "validateAccount.php?" + urllib.parse.urlencode(link)
-            text = "Dear " + login + ",\n\n\
-Please visit the following link to validate your FAF account:\n\
------------------------\n\
-" + passwordLink + "\n\
------------------------\n\\n\
-Thanks,\n\
--- The FA Forever team"
-
-            msg = MIMEText(str(text))
-
-            msg['Subject'] = 'Forged Alliance Forever - Account validation'
-            msg['From'] = email.utils.formataddr(('Forged Alliance Forever', MAIL_ADDRESS))
-            msg['To'] = email.utils.formataddr((login, em))
-
-            #self.log.debug("sending SMTP mail to " + em)
-            #self.log.debug(msg.as_string())
-            #s = smtplib.SMTP(config['global']['smtp_server'])
-            s = smtplib.SMTP_SSL(Config['smtp_server'], 465, Config['smtp_server'], timeout=5)
-            s.login(Config['smtp_username'], Config['smtp_password'])
-            s.sendmail(MAIL_ADDRESS, [em], msg.as_string())
-            s.quit()
-            self.sendJSON(dict(command="notice", style="info",
-                               text="A e-mail has been sent with the instructions to validate your account"))
-            #self.log.debug(self.logPrefix + "SMTP resend done")
-
-    @timed()
     def command_admin(self, message):
         action = message['action']
 
@@ -832,7 +811,6 @@ Thanks,\n\
     def check_user_login(self, cursor, login, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.
         yield from cursor.execute("SELECT login.id as id,"
-                                  "login.validated as validated,"
                                   "login.email as email,"
                                   "login.password as password,"
                                   "login.steamchecked as steamchecked,"
@@ -848,7 +826,7 @@ Thanks,\n\
                                text="Login not found or password incorrect. They are case sensitive."))
             return
 
-        player_id, validated, self.email, dbPassword, self.steamChecked, ban_reason, permissionGroup = yield from cursor.fetchone()
+        player_id, self.email, dbPassword, self.steamChecked, ban_reason, permissionGroup = yield from cursor.fetchone()
         if dbPassword != password:
             self.sendJSON(dict(command="notice", style="error",
                                text="Login not found or password incorrect. They are case sensitive."))
@@ -856,15 +834,6 @@ Thanks,\n\
 
         if ban_reason != None:
             reason = "You are banned from FAF.\n Reason :\n " + ban_reason
-            self.sendJSON(dict(command="notice", style="error", text=reason))
-            return
-
-        if validated == 0:
-            validate_account_url = "{}faf/validateAccount.php".format(Config['app_url'])
-            reason = ("Your account is not validated. Please visit <a href='{}'>{}</a>. "
-                      "<br>Please re-create an account if your email is not correct (<b>{}</b>)"
-                      .format(validate_account_url, validate_account_url, self.email))
-            self.resendMail(login)
             self.sendJSON(dict(command="notice", style="error", text=reason))
             return
 
