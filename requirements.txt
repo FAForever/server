@@ -6,7 +6,7 @@ configobj
 docopt
 pycrypto
 pygeoip
-pytest
+pytest>=2.7.0
 pytest-mock
 pytest-qt
 quamash
