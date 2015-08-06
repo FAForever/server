@@ -588,23 +588,22 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def ConnectThroughProxy(self, peer, recurse=True):
         try:
-            numProxy = self.game.proxy.map(self.player.login, peer.player.login)
+            n_proxy = self.game.proxy.map(self.player.login, peer.player.login)
 
-            if numProxy is not None:
-                self.send_ConnectToProxy(numProxy,
-                                         peer.player.ip,
-                                         str(peer.player.login),
-                                         int(peer.player.id))
-
-                if self.game:
-                    self.game._logger.debug("%s is connecting through proxy to %s on port %i" % (
-                        self.player.login, peer.player.login, numProxy))
-
-                if recurse:
-                    peer.ConnectThroughProxy(self, False)
-            else:
+            if not n_proxy:
                 self.log.debug(self.logGame + "Maximum proxies used")  # pragma: no cover
                 self.abort()
+
+            self.game._logger.debug("%s is connecting through proxy to %s on port %i" % (
+                self.player.login, peer.player.login, n_proxy))
+
+            self.send_ConnectToProxy(n_proxy,
+                                     peer.player.ip,
+                                     str(peer.player.login),
+                                     int(peer.player.id))
+
+            if recurse:
+                peer.ConnectThroughProxy(self, False)
         except Exception as e:  # pragma: no cover
             self.log.exception(e)
 
