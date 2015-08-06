@@ -834,21 +834,26 @@ Thanks,\n\
         yield from cursor.execute("SELECT login.id as id,"
                                   "login.validated as validated,"
                                   "login.email as email,"
+                                  "login.password as password,"
                                   "login.steamchecked as steamchecked,"
                                   "lobby_ban.reason as reason,"
                                   "lobby_admin.group as admin_group "
                                   "FROM login "
                                   "LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser "
                                   "LEFT JOIN lobby_admin ON login.id = lobby_admin.user_id "
-                                  "WHERE login=%s AND password=%s", (login, password))
+                                  "WHERE login=%s", login)
 
         if cursor.rowcount != 1:
-            self._logger.info("Invalid login or password")
             self.sendJSON(dict(command="notice", style="error",
                                text="Login not found or password incorrect. They are case sensitive."))
             return
 
-        player_id, validated, self.email, self.steamChecked, ban_reason, permissionGroup = yield from cursor.fetchone()
+        player_id, validated, self.email, dbPassword, self.steamChecked, ban_reason, permissionGroup = yield from cursor.fetchone()
+        if dbPassword != password:
+            self.sendJSON(dict(command="notice", style="error",
+                               text="Login not found or password incorrect. They are case sensitive."))
+            return
+
         if ban_reason != None:
             reason = "You are banned from FAF.\n Reason :\n " + ban_reason
             self.sendJSON(dict(command="notice", style="error", text=reason))
@@ -1036,7 +1041,7 @@ Thanks,\n\
                                           "WHERE id=%s", (self.session, self.ip, player_id))
 
             if not self.steamChecked:
-                # the user is not steam Checked.
+                # If this id is associated with a different steam account, explode.
                 query = QSqlQuery(self.db)
                 query.prepare("SELECT uniqueid FROM steam_uniqueid WHERE uniqueId = ?")
                 query.addBindValue(uniqueId)
