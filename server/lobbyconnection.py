@@ -906,7 +906,7 @@ Thanks,\n\
                 query.exec_()
                 if query.size() > 0:
                     self.sendJSON(dict(command="notice", style="error",
-                                       text="This computer has been used by a steam account.<br>You have to authentify your account on steam too in order to use it on this computer :<br>SteamLink: <a href='" +
+                                       text="This computer has been used by a Steam account.<br>You have to link your account to Steam too in order to use it on this computer :<br>SteamLink: <a href='" +
                                             Config['app_url'] + "faf/steam.php'>" + Config[
                                                 'app_url'] + "faf/steam.php</a>"))
                     return
