@@ -899,13 +899,7 @@ Thanks,\n\
                                           "WHERE id=%s", (self.session, self.ip, player_id))
 
             if not self.steamChecked:
-                if uniqueId is None:
-                    self.sendJSON(dict(command="notice", style="error",
-                                       text="Unique Id found for another user.<br>Multiple accounts are not allowed.<br><br>Try SteamLink: <a href='" +
-                                            Config['app_url'] + "faf/steam.php'>" + Config[
-                                                'app_url'] + "faf/steam.php</a>"))
-                    return
-                    # the user is not steam Checked.
+                # the user is not steam Checked.
                 query = QSqlQuery(self.db)
                 query.prepare("SELECT uniqueid FROM steam_uniqueid WHERE uniqueId = ?")
                 query.addBindValue(uniqueId)
