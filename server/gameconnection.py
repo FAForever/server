@@ -82,9 +82,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self._transport = None
         self.nat_packets = {}
         self.ping_task = None
-        self._connectivity_state = None
 
-        self.connectivity_state = asyncio.Future()
+        self._connectivity_state = asyncio.Future()
 
     @property
     def state(self):
@@ -229,9 +228,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                           self.player.game_port,
                           self.player.id) as peer_test:
                 self._connectivity_state = yield from peer_test.determine_connectivity()
-                self.connectivity_state.set_result(self._connectivity_state)
                 self.send_gpgnet_message('ConnectivityState', [self.player.getId(),
-                                                       self._connectivity_state.state.value])
+                                                       self.connectivity_state.state.value])
 
             playeraction = self.player.action
             if playeraction == "HOST":
@@ -374,7 +372,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         :return: resolved_address
         """
         nat_message = "Hello from {}".format(self.player.id)
-        addr = peer.connectivity_state.result()[0] if not use_address else use_address
+        addr = peer.connectivity_state.result().addr if not use_address else use_address
         self._logger.debug("{} probing {} at {} with msg: {}".format(self, peer, addr, nat_message))
         for _ in range(2):
             self.send_SendNatPacket(addr, nat_message)
@@ -663,11 +661,20 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         finally:
             self.abort()
 
+    @property
     def connectivity_state(self):
-        return self._connectivity_state
+        if not self._connectivity_state.done():
+            return None
+        else:
+            return self._connectivity_state.result()
+
+    @connectivity_state.setter
+    def connectivity_state(self, val):
+        if not self._connectivity_state.done():
+            self._connectivity_state.set_result(val)
 
     def address_and_port(self):
-        return "{}:{}".format(self.player.getIp(), self.player.gamePort)
+        return "{}:{}".format(self.player.ip, self.player.game_port)
 
     def __str__(self):
         return "GameConnection(Player({}),Game({}))".format(self.player, self.game)
