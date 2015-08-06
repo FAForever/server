@@ -982,7 +982,7 @@ Thanks,\n\
             version = message['version']
             login = message['login'].strip()
             password = message['password']
-            uniqueId = self.decodeUniqueId(self, message['unique_id'], login)
+            uniqueId = self.decodeUniqueId(message['unique_id'], login)
 
             self.logPrefix = login + "\t"
 
