@@ -859,15 +859,14 @@ Thanks,\n\
             self.logPrefix = login + "\t"
 
             channels = []
-            query = QSqlQuery(self.db)
 
             with (yield from self.db_pool) as conn:
                 cursor = yield from conn.cursor()
                 # TODO: Hash passwords server-side so the hashing actually *does* something.
                 yield from cursor.execute("SELECT login.id as id, login.validated as validated,"
                                           "login.email as email, login.steamchecked as steamchecked,"
-                                          "login.session as session, lobby_ban.reason as reason"
-                                          "FROM login LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser"
+                                          "login.session as session, lobby_ban.reason as reason "
+                                          "FROM login LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser "
                                           "WHERE login=%s AND password=%s", (login, password))
 
                 if cursor.rowcount != 1:
