@@ -188,7 +188,7 @@ def create_player():
         p.getId = mock.Mock(return_value=id)
         p.getIp = mock.Mock(return_value=ip)
         p.ip = ip
-        p.gamePort = port
+        p.game_port = port
         p.action = action
         p.id = id
         p.login = login
