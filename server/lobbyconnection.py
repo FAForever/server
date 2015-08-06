@@ -851,7 +851,7 @@ Thanks,\n\
                 # TODO: Hash passwords server-side so the hashing actually *does* something.
                 yield from cursor.execute("SELECT login.id as id, login.validated as validated,"
                                           "login.email as email, login.steamchecked as steamchecked,"
-                                          "login.session as session, lobby_ban.reason as reason "
+                                          "lobby_ban.reason as reason "
                                           "FROM login LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser "
                                           "WHERE login=%s AND password=%s", (login, password))
 
@@ -861,7 +861,7 @@ Thanks,\n\
                                        text="Login not found or password incorrect. They are case sensitive."))
                     return
 
-                player_id, validated, self.email, self.steamChecked, session, ban_reason = yield from cursor.fetchone()
+                player_id, validated, self.email, self.steamChecked, ban_reason = yield from cursor.fetchone()
                 if ban_reason != None:
                     reason = "You are banned from FAF.\n Reason :\n " + ban_reason
                     self.sendJSON(dict(command="notice", style="error", text=reason))
