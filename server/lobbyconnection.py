@@ -28,6 +28,7 @@ import os
 import shutil
 import random
 import re
+import rsa
 import time
 import smtplib
 from email.mime.text import MIMEText
@@ -35,6 +36,7 @@ import email.utils
 
 from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QObject
 from PySide.QtSql import QSqlQuery
+from Crypto.Cipher import AES
 import pygeoip
 import trueskill
 from trueskill import Rating
@@ -43,7 +45,7 @@ from server.decorators import timed, with_logger
 from server.games.game import GameState
 from server.players import *
 from .game_service import GameService
-from passwords import PW_SALT, STEAM_APIKEY, PRIVATE_KEY, decodeUniqueId, MAIL_ADDRESS
+from passwords import PW_SALT, STEAM_APIKEY, STEAM_FA_ID, PRIVATE_KEY, MAIL_ADDRESS
 import config
 from config import Config
 from server.protocol import QDataStreamProtocol
@@ -865,6 +867,176 @@ Thanks,\n\
         self._authenticated = True
 
         return player_id, permissionGroup or 0
+
+    def decodeUniqueId(lobby, string, login):
+        try:
+            uid = 0
+            query = QSqlQuery(lobby.parent.db)
+
+            steamLinked = False
+
+            query.prepare("SELECT id, IFNULL(steamid,-1), steamchecked FROM login WHERE login.login = ?")
+            query.addBindValue(login)
+
+            if not query.exec_() :
+                lobby.log.debug(query.lastQuery())
+            if query.size() == 0 :
+                lobby.log.debug("can't find login")
+                lobby.sendJSON(dict(command="notice", style="error", text="Your login is invalid! (it's case sensitive)"))
+                return None
+            else :
+                query.first()
+                uid = int(query.value(0))
+                lobby.log.debug("query: " + str(query))
+
+
+                if int(query.value(1)) != -1 and int(query.value(2)) == 0:
+                    #check the steam account
+                    vanity = int(query.value(1))
+                    games = api.interface("IPlayerService").GetOwnedGames(steamid = str(vanity))
+                    try:
+                        games["response"]
+                    except:
+                        pass
+                    if games :
+                        if "response" in games:
+                            if "games" in games["response"]:
+                                lobby.log.debug("game found")
+                                if STEAM_FA_ID in [game["appid"] for game in games["response"]["games"]]:
+                                    query2 = QSqlQuery(lobby.parent.db)
+                                    query2.prepare("UPDATE `login` SET `steamchecked`=1 WHERE id = ?")
+                                    query2.addBindValue(uid)
+                                    query2.exec_()
+                                    steamLinked = True
+                                    lobby.sendJSON(dict(command="notice", style="info", text="Your FAF account is now tied to steam."))
+                    if not steamLinked:
+                        lobby.sendJSON(dict(command="notice", style="error", text="You've registered a steam account but we can't find Forged Alliance.<br>Steam is now unlinked from your account.<br><br>PROBABLE CAUSE: Your profile is private. Try to relink it, and relog while setting it in public.<br>You can set it back to private after your first login."))
+                        query2 = QSqlQuery(lobby.parent.db)
+                        query2.prepare("UPDATE login SET steamid=NULL WHERE id=?")
+                        query2.addBindValue(uid)
+                        query2.exec_()
+
+
+                elif int(query.value(2)) == 1:
+                    lobby.log.debug("Steam linked verified")
+                    steamLinked = True
+
+            privkey = lobby.privkey
+
+            message = (base64.b64decode(string))
+
+            trailing = ord( message[0])
+
+            message = message[1:]
+
+
+            iv = (base64.b64decode(message[:24]))
+            encoded = message[24:-40]
+            key = (base64.b64decode(message[-40:]))
+
+            AESkey = rsa.decrypt(key, privkey)
+
+            cipher = AES.new(AESkey, AES.MODE_CBC, iv)
+            DecodeAES = lambda c, e: c.decrypt(base64.b64decode(e))
+            decoded = DecodeAES(cipher, encoded)[:-trailing]
+            regexp = re.compile(r'[0-9a-zA-Z\\]("")')
+            decoded = regexp.sub('"', decoded)
+            decoded = decoded.replace("\\", "\\\\")
+            regexp = re.compile('[^\x09\x0A\x0D\x20-\x7F]')
+            decoded = regexp.sub('', decoded)
+            jstring = json.loads(decoded)
+
+
+            if str(jstring["session"]) != str(lobby.session) :
+                lobby.sendJSON(dict(command="notice", style="error", text="Your session is corrupted. Try relogging"))
+                return None
+
+            if login == "en9dmp" or login == "acelenny" or login == "CybranKiller" or login == "RockaholicRaven" or login == "Pelikan":
+                ##These guy have the same uniqueid for some reason, they have a free pass.
+                m = hashlib.md5()
+                m.update(str(login))
+                return m.hexdigest()
+
+
+            machine = jstring["machine"]
+
+            UUID = machine.get('UUID', 0)
+            mem_SerialNumber = machine.get('mem_SerialNumber', 0)
+            DeviceID = machine.get('DeviceID', 0)
+            Manufacturer = machine.get('Manufacturer', 0)
+            Name = machine.get('Name', 0)
+            ProcessorId = machine.get('ProcessorId', 0)
+            SMBIOSBIOSVersion = machine.get('SMBIOSBIOSVersion', 0)
+            SerialNumber = machine.get('SerialNumber', 0)
+            VolumeSerialNumber = machine.get('VolumeSerialNumber', 0)
+
+            if "wine" in Manufacturer.lower():
+                pass
+                #lobby.sendJSON(dict(command="notice", style="warning", text="Forged Alliance Forever doesn't support Linux.\nYou may experience troubles but no support can be given.\n\nThe main known problem is a message telling you to steam link your account.\nNothing can be done about it if you don't steam-link."))
+
+            for i in  machine.values() :
+                if "vmware" in i.lower() or "virtual" in i.lower() or "innotek" in i.lower() or "qemu" in i.lower() or "parallels" in i.lower() or "bochs" in i.lower() :
+                    if not steamLinked:
+                        lobby.sendJSON(dict(command="notice", style="error", text="You need to link your account to Steam in order to use FAF in a Virtual Machine. You can contact the admin in the forums."))
+                        return None
+
+            m = hashlib.md5()
+
+            m.update(str(UUID) + str(mem_SerialNumber) + str(DeviceID) + str(Manufacturer) + str(Name) + str(ProcessorId) + str(SMBIOSBIOSVersion) + str(SerialNumber) + str(VolumeSerialNumber))
+
+            if str(UUID) == "1E9F4140-5BCB-11D9-A71D-14DAE9EFAA1D" or str(UUID) == "00000000-0000-0000-0000-6C626DDF5D09":
+                if login != "IKatherine":
+                    lobby.sendJSON(dict(command="notice", style="error", text="As promised, I've banned you a month for each account you've created. You can come back in 4,2 years.\nGuess I won the bet hey :)"))
+                    query = QSqlQuery(lobby.parent.db)
+                    query.prepare("INSERT INTO `lobby_ban` (idUser, reason) VALUES ((SELECT id FROM login WHERE login.login = ?),?)")
+                    query.addBindValue(login)
+                    query.addBindValue("No tectec allowed.")
+                    query.exec_()
+                    return None
+                else:
+                    lobby.sendJSON(dict(command="notice", style="info", text="I'm watching you..."))
+
+            if str(UUID) == "50D2F9C0-14D0-11E1-9F68-5404A642043C":
+                lobby.sendJSON(dict(command="notice", style="error", text="You are banned, deal with it."))
+                query.prepare("INSERT INTO `lobby_ban` (idUser, reason) VALUES ((SELECT id FROM login WHERE login.login = ?),?)")
+                query.addBindValue(login)
+                query.addBindValue("Attempt to bypass a ban.")
+                query.exec_()
+                return None
+
+
+            if str(m.hexdigest()).startswith("7b299509fcd33735ea425ad26bed4661") :
+                return login
+
+
+            query.prepare("SELECT userid FROM `uniqueid` WHERE MD5( CONCAT( `uuid` , `mem_SerialNumber` , `deviceID` , `manufacturer` , `name` , `processorId` , `SMBIOSBIOSVersion` , `serialNumber` , `volumeSerialNumber` ) ) = ?")
+            query.addBindValue(str(m.hexdigest()))
+            if not query.exec_() :
+                lobby.log.debug(query.lastQuery())
+            if query.size() == 0 :
+                query2 = QSqlQuery(lobby.parent.db)
+                query2.prepare("INSERT INTO `uniqueid` (`userid`, `uuid`, `mem_SerialNumber`, `deviceID`, `manufacturer`, `name`, `processorId`, `SMBIOSBIOSVersion`, `serialNumber`, `volumeSerialNumber`) VALUES ((SELECT id FROM login WHERE login.login = ?),?,?,?,?,?,?,?,?,?)")
+                query2.addBindValue(login)
+                query2.addBindValue(str(UUID))
+                query2.addBindValue(str(mem_SerialNumber))
+                query2.addBindValue(str(DeviceID))
+                query2.addBindValue(str(Manufacturer))
+                query2.addBindValue(str(Name))
+                query2.addBindValue(str(ProcessorId))
+                query2.addBindValue(str(SMBIOSBIOSVersion))
+                query2.addBindValue(str(SerialNumber))
+                query2.addBindValue(str(VolumeSerialNumber))
+                if not query2.exec_() :
+                    lobby.log.error("Failed query :")
+                    lobby.log.error(query2.lastQuery())
+                    lobby.log.error(query2.lastError())
+
+
+            return m.hexdigest()
+
+        except Exception as ex:
+            lobby._logger.exception(ex)
+
 
     @asyncio.coroutine
     def command_hello(self, message):
