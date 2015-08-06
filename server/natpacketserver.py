@@ -46,6 +46,7 @@ class NatPacketServer(Subscribable):
                     'command_id': 'ProcessServerNatPacket',
                     'arguments': ["{}:{}".format(addr[0], addr[1]), data[1:].decode()]
                 })
+                self._socket.sendto(b"\x08OK", addr)
         except OSError as ex:
             if ex.errno == socket.EWOULDBLOCK:
                 pass
