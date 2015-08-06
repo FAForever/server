@@ -10,4 +10,4 @@ quamash
 steamodd
 trueskill
 rsa
-Crypto
+pycrypto
