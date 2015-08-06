@@ -316,8 +316,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         :param peer: Client to connect to
         :return: (ConnectivityState, own_addr, remote_addr)
         """
-        own_state = self.connectivity_state
-        peer_state = peer.connectivity_state
+        own_state = self._connectivity_state
+        peer_state = peer._connectivity_state
         (done, pending) = yield from asyncio.wait([own_state, peer_state])
         if pending:
             self._logger.debug("Aborting due to lack of connectivity")
