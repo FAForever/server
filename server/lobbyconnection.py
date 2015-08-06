@@ -972,7 +972,6 @@ Thanks,\n\
 
             if "wine" in Manufacturer.lower():
                 pass
-                #lobby.sendJSON(dict(command="notice", style="warning", text="Forged Alliance Forever doesn't support Linux.\nYou may experience troubles but no support can be given.\n\nThe main known problem is a message telling you to steam link your account.\nNothing can be done about it if you don't steam-link."))
 
             for i in  machine.values() :
                 if "vmware" in i.lower() or "virtual" in i.lower() or "innotek" in i.lower() or "qemu" in i.lower() or "parallels" in i.lower() or "bochs" in i.lower() :
@@ -983,31 +982,6 @@ Thanks,\n\
             m = hashlib.md5()
 
             m.update(str(UUID) + str(mem_SerialNumber) + str(DeviceID) + str(Manufacturer) + str(Name) + str(ProcessorId) + str(SMBIOSBIOSVersion) + str(SerialNumber) + str(VolumeSerialNumber))
-
-            if str(UUID) == "1E9F4140-5BCB-11D9-A71D-14DAE9EFAA1D" or str(UUID) == "00000000-0000-0000-0000-6C626DDF5D09":
-                if login != "IKatherine":
-                    lobby.sendJSON(dict(command="notice", style="error", text="As promised, I've banned you a month for each account you've created. You can come back in 4,2 years.\nGuess I won the bet hey :)"))
-                    query = QSqlQuery(lobby.parent.db)
-                    query.prepare("INSERT INTO `lobby_ban` (idUser, reason) VALUES ((SELECT id FROM login WHERE login.login = ?),?)")
-                    query.addBindValue(login)
-                    query.addBindValue("No tectec allowed.")
-                    query.exec_()
-                    return None
-                else:
-                    lobby.sendJSON(dict(command="notice", style="info", text="I'm watching you..."))
-
-            if str(UUID) == "50D2F9C0-14D0-11E1-9F68-5404A642043C":
-                lobby.sendJSON(dict(command="notice", style="error", text="You are banned, deal with it."))
-                query.prepare("INSERT INTO `lobby_ban` (idUser, reason) VALUES ((SELECT id FROM login WHERE login.login = ?),?)")
-                query.addBindValue(login)
-                query.addBindValue("Attempt to bypass a ban.")
-                query.exec_()
-                return None
-
-
-            if str(m.hexdigest()).startswith("7b299509fcd33735ea425ad26bed4661") :
-                return login
-
 
             query.prepare("SELECT userid FROM `uniqueid` WHERE MD5( CONCAT( `uuid` , `mem_SerialNumber` , `deviceID` , `manufacturer` , `name` , `processorId` , `SMBIOSBIOSVersion` , `serialNumber` , `volumeSerialNumber` ) ) = ?")
             query.addBindValue(str(m.hexdigest()))
