@@ -376,8 +376,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         nat_message = "Hello from {}".format(self.player.id)
         addr = peer.connectivity_state.addr if not use_address else use_address
         self._logger.debug("{} probing {} at {} with msg: {}".format(self, peer, addr, nat_message))
-        for _ in range(2):
-            self.send_SendNatPacket(addr, nat_message)
+        for _ in range(3):
+            for i in range(0, 4):
+                addr, port = addr.split(':')
+                self.send_SendNatPacket('{}:{}'.format(addr, int(port) + i), nat_message)
         try:
             received_message = asyncio.Future()
             peer.nat_packets[nat_message] = received_message
