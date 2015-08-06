@@ -35,8 +35,6 @@ class Player(BasePlayer):
         self.uuid = uuid
         self.session = session
         self._login = login
-        self._ip = ''
-        self.localIp = ''
 
         self.global_rating = global_rating
         self.ladder_rating = ladder_rating
