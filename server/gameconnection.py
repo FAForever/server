@@ -372,8 +372,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
         :return: resolved_address
         """
+        assert peer.connectivity_state
         nat_message = "Hello from {}".format(self.player.id)
-        addr = peer.connectivity_state.result().addr if not use_address else use_address
+        addr = peer.connectivity_state.addr if not use_address else use_address
         self._logger.debug("{} probing {} at {} with msg: {}".format(self, peer, addr, nat_message))
         for _ in range(2):
             self.send_SendNatPacket(addr, nat_message)
@@ -649,8 +650,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     s.connect(PROXY_SERVER)
                     s.sendall(json.dumps(dict(command="cleanup", sourceip=self.player.ip)).encode())
                     s.close()
-            if self.connectivity_state.done()\
-                    and self.connectivity_state.result() == ConnectivityState.PROXY:
+            if self.connectivity_state and self.connectivity_state.state == ConnectivityState.PROXY:
                 wiki_link = "{}index.php?title=Connection_issues_and_solutions".format(config.WIKI_LINK)
                 text = "Your network is not setup right.<br>The server had to make you connect to other players by proxy.<br>Please visit <a href='{}'>{}</a>" + \
                        "to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs,".format(wiki_link, wiki_link)
