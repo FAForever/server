@@ -17,7 +17,6 @@ def test_map_dup_reverse():
     p1 = mock.Mock()
     p2 = mock.Mock()
     assert map.map(p1, p2) == map.map(p2, p1)
-    assert map.map(p1, p2)
 
 
 def test_map_all():
