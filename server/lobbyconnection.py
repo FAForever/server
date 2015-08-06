@@ -921,7 +921,6 @@ Thanks,\n\
 
 
                 elif int(query.value(2)) == 1:
-                    lobby.log.debug("Steam linked verified")
                     steamLinked = True
 
             privkey = lobby.privkey
@@ -932,13 +931,13 @@ Thanks,\n\
 
             message = message[1:]
 
-
             iv = (base64.b64decode(message[:24]))
             encoded = message[24:-40]
             key = (base64.b64decode(message[-40:]))
 
             AESkey = rsa.decrypt(key, privkey)
 
+            # What the hell is this?
             cipher = AES.new(AESkey, AES.MODE_CBC, iv)
             DecodeAES = lambda c, e: c.decrypt(base64.b64decode(e))
             decoded = DecodeAES(cipher, encoded)[:-trailing]
@@ -970,13 +969,13 @@ Thanks,\n\
                 pass
 
             for i in  machine.values() :
-                if "vmware" in i.lower() or "virtual" in i.lower() or "innotek" in i.lower() or "qemu" in i.lower() or "parallels" in i.lower() or "bochs" in i.lower() :
+                low = i.lower()
+                if "vmware" in low or "virtual" in low or "innotek" in low or "qemu" in low or "parallels" in low or "bochs" in low :
                     if not steamLinked:
                         lobby.sendJSON(dict(command="notice", style="error", text="You need to link your account to Steam in order to use FAF in a Virtual Machine. You can contact the admin in the forums."))
                         return None
 
             m = hashlib.md5()
-
             m.update(str(UUID) + str(mem_SerialNumber) + str(DeviceID) + str(Manufacturer) + str(Name) + str(ProcessorId) + str(SMBIOSBIOSVersion) + str(SerialNumber) + str(VolumeSerialNumber))
 
             query.prepare("SELECT userid FROM `uniqueid` WHERE MD5( CONCAT( `uuid` , `mem_SerialNumber` , `deviceID` , `manufacturer` , `name` , `processorId` , `SMBIOSBIOSVersion` , `serialNumber` , `volumeSerialNumber` ) ) = ?")
