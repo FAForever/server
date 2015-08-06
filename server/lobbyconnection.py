@@ -826,6 +826,40 @@ Thanks,\n\
                 query.addBindValue(avatar)
                 query.exec_()
 
+    def check_user_login(self, cursor, login, password):
+        # TODO: Hash passwords server-side so the hashing actually *does* something.
+        yield from cursor.execute("SELECT login.id as id, login.validated as validated,"
+                                  "login.email as email, login.steamchecked as steamchecked,"
+                                  "lobby_ban.reason as reason "
+                                  "FROM login LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser "
+                                  "WHERE login=%s AND password=%s", (login, password))
+
+        if cursor.rowcount != 1:
+            self._logger.info("Invalid login or password")
+            self.sendJSON(dict(command="notice", style="error",
+                               text="Login not found or password incorrect. They are case sensitive."))
+            return
+
+        player_id, validated, self.email, self.steamChecked, ban_reason = yield from cursor.fetchone()
+        if ban_reason != None:
+            reason = "You are banned from FAF.\n Reason :\n " + ban_reason
+            self.sendJSON(dict(command="notice", style="error", text=reason))
+            return
+
+        if validated == 0:
+            validate_account_url = "{}faf/validateAccount.php".format(Config['app_url'])
+            reason = ("Your account is not validated. Please visit <a href='{}'>{}</a>. "
+                      "<br>Please re-create an account if your email is not correct (<b>{}</b>)"
+                      .format(validate_account_url, validate_account_url, self.email))
+            self.resendMail(login)
+            self.sendJSON(dict(command="notice", style="error", text=reason))
+            return
+
+        self._logger.debug("Login from: {}, {}, {}".format(player_id, self.email, self.session))
+        self._authenticated = True
+
+        return player_id
+
     @asyncio.coroutine
     def command_hello(self, message):
         try:
@@ -848,39 +882,12 @@ Thanks,\n\
                     self.sendJSON(dict(command="welcome", update=updateFile))
                     return
 
-                # TODO: Hash passwords server-side so the hashing actually *does* something.
-                yield from cursor.execute("SELECT login.id as id, login.validated as validated,"
-                                          "login.email as email, login.steamchecked as steamchecked,"
-                                          "lobby_ban.reason as reason "
-                                          "FROM login LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser "
-                                          "WHERE login=%s AND password=%s", (login, password))
+                player_id = self.check_user_login(cursor, login, password)
 
-                if cursor.rowcount != 1:
-                    self._logger.info("Invalid login or password")
-                    self.sendJSON(dict(command="notice", style="error",
-                                       text="Login not found or password incorrect. They are case sensitive."))
+                # Login was not approved.
+                if player_id == None:
                     return
 
-                player_id, validated, self.email, self.steamChecked, ban_reason = yield from cursor.fetchone()
-                if ban_reason != None:
-                    reason = "You are banned from FAF.\n Reason :\n " + ban_reason
-                    self.sendJSON(dict(command="notice", style="error", text=reason))
-                    return
-
-                self._logger.debug("Login from: {}, {}, {}".format(player_id, self.email, self.session))
-                self._authenticated = True
-
-            if validated == 0:
-                validate_account_url = "{}faf/validateAccount.php".format(Config['app_url'])
-                reason = ("Your account is not validated. Please visit <a href='{}'>{}</a>. "
-                          "<br>Please re-create an account if your email is not correct (<b>{}</b>)"
-                          .format(validate_account_url, validate_account_url, self.email))
-                self.resendMail(login)
-                self.sendJSON(dict(command="notice", style="error", text=reason))
-                return
-
-            with (yield from self.db_pool) as conn:
-                cursor = yield from conn.cursor()
                 yield from cursor.execute("UPDATE login "
                                           "SET `session`=%s, ip=%s "
                                           "WHERE id=%s", (self.session, self.ip, player_id))
