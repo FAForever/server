@@ -103,8 +103,7 @@ class Game(BaseGame):
         self.access = "public"
         self.minPlayer = minPlayer
         self.maxPlayer = 12
-        self.host = None
-        self.hostPlayer = host
+        self.host = host
         self.hostuuid = hostId
         self.hostip = hostIp
         self.hostport = hostPort
