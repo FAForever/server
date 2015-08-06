@@ -226,8 +226,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         """
         try:
             with TestPeer(self,
-                          self.player.getIp(),
-                          self.player.gamePort,
+                          self.player.ip,
+                          self.player.game_port,
                           self.player.id) as peer_test:
                 self._connectivity_state = yield from peer_test.determine_connectivity()
                 self.connectivity_state.set_result(self._connectivity_state)
