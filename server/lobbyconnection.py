@@ -704,99 +704,100 @@ Thanks,\n\
     def command_admin(self, message):
         action = message['action']
 
-        if action == "closeFA" and self.player.admin:
-            who = message['user']
+        if self.player.admin:
+            if action == "closeFA":
+                who = message['user']
 
-            player = self.players.findByName(who)
-            if player:
-                self._logger.info('Administrative action: {} closed game for {}'.format(self.player, player))
-                player.lobbyThread.sendJSON(dict(command="notice", style="info",
-                                   text=("Your game was closed by an administrator ({admin_name}). "
-                                         "Please refer to our rules for the lobby/game here {rule_link}."
-                                   .format(admin_name=self.player.login,
-                                           rule_link=config.RULE_LINK))))
-                player.lobbyThread.sendJSON(dict(command="notice", style="kill"))
-
-        elif action == "join_channel" and self.player.mod:
-            whos = message['users']
-            channel = message['channel']
-
-            for who in whos:
                 player = self.players.findByName(who)
                 if player:
-                    player.lobbyThread.sendJSON(dict(command="social", autojoin=[channel]))
+                    self._logger.info('Administrative action: {} closed game for {}'.format(self.player, player))
+                    player.lobbyThread.sendJSON(dict(command="notice", style="info",
+                                       text=("Your game was closed by an administrator ({admin_name}). "
+                                             "Please refer to our rules for the lobby/game here {rule_link}."
+                                       .format(admin_name=self.player.login,
+                                               rule_link=config.RULE_LINK))))
+                    player.lobbyThread.sendJSON(dict(command="notice", style="kill"))
 
-        elif action == "closelobby" and self.player.admin:
-            who = message['user']
+            elif action == "closelobby":
+                who = message['user']
 
-            player = self.players.findByName(who)
-            if player:
-                self._logger.info('Administrative action: {} closed game for {}'.format(self.player, player))
-                player.lobbyThread.sendJSON(dict(command="notice", style="info",
-                                   text=("Your client was closed by an administrator ({admin_name}). "
-                                         "Please refer to our rules for the lobby/game here {rule_link}."
-                                   .format(admin_name=self.player.login,
-                                           rule_link=config.RULE_LINK))))
-                player.lobbyThread.sendJSON(dict(command="notice", style="kick"))
-                player.lobbyThread.abort()
+                player = self.players.findByName(who)
+                if player:
+                    self._logger.info('Administrative action: {} closed game for {}'.format(self.player, player))
+                    player.lobbyThread.sendJSON(dict(command="notice", style="info",
+                                       text=("Your client was closed by an administrator ({admin_name}). "
+                                             "Please refer to our rules for the lobby/game here {rule_link}."
+                                       .format(admin_name=self.player.login,
+                                               rule_link=config.RULE_LINK))))
+                    player.lobbyThread.sendJSON(dict(command="notice", style="kick"))
+                    player.lobbyThread.abort()
 
-        elif action == "requestavatars" and self.player.admin:
-            query = QSqlQuery(self.db)
-            query.prepare("SELECT url, tooltip FROM `avatars_list`")
-            query.exec_()
-            if query.size() > 0:
-                avatarList = []
-                while query.next():
-                    avatar = {"url": str(query.value(0)), "tooltip": str(query.value(1))}
-                    avatarList.append(avatar)
-
-                jsonToSend = {"command": "admin", "avatarlist": avatarList}
-                self.sendJSON(jsonToSend)
-
-        elif action == "remove_avatar" and self.player.admin:
-            idavatar = message["idavatar"]
-            iduser = message["iduser"]
-            query = QSqlQuery(self.db)
-            query.prepare("DELETE FROM `avatars` WHERE `idUser` = ? AND `idAvatar` = ?")
-            query.addBindValue(iduser)
-            query.addBindValue(idavatar)
-            query.exec_()
-
-        elif action == "list_avatar_users" and self.player.admin:
-            avatar = message['avatar']
-            if avatar is not None:
+            elif action == "requestavatars":
                 query = QSqlQuery(self.db)
-                query.prepare(
-                    "SELECT `idUser`, `login`, `idAvatar` FROM `avatars` LEFT JOIN `login` ON `login`.`id` = `idUser`  WHERE `idAvatar` = (SELECT id FROM avatars_list WHERE avatars_list.url = ?)")
-                query.addBindValue(avatar)
+                query.prepare("SELECT url, tooltip FROM `avatars_list`")
                 query.exec_()
                 if query.size() > 0:
                     avatarList = []
                     while query.next():
-                        avatar = {"iduser": str(query.value(0)), "login": str(query.value(1))}
-                        avatarid = query.value(2)
+                        avatar = {"url": str(query.value(0)), "tooltip": str(query.value(1))}
                         avatarList.append(avatar)
 
-            jsonToSend = {"command": "admin", "player_avatar_list": avatarList, "avatar_id": avatarid}
-            self.sendJSON(jsonToSend)
+                    jsonToSend = {"command": "admin", "avatarlist": avatarList}
+                    self.sendJSON(jsonToSend)
 
-        elif action == "add_avatar" and self.player.admin:
-            who = message['user']
-            avatar = message['avatar']
+            elif action == "remove_avatar":
+                idavatar = message["idavatar"]
+                iduser = message["iduser"]
+                query = QSqlQuery(self.db)
+                query.prepare("DELETE FROM `avatars` WHERE `idUser` = ? AND `idAvatar` = ?")
+                query.addBindValue(iduser)
+                query.addBindValue(idavatar)
+                query.exec_()
 
-            query = QSqlQuery(self.db)
-            if avatar is None:
-                query.prepare(
-                    "DELETE FROM `avatars` WHERE `idUser` = (SELECT `id` FROM `login` WHERE `login`.`login` = ?)")
-                query.addBindValue(who)
-                query.exec_()
-            else:
-                query.prepare(
-                    "INSERT INTO `avatars`(`idUser`, `idAvatar`) VALUES ((SELECT id FROM login WHERE login.login = ?),(SELECT id FROM avatars_list WHERE avatars_list.url = ?)) ON DUPLICATE KEY UPDATE `idAvatar` = (SELECT id FROM avatars_list WHERE avatars_list.url = ?)")
-                query.addBindValue(who)
-                query.addBindValue(avatar)
-                query.addBindValue(avatar)
-                query.exec_()
+            elif action == "list_avatar_users":
+                avatar = message['avatar']
+                if avatar is not None:
+                    query = QSqlQuery(self.db)
+                    query.prepare(
+                        "SELECT `idUser`, `login`, `idAvatar` FROM `avatars` LEFT JOIN `login` ON `login`.`id` = `idUser`  WHERE `idAvatar` = (SELECT id FROM avatars_list WHERE avatars_list.url = ?)")
+                    query.addBindValue(avatar)
+                    query.exec_()
+                    if query.size() > 0:
+                        avatarList = []
+                        while query.next():
+                            avatar = {"iduser": str(query.value(0)), "login": str(query.value(1))}
+                            avatarid = query.value(2)
+                            avatarList.append(avatar)
+
+                jsonToSend = {"command": "admin", "player_avatar_list": avatarList, "avatar_id": avatarid}
+                self.sendJSON(jsonToSend)
+
+            elif action == "add_avatar":
+                who = message['user']
+                avatar = message['avatar']
+
+                query = QSqlQuery(self.db)
+                if avatar is None:
+                    query.prepare(
+                        "DELETE FROM `avatars` WHERE `idUser` = (SELECT `id` FROM `login` WHERE `login`.`login` = ?)")
+                    query.addBindValue(who)
+                    query.exec_()
+                else:
+                    query.prepare(
+                        "INSERT INTO `avatars`(`idUser`, `idAvatar`) VALUES ((SELECT id FROM login WHERE login.login = ?),(SELECT id FROM avatars_list WHERE avatars_list.url = ?)) ON DUPLICATE KEY UPDATE `idAvatar` = (SELECT id FROM avatars_list WHERE avatars_list.url = ?)")
+                    query.addBindValue(who)
+                    query.addBindValue(avatar)
+                    query.addBindValue(avatar)
+                    query.exec_()
+        elif self.player.mod:
+            if action == "join_channel":
+                whos = message['users']
+                channel = message['channel']
+
+                for who in whos:
+                    player = self.players.findByName(who)
+                    if player:
+                        player.lobbyThread.sendJSON(dict(command="social", autojoin=[channel]))
 
     @asyncio.coroutine
     def check_user_login(self, cursor, login, password):
