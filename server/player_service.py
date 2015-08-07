@@ -98,6 +98,24 @@ class PlayerService(object):
         else:
             return 0
 
+    # Get a player ID given the name. Checks the in-memory player list first, and falls back to a
+    # database query should the user be offline (generally should be used for things like the friend
+    # list where you expect the user should be online, and will only be offline if a rare race
+    # condition occurs)
+    def get_player_id(self, name):
+        online = self.findByName(name)
+        if online:
+            return online
+
+        with (yield from self.db_pool) as conn:
+            cursor = yield from conn.cursor()
+
+            yield from cursor.execute("SELECT id FROM login WHERE login = %s", name)
+            if cursor.rowcount != 1:
+                return 0
+            else:
+                return cursor.fetchone()
+
     def findByName(self, name):
         for player in self.players:
             if player.getLogin() == name:

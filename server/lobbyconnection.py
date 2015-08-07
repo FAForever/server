@@ -650,12 +650,12 @@ Thanks,\n\
             self._logger.info("No-op social_remove ignored.")
             return
 
-        query += " = (SELECT id FROM login WHERE login.login = %s) AND idUser = %s"
+        query += " = %s AND idUser = %s"
 
         with (yield from self.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute(query, self.player.uuid, target)
+            yield from cursor.execute(query, self.players.get_player_id(target).uuid, self.player.uuid)
 
     @timed()
     @asyncio.coroutine
@@ -671,12 +671,12 @@ Thanks,\n\
             self._logger.info("No-op social_add ignored.")
             return
 
-        query += " values (%s,(SELECT id FROM login WHERE login.login = %s))"
+        query += " values (%s,%s)"
 
         with (yield from self.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute(query, self.player.uuid, target)
+            yield from cursor.execute(query, self.player.uuid, self.players.get_player_id(target))
 
     @timed()
     def command_admin(self, message):
