@@ -183,27 +183,6 @@ def test_mod_vault_no_type(fa_server_thread):
     with pytest.raises(KeyError):
         fa_server_thread.command_modvault({'invalidKey': None})
 
-
-# Social
-def test_social_invalid(fa_server_thread):
-    with pytest.raises(KeyError):
-        fa_server_thread.command_social({'invalidKey': None})
-
-
-def test_social_friends(fa_server_thread):
-    assert fa_server_thread.friendList == []
-    friends = {'Sheeo', 'Dragonfire', 'Spooky'}
-    fa_server_thread.command_social({'friends': friends})
-    assert fa_server_thread.friendList == friends
-
-
-def test_social_foes(fa_server_thread):
-    assert fa_server_thread.foeList == []
-    foes = {'Cheater', 'Haxxor', 'Boom1234'}
-    fa_server_thread.command_social({'foes': foes})
-    assert fa_server_thread.foeList == foes
-
-
 # Ask Session
 # TODO: @sheeo add special cases with Timer
 def test_ask_session(fa_server_thread):
