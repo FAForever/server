@@ -49,17 +49,12 @@ from server.decorators import timed, with_logger
 from server.games.game import GameState
 from server.players import *
 from .game_service import GameService
-from passwords import STEAM_APIKEY, STEAM_FA_ID, PRIVATE_KEY, MAIL_ADDRESS, VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY
+from passwords import PRIVATE_KEY, MAIL_ADDRESS, VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY
 import config
 from config import Config
 from server.protocol import QDataStreamProtocol
 
-
 gi = pygeoip.GeoIP('GeoIP.dat', pygeoip.MEMORY_CACHE)
-
-from steam import api
-
-api.key.set(STEAM_APIKEY)
 
 @with_logger
 class LobbyConnection(QObject):
@@ -81,7 +76,6 @@ class LobbyConnection(QObject):
         self.player = None
         self.initPing = True
         self.ponged = False
-        self.steamChecked = False
         self.logPrefix = "\t"
         self.missedPing = 0
         self.friendList = []
@@ -783,7 +777,7 @@ Thanks,\n\
         yield from cursor.execute("SELECT login.id as id,"
                                   "login.email as email,"
                                   "login.password as password,"
-                                  "login.steamchecked as steamchecked,"
+                                  "login.steamid as steamid,"
                                   "lobby_ban.reason as reason,"
                                   "lobby_admin.group as admin_group "
                                   "FROM login "
@@ -796,7 +790,7 @@ Thanks,\n\
                                text="Login not found or password incorrect. They are case sensitive."))
             return
 
-        player_id, self.email, dbPassword, self.steamChecked, ban_reason, permissionGroup = yield from cursor.fetchone()
+        player_id, self.email, dbPassword, steamid, ban_reason, permissionGroup = yield from cursor.fetchone()
         if dbPassword != password:
             self.sendJSON(dict(command="notice", style="error",
                                text="Login not found or password incorrect. They are case sensitive."))
@@ -810,57 +804,15 @@ Thanks,\n\
         self._logger.debug("Login from: {}, {}, {}".format(player_id, self.email, self.session))
         self._authenticated = True
 
-        return player_id, permissionGroup or 0
+        return player_id, permissionGroup or 0, steamid
 
     def decodeUniqueId(self, string, login):
         try:
-            uid = 0
             query = QSqlQuery(self.db)
 
-            steamLinked = False
-
-            query.prepare("SELECT id, IFNULL(steamid,-1), steamchecked FROM login WHERE login.login = ?")
+            query.prepare("SELECT id, steamid FROM login WHERE login.login = ?")
             query.addBindValue(login)
-
-            if query.size() == 0 :
-                self.log.debug("can't find login")
-                self.sendJSON(dict(command="notice", style="error", text="Your login is invalid! (it's case sensitive)"))
-                return None
-            else :
-                query.first()
-                uid = int(query.value(0))
-                self.log.debug("query: " + str(query))
-
-
-                if int(query.value(1)) != -1 and int(query.value(2)) == 0:
-                    #check the steam account
-                    vanity = int(query.value(1))
-                    games = api.interface("IPlayerService").GetOwnedGames(steamid = str(vanity))
-                    try:
-                        games["response"]
-                    except:
-                        pass
-                    if games :
-                        if "response" in games:
-                            if "games" in games["response"]:
-                                self.log.debug("game found")
-                                if STEAM_FA_ID in [game["appid"] for game in games["response"]["games"]]:
-                                    query2 = QSqlQuery(self.db)
-                                    query2.prepare("UPDATE `login` SET `steamchecked`=1 WHERE id = ?")
-                                    query2.addBindValue(uid)
-                                    query2.exec_()
-                                    steamLinked = True
-                                    self.sendJSON(dict(command="notice", style="info", text="Your FAF account is now tied to steam."))
-                    if not steamLinked:
-                        self.sendJSON(dict(command="notice", style="error", text="You've registered a steam account but we can't find Forged Alliance.<br>Steam is now unlinked from your account.<br><br>PROBABLE CAUSE: Your profile is private. Try to relink it, and relog while setting it in public.<br>You can set it back to private after your first login."))
-                        query2 = QSqlQuery(self.db)
-                        query2.prepare("UPDATE login SET steamid=NULL WHERE id=?")
-                        query2.addBindValue(uid)
-                        query2.exec_()
-
-
-                elif int(query.value(2)) == 1:
-                    steamLinked = True
+            steamLinked = query.size() == 1
 
             privkey = self.privkey
 
@@ -968,13 +920,13 @@ Thanks,\n\
                     self.sendJSON(dict(command="welcome", update=updateFile))
                     return
 
-                player_id, permissionGroup = yield from self.check_user_login(cursor, login, password)
+                player_id, permissionGroup, steamid = yield from self.check_user_login(cursor, login, password)
 
                 # Login was not approved.
                 if not player_id:
                     return
 
-            if not self.steamChecked:
+            if not self.steamid:
                 # If this id is associated with a different steam account, explode.
                 query = QSqlQuery(self.db)
                 query.prepare("SELECT uniqueid FROM steam_uniqueid WHERE uniqueId = ?")

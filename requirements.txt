@@ -13,5 +13,4 @@ pytest-cov
 pyflakes
 quamash
 rsa
-steamodd
 trueskill

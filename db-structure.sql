@@ -718,7 +718,6 @@ CREATE TABLE `login` (
   `session` int(10) unsigned NOT NULL DEFAULT '0',
   `validated` tinyint(1) NOT NULL DEFAULT '0',
   `steamid` bigint(20) unsigned DEFAULT NULL,
-  `steamchecked` tinyint(1) NOT NULL DEFAULT '0',
   `ladderCancelled` tinyint(3) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_login` (`login`),
