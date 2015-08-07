@@ -1,3 +1,4 @@
+import asyncio
 from PySide import QtNetwork
 
 import pytest
@@ -124,6 +125,7 @@ def test_command_game_host_calls_host_game_invalid_title(fa_server_thread,
     assert mock_games.create_game.mock_calls == []
     fa_server_thread.sendJSON.assert_called_once_with(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
 
+
 # ModVault
 def test_mod_vault_start(mocker, fa_server_thread):
     mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
@@ -138,6 +140,7 @@ def test_mod_vault_start(mocker, fa_server_thread):
     (response, ), _ = fa_server_thread.sendJSON.call_args
     assert response['command'] == 'modvault_info'
 
+
 def test_mod_vault_like(mocker, fa_server_thread):
     mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
     mocker.patch('server.lobbyconnection.Config')
@@ -150,6 +153,7 @@ def test_mod_vault_like(mocker, fa_server_thread):
     (response, ), _ = fa_server_thread.sendJSON.call_args
     assert response['command'] == 'modvault_info'
 
+
 def test_mod_vault_like_invalid_uid(mocker, fa_server_thread):
     mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
     mocker.patch('server.lobbyconnection.Config')
@@ -161,6 +165,7 @@ def test_mod_vault_like_invalid_uid(mocker, fa_server_thread):
     # call, method:attributes, attribute_index
     assert fa_server_thread.sendJSON.mock_calls == []
 
+
 def test_mod_vault_download(mocker, fa_server_thread):
     mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
 
@@ -168,20 +173,6 @@ def test_mod_vault_download(mocker, fa_server_thread):
                                     'uid': None})
     mock_query.return_value.prepare.assert_called_with("UPDATE `table_mod` SET downloads=downloads+1 WHERE uid = ?")
 
-
-def test_mod_vault_addcomment(fa_server_thread):
-    with pytest.raises(NotImplementedError):
-        fa_server_thread.command_modvault({'type': 'addcomment'})
-
-
-def test_mod_vault_invalid_type(fa_server_thread):
-    with pytest.raises(ValueError):
-        fa_server_thread.command_modvault({'type': 'DragonfireNegativeTest'})
-
-
-def test_mod_vault_no_type(fa_server_thread):
-    with pytest.raises(KeyError):
-        fa_server_thread.command_modvault({'invalidKey': None})
 
 # Ask Session
 # TODO: @sheeo add special cases with Timer
