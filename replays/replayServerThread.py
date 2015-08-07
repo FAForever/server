@@ -489,22 +489,6 @@ class replayServerThread(QObject):
         
         return previous
 
-    
-    def command_gw_game_info(self, message):
-        gameuid = message["uid"]
-        query = QSqlQuery(self.parent.db)
-        query.setForwardOnly(True)
-        query.prepare("SELECT * FROM galacticwar.reinforcements_replays WHERE uid = ?")
-        query.addBindValue(gameuid)
-        if not query.exec_():
-            self.logger.debug(query.lastQuery())
-        if query.size() > 0:
-            query.first()
-            self.sendJSON(dict(command = "gw_game_info", table = str(query.value(1))))
-        else:
-            self.sendJSON(dict(command = "gw_game_info", table = ""))
-        
-    
     def command_list(self, message):
         query = QSqlQuery(self.parent.db)
         query.setForwardOnly(True)
