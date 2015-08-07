@@ -30,7 +30,7 @@ class CoopGame(Game):
 
 
 class CoopGamesContainer(GamesContainer):
-    """Class for custom claustrophobia games"""
+    """Class for coop games"""
     listable = False
 
     def __init__(self, db, games_service=None, name='coop', nice_name='coop'):
