@@ -479,63 +479,36 @@ limit 1   " % (self.tableModFiles, self.tableMod, self.tableMod, self.tableModFi
 
 
     def readDatas(self):
-
-        #self.readingSocket = True
         if self.socket is not None:
             if self.socket.isValid():
                 ins = QDataStream(self.socket)
-        
-        
                 ins.setVersion(QDataStream.Qt_4_2)
                 loop = 0
                 while not ins.atEnd():
                     QCoreApplication.processEvents()
                     loop += 1
                     if loop > 1000: break
-                     
-                    
                     if self.socket is not None:
                         if self.socket.isValid():
-         
                             if self.blockSize == 0:
                                 if self.socket.isValid():
                                     if self.socket.bytesAvailable() < 4:
-                        
                                         return
                                     self.blockSize = ins.readUInt32()
                                 else:
-        
                                     return
-                
                             if self.socket.isValid():
                                 if self.socket.bytesAvailable() < self.blockSize:
-                                    
-                    
                                     bytesReceived = str(self.socket.bytesAvailable())
-        
                                     return
-                        
-                    
                                 bytesReceived = str(self.socket.bytesAvailable())
-        
                             else:
-        
-                                return  
-                    
-                            
-        
+                                return
                             action = ins.readQString()
-                            
-        
                             self.handleAction(action, ins)
-                                
-        
                             self.blockSize = 0
-                            
-                        else: 
-        
-                            return    
-        
+                        else:
+                            return
                     else:
                         return
                 return
