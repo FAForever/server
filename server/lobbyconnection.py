@@ -1341,27 +1341,6 @@ Thanks,\n\
             self.abort()
 
     @timed
-    def getLastSeason(self):
-        now = datetime.date.today()
-
-        if (now.month == 3 and now.day < 21) or now.month < 3:
-            previous = datetime.datetime(now.year - 1, 12, 21)
-
-        elif (now.month == 6 and now.day < 21) or now.month < 6:
-
-            previous = datetime.datetime(now.year, 0o3, 21)
-
-        elif (now.month == 9 and now.day < 21) or now.month < 9:
-
-            previous = datetime.datetime(now.year, 0o6, 21)
-
-        else:
-
-            previous = datetime.datetime(now.year, 9, 21)
-
-        return previous
-
-    @timed
     def command_ask_session(self, message):
         jsonToSend = {"command": "welcome", "session": self.session}
         self.sendJSON(jsonToSend)
