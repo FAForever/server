@@ -57,8 +57,6 @@ class Player(BasePlayer):
 
         self.action = "NOTHING"
 
-        self.globalSkill = None
-        self.ladder1v1Skill = None
         self.expandLadder = 0
         self.faction = 1
         self.wantToConnectToGame = False
