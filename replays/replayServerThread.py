@@ -87,7 +87,7 @@ class replayServerThread(QObject):
         nameField = "%" + search + "%"
         
         query = QSqlQuery(self.parent.db)
-        queryStr = "SELECT `id`,`uid`, `t`.`name`,`version`,`author`,`ui`,`big`,`small`,`date`,`downloads`,`likes`,`played`,`description`,`filename`,`icon` \
+        queryStr = "SELECT `id`,`uid`, `t`.`name`,`version`,`author`,`ui`,`date`,`downloads`,`likes`,`played`,`description`,`filename`,`icon` \
                     FROM     (     SELECT `name`, MAX(`version`) AS max_version \
                                     FROM `table_mod`   \
                                     WHERE (`name` LIKE ? OR `description` REGEXP ? OR `author` LIKE ?)\
@@ -100,7 +100,7 @@ class replayServerThread(QObject):
                         AND t.`version`= m.max_version;" 
         self.logger.debug(queryStr)
         if typemod != 2:
-            queryStr = "SELECT `id`,`uid`,`t`.`name`,`version`,`author`,`ui`,`big`,`small`,`date`,`downloads`,`likes`,`played`,`description`,`filename`,`icon` \
+            queryStr = "SELECT `id`,`uid`,`t`.`name`,`version`,`author`,`ui`,`date`,`downloads`,`likes`,`played`,`description`,`filename`,`icon` \
                         FROM     (     SELECT `name`, MAX(`version`) AS max_version \
                                         FROM `table_mod`   \
                                         WHERE (`name` LIKE ? OR `description` REGEXP ? OR `author` LIKE ?) AND `ui` = ? \

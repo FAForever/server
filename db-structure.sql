@@ -1145,8 +1145,6 @@ CREATE TABLE `table_mod` (
   `version` smallint(5) unsigned NOT NULL,
   `author` varchar(100) NOT NULL,
   `ui` tinyint(4) NOT NULL,
-  `big` tinyint(3) unsigned NOT NULL,
-  `small` tinyint(3) unsigned NOT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `downloads` mediumint(8) unsigned NOT NULL DEFAULT '0',
   `likes` mediumint(8) unsigned NOT NULL DEFAULT '0',
