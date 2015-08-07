@@ -21,6 +21,7 @@ import random
 
 from PySide.QtSql import QSqlQuery
 import trueskill
+import config
 
 from .gamesContainer import  GamesContainer
 from .ladderGame import Ladder1V1Game
@@ -34,7 +35,6 @@ class Ladder1V1GamesContainer(GamesContainer):
     def __init__(self, db, games_service, name='ladder1v1', nice_name='ladder 1 vs 1'):
         super(Ladder1V1GamesContainer, self).__init__(name, nice_name, db, games_service)
 
-        self.season = None
         self.players = []
         self.host = False
         self.join = False
@@ -57,13 +57,9 @@ class Ladder1V1GamesContainer(GamesContainer):
             query.exec_()
             return 1
 
-    def addPlayer(self, season, player):
-
-        self.season = season
-
+    def addPlayer(self, player):
         if not player in self.players:
-            
-            league = self.getLeague(season, player)
+            league = self.getLeague(config.LADDER_SEASON, player)
             
             player.league = league
 

@@ -23,9 +23,8 @@ from PySide.QtCore import QObject
 from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QCoreApplication
 from PySide import QtNetwork
 from PySide.QtSql import *
-from configobj import ConfigObj
-
-config = ConfigObj("/etc/faforever/faforever.conf")
+import config
+from config import Config
 
 import asyncio
 import os
@@ -46,7 +45,6 @@ class replayServerThread(QObject):
 
         self.logger = logging.getLogger(__name__)
 
-        self.season = "ladder_season_5"
         self.socket = QtNetwork.QTcpSocket(self)
         self.socket.setSocketDescriptor(socketId)
         self.parent = parent
@@ -107,11 +105,11 @@ class replayServerThread(QObject):
             for i in range(0, cursor.rowcount):
                 uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = yield from cursor.fetchone()
                 date = date.toTime_t()
-                link = config['global']['content_url'] + "vault/" + filename
+                link = Config['content_url'] + "vault/" + filename
 
                 thumbstr = ""
                 if icon != "":
-                    thumbstr = config['global']['content_url'] + "vault/mods_thumbs/" + urllib.parse.quote(icon)
+                    thumbstr = Config['content_url'] + "vault/mods_thumbs/" + urllib.parse.quote(icon)
                 
                 modList.append(dict(thumbnail=thumbstr,link=link,bugreports=[],comments=[],description=description,played=played,likes=likes,downloads=downloads,date=date, uid=uid, name=name, version=version, author=author,ui=ui))
 
@@ -244,7 +242,7 @@ class replayServerThread(QObject):
             
             limitBasse = limit - range
             
-            query.prepare("SELECT login, score FROM %s JOIN login ON %s.idUser=login.id WHERE league = ? AND score <= ? AND score >= ? ORDER BY score DESC" % (self.season, self.season))
+            query.prepare("SELECT login, score FROM %s JOIN login ON %s.idUser=login.id WHERE league = ? AND score <= ? AND score >= ? ORDER BY score DESC" % (config.LADDER_SEASON, config.LADDER_SEASON))
             query.addBindValue(league)
             query.addBindValue(limit)
             query.addBindValue(limitBasse)
@@ -264,7 +262,7 @@ class replayServerThread(QObject):
         elif typeState == "league_table":
             league = message['league']
             query = QSqlQuery(self.parent.db)
-            query.prepare("SELECT login, score FROM %s JOIN login ON %s.idUser=login.id  WHERE league = ? ORDER BY score DESC" % (self.season, self.season))
+            query.prepare("SELECT login, score FROM %s JOIN login ON %s.idUser=login.id  WHERE league = ? ORDER BY score DESC" % (config.LADDER_SEASON, config.LADDER_SEASON))
             query.addBindValue(league)
             query.exec_()
 

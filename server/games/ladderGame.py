@@ -25,7 +25,7 @@ from .game import Game
 
 from PySide.QtSql import QSqlQuery
 import operator
-
+import config
 
 class Ladder1V1Game(Game):
     """Class for 1v1 ladder game"""
@@ -115,7 +115,7 @@ class Ladder1V1Game(Game):
                         scoreToAdd = 1.5
 
                 query.prepare("UPDATE %s SET score = (score + ?) "
-                              "WHERE `idUser` = ?" % self.parent.season)
+                              "WHERE `idUser` = ?" % config.LADDER_SEASON)
                 query.addBindValue(scoreToAdd)
                 query.addBindValue(player.id)
                 query.exec_()
@@ -130,7 +130,7 @@ class Ladder1V1Game(Game):
                         scoreToRemove = 0
 
                 query.prepare("UPDATE %s SET score = GREATEST(0,(score - ?))"
-                              "WHERE `idUser` = ?" % self.parent.season)
+                              "WHERE `idUser` = ?" % config.LADDER_SEASON)
                 query.addBindValue(scoreToRemove)
                 query.addBindValue(player.id)
                 query.exec_()
@@ -138,7 +138,7 @@ class Ladder1V1Game(Game):
 
             #check if the user must be promoted
             query.prepare("SELECT league, score FROM %s"
-                          "WHERE `idUser` = ?" % self.parent.season)
+                          "WHERE `idUser` = ?" % config.LADDER_SEASON)
             query.addBindValue(player.id)
             query.exec_()
             if query.size() != 0:
@@ -149,12 +149,12 @@ class Ladder1V1Game(Game):
                 league_incr_min = {1: 50, 2: 75, 3: 100, 4: 150}
                 if pleague in league_incr_min and pscore > league_incr_min[pleague]:
                     query.prepare("UPDATE %s SET league = league+1, score = 0"
-                                  "WHERE `idUser` = ?" % self.parent.season)
+                                  "WHERE `idUser` = ?" % config.LADDER_SEASON)
                     query.addBindValue(player.id)
                     query.exec_()
 
                 for p in self.players:
-                    query.prepare("SELECT score, league FROM %s WHERE idUser = ?" % self.parent.season)
+                    query.prepare("SELECT score, league FROM %s WHERE idUser = ?" % config.LADDER_SEASON)
                     query.addBindValue(p.id)
                     query.exec_()
                     if query.size() > 0:

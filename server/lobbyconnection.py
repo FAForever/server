@@ -57,8 +57,6 @@ from server.protocol import QDataStreamProtocol
 
 gi = pygeoip.GeoIP('GeoIP.dat', pygeoip.MEMORY_CACHE)
 
-LADDER_SEASON = "ladder_season_5"
-
 from steam import api
 
 api.key.set(STEAM_APIKEY)
@@ -74,7 +72,6 @@ class LobbyConnection(QObject):
         self.games = games
         self.players = players
         self.context = context
-        self.season = LADDER_SEASON
         self.ladderPotentialPlayers = []
         self.warned = False
         self._authenticated = False
@@ -1112,7 +1109,7 @@ Thanks,\n\
               %s.league = ladder_division.league AND\
               ladder_division.limit >= %s.score\
             ORDER BY ladder_division.limit ASC\
-            LIMIT 1;" % (self.season, self.season, self.season, self.season))
+            LIMIT 1;" % (config.LADDER_SEASON, config.LADDER_SEASON, config.LADDER_SEASON, config.LADDER_SEASON))
             query.addBindValue(self.player.id)
             query.exec_()
             if query.size() > 0:
@@ -1130,7 +1127,7 @@ Thanks,\n\
                 if cancontinue:
                     # check if top of the division :
                     query.prepare(
-                        "SELECT score, idUser FROM %s WHERE score <= ? and league = ? ORDER BY score DESC" % self.season)
+                        "SELECT score, idUser FROM %s WHERE score <= ? and league = ? ORDER BY score DESC" % config.LADDER_SEASON)
                     query.addBindValue(limit)
                     query.addBindValue(league)
                     #query.addBindValue(self.player.getId())
@@ -1164,7 +1161,7 @@ Thanks,\n\
 
                     # check if top of the league :
                     query.prepare(
-                        "SELECT score, idUser FROM %s  WHERE league = ? ORDER BY score DESC" % self.season)
+                        "SELECT score, idUser FROM %s  WHERE league = ? ORDER BY score DESC" % config.LADDER_SEASON)
                     query.addBindValue(league)
                     query.exec_()
                     if query.size() >= 4:
@@ -1585,7 +1582,7 @@ Thanks,\n\
                     faction = message['faction']
 
                     self.player.setGamePort(gameport)
-                    container.addPlayer(self.season, self.player)
+                    container.addPlayer(self.player)
                     container.searchForMatchup(self.player)
                     if faction.startswith("/"):
                         faction = faction.strip("/")
