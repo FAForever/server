@@ -27,6 +27,7 @@ from configobj import ConfigObj
 
 config = ConfigObj("/etc/faforever/faforever.conf")
 
+import asyncio
 import os
 import logging
 import json
@@ -61,9 +62,6 @@ class replayServerThread(QObject):
             self.socket.error.connect(self.displayError)
             self.parent.db.open()   
 
-        
-
-            
     def lock(self):
         pass
 #        query = QSqlQuery(self.parent.db)
@@ -75,8 +73,8 @@ class replayServerThread(QObject):
 #        query = QSqlQuery(self.parent.db)
 #        query.prepare("SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ ;")
 #        query.exec_()        
-            
 
+    @asyncio.coroutine
     def command_modvault_search(self, message):
         """that function is used by the mod vault to search for mods!"""
 
@@ -85,72 +83,40 @@ class replayServerThread(QObject):
         
         descriptionField =  ".*[[:space:]]"+search+"[[:space:]].*"
         nameField = "%" + search + "%"
-        
-        query = QSqlQuery(self.parent.db)
-        queryStr = "SELECT `id`,`uid`, `t`.`name`,`version`,`author`,`ui`,`date`,`downloads`,`likes`,`played`,`description`,`filename`,`icon` \
-                    FROM     (     SELECT `name`, MAX(`version`) AS max_version \
-                                    FROM `table_mod`   \
-                                    WHERE (`name` LIKE ? OR `description` REGEXP ? OR `author` LIKE ?)\
-                                    GROUP BY `name` \
-                                    ORDER BY `id` DESC   \
-                                    LIMIT 0,100 \
+
+        with (yield from self.db_pool) as conn:
+            cursor = yield from conn.cursor()
+            queryStr = "SELECT `uid`, `t`.`name`,`version`,`author`,`ui`,`date`,`downloads`,`likes`,`played`,`description`,`filename`,`icon` \
+                        FROM     (     SELECT `name`, MAX(`version`) AS max_version \
+                                        FROM `table_mod`   \
+                                        WHERE (`name` LIKE %s OR `description` REGEXP %s OR `author` LIKE %s)"
+
+            if typemod != 2:
+                queryStr += "AND `ui` = " + typemod
+
+            queryStr += "GROUP BY `name` \
+                         ORDER BY `id` DESC   \
+                         LIMIT 0,100 \
                             ) AS m \
                     INNER JOIN `table_mod` AS t \
                         ON t.`name`= m.`name` \
-                        AND t.`version`= m.max_version;" 
-        self.logger.debug(queryStr)
-        if typemod != 2:
-            queryStr = "SELECT `id`,`uid`,`t`.`name`,`version`,`author`,`ui`,`date`,`downloads`,`likes`,`played`,`description`,`filename`,`icon` \
-                        FROM     (     SELECT `name`, MAX(`version`) AS max_version \
-                                        FROM `table_mod`   \
-                                        WHERE (`name` LIKE ? OR `description` REGEXP ? OR `author` LIKE ?) AND `ui` = ? \
-                                        GROUP BY `name` \
-                                        ORDER BY `id` DESC   \
-                                        LIMIT 0,100 \
-                                ) AS m \
-                        INNER JOIN `table_mod` AS t \
-                            ON t.`name`= m.`name` \
-                            AND t.`version`= m.max_version;"         
-        
-        if not query.prepare(queryStr):
-            self.logger.debug(query.lastQuery())
-            self.logger.debug(query.lastError())
-            
-        query.addBindValue(nameField)
-        query.addBindValue(descriptionField)
-        query.addBindValue(nameField)
-        if typemod != 2:
-            query.addBindValue(typemod)
-        
-        modList = []
-        
-        query.exec_()
-        if query.size() != 0:
-            while query.next():
-                uid = str(query.value(1))
-                name = str(query.value(2))
-                version = int(query.value(3))
-                author = str(query.value(4))
-                isuimod = int(query.value(5))
-                date = query.value(6).toTime_t()
-                downloads = int(query.value(7))
-                likes = int(query.value(8))
-                played = int(query.value(9))
-                description = str(query.value(10))
-                comments = []
-                bugreports = []
-                link = config['global']['content_url'] + "vault/" + str(query.value(11))
-                icon = str(query.value(12))
+                        AND t.`version`= m.max_version;"
+
+            modList = []
+            yield from cursor.execute(queryStr, nameField, descriptionField, nameField)
+            for i in range(0, cursor.rowcount):
+                uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = yield from cursor.fetchone()
+                date = date.toTime_t()
+                link = config['global']['content_url'] + "vault/" + filename
+
                 thumbstr = ""
                 if icon != "":
                     thumbstr = config['global']['content_url'] + "vault/mods_thumbs/" + urllib.parse.quote(icon)
                 
-                modList.append(dict(thumbnail=thumbstr,link=link,bugreports=bugreports,comments=comments,description=description,played=played,likes=likes,downloads=downloads,date=date, uid=uid, name=name, version=version, author=author,ui=isuimod))
+                modList.append(dict(thumbnail=thumbstr,link=link,bugreports=[],comments=[],description=description,played=played,likes=likes,downloads=downloads,date=date, uid=uid, name=name, version=version, author=author,ui=ui))
 
         out = dict(command="modvault_list_info", modList = modList)
         self.sendJSON(out)
-                  
-
 
     def command_coop_stats(self, message):
         missionuid = message["mission"]
