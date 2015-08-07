@@ -1052,7 +1052,6 @@ Thanks,\n\
             if self.player.mod:
                 self.sendJSON({"command": "social", "power": permissionGroup})
 
-            self.player.lobbyVersion = version
             self.player.resolvedAddress = self.player.ip
             yield from self.players.fetch_player_data(self.player)
 
