@@ -1052,7 +1052,6 @@ Thanks,\n\
             if self.player.mod:
                 self.sendJSON({"command": "social", "power": permissionGroup})
 
-            self.player.resolvedAddress = self.player.ip
             yield from self.players.fetch_player_data(self.player)
 
             self.player.faction = random.randint(1, 4)
@@ -1197,7 +1196,6 @@ Thanks,\n\
             if lobbySocket is not None:
                 lobbySocket.abort()
 
-            self._logger.debug("Welcome")
             self.sendJSON(dict(command="welcome", email=str(self.email), id=self.player.id))
 
             self.protocol.send_messages(
