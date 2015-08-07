@@ -1054,9 +1054,6 @@ Thanks,\n\
 
             yield from self.players.fetch_player_data(self.player)
 
-            self.player.faction = random.randint(1, 4)
-
-
             ## Country
             ## ----------
 
