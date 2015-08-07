@@ -638,67 +638,45 @@ Thanks,\n\
 
         self.ladderMapList = maplist
 
+    def command_social_remove(self, message):
+        query = "DELETE FROM "
+        if "friend" in message:
+            query += "friends WHERE idFriend"
+            target = message['friend']
+        elif "foe" in message:
+            query += "foes WHERE idFoe"
+            target = message['foe']
+        else:
+            self._logger.info("No-op social_remove ignored.")
+            return
+
+        query += " = (SELECT id FROM login WHERE login.login = %s) AND idUser = %s"
+
+        with (yield from self.db_pool) as conn:
+            cursor = yield from conn.cursor()
+
+            yield from cursor.execute(query, self.player.uuid, target)
+
     @timed()
-    def command_social(self, message):
-        success = False
-        if "friends" in message:
-            friendlist = message['friends']
-            toAdd = set(friendlist) - set(self.friendList)
+    @asyncio.coroutine
+    def command_social_add(self, message):
+        query = "INSERT INTO "
+        if "friend" in message:
+            query += "friends (idUser, idFriend)"
+            target = message['friend']
+        elif "foe" in message:
+            query += "foes (idUser, idFoe)"
+            target = message['foe']
+        else:
+            self._logger.info("No-op social_add ignored.")
+            return
 
-            if len(toAdd) > 0:
+        query += " values (%s,(SELECT id FROM login WHERE login.login = %s))"
 
-                for friend in toAdd:
-                    query = QSqlQuery(self.db)
-                    query.prepare(
-                        "INSERT INTO friends (idUser, idFriend) values (?,(SELECT id FROM login WHERE login.login = ?))")
-                    query.addBindValue(self.player.id)
-                    query.addBindValue(friend)
-                    query.exec_()
+        with (yield from self.db_pool) as conn:
+            cursor = yield from conn.cursor()
 
-            toRemove = set(self.friendList) - set(friendlist)
-
-            if len(toRemove) > 0:
-                for friend in toRemove:
-                    query = QSqlQuery(self.db)
-                    query.prepare(
-                        "DELETE FROM friends WHERE idFriend = (SELECT id FROM login WHERE login.login = ?) AND idUser = ?")
-                    query.addBindValue(friend)
-                    query.addBindValue(self.player.id)
-                    query.exec_()
-
-            self.friendList = friendlist
-            success = True
-
-        if "foes" in message:
-            foelist = message['foes']
-            toAdd = set(foelist) - set(self.foeList)
-
-            if len(toAdd) > 0:
-
-                for foe in toAdd:
-                    query = QSqlQuery(self.db)
-                    query.prepare(
-                        "INSERT INTO foes (idUser, idFoe) values (?,(SELECT id FROM login WHERE login.login = ?))")
-                    query.addBindValue(self.player.id)
-                    query.addBindValue(foe)
-                    query.exec_()
-
-            toRemove = set(self.foeList) - set(foelist)
-
-            if len(toRemove) > 0:
-                for foe in toRemove:
-                    query = QSqlQuery(self.db)
-                    query.prepare(
-                        "DELETE FROM foes WHERE idFoe = (SELECT id FROM login WHERE login.login = ?) AND idUser = ?")
-                    query.addBindValue(foe)
-                    query.addBindValue(self.player.id)
-                    query.exec_()
-
-            self.foeList = foelist
-            success = True
-
-        if not success:
-            raise KeyError('no valid social action')
+            yield from cursor.execute(query, self.player.uuid, target)
 
     @timed()
     def command_admin(self, message):

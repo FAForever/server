@@ -32,6 +32,7 @@ class Player(BasePlayer):
         super().__init__()
         
         self._action = ''
+        # The id of the user in the `login` table of the database.
         self.uuid = uuid
         self.session = session
         self._login = login
