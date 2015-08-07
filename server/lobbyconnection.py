@@ -1188,9 +1188,6 @@ Thanks,\n\
                             self.leagueAvatar = avatar
                             break
 
-                    jleague = {"league": self.player.league, "division": self.player.division}
-                    self.player.leagueInfo = jleague
-
             ## AVATARS
             ## -------------------
             query.prepare(

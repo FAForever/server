@@ -45,7 +45,6 @@ class Player(BasePlayer):
         self.country = None
 
         self.league = None
-        self.leagueInfo = None
 
         self.admin = permissionGroup >= 2
         self.mod = permissionGroup >= 1
@@ -214,7 +213,6 @@ class Player(BasePlayer):
             ('ladder_rating_deviation', self.ladder_rating[1]),
             ('number_of_games', self.numGames),
             ('avatar', self.avatar or ''),
-            ('league', self.leagueInfo),
             ('country', self.country),
             ('clan', self.clan)
         )))
