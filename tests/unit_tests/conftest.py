@@ -38,7 +38,7 @@ def connections(loop, player_service, games, transport, game):
         conn.player = player
         conn.game = game
         conn._transport = transport
-        conn.connectivity_state.set_result(connectivity)
+        conn._connectivity_state.set_result(connectivity)
         return conn
 
     return mock.Mock(

@@ -227,7 +227,7 @@ def test_on_connection_lost_proxy_cleanup(game_connection, players):
     game_connection.game.proxy = mock.Mock()
     game_connection.game.proxy.unmap.return_value = True
     game_connection.player = players.hosting
-    game_connection.connectivity_state.set_result(LOCAL_PROXY)
+    game_connection._connectivity_state.set_result(LOCAL_PROXY)
 
     with mock.patch('server.gameconnection.socket') as socket:
         game_connection.on_connection_lost()
@@ -271,9 +271,9 @@ def test_ConnectToHost_public_stun(loop, connections, players):
                             [host_conn.player.address_and_port,
                              "Hello from {}".format(host_conn.player.id)]))
     yield from result
-    peer_conn.send_SendNatPacket.assert_called_with(host_conn.player.address_and_port,
+    peer_conn.send_SendNatPacket.assert_any_call(host_conn.player.address_and_port,
                                                     "Hello from {}".format(peer_conn.player.id))
-    host_conn.send_SendNatPacket.assert_called_with(peer_conn.player.address_and_port,
+    host_conn.send_SendNatPacket.assert_any_call(peer_conn.player.address_and_port,
                                                     "Hello from {}".format(host_conn.player.id))
     host_conn.send_ConnectToPeer.assert_called_with(peer_conn.player.address_and_port,
                                                     peer_conn.player.login,

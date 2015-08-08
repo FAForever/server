@@ -127,54 +127,6 @@ def test_command_game_host_calls_host_game_invalid_title(fa_server_thread,
     fa_server_thread.sendJSON.assert_called_once_with(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
 
 
-# ModVault
-def test_mod_vault_start(mocker, fa_server_thread):
-    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
-    mocker.patch('server.lobbyconnection.Config')
-
-    fa_server_thread.sendJSON = mock.Mock()
-    mock_query.return_value.size.return_value = 1
-    mock_query.return_value.next.side_effect = [True, False]
-    fa_server_thread.command_modvault({'type': 'start'})
-    fa_server_thread.sendJSON.assert_called_once()
-    assert fa_server_thread.sendJSON.call_count == 1
-    (response, ), _ = fa_server_thread.sendJSON.call_args
-    assert response['command'] == 'modvault_info'
-
-
-def test_mod_vault_like(mocker, fa_server_thread):
-    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
-    mocker.patch('server.lobbyconnection.Config')
-
-    fa_server_thread.sendJSON = mock.Mock()
-    mock_query.return_value.size.return_value = 1
-    fa_server_thread.command_modvault({'type': 'like',
-                                    'uid': 'a valid one'})
-    assert fa_server_thread.sendJSON.call_count == 1
-    (response, ), _ = fa_server_thread.sendJSON.call_args
-    assert response['command'] == 'modvault_info'
-
-
-def test_mod_vault_like_invalid_uid(mocker, fa_server_thread):
-    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
-    mocker.patch('server.lobbyconnection.Config')
-
-    fa_server_thread.sendJSON = mock.Mock()
-    mock_query.return_value.size.return_value = 0
-    fa_server_thread.command_modvault({'type': 'like',
-                                    'uid': 'something_invalid'})
-    # call, method:attributes, attribute_index
-    assert fa_server_thread.sendJSON.mock_calls == []
-
-
-def test_mod_vault_download(mocker, fa_server_thread):
-    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
-
-    fa_server_thread.command_modvault({'type': 'download',
-                                    'uid': None})
-    mock_query.return_value.prepare.assert_called_with("UPDATE `table_mod` SET downloads=downloads+1 WHERE uid = ?")
-
-
 # Ask Session
 # TODO: @sheeo add special cases with Timer
 def test_ask_session(fa_server_thread):
