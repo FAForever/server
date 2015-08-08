@@ -45,8 +45,8 @@ def mock_player():
     return mock.create_autospec(Player(login='Dummy', uuid=42))
 
 @pytest.fixture
-def mock_context():
-    return mock.create_autospec(ServerContext(lambda: None))
+def mock_context(loop):
+    return mock.create_autospec(ServerContext(lambda: None, loop))
 
 @pytest.fixture
 def mock_players(mock_db_pool):
@@ -61,8 +61,9 @@ def mock_protocol():
     return mock.create_autospec(QDataStreamProtocol(mock.Mock(), mock.Mock()))
 
 @pytest.fixture
-def fa_server_thread(mock_context, mock_protocol, mock_games, mock_players, mock_player, db):
-    lc = LobbyConnection(context=mock_context,
+def fa_server_thread(loop, mock_context, mock_protocol, mock_games, mock_players, mock_player, db):
+    lc = LobbyConnection(loop,
+                         context=mock_context,
                          games=mock_games,
                          players=mock_players,
                          db=db)

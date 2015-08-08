@@ -44,7 +44,7 @@ def run_lobby_server(address: (str, int),
                      games: GameService,
                      db,
                      db_pool,
-                     loop: AbstractEventLoop=asyncio.get_event_loop()):
+                     loop):
     """
     Run the lobby server
 
@@ -94,7 +94,7 @@ def run_game_server(address: (str, int),
                     games: GameService,
                     db,
                     db_pool,
-                    loop: AbstractEventLoop=asyncio.get_event_loop()):
+                    loop):
     """
     Run the game server
 

@@ -64,7 +64,7 @@ api.key.set(STEAM_APIKEY)
 @with_logger
 class LobbyConnection(QObject):
     @timed()
-    def __init__(self, context=None, games: GameService=None, players=None, db=None, db_pool=None, loop=asyncio.get_event_loop()):
+    def __init__(self, loop, context=None, games: GameService=None, players=None, db=None, db_pool=None):
         super(LobbyConnection, self).__init__()
         self.loop = loop
         self.db = db

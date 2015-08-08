@@ -9,7 +9,7 @@ class ServerContext:
     Base class for managing connections and holding state about them.
     """
 
-    def __init__(self, connection_factory, name='Unknown server', loop=asyncio.get_event_loop()):
+    def __init__(self, connection_factory, loop, name='Unknown server'):
         super().__init__()
         self.loop = loop
         self.name = name
@@ -17,21 +17,25 @@ class ServerContext:
         self._connection_factory = connection_factory
         self.connections = {}
         self._transport = None
-        self._logger.info("{} initialized".format(self))
+        self._logger.info("{} initialized with loop: {}".format(self, loop))
 
     def __repr__(self):
         return "ServerContext({})".format(self.name)
 
+    @asyncio.coroutine
     def listen(self, host, port):
         self._logger.info("ServerContext.listen({},{})".format(host, port))
-        self._server = asyncio.start_server(self.client_connected,
+        self._server = yield from asyncio.start_server(self.client_connected,
                                             host=host,
                                             port=port,
                                             loop=self.loop)
+        self._logger.info("Closed")
         return self._server
 
     def close(self):
         self._server.close()
+        self._logger.info("Closed")
+        del self._server
 
     def __contains__(self, connection):
         return connection in self.connections.keys()
