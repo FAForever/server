@@ -775,6 +775,7 @@ Thanks,\n\
     def check_user_login(self, cursor, login, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.
         yield from cursor.execute("SELECT login.id as id,"
+                                  "login.login as username,"
                                   "login.email as email,"
                                   "login.password as password,"
                                   "login.steamid as steamid,"
@@ -783,14 +784,14 @@ Thanks,\n\
                                   "FROM login "
                                   "LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser "
                                   "LEFT JOIN lobby_admin ON login.id = lobby_admin.user_id "
-                                  "WHERE login=%s", login)
+                                  "WHERE LOWER(login)=%s", login.lower())
 
         if cursor.rowcount != 1:
             self.sendJSON(dict(command="notice", style="error",
                                text="Login not found or password incorrect. They are case sensitive."))
             return
 
-        player_id, self.email, dbPassword, steamid, ban_reason, permissionGroup = yield from cursor.fetchone()
+        player_id, real_username, self.email, dbPassword, steamid, ban_reason, permissionGroup = yield from cursor.fetchone()
         if dbPassword != password:
             self.sendJSON(dict(command="notice", style="error",
                                text="Login not found or password incorrect. They are case sensitive."))
@@ -804,7 +805,7 @@ Thanks,\n\
         self._logger.debug("Login from: {}, {}, {}".format(player_id, self.email, self.session))
         self._authenticated = True
 
-        return player_id, permissionGroup or 0, steamid
+        return player_id, real_username, permissionGroup or 0, steamid
 
     def decodeUniqueId(self, string, login):
         try:
@@ -917,7 +918,7 @@ Thanks,\n\
                     self.sendJSON(dict(command="welcome", update=updateFile))
                     return
 
-                player_id, permissionGroup, steamid = yield from self.check_user_login(cursor, login, password)
+                player_id, login, permissionGroup, steamid = yield from self.check_user_login(cursor, login, password)
 
                 # Login was not approved.
                 if not player_id:
@@ -1119,7 +1120,7 @@ Thanks,\n\
             if lobbySocket is not None:
                 lobbySocket.abort()
 
-            self.sendJSON(dict(command="welcome", email=str(self.email), id=self.player.id))
+            self.sendJSON(dict(command="welcome", email=str(self.email), id=self.player.id, login=login))
 
             self.protocol.send_messages(
                 [player.to_dict()
