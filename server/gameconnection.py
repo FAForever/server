@@ -636,6 +636,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.log.debug("Exception in abort(): {}".format(ex))
             pass
         finally:
+            if not self._connectivity_state.done():
+                self._connectivity_state.cancel()
             if self.ping_task is not None:
                 self.ping_task.cancel()
             if self._player:
