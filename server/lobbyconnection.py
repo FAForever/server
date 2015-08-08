@@ -923,71 +923,47 @@ Thanks,\n\
                 if not player_id:
                     return
 
-            if not self.steamid:
-                # If this id is associated with a different steam account, explode.
-                query = QSqlQuery(self.db)
-                query.prepare("SELECT uniqueid FROM steam_uniqueid WHERE uniqueId = ?")
-                query.addBindValue(uniqueId)
-                query.exec_()
-                if query.size() > 0:
-                    self.sendJSON(dict(command="notice", style="error",
-                                       text="This computer has been used by a Steam account.<br>You have to link your account to Steam too in order to use it on this computer :<br>SteamLink: <a href='" +
-                                            Config['app_url'] + "faf/steam.php'>" + Config[
-                                                'app_url'] + "faf/steam.php</a>"))
-                    return
+                if not self.steamid:
+                    # If this id is associated with a different steam account, explode.
+                    yield from cursor.execute("SELECT uniqueid FROM steam_uniqueid WHERE uniqueId = %s", uniqueId)
+                    if cursor.rowcount > 0:
+                        self.sendJSON(dict(command="notice", style="error",
+                                           text="This computer has been used by a Steam account.<br>You have to link your account to Steam too in order to use it on this computer :<br>SteamLink: <a href='" +
+                                                Config['app_url'] + "faf/steam.php'>" + Config[
+                                                    'app_url'] + "faf/steam.php</a>"))
+                        return
 
-                # check for another account using the same uniqueId as us.
-                query = QSqlQuery(self.db)
-                query.prepare("SELECT id, login FROM login WHERE uniqueId = ? AND id != ?")
-                query.addBindValue(uniqueId)
-                query.addBindValue(player_id)
-                query.exec_()
+                    # check for another account using the same uniqueId as us.
+                    yield from cursor.execute("SELECT id, login FROM login WHERE uniqueId = %s AND id != %s", uniqueId, player_id)
 
-                if query.size() == 1:
-                    query.first()
+                    if cursor.rowcount > 0:
+                        idFound, otherName = cursor.fetchone()
 
-                    idFound = int(query.value(0))
-                    otherName = str(query.value(1))
+                        self._logger.debug("%i (%s) is a smurf of %s" % (self.player.id, login, otherName))
+                        self.sendJSON(dict(command="notice", style="error",
+                                           text="This computer is tied to this account : %s.<br>Multiple accounts are not allowed.<br>You can free this computer by logging in with that account (%s) on another computer.<br><br>Or Try SteamLink: <a href='" +
+                                                Config['app_url'] + "faf/steam.php'>" +
+                                                Config['app_url'] + "faf/steam.php</a>" % (
+                                               otherName, otherName)))
 
-                    self._logger.debug("%i (%s) is a smurf of %s" % (self.player.id, login, otherName))
-                    self.sendJSON(dict(command="notice", style="error",
-                                       text="This computer is tied to this account : %s.<br>Multiple accounts are not allowed.<br>You can free this computer by logging in with that account (%s) on another computer.<br><br>Or Try SteamLink: <a href='" +
-                                            Config['app_url'] + "faf/steam.php'>" +
-                                            Config['app_url'] + "faf/steam.php</a>" % (
-                                           otherName, otherName)))
+                        yield from cursor.execute("INSERT INTO `smurf_table`(`origId`, `smurfId`) VALUES (%s,%s)", player_id, idFound)
+                        return
 
-                    query2 = QSqlQuery(self.db)
-                    query2.prepare("INSERT INTO `smurf_table`(`origId`, `smurfId`) VALUES (?,?)")
-                    query2.addBindValue(player_id)
-                    query2.addBindValue(idFound)
-                    query2.exec_()
-                    return
+                    yield from cursor.execute("UPDATE login SET ip = %s, uniqueId = %s WHERE id = %s", self.ip, uniqueId, player_id)
+                else:
+                    yield from cursor.execute("INSERT INTO `steam_uniqueid`(`uniqueid`) VALUES (%s)", uniqueId)
 
-                query = QSqlQuery(self.db)
-                query.prepare("UPDATE login SET ip = ?, uniqueId = ? WHERE id = ?")
-                query.addBindValue(self.ip)
-                query.addBindValue(str(uniqueId))
-                query.addBindValue(player_id)
-                query.exec_()
-            else:
-                query = QSqlQuery(self.db)
-                query.prepare("INSERT INTO `steam_uniqueid`(`uniqueid`) VALUES (?)")
-                query.addBindValue(str(uniqueId))
-                query.exec_()
+                # Update the user's IRC registration (why the fuck is this here?!)
+                m = hashlib.md5()
+                m.update(password.encode())
+                passwordmd5 = m.hexdigest()
+                m = hashlib.md5()
+                # Since the password is hashed on the client, what we get at this point is really
+                # md5(md5(sha256(password))). This is entirely insane.
+                m.update(passwordmd5.encode())
+                irc_pass = "md5:" + str(m.hexdigest())
 
-            query = QSqlQuery(self.db)
-            query.prepare("UPDATE anope.anope_db_NickCore SET pass = ? WHERE display = ?")
-            m = hashlib.md5()
-            m.update(password.encode())
-            passwordmd5 = m.hexdigest()
-            m = hashlib.md5()
-            # Since the password is hashed on the client, what we get at this point is really
-            # md5(md5(sha256(password))). This is entirely insane.
-            m.update(passwordmd5.encode())
-            query.addBindValue("md5:" + str(m.hexdigest()))
-            query.addBindValue(login)
-            if not query.exec_():
-                self._logger.error(query.lastError())
+                yield from cursor.execute("UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s", irc_pass, login)
 
             self.player = Player(login=str(login),
                                  session=self.session,
@@ -1018,6 +994,7 @@ Thanks,\n\
 
             # Query to extract the user's league and divison info.
             # Naming a column `limit` was unwise.
+            query = QSqlQuery(self.db)
             query.prepare(
             "SELECT\
               score,\
