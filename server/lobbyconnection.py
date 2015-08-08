@@ -812,10 +812,10 @@ Thanks,\n\
 
         return player_id, permissionGroup or 0
 
-    def decodeUniqueId(lobby, string, login):
+    def decodeUniqueId(self, string, login):
         try:
             uid = 0
-            query = QSqlQuery(lobby.parent.db)
+            query = QSqlQuery(self.db)
 
             steamLinked = False
 
@@ -823,13 +823,13 @@ Thanks,\n\
             query.addBindValue(login)
 
             if query.size() == 0 :
-                lobby.log.debug("can't find login")
-                lobby.sendJSON(dict(command="notice", style="error", text="Your login is invalid! (it's case sensitive)"))
+                self.log.debug("can't find login")
+                self.sendJSON(dict(command="notice", style="error", text="Your login is invalid! (it's case sensitive)"))
                 return None
             else :
                 query.first()
                 uid = int(query.value(0))
-                lobby.log.debug("query: " + str(query))
+                self.log.debug("query: " + str(query))
 
 
                 if int(query.value(1)) != -1 and int(query.value(2)) == 0:
@@ -843,17 +843,17 @@ Thanks,\n\
                     if games :
                         if "response" in games:
                             if "games" in games["response"]:
-                                lobby.log.debug("game found")
+                                self.log.debug("game found")
                                 if STEAM_FA_ID in [game["appid"] for game in games["response"]["games"]]:
-                                    query2 = QSqlQuery(lobby.parent.db)
+                                    query2 = QSqlQuery(self.db)
                                     query2.prepare("UPDATE `login` SET `steamchecked`=1 WHERE id = ?")
                                     query2.addBindValue(uid)
                                     query2.exec_()
                                     steamLinked = True
-                                    lobby.sendJSON(dict(command="notice", style="info", text="Your FAF account is now tied to steam."))
+                                    self.sendJSON(dict(command="notice", style="info", text="Your FAF account is now tied to steam."))
                     if not steamLinked:
-                        lobby.sendJSON(dict(command="notice", style="error", text="You've registered a steam account but we can't find Forged Alliance.<br>Steam is now unlinked from your account.<br><br>PROBABLE CAUSE: Your profile is private. Try to relink it, and relog while setting it in public.<br>You can set it back to private after your first login."))
-                        query2 = QSqlQuery(lobby.parent.db)
+                        self.sendJSON(dict(command="notice", style="error", text="You've registered a steam account but we can't find Forged Alliance.<br>Steam is now unlinked from your account.<br><br>PROBABLE CAUSE: Your profile is private. Try to relink it, and relog while setting it in public.<br>You can set it back to private after your first login."))
+                        query2 = QSqlQuery(self.db)
                         query2.prepare("UPDATE login SET steamid=NULL WHERE id=?")
                         query2.addBindValue(uid)
                         query2.exec_()
@@ -862,7 +862,7 @@ Thanks,\n\
                 elif int(query.value(2)) == 1:
                     steamLinked = True
 
-            privkey = lobby.privkey
+            privkey = self.privkey
 
             message = (base64.b64decode(string))
 
@@ -888,8 +888,8 @@ Thanks,\n\
             jstring = json.loads(decoded)
 
 
-            if str(jstring["session"]) != str(lobby.session) :
-                lobby.sendJSON(dict(command="notice", style="error", text="Your session is corrupted. Try relogging"))
+            if str(jstring["session"]) != str(self.session) :
+                self.sendJSON(dict(command="notice", style="error", text="Your session is corrupted. Try relogging"))
                 return None
 
             machine = jstring["machine"]
@@ -911,7 +911,7 @@ Thanks,\n\
                 low = i.lower()
                 if "vmware" in low or "virtual" in low or "innotek" in low or "qemu" in low or "parallels" in low or "bochs" in low :
                     if not steamLinked:
-                        lobby.sendJSON(dict(command="notice", style="error", text="You need to link your account to Steam in order to use FAF in a Virtual Machine. You can contact the admin in the forums."))
+                        self.sendJSON(dict(command="notice", style="error", text="You need to link your account to Steam in order to use FAF in a Virtual Machine. You can contact the admin in the forums."))
                         return None
 
             m = hashlib.md5()
@@ -920,9 +920,9 @@ Thanks,\n\
             query.prepare("SELECT userid FROM `uniqueid` WHERE MD5( CONCAT( `uuid` , `mem_SerialNumber` , `deviceID` , `manufacturer` , `name` , `processorId` , `SMBIOSBIOSVersion` , `serialNumber` , `volumeSerialNumber` ) ) = ?")
             query.addBindValue(str(m.hexdigest()))
             if not query.exec_() :
-                lobby.log.debug(query.lastQuery())
+                self.log.debug(query.lastQuery())
             if query.size() == 0 :
-                query2 = QSqlQuery(lobby.parent.db)
+                query2 = QSqlQuery(self.db)
                 query2.prepare("INSERT INTO `uniqueid` (`userid`, `uuid`, `mem_SerialNumber`, `deviceID`, `manufacturer`, `name`, `processorId`, `SMBIOSBIOSVersion`, `serialNumber`, `volumeSerialNumber`) VALUES ((SELECT id FROM login WHERE login.login = ?),?,?,?,?,?,?,?,?,?)")
                 query2.addBindValue(login)
                 query2.addBindValue(str(UUID))
@@ -935,15 +935,15 @@ Thanks,\n\
                 query2.addBindValue(str(SerialNumber))
                 query2.addBindValue(str(VolumeSerialNumber))
                 if not query2.exec_() :
-                    lobby.log.error("Failed query :")
-                    lobby.log.error(query2.lastQuery())
-                    lobby.log.error(query2.lastError())
+                    self.log.error("Failed query :")
+                    self.log.error(query2.lastQuery())
+                    self.log.error(query2.lastError())
 
 
             return m.hexdigest()
 
         except Exception as ex:
-            lobby._logger.exception(ex)
+            self._logger.exception(ex)
 
 
     @asyncio.coroutine
