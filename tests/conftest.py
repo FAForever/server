@@ -12,21 +12,18 @@ import logging
 import os
 import sys
 
-from PySide.QtCore import QCoreApplication
+from server.qt_compat import QtCore, QtSql, QtNetwork
+
 import aiomysql
 import pytest
 from unittest import mock
-from PySide import QtCore, QtSql
 from trueskill import Rating
 
 from server.abc.base_game import InitMode
 from server.game_service import GameService
 
 
-if not hasattr(QtCore, 'Signal'):
-    QtCore.Signal = QtCore.pyqtSignal
 
-from PySide.QtNetwork import QTcpSocket
 from server.players import Player
 from server.player_service import PlayerService
 from server.games import Game
@@ -81,19 +78,19 @@ def pytest_pyfunc_call(pyfuncitem):
     testargs = {}
     for arg in pyfuncitem._fixtureinfo.argnames:
         testargs[arg] = funcargs[arg]
+    loop = testargs.get('loop', asyncio.get_event_loop())
     coro = asyncio.wait_for(testfn(**testargs), 5)
 
-    loop = testargs.get('loop', asyncio.get_event_loop())
     try:
         loop.run_until_complete(coro)
     except RuntimeError as err:
-        logging.warning(err)
+        logging.error(err)
         raise err
     return True
 
 @pytest.fixture(scope='session')
 def application():
-    return QCoreApplication([])
+    return QtCore.QCoreApplication([])
 
 @pytest.fixture(scope='function')
 def loop(request, application):
@@ -153,8 +150,8 @@ def mock_db_pool(loop):
 
 @pytest.fixture
 def connected_game_socket():
-    game_socket = mock.Mock(spec=QTcpSocket)
-    game_socket.state = mock.Mock(return_value=QTcpSocket.ConnectedState)
+    game_socket = mock.Mock(spec=QtNetwork.QTcpSocket)
+    game_socket.state = mock.Mock(return_value=QtNetwork.QTcpSocket.ConnectedState)
     game_socket.isValid = mock.Mock(return_value=True)
     return game_socket
 
