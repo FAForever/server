@@ -856,9 +856,6 @@ Thanks,\n\
             SerialNumber = machine.get('SerialNumber', 0)
             VolumeSerialNumber = machine.get('VolumeSerialNumber', 0)
 
-            if "wine" in Manufacturer.lower():
-                pass
-
             for i in  machine.values() :
                 low = i.lower()
                 if "vmware" in low or "virtual" in low or "innotek" in low or "qemu" in low or "parallels" in low or "bochs" in low :
