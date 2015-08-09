@@ -3,6 +3,7 @@ PySide
 aiohttp
 aiomysql
 configobj
+coveralls
 docopt
 pycrypto
 pygeoip
