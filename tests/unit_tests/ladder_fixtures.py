@@ -28,7 +28,7 @@ def playerMock(lobbythread, id):
     player_mock.setAction = lambda action: None
     player_mock.getId = lambda: id
     player_mock.setGame = lambda uid: None
-    player_mock.gamePort = 4242
+    player_mock.game_port = 4242
     player_mock.lobbyThread = lobbythread
     return player_mock
 

@@ -36,6 +36,9 @@ class Player(BasePlayer):
         self.uuid = uuid
         self.session = session
         self._login = login
+        self._login = login
+        self._ip = ip
+        self._game_port = port
 
         self.global_rating = global_rating
         self.ladder_rating = ladder_rating
@@ -51,20 +54,12 @@ class Player(BasePlayer):
         self.mod = permissionGroup >= 1
         
         self.numGames = numGames
-        self.gamePort = 0
-
-        self.localGamePort = 0
-        self.udpPacketPort = 0
 
         self.action = "NOTHING"
 
         self.expandLadder = 0
         self.faction = 1
         self.wantToConnectToGame = False
-
-        self._login = login
-        self._ip = ip
-        self.gamePort = port
 
         self._lobby_connection = lambda: None
         if lobbyThread is not None:
@@ -73,18 +68,8 @@ class Player(BasePlayer):
         self._game = lambda: None
         self._game_connection = lambda: None
 
-    def setGamePort(self, gamePort):
-        if gamePort == 0:
-            gamePort = 6112
-        self.gamePort = gamePort
-
-        return 1
-
     def setLogin(self, login):
         self._login = str(login)
-
-    def getLocalGamePort(self):
-        return self.localGamePort
 
     @property
     def action(self):
@@ -104,22 +89,7 @@ class Player(BasePlayer):
         return 1
 
     def getAddress(self):
-        return "%s:%s" % (str(self.getIp()), str(self.gamePort))
-
-    def getLocalAddress(self):
-        return "%s:%s" % (str(self.getLocalIp()), str(self.getLocalGamePort()))
-
-    def getIp(self):
-        return self._ip
-
-    def getLocalIp(self):
-        return self.localIp
-     
-    def getLogin(self):
-        return str(self._login)
-    
-    def getId(self):
-        return self.uuid
+        return "%s:%s" % (str(self.ip), str(self.game_port))
 
     @property
     def lobbyThread(self):
@@ -185,7 +155,11 @@ class Player(BasePlayer):
 
     @property
     def game_port(self):
-        return self.gamePort
+        return self._game_port or 6112
+
+    @game_port.setter
+    def game_port(self, value):
+        self._game_port = value
 
     @property
     def address_and_port(self):

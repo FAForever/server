@@ -218,7 +218,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     def _handle_lobby_state(self):
         """
         The game has told us it is ready and listening on
-        self.player.gamePort for UDP.
+        self.player.game_port for UDP.
         We determine the connectivity of the peer and respond
         appropriately
         """
@@ -547,7 +547,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         elif state == 'Lobby':
             # The game is initialized and awaiting commands
             # At this point, it is listening locally on the
-            # port we told it to (self.player.gamePort)
+            # port we told it to (self.player.game_port)
             # We schedule an async task to determine their connectivity
             # and respond appropriately
             #
@@ -585,7 +585,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 self.send_gpgnet_message("P2PReconnect", [])
 
         self.send_CreateLobby(self.game.init_mode,
-                              self.player.gamePort,
+                              self.player.game_port,
                               self.player.login,
                               self.player.id, 1)
 

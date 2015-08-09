@@ -1381,8 +1381,7 @@ Thanks,\n\
 
         self.player.setAction("JOIN")
         self.player.wantToConnectToGame = True
-        self.player.setGamePort(port)
-        self.player.localGamePort = port
+        self.player.game_port = port
         self.player.game = game
 
         response = {"command": "game_launch",
@@ -1459,7 +1458,7 @@ Thanks,\n\
                     gameport = message['gameport']
                     faction = message['faction']
 
-                    self.player.setGamePort(gameport)
+                    self.player.game_port = gameport
                     container.addPlayer(self.player)
                     container.searchForMatchup(self.player)
                     if faction.startswith("/"):
@@ -1561,8 +1560,7 @@ Thanks,\n\
         self.player.action = "HOST"
         self.player.wantToConnectToGame = True
         self.player.game = game
-        self.player.setGamePort(port)
-        self.player.localGamePort = port
+        self.player.game_port = port
 
         self.sendJSON({"command": "game_launch",
                        "mod": mod,

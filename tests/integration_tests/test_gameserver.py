@@ -30,7 +30,7 @@ def game_server(loop, request, player_service, mock_games, db, mock_db_pool):
 def test_public_host(loop, game_server, players, player_service, games, db):
     player = players.hosting
     nat_server, server = game_server
-    with TestGPGClient(player.gamePort, loop=loop, process_nat_packets=True) as client:
+    with TestGPGClient(player.game_port, loop=loop, process_nat_packets=True) as client:
         yield from client.connect(*server.sockets[0].getsockname())
         client.proto.send_gpgnet_message('Authenticate', ['42'])
         client.proto.send_GameState(['Idle'])
@@ -50,7 +50,7 @@ def test_public_host(loop, game_server, players, player_service, games, db):
 def test_stun_host(loop, game_server, players, player_service, games, db):
     player = players.hosting
     nat_server, server = game_server
-    with TestGPGClient(player.gamePort, loop=loop, process_nat_packets=False) as client:
+    with TestGPGClient(player.game_port, loop=loop, process_nat_packets=False) as client:
         yield from client.connect(*server.sockets[0].getsockname())
         client.proto.send_gpgnet_message('Authenticate', ['42'])
         client.proto.send_GameState(['Idle'])
