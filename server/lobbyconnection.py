@@ -53,8 +53,6 @@ class LobbyConnection(QObject):
         self.warned = False
         self._authenticated = False
         self.privkey = PRIVATE_KEY
-        self.noSocket = False
-        self.readingSocket = False
         self.player = None
         self.logPrefix = "\t"
         self.missedPing = 0
