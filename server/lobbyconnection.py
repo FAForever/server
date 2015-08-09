@@ -10,6 +10,7 @@ import os
 import shutil
 import random
 import re
+import pymysql
 import rsa
 import time
 import smtplib
@@ -69,6 +70,7 @@ class LobbyConnection(QObject):
         self.session = int(random.randrange(0, 4294967295))
         self.protocol = None
         self._logger.debug("LobbyConnection initialized")
+        self.steamid = None
 
     @property
     def authenticated(self):
@@ -788,7 +790,7 @@ Thanks,\n\
 
         return player_id, real_username, permissionGroup or 0, steamid
 
-    def decodeUniqueId(self, string, login):
+    def decodeUniqueId(self, serialized_uniqueid, login):
         try:
             query = QSqlQuery(self.db)
 
@@ -798,7 +800,7 @@ Thanks,\n\
 
             privkey = self.privkey
 
-            message = (base64.b64decode(string))
+            message = (base64.b64decode(serialized_uniqueid))
 
             trailing = ord( message[0])
 
@@ -820,7 +822,6 @@ Thanks,\n\
             regexp = re.compile('[^\x09\x0A\x0D\x20-\x7F]')
             decoded = regexp.sub('', decoded)
             jstring = json.loads(decoded)
-
 
             if str(jstring["session"]) != str(self.session) :
                 self.sendJSON(dict(command="notice", style="error", text="Your session is corrupted. Try relogging"))
@@ -876,14 +877,12 @@ Thanks,\n\
         except Exception as ex:
             self._logger.exception(ex)
 
-
     @asyncio.coroutine
     def command_hello(self, message):
         try:
             version = message['version']
             login = message['login'].strip()
             password = message['password']
-            uniqueId = self.decodeUniqueId(message['unique_id'], login)
 
             self.logPrefix = login + "\t"
 
@@ -899,15 +898,22 @@ Thanks,\n\
                     self.sendJSON(dict(command="welcome", update=updateFile))
                     return
 
-                player_id, login, permissionGroup, steamid = yield from self.check_user_login(cursor, login, password)
+                player_id, login, permissionGroup, self.steamid = yield from self.check_user_login(cursor, login, password)
+
+                yield from cursor.execute("SELECT EXISTS(select user_id from uniqueid_exempt where user_id = %s)", (player_id))
+                (uniqueid_exempt, ) = yield from cursor.fetchone()
+                if not uniqueid_exempt:
+                    uniqueId = self.decodeUniqueId(message['unique_id'], login)
+                else:
+                    uniqueId = True
 
                 # Login was not approved.
                 if not player_id:
                     return
 
-                if not self.steamid:
+                if not self.steamid and uniqueId:
                     # If this id is associated with a different steam account, explode.
-                    yield from cursor.execute("SELECT uniqueid FROM steam_uniqueid WHERE uniqueId = %s", uniqueId)
+                    yield from cursor.execute("SELECT uniqueid FROM steam_uniqueid WHERE uniqueId = %s", (uniqueId, ))
                     if cursor.rowcount > 0:
                         self.sendJSON(dict(command="notice", style="error",
                                            text="This computer has been used by a Steam account.<br>You have to link your account to Steam too in order to use it on this computer :<br>SteamLink: <a href='" +
@@ -916,7 +922,7 @@ Thanks,\n\
                         return
 
                     # check for another account using the same uniqueId as us.
-                    yield from cursor.execute("SELECT id, login FROM login WHERE uniqueId = %s AND id != %s", uniqueId, player_id)
+                    yield from cursor.execute("SELECT id, login FROM login WHERE uniqueId = %s AND id != %s", (uniqueId, player_id))
 
                     if cursor.rowcount > 0:
                         idFound, otherName = cursor.fetchone()
@@ -928,12 +934,12 @@ Thanks,\n\
                                                 Config['app_url'] + "faf/steam.php</a>" % (
                                                otherName, otherName)))
 
-                        yield from cursor.execute("INSERT INTO `smurf_table`(`origId`, `smurfId`) VALUES (%s,%s)", player_id, idFound)
+                        yield from cursor.execute("INSERT INTO `smurf_table`(`origId`, `smurfId`) VALUES (%s,%s)", (player_id, idFound))
                         return
 
-                    yield from cursor.execute("UPDATE login SET ip = %s, uniqueId = %s WHERE id = %s", self.ip, uniqueId, player_id)
-                else:
-                    yield from cursor.execute("INSERT INTO `steam_uniqueid`(`uniqueid`) VALUES (%s)", uniqueId)
+                    yield from cursor.execute("UPDATE login SET ip = %s, uniqueId = %s WHERE id = %s", (self.ip, uniqueId, player_id))
+                elif uniqueId:
+                    yield from cursor.execute("INSERT INTO `steam_uniqueid`(`uniqueid`) VALUES (%s)", (uniqueId, ))
 
                 # Update the user's IRC registration (why the fuck is this here?!)
                 m = hashlib.md5()
@@ -945,7 +951,10 @@ Thanks,\n\
                 m.update(passwordmd5.encode())
                 irc_pass = "md5:" + str(m.hexdigest())
 
-                yield from cursor.execute("UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s", irc_pass, login)
+                try:
+                    yield from cursor.execute("UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s", (irc_pass, login))
+                except pymysql.ProgrammingError:
+                    self._logger.info("Failure updating NickServ password for {}".format(login))
 
             self.player = Player(login=str(login),
                                  session=self.session,
@@ -961,18 +970,16 @@ Thanks,\n\
 
             yield from self.players.fetch_player_data(self.player)
 
-            ## Country
-            ## ----------
+            # Country
+            # -------
 
             country = gi.country_code_by_addr(self.ip)
             if country is not None:
                 self.player.country = str(country)
 
-
-            ## LADDER LEAGUES ICONS
-            ## ----------------------
+            # LADDER LEAGUES ICONS
+            # --------------------
             # If a user is top of their division or league, set their avatar appropriately.
-            #
 
             # Query to extract the user's league and divison info.
             # Naming a column `limit` was unwise.
