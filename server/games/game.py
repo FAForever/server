@@ -383,17 +383,13 @@ class Game(BaseGame):
 
     def mod_ranked(self, id):
         query = QSqlQuery(self.db)
-        query.prepare("SELECT ranked FROM table_mod WHERE uid = ?")
+        query.prepare("SELECT ranked FROM table_mod WHERE uid = ? AND ranked = 1")
         query.addBindValue(id)
 
         if not query.exec_():
             self._logger.exception(query.lastError())
 
-        if query.size() != 0:
-            query.first()
-            if query.value(0) == 1:
-                return True
-        return False
+        return query.size() == 1
 
     def launch(self):
         """
