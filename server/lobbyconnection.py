@@ -64,7 +64,6 @@ class LobbyConnection(QObject):
         self.session = int(random.randrange(0, 4294967295))
         self.protocol = None
         self._logger.debug("LobbyConnection initialized")
-        self.steamid = None
 
     @property
     def authenticated(self):
@@ -889,7 +888,7 @@ Thanks,\n\
                     self.sendJSON(dict(command="welcome", update=updateFile))
                     return
 
-                player_id, login, permissionGroup, self.steamid = yield from self.check_user_login(cursor, login, password)
+                player_id, login, permissionGroup, steamid = yield from self.check_user_login(cursor, login, password)
 
                 yield from cursor.execute("SELECT EXISTS(select user_id from uniqueid_exempt where user_id = %s)", (player_id))
                 (uniqueid_exempt, ) = yield from cursor.fetchone()
@@ -902,7 +901,7 @@ Thanks,\n\
                 if not player_id:
                     return
 
-                if not self.steamid and uniqueId:
+                if not steamid and uniqueId:
                     # If this id is associated with a different steam account, explode.
                     yield from cursor.execute("SELECT uniqueid FROM steam_uniqueid WHERE uniqueId = %s", (uniqueId, ))
                     if cursor.rowcount > 0:
