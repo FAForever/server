@@ -117,6 +117,7 @@ class LobbyConnection(QObject):
     def command_pong(self, msg):
         self.ponged = True
 
+    @asyncio.coroutine
     def command_upload_mod(self, msg):
         zipmap = msg['name']
         infos = msg['info']
