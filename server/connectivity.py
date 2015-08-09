@@ -98,11 +98,11 @@ class TestPeer:
     def test_public(self):
         self._logger.debug("Testing PUBLIC")
         self._logger.debug(self.client_packets)
+        message = "Are you public? {}".format(self.identifier)
         for i in range(0, 3):
-            send_natpacket(self.remote_addr, 'Are you public? %s' % self.identifier)
+            send_natpacket(self.remote_addr, message)
             yield from asyncio.sleep(0.2)
-        return any(map(lambda args: "Are you public? %s" % self.identifier in args,
-                       self.client_packets))
+        return any(map(lambda packets: message in packets, self.client_packets))
 
     def received_server_packet(self):
         for packet in self.server_packets:

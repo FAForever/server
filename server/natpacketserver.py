@@ -28,7 +28,6 @@ class NatPacketServer(Subscribable):
         finally:
             self._socket.close()
 
-
     def __enter__(self):
         return self
 
