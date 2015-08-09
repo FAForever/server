@@ -49,21 +49,3 @@ def test_server_listen(loop, mock_players, mock_games, db, db_pool):
         server.close()
         writer.close()
         yield from server.wait_closed()
-
-@asyncio.coroutine
-@slow
-def test_command_hello_unvalidated_account(loop, lobby_server, db_pool):
-    with mock.patch('server.lobbyconnection.Config'):
-        (reader, writer) = yield from asyncio.open_connection(*lobby_server.sockets[0].getsockname())
-        proto = QDataStreamProtocol(reader, writer)
-        proto.send_message({'command': 'hello',
-                            'version': 0,
-                            'login': 'test',
-                            'password': 'test_password',
-                            'unique_id': 'some_id'})
-        yield from writer.drain()
-        msg = yield from proto.read_message()
-        assert msg['command'] == 'notice'
-        assert msg['style'] == 'error'
-        assert msg['text'].startswith('Your account is not validated. Please visit')
-        writer.close()
