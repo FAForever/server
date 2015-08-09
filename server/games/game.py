@@ -68,11 +68,9 @@ class Game(BaseGame):
                  host=None,
                  hostId=0,
                  hostIp=None,
-                 hostLocalIp=None,
                  hostPort=6112,
                  name='None',
                  map='SCMP_007',
-                 mode=0,
                  minPlayer=1):
         """
         Initializes a new game
