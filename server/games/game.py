@@ -383,7 +383,7 @@ class Game(BaseGame):
 
     def mod_ranked(self, id):
         query = QSqlQuery(self.db)
-        query.prepare("SELECT ranked FROM table_mod WHERE uid LIKE ?")
+        query.prepare("SELECT ranked FROM table_mod WHERE uid = ?")
         query.addBindValue(id)
 
         if not query.exec_():
