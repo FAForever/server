@@ -5,7 +5,6 @@ import cgi
 import base64
 import json
 import urllib.parse
-import datetime
 import zipfile
 import os
 import shutil
@@ -16,7 +15,6 @@ import time
 import smtplib
 import string
 from email.mime.text import MIMEText
-import email.utils
 
 from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QObject
 from PySide.QtSql import QSqlQuery
