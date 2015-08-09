@@ -169,7 +169,6 @@ def game(players, db):
     players.peer.getGame = mock.Mock(return_value=game)
     game.hostPlayer = players.hosting
     game.init_mode = InitMode.NORMAL_LOBBY
-    game.packetReceived = []
     game.name = "Some game name"
     game.uuid = 1
     return game

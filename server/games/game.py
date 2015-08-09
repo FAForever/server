@@ -70,8 +70,7 @@ class Game(BaseGame):
                  hostIp=None,
                  hostPort=6112,
                  name='None',
-                 map='SCMP_007',
-                 minPlayer=1):
+                 map='SCMP_007'):
         """
         Initializes a new game
         :type uuid int
@@ -84,7 +83,6 @@ class Game(BaseGame):
         :type name: str
         :type map: str
         :type mode: int
-        :type minPlayer: int
         :return: Game
         """
         self._results = {}
@@ -93,13 +91,10 @@ class Game(BaseGame):
         self._player_options = {}
         self.createDate = time.time()
         self.launched_at = None
-        self.receiveUdpHost = False
         self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, uuid))
         self.uuid = uuid
         self.ffa = False
-        self.partial = 1
         self.access = "public"
-        self.minPlayer = minPlayer
         self.maxPlayer = 12
         self.host = host
         self.hostuuid = hostId
@@ -109,25 +104,15 @@ class Game(BaseGame):
         self.mapName = map
         self.password = None
         self._players = []
-        self.size = 0
         self.options = []
         self.valid = True
-        self.modsVersion = {}
         self.gameType = 0
         self.AIs = {}
-        self.packetReceived = {}
         self.desyncs = 0
         self.invalidReason = None
-        self.connecting = 0
-        self.teamAssign = {}
-        self.playerPosition = {}
-        self.finalTeams = []
-        self.gameScore = {}
         self.gameResult = {}
-        self.gameFaResult = {}
+        # Isn't this really a property of the game container?
         self.game_mode = 'faf'
-        self.playerFaction = {}
-        self.playerColor = {}
         self.state = GameState.INITIALIZING
         self._proxy = ProxyMap()
         self._connections = {}
