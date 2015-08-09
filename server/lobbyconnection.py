@@ -135,10 +135,9 @@ class LobbyConnection(QObject):
                 self.sendJSON(dict(command="notice", style="error", text="No {} provided.".format(readable)))
                 return
 
-        name = message["name"]
-        name = name.replace("'", "\\'")
-        description = message["description"]
-        description = description.replace("'", "\\'")
+        # Is this a hilariously flawed attempt to avoid SQL injection?
+        name = message["name"].replace("'", "\\'")
+        description = message["description"].replace("'", "\\'")
 
         uid = message["uid"]
         version = message["version"]
@@ -146,25 +145,28 @@ class LobbyConnection(QObject):
         ui = message["ui_only"]
         icon = ""
 
-        query = QSqlQuery(self.db)
-        query.prepare("SELECT * FROM table_mod WHERE uid = ?")
-        query.addBindValue(uid)
-        query.exec_()
-        if query.size() != 0:
-            error = name + " uid " + uid + "already exists in the database."
-            self.sendJSON(dict(command="notice", style="error", text=error))
-            return
+        with (yield from self.db_pool) as conn:
+            cursor = yield from conn.cursor()
 
-        query.prepare("SELECT filename FROM table_mod WHERE filename LIKE '%" + zipmap + "%'")
-        query.exec_()
-        if query.size() != 0:
-            self.sendJSON(dict(command="notice", style="error",
-                               text="This file (%s) is already in the database !" % str(zipmap)))
-            return
+            yield from cursor.execute("SELECT * FROM table_mod WHERE uid = %s", uid)
+            if cursor.rowcount > 0:
+                error = name + " uid " + uid + "already exists in the database."
+                self.sendJSON(dict(command="notice", style="error", text=error))
+                return
+
+            yield from cursor.execute("SELECT filename FROM table_mod WHERE filename LIKE '%" + zipmap + "%'")
+            if cursor.rowcount > 0:
+                self.sendJSON(dict(command="notice", style="error",
+                                   text="This file (%s) is already in the database !" % str(zipmap)))
+                return
+
+        # Yield the database connection back to the pool here, as we shouldn't hold it while doing
+        # crazy expensive zipfile manipulation crap.
         writeFile = QFile(Config['content_path'] + "vault/mods/%s" % zipmap)
 
         if writeFile.open(QIODevice.WriteOnly):
             writeFile.write(fileDatas)
+
         writeFile.close()
 
         if not zipfile.is_zipfile(Config['content_path'] + "vault/mods/%s" % zipmap):
@@ -174,41 +176,38 @@ class LobbyConnection(QObject):
         zip = zipfile.ZipFile(Config['content_path'] + "vault/mods/%s" % zipmap, "r",
                               zipfile.ZIP_DEFLATED)
 
-        if zip.testzip() is None:
+        # Is the zipfile corrupt?
+        if zip.testzip() is not None:
+            self.sendJSON(dict(command="notice", style="error", text="The generated zipfile was corrupt!"))
+            zip.close()
+            return
 
-            for member in zip.namelist():
-                #QCoreApplication.processEvents()
-                filename = os.path.basename(member)
-                if not filename:
-                    continue
-                if filename.endswith(".png"):
-                    source = zip.open(member)
-                    target = open(
-                        os.path.join(Config['content_path'] + "vault/mods_thumbs/",
-                                     zipmap.replace(".zip", ".png")), "wb")
-                    icon = zipmap.replace(".zip", ".png")
+        for member in zip.namelist():
+            #QCoreApplication.processEvents()
+            filename = os.path.basename(member)
+            if not filename:
+                continue
 
-                    shutil.copyfileobj(source, target)
-                    source.close()
-                    target.close()
+            if filename.endswith(".png"):
+                source = zip.open(member)
+                target = open(
+                    os.path.join(Config['content_path'] + "vault/mods_thumbs/",
+                                 zipmap.replace(".zip", ".png")), "wb")
+                icon = zipmap.replace(".zip", ".png")
 
-            #add the datas in the db
-            filename = "mods/%s" % zipmap
+                shutil.copyfileobj(source, target)
+                source.close()
+                target.close()
 
-            query = QSqlQuery(self.db)
-            query.prepare(
-                "INSERT INTO `table_mod`(`uid`, `name`, `version`, `author`, `ui`, `description`, `filename`, `icon`) VALUES (?,?,?,?,?,?,?,?)")
-            query.addBindValue(uid)
-            query.addBindValue(name)
-            query.addBindValue(version)
-            query.addBindValue(author)
-            query.addBindValue(int(ui))
-            query.addBindValue(description)
-            query.addBindValue(filename)
-            query.addBindValue(icon)
+        #add the datas in the db
+        filename = "mods/%s" % zipmap
 
-            if not query.exec_():
-                self._logger.debug(query.lastError())
+
+        with (yield from self.db_pool) as conn:
+            cursor = yield from conn.cursor()
+            yield from cursor.execute("INSERT INTO `table_mod`(`uid`, `name`, `version`, `author`, `ui`, `description`, `filename`, `icon`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                                      uid, name, version, author, int(ui), description, filename, icon)
+
         zip.close()
 
         self.sendJSON(dict(command="notice", style="info", text="Mod correctly uploaded."))
