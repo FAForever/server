@@ -46,19 +46,11 @@ def db_pool(request, loop):
                 yield from cur.execute('CREATE DATABASE IF NOT EXISTS `%s`;' % db)
                 yield from cur.execute("USE `%s`;" % db)
                 yield from cur.execute(data.read())
+            with open('tests/data/db-fixtures.sql', 'r', encoding='utf-8') as data:
+                yield from cur.execute(data.read())
                 yield from cur.close()
 
-    @asyncio.coroutine
-    def teardown():
-        with (yield from pool) as conn:
-            cur = yield from conn.cursor()
-            yield from cur.execute('DROP DATABASE IF EXISTS `%s`;' % db)
-            yield from cur.execute('CREATE DATABASE IF NOT EXISTS `%s`;' % db)
-            yield from cur.close()
-
     def fin():
-        loop.run_until_complete(teardown())
-
         pool.close()
         loop.run_until_complete(pool.wait_closed())
     request.addfinalizer(fin)

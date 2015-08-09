@@ -53,13 +53,6 @@ def test_server_listen(loop, mock_players, mock_games, db, db_pool):
 @asyncio.coroutine
 @slow
 def test_command_hello_unvalidated_account(loop, lobby_server, db_pool):
-    with (yield from db_pool) as conn:
-        cur = yield from conn.cursor()
-        yield from cur.execute("INSERT INTO login (login, password) VALUES (%s, %s)", ('test', 'test_password'))
-        assert cur.rowcount == 1
-        yield from cur.close()
-    # Be careful to yield the connection back to the pool, since we're only using one connection
-
     with mock.patch('server.lobbyconnection.Config'):
         (reader, writer) = yield from asyncio.open_connection(*lobby_server.sockets[0].getsockname())
         proto = QDataStreamProtocol(reader, writer)
