@@ -507,23 +507,23 @@ Thanks,\n\
     def send_tutorial_section(self):
         reply = []
 
-        query = QSqlQuery(self.db)
-        query.prepare("SELECT `section`,`description` FROM `tutorial_sections`")
-        query.exec_()
-        if query.size() > 0:
-            while query.next():
-                jsonToSend = {"command": "tutorials_info", "section": query.value(0), "description": query.value(1)}
-                reply.append(jsonToSend)
+        with (yield from self.db_pool) as conn:
+            cursor = yield from conn.cursor()
 
-        query.prepare(
-            "SELECT tutorial_sections.`section`,`name`,`url`, `tutorials`.`description`, `map` FROM `tutorials` LEFT JOIN  tutorial_sections ON tutorial_sections.id = tutorials.section ORDER BY `tutorials`.`section`, name")
-        query.exec_()
-        if query.size() > 0:
-            while query.next():
-                jsonToSend = {"command": "tutorials_info", "tutorial": query.value(1), "url": query.value(2),
-                              "tutorial_section": query.value(0), "description": query.value(3),
-                              "mapname": query.value(4)}
-                reply.append(jsonToSend)
+            # Can probably replace two queries with one here if we're smart enough.
+            yield from cursor.execute("SELECT `section`,`description` FROM `tutorial_sections`")
+
+            for i in range(0, cursor.rowcount):
+                section, description = cursor.fetchone()
+                reply.append( {"command": "tutorials_info", "section": section, "description": description})
+
+            yield from cursor.execute("SELECT tutorial_sections.`section`, `name`, `url`, `tutorials`.`description`, `map` FROM `tutorials` LEFT JOIN  tutorial_sections ON tutorial_sections.id = tutorials.section ORDER BY `tutorials`.`section`, name")
+
+            for i in range(0, cursor.rowcount):
+                section, tutorial_name, url, description, map_name = cursor.fetchone()
+                reply.append({"command": "tutorials_info", "tutorial": tutorial_name, "url": url,
+                              "tutorial_section": section, "description": description,
+                              "mapname": map_name})
 
         self.protocol.send_messages(reply)
 
