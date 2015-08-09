@@ -56,14 +56,12 @@ class LobbyConnection(QObject):
         self.noSocket = False
         self.readingSocket = False
         self.player = None
-        self.initPing = True
         self.logPrefix = "\t"
         self.missedPing = 0
         self.friendList = []
         self.foeList = []
         self.ladderMapList = []
         self.leagueAvatar = None
-        self.email = None
         self.ip = None
         self.port = None
         self.session = int(random.randrange(0, 4294967295))
@@ -758,7 +756,6 @@ Thanks,\n\
         # TODO: Hash passwords server-side so the hashing actually *does* something.
         yield from cursor.execute("SELECT login.id as id,"
                                   "login.login as username,"
-                                  "login.email as email,"
                                   "login.password as password,"
                                   "login.steamid as steamid,"
                                   "lobby_ban.reason as reason,"
@@ -773,7 +770,7 @@ Thanks,\n\
                                text="Login not found or password incorrect. They are case sensitive."))
             return
 
-        player_id, real_username, self.email, dbPassword, steamid, ban_reason, permissionGroup = yield from cursor.fetchone()
+        player_id, real_username, dbPassword, steamid, ban_reason, permissionGroup = yield from cursor.fetchone()
         if dbPassword != password:
             self.sendJSON(dict(command="notice", style="error",
                                text="Login not found or password incorrect. They are case sensitive."))
@@ -784,7 +781,7 @@ Thanks,\n\
             self.sendJSON(dict(command="notice", style="error", text=reason))
             return
 
-        self._logger.debug("Login from: {}, {}, {}".format(player_id, self.email, self.session))
+        self._logger.debug("Login from: {}, {}".format(player_id, self.session))
         self._authenticated = True
 
         return player_id, real_username, permissionGroup or 0, steamid
@@ -1089,7 +1086,7 @@ Thanks,\n\
 
             self.players.addUser(self.player)
 
-            self.sendJSON(dict(command="welcome", email=str(self.email), id=self.player.id, login=login))
+            self.sendJSON(dict(command="welcome", id=self.player.id, login=login))
 
             self.protocol.send_messages(
                 [player.to_dict()
