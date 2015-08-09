@@ -52,7 +52,6 @@ class LobbyConnection(QObject):
         self.ladderPotentialPlayers = []
         self.warned = False
         self._authenticated = False
-        self.privkey = PRIVATE_KEY
         self.player = None
         self.logPrefix = "\t"
         self.missedPing = 0
@@ -792,8 +791,6 @@ Thanks,\n\
             query.addBindValue(login)
             steamLinked = query.size() == 1
 
-            privkey = self.privkey
-
             message = (base64.b64decode(serialized_uniqueid))
 
             trailing = ord( message[0])
@@ -804,7 +801,7 @@ Thanks,\n\
             encoded = message[24:-40]
             key = (base64.b64decode(message[-40:]))
 
-            AESkey = rsa.decrypt(key, privkey)
+            AESkey = rsa.decrypt(key, PRIVATE_KEY)
 
             # What the hell is this?
             cipher = AES.new(AESkey, AES.MODE_CBC, iv)
