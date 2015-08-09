@@ -57,7 +57,6 @@ class LobbyConnection(QObject):
         self.readingSocket = False
         self.player = None
         self.initPing = True
-        self.ponged = False
         self.logPrefix = "\t"
         self.missedPing = 0
         self.friendList = []
@@ -115,7 +114,7 @@ class LobbyConnection(QObject):
         self.sendReply('PONG')
 
     def command_pong(self, msg):
-        self.ponged = True
+        pass
 
     @asyncio.coroutine
     def command_upload_mod(self, msg):
@@ -1498,7 +1497,7 @@ Thanks,\n\
 
 
     def command_coop_list(self, message):
-        """ requestion coop lists"""
+        """ Request for coop map list"""
         self.send_coop_maps()
 
     @timed()
