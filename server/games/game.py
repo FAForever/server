@@ -110,7 +110,6 @@ class Game(BaseGame):
         self.AIs = {}
         self.desyncs = 0
         self.invalidReason = None
-        self.gameResult = {}
         # Isn't this really a property of the game container?
         self.game_mode = 'faf'
         self.state = GameState.INITIALIZING
