@@ -1245,6 +1245,22 @@ CREATE TABLE `uniqueid` (
 ) ENGINE=InnoDB AUTO_INCREMENT=172442 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+
+--
+-- Table structure for table `uniqueid_exempt`
+--
+
+DROP TABLE IF EXISTS `uniqueid_exempt`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `uniqueid_exempt` (
+  `user_id` mediumint(8) unsigned NOT NULL,
+  PRIMARY KEY (`user_id`),
+  KEY `userid` (`user_id`),
+  CONSTRAINT `uniqueid_exempt_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
 --
 -- Table structure for table `updates`
 --
