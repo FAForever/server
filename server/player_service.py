@@ -62,8 +62,8 @@ class PlayerService(object):
         gamesocket = None
         lobbySocket = None
         # login not in current active players
-        if not newplayer.getLogin() in self.logins:
-            self.logins.append(newplayer.getLogin())
+        if not newplayer.login in self.logins:
+            self.logins.append(newplayer.login)
             self.players.append(newplayer)
             return gamesocket, lobbySocket
         else:
@@ -71,11 +71,10 @@ class PlayerService(object):
 
             for player in self.players:
                 if newplayer.session == player.session:
-                    # uuid is the same, I don't know how it's possible, but we do nothing.
                     return gamesocket, lobbySocket
 
-                if newplayer.getLogin() == player.getLogin():
-                    # login exists, uuid not the same
+                if newplayer.login == player.login:
+                    # login exists, session not the same
                     try:
                         lobbyThread = player.lobbyThread
                         if lobbyThread is not None:

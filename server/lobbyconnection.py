@@ -1088,25 +1088,7 @@ Thanks,\n\
                 avatar = {"url": str(query.value(0)), "tooltip": str(query.value(1))}
                 self.player.avatar = avatar
 
-            for p in self.players.players:
-                if p.login == self.player.login:
-                    if hasattr(p, 'lobbyThread'):
-                        p.lobbyThread.abort()
-
-                    if p in self.players.players:
-                        self.players.players.remove(p)
-
-            for p in self.players.logins:
-                if p == self.player.getLogin():
-                    self.players.logins.remove(p)
-
-            gameSocket, lobbySocket = self.players.addUser(self.player)
-
-            if gameSocket is not None:
-                gameSocket.abort()
-
-            if lobbySocket is not None:
-                lobbySocket.abort()
+            self.players.addUser(self.player)
 
             self.sendJSON(dict(command="welcome", email=str(self.email), id=self.player.id, login=login))
 
@@ -1162,27 +1144,14 @@ Thanks,\n\
             channels = []
             if self.player.mod:
                 channels.append("#moderators")
-            # #channels.append("#techQuestions")
-            # #channels.append("#IMBA_Cup_2")
+
             if self.player.clan is not None:
                 channels.append("#%s_clan" % self.player.clan)
-
-            # Useful for setting clan war on a specific day.
-            #     if datetime.datetime.today().weekday() == 6:
-            #         #if it's sunday, clan war!
-            #         clanwar = ["BC", "B8", "SFo", "VoR", "AIx", "BFA", "OS"]
-            #         if self.player.getClan() in clanwar:
-            #             channels.append("#IntergalacticColosseum6")
-
 
             jsonToSend = {"command": "social", "autojoin": channels}
             self.sendJSON(jsonToSend)
 
-            # for GW
-            #channelsAvailable = ["#aeon", "#cybran", "#uef", "#seraphim"] + channels
-            channelsAvailable = channels
-
-            jsonToSend = {"command": "social", "channels": channelsAvailable}
+            jsonToSend = {"command": "social", "channels": channels}
             self.sendJSON(jsonToSend)
 
             # for matchmaker match...
