@@ -42,7 +42,7 @@ class Ladder1V1Game(Game):
         self.leagues = {}
 
     def setLeaguePlayer(self, player):
-        self.leagues[player.getLogin()] = player.league
+        self.leagues[player.login] = player.league
          
     def specialInit(self, player):
         if player.getAction() == "HOST":

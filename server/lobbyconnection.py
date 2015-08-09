@@ -1183,7 +1183,7 @@ Thanks,\n\
                     quality = trueskill.quality_1vs1(Rating(*self.player.ladder_rating),
                                                      Rating(*player.ladder_rating))
                     if quality >= gameQuality:
-                        self.addPotentialPlayer(player.getLogin())
+                        self.addPotentialPlayer(player.login)
 
         except Exception as ex:
             self._logger.exception(ex)
@@ -1412,7 +1412,7 @@ Thanks,\n\
         query = QSqlQuery(self.db)
         query.prepare(
             "SELECT * FROM matchmaker_ban WHERE `userid` = (SELECT `id` FROM `login` WHERE `login`.`login` = ?)")
-        query.addBindValue(self.player.getLogin())
+        query.addBindValue(self.player.login)
         query.exec_()
         if query.size() != 0:
             self.sendJSON(dict(command="notice", style="error",
@@ -1428,7 +1428,7 @@ Thanks,\n\
                 if state == "stop":
                     for player in self.players.players:
                         if player.lobbyThread:
-                            player.lobbyThread.removePotentialPlayer(self.player.getLogin())
+                            player.lobbyThread.removePotentialPlayer(self.player.login)
 
                 elif state == "start":
                     gameport = message['gameport']
@@ -1490,7 +1490,7 @@ Thanks,\n\
             curMatchQuality = self.getMatchQuality(self.player, player)
             if curMatchQuality >= gameQuality:
                 if hasattr(player.lobbyThread, "addPotentialPlayer"):
-                    player.lobbyThread.addPotentialPlayer(self.player.getLogin())
+                    player.lobbyThread.addPotentialPlayer(self.player.login)
 
     @staticmethod
     def getMatchQuality(player1: Player, player2: Player):
@@ -1618,7 +1618,7 @@ Thanks,\n\
                 # if we join a game, we are not a potential player anymore
                 for player in self.players:
                     if player.lobbyThread:
-                        player.lobbyThread.removePotentialPlayer(self.player.getLogin())
+                        player.lobbyThread.removePotentialPlayer(self.player.login)
 
         try:
             self.protocol.send_message(data_dictionary)

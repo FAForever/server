@@ -117,7 +117,7 @@ class PlayerService(object):
 
     def findByName(self, name):
         for player in self.players:
-            if player.getLogin() == name:
+            if player.login == name:
                 return player
         return 0
 

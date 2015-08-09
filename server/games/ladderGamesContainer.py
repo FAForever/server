@@ -164,7 +164,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         return pool - self.get_recent_maps(player1, player2)
 
     def startGame(self, player1, player2):
-        gameName = str(player1.getLogin() + " Vs " + player2.getLogin())
+        gameName = str(player1.login + " Vs " + player2.login)
         
         player1.setAction("HOST")
         gameUuid = self.createUuid(player1.id)
