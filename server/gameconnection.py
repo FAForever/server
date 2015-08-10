@@ -155,7 +155,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.player.connectedToHost = False
 
             self.ping_task = asyncio.async(self.ping())
-            self.player.wantToConnectToGame = False
             self._state = GameConnectionState.INITIALIZED
             self._authenticated.set_result(session)
         except (CancelledError, asyncio.InvalidStateError) as ex:

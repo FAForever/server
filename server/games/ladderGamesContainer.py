@@ -169,7 +169,6 @@ class Ladder1V1GamesContainer(GamesContainer):
         player1.setAction("HOST")
         gameUuid = self.createUuid(player1.id)
         player2.setAction("JOIN")
-        player1.wantToConnectToGame = True
 
         map_pool = self.choose_ladder_map_pool(player1, player2)
 

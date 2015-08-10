@@ -59,7 +59,6 @@ class Player(BasePlayer):
 
         self.expandLadder = 0
         self.faction = 1
-        self.wantToConnectToGame = False
 
         self._lobby_connection = lambda: None
         if lobbyThread is not None:

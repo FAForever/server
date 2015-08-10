@@ -46,8 +46,6 @@ class Ladder1V1Game(Game):
          
     def specialInit(self, player):
         if player.getAction() == "HOST":
-            self.playerToJoin.wantToConnectToGame = True
-            
             map = self.mapName
             
             json = {

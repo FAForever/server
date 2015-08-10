@@ -1349,7 +1349,6 @@ Thanks,\n\
             return
 
         self.player.setAction("JOIN")
-        self.player.wantToConnectToGame = True
         self.player.game_port = port
         self.player.game = game
 
@@ -1527,7 +1526,6 @@ Thanks,\n\
         })
 
         self.player.action = "HOST"
-        self.player.wantToConnectToGame = True
         self.player.game = game
         self.player.game_port = port
 
