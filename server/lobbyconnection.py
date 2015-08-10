@@ -900,20 +900,12 @@ Thanks,\n\
                 else:
                     uniqueId = True
 
-                # Login was not approved.
-                if not player_id:
+                # Login was not approved or decoding exploded somehow.
+                if not player_id or not uniqueId:
                     return
 
-                if not steamid and uniqueId:
-                    # If this id is associated with a different steam account, explode.
-                    yield from cursor.execute("SELECT uniqueid FROM steam_uniqueid WHERE uniqueId = %s", (uniqueId, ))
-                    if cursor.rowcount > 0:
-                        self.sendJSON(dict(command="notice", style="error",
-                                           text="This computer has been used by a Steam account.<br>You have to link your account to Steam too in order to use it on this computer :<br>SteamLink: <a href='" +
-                                                Config['app_url'] + "faf/steam.php'>" + Config[
-                                                    'app_url'] + "faf/steam.php</a>"))
-                        return
-
+                # Accounts linked to steam are exempt from uniqueId checking.
+                if not steamid:
                     # check for another account using the same uniqueId as us.
                     yield from cursor.execute("SELECT id, login FROM login WHERE uniqueId = %s AND id != %s", (uniqueId, player_id))
 
@@ -931,8 +923,6 @@ Thanks,\n\
                         return
 
                     yield from cursor.execute("UPDATE login SET ip = %s, uniqueId = %s WHERE id = %s", (self.ip, uniqueId, player_id))
-                elif uniqueId:
-                    yield from cursor.execute("INSERT INTO `steam_uniqueid`(`uniqueid`) VALUES (%s)", (uniqueId, ))
 
                 # Update the user's IRC registration (why the fuck is this here?!)
                 m = hashlib.md5()
