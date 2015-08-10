@@ -1351,58 +1351,22 @@ Thanks,\n\
 
         self.sendJSON(response)
 
-    def check_cheaters(self):
-        """ When someone is cancelling a ladder game on purpose..."""
-        game = self.player.game
-        if game:
-            if game.gamemod == 'ladder1v1' and game.state != GameState.LIVE:
-                # player has a laddergame that isn't playing, so we suspect he is a canceller....
-                self._logger.debug("Detected cancelled ladder for {} {}".format(self.player, game))
-
-                query = QSqlQuery(self.db)
-                query.prepare("UPDATE `login` SET `ladderCancelled`= `ladderCancelled`+1  WHERE id = ?")
-                query.addBindValue(self.player.id)
-                query.exec_()
-
-            else:
-                self._logger.debug("No real game found...")
-
-            query = QSqlQuery(self.db)
-            query.prepare("SELECT `ladderCancelled` FROM `login` WHERE id = ?")
-            query.addBindValue(self.player.id)
-            query.exec_()
-            if query.size() != 0:
-                attempts = query.value(0)
-                if attempts and attempts >= 10:
-                    return False
-        return True
-
     @timed
     def command_game_matchmaking(self, message):
-
         mod = message.get('mod', 'matchmaker')
         state = message['state']
 
-        if mod == "ladder1v1" and state == "start":
-
-            if not self.check_cheaters():
-                self.sendJSON(dict(command="notice", style="error",
-                                   text="You are banned from the matchmaker (cancelling too many times). Please contact an admin."))
-                return
-
         query = QSqlQuery(self.db)
         query.prepare(
-            "SELECT * FROM matchmaker_ban WHERE `userid` = (SELECT `id` FROM `login` WHERE `login`.`login` = ?)")
-        query.addBindValue(self.player.login)
+            "SELECT id FROM matchmaker_ban WHERE `userid` = ?")
+        query.addBindValue(self.player.id)
         query.exec_()
         if query.size() != 0:
             self.sendJSON(dict(command="notice", style="error",
                                text="You are banned from the matchmaker. Contact an admin to have the reason."))
             return
 
-
         container = self.games.getContainer(mod)
-
         if container is not None:
 
             if mod == "ladder1v1":
