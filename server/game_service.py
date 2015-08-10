@@ -58,8 +58,7 @@ class GameService:
                     host: Player=None,
                     name: str=None,
                     mapname: str=None,
-                    password: str=None,
-                    version=None):
+                    password: str=None):
         """
         Main entrypoint for creating new games
         """
@@ -74,7 +73,6 @@ class GameService:
         self._logger.info("{} created in {} container".format(game, game_mode))
         game.mapName = mapname
         game.access = visibility
-        game.version = version
 
         if password is not None:
             game.password = password

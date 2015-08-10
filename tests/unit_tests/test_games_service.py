@@ -15,8 +15,7 @@ def test_create_game(players, db):
                                host=players.hosting,
                                name='Test',
                                mapname='SCMP_007',
-                               password=None,
-                               version=None)
+                               password=None)
     assert game is not None
     assert game in service.dirty_games
 
@@ -27,8 +26,7 @@ def test_all_games(players, db):
                                host=players.hosting,
                                name='Test',
                                mapname='SCMP_007',
-                               password=None,
-                               version=None)
+                               password=None)
     assert game in service.active_games
 
 def test_all_game_modes(players, db):

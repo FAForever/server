@@ -1501,7 +1501,6 @@ Thanks,\n\
         port = message.get('gameport')
         access = message.get('access')
         mod = message.get('mod')
-        version = message.get('version')
         try:
             title.encode('ascii')
         except UnicodeEncodeError:
@@ -1521,8 +1520,7 @@ Thanks,\n\
             'host': self.player,
             'name': title if title else self.player.login,
             'mapname': mapname,
-            'password': password,
-            'version': None
+            'password': password
         })
 
         self.player.action = "HOST"
@@ -1532,7 +1530,6 @@ Thanks,\n\
         self.sendJSON({"command": "game_launch",
                        "mod": mod,
                        "uid": game.uuid,
-                       "version": version,
                        "args": ["/numgames " + str(self.player.numGames)]})
 
     @asyncio.coroutine

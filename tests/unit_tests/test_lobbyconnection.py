@@ -19,7 +19,6 @@ def test_game_info():
         'gameport': '8000',
         'access': 'public',
         'mod': 'faf',
-        'version': None,
         'mapname': 'scmp_007',
         'password': None,
         'lobby_rating': 1,
@@ -33,7 +32,6 @@ def test_game_info_invalid():
         'gameport': '8000',
         'access': 'public',
         'mod': 'faf',
-        'version': None,
         'mapname': 'scmp_007',
         'password': None,
         'lobby_rating': 1,
@@ -87,7 +85,6 @@ def test_command_game_host_creates_game(fa_server_thread,
         'host': players.hosting,
         'password': test_game_info['password'],
         'mapname': test_game_info['mapname'],
-        'version': test_game_info['version']
     }
     mock_games.create_game\
         .assert_called_with(**expected_call)
