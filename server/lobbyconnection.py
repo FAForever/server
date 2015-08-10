@@ -789,10 +789,6 @@ Thanks,\n\
         try:
             query = QSqlQuery(self.db)
 
-            query.prepare("SELECT id, steamid FROM login WHERE login.login = ?")
-            query.addBindValue(login)
-            steamLinked = query.size() == 1
-
             message = (base64.b64decode(serialized_uniqueid))
 
             trailing = ord( message[0])
@@ -835,9 +831,7 @@ Thanks,\n\
             for i in  machine.values() :
                 low = i.lower()
                 if "vmware" in low or "virtual" in low or "innotek" in low or "qemu" in low or "parallels" in low or "bochs" in low :
-                    if not steamLinked:
-                        self.sendJSON(dict(command="notice", style="error", text="You need to link your account to Steam in order to use FAF in a Virtual Machine. You can contact the admin in the forums."))
-                        return None
+                    return "VM"
 
             m = hashlib.md5()
             m.update(str(UUID) + str(mem_SerialNumber) + str(DeviceID) + str(Manufacturer) + str(Name) + str(ProcessorId) + str(SMBIOSBIOSVersion) + str(SerialNumber) + str(VolumeSerialNumber))
@@ -902,6 +896,11 @@ Thanks,\n\
 
                 # Login was not approved or decoding exploded somehow.
                 if not player_id or not uniqueId:
+                    return
+
+                # VM users must use steam.
+                if uniqueId == "VM":
+                    self.sendJSON(dict(command="notice", style="error", text="You need to link your account to Steam in order to use FAF in a Virtual Machine. You can contact the admin in the forums."))
                     return
 
                 # Accounts linked to steam are exempt from uniqueId checking.
