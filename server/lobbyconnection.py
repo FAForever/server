@@ -522,26 +522,29 @@ Thanks,\n\
 
     @timed()
     def send_coop_maps(self):
-        query = QSqlQuery(self.db)
-        query.prepare("SELECT name, description, filename, type, id FROM `coop_map`")
-        query.exec_()
-        maps = []
-        if query.size() > 0:
-            while query.next():
-                jsonToSend = {"command": "coop_info", "name": query.value(0), "description": query.value(1),
-                              "filename": query.value(2), "featured_mod": "coop"}
-                if query.value(3) == 0:
-                    jsonToSend["type"] = "FA Campaign"
-                elif query.value(3) == 1:
-                    jsonToSend["type"] = "Aeon Vanilla Campaign"
-                elif query.value(3) == 2:
-                    jsonToSend["type"] = "Cybran Vanilla Campaign"
-                elif query.value(3) == 3:
-                    jsonToSend["type"] = "UEF Vanilla Campaign"
+        with (yield from self.db_pool) as conn:
+            cursor = yield from conn.cursor()
 
+            yield from cursor.execute("SELECT name, description, filename, type, id FROM `coop_map`")
+
+            maps = []
+            for i in range(0, cursor.rowcount):
+                name, description, filename, type, id = cursor.fetchone()
+                jsonToSend = {"command": "coop_info", "name": name, "description": description,
+                              "filename": filename, "featured_mod": "coop"}
+                if type == 0:
+                    jsonToSend["type"] = "FA Campaign"
+                elif type == 1:
+                    jsonToSend["type"] = "Aeon Vanilla Campaign"
+                elif type == 2:
+                    jsonToSend["type"] = "Cybran Vanilla Campaign"
+                elif type == 3:
+                    jsonToSend["type"] = "UEF Vanilla Campaign"
                 else:
-                    jsonToSend["type"] = "Unknown"
-                jsonToSend["uid"] = query.value(4)
+                    # Don't sent corrupt data to the client...
+                    self._logger.error("Unknown coop type!")
+                    return
+                jsonToSend["uid"] = id
                 maps.append(jsonToSend)
 
         self.protocol.send_messages(maps)
