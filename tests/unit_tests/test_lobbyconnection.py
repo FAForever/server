@@ -280,26 +280,6 @@ def test_send_game_list(mocker, fa_server_thread):
 
     protocol.send_messages.assert_any_call([game1.to_dict(), game2.to_dict()])
 
-def test_send_coop_maps(mocker, fa_server_thread):
-    query = mocker.patch('server.lobbyconnection.QSqlQuery').return_value
-    protocol = mocker.patch.object(fa_server_thread, 'protocol')
-
-    query.size.return_value = 1
-    query.next.side_effect = [True, False]
-    query.value.side_effect = ['test map', 'test description', 'mapname', 0, 42]
-
-    fa_server_thread.send_coop_maps()
-
-    protocol.send_messages.assert_called_with([
-        {'command': 'coop_info',
-         'name': 'test map',
-         'description': 'test description',
-         'filename': 'mapname',
-         'type': 'FA Campaign',
-         'featured_mod': 'coop',
-         'uid': 42}
-    ])
-
 def test_send_mod_list(mocker, fa_server_thread, mock_games):
     protocol = mocker.patch.object(fa_server_thread, 'protocol')
 
@@ -359,33 +339,3 @@ def test_command_admin_closeFA(mocker, fa_server_thread):
               "Please refer to our rules for the lobby/game here {rule_link}."
               .format(rule_link=config.RULE_LINK))
     ))
-
-
-def test_send_tutorial_section(mocker, fa_server_thread):
-    query = mocker.patch('server.lobbyconnection.QSqlQuery').return_value
-    protocol = mocker.patch.object(fa_server_thread, 'protocol')
-
-    query.size.return_value = 1
-    query.next.side_effect = [True, False, True, False]
-    query.value.side_effect = ['some section',
-                               'some description',
-                               'some tutorial title',
-                               'http://example.com',
-                               'some section',
-                               'some description',
-                               'some_mapname']
-
-    fa_server_thread.send_tutorial_section()
-
-    protocol.send_messages.assert_called_with([
-        {'command': 'tutorials_info',
-         'section': 'some section',
-         'description': 'some description'
-        },
-        {'command': 'tutorials_info',
-         'tutorial': 'some tutorial title',
-         'url': 'http://example.com',
-         'tutorial_section': 'some section',
-         'description': 'some description',
-         'mapname': 'some_mapname'}
-    ])
