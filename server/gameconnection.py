@@ -433,17 +433,14 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                         self.game.mods = {}
 
                 if values[0] == "uids":
-                    self.game.mods = {}
-                    query = QSqlQuery(self.db)
-                    for uid in values[1].split():
-                        query.prepare("SELECT name FROM table_mod WHERE uid = ?")
-                        query.addBindValue(uid)
-                        query.exec_()
-                        if query.size() > 0:
-                            query.first()
-                            self.game.mods[uid] = str(query.value(0))
-                        else:
-                            self.game.mods[uid] = "Unknown sim mod"
+                    uids = values[1].split()
+                    self.game.mods = {uid: "Unknown sim mod" for uid in uids}
+                    with (yield from self.db_pool) as conn:
+                        cursor = yield from conn.cursor()
+                        yield from cursor.execute("SELECT uid, name from table_mod WHERE uid in %s", (uids, ))
+                        mods = yield from cursor.fetchall()
+                        for (uid, name) in mods:
+                            self.game.mods[uid] = name
                 self._mark_dirty()
 
             elif key == 'PlayerOption':
