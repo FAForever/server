@@ -594,7 +594,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.log.exception(e)
 
     def _mark_dirty(self):
-        self.games.mark_dirty(self.game)
+        if self.game:
+            self.games.mark_dirty(self.game)
 
     def abort(self):
         """
