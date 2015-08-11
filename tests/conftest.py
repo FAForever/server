@@ -30,6 +30,9 @@ from server.games import Game
 
 logging.getLogger().setLevel(logging.DEBUG)
 
+import os
+os.environ['QUAMASH_QTIMPL'] = 'PySide'
+
 import quamash
 
 
