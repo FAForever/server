@@ -14,7 +14,6 @@ def lobby_server(request, loop, db_pool, mock_players, mock_games, db):
                                                       mock_players,
                                                       mock_games,
                                                       db,
-                                                      db_pool,
                                                       loop))
 
     def fin():
@@ -32,7 +31,6 @@ def test_server_listen(loop, mock_players, mock_games, db, db_pool):
                                               mock_players,
                                               mock_games,
                                               db,
-                                              db_pool=db_pool,
                                               loop=loop)
         (reader, writer) = yield from asyncio.open_connection(*server.sockets[0].getsockname())
         proto = QDataStreamProtocol(reader, writer)

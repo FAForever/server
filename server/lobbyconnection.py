@@ -26,6 +26,7 @@ from Crypto.Cipher import Blowfish
 from Crypto.Cipher import AES
 import pygeoip
 import trueskill
+import server
 from trueskill import Rating
 
 from server.decorators import timed, with_logger
@@ -42,11 +43,11 @@ gi = pygeoip.GeoIP('GeoIP.dat', pygeoip.MEMORY_CACHE)
 @with_logger
 class LobbyConnection(QObject):
     @timed()
-    def __init__(self, loop, context=None, games: GameService=None, players=None, db=None, db_pool=None):
+    def __init__(self, loop, context=None, games: GameService=None, players=None, db=None):
         super(LobbyConnection, self).__init__()
         self.loop = loop
         self.db = db
-        self.db_pool = db_pool
+        self.db_pool = server.db.db_pool
         self.games = games
         self.players = players
         self.context = context

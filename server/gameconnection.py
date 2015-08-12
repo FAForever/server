@@ -8,6 +8,7 @@ import functools
 from PySide.QtSql import *
 import json
 import config
+import server
 
 from server.abc.base_game import GameConnectionState
 from server.connectivity import TestPeer, ConnectivityState
@@ -28,7 +29,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     """
     Responsible for connections to the game, using the GPGNet protocol
     """
-    def __init__(self, loop, users, games: GameService, db, db_pool):
+    def __init__(self, loop, users, games: GameService, db):
         """
         Construct a new GameConnection
 
@@ -36,7 +37,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         :param users: PlayersOnline
         :param games: GamesService
         :param db: QSqlDatabase
-        :param db_pool: aiomysql connection pool
         :return:
         """
         super().__init__()
@@ -48,7 +48,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.games = games
 
         self.db = db
-        self.db_pool = db_pool
+        self.db_pool = server.db.db_pool
         self.log = logging.getLogger(__name__)
         self.initTime = time.time()
         self.proxies = {}
