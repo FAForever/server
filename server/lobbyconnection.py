@@ -758,10 +758,8 @@ Thanks,\n\
                                   "login.password as password,"
                                   "login.steamid as steamid,"
                                   "lobby_ban.reason as reason,"
-                                  "lobby_admin.group as admin_group "
                                   "FROM login "
                                   "LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser "
-                                  "LEFT JOIN lobby_admin ON login.id = lobby_admin.user_id "
                                   "WHERE LOWER(login)=%s", login.lower())
 
         if cursor.rowcount != 1:
@@ -769,7 +767,7 @@ Thanks,\n\
                                text="Login not found or password incorrect. They are case sensitive."))
             return
 
-        player_id, real_username, dbPassword, steamid, ban_reason, permissionGroup = yield from cursor.fetchone()
+        player_id, real_username, dbPassword, steamid, ban_reason = yield from cursor.fetchone()
         if dbPassword != password:
             self.sendJSON(dict(command="notice", style="error",
                                text="Login not found or password incorrect. They are case sensitive."))
@@ -783,7 +781,7 @@ Thanks,\n\
         self._logger.debug("Login from: {}, {}".format(player_id, self.session))
         self._authenticated = True
 
-        return player_id, real_username, permissionGroup or 0, steamid
+        return player_id, real_username, steamid
 
     def decodeUniqueId(self, serialized_uniqueid, login):
         try:
@@ -885,7 +883,7 @@ Thanks,\n\
                     self.sendJSON(dict(command="welcome", update=updateFile))
                     return
 
-                player_id, login, permissionGroup, steamid = yield from self.check_user_login(cursor, login, password)
+                player_id, login, steamid = yield from self.check_user_login(cursor, login, password)
 
                 yield from cursor.execute("SELECT EXISTS(select user_id from uniqueid_exempt where user_id = %s)", (player_id))
                 (uniqueid_exempt, ) = yield from cursor.fetchone()
@@ -938,17 +936,18 @@ Thanks,\n\
                 except pymysql.ProgrammingError:
                     self._logger.info("Failure updating NickServ password for {}".format(login))
 
+            permission_group = self.players.get_permission_group(player_id)
             self.player = Player(login=str(login),
                                  session=self.session,
                                  ip=self.ip,
                                  port=self.port,
                                  uuid=player_id,
-                                 permissionGroup=permissionGroup,
+                                 permissionGroup=permission_group,
                                  lobbyThread=self)
 
             # If the user has any authority, tell them about it.
             if self.player.mod:
-                self.sendJSON({"command": "social", "power": permissionGroup})
+                self.sendJSON({"command": "social", "power": permission_group})
 
             yield from self.players.fetch_player_data(self.player)
 

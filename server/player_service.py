@@ -1,12 +1,15 @@
 import aiomysql
 import asyncio
-
+import aiocron
 
 class PlayerService(object):
     def __init__(self, db_pool: aiomysql.Pool):
         self.players = []
         self.logins = []
         self.db_pool = db_pool
+        self.privileged_users = {}
+
+        self.update_static_ish_data()
 
     def __len__(self):
         return len(self.players)
@@ -114,6 +117,22 @@ class PlayerService(object):
                 return 0
             else:
                 return cursor.fetchone()
+
+    def get_permission_group(self, user_id):
+        return self.privileged_users[user_id] or 0
+
+    @aiocron.crontab('0 * * * *')
+    @asyncio.coroutine
+    def update_static_ish_data(self):
+        """
+        Update rarely-changing data, such as the admin list and the list of users exempt from the
+        uniqueid check.
+        """
+        with (yield from self.db_pool) as conn:
+            # Admins/mods
+            cursor = yield from conn.cursor()
+            yield from cursor.execute("SELECT `user_id`, `group` FROM lobby_admin")
+            self.privileged_users = dict(cursor.fetchall())
 
     def findByName(self, name):
         for player in self.players:
