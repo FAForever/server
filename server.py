@@ -89,7 +89,8 @@ if __name__ == '__main__':
                                                    user=DB_LOGIN,
                                                    password=DB_PASSWORD,
                                                    maxsize=10,
-                                                   db=DB_TABLE))
+                                                   db=DB_TABLE,
+                                                   loop=loop))
         db_pool = loop.run_until_complete(pool_fut)
 
         players_online = PlayerService(db_pool)
