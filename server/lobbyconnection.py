@@ -770,7 +770,7 @@ Thanks,\n\
                                   "login.login as username,"
                                   "login.password as password,"
                                   "login.steamid as steamid,"
-                                  "lobby_ban.reason as reason,"
+                                  "lobby_ban.reason as reason "
                                   "FROM login "
                                   "LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser "
                                   "WHERE LOWER(login)=%s", login.lower())
