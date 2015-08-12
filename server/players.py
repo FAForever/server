@@ -18,7 +18,6 @@ class Player(BasePlayer):
         self.uuid = uuid
         self.session = session
         self._login = login
-        self._login = login
         self.ip = ip
         self._game_port = port
 
@@ -48,9 +47,6 @@ class Player(BasePlayer):
 
         self._game = lambda: None
         self._game_connection = lambda: None
-
-    def setLogin(self, login):
-        self._login = str(login)
 
     def getAddress(self):
         return "%s:%s" % (str(self.ip), str(self.game_port))
