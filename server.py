@@ -103,7 +103,6 @@ if __name__ == '__main__':
                                     players_online,
                                     games,
                                     db,
-                                    db_pool,
                                     loop)
         )
         for sock in lobby_server.sockets:
