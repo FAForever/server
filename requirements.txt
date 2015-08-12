@@ -16,3 +16,4 @@ quamash
 rsa
 trueskill
 aiocron
+marisa-trie

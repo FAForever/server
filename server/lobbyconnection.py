@@ -15,6 +15,7 @@ import rsa
 import time
 import smtplib
 import string
+import email
 from email.mime.text import MIMEText
 
 from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QObject
@@ -390,12 +391,12 @@ class LobbyConnection(QObject):
 
     def command_create_account(self, message):
         login = message['login']
-        email = message['email']
+        user_email = message['email']
         password = message['password']
 
         username_pattern = re.compile(r"^[^,]{1,20}$")
         email_pattern = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$")
-        if not email_pattern.match(email):
+        if not email_pattern.match(user_email):
             self.sendJSON(dict(command="notice", style="info",
                                text="Please use a valid email address."))
             self.sendReply("LOGIN_AVAILABLE", "no", login)
@@ -420,6 +421,16 @@ class LobbyConnection(QObject):
             self._logger.debug("Login not available: %s", login)
             self.sendReply("LOGIN_AVAILABLE", "no", login)
             return
+
+        if self.players.has_blacklisted_domain(user_email):
+            # We don't like disposable emails.
+            text = "Dear " + login + ",\n\n\
+Please use a non-disposable email address.\n\n\
+++?????++ Out of Cheese Error. Redo From Start."
+            self.send_email(text, login, email)
+
+            return
+
 
         # We want the user to validate their email address before we create their account.
         #
@@ -446,7 +457,7 @@ class LobbyConnection(QObject):
         nonce = ''.join(choice(string.ascii_uppercase + string.digits) for _ in range(256))
 
         # The data payload we need on the PHP side
-        plaintext = (login + "," + password + "," + email + "," + expiry + "," + nonce).encode('utf-8')
+        plaintext = (login + "," + password + "," + user_email + "," + expiry + "," + nonce).encode('utf-8')
 
         bs = Blowfish.block_size
         paddinglen = bs - divmod(len(plaintext), bs)[1]
@@ -476,25 +487,27 @@ Please visit the following link to validate your FAF account:\n\
 Thanks,\n\
 -- The FA Forever team"
 
-        msg = MIMEText(text)
-
-
-        msg['Subject'] = 'Forged Alliance Forever - Account validation'
-        msg['From'] = email.utils.formataddr(('Forged Alliance Forever', MAIL_ADDRESS))
-        msg['To'] = email.utils.formataddr((login, email))
-
-        self._logger.debug("sending mail to " + email)
-        s = smtplib.SMTP_SSL(Config['smtp_server'], 465, Config['smtp_server'],
-                             timeout=5)
-        s.login(Config['smtp_username'], Config['smtp_password'])
-
-        s.sendmail(MAIL_ADDRESS, [email], msg.as_string())
-        s.quit()
+        self.send_email(text, login, email)
 
         self.sendJSON(dict(command="notice", style="info",
                            text="A e-mail has been sent with the instructions to validate your account"))
         self._logger.debug("sent mail")
         self.sendReply("LOGIN_AVAILABLE", "yes", login)
+
+    def send_email(self, text, to_name, to_email):
+        msg = MIMEText(text)
+
+        msg['Subject'] = 'Forged Alliance Forever - Account validation'
+        msg['From'] = email.utils.formataddr(('Forged Alliance Forever', MAIL_ADDRESS))
+        msg['To'] = email.utils.formataddr((to_name, to_email))
+
+        self._logger.debug("sending mail to " + to_email)
+        s = smtplib.SMTP_SSL(Config['smtp_server'], 465, Config['smtp_server'],
+                             timeout=5)
+        s.login(Config['smtp_username'], Config['smtp_password'])
+
+        s.sendmail(MAIL_ADDRESS, [to_email], msg.as_string())
+        s.quit()
 
     @timed()
     def send_tutorial_section(self):

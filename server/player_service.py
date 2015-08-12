@@ -1,17 +1,21 @@
 import aiomysql
 import asyncio
 import aiocron
+import marisa_trie
 
 class PlayerService(object):
     def __init__(self, db_pool: aiomysql.Pool):
         self.players = []
         self.logins = []
         self.db_pool = db_pool
+
+        # Static-ish data fields.
         self.privileged_users = {}
         self.uniqueid_exempt = {}
-        self.client_version_info = None
+        self.client_version_info = (0, None)
+        self.blacklisted_email_domains = {}
 
-        self.update_static_ish_data()
+        asyncio.async(self.really_update_static_ish_data())
 
     def __len__(self):
         return len(self.players)
@@ -129,9 +133,11 @@ class PlayerService(object):
     def get_client_version(self):
         return self.client_version_info
 
-    @aiocron.crontab('0 * * * *')
+    def has_blacklisted_domain(self, email):
+        return len(self.blacklisted_email_domains.keys(email[::-1])) != 0
+
     @asyncio.coroutine
-    def update_static_ish_data(self):
+    def really_update_static_ish_data(self):
         """
         Update rarely-changing data, such as the admin list and the list of users exempt from the
         uniqueid check.
@@ -149,6 +155,17 @@ class PlayerService(object):
             # Client version number
             yield from cursor.execute("SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1")
             self.client_version_info = cursor.fetchone()
+
+            # Blacklisted email domains (we don't like disposable email)
+            yield from cursor.execute("SELECT domain FROM email_domain_blacklist")
+            # Get list of reversed blacklisted domains (so we can (pre)suffix-match incoming emails
+            # in sublinear time)
+            self.blacklisted_email_domains = marisa_trie.Trie(cursor.fetchall().map(lambda x: x[0][::-1]))
+
+    @aiocron.crontab('0 * * * *')
+    @asyncio.coroutine
+    def update_static_ish_data(self):
+        self.really_update_static_ish_data()
 
     def findByName(self, name):
         for player in self.players:
