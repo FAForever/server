@@ -14,7 +14,7 @@ def set_pool(pool: Pool):
 
 @asyncio.coroutine
 def connect(loop,
-            host='localhost', user='root', password='', db='faf_test',
+            host='localhost', port=3306, user='root', password='', db='faf_test',
             minsize=1, maxsize=1, cursorclass=ContextCursor):
     """
     Initialize the database pool
@@ -29,6 +29,7 @@ def connect(loop,
     :return:
     """
     pool = yield from aiomysql.create_pool(host=host,
+                                port=port,
                                 user=user,
                                 password=password,
                                 db=db,
