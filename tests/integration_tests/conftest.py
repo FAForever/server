@@ -3,6 +3,7 @@ import aiomysql
 import asyncio
 import pytest
 from server import PlayerService, GameService
+import server
 from server.db import ContextCursor
 
 
@@ -31,15 +32,12 @@ def db_pool(request, loop):
     def opt(val):
         return request.config.getoption(val)
     host, user, pw, db = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt('--mysql_database')
-    pool = loop.run_until_complete(aiomysql.create_pool(host=host,
-                                                        user=user,
-                                                        password=pw,
-                                                        db=db,
-                                                        autocommit=True,
-                                                        loop=loop,
-                                                        minsize=1,
-                                                        maxsize=1,
-                                                        cursorclass=ContextCursor))
+    pool_fut = asyncio.async(server.db.connect(loop=loop,
+                                               host=host,
+                                               user=user,
+                                               password=pw,
+                                               db=db))
+    pool = loop.run_until_complete(pool_fut)
 
     @asyncio.coroutine
     def setup():
