@@ -23,6 +23,7 @@ from PySide import QtSql, QtCore
 from PySide.QtCore import QTimer
 
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
+from server.db import ContextCursor
 from server.game_service import GameService
 from server.player_service import PlayerService
 import config
@@ -88,7 +89,8 @@ if __name__ == '__main__':
                                                                port=DB_PORT,
                                                                user=DB_LOGIN,
                                                                password=DB_PASSWORD,
-                                                               db=DB_TABLE))
+                                                               db=DB_TABLE,
+                                                               cursorclass=ContextCursor))
         players_online = PlayerService(db_pool)
         games = GameService(players_online, db)
 

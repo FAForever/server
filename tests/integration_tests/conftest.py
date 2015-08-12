@@ -3,6 +3,7 @@ import aiomysql
 import asyncio
 import pytest
 from server import PlayerService, GameService
+from server.db import ContextCursor
 
 
 def pytest_addoption(parser):
@@ -35,7 +36,8 @@ def db_pool(request, loop):
                                                         autocommit=True,
                                                         loop=loop,
                                                         minsize=1,
-                                                        maxsize=1))
+                                                        maxsize=1,
+                                                        cursorclass=ContextCursor))
 
     @asyncio.coroutine
     def setup():
