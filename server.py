@@ -111,8 +111,6 @@ if __name__ == '__main__':
             server.run_game_server(('', 8000),
                                    players_online,
                                    games,
-                                   db,
-                                   db_pool,
                                    loop)
         game_server = loop.run_until_complete(game_server)
 

@@ -90,7 +90,6 @@ def run_lobby_server(address: (str, int),
 def run_game_server(address: (str, int),
                     player_service: PlayerService,
                     games: GameService,
-                    db,
                     loop):
     """
     Run the game server
