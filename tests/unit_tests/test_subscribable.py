@@ -1,6 +1,6 @@
 import asyncio
 
-import mock
+from unittest import mock
 import pytest
 
 from server.subscribable import Subscribable

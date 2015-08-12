@@ -1,6 +1,6 @@
 import logging
 
-import mock
+from unittest import mock
 
 from server.decorators import with_logger, timed
 

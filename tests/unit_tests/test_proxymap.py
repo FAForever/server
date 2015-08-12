@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from server.proxy_map import ProxyMap
 

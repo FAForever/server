@@ -2,7 +2,7 @@ import asyncio
 import socket
 import logging
 
-import mock
+from unittest import mock
 
 from server.natpacketserver import NatPacketServer
 

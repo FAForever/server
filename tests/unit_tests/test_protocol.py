@@ -2,7 +2,7 @@ from asyncio import StreamReader, StreamWriter
 
 import asyncio
 from PySide.QtCore import QByteArray, QDataStream, QIODevice
-import mock
+from unittest import mock
 import pytest
 from server.protocol import QDataStreamProtocol
 

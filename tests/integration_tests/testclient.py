@@ -3,7 +3,7 @@ import socket
 
 from PySide.QtCore import QObject
 from PySide.QtNetwork import QUdpSocket
-import mock
+from unittest import mock
 from server.decorators import with_logger
 from server.protocol import QDataStreamProtocol
 from server.protocol.gpgnet import GpgNetClientProtocol
