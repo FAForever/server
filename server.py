@@ -84,12 +84,13 @@ if __name__ == '__main__':
         timer.timeout.connect(poll_signal)
         timer.start(200)
 
-        db_pool = loop.run_until_complete(aiomysql.create_pool(host=DB_SERVER,
-                                                               port=DB_PORT,
-                                                               user=DB_LOGIN,
-                                                               password=DB_PASSWORD,
-                                                               db=DB_TABLE,
-                                                               cursorclass=ContextCursor))
+        pool_fut = asyncio.async(server.db.connect(host=DB_SERVER,
+                                                   port=DB_PORT,
+                                                   user=DB_LOGIN,
+                                                   password=DB_PASSWORD,
+                                                   db=DB_TABLE))
+        db_pool = loop.run_until_complete(pool_fut)
+
         players_online = PlayerService(db_pool)
         games = GameService(players_online, db)
 
