@@ -9,6 +9,7 @@ class PlayerService(object):
         self.db_pool = db_pool
         self.privileged_users = {}
         self.uniqueid_exempt = {}
+        self.client_version_info = None
 
         self.update_static_ish_data()
 
@@ -125,6 +126,9 @@ class PlayerService(object):
     def is_uniqueid_exempt(self, user_id):
         return user_id in self.uniqueid_exempt
 
+    def get_client_version(self):
+        return self.client_version_info
+
     @aiocron.crontab('0 * * * *')
     @asyncio.coroutine
     def update_static_ish_data(self):
@@ -141,6 +145,10 @@ class PlayerService(object):
             # UniqueID-exempt users.
             yield from cursor.execute("SELECT `idUser` FROM uniqueid_exempt")
             self.uniqueid_exempt = frozenset(cursor.fetchall().map(lambda x: x[0]))
+
+            # Client version number
+            yield from cursor.execute("SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1")
+            self.client_version_info = cursor.fetchone()
 
     def findByName(self, name):
         for player in self.players:
