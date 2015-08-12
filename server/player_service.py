@@ -130,9 +130,6 @@ class PlayerService(object):
     def is_uniqueid_exempt(self, user_id):
         return user_id in self.uniqueid_exempt
 
-    def get_client_version(self):
-        return self.client_version_info
-
     def has_blacklisted_domain(self, email):
         return len(self.blacklisted_email_domains.keys(email[::-1])) != 0
 

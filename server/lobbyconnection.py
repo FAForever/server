@@ -888,7 +888,7 @@ Thanks,\n\
             # TODO: Do this somewhere less insane. (no need to query our db for this every login!)
             with (yield from self.db_pool) as conn:
                 cursor = yield from conn.cursor()
-                versionDB, updateFile = self.players.get_client_version()
+                versionDB, updateFile = self.players.client_version_info
 
                 # Version of zero represents a developer build.
                 if version < versionDB and version != 0:
