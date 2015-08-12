@@ -374,17 +374,17 @@ class LobbyConnection(QObject):
             if not query.exec_():
                 self._logger.debug(query.lastError())
 
-            uuid = query.lastInsertId()
+            id = query.lastInsertId()
 
             query.prepare("INSERT INTO `table_map_uploaders`(`mapid`, `userid`) VALUES (?,?)")
-            query.addBindValue(uuid)
+            query.addBindValue(id)
             query.addBindValue(self.player.id)
             if not query.exec_():
                 self._logger.debug(query.lastError())
 
             if unranked:
                 query.prepare("INSERT INTO `table_map_unranked`(`id`) VALUES (?)")
-                query.addBindValue(uuid)
+                query.addBindValue(id)
                 if not query.exec_():
                     self._logger.debug(query.lastError())
 
@@ -636,7 +636,7 @@ Thanks,\n\
         with (yield from self.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute(query, self.players.get_player_id(target).uuid, self.player.uuid)
+            yield from cursor.execute(query, self.players.get_player_id(target).id, self.player.id)
 
     @timed()
     @asyncio.coroutine
@@ -657,7 +657,7 @@ Thanks,\n\
         with (yield from self.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute(query, self.player.uuid, self.players.get_player_id(target))
+            yield from cursor.execute(query, self.player.id, self.players.get_player_id(target))
 
     @timed()
     def command_admin(self, message):
@@ -946,7 +946,7 @@ Thanks,\n\
                                  session=self.session,
                                  ip=self.ip,
                                  port=self.port,
-                                 uuid=player_id,
+                                 id=player_id,
                                  permissionGroup=permission_group,
                                  lobbyThread=self)
 

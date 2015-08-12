@@ -145,7 +145,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         gameName = str(player1.login + " Vs " + player2.login)
         
         player1.action = "HOST"
-        gameUuid = self.createUuid(player1.id)
+        gameid = self.createUuid(player1.id)
         player2.action = "JOIN"
 
         map_pool = self.choose_ladder_map_pool(player1, player2)
@@ -153,12 +153,12 @@ class Ladder1V1GamesContainer(GamesContainer):
         mapChosen = random.choice(tuple(map_pool))
         map = self.getMapName(mapChosen)
 
-        ngame = Ladder1V1Game(gameUuid, self)
+        ngame = Ladder1V1Game(gameid, self)
         ngame.game_mode = self.game_mode
-        uuid = ngame.uuid
+        id = ngame.id
 
-        player1.setGame(uuid)
-        player2.setGame(uuid)
+        player1.setGame(id)
+        player2.setGame(id)
 
         #host is player 1
         
@@ -187,7 +187,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         json["mod"] = self.game_mode
         json["mapname"] = str(map)
         json["reason"] = "ranked"
-        json["uid"] = uuid
+        json["uid"] = id
         json["args"] = ["/players 2", "/team 1"]
         
         player1.lobbyThread.sendJSON(json)

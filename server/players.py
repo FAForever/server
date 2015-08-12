@@ -10,14 +10,12 @@ class Player(BasePlayer):
     In the context of a game, the Game object holds game-specific
     information about players.
     """
-    def __init__(self, login=None, session=0, ip=None, port=None, uuid=0,
+    def __init__(self, login=None, session=0, ip=None, port=None, id=0,
                  global_rating=(1500, 500), ladder_rating=(1500, 500), clan=None, numGames=0, permissionGroup=0, lobbyThread=None):
-        super().__init__()
+        super().__init__(id, login)
 
         # The id of the user in the `login` table of the database.
-        self.uuid = uuid
         self.session = session
-        self._login = login
         self.ip = ip
         self._game_port = port
 
@@ -98,14 +96,6 @@ class Player(BasePlayer):
         self._game_connection = lambda: None
 
     @property
-    def id(self):
-        return int(self.uuid)
-
-    @property
-    def login(self):
-        return self._login
-
-    @property
     def in_game(self):
         return self.game is not None
 
@@ -120,10 +110,6 @@ class Player(BasePlayer):
     @property
     def address_and_port(self):
         return "{}:{}".format(self.ip, self.game_port)
-
-    @login.setter
-    def login(self, value):
-        self._login = value
 
     def to_dict(self):
         """
@@ -147,7 +133,7 @@ class Player(BasePlayer):
         )))
 
     def __str__(self):
-        return "Player({}, {})".format(self.login, self.uuid)
+        return "Player({}, {})".format(self.login, self.id)
 
     def __repr__(self):
         return self.__str__()

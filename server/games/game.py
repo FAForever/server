@@ -47,7 +47,7 @@ class Game(BaseGame):
     """
     init_mode = InitMode.NORMAL_LOBBY
 
-    def __init__(self, uuid, parent,
+    def __init__(self, id, parent,
                  host=None,
                  hostId=0,
                  hostIp=None,
@@ -56,7 +56,7 @@ class Game(BaseGame):
                  map='SCMP_007'):
         """
         Initializes a new game
-        :type uuid int
+        :type id int
         :type host: None
         :type hostId: int
         :type hostIp: str
@@ -74,13 +74,13 @@ class Game(BaseGame):
         self._player_options = {}
         self.createDate = time.time()
         self.launched_at = None
-        self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, uuid))
-        self.uuid = uuid
+        self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, id))
+        self.id = id
         self.ffa = False
         self.access = "public"
         self.maxPlayer = 12
         self.host = host
-        self.hostuuid = hostId
+        self.hostid = hostId
         self.hostip = hostIp
         self.hostport = hostPort
         self.name = name
@@ -136,10 +136,6 @@ class Game(BaseGame):
     @property
     def connections(self):
         return self._connections.values()
-
-    @property
-    def id(self):
-        return self.uuid
 
     @property
     def teams(self):
@@ -436,7 +432,7 @@ class Game(BaseGame):
         query.addBindValue(modId)
         query.addBindValue(mapId)
         query.addBindValue(self.name)
-        query.addBindValue(self.uuid)
+        query.addBindValue(self.id)
         if not query.exec_():
             self._logger.debug("Error updating game_stats:")
             self._logger.debug(query.lastError())
@@ -584,7 +580,7 @@ class Game(BaseGame):
         return {
             "command": "game_info",
             "access": self.access,
-            "uid": self.uuid,
+            "uid": self.id,
             "title": self.name,
             "state": client_state,
             "featured_mod": self.gamemod,
@@ -627,4 +623,4 @@ class Game(BaseGame):
         return self.id.__hash__()
 
     def __str__(self):
-        return "Game({},{},{},{})".format(self.uuid, self.host.login if self.host else '', self.mapName, len(self.players))
+        return "Game({},{},{},{})".format(self.id, self.host.login if self.host else '', self.mapName, len(self.players))

@@ -178,13 +178,13 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.game.add_game_connection(self)
             self.game.host = self.player
             strlog = (
-                "%s.%s.%s\t" % (str(self.player.login), str(self.game.uuid), str(self.game.gamemod)))
+                "%s.%s.%s\t" % (str(self.player.login), str(self.game.id), str(self.game.gamemod)))
             self.logGame = strlog
             self._send_create_lobby()
 
         elif action == "JOIN":
             strlog = (
-                "%s.%s.%s\t" % (str(self.player.login), str(self.game.uuid), str(self.game.gamemod)))
+                "%s.%s.%s\t" % (str(self.player.login), str(self.game.id), str(self.game.gamemod)))
             self.logGame = strlog
             self._send_create_lobby()
 
@@ -491,7 +491,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                         yield from cursor.execute("INSERT INTO `coop_leaderboard`"
                                                   "(`mission`, `gameuid`, `secondary`, `time`) "
                                                   "VALUES (%s, %s, %s, %s);",
-                                                  (mission, self.game.uuid, secondary, delta))
+                                                  (mission, self.game.id, secondary, delta))
 
         except Exception as e:  # pragma: no cover
             self.log.exception(e)

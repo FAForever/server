@@ -1,16 +1,12 @@
-
 from server.abc.base_game import InitMode
 from . import GamesContainer
 from .game import Game
 class CoopGame(Game):
     """Class forcoop game"""
-
     init_mode = InitMode.NORMAL_LOBBY
 
-    def __init__(self, uuid, parent = None):
-        super(self.__class__, self).__init__(uuid, parent)
-
-
+    def __init__(self, id, parent = None):
+        super(self.__class__, self).__init__(id, parent)
 
 class CoopGamesContainer(GamesContainer):
     """Class for coop games"""

@@ -11,10 +11,13 @@ class BasePlayer():
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self):
+    def __init__(self, id, login):
         self._faction = 0
         self._global_rating = (1500, 500)
         self._ladder_rating = (1500, 500)
+
+        self.id = id
+        self.login = login
 
     @property
     def global_rating(self):
@@ -37,9 +40,6 @@ class BasePlayer():
             self._ladder_rating = (value.mu, value.sigma)
         else:
             self._ladder_rating = value
-
-    login = abstractproperty()
-    id = abstractproperty()
 
     @property
     def faction(self):

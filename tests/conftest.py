@@ -173,7 +173,7 @@ def game(players, db):
     game.hostPlayer = players.hosting
     game.init_mode = InitMode.NORMAL_LOBBY
     game.name = "Some game name"
-    game.uuid = 1
+    game.id = 1
     return game
 
 @pytest.fixture

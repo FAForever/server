@@ -57,10 +57,10 @@ class GamesContainer(object):
 
         return uuid
 
-    def findGameByUuid(self, uuid):
-        """Find a game by the uuid"""
+    def findGameById(self, id):
+        """Find a game by the id"""
         for game in self.games:
-            if game.uuid == uuid:
+            if game.id == id:
                 return game
         return None
 

@@ -13,8 +13,8 @@ class Ladder1V1Game(Game):
     """Class for 1v1 ladder game"""
     init_mode = InitMode.AUTO_LOBBY
     
-    def __init__(self, uuid, parent = None):
-        super(self.__class__, self).__init__(uuid, parent)
+    def __init__(self, id, parent = None):
+        super(self.__class__, self).__init__(id, parent)
 
         self.hosted = False
         
@@ -34,7 +34,7 @@ class Ladder1V1Game(Game):
                 "command": "game_launch",
                 "mod": self.parent.gameTypeName,
                 "reason": "ranked",
-                "uid": self.uuid,
+                "uid": self.id,
                 "mapname": map,
                 "args": ["/players 2", "/team 2"]
             }
