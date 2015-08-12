@@ -182,7 +182,6 @@ def create_player():
         p = mock.create_autospec(spec=Player(login))
         p.global_rating = global_rating
         p.ladder_rating = ladder_rating
-        p.getAction = mock.Mock(return_value=action)
         p.getLogin = mock.Mock(return_value=login)
         p.getId = mock.Mock(return_value=id)
         p.getIp = mock.Mock(return_value=ip)

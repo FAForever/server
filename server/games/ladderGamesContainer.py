@@ -43,7 +43,7 @@ class Ladder1V1GamesContainer(GamesContainer):
             player.league = league
 
             self.players.append(player)
-            player.setAction("SEARCH_LADDER")
+            player.action = "SEARCH_LADDER"
             mean, deviation = player.ladder_rating
 
             if deviation > 490:
@@ -58,7 +58,7 @@ class Ladder1V1GamesContainer(GamesContainer):
     def removePlayer(self, player):
         if player in self.players:
             self.players.remove(player)
-            player.setAction("NOTHING")
+            player.action = "NOTHING"
             return 1
         return 0
     
@@ -144,9 +144,9 @@ class Ladder1V1GamesContainer(GamesContainer):
     def startGame(self, player1, player2):
         gameName = str(player1.login + " Vs " + player2.login)
         
-        player1.setAction("HOST")
+        player1.action = "HOST"
         gameUuid = self.createUuid(player1.id)
-        player2.setAction("JOIN")
+        player2.action = "JOIN"
 
         map_pool = self.choose_ladder_map_pool(player1, player2)
 
@@ -196,7 +196,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         
         if  player in self.players:
         
-            if player.getAction() != "SEARCH_LADDER":
+            if player.action != "SEARCH_LADDER":
                 return
                 
             expandValue = player.expandLadder
@@ -228,7 +228,7 @@ class Ladder1V1GamesContainer(GamesContainer):
                 #check if we don't match again ourselves
                 if curPlayer != player:
                     #check if we don't match again a playing fella
-                    if curPlayer.getAction() == "SEARCH_LADDER":
+                    if curPlayer.action == "SEARCH_LADDER":
                         match_mean, match_dev = curPlayer.ladder_rating
 
                         if deviation > 350 and match_dev - 3* match_dev > 1400:

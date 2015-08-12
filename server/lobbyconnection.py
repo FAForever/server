@@ -565,7 +565,7 @@ Thanks,\n\
 
         self.protocol.send_messages(maps)
 
-    @timed()
+    @timed
     def send_mod_list(self):
         self.protocol.send_messages(self.games.all_game_modes())
 
@@ -594,14 +594,6 @@ Thanks,\n\
             stream.writeUInt32(reply.size() - 4)
 
             asyncio.async(self.protocol.send_raw(reply))
-
-    def command_fa_state(self, message):
-        state = message["state"]
-        if state == "on":
-            if self.player.getAction() == "NOTHING":
-                self.player.setAction("FA_LAUNCHED")
-        else:
-            self.player.setAction("NOTHING")
 
     def command_ladder_maps(self, message):
         maplist = message['maps']
@@ -1349,7 +1341,7 @@ Thanks,\n\
             self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
             return
 
-        self.player.setAction("JOIN")
+        self.player.action = "JOIN"
         self.player.game_port = port
         self.player.game = game
 

@@ -13,14 +13,13 @@ class Player(BasePlayer):
     def __init__(self, login=None, session=0, ip=None, port=None, uuid=0,
                  global_rating=(1500, 500), ladder_rating=(1500, 500), clan=None, numGames=0, permissionGroup=0, lobbyThread=None):
         super().__init__()
-        
-        self._action = ''
+
         # The id of the user in the `login` table of the database.
         self.uuid = uuid
         self.session = session
         self._login = login
         self._login = login
-        self._ip = ip
+        self.ip = ip
         self._game_port = port
 
         self.global_rating = global_rating
@@ -52,23 +51,6 @@ class Player(BasePlayer):
 
     def setLogin(self, login):
         self._login = str(login)
-
-    @property
-    def action(self):
-        return self._action
-
-    @action.setter
-    def action(self, value):
-        self._action = value
-    
-    def getAction(self):
-        return str(self._action)
-
-    def setAction(self, action):
-        if action == '':
-            return 0
-        self._action = action
-        return 1
 
     def getAddress(self):
         return "%s:%s" % (str(self.ip), str(self.game_port))
@@ -122,10 +104,6 @@ class Player(BasePlayer):
     @property
     def id(self):
         return int(self.uuid)
-
-    @property
-    def ip(self):
-        return self.getIp()
 
     @property
     def login(self):

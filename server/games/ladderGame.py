@@ -27,7 +27,7 @@ class Ladder1V1Game(Game):
         self.leagues[player.login] = player.league
          
     def specialInit(self, player):
-        if player.getAction() == "HOST":
+        if player.action == "HOST":
             map = self.mapName
             
             json = {
@@ -46,7 +46,7 @@ class Ladder1V1Game(Game):
             self.set_player_option(player.id, 'Faction', player.faction)
             self.set_player_option(player.id, 'Color', 1)
 
-        if player.getAction() == "JOIN":
+        if player.action == "JOIN":
             self.set_player_option(player.id, 'Team', 1)
             self.set_player_option(player.id, 'Army', 1)
             self.set_player_option(player.id, 'StartSpot', 1)

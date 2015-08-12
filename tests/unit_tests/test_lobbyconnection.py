@@ -218,37 +218,6 @@ def test_avatar_select_no_avatar(mocker, fa_server_thread):
     with pytest.raises(KeyError):
         fa_server_thread.command_avatar({'action': 'select'})
 
-
-def test_fa_state(fa_server_thread):
-    fa_server_thread.player = mock.Mock()
-    fa_server_thread.player.getAction.return_value = 'NOTHING'
-    message = {'state': 'on'}
-    assert fa_server_thread.player.setAction.call_count == 0
-    fa_server_thread.command_fa_state(message)
-    fa_server_thread.player.setAction.assert_called_once_with('FA_LAUNCHED')
-    assert fa_server_thread.player.setAction.call_count == 1
-    # if called again action is not set
-    fa_server_thread.player.getAction.return_value = 'FA_LAUNCHED'
-    fa_server_thread.command_fa_state(message)
-    assert fa_server_thread.player.setAction.call_count == 1
-    # reset state
-    fa_server_thread.command_fa_state({'state': 'off'})
-    fa_server_thread.player.setAction.assert_called_with('NOTHING')
-    assert fa_server_thread.player.setAction.call_count == 2
-    # test if launching is working after reset
-    fa_server_thread.player.getAction.return_value = 'NOTHING'
-    fa_server_thread.command_fa_state(message)
-    fa_server_thread.player.setAction.assert_called_with('FA_LAUNCHED')
-    assert fa_server_thread.player.setAction.call_count == 3
-
-
-def test_fa_state_reset(fa_server_thread):
-    reset_values = {None, '', 'ON', 'off'}
-    for val in reset_values:
-        fa_server_thread.command_fa_state({'state': val})
-        fa_server_thread.player.setAction.assert_called_with('NOTHING')
-
-
 def test_fa_state_invalid(fa_server_thread):
     with pytest.raises(KeyError):
         fa_server_thread.command_ladder_maps({})
