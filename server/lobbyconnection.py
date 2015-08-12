@@ -40,6 +40,8 @@ from server.protocol import QDataStreamProtocol
 
 gi = pygeoip.GeoIP('GeoIP.dat', pygeoip.MEMORY_CACHE)
 
+MAX_ACCOUNTS_PER_MACHINE = 3
+
 @with_logger
 class LobbyConnection(QObject):
     @timed()
@@ -797,13 +799,11 @@ Thanks,\n\
 
         return player_id, real_username, steamid
 
-    def decodeUniqueId(self, serialized_uniqueid, login):
+    def decodeUniqueId(self, serialized_uniqueid):
         try:
-            query = QSqlQuery(self.db)
-
             message = (base64.b64decode(serialized_uniqueid))
 
-            trailing = ord( message[0])
+            trailing = ord(message[0])
 
             message = message[1:]
 
@@ -830,15 +830,15 @@ Thanks,\n\
 
             machine = jstring["machine"]
 
-            UUID = machine.get('UUID', 0)
-            mem_SerialNumber = machine.get('mem_SerialNumber', 0)
-            DeviceID = machine.get('DeviceID', 0)
-            Manufacturer = machine.get('Manufacturer', 0)
-            Name = machine.get('Name', 0)
-            ProcessorId = machine.get('ProcessorId', 0)
-            SMBIOSBIOSVersion = machine.get('SMBIOSBIOSVersion', 0)
-            SerialNumber = machine.get('SerialNumber', 0)
-            VolumeSerialNumber = machine.get('VolumeSerialNumber', 0)
+            UUID = str(machine.get('UUID', 0))
+            mem_SerialNumber = str(machine.get('mem_SerialNumber', 0))
+            DeviceID = str(machine.get('DeviceID', 0))
+            Manufacturer = str(machine.get('Manufacturer', 0))
+            Name = str(machine.get('Name', 0))
+            ProcessorId = str(machine.get('ProcessorId', 0))
+            SMBIOSBIOSVersion = str(machine.get('SMBIOSBIOSVersion', 0))
+            SerialNumber = str(machine.get('SerialNumber', 0))
+            VolumeSerialNumber = str(machine.get('VolumeSerialNumber', 0))
 
             for i in  machine.values() :
                 low = i.lower()
@@ -846,35 +846,62 @@ Thanks,\n\
                     return "VM"
 
             m = hashlib.md5()
-            m.update(str(UUID) + str(mem_SerialNumber) + str(DeviceID) + str(Manufacturer) + str(Name) + str(ProcessorId) + str(SMBIOSBIOSVersion) + str(SerialNumber) + str(VolumeSerialNumber))
+            m.update(UUID + mem_SerialNumber + DeviceID + Manufacturer + Name + ProcessorId + SMBIOSBIOSVersion + SerialNumber + VolumeSerialNumber)
 
-            query.prepare("SELECT userid FROM `uniqueid` WHERE MD5( CONCAT( `uuid` , `mem_SerialNumber` , `deviceID` , `manufacturer` , `name` , `processorId` , `SMBIOSBIOSVersion` , `serialNumber` , `volumeSerialNumber` ) ) = ?")
-            query.addBindValue(str(m.hexdigest()))
-            if not query.exec_() :
-                self.log.debug(query.lastQuery())
-            if query.size() == 0 :
-                query2 = QSqlQuery(self.db)
-                query2.prepare("INSERT INTO `uniqueid` (`userid`, `uuid`, `mem_SerialNumber`, `deviceID`, `manufacturer`, `name`, `processorId`, `SMBIOSBIOSVersion`, `serialNumber`, `volumeSerialNumber`) VALUES ((SELECT id FROM login WHERE login.login = ?),?,?,?,?,?,?,?,?,?)")
-                query2.addBindValue(login)
-                query2.addBindValue(str(UUID))
-                query2.addBindValue(str(mem_SerialNumber))
-                query2.addBindValue(str(DeviceID))
-                query2.addBindValue(str(Manufacturer))
-                query2.addBindValue(str(Name))
-                query2.addBindValue(str(ProcessorId))
-                query2.addBindValue(str(SMBIOSBIOSVersion))
-                query2.addBindValue(str(SerialNumber))
-                query2.addBindValue(str(VolumeSerialNumber))
-                if not query2.exec_() :
-                    self.log.error("Failed query :")
-                    self.log.error(query2.lastQuery())
-                    self.log.error(query2.lastError())
-
-
-            return m.hexdigest()
-
+            return m.hexdigest(), (UUID, mem_SerialNumber, DeviceID, Manufacturer, Name, ProcessorId, SMBIOSBIOSVersion, SerialNumber, VolumeSerialNumber)
         except Exception as ex:
             self._logger.exception(ex)
+
+    def validate_unique_id(self, cursor, player_id, steamid, encoded_unique_id):
+        # Accounts linked to steam are exempt from uniqueId checking.
+        if steamid:
+            return True
+
+        uid_hash, hardware_info = self.decodeUniqueId(encoded_unique_id)
+
+        # VM users must use steam.
+        if uid_hash == "VM":
+            self.sendJSON(dict(command="notice", style="error", text="You need to link your account to Steam in order to use FAF in a Virtual Machine. You can contact the admin in the forums."))
+            return False
+
+        # check for other accounts using the same uniqueId as us. We only permit 3 such accounts to
+        # exist.
+        yield from cursor.execute("SELECT user_id FROM unique_id_users WHERE uniqueid_hash = %s", uid_hash)
+
+        rows = cursor.fetchall()
+        ids = rows.map(lambda x: x[0])
+
+        # Is the user we're logging in with not currently associated with this uid?
+        if player_id not in ids:
+            # Do we have a spare slot into which we can allocate this new account?
+            if cursor.rowcount >= MAX_ACCOUNTS_PER_MACHINE:
+                yield from cursor.execute("SELECT login FROM login WHERE id IN(%s)" % ids.join(","))
+
+                names = cursor.fetchall().map(lambda x: x[0])
+
+                self.sendJSON(dict(command="notice", style="error",
+                                   text="This computer is already associated with too many FAF accounts: %s.<br><br>You might want to try SteamLink: <a href='" +
+                                        Config['app_url'] + "faf/steam.php'>" +
+                                        Config['app_url'] + "faf/steam.php</a>" %
+                                        names.join(", ")))
+
+                return False
+
+            # Is this a uuid we have never seen before?
+            if cursor.rowcount == 0:
+                # Store its component parts in the table for doing that sort of thing. (just for
+                # human-reading, really)
+                yield from cursor.execute("INSERT INTO `uniqueid` (`hash`, `uuid`, `mem_SerialNumber`, `deviceID`, `manufacturer`, `name`, `processorId`, `SMBIOSBIOSVersion`, `serialNumber`, `volumeSerialNumber`)"
+                                          "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", uid_hash, *hardware_info)
+
+            # Associate this account with this hardware hash.
+            yield from cursor.execute("INSERT INTO unique_id_users(user_id, uniqueid_hash) VALUES(%s, %s)", player_id, uid_hash)
+
+        # TODO: Mildly unpleasant
+        yield from cursor.execute("UPDATE login SET ip = %s WHERE id = %s", (self.ip, player_id))
+
+        return True
+
 
     @asyncio.coroutine
     def command_hello(self, message):
@@ -898,39 +925,14 @@ Thanks,\n\
 
                 player_id, login, steamid = yield from self.check_user_login(cursor, login, password)
 
+                # Login was not approved.
+                if not player_id:
+                    return
+
                 if not self.players.is_uniqueid_exempt(player_id):
-                    uniqueId = self.decodeUniqueId(message['unique_id'], login)
-                else:
-                    uniqueId = True
-
-                # Login was not approved or decoding exploded somehow.
-                if not player_id or not uniqueId:
-                    return
-
-                # VM users must use steam.
-                if uniqueId == "VM":
-                    self.sendJSON(dict(command="notice", style="error", text="You need to link your account to Steam in order to use FAF in a Virtual Machine. You can contact the admin in the forums."))
-                    return
-
-                # Accounts linked to steam are exempt from uniqueId checking.
-                if not steamid:
-                    # check for another account using the same uniqueId as us.
-                    yield from cursor.execute("SELECT id, login FROM login WHERE uniqueId = %s AND id != %s", (uniqueId, player_id))
-
-                    if cursor.rowcount > 0:
-                        idFound, otherName = cursor.fetchone()
-
-                        self._logger.debug("%i (%s) is a smurf of %s" % (self.player.id, login, otherName))
-                        self.sendJSON(dict(command="notice", style="error",
-                                           text="This computer is tied to this account : %s.<br>Multiple accounts are not allowed.<br>You can free this computer by logging in with that account (%s) on another computer.<br><br>Or Try SteamLink: <a href='" +
-                                                Config['app_url'] + "faf/steam.php'>" +
-                                                Config['app_url'] + "faf/steam.php</a>" % (
-                                               otherName, otherName)))
-
-                        yield from cursor.execute("INSERT INTO `smurf_table`(`origId`, `smurfId`) VALUES (%s,%s)", (player_id, idFound))
+                    # UniqueID check was rejected (too many accounts or tamper-evident madness)
+                    if not self.validate_unique_id(cursor, player_id, steamid, message['unique_id']):
                         return
-
-                    yield from cursor.execute("UPDATE login SET ip = %s, uniqueId = %s WHERE id = %s", (self.ip, uniqueId, player_id))
 
                 # Update the user's IRC registration (why the fuck is this here?!)
                 m = hashlib.md5()
