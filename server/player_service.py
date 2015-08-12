@@ -125,7 +125,7 @@ class PlayerService(object):
                 return cursor.fetchone()
 
     def get_permission_group(self, user_id):
-        return self.privileged_users[user_id] or 0
+        return self.privileged_users.get(user_id, 0)
 
     def is_uniqueid_exempt(self, user_id):
         return user_id in self.uniqueid_exempt
