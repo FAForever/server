@@ -88,6 +88,7 @@ if __name__ == '__main__':
                                                    port=DB_PORT,
                                                    user=DB_LOGIN,
                                                    password=DB_PASSWORD,
+                                                   maxsize=10,
                                                    db=DB_TABLE))
         db_pool = loop.run_until_complete(pool_fut)
 
