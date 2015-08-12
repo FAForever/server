@@ -14,7 +14,7 @@ from server.connectivity import TestPeer, ConnectivityState
 from server.games.game import Game, GameState, Victory
 from server.decorators import with_logger, timed
 from server.game_service import GameService
-from server.protocol.gpgnet import GpgNetServerProtocol
+from server.protocol import GpgNetServerProtocol
 from server.subscribable import Subscribable
 
 
