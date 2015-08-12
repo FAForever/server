@@ -1,5 +1,4 @@
-import random
-from mock import patch
+from unittest.mock import patch
 
 from tests.unit_tests.ladder_fixtures import *
 

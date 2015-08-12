@@ -1,6 +1,6 @@
 import asyncio
 
-from mock import call
+from unittest.mock import call
 import pytest
 import config
 
