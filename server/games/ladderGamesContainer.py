@@ -6,6 +6,7 @@ import config
 
 from .gamesContainer import  GamesContainer
 from .ladderGame import Ladder1V1Game
+import server
 from server.players import Player
 
 
@@ -20,28 +21,25 @@ class Ladder1V1GamesContainer(GamesContainer):
         self.host = False
         self.join = False
         self.parent = games_service
+        self.db_pool = server.db.db_pool
 
     def getLeague(self, season, player):
-        
-        query = QSqlQuery(self.db)
-        query.prepare("SELECT league FROM %s WHERE idUser = ?" % season)
-        query.addBindValue(player.id)
-        query.exec_()
-        if query.size() > 0:
-            query.first()
-            return int(query.value(0))
-        
-        # place the player in his league !
-        else:              
-            query.prepare("INSERT INTO %s (`idUser` ,`league` ,`score`) VALUES (?, 1, 0)" % season)
-            query.addBindValue(player.id)
-            query.exec_()
-            return 1
+        with (yield from self.db_pool) as conn:
+            with (yield from conn.cursor()) as cursor:
+                yield from cursor.execute("SELECT league FROM %s WHERE idUser = %s", (season, player.id))
+                (league, ) = yield from cursor.fetchone()
+                if league:
+                    return league
 
     def addPlayer(self, player):
-        if not player in self.players:
+        if player not in self.players:
             league = self.getLeague(config.LADDER_SEASON, player)
-            
+            if not league:
+                with (yield from self.db_pool) as conn:
+                    with (yield from conn.cursor()) as cursor:
+                        yield from cursor.execute("INSERT INTO %s (`idUser` ,`league` ,`score`) "
+                                                  "VALUES (%s, 1, 0)", (config.LADDER_SEASON, player.id))
+
             player.league = league
 
             self.players.append(player)
@@ -58,8 +56,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         return 0
 
     def removePlayer(self, player):
-        
-        if  player in self.players:
+        if player in self.players:
             self.players.remove(player)
             player.setAction("NOTHING")
             return 1
