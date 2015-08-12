@@ -14,7 +14,7 @@ TEST_ADDRESS = ('127.0.0.1', None)
 
 @pytest.fixture
 def game_server(loop, request, player_service, mock_games, db, mock_db_pool):
-    nat_server, server = run_game_server(TEST_ADDRESS, player_service, mock_games, db, loop)
+    nat_server, server = run_game_server(TEST_ADDRESS, player_service, mock_games, loop)
     server = loop.run_until_complete(server)
 
     def fin():
