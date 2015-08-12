@@ -5,7 +5,6 @@ import time
 import logging
 import functools
 
-from PySide.QtSql import *
 import json
 import config
 import server
@@ -29,14 +28,13 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     """
     Responsible for connections to the game, using the GPGNet protocol
     """
-    def __init__(self, loop, users, games: GameService, db):
+    def __init__(self, loop, users, games: GameService):
         """
         Construct a new GameConnection
 
         :param loop: asyncio event loop to use
         :param users: PlayersOnline
         :param games: GamesService
-        :param db: QSqlDatabase
         :return:
         """
         super().__init__()
@@ -47,7 +45,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.users = users
         self.games = games
 
-        self.db = db
         self.db_pool = server.db.db_pool
         self.log = logging.getLogger(__name__)
         self.initTime = time.time()

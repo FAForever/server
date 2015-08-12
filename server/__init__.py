@@ -100,7 +100,7 @@ def run_game_server(address: (str, int),
     nat_packet_server = NatPacketServer(loop, config.LOBBY_UDP_PORT)
 
     def initialize_connection():
-        gc = GameConnection(loop, player_service, games, db)
+        gc = GameConnection(loop, player_service, games)
         nat_packet_server.subscribe(gc, ['ProcessServerNatPacket'])
         return gc
     ctx = ServerContext(initialize_connection, name='GameServer', loop=loop)
