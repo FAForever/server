@@ -885,9 +885,7 @@ Thanks,\n\
 
                 player_id, login, steamid = yield from self.check_user_login(cursor, login, password)
 
-                yield from cursor.execute("SELECT EXISTS(select user_id from uniqueid_exempt where user_id = %s)", (player_id))
-                (uniqueid_exempt, ) = yield from cursor.fetchone()
-                if not uniqueid_exempt:
+                if not self.players.is_uniqueid_exempt(player_id):
                     uniqueId = self.decodeUniqueId(message['unique_id'], login)
                 else:
                     uniqueId = True

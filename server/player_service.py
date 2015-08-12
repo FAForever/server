@@ -8,6 +8,7 @@ class PlayerService(object):
         self.logins = []
         self.db_pool = db_pool
         self.privileged_users = {}
+        self.uniqueid_exempt = {}
 
         self.update_static_ish_data()
 
@@ -121,6 +122,9 @@ class PlayerService(object):
     def get_permission_group(self, user_id):
         return self.privileged_users[user_id] or 0
 
+    def is_uniqueid_exempt(self, user_id):
+        return user_id in self.uniqueid_exempt
+
     @aiocron.crontab('0 * * * *')
     @asyncio.coroutine
     def update_static_ish_data(self):
@@ -133,6 +137,10 @@ class PlayerService(object):
             cursor = yield from conn.cursor()
             yield from cursor.execute("SELECT `user_id`, `group` FROM lobby_admin")
             self.privileged_users = dict(cursor.fetchall())
+
+            # UniqueID-exempt users.
+            yield from cursor.execute("SELECT `idUser` FROM uniqueid_exempt")
+            self.uniqueid_exempt = frozenset(cursor.fetchall().map(lambda x: x[0]))
 
     def findByName(self, name):
         for player in self.players:
