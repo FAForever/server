@@ -84,7 +84,6 @@ if __name__ == '__main__':
         timer.timeout.connect(poll_signal)
         timer.start(200)
 
-        dirtyGameList = []
         db_pool = loop.run_until_complete(aiomysql.create_pool(host=DB_SERVER,
                                                                port=DB_PORT,
                                                                user=DB_LOGIN,
