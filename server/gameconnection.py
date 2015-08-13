@@ -14,6 +14,7 @@ from server.connectivity import TestPeer, ConnectivityState
 from server.games.game import Game, GameState, Victory
 from server.decorators import with_logger, timed
 from server.game_service import GameService
+from server.players import PlayerState
 from server.protocol import GpgNetServerProtocol
 from server.subscribable import Subscribable
 
@@ -170,9 +171,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         """
         assert self.game
         self.send_Ping()
-        action = self.player.action
+        state = self.player.state
 
-        if action == "HOST":
+        if state == PlayerState.HOSTING:
             self.game.state = GameState.LOBBY
             self._state = GameConnectionState.CONNECTED_TO_HOST
             self.game.add_game_connection(self)
@@ -182,7 +183,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.logGame = strlog
             self._send_create_lobby()
 
-        elif action == "JOIN":
+        elif state == PlayerState.JOINING:
             strlog = (
                 "%s.%s.%s\t" % (str(self.player.login), str(self.game.id), str(self.game.gamemod)))
             self.logGame = strlog
@@ -210,13 +211,13 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 self.send_gpgnet_message('ConnectivityState', [self.player.getId(),
                                                        self.connectivity_state.state.value])
 
-            playeraction = self.player.action
-            if playeraction == "HOST":
+            player_state = self.player.state
+            if player_state == PlayerState.HOSTING:
                 map = self.game.mapName
                 self.send_HostGame(map)
             # If the player is joining, we connect him to host
             # followed by the rest of the players.
-            elif playeraction == "JOIN":
+            elif player_state == PlayerState.JOINING:
                 yield from self.ConnectToHost(self.game.host.game_connection)
                 self._state = GameConnectionState.CONNECTED_TO_HOST
                 self.game.add_game_connection(self)
@@ -256,7 +257,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         Connect self to a given peer (host)
         :return:
         """
-        assert peer.player.action == 'HOST'
+        assert peer.player.state == PlayerState.HOSTING
         connection, own_addr, peer_addr = yield from self.EstablishConnection(peer)
         if connection == ConnectivityState.PUBLIC or connection == ConnectivityState.STUN:
             self.send_JoinGame(peer_addr,
@@ -441,7 +442,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 self._mark_dirty()
 
             elif key == 'PlayerOption':
-                if self.player.action == "HOST":
+                if self.player.state == PlayerState.HOSTING:
                     id = values[0]
                     key = values[1]
                     value = values[2]
@@ -449,7 +450,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     self._mark_dirty()
 
             elif key == 'AIOption':
-                if self.player.action == "HOST":
+                if self.player.state == PlayerState.HOSTING:
                     name = values[0]
                     key = values[1]
                     value = values[2]
@@ -457,7 +458,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     self._mark_dirty()
 
             elif key == 'ClearSlot':
-                if self.player.action == "HOST":
+                if self.player.state == PlayerState.HOSTING:
                     slot = values[0]
                     self.game.clear_slot(slot)
                 self._mark_dirty()
@@ -524,7 +525,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             asyncio.async(self._handle_lobby_state())
 
         elif state == 'Launching':
-            if self.player.action == "HOST":
+            if self.player.state == PlayerState.HOSTING:
                 self.game.launch()
 
                 if len(self.game.mods) > 0:
@@ -609,7 +610,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             if self.ping_task is not None:
                 self.ping_task.cancel()
             if self._player:
-                self._player.action = 'NONE'
+                self._player.state = PlayerState.IDLE
 
     def on_connection_lost(self):
         try:

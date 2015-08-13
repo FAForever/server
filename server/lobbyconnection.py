@@ -1324,7 +1324,7 @@ Thanks,\n\
             self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
             return
 
-        self.player.action = "JOIN"
+        self.player.state = PlayerState.JOINING
         self.player.game_port = port
         self.player.game = game
 
@@ -1463,7 +1463,7 @@ Thanks,\n\
             'password': password
         })
 
-        self.player.action = "HOST"
+        self.player.state = PlayerState.HOSTING
         self.player.game = game
         self.player.game_port = port
 

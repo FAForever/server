@@ -1,5 +1,6 @@
 import server
 from server.game_service import GameService
+from server.players import PlayerState
 
 
 def test_initialization(players, db):
@@ -8,7 +9,7 @@ def test_initialization(players, db):
 
 
 def test_create_game(players, db):
-    players.hosting.action = ''
+    players.hosting.state = PlayerState.IDLE
     service = GameService(players, db)
     game = service.create_game(visibility='public',
                                game_mode='faf',

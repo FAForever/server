@@ -7,7 +7,7 @@ import config
 from .gamesContainer import  GamesContainer
 from .ladderGame import Ladder1V1Game
 import server
-from server.players import Player
+from server.players import Player, PlayerState
 
 
 class Ladder1V1GamesContainer(GamesContainer):
@@ -43,7 +43,7 @@ class Ladder1V1GamesContainer(GamesContainer):
             player.league = league
 
             self.players.append(player)
-            player.action = "SEARCH_LADDER"
+            player.state = PlayerState.SEARCHING_LADDER
             mean, deviation = player.ladder_rating
 
             if deviation > 490:
@@ -58,7 +58,7 @@ class Ladder1V1GamesContainer(GamesContainer):
     def removePlayer(self, player):
         if player in self.players:
             self.players.remove(player)
-            player.action = "NOTHING"
+            player.state = PlayerState.IDLE
             return 1
         return 0
     
@@ -144,9 +144,9 @@ class Ladder1V1GamesContainer(GamesContainer):
     def startGame(self, player1, player2):
         gameName = str(player1.login + " Vs " + player2.login)
         
-        player1.action = "HOST"
+        player1.state = PlayerState.HOSTING
         gameid = self.createUuid(player1.id)
-        player2.action = "JOIN"
+        player2.state = PlayerState.JOINING
 
         map_pool = self.choose_ladder_map_pool(player1, player2)
 
@@ -196,7 +196,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         
         if  player in self.players:
         
-            if player.action != "SEARCH_LADDER":
+            if player.state != PlayerState.SEARCHING_LADDER:
                 return
                 
             expandValue = player.expandLadder
@@ -228,7 +228,7 @@ class Ladder1V1GamesContainer(GamesContainer):
                 #check if we don't match again ourselves
                 if curPlayer != player:
                     #check if we don't match again a playing fella
-                    if curPlayer.action == "SEARCH_LADDER":
+                    if curPlayer.state == PlayerState.SEARCHING_LADDER:
                         match_mean, match_dev = curPlayer.ladder_rating
 
                         if deviation > 350 and match_dev - 3* match_dev > 1400:

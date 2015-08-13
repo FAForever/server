@@ -22,8 +22,7 @@ from trueskill import Rating
 from server.abc.base_game import InitMode
 from server.game_service import GameService
 
-
-
+from server.players import PlayerState
 from server.players import Player
 from server.player_service import PlayerService
 from server.games import Game
@@ -34,7 +33,6 @@ import os
 os.environ['QUAMASH_QTIMPL'] = 'PySide'
 
 import quamash
-
 
 def async_test(f):
     def wrapper(*args, **kwargs):
@@ -178,7 +176,7 @@ def game(players, db):
 
 @pytest.fixture
 def create_player():
-    def make(login='', id=0, port=6112, action='HOST', ip='127.0.0.1', global_rating=Rating(1500, 250), ladder_rating=Rating(1500, 250)):
+    def make(login='', id=0, port=6112, state=PlayerState.HOSTING, ip='127.0.0.1', global_rating=Rating(1500, 250), ladder_rating=Rating(1500, 250)):
         p = mock.create_autospec(spec=Player(login))
         p.global_rating = global_rating
         p.ladder_rating = ladder_rating
@@ -187,7 +185,7 @@ def create_player():
         p.getIp = mock.Mock(return_value=ip)
         p.ip = ip
         p.game_port = port
-        p.action = action
+        p.state = state
         p.id = id
         p.login = login
         p.address_and_port = "{}:{}".format(ip, port)
@@ -197,9 +195,9 @@ def create_player():
 @pytest.fixture
 def players(create_player):
     return mock.Mock(
-        hosting=create_player(login='Paula_Bean', id=1, port=6112, action="HOST"),
-        peer=create_player(login='That_Guy', id=2, port=6112, action="JOIN"),
-        joining=create_player(login='James_Kirk', id=3, port=6112, action="JOIN")
+        hosting=create_player(login='Paula_Bean', id=1, port=6112, state=PlayerState.HOSTING),
+        peer=create_player(login='That_Guy', id=2, port=6112, state=PlayerState.JOINING),
+        joining=create_player(login='James_Kirk', id=3, port=6112, state=PlayerState.JOINING)
     )
 
 @pytest.fixture

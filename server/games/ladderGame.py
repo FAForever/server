@@ -1,5 +1,6 @@
 import logging
 from server.abc.base_game import InitMode
+from server.players import PlayerState
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ class Ladder1V1Game(Game):
         self.leagues[player.login] = player.league
          
     def specialInit(self, player):
-        if player.action == "HOST":
+        if player.state == PlayerState.HOSTING:
             map = self.mapName
             
             json = {
@@ -46,7 +47,7 @@ class Ladder1V1Game(Game):
             self.set_player_option(player.id, 'Faction', player.faction)
             self.set_player_option(player.id, 'Color', 1)
 
-        if player.action == "JOIN":
+        if player.state == PlayerState.JOINING:
             self.set_player_option(player.id, 'Team', 1)
             self.set_player_option(player.id, 'Army', 1)
             self.set_player_option(player.id, 'StartSpot', 1)

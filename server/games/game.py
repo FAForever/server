@@ -8,7 +8,7 @@ import functools
 import trueskill
 from server.proxy_map import ProxyMap
 from server.abc.base_game import GameConnectionState, BaseGame, InitMode
-from server.players import Player
+from server.players import Player, PlayerState
 
 
 class GameState(IntEnum):
@@ -386,7 +386,7 @@ class Game(BaseGame):
 
     def on_game_launched(self):
         for player in self.players:
-            player.action = 'PLAYING'
+            player.state = PlayerState.PLAYING
         self.update_ratings()
         self.update_game_stats()
         self.update_game_player_stats()

@@ -10,6 +10,7 @@ from server import proxy_map
 from server.connectivity import Connectivity, ConnectivityState
 from server.gameconnection import GameConnection
 from server.games import Game
+from server.players import PlayerState
 
 slow = pytest.mark.slow
 
@@ -96,7 +97,7 @@ def test_handle_action_GameState_idle_non_searching_player_aborts(game_connectio
     game_connection.player = players.hosting
     game_connection.lobby = mock.Mock()
     game_connection.abort = mock.Mock()
-    players.hosting.action = None
+    players.hosting.state = PlayerState.IDLE
 
     yield from game_connection.handle_action('GameState', ['Idle'])
 

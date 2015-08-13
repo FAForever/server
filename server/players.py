@@ -1,7 +1,14 @@
 import weakref
 
+from enum import Enum
 from .abc.base_player import BasePlayer
 
+class PlayerState(Enum):
+    IDLE = 1,
+    PLAYING = 2,
+    HOSTING = 3,
+    JOINING = 4,
+    SEARCHING_LADDER = 5,
 
 class Player(BasePlayer):
     """
@@ -34,7 +41,7 @@ class Player(BasePlayer):
         
         self.numGames = numGames
 
-        self.action = "NOTHING"
+        self.state = PlayerState.IDLE
 
         self.expandLadder = 0
         self.faction = 1
