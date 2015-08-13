@@ -122,7 +122,8 @@ class PlayerService(object):
             if cursor.rowcount != 1:
                 return 0
             else:
-                return cursor.fetchone()
+                id = yield from cursor.fetchone()
+                return id
 
     def get_permission_group(self, user_id):
         return self.privileged_users.get(user_id, 0)
@@ -143,21 +144,24 @@ class PlayerService(object):
             # Admins/mods
             cursor = yield from conn.cursor()
             yield from cursor.execute("SELECT `user_id`, `group` FROM lobby_admin")
-            self.privileged_users = dict(cursor.fetchall())
+            rows = yield from cursor.fetchall()
+            self.privileged_users = dict(rows)
 
             # UniqueID-exempt users.
             yield from cursor.execute("SELECT `idUser` FROM uniqueid_exempt")
-            self.uniqueid_exempt = frozenset(cursor.fetchall().map(lambda x: x[0]))
+            rows = yield from cursor.fetchall()
+            self.uniqueid_exempt = frozenset(rows.map(lambda x: x[0]))
 
             # Client version number
             yield from cursor.execute("SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1")
-            self.client_version_info = cursor.fetchone()
+            self.client_version_info = yield from cursor.fetchone()
 
             # Blacklisted email domains (we don't like disposable email)
             yield from cursor.execute("SELECT domain FROM email_domain_blacklist")
+            rows = yield from cursor.fetchall()
             # Get list of reversed blacklisted domains (so we can (pre)suffix-match incoming emails
             # in sublinear time)
-            self.blacklisted_email_domains = marisa_trie.Trie(cursor.fetchall().map(lambda x: x[0][::-1]))
+            self.blacklisted_email_domains = marisa_trie.Trie(rows.map(lambda x: x[0][::-1]))
 
     @aiocron.crontab('0 * * * *')
     @asyncio.coroutine

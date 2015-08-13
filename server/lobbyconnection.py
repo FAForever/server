@@ -523,13 +523,13 @@ Thanks,\n\
             yield from cursor.execute("SELECT `section`,`description` FROM `tutorial_sections`")
 
             for i in range(0, cursor.rowcount):
-                section, description = cursor.fetchone()
+                section, description = yield from cursor.fetchone()
                 reply.append( {"command": "tutorials_info", "section": section, "description": description})
 
             yield from cursor.execute("SELECT tutorial_sections.`section`, `name`, `url`, `tutorials`.`description`, `map` FROM `tutorials` LEFT JOIN  tutorial_sections ON tutorial_sections.id = tutorials.section ORDER BY `tutorials`.`section`, name")
 
             for i in range(0, cursor.rowcount):
-                section, tutorial_name, url, description, map_name = cursor.fetchone()
+                section, tutorial_name, url, description, map_name = yield from cursor.fetchone()
                 reply.append({"command": "tutorials_info", "tutorial": tutorial_name, "url": url,
                               "tutorial_section": section, "description": description,
                               "mapname": map_name})
@@ -545,7 +545,7 @@ Thanks,\n\
 
             maps = []
             for i in range(0, cursor.rowcount):
-                name, description, filename, type, id = cursor.fetchone()
+                name, description, filename, type, id = yield from cursor.fetchone()
                 jsonToSend = {"command": "coop_info", "name": name, "description": description,
                               "filename": filename, "featured_mod": "coop"}
                 if type == 0:
@@ -860,7 +860,7 @@ Thanks,\n\
         # exist.
         yield from cursor.execute("SELECT user_id FROM unique_id_users WHERE uniqueid_hash = %s", uid_hash)
 
-        rows = cursor.fetchall()
+        rows = yield from cursor.fetchall()
         ids = rows.map(lambda x: x[0])
 
         # Is the user we're logging in with not currently associated with this uid?
@@ -868,8 +868,9 @@ Thanks,\n\
             # Do we have a spare slot into which we can allocate this new account?
             if cursor.rowcount >= MAX_ACCOUNTS_PER_MACHINE:
                 yield from cursor.execute("SELECT login FROM login WHERE id IN(%s)" % ids.join(","))
+                rows = yield from cursor.fetchall()
 
-                names = cursor.fetchall().map(lambda x: x[0])
+                names = rows.map(lambda x: x[0])
 
                 self.sendJSON(dict(command="notice", style="error",
                                    text="This computer is already associated with too many FAF accounts: %s.<br><br>You might want to try SteamLink: <a href='" +
@@ -1499,7 +1500,7 @@ Thanks,\n\
                 yield from cursor.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon FROM table_mod ORDER BY likes DESC LIMIT 100")
 
                 for i in range(0, cursor.rowcount):
-                    uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = cursor.fetchone()
+                    uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = yield from cursor.fetchone()
                     date = date.toTime_t()
                     link = Config['content_url'] + "vault/" + filename
                     thumbstr = ""
@@ -1516,7 +1517,7 @@ Thanks,\n\
                 canLike = True
                 yield from cursor.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likers FROM `table_mod` WHERE uid = ? LIMIT 1")
 
-                uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = cursor.fetchone()
+                uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = yield from cursor.fetchone()
                 date = date.toTime_t()
                 link = Config['content_url'] + "vault/" + filename
                 thumbstr = ""
