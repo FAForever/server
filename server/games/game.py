@@ -49,9 +49,6 @@ class Game(BaseGame):
 
     def __init__(self, id, parent,
                  host=None,
-                 hostId=0,
-                 hostIp=None,
-                 hostPort=6112,
                  name='None',
                  map='SCMP_007'):
         """
@@ -78,9 +75,6 @@ class Game(BaseGame):
         self.access = "public"
         self.max_players = 12
         self.host = host
-        self.hostid = hostId
-        self.hostip = hostIp
-        self.hostport = hostPort
         self.name = name
         self.mapName = map
         self.password = None
