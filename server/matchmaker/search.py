@@ -9,12 +9,11 @@ class Search:
     """
     Represents the state of a users search for a match.
     """
-    def __init__(self, player, start_time=None, rating_prop='ladder_rating', on_matched=None):
+    def __init__(self, player, start_time=None, rating_prop='ladder_rating'):
         self.rating_prop = rating_prop
         self.player = player
         self.start_time = start_time or time.time()
         self._match = asyncio.Future()
-        self.on_matched = on_matched
 
         # A map from 'deviation above' to 'minimum game quality required'
         # This ensures that new players get matched broadly to
