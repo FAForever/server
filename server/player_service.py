@@ -2,6 +2,8 @@ import aiomysql
 import asyncio
 import aiocron
 import marisa_trie
+from server.matchmaker import MatchmakerQueue
+
 
 class PlayerService(object):
     def __init__(self, db_pool: aiomysql.Pool):
@@ -15,6 +17,7 @@ class PlayerService(object):
         self.client_version_info = (0, None)
         self.blacklisted_email_domains = {}
 
+        self.ladder_queue = MatchmakerQueue('ladder1v1', self)
         asyncio.get_event_loop().run_until_complete(asyncio.async(self.really_update_static_ish_data()))
 
     def __len__(self):

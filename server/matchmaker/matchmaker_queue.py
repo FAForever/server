@@ -3,18 +3,16 @@ from collections import OrderedDict
 from concurrent.futures import CancelledError
 from pybloom import ScalableBloomFilter
 
-from server import PlayerService
 from server.decorators import with_logger
 from .search import Search
 
 
 @with_logger
 class MatchmakerQueue:
-    def __init__(self, queue_name: str, player_service: PlayerService):
+    def __init__(self, queue_name: str, player_service: "PlayerService"):
         self.player_service = player_service
         self.queue_name = queue_name
         self.rating_prop = 'ladder_rating'
-        # A priority queue of currently queuing players
         self.queue = OrderedDict()
         self.filter = ScalableBloomFilter(mode=ScalableBloomFilter.SMALL_SET_GROWTH)
         self._logger.info("MatchmakerQueue initialized for {}, using bloom filter: {}".format(queue_name, self.filter))

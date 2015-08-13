@@ -27,6 +27,7 @@ from Crypto.Cipher import AES
 import pygeoip
 import trueskill
 import server
+from server.matchmaker import Search
 from trueskill import Rating
 
 from server.decorators import timed, with_logger
@@ -68,6 +69,7 @@ class LobbyConnection(QObject):
         self.session = int(random.randrange(0, 4294967295))
         self.protocol = None
         self._logger.debug("LobbyConnection initialized")
+        self.search = None
 
     @property
     def authenticated(self):
@@ -1123,37 +1125,6 @@ Thanks,\n\
             jsonToSend = {"command": "social", "channels": channels}
             self.sendJSON(jsonToSend)
 
-            # for matchmaker match...
-
-            container = self.games.getContainer("ladder1v1")
-            if container is not None:
-                for player in container.players:
-                    if player == self.player:
-                        continue
-                    #minimum game quality to start a match.
-                    (mean, deviation) = self.player.ladder_rating
-
-                    if deviation > 450:
-                        gameQuality = 0.01
-                    elif deviation > 350:
-                        gameQuality = 0.1
-                    elif deviation > 300:
-                        gameQuality = 0.7
-                    elif deviation > 250:
-                        gameQuality = 0.75
-                    else:
-                        gameQuality = 0.8
-
-                    (match_mean, match_deviation) = player.ladder_rating
-
-                    if deviation > 350 and match_mean - 3 * match_deviation > 1600:
-                        continue
-
-                    quality = trueskill.quality_1vs1(Rating(*self.player.ladder_rating),
-                                                     Rating(*player.ladder_rating))
-                    if quality >= gameQuality:
-                        self.addPotentialPlayer(player.login)
-
         except Exception as ex:
             self._logger.exception(ex)
             self.sendJSON(dict(command="notice", style="error",
@@ -1338,7 +1309,7 @@ Thanks,\n\
 
         self.sendJSON(response)
 
-    @timed
+    @asyncio.coroutine
     def command_game_matchmaking(self, message):
         mod = message.get('mod', 'matchmaker')
         state = message['state']
@@ -1353,14 +1324,15 @@ Thanks,\n\
                                text="You are banned from the matchmaker. Contact an admin to have the reason."))
             return
 
+        if not self.search:
+            self.search = Search(self.player)
+
         container = self.games.getContainer(mod)
         if container is not None:
 
             if mod == "ladder1v1":
                 if state == "stop":
-                    for player in self.players.players:
-                        if player.lobbyThread:
-                            player.lobbyThread.removePotentialPlayer(self.player.login)
+                    self.search.cancel()
 
                 elif state == "start":
                     gameport = message['gameport']
@@ -1368,66 +1340,17 @@ Thanks,\n\
 
                     self.player.game_port = gameport
                     container.addPlayer(self.player)
-                    container.searchForMatchup(self.player)
+
                     if faction.startswith("/"):
                         faction = faction.strip("/")
 
                     self.player.faction = faction
-
-                    self.warnPotentialOpponent()
+                    self._logger.info("{} is searching for ladder".format(self.player))
+                    yield from self.players.ladder_queue.search(self.player, search=self.search)
 
                 elif state == "expand":
-                    rate = message['rate']
-                    self.player.expandLadder = rate
-                    container.searchForMatchup(self.player)
-
-    def addPotentialPlayer(self, player):
-        if player in self.ladderPotentialPlayers:
-            return
-        else:
-            self.ladderPotentialPlayers.append(player)
-            if not self.warned:
-                self.warned = True
-                self.sendJSON(dict(command="matchmaker_info", potential=True))
-
-    def removePotentialPlayer(self, player):
-        if player in self.ladderPotentialPlayers:
-            self.ladderPotentialPlayers.remove(player)
-
-        if len(self.ladderPotentialPlayers) == 0 and self.warned:
-            self.sendJSON(dict(command="matchmaker_info", potential=False))
-            self.warned = False
-
-    def warnPotentialOpponent(self):
-        for player in self.players.players:
-            if player == self.player:
-                continue
-                #minimum game quality to start a match.
-            mean, deviation = player.ladder_rating
-
-            if deviation > 450:
-                gameQuality = 0.01
-            elif deviation > 350:
-                gameQuality = 0.1
-            elif deviation > 300:
-                gameQuality = 0.7
-            elif deviation > 250:
-                gameQuality = 0.75
-            else:
-                gameQuality = 0.8
-
-            if deviation > 350 and mean - 3*deviation > 1600:
-                continue
-
-            curMatchQuality = self.getMatchQuality(self.player, player)
-            if curMatchQuality >= gameQuality:
-                if hasattr(player.lobbyThread, "addPotentialPlayer"):
-                    player.lobbyThread.addPotentialPlayer(self.player.login)
-
-    @staticmethod
-    def getMatchQuality(player1: Player, player2: Player):
-        return trueskill.quality_1vs1(player1.ladder_rating, player2.ladder_rating)
-
+                    # Deprecated flag for when the client controlled the ladder search expansion rate
+                    pass
 
     def command_coop_list(self, message):
         """ Request for coop map list"""
