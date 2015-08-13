@@ -536,11 +536,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                         yield from cursor.execute("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid in %s",
                                                   (self.game.mods.keys(), ))
 
-                for player in self.game.players:
-                    if player.global_rating[0] < -1000 or \
-                       player.ladder_rating[0] < -1000:
-                        self.game.mark_invalid("You are playing with a smurfer.")
-
     def _send_create_lobby(self):
         """
         Used for initializing the game to start listening on UDP

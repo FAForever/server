@@ -1,4 +1,4 @@
-from enum import Enum, IntEnum, unique
+from enum import IntEnum, unique
 import string
 import logging
 import time
@@ -34,6 +34,22 @@ class Victory(IntEnum):
             return Victory.ERADICATION
         elif value == "sandbox":
             return Victory.SANDBOX
+
+# Identifiers must be kept in sync with the contents of the invalid_game_reasons table.
+# New reasons added should have a description added to that table. Identifiers should never be
+# reused, and values should never be deleted from invalid_game_reasons.
+class ValidityState(IntEnum):
+    VALID = 0
+    TOO_MANY_DESYNCS = 1
+    WRONG_VICTORY_CONDITION = 2
+    NO_FOG_OF_WAR = 3
+    CHEATS_ENABLED = 4
+    PREBUILT_ENABLED = 5
+    NORUSH_ENABLED = 6
+    BAD_UNIT_RESTRICTIONS = 7
+    BAD_MAP = 8
+    TOO_SHORT = 9
+    BAD_MOD = 10
 
 class GameError(Exception):
     def __init__(self, *args, **kwargs):
@@ -83,7 +99,7 @@ class Game(BaseGame):
         self.gameType = 0
         self.AIs = {}
         self.desyncs = 0
-        self.invalidReason = None
+        self.validity = ValidityState.VALID
         # Isn't this really a property of the game container?
         self.game_mode = 'faf'
         self.state = GameState.INITIALIZING
@@ -182,7 +198,7 @@ class Game(BaseGame):
         self.state = GameState.ENDED
         self._logger.info("Game ended")
         if self.desyncs > 20:
-            self.mark_invalid("Too many desyncs")
+            self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
 
         query = QSqlQuery(self.db)
         query.prepare("UPDATE game_stats set `EndTime` = NOW() where `id` = ?")
@@ -330,25 +346,26 @@ class Game(BaseGame):
         """
         for id in self.mods:
             if not self.mod_ranked(id):
-                self.mark_invalid("Mod {} isn't ranked".format(id))
+                self.mark_invalid(ValidityState.BAD_MOD)
+                break
 
         if self.gameOptions['Victory'] != Victory.DEMORALIZATION and self.gamemod != 'coop':
-            self.mark_invalid("Only assassination mode is ranked")
+            self.mark_invalid(ValidityState.WRONG_VICTORY_CONDITION)
 
         elif self.gameOptions["FogOfWar"] != "explored":
-            self.mark_invalid("Fog of war not activated")
+            self.mark_invalid(ValidityState.NO_FOG_OF_WAR)
 
         elif self.gameOptions["CheatsEnabled"] != "false":
-            self.mark_invalid("Cheats were activated")
+            self.mark_invalid(ValidityState.CHEATS_ENABLED)
 
         elif self.gameOptions["PrebuiltUnits"] != "Off":
-            self.mark_invalid("Prebuilt was activated")
+            self.mark_invalid(ValidityState.PREBUILT_ENABLED)
 
         elif self.gameOptions["NoRushOption"] != "Off":
-            self.mark_invalid("No rush games are not ranked")
+            self.mark_invalid(ValidityState.NORUSH_ENABLED)
 
         elif self.gameOptions["RestrictedCategories"] != 0:
-            self.mark_invalid("Restricted games are not ranked")
+            self.mark_invalid(ValidityState.BAD_UNIT_RESTRICTIONS)
 
     def mod_ranked(self, id):
         query = QSqlQuery(self.db)
@@ -388,7 +405,7 @@ class Game(BaseGame):
 
         # What the actual fucking fuck?
         if "thermo" in self.mapName.lower():
-            self.mark_invalid("This map is not ranked.")
+            self.mark_invalid(ValidityState.BAD_MAP)
 
         query = QSqlQuery(self.parent.db)
         # Everyone loves table sacns!
@@ -403,7 +420,7 @@ class Game(BaseGame):
             query.addBindValue(mapId)
             query.exec_()
             if query.size() > 0:
-                self.mark_invalid("This map is not ranked.")
+                self.mark_invalid(ValidityState.BAD_MAP)
 
         # Why can't this be rephrased to use equality?
         queryStr = ("SELECT id FROM game_featuredMods WHERE gamemod LIKE '%s'" % self.gamemod)
