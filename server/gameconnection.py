@@ -408,16 +408,18 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 self._mark_dirty()
 
             elif key == 'GameOption':
-                if values[0] == 'Victory':
-                    self.game.gameOptions['Victory'] = Victory.from_gpgnet_string(values[1])
-                elif values[0] in self.game.gameOptions:
-                    self.game.gameOptions[values[0]] = values[1]
+                option_key = values[0]
+                option_value = values[1]
+                if option_key == 'Victory':
+                    self.game.gameOptions['Victory'] = Victory.from_gpgnet_string(option_value)
+                elif option_key in self.game.gameOptions:
+                    self.game.gameOptions[option_key] = option_value
 
-                if values[0] == "Slots":
-                    self.game.maxPlayer = values[1]
+                if option_key == "Slots":
+                    self.game.maxPlayer = option_value
 
-                if values[0] == 'ScenarioFile':
-                    raw = "%r" % values[1]
+                if option_key == 'ScenarioFile':
+                    raw = "%r" % option_value
                     path = raw.replace('\\', '/')
                     mapname = str(path.split('/')[2]).lower()
                     curMap = self.game.mapName
