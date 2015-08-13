@@ -76,7 +76,6 @@ class Game(BaseGame):
         self.launched_at = None
         self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, id))
         self.id = id
-        self.ffa = False
         self.access = "public"
         self.max_players = 12
         self.host = host
