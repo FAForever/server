@@ -109,7 +109,7 @@ class LobbyConnection(QObject):
             self._logger.exception(ex)
 
     def command_ping(self, msg):
-        self.sendReply('PONG')
+        self.protocol.send_raw(self.protocol.pack_message('PONG'))
 
     def command_pong(self, msg):
         pass
@@ -399,16 +399,19 @@ class LobbyConnection(QObject):
 
         username_pattern = re.compile(r"^[^,]{1,20}$")
         email_pattern = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$")
+
+        def reply_no():
+            self.protocol.send_raw(self.protocol.pack_message("LOGIN_AVAILABLE", "no", login))
         if not email_pattern.match(user_email):
             self.sendJSON(dict(command="notice", style="info",
                                text="Please use a valid email address."))
-            self.sendReply("LOGIN_AVAILABLE", "no", login)
+            reply_no()
             return
 
         if not username_pattern.match(login):
             self.sendJSON(dict(command="notice", style="info",
                                text="Please don't use \",\" in your username."))
-            self.sendReply("LOGIN_AVAILABLE", "no", login)
+            reply_no()
             return
 
         query = QSqlQuery(self.db)
@@ -417,12 +420,12 @@ class LobbyConnection(QObject):
         if not query.exec_():
             self._logger.debug("Error inserting login %s", login)
             self._logger.debug(query.lastError())
-            self.sendReply("LOGIN_AVAILABLE", "no", login)
+            reply_no()
             return
 
         if query.size() != 0:
             self._logger.debug("Login not available: %s", login)
-            self.sendReply("LOGIN_AVAILABLE", "no", login)
+            reply_no()
             return
 
         if self.players.has_blacklisted_domain(user_email):
@@ -495,7 +498,7 @@ Thanks,\n\
         self.sendJSON(dict(command="notice", style="info",
                            text="A e-mail has been sent with the instructions to validate your account"))
         self._logger.debug("sent mail")
-        self.sendReply("LOGIN_AVAILABLE", "yes", login)
+        self.protocol.send_raw(self.protocol.pack_message("LOGIN_AVAILABLE", "yes", login))
 
     def send_email(self, text, to_name, to_email, subject):
         msg = MIMEText(text)
@@ -573,28 +576,6 @@ Thanks,\n\
     @timed()
     def send_game_list(self):
         self.protocol.send_messages([game.to_dict() for game in self.games.active_games])
-
-    @timed()
-    def sendReply(self, action, *args, **kwargs):
-        if self in self.context:
-            reply = QByteArray()
-            stream = QDataStream(reply, QIODevice.WriteOnly)
-            stream.setVersion(QDataStream.Qt_4_2)
-            stream.writeUInt32(0)
-
-            stream.writeQString(action)
-
-            for arg in args:
-                if isinstance(arg, int):
-                    stream.writeInt(arg)
-                elif isinstance(arg, str):
-                    stream.writeQString(arg)
-
-            stream.device().seek(0)
-
-            stream.writeUInt32(reply.size() - 4)
-
-            asyncio.async(self.protocol.send_raw(reply))
 
     def command_ladder_maps(self, message):
         maplist = message['maps']
