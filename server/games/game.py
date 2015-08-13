@@ -72,7 +72,6 @@ class Game(BaseGame):
         self.db = parent.db
         self.parent = parent
         self._player_options = {}
-        self.createDate = time.time()
         self.launched_at = None
         self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, id))
         self.id = id
@@ -588,7 +587,6 @@ class Game(BaseGame):
             "mapname": self.mapName.lower(),
             "host": self.host.login if self.host else '',
             "num_players": len(self.players),
-            "game_time": self.created_at,
             "game_type": self.gameType,
             "options": self.options,
             "max_players": self.max_players,
@@ -598,13 +596,6 @@ class Game(BaseGame):
                 for team in self.teams
             }
         }
-
-    @property
-    def created_at(self):
-        """
-        :rtype : time
-        """
-        return self.createDate
 
     def setGameMap(self, map):
         if map == '':

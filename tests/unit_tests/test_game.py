@@ -283,7 +283,6 @@ def test_to_dict(game, create_player):
         "mapname": game.mapName.lower(),
         "host": game.host.login,
         "num_players": len(game.players),
-        "game_time": game.created_at,
         "game_type": game.gameType,
         "options": game.options,
         "max_players": game.max_players,
