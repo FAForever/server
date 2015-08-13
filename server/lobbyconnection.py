@@ -1311,46 +1311,34 @@ Thanks,\n\
 
     @asyncio.coroutine
     def command_game_matchmaking(self, message):
-        mod = message.get('mod', 'matchmaker')
+        mod = message.get('mod', 'ladder1v1')
         state = message['state']
 
-        query = QSqlQuery(self.db)
-        query.prepare(
-            "SELECT id FROM matchmaker_ban WHERE `userid` = ?")
-        query.addBindValue(self.player.id)
-        query.exec_()
-        if query.size() != 0:
-            self.sendJSON(dict(command="notice", style="error",
-                               text="You are banned from the matchmaker. Contact an admin to have the reason."))
-            return
+        with (yield from server.db.db_pool) as conn:
+            cursor = yield from conn.cursor()
+            yield from cursor.execute("SELECT id FROM matchmaker_ban WHERE `userid` = %s", (self.player.id))
+            if cursor.rowcount > 0:
+                self.sendJSON(dict(command="notice", style="error",
+                                   text="You are banned from the matchmaker. Contact an admin to have the reason."))
+                return
 
         if not self.search:
             self.search = Search(self.player)
 
         container = self.games.getContainer(mod)
         if container is not None:
-
             if mod == "ladder1v1":
                 if state == "stop":
                     self.search.cancel()
 
                 elif state == "start":
-                    gameport = message['gameport']
-                    faction = message['faction']
+                    self.player.game_port = message['gameport']
+                    self.player.faction = message['faction']
 
-                    self.player.game_port = gameport
                     yield from container.addPlayer(self.player)
 
-                    if faction.startswith("/"):
-                        faction = faction.strip("/")
-
-                    self.player.faction = faction
                     self._logger.info("{} is searching for ladder".format(self.player))
                     asyncio.async(self.players.ladder_queue.search(self.player, search=self.search))
-
-                elif state == "expand":
-                    # Deprecated flag for when the client controlled the ladder search expansion rate
-                    pass
 
     def command_coop_list(self, message):
         """ Request for coop map list"""
