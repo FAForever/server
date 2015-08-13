@@ -1346,7 +1346,7 @@ Thanks,\n\
 
                     self.player.faction = faction
                     self._logger.info("{} is searching for ladder".format(self.player))
-                    yield from self.players.ladder_queue.search(self.player, search=self.search)
+                    asyncio.async(self.players.ladder_queue.search(self.player, search=self.search))
 
                 elif state == "expand":
                     # Deprecated flag for when the client controlled the ladder search expansion rate
