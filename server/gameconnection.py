@@ -556,7 +556,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
     def ConnectThroughProxy(self, peer, recurse=True):
         try:
-            n_proxy = self.game.proxy.map(self.player, peer.player)
+            n_proxy = self.game.proxy_map.map(self.player, peer.player)
 
             if n_proxy < 0:
                 self.log.debug(self.logGame + "Maximum proxies used")  # pragma: no cover
@@ -616,7 +616,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 for peer in self.game.connections:
                     peer.send_DisconnectFromPeer(self.player.id)
             if self.game:
-                if self.game.proxy.unmap(self.player.login):
+                if self.game.proxy_map.unmap(self.player.login):
                     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                     s.connect(PROXY_SERVER)
                     s.sendall(json.dumps(dict(command="cleanup", sourceip=self.player.ip)).encode())

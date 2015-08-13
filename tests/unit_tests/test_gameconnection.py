@@ -259,7 +259,7 @@ def test_ConnectToHost_public_stun(loop, connections, players):
     peer_conn.send_SendNatPacket = mock.Mock()
     host_conn.send_SendNatPacket = mock.Mock()
     peer_conn.send_JoinGame = mock.Mock()
-    host_conn.game.proxy = proxy_map.ProxyMap()
+    host_conn.game.proxy_map = proxy_map.ProxyMap()
     host_conn._authenticated.set_result(True)
     peer_conn._authenticated.set_result(True)
 
@@ -289,7 +289,7 @@ def test_ConnectToHost_public_proxy(connections, players):
     peer_conn = connections.make_connection(players.joining, LOCAL_PROXY)
     host_conn.send_ConnectToProxy = mock.Mock()
     peer_conn.send_ConnectToProxy = mock.Mock()
-    host_conn.game.proxy = proxy_map.ProxyMap()
+    host_conn.game.proxy_map = proxy_map.ProxyMap()
     yield from peer_conn.ConnectToHost(host_conn)
     host_conn.send_ConnectToProxy.assert_called_with(0,
                                                      peer_conn.player.ip,

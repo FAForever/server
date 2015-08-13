@@ -103,7 +103,7 @@ class Game(BaseGame):
         # Isn't this really a property of the game container?
         self.game_mode = 'faf'
         self.state = GameState.INITIALIZING
-        self._proxy = ProxyMap()
+        self.proxy_map = ProxyMap()
         self._connections = {}
         self.gameOptions = {'FogOfWar': 'explored',
                             'GameSpeed': 'normal',
@@ -148,10 +148,6 @@ class Game(BaseGame):
     def teams(self):
         return frozenset({self.get_player_option(player.id, 'Team')
                           for player in self.players})
-
-    @property
-    def proxy(self):
-        return self._proxy
 
     def add_result(self, reporter, army, result_type, score):
         """
