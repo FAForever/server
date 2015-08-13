@@ -6,6 +6,7 @@ import time
 from PySide.QtSql import QSqlQuery
 import functools
 import trueskill
+from server.db import db_pool
 from server.proxy_map import ProxyMap
 from server.abc.base_game import GameConnectionState, BaseGame, InitMode
 from server.players import Player, PlayerState
@@ -196,19 +197,16 @@ class Game(BaseGame):
         if self.desyncs > 20:
             self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
 
-        query = QSqlQuery(self.db)
-        query.prepare("UPDATE game_stats set `EndTime` = NOW() where `id` = ?")
-        query.addBindValue(self.id)
-        query.exec_()
 
         self.persist_results()
         self.rate_game()
 
     def persist_results(self):
         """
-        Persist game results (score) into the game_player_stats table
+        Persist game results into the database
         :return:
         """
+
         self._logger.info("Saving game scores")
         results = {}
         for player in self.players:
@@ -220,22 +218,17 @@ class Game(BaseGame):
             except KeyError:
                 # Default to -1 if there is no result
                 results[player] = -1
-        query = QSqlQuery(self.db)
-        query.prepare("INSERT INTO game_player_stats (gameId, playerId, score, scoreTime) "
-                      "VALUES (?, ?, ?, NOW())")
-        game_ids = []
-        player_ids = []
-        scores = []
-        for player, result in results.items():
-            self._logger.info("Result for player {}: {}".format(player, result))
-            game_ids.append(self.id)
-            player_ids.append(player.id)
-            scores.append(result)
-        query.addBindValue(game_ids)
-        query.addBindValue(player_ids)
-        query.addBindValue(scores)
-        if not query.execBatch():
-            self._logger.critical("Error persisting scores to database: {}".format(query.lastError()))
+
+        with (yield from db_pool) as conn:
+            cursor = yield from conn.cursor()
+
+            rows = []
+            for player, result in results.items():
+                self._logger.info("Result for player {}: {}".format(player, result))
+                rows.append((self.id, player.id, result))
+
+            yield from cursor.executemany("INSERT INTO game_player_stats (gameId, playerId, score, scoreTime) "
+                                          "VALUES (%s, %s, %s, NOW())", rows)
 
     def persist_rating_change_stats(self, rating_groups, rating='global'):
         """
@@ -249,6 +242,7 @@ class Game(BaseGame):
             for team in rating_groups
             for player, new_rating in team.items()
         }
+
         game_stats_query = QSqlQuery(self.db)
         game_stats_query.prepare("UPDATE game_player_stats "
                                  "SET after_mean = ?, after_deviation = ?, scoreTime = NOW() "
