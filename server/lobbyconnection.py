@@ -1339,7 +1339,7 @@ Thanks,\n\
                     faction = message['faction']
 
                     self.player.game_port = gameport
-                    container.addPlayer(self.player)
+                    yield from container.addPlayer(self.player)
 
                     if faction.startswith("/"):
                         faction = faction.strip("/")

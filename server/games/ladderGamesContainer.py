@@ -1,6 +1,7 @@
 import random
 
 from PySide.QtSql import QSqlQuery
+import asyncio
 import trueskill
 import config
 
@@ -23,6 +24,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         self.join = False
         self.games_service = games_service
 
+    @asyncio.coroutine
     def getLeague(self, season, player):
         with (yield from db_pool) as conn:
             with (yield from conn.cursor()) as cursor:
@@ -31,9 +33,10 @@ class Ladder1V1GamesContainer(GamesContainer):
                 if league:
                     return league
 
+    @asyncio.coroutine
     def addPlayer(self, player):
         if player not in self.players:
-            league = self.getLeague(config.LADDER_SEASON, player)
+            league = yield from self.getLeague(config.LADDER_SEASON, player)
             if not league:
                 with (yield from db_pool) as conn:
                     with (yield from conn.cursor()) as cursor:
