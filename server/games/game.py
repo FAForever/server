@@ -50,6 +50,7 @@ class ValidityState(IntEnum):
     BAD_MAP = 8
     TOO_SHORT = 9
     BAD_MOD = 10
+    COOP_NOT_RANKED = 11
 
 class GameError(Exception):
     def __init__(self, *args, **kwargs):
@@ -95,7 +96,6 @@ class Game(BaseGame):
         self.password = None
         self._players = []
         self.options = []
-        self.valid = True
         self.gameType = 0
         self.AIs = {}
         self.desyncs = 0
@@ -511,7 +511,6 @@ class Game(BaseGame):
 
     def mark_invalid(self, reason):
         self._logger.info("marked as invalid because: {}".format(reason))
-        self.valid = False
         self.invalidReason = reason
 
     def get_army_result(self, army):

@@ -4,7 +4,7 @@ from server.players import PlayerState
 
 logger = logging.getLogger(__name__)
 
-from .game import Game
+from .game import Game, ValidityState
 
 from PySide.QtSql import QSqlQuery
 import operator
@@ -55,7 +55,7 @@ class Ladder1V1Game(Game):
             self.set_player_option(player.id, 'Color', 2)
 
     def rate_game(self):
-        if self.valid:
+        if self.validity == ValidityState.VALID:
             new_ratings = self.compute_rating()
             self.persist_rating_change_stats(new_ratings, rating='ladder1v1')
 
@@ -64,8 +64,9 @@ class Ladder1V1Game(Game):
 
     def on_game_end(self):
         super().on_game_end()
-        if not self.valid:
+        if self.validity != ValidityState.VALID:
             return
+
         if self.isDraw():
             query = QSqlQuery(self.db)
             queryStr = ("SELECT id FROM table_map WHERE filename LIKE '%" + self.mapName + "%'")

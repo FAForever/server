@@ -16,6 +16,6 @@ class CustomGame(Game):
         limit = len(self.players) * 60
         if time.time() - self.launched_at < limit:
             self.mark_invalid(ValidityState.TOO_SHORT)
-        if self.valid:
+        if self.validity == ValidityState.VALID:
             new_ratings = self.compute_rating()
             self.persist_rating_change_stats(new_ratings, rating='global')
