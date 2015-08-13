@@ -430,7 +430,7 @@ class LobbyConnection(QObject):
             text = "Dear " + login + ",\n\n\
 Please use a non-disposable email address.\n\n\
 ++?????++ Out of Cheese Error. Redo From Start."
-            self.send_email(text, login, email)
+            self.send_email(text, login, email, 'Forged Alliance Forever - Account validation')
 
             return
 
@@ -490,17 +490,17 @@ Please visit the following link to validate your FAF account:\n\
 Thanks,\n\
 -- The FA Forever team"
 
-        self.send_email(text, login, email)
+        self.send_email(text, login, email, 'Forged Alliance Forever - Account validation')
 
         self.sendJSON(dict(command="notice", style="info",
                            text="A e-mail has been sent with the instructions to validate your account"))
         self._logger.debug("sent mail")
         self.sendReply("LOGIN_AVAILABLE", "yes", login)
 
-    def send_email(self, text, to_name, to_email):
+    def send_email(self, text, to_name, to_email, subject):
         msg = MIMEText(text)
 
-        msg['Subject'] = 'Forged Alliance Forever - Account validation'
+        msg['Subject'] = subject
         msg['From'] = email.utils.formataddr(('Forged Alliance Forever', MAIL_ADDRESS))
         msg['To'] = email.utils.formataddr((to_name, to_email))
 
