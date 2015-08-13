@@ -1,4 +1,4 @@
-from enum import Enum, IntEnum
+from enum import Enum, IntEnum, unique
 import string
 import logging
 import time
@@ -10,14 +10,14 @@ from server.proxy_map import ProxyMap
 from server.abc.base_game import GameConnectionState, BaseGame, InitMode
 from server.players import Player, PlayerState
 
-
+@unique
 class GameState(IntEnum):
     INITIALIZING = 0
     LOBBY = 1
     LIVE = 2
     ENDED = 3
 
-
+@unique
 class Victory(IntEnum):
     DEMORALIZATION = 0
     DOMINATION = 1
@@ -34,7 +34,6 @@ class Victory(IntEnum):
             return Victory.ERADICATION
         elif value == "sandbox":
             return Victory.SANDBOX
-
 
 class GameError(Exception):
     def __init__(self, *args, **kwargs):

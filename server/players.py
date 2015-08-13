@@ -1,9 +1,10 @@
 import weakref
 
-from enum import Enum
+from enum import IntEnum, unique
 from .abc.base_player import BasePlayer
 
-class PlayerState(Enum):
+@unique
+class PlayerState(IntEnum):
     IDLE = 1,
     PLAYING = 2,
     HOSTING = 3,

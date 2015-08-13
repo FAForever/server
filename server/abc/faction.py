@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import Enum, unique
 
-
+@unique
 class Faction(Enum):
     uef = 1
     aeon = 2

@@ -2,7 +2,7 @@ from collections import namedtuple
 from concurrent.futures import CancelledError, TimeoutError
 import asyncio
 import logging
-from enum import Enum
+from enum import Enum, unique
 import socket
 
 import config
@@ -11,7 +11,7 @@ from .decorators import with_logger
 
 logger = logging.getLogger(__name__)
 
-
+@unique
 class ConnectivityState(Enum):
     """
     Describes the connectivity level of a peer

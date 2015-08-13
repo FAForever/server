@@ -1,15 +1,15 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
-from enum import Enum, IntEnum
+from enum import Enum, IntEnum, unique
 from server.players import Player
 
-
+@unique
 class GameConnectionState(Enum):
     INITIALIZING = 0
     INITIALIZED = 1
     CONNECTED_TO_HOST = 2
     ENDED = 3
 
-
+@unique
 class InitMode(IntEnum):
     NORMAL_LOBBY = 0
     AUTO_LOBBY = 1
