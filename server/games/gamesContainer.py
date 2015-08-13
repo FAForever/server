@@ -49,14 +49,6 @@ class GamesContainer(object):
         
         return value
 
-    def createUuid(self, playerId):
-        query = QtSql.QSqlQuery(self.db)
-        queryStr = ("INSERT INTO game_stats (`host`) VALUE ( %i )" % playerId)
-        query.exec_(queryStr)      
-        uuid = query.lastInsertId()
-
-        return uuid
-
     def findGameById(self, id):
         """Find a game by the id"""
         for game in self.games:
@@ -70,12 +62,3 @@ class GamesContainer(object):
             self.games.append(game)
             return 1
         return 0
-
-    def addBasicGame(self, player, name):
-        ngame = Game(self.createUuid(player.id), self)
-        ngame.host = player
-        ngame.name = name
-        ngame.game_mode = self.game_mode
-        self.games.append(ngame)
-        return ngame
-

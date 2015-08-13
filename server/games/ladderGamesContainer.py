@@ -20,7 +20,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         self.players = []
         self.host = False
         self.join = False
-        self.parent = games_service
+        self.games_service = games_service
         self.db_pool = server.db.db_pool
 
     def getLeague(self, season, player):
@@ -145,7 +145,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         gameName = str(player1.login + " Vs " + player2.login)
         
         player1.state = PlayerState.HOSTING
-        gameid = self.createUuid(player1.id)
+        gameid = self.games_service.createUuid(player1.id)
         player2.state = PlayerState.JOINING
 
         map_pool = self.choose_ladder_map_pool(player1, player2)

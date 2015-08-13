@@ -2,6 +2,7 @@ from unittest import mock
 
 from PySide import QtSql
 import pytest
+from server import GameService
 
 from server.games import Ladder1V1GamesContainer
 from server.players import Player
@@ -53,8 +54,7 @@ def ladder_setup(player1, player2, player1_maps, player2_maps, popular_maps):
         'popular_maps': popular_maps
     }
 
-
 @pytest.fixture()
-def container(db, monkeypatch, sqlquery):
+def container(db, monkeypatch, sqlquery, games):
     monkeypatch.setattr(QtSql, 'QSqlQuery', sqlquery)
-    return Ladder1V1GamesContainer(db, None)
+    return Ladder1V1GamesContainer(db, games)

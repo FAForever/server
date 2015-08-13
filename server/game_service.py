@@ -5,6 +5,7 @@ from server.decorators import with_logger
 from server.games.game import Game
 from server.players import Player
 
+from PySide import QtSql
 
 @with_logger
 class GameService:
@@ -35,6 +36,15 @@ class GameService:
                                                db=self.db,
                                                games_service=self)
 
+    # TODO: KILL
+    def createUuid(self, playerId):
+        query = QtSql.QSqlQuery(self.db)
+        queryStr = ("INSERT INTO game_stats (`host`) VALUE ( %i )" % playerId)
+        query.exec_(queryStr)
+        uuid = query.lastInsertId()
+
+        return uuid
+
     def create_game(self,
                     visibility: str='public',
                     game_mode: str=None,
@@ -45,9 +55,11 @@ class GameService:
         """
         Main entrypoint for creating new games
         """
-        game = self._containers[game_mode].addBasicGame(host, name)
+        game = Game(self.createUuid(host.id), self, host, name, mapname)
+        game.game_mode = game_mode
+        self._containers[game_mode].addGame(game)
+
         self._logger.info("{} created in {} container".format(game, game_mode))
-        game.mapName = mapname
         game.access = visibility
 
         if password is not None:
