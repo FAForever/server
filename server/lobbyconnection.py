@@ -537,6 +537,7 @@ Thanks,\n\
         self.protocol.send_messages(reply)
 
     @timed()
+    @asyncio.coroutine
     def send_coop_maps(self):
         with (yield from self.db_pool) as conn:
             cursor = yield from conn.cursor()
@@ -1449,7 +1450,7 @@ Thanks,\n\
 
     def command_coop_list(self, message):
         """ Request for coop map list"""
-        self.send_coop_maps()
+        asyncio.async(self.send_coop_maps())
 
     @timed()
     def command_game_host(self, message):
