@@ -219,7 +219,7 @@ class Ladder1V1GamesContainer(GamesContainer):
             if gameQuality < 0:
                 gameQuality = 0
                 
-            
+
             maxQuality = 0
             bestMatchupPlayer = ''
 

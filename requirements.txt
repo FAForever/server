@@ -17,3 +17,4 @@ rsa
 trueskill
 aiocron
 marisa-trie
+git+https://github.com/jaybaird/python-bloomfilter.git@2bbe01ad49965bf759e31781e6820408068862ac#egg=pybloom
