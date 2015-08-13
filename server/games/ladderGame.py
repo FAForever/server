@@ -21,7 +21,7 @@ class Ladder1V1Game(Game):
         
         self.results = []
         self.playerToJoin = None
-        self.maxPlayer = 2
+        self.max_players = 2
         self.leagues = {}
 
     def setLeaguePlayer(self, player):

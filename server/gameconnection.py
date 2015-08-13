@@ -416,7 +416,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     self.game.gameOptions[option_key] = option_value
 
                 if option_key == "Slots":
-                    self.game.maxPlayer = option_value
+                    self.game.max_players = option_value
 
                 if option_key == 'ScenarioFile':
                     raw = "%r" % option_value

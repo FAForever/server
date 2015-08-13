@@ -286,7 +286,7 @@ def test_to_dict(game, create_player):
         "game_time": game.created_at,
         "game_type": game.gameType,
         "options": game.options,
-        "max_players": game.maxPlayer,
+        "max_players": game.max_players,
         "teams": {
             team: [player.login for player in game.players
                    if game.get_player_option(player.id, 'Team') == team]

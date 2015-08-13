@@ -78,7 +78,7 @@ class Game(BaseGame):
         self.id = id
         self.ffa = False
         self.access = "public"
-        self.maxPlayer = 12
+        self.max_players = 12
         self.host = host
         self.hostid = hostId
         self.hostip = hostIp
@@ -592,7 +592,7 @@ class Game(BaseGame):
             "game_time": self.created_at,
             "game_type": self.gameType,
             "options": self.options,
-            "max_players": self.maxPlayer,
+            "max_players": self.max_players,
             "teams": {
                 team: [player.login for player in self.players
                        if self.get_player_option(player.id, 'Team') == team]
