@@ -393,10 +393,6 @@ class Game(BaseGame):
         mapId = 0
         modId = 0
 
-        # What the actual fucking fuck?
-        if "thermo" in self.mapName.lower():
-            self.mark_invalid(ValidityState.BAD_MAP)
-
         query = QSqlQuery(self.parent.db)
         # Everyone loves table sacns!
         queryStr = ("SELECT id FROM table_map WHERE filename LIKE '%/" + self.mapName + ".%'")
