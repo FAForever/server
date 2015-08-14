@@ -21,6 +21,7 @@ values (1, NOW(), 'Test game', 0, 6);
 delete from table_map;
 insert into table_map (id, filename)
 values
+(5, 'scmp_005/scmp_005.scenario_info.lua'),
 (10, 'scmp_007/scmp_007.scenario_info.lua'),
 (12, 'scmp_012/scmp_012.scenario_info.lua');
 
