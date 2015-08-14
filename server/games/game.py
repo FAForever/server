@@ -394,7 +394,7 @@ class Game(BaseGame):
             cursor = yield from conn.cursor()
 
             yield from cursor.execute("SELECT id FROM table_map WHERE id filename = %s", self.mapName)
-            (mapId, ) = cursor.fetchone()
+            (mapId, ) = yield from cursor.fetchone()
 
             cursor.execute("SELECT id FROM table_map_unranked WHERE id = %s", mapId)
             if cursor.rowcount > 0:
@@ -402,7 +402,7 @@ class Game(BaseGame):
 
             # Should probably just keep all this crap in memory...
             cursor.execute("SELECT id FROM game_featuredMods WHERE gamemod = %s", self.gamemod)
-            (modId, ) = cursor.fetchone()
+            (modId, ) = yield from cursor.fetchone()
 
             # Should probably refactor so we only insert once, instead of polluting the DB with spam
             # for non-started games.
