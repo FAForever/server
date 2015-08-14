@@ -446,16 +446,6 @@ class Game(BaseGame):
     def getGamemodVersion(self):
         return self.game_service.getGamemodVersion()
 
-    def setGameType(self, type):
-        if type == "demoralization":
-            self.gameType = 0
-        elif type == "domination":
-            self.gameType = 1
-        elif type == "eradication":
-            self.gameType = 2
-        elif type == "sandbox":
-            self.gameType = 3
-
     @property
     def gamemod(self):
         return self.game_service.game_mode
