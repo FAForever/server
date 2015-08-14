@@ -19,7 +19,12 @@ class GameService:
         self.players = players
         self.db = db
         self.game_id_counter = 0
+
+        # Populated below in really_update_static_ish_data.
         self.featured_mods = dict()
+
+        # A set of mod ids that are allowed in ranked games (everyone loves caching)
+        self.ranked_mods = set()
 
         # Synchronously initialise the game-id counter and static-ish-data.
         asyncio.get_event_loop().run_until_complete(asyncio.async(self.initialise_game_counter()))
@@ -54,6 +59,14 @@ class GameService:
                 featured_mods[row["gamemod"]] = row
 
             self.featured_mods = featured_mods
+
+            # Get an ordinary cursor back.
+            cursor = yield from conn.cursor()
+            yield from cursor.execute("SELECT id FROM table_mod WHERE ranked = 1")
+
+            # Turn resultset into a list of ids
+            rows = yield from cursor.fetchall()
+            self.ranked_mods = set(map(lambda x: x[0], rows))
 
     @aiocron.crontab('0 * * * *')
     @asyncio.coroutine

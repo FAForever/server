@@ -334,7 +334,7 @@ class Game(BaseGame):
         Mark the game invalid if it has non-compliant options
         """
         for id in self.mods:
-            if not self.mod_ranked(id):
+            if not id in self.parent.ranked_mods:
                 self.mark_invalid(ValidityState.BAD_MOD)
                 break
 
@@ -355,16 +355,6 @@ class Game(BaseGame):
 
         elif self.gameOptions["RestrictedCategories"] != 0:
             self.mark_invalid(ValidityState.BAD_UNIT_RESTRICTIONS)
-
-    def mod_ranked(self, id):
-        query = QSqlQuery(self.db)
-        query.prepare("SELECT ranked FROM table_mod WHERE uid = ? AND ranked = 1")
-        query.addBindValue(id)
-
-        if not query.exec_():
-            self._logger.exception(query.lastError())
-
-        return query.size() == 1
 
     def launch(self):
         """
