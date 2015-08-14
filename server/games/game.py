@@ -394,8 +394,8 @@ class Game(BaseGame):
         modId = 0
 
         query = QSqlQuery(self.parent.db)
-        # Everyone loves table sacns!
-        queryStr = ("SELECT id FROM table_map WHERE filename LIKE '%/" + self.mapName + ".%'")
+
+        queryStr = ("SELECT id FROM table_map WHERE id filename = %s" % self.mapName)
         query.exec_(queryStr)
         if query.size() > 0:
             query.first()
@@ -408,8 +408,7 @@ class Game(BaseGame):
             if query.size() > 0:
                 self.mark_invalid(ValidityState.BAD_MAP)
 
-        # Why can't this be rephrased to use equality?
-        queryStr = ("SELECT id FROM game_featuredMods WHERE gamemod LIKE '%s'" % self.gamemod)
+        queryStr = ("SELECT id FROM game_featuredMods WHERE gamemod = %s" % self.gamemod)
         query.exec_(queryStr)
 
         if query.size() == 1:
