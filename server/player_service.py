@@ -154,7 +154,7 @@ class PlayerService(object):
             # UniqueID-exempt users.
             yield from cursor.execute("SELECT `user_id` FROM uniqueid_exempt")
             rows = yield from cursor.fetchall()
-            self.uniqueid_exempt = frozenset(rows.map(lambda x: x[0]))
+            self.uniqueid_exempt = frozenset(map(lambda x: x[0], rows))
 
             # Client version number
             yield from cursor.execute("SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1")
@@ -165,7 +165,7 @@ class PlayerService(object):
             rows = yield from cursor.fetchall()
             # Get list of reversed blacklisted domains (so we can (pre)suffix-match incoming emails
             # in sublinear time)
-            self.blacklisted_email_domains = marisa_trie.Trie(rows.map(lambda x: x[0][::-1]))
+            self.blacklisted_email_domains = marisa_trie.Trie(map(lambda x: x[0][::-1], rows))
 
     @aiocron.crontab('0 * * * *')
     @asyncio.coroutine
