@@ -176,7 +176,6 @@ class PlayerService(object):
         for player in self.players:
             if player.login == name:
                 return player
-        return 0
 
     def findByIp(self, ip):
         """
@@ -187,10 +186,8 @@ class PlayerService(object):
         for player in self.players:
             if player.ip == ip and player.game is not None:
                 return player
-        return None
 
     def find_by_ip_and_session(self, ip, session):
         for player in self.players:
             if player.ip == ip and player.session == session and player.game is not None:
                 return player
-        return None
