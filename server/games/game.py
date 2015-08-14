@@ -415,9 +415,6 @@ class Game(BaseGame):
             cursor.execute("INSERT INTO game_stats(gameType, gameMod, `host`, mapId, gameName)"
                            "VALUES(%s, %s, %s, %s, %s)", self.gameType, modId, self.host.id, mapId, self.name)
 
-            # This can probably be a trigger...
-            cursor.execute("UPDATE table_map_features set times_played = (times_played +1) WHERE map_id = %s", mapId)
-
     def update_game_player_stats(self):
         queryStr = ""
         bind_values = []
