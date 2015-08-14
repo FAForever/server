@@ -33,7 +33,7 @@ class GameService:
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute("SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = "faf_lobby" AND TABLE_NAME = "game_stats";")
+            yield from cursor.execute("SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'faf_lobby' AND TABLE_NAME = 'game_stats';")
             (self.game_id_counter, ) = yield from cursor.fetchone()
 
     def really_update_static_ish_data(self):
