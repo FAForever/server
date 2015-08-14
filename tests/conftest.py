@@ -167,6 +167,9 @@ def db_pool(request, loop):
                 yield from cur.execute('CREATE DATABASE IF NOT EXISTS `%s`;' % db)
                 yield from cur.execute("USE `%s`;" % db)
                 yield from cur.execute(data.read())
+            with open('migration.sql', 'r', encoding='utf-8') as data:
+                yield from cur.execute(data.read())
+                yield from cur.close()
             with open('tests/data/db-fixtures.sql', 'r', encoding='utf-8') as data:
                 yield from cur.execute(data.read())
                 yield from cur.close()
