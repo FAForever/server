@@ -152,7 +152,7 @@ class PlayerService(object):
             self.privileged_users = dict(rows)
 
             # UniqueID-exempt users.
-            yield from cursor.execute("SELECT `idUser` FROM uniqueid_exempt")
+            yield from cursor.execute("SELECT `user_id` FROM uniqueid_exempt")
             rows = yield from cursor.fetchall()
             self.uniqueid_exempt = frozenset(rows.map(lambda x: x[0]))
 
