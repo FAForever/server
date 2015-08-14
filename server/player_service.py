@@ -141,8 +141,9 @@ class PlayerService(object):
         uniqueid check.
         """
         with (yield from self.db_pool) as conn:
-            # Admins/mods
             cursor = yield from conn.cursor()
+
+            # Admins/mods
             yield from cursor.execute("SELECT `user_id`, `group` FROM lobby_admin")
             rows = yield from cursor.fetchall()
             self.privileged_users = dict(rows)

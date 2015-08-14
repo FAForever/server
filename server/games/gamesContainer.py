@@ -1,9 +1,5 @@
-import time
-
 from PySide import QtSql
 from server.decorators import with_logger
-
-from server.games.game import Game, GameState
 
 
 @with_logger
@@ -11,16 +7,16 @@ class GamesContainer(object):
     """Class for containing games"""
     listable = True
 
-    def __init__(self, name, nice_name, db, games_service=None):
+    def __init__(self, name, desc, nice_name, db, games_service=None):
         self.games = []
 
         self.host = True
         self.live = True
         self.join = True
-        
+
         self.type = 0
 
-        self.desc = None
+        self.desc = desc
 
         self.game_mode = name
         self.gameNiceName = nice_name
@@ -30,11 +26,6 @@ class GamesContainer(object):
 
         self.db = db
         self._logger.debug("Initialized {}".format(nice_name))
-
-        query = self.db.exec_("SELECT description FROM game_featuredMods WHERE gamemod = '%s'" % self.game_mode)
-        if query.size() > 0:
-            query.first()
-            self.desc = query.value(0)  
 
     def getGamemodVersion(self):
         tableMod = "updates_" + self.game_mode

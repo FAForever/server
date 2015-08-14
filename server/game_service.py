@@ -1,4 +1,6 @@
 import asyncio
+import aiocron
+import aiomysql
 from server import games
 
 from server.decorators import with_logger
@@ -16,12 +18,15 @@ class GameService:
         self._dirty_games = set()
         self.players = players
         self.db = db
+        self.game_id_counter = 0
+        self.featured_mods = dict()
+
+        # Synchronously initialise the game-id counter and static-ish-data.
+        asyncio.get_event_loop().run_until_complete(asyncio.async(self.initialise_game_counter()))
+        asyncio.get_event_loop().run_until_complete(asyncio.async(self.really_update_static_ish_data()))
+
         self._containers = {}
         self.add_game_modes()
-        self.game_id_counter = 0
-
-        # Synchronously initialise the game-id counter.
-        asyncio.get_event_loop().run_until_complete(asyncio.async(self.initialise_game_counter()))
 
     @asyncio.coroutine
     def initialise_game_counter(self):
@@ -30,6 +35,30 @@ class GameService:
 
             yield from cursor.execute("SELECT MAX(id) FROM game_stats;")
             (self.game_id_counter, ) = yield from cursor.fetchone()
+
+    def really_update_static_ish_data(self):
+        """
+        Loads from the database the mostly-constant things that it doesn't make sense to query every
+        time we need, but which can in principle change over time.
+        """
+        with (yield from self.db_pool) as conn:
+            cursor = yield from conn.cursor(aiomysql.DictCursor)
+
+            # Load the featured mods table into memory (the bits of it we care about).
+            featured_mods = dict()
+
+            yield from cursor.execute("SELECT id, gamemod, description, name FROM game_featuredMods WHERE publish = 1")
+
+            for i in range(0, cursor.rowcount):
+                row = yield from cursor.fetchone()
+                featured_mods[row["gamemod"]] = row
+
+            self.featured_mods = featured_mods
+
+    @aiocron.crontab('0 * * * *')
+    @asyncio.coroutine
+    def update_static_ish_data(self):
+        self.really_update_static_ish_data()
 
     @property
     def dirty_games(self):
@@ -43,7 +72,10 @@ class GameService:
 
     def add_game_modes(self):
         for name, nice_name, container in games.game_modes:
+            mode_description = self.featured_mods[name]['description']
+
             self._containers[name] = container(name=name,
+                                               desc=mode_description,
                                                nice_name=nice_name,
                                                db=self.db,
                                                games_service=self)

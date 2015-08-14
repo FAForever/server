@@ -405,10 +405,7 @@ class Game(BaseGame):
             if cursor.rowcount > 0:
                 self.mark_invalid(ValidityState.BAD_MAP)
 
-            # Look up the featured mod id.
-            # Should probably just keep all this crap in memory...
-            cursor.execute("SELECT id FROM game_featuredMods WHERE gamemod = %s", self.gamemod)
-            (modId, ) = yield from cursor.fetchone()
+            modId = self.parent.featured_mods[self.gamemod]['id']
 
             # Write out the game_stats record.
             cursor.execute("INSERT INTO game_stats(gameType, gameMod, `host`, mapId, gameName)"
