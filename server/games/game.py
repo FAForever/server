@@ -390,28 +390,30 @@ class Game(BaseGame):
         self.update_game_player_stats()
 
     def update_game_stats(self):
+        """
+        Runs at game-start to populate the game_stats table (games that start are ones we actually
+        care about recording stats for, after all)
+        """
         with (yield from db_pool) as conn:
             cursor = yield from conn.cursor()
 
+            # Lookup the map id.
             yield from cursor.execute("SELECT id FROM table_map WHERE id filename = %s", self.mapName)
             (mapId, ) = yield from cursor.fetchone()
 
+            # Mark the game unranked if the map is blacklisted.
             cursor.execute("SELECT id FROM table_map_unranked WHERE id = %s", mapId)
             if cursor.rowcount > 0:
                 self.mark_invalid(ValidityState.BAD_MAP)
 
+            # Look up the featured mod id.
             # Should probably just keep all this crap in memory...
             cursor.execute("SELECT id FROM game_featuredMods WHERE gamemod = %s", self.gamemod)
             (modId, ) = yield from cursor.fetchone()
 
-            # Should probably refactor so we only insert once, instead of polluting the DB with spam
-            # for non-started games.
-            cursor.execute("UPDATE game_stats set `startTime` = NOW(),"
-                          "gameType = %s,"
-                          "gameMod = %s,"
-                          "mapId = %s,"
-                          "gameName = %s "
-                          "WHERE id = %s", self.gameType, modId, mapId, self.name, self.id)
+            # Write out the game_stats record.
+            cursor.execute("INSERT INTO game_stats(gameType, gameMod, `host`, mapId, gameName)"
+                           "VALUES(%s, %s, %s, %s, %s)", self.gameType, modId, self.host.id, mapId, self.name)
 
             # This can probably be a trigger...
             cursor.execute("UPDATE table_map_features set times_played = (times_played +1) WHERE map_id = %s", mapId)

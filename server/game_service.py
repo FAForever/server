@@ -1,9 +1,11 @@
+import asyncio
 from server import games
 
 from server.decorators import with_logger
 
 from server.games.game import Game
 from server.players import Player
+from server.db import db_pool
 
 from PySide import QtSql
 
@@ -18,6 +20,18 @@ class GameService:
         self.db = db
         self._containers = {}
         self.add_game_modes()
+        self.game_id_counter = 0
+
+        # Synchronously initialise the game-id counter.
+        asyncio.get_event_loop().run_until_complete(asyncio.async(self.initialise_game_counter()))
+
+    @asyncio.coroutine
+    def initialise_game_counter(self):
+        with (yield from db_pool) as conn:
+            cursor = yield from conn.cursor()
+
+            yield from cursor.execute("SELECT MAX(id) FROM game_stats;")
+            (self.game_id_counter, ) = yield from cursor.fetchone()
 
     @property
     def dirty_games(self):
@@ -36,14 +50,12 @@ class GameService:
                                                db=self.db,
                                                games_service=self)
 
-    # TODO: KILL
-    def createUuid(self, playerId):
-        query = QtSql.QSqlQuery(self.db)
-        queryStr = ("INSERT INTO game_stats (`host`) VALUE ( %i )" % playerId)
-        query.exec_(queryStr)
-        uuid = query.lastInsertId()
+    # This is still used by ladderGamesContainer: refactoring to make this interaction less
+    # ugly would be nice.
+    def createUuid(self):
+        self.game_id_counter += 1
 
-        return uuid
+        return self.game_id_counter
 
     def create_game(self,
                     visibility: str='public',
@@ -55,7 +67,7 @@ class GameService:
         """
         Main entrypoint for creating new games
         """
-        game = Game(self.createUuid(host.id), self, host, name, mapname)
+        game = Game(self.createUuid(), self, host, name, mapname)
         game.game_mode = game_mode
         self._containers[game_mode].addGame(game)
 
