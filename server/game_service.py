@@ -33,7 +33,7 @@ class GameService:
         with (yield from db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute("SELECT MAX(id) FROM game_stats;")
+            yield from cursor.execute("SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = "faf_lobby" AND TABLE_NAME = "game_stats";")
             (self.game_id_counter, ) = yield from cursor.fetchone()
 
     def really_update_static_ish_data(self):
@@ -85,7 +85,7 @@ class GameService:
     def createUuid(self):
         self.game_id_counter += 1
 
-        return self.game_id_counter
+        return self.game_id_counter - 1
 
     def create_game(self,
                     visibility: str='public',
