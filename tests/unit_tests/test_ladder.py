@@ -59,7 +59,6 @@ def test_start_game_uses_map_from_mappool(container: Ladder1V1GamesContainer, la
     container.choose_ladder_map_pool = mock.Mock(return_value=map_pool)
     lobbythread.sendJSON = mock.Mock()
     container.getMapName = lambda i: i
-
     container.startGame(ladder_setup['player1'], ladder_setup['player2'])
     args, kwargs = lobbythread.sendJSON.call_args
     assert int(args[0]['mapname']) in map_pool

@@ -27,7 +27,7 @@ def game_server(loop, request, player_service, mock_games, db, mock_db_pool):
 
 @asyncio.coroutine
 @slow
-def test_public_host(loop, game_server, players, player_service, games, db):
+def test_public_host(loop, game_server, players, player_service, db):
     player = players.hosting
     nat_server, server = game_server
     with TestGPGClient(player.game_port, loop=loop, process_nat_packets=True) as client:
@@ -47,7 +47,7 @@ def test_public_host(loop, game_server, players, player_service, games, db):
 
 @asyncio.coroutine
 @slow
-def test_stun_host(loop, game_server, players, player_service, games, db):
+def test_stun_host(loop, game_server, players, player_service, db):
     player = players.hosting
     nat_server, server = game_server
     with TestGPGClient(player.game_port, loop=loop, process_nat_packets=False) as client:

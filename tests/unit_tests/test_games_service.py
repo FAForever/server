@@ -2,13 +2,12 @@ import server
 from server.game_service import GameService
 from server.players import PlayerState
 
-
-def test_initialization(players, db):
+def test_initialization(loop, players, db, db_pool):
     service = GameService(players, db)
     assert len(service.dirty_games) == 0
 
 
-def test_create_game(players, db):
+def test_create_game(loop, players, db, db_pool):
     players.hosting.state = PlayerState.IDLE
     service = GameService(players, db)
     game = service.create_game(visibility='public',
@@ -20,7 +19,7 @@ def test_create_game(players, db):
     assert game is not None
     assert game in service.dirty_games
 
-def test_all_games(players, db):
+def test_all_games(loop, players, db, db_pool):
     service = GameService(players, db)
     game = service.create_game(visibility='public',
                                game_mode='faf',
@@ -30,7 +29,7 @@ def test_all_games(players, db):
                                password=None)
     assert game in service.active_games
 
-def test_all_game_modes(players, db):
+def test_all_game_modes(loop, players, db, db_pool):
     service = GameService(players, db)
     game_modes = service.all_game_modes()
 

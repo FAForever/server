@@ -9,23 +9,12 @@ these should be put in the ``conftest.py'' relative to it.
 import asyncio
 
 import logging
-import os
 import sys
-
-from server.qt_compat import QtCore, QtSql, QtNetwork
 
 import aiomysql
 import pytest
 from unittest import mock
 from trueskill import Rating
-
-from server.abc.base_game import InitMode
-from server.game_service import GameService
-
-from server.players import PlayerState
-from server.players import Player
-from server.player_service import PlayerService
-from server.games import Game
 
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -51,6 +40,10 @@ def pytest_addoption(parser):
                      help='Also run slow tests')
     parser.addoption('--aiodebug', action='store_true', default=False,
                      help='Enable asyncio debugging')
+    parser.addoption('--mysql_host', action='store', default='127.0.0.1', help='mysql host to use for test database')
+    parser.addoption('--mysql_username', action='store', default='root', help='mysql username to use for test database')
+    parser.addoption('--mysql_password', action='store', default='', help='mysql password to use for test database')
+    parser.addoption('--mysql_database', action='store', default='faf_test', help='mysql database to use for tests')
 
 def pytest_configure(config):
     if config.getoption('--aiodebug'):
@@ -91,9 +84,10 @@ def pytest_pyfunc_call(pyfuncitem):
 
 @pytest.fixture(scope='session')
 def application():
+    from server.qt_compat import QtCore
     return QtCore.QCoreApplication([])
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope='function', autouse=True)
 def loop(request, application):
     loop = quamash.QEventLoop(application)
     loop.set_debug(True)
@@ -140,17 +134,55 @@ def sqlquery():
 @pytest.fixture
 def db(sqlquery):
     # Since PySide does strict type checking, we cannot mock this directly
+    from server.qt_compat import QtSql
     db = QtSql.QSqlDatabase()
     db.exec_ = lambda q: sqlquery
     db.isOpen = mock.Mock(return_value=True)
     return db
 
 @pytest.fixture
-def mock_db_pool(loop):
-    return mock.create_autospec(aiomysql.Pool(0, 10, False, loop))
+def mock_db_pool(loop, db_pool, autouse=True):
+    return db_pool
+
+@pytest.fixture
+def db_pool(request, loop):
+    import server
+
+    def opt(val):
+        return request.config.getoption(val)
+    host, user, pw, db = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt('--mysql_database')
+    pool_fut = asyncio.async(server.db.connect(loop=loop,
+                                               host=host,
+                                               user=user,
+                                               password=pw,
+                                               db=db))
+    pool = loop.run_until_complete(pool_fut)
+
+    @asyncio.coroutine
+    def setup():
+        with (yield from pool) as conn:
+            cur = yield from conn.cursor()
+            with open('db-structure.sql', 'r', encoding='utf-8') as data:
+                yield from cur.execute('DROP DATABASE IF EXISTS `%s`;' % db)
+                yield from cur.execute('CREATE DATABASE IF NOT EXISTS `%s`;' % db)
+                yield from cur.execute("USE `%s`;" % db)
+                yield from cur.execute(data.read())
+            with open('tests/data/db-fixtures.sql', 'r', encoding='utf-8') as data:
+                yield from cur.execute(data.read())
+                yield from cur.close()
+
+    def fin():
+        pool.close()
+        loop.run_until_complete(pool.wait_closed())
+    request.addfinalizer(fin)
+
+    loop.run_until_complete(setup())
+
+    return pool
 
 @pytest.fixture
 def connected_game_socket():
+    from server.qt_compat import QtNetwork
     game_socket = mock.Mock(spec=QtNetwork.QTcpSocket)
     game_socket.state = mock.Mock(return_value=QtNetwork.QTcpSocket.ConnectedState)
     game_socket.isValid = mock.Mock(return_value=True)
@@ -162,6 +194,8 @@ def transport():
 
 @pytest.fixture
 def game(players, db):
+    from server.games import Game
+    from server.abc.base_game import InitMode
     mock_parent = mock.Mock()
     mock_parent.db = db
     game = mock.create_autospec(spec=Game(1, mock_parent))
@@ -176,6 +210,7 @@ def game(players, db):
 
 @pytest.fixture
 def create_player():
+    from server.players import Player, PlayerState
     def make(login='', id=0, port=6112, state=PlayerState.HOSTING, ip='127.0.0.1', global_rating=Rating(1500, 250), ladder_rating=Rating(1500, 250)):
         p = mock.create_autospec(spec=Player(login))
         p.global_rating = global_rating
@@ -194,6 +229,7 @@ def create_player():
 
 @pytest.fixture
 def players(create_player):
+    from server.players import PlayerState
     return mock.Mock(
         hosting=create_player(login='Paula_Bean', id=1, port=6112, state=PlayerState.HOSTING),
         peer=create_player(login='That_Guy', id=2, port=6112, state=PlayerState.JOINING),
@@ -201,13 +237,15 @@ def players(create_player):
     )
 
 @pytest.fixture
-def player_service(players, mock_db_pool):
+def player_service(loop, players, mock_db_pool):
+    from server import PlayerService
     p = mock.Mock(spec=PlayerService(mock_db_pool))
     p.find_by_ip_and_session = mock.Mock(return_value=players.hosting)
     return p
 
 @pytest.fixture
-def games(game, players, db):
+def game_service(loop, game, players, db, mock_db_pool):
+    from server import GameService
     service = mock.create_autospec(GameService(players, db))
     service.find_by_id.return_value = game
     return service

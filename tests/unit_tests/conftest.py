@@ -3,11 +3,6 @@ from unittest import mock
 
 import pytest
 
-from server.gameconnection import GameConnection
-from server.lobbyconnection import LobbyConnection
-
-
-
 @pytest.fixture()
 def lobbythread():
     return mock.Mock(
@@ -16,8 +11,9 @@ def lobbythread():
 
 
 @pytest.fixture
-def game_connection(request, game, loop, player_service, players, games, transport, connected_game_socket):
-    conn = GameConnection(loop=loop, users=player_service, games=games)
+def game_connection(request, game, loop, player_service, players, game_service, transport, connected_game_socket):
+    from server import GameConnection, LobbyConnection
+    conn = GameConnection(loop=loop, users=player_service, games=game_service)
     conn._transport = transport
     conn.player = players.hosting
     conn.game = game
@@ -31,9 +27,10 @@ def game_connection(request, game, loop, player_service, players, games, transpo
 
 
 @pytest.fixture
-def connections(loop, player_service, games, transport, game):
+def connections(loop, player_service, game_service, transport, game):
+    from server import GameConnection
     def make_connection(player, connectivity):
-        conn = GameConnection(loop=loop, users=player_service, games=games)
+        conn = GameConnection(loop=loop, users=player_service, games=game_service)
         conn.protocol = mock.Mock()
         conn.player = player
         conn.game = game

@@ -3,11 +3,11 @@ import aiocron
 import aiomysql
 from server import games
 
+import server.db as db
+from server import games
 from server.decorators import with_logger
-
 from server.games.game import Game
 from server.players import Player
-from server.db import db_pool
 
 @with_logger
 class GameService:
@@ -30,7 +30,7 @@ class GameService:
 
     @asyncio.coroutine
     def initialise_game_counter(self):
-        with (yield from db_pool) as conn:
+        with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
             yield from cursor.execute("SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = "faf_lobby" AND TABLE_NAME = "game_stats";")

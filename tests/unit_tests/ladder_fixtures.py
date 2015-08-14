@@ -55,6 +55,6 @@ def ladder_setup(player1, player2, player1_maps, player2_maps, popular_maps):
     }
 
 @pytest.fixture()
-def container(db, monkeypatch, sqlquery, games):
+def container(db, monkeypatch, sqlquery, game_service):
     monkeypatch.setattr(QtSql, 'QSqlQuery', sqlquery)
-    return Ladder1V1GamesContainer(db, games)
+    return Ladder1V1GamesContainer(db, game_service)
