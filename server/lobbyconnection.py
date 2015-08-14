@@ -18,7 +18,7 @@ import string
 import email
 from email.mime.text import MIMEText
 
-from PySide.QtCore import QByteArray, QDataStream, QIODevice, QFile, QObject
+from PySide.QtCore import QIODevice, QFile, QObject
 from PySide.QtSql import QSqlQuery
 from Crypto import Random
 from Crypto.Random.random import choice

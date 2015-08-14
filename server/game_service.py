@@ -7,8 +7,6 @@ from server.games.game import Game
 from server.players import Player
 from server.db import db_pool
 
-from PySide import QtSql
-
 @with_logger
 class GameService:
     """

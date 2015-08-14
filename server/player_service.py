@@ -15,7 +15,7 @@ class PlayerService(object):
         self.client_version_info = (0, None)
         self.blacklisted_email_domains = {}
 
-        asyncio.async(self.really_update_static_ish_data())
+        asyncio.get_event_loop().run_until_complete(asyncio.async(self.really_update_static_ish_data()))
 
     def __len__(self):
         return len(self.players)
