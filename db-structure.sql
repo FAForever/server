@@ -1,9 +1,8 @@
-SET storage_engine=MEMORY;
--- MySQL dump 10.13  Distrib 5.5.29, for debian-linux-gnu (x86_64)
+-- MySQL dump 10.16  Distrib 10.1.4-MariaDB, for debian-linux-gnu (x86_64)
 --
 -- Host: localhost    Database: faf_lobby
 -- ------------------------------------------------------
--- Server version	5.5.29-0ubuntu0.12.04.1-log
+-- Server version	10.1.1-MariaDB-1~trusty-wsrep-log
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -24,11 +23,11 @@ DROP TABLE IF EXISTS `AI_names`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `AI_names` (
-  `id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Primary Key : ID .\nUnsigned car pas de valeurs negative.\nMEDIUMINT : 16 millions d''entrÃÂ©es maxi, meilleures perfs que INT\nSMALLINT : 65.000 entrÃÂ©es, ce qui peut etre largement suffisant.\nDoit etre contraint a l''id de la table info_clients.',
+  `id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Primary Key : ID .\nUnsigned car pas de valeurs negative.\nMEDIUMINT : 16 millions d''entrÃ©es maxi, meilleures perfs que INT\nSMALLINT : 65.000 entrÃ©es, ce qui peut etre largement suffisant.\nDoit etre contraint a l''id de la table info_clients.',
   `login` varchar(60) CHARACTER SET latin1 COLLATE latin1_bin NOT NULL COMMENT 'login du clientMinimum 5 caracteres, VARCHAR peut fragmenter la DB, mais pas d''autres moyens ici.',
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_login` (`login`)
-)  AUTO_INCREMENT=16777215 DEFAULT CHARSET=latin1 COMMENT='login';
+) ENGINE=InnoDB AUTO_INCREMENT=16777216 DEFAULT CHARSET=latin1 COMMENT='login';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -45,7 +44,7 @@ CREATE TABLE `AI_rating` (
   `numGames` smallint(4) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   CONSTRAINT `AI_rating_ibfk_1` FOREIGN KEY (`id`) REFERENCES `AI_names` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -174,9 +173,8 @@ CREATE TABLE `avatars` (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `idUser` (`idUser`,`idAvatar`),
   KEY `friendCnst` (`idAvatar`),
-  CONSTRAINT `avatars_ibfk_1` FOREIGN KEY (`idUser`) REFERENCES `login` (`id`),
   CONSTRAINT `avatars_ibfk_2` FOREIGN KEY (`idAvatar`) REFERENCES `avatars_list` (`id`)
-)  AUTO_INCREMENT=1652 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=1971 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -192,7 +190,23 @@ CREATE TABLE `avatars_list` (
   `tooltip` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `url` (`url`,`tooltip`)
-)  AUTO_INCREMENT=175 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=222 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `avatars_list_copy_812015`
+--
+
+DROP TABLE IF EXISTS `avatars_list_copy_812015`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `avatars_list_copy_812015` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `url` varchar(255) NOT NULL,
+  `tooltip` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `url` (`url`,`tooltip`)
+) ENGINE=InnoDB AUTO_INCREMENT=186 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -206,7 +220,7 @@ CREATE TABLE `bet` (
   `userid` mediumint(8) unsigned NOT NULL,
   `amount` int(11) NOT NULL,
   PRIMARY KEY (`userid`)
-)  DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -224,7 +238,7 @@ CREATE TABLE `coop_leaderboard` (
   `time` time NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `gameuid` (`gameuid`)
-)  AUTO_INCREMENT=19725 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=29190 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -238,13 +252,26 @@ CREATE TABLE `coop_map` (
   `type` tinyint(3) unsigned NOT NULL,
   `id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(40) DEFAULT NULL,
-  `description` varchar(1024),
+  `description` longtext,
   `version` decimal(4,0) DEFAULT NULL,
   `filename` varchar(200) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `Combo` (`name`,`version`),
   KEY `filename` (`filename`)
-)  AUTO_INCREMENT=23 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `email_domain_blacklist`
+--
+
+DROP TABLE IF EXISTS `email_domain_blacklist`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `email_domain_blacklist` (
+  `domain` varchar(255) NOT NULL,
+  UNIQUE KEY `domain_index` (`domain`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -261,9 +288,8 @@ CREATE TABLE `featured_mods_owners` (
   PRIMARY KEY (`id`),
   KEY `uid` (`uid`),
   KEY `moduid` (`moduid`),
-  CONSTRAINT `featured_mods_owners_ibfk_1` FOREIGN KEY (`moduid`) REFERENCES `game_featuredMods` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `featured_mods_owners_ibfk_2` FOREIGN KEY (`uid`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  AUTO_INCREMENT=17 DEFAULT CHARSET=latin1;
+  CONSTRAINT `featured_mods_owners_ibfk_1` FOREIGN KEY (`moduid`) REFERENCES `game_featuredMods` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -279,10 +305,8 @@ CREATE TABLE `foes` (
   `idFoe` mediumint(8) unsigned NOT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `unique_pair` (`idUser`,`idFoe`) USING BTREE,
-  KEY `friendCnst` (`idFoe`),
-  CONSTRAINT `foes_ibfk_1` FOREIGN KEY (`idUser`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `foes_ibfk_2` FOREIGN KEY (`idFoe`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  AUTO_INCREMENT=13044 DEFAULT CHARSET=latin1;
+  KEY `friendCnst` (`idFoe`)
+) ENGINE=InnoDB AUTO_INCREMENT=20595 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -298,10 +322,8 @@ CREATE TABLE `friends` (
   `idFriend` mediumint(8) unsigned NOT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `unique_pair` (`idUser`,`idFriend`) USING BTREE,
-  KEY `friendCnst` (`idFriend`),
-  CONSTRAINT `friendCnst` FOREIGN KEY (`idFriend`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `userCnst` FOREIGN KEY (`idUser`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  AUTO_INCREMENT=160250 DEFAULT CHARSET=latin1;
+  KEY `friendCnst` (`idFriend`)
+) ENGINE=InnoDB AUTO_INCREMENT=200722 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -314,11 +336,12 @@ DROP TABLE IF EXISTS `game_featuredMods`;
 CREATE TABLE `game_featuredMods` (
   `id` tinyint(3) unsigned NOT NULL AUTO_INCREMENT,
   `gamemod` varchar(50) DEFAULT NULL,
-  `description` varchar(2048) NOT NULL,
+  `description` text NOT NULL,
   `name` varchar(255) NOT NULL,
   `publish` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`)
-)  AUTO_INCREMENT=27 DEFAULT CHARSET=latin1;
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `mod_name_idx` (`gamemod`)
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -333,7 +356,7 @@ CREATE TABLE `game_min_rating` (
   `minRating` float DEFAULT NULL,
   PRIMARY KEY (`id`),
   CONSTRAINT `game_min_rating_ibfk_1` FOREIGN KEY (`id`) REFERENCES `game_stats_bak` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -361,37 +384,35 @@ CREATE TABLE `game_player_stats` (
   PRIMARY KEY (`id`),
   KEY `playerId` (`playerId`),
   KEY `gameIdIdx` (`gameId`)
-)  AUTO_INCREMENT=4752559 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=6719429 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `game_player_stats_bak`
+-- Table structure for table `game_replays`
 --
 
-DROP TABLE IF EXISTS `game_player_stats_bak`;
+DROP TABLE IF EXISTS `game_replays`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `game_player_stats_bak` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `gameId` bigint(20) unsigned NOT NULL,
-  `playerId` mediumint(8) unsigned NOT NULL,
-  `AI` tinyint(1) NOT NULL,
-  `faction` tinyint(3) unsigned NOT NULL,
-  `color` tinyint(4) NOT NULL,
-  `team` tinyint(3) NOT NULL,
-  `place` tinyint(3) unsigned NOT NULL,
-  `mean` float unsigned NOT NULL,
-  `deviation` float unsigned NOT NULL,
-  `after_mean` float DEFAULT NULL,
-  `after_deviation` float DEFAULT NULL,
-  `score` tinyint(3) NOT NULL,
-  `scoreTime` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `playerId` (`playerId`),
-  KEY `gameIdIdx` (`gameId`),
-  CONSTRAINT `game_player_stats_bak_ibfk_1` FOREIGN KEY (`gameId`) REFERENCES `game_stats_bak` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `game_player_stats_bak_ibfk_2` FOREIGN KEY (`playerId`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  AUTO_INCREMENT=3461180 DEFAULT CHARSET=latin1;
+CREATE TABLE `game_replays` (
+  `UID` bigint(20) unsigned NOT NULL,
+  PRIMARY KEY (`UID`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `game_replays_old`
+--
+
+DROP TABLE IF EXISTS `game_replays_old`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `game_replays_old` (
+  `UID` bigint(20) unsigned NOT NULL,
+  `file` longblob NOT NULL,
+  PRIMARY KEY (`UID`),
+  CONSTRAINT `game_replays_old_ibfk_1` FOREIGN KEY (`UID`) REFERENCES `game_stats_bak` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -403,17 +424,31 @@ DROP TABLE IF EXISTS `game_stats`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `game_stats` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `startTime` timestamp NULL DEFAULT NULL,
-  `EndTime` timestamp NULL DEFAULT NULL,
-  `gameType` enum('0','1','2','3') DEFAULT '0',
-  `gameMod` tinyint(3) unsigned DEFAULT NULL,
-  `host` mediumint(8) unsigned DEFAULT NULL,
-  `mapId` mediumint(8) unsigned DEFAULT NULL COMMENT 'map id',
-  `gameName` varchar(255),
+  `startTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `gameType` enum('0','1','2','3') NOT NULL,
+  `gameMod` tinyint(3) unsigned NOT NULL,
+  `host` mediumint(8) unsigned NOT NULL,
+  `mapId` mediumint(8) unsigned NOT NULL,
+  `gameName` varchar(128) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `startTime` (`startTime`)
-)  AUTO_INCREMENT=2654528 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3638965 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = latin1 */ ;
+/*!50003 SET character_set_results = latin1 */ ;
+/*!50003 SET collation_connection  = latin1_swedish_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = '' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER map_play_count AFTER INSERT ON game_stats FOR EACH ROW UPDATE table_map_features set times_played = (times_played +1) WHERE map_id = NEW.mapId */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 
 --
 -- Table structure for table `game_stats_bak`
@@ -430,7 +465,7 @@ CREATE TABLE `game_stats_bak` (
   `gameMod` tinyint(3) unsigned DEFAULT NULL,
   `host` mediumint(8) unsigned DEFAULT NULL,
   `mapId` mediumint(8) unsigned DEFAULT NULL COMMENT 'map id',
-  `gameName` varchar(255),
+  `gameName` tinytext,
   `valid` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`),
   KEY `gameMod` (`gameMod`),
@@ -439,9 +474,8 @@ CREATE TABLE `game_stats_bak` (
   KEY `startTime` (`startTime`),
   KEY `endTime` (`EndTime`),
   CONSTRAINT `game_stats_bak_ibfk_1` FOREIGN KEY (`mapId`) REFERENCES `table_map` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `game_stats_bak_ibfk_4` FOREIGN KEY (`gameMod`) REFERENCES `game_featuredMods` (`id`) ON DELETE SET NULL ON UPDATE SET NULL,
-  CONSTRAINT `game_stats_bak_ibfk_5` FOREIGN KEY (`host`) REFERENCES `login` (`id`) ON DELETE SET NULL ON UPDATE SET NULL
-)  AUTO_INCREMENT=1996403 DEFAULT CHARSET=latin1;
+  CONSTRAINT `game_stats_bak_ibfk_4` FOREIGN KEY (`gameMod`) REFERENCES `game_featuredMods` (`id`) ON DELETE SET NULL ON UPDATE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=1996403 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -451,6 +485,28 @@ CREATE TABLE `game_stats_bak` (
 /*!50003 SET collation_connection  = utf8_general_ci */ ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = '' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER  add_new_rating AFTER UPDATE ON `game_stats_bak` FOR EACH ROW
+BEGIN
+INSERT INTO game_min_rating (id, minRating)
+VALUES (
+NEW.id, 
+(
+SELECT MIN( mean -3 * deviation ) 
+FROM game_player_stats
+WHERE game_player_stats.gameId = NEW.id
+GROUP BY game_player_stats.gameId
+)
+)
+ON DUPLICATE KEY UPDATE `minRating` =
+(
+SELECT MIN( mean -3 * deviation ) 
+FROM game_player_stats
+WHERE game_player_stats.gameId = NEW.id
+GROUP BY game_player_stats.gameId
+);
+END */;;
+DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
@@ -469,10 +525,22 @@ CREATE TABLE `global_rating` (
   `deviation` float DEFAULT NULL,
   `numGames` smallint(4) unsigned NOT NULL DEFAULT '0',
   `is_active` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`),
-  CONSTRAINT `IdCnst` FOREIGN KEY (`id`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `id_constraint` FOREIGN KEY (`id`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  DEFAULT CHARSET=latin1;
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `invalid_game_reasons`
+--
+
+DROP TABLE IF EXISTS `invalid_game_reasons`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `invalid_game_reasons` (
+  `id` tinyint(4) NOT NULL AUTO_INCREMENT,
+  `message` varchar(100) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -489,9 +557,8 @@ CREATE TABLE `ladder1v1_rating` (
   `numGames` smallint(4) unsigned NOT NULL DEFAULT '0',
   `winGames` smallint(4) unsigned NOT NULL DEFAULT '0',
   `is_active` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`),
-  CONSTRAINT `ladder1v1_rating_ibfk_1` FOREIGN KEY (`id`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  DEFAULT CHARSET=latin1;
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -508,7 +575,7 @@ CREATE TABLE `ladder_division` (
   `limit` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-)  DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -523,7 +590,7 @@ CREATE TABLE `ladder_divisions` (
   `name` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-)  AUTO_INCREMENT=286 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=286 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -539,7 +606,7 @@ CREATE TABLE `ladder_map` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `idmap` (`idmap`),
   CONSTRAINT `ladder_map_ibfk_1` FOREIGN KEY (`idmap`) REFERENCES `table_map` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  AUTO_INCREMENT=233 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=235 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -556,7 +623,7 @@ CREATE TABLE `ladder_map_selection` (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `unique_pair` (`idUser`,`idMap`) USING BTREE,
   KEY `friendCnst` (`idMap`)
-)  AUTO_INCREMENT=136915 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=221078 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -574,7 +641,7 @@ CREATE TABLE `ladder_season_1` (
   `score` smallint(5) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `idUser` (`idUser`)
-)  AUTO_INCREMENT=3424 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3424 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -592,7 +659,7 @@ CREATE TABLE `ladder_season_2` (
   `score` smallint(5) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `idUser` (`idUser`)
-)  AUTO_INCREMENT=5085 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=5085 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -612,7 +679,7 @@ CREATE TABLE `ladder_season_3` (
   UNIQUE KEY `idUser` (`idUser`),
   KEY `league` (`league`),
   KEY `division` (`division`)
-)  AUTO_INCREMENT=8065 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=8065 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -632,7 +699,7 @@ CREATE TABLE `ladder_season_3_safe` (
   UNIQUE KEY `idUser` (`idUser`),
   KEY `league` (`league`),
   KEY `division` (`division`)
-)  AUTO_INCREMENT=2884 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=2884 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -652,7 +719,7 @@ CREATE TABLE `ladder_season_4` (
   UNIQUE KEY `idUser` (`idUser`),
   KEY `league` (`league`),
   KEY `division` (`division`)
-)  AUTO_INCREMENT=5958 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=5958 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -670,7 +737,7 @@ CREATE TABLE `ladder_season_5` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `idUser` (`idUser`),
   KEY `league` (`league`)
-)  AUTO_INCREMENT=17512 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=27334 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -684,7 +751,7 @@ CREATE TABLE `lobby_admin` (
   `user_id` int(11) NOT NULL,
   `group` tinyint(4) NOT NULL COMMENT '0 - no privileges; 1 - moderator, can delete/edit comments and approve broken maps reports; 2 - admin, same as moderator plus can add global bans',
   PRIMARY KEY (`user_id`)
-)  DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -697,9 +764,8 @@ DROP TABLE IF EXISTS `lobby_ban`;
 CREATE TABLE `lobby_ban` (
   `idUser` mediumint(8) unsigned DEFAULT NULL,
   `reason` varchar(255) NOT NULL,
-  UNIQUE KEY `idUser` (`idUser`),
-  CONSTRAINT `lobby_ban_ibfk_1` FOREIGN KEY (`idUser`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  DEFAULT CHARSET=latin1;
+  UNIQUE KEY `idUser` (`idUser`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -712,12 +778,11 @@ DROP TABLE IF EXISTS `login`;
 CREATE TABLE `login` (
   `id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
   `login` varchar(20) CHARACTER SET latin1 COLLATE latin1_bin NOT NULL,
-  `password` char(64) NOT NULL,
+  `password` char(77) DEFAULT NULL,
+  `salt` char(16) DEFAULT NULL,
   `email` char(64) CHARACTER SET latin1 COLLATE latin1_bin DEFAULT NULL,
   `ip` varchar(15) CHARACTER SET latin1 COLLATE latin1_bin DEFAULT NULL,
   `uniqueId` varchar(45) DEFAULT NULL,
-  `session` int(10) unsigned NOT NULL DEFAULT '0',
-  `validated` tinyint(1) NOT NULL DEFAULT '0',
   `steamid` bigint(20) unsigned DEFAULT NULL,
   `ladderCancelled` tinyint(3) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
@@ -725,7 +790,32 @@ CREATE TABLE `login` (
   UNIQUE KEY `unique_email` (`email`),
   UNIQUE KEY `uniqueId` (`uniqueId`),
   UNIQUE KEY `steamid` (`steamid`)
-)  AUTO_INCREMENT=114914 DEFAULT CHARSET=latin1 COMMENT='login';
+) ENGINE=InnoDB AUTO_INCREMENT=146315 DEFAULT CHARSET=latin1 COMMENT='login';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `login_with_duplicated_users`
+--
+
+DROP TABLE IF EXISTS `login_with_duplicated_users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `login_with_duplicated_users` (
+  `id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
+  `login` varchar(20) CHARACTER SET latin1 COLLATE latin1_bin NOT NULL,
+  `password` char(77) DEFAULT NULL,
+  `salt` char(16) DEFAULT NULL,
+  `email` char(64) CHARACTER SET latin1 COLLATE latin1_bin DEFAULT NULL,
+  `ip` varchar(15) CHARACTER SET latin1 COLLATE latin1_bin DEFAULT NULL,
+  `uniqueId` varchar(45) DEFAULT NULL,
+  `steamid` bigint(20) unsigned DEFAULT NULL,
+  `ladderCancelled` tinyint(3) unsigned NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_login` (`login`),
+  UNIQUE KEY `unique_email` (`email`),
+  UNIQUE KEY `uniqueId` (`uniqueId`),
+  UNIQUE KEY `steamid` (`steamid`)
+) ENGINE=InnoDB AUTO_INCREMENT=146315 DEFAULT CHARSET=latin1 COMMENT='login';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -739,7 +829,7 @@ CREATE TABLE `matchmaker_ban` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `userid` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`)
-)  DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -754,23 +844,8 @@ CREATE TABLE `name_history` (
   `user_id` mediumint(8) unsigned NOT NULL,
   `previous_name` varchar(20) NOT NULL,
   PRIMARY KEY (`change_time`),
-  KEY `user_id` (`user_id`),
-  CONSTRAINT `name_history_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `nomads_beta`
---
-
-DROP TABLE IF EXISTS `nomads_beta`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `nomads_beta` (
-  `idUser` mediumint(8) unsigned DEFAULT NULL,
-  UNIQUE KEY `idUser` (`idUser`),
-  CONSTRAINT `nomads_beta_ibfk_1` FOREIGN KEY (`idUser`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  DEFAULT CHARSET=latin1;
+  KEY `user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -786,7 +861,7 @@ CREATE TABLE `patchs_table` (
   `toMd5` varchar(45) DEFAULT NULL,
   `patchFile` varchar(200) DEFAULT NULL,
   PRIMARY KEY (`idpatchs_table`)
-)  AUTO_INCREMENT=689 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=2769 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -802,51 +877,8 @@ CREATE TABLE `recoveryemails_enc` (
   `Key` varchar(32) NOT NULL,
   `expDate` datetime NOT NULL,
   PRIMARY KEY (`ID`),
-  KEY `UserID` (`UserID`),
-  CONSTRAINT `recoveryemails_enc_ibfk_1` FOREIGN KEY (`UserID`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  AUTO_INCREMENT=21516 DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `replay_comment`
---
-
-DROP TABLE IF EXISTS `replay_comment`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `replay_comment` (
-  `id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` mediumint(8) unsigned NOT NULL,
-  `replay_id` bigint(20) unsigned NOT NULL,
-  `varchar(512)` varchar(1024) NOT NULL,
-  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`),
-  KEY `replay_id` (`replay_id`),
-  CONSTRAINT `replay_comment_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `replay_comment_ibfk_2` FOREIGN KEY (`replay_id`) REFERENCES `submitted_replays` (`game_id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  AUTO_INCREMENT=41 DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `replay_review`
---
-
-DROP TABLE IF EXISTS `replay_review`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `replay_review` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `submitted_replay_id` bigint(20) unsigned NOT NULL,
-  `user_id` mediumint(8) unsigned NOT NULL,
-  `type` varchar(255) NOT NULL,
-  `body` varchar(1024) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `submitted_replay_id` (`submitted_replay_id`,`user_id`),
-  KEY `user_id` (`user_id`),
-  CONSTRAINT `replay_review_ibfk_1` FOREIGN KEY (`submitted_replay_id`) REFERENCES `submitted_replays` (`game_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `replay_review_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  AUTO_INCREMENT=21 DEFAULT CHARSET=latin1;
+  KEY `UserID` (`UserID`)
+) ENGINE=InnoDB AUTO_INCREMENT=29996 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -858,7 +890,7 @@ DROP TABLE IF EXISTS `replay_vault`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `replay_vault` (
   `id` bigint(20) unsigned NOT NULL DEFAULT '0',
-  `gameName` varchar(255),
+  `gameName` tinytext,
   `filename` varchar(200) DEFAULT NULL,
   `startTime` timestamp NULL DEFAULT NULL,
   `EndTime` timestamp NULL DEFAULT NULL,
@@ -878,20 +910,6 @@ CREATE TABLE `replay_vault` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Temporary table structure for view `search_player`
---
-
-DROP TABLE IF EXISTS `search_player`;
-/*!50001 DROP VIEW IF EXISTS `search_player`*/;
-SET @saved_cs_client     = @@character_set_client;
-SET character_set_client = utf8;
-/*!50001 CREATE TABLE `search_player` (
-  `id` tinyint NOT NULL,
-  `playerid` tinyint NOT NULL
-) ENGINE=MyISAM */;
-SET character_set_client = @saved_cs_client;
-
---
 -- Table structure for table `smurf_table`
 --
 
@@ -905,66 +923,8 @@ CREATE TABLE `smurf_table` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `origId_2` (`origId`,`smurfId`),
   KEY `origId` (`origId`),
-  KEY `smurfId` (`smurfId`),
-  CONSTRAINT `smurf_table_ibfk_1` FOREIGN KEY (`origId`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `smurf_table_ibfk_2` FOREIGN KEY (`smurfId`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  AUTO_INCREMENT=6843 DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `steam_link_request`
---
-
-DROP TABLE IF EXISTS `steam_link_request`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `steam_link_request` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `uid` mediumint(8) unsigned NOT NULL,
-  `Key` varchar(32) NOT NULL,
-  `expDate` datetime NOT NULL,
-  PRIMARY KEY (`id`)
-)  AUTO_INCREMENT=159 DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `steam_uniqueid`
---
-
-DROP TABLE IF EXISTS `steam_uniqueid`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `steam_uniqueid` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `uniqueid` varchar(45) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uniqueid` (`uniqueid`)
-)  AUTO_INCREMENT=197049 DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `submitted_replays`
---
-
-DROP TABLE IF EXISTS `submitted_replays`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `submitted_replays` (
-  `game_id` bigint(20) unsigned NOT NULL,
-  `featured_by` mediumint(8) unsigned DEFAULT NULL,
-  `experted_by` mediumint(8) unsigned DEFAULT NULL,
-  `rating` decimal(2,1) DEFAULT NULL,
-  `votes` int(10) unsigned NOT NULL DEFAULT '0',
-  `voters` varchar(1024),
-  `reserved_by` smallint(8) unsigned DEFAULT NULL,
-  PRIMARY KEY (`game_id`),
-  KEY `featured_by` (`featured_by`),
-  KEY `experted_by` (`experted_by`),
-  KEY `reserved_by` (`reserved_by`),
-  CONSTRAINT `submitted_replays_ibfk_1` FOREIGN KEY (`game_id`) REFERENCES `game_stats_bak` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `submitted_replays_ibfk_2` FOREIGN KEY (`featured_by`) REFERENCES `login` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `submitted_replays_ibfk_3` FOREIGN KEY (`experted_by`) REFERENCES `login` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-)  DEFAULT CHARSET=latin1;
+  KEY `smurfId` (`smurfId`)
+) ENGINE=InnoDB AUTO_INCREMENT=7040 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -986,9 +946,8 @@ CREATE TABLE `swiss_tournaments` (
   `tourney_date` datetime DEFAULT NULL,
   `tourney_state` tinyint(4) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `host` (`host`),
-  CONSTRAINT `swiss_tournaments_ibfk_1` FOREIGN KEY (`host`) REFERENCES `login` (`id`)
-)  AUTO_INCREMENT=35 DEFAULT CHARSET=latin1;
+  KEY `host` (`host`)
+) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1006,9 +965,8 @@ CREATE TABLE `swiss_tournaments_players` (
   UNIQUE KEY `idtourney` (`idtourney`,`iduser`),
   KEY `tournament` (`idtourney`),
   KEY `iduser` (`iduser`),
-  CONSTRAINT `swiss_tournaments_players_ibfk_3` FOREIGN KEY (`idtourney`) REFERENCES `swiss_tournaments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `swiss_tournaments_players_ibfk_4` FOREIGN KEY (`iduser`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  AUTO_INCREMENT=597 DEFAULT CHARSET=latin1;
+  CONSTRAINT `swiss_tournaments_players_ibfk_3` FOREIGN KEY (`idtourney`) REFERENCES `swiss_tournaments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=597 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1021,7 +979,7 @@ DROP TABLE IF EXISTS `table_map`;
 CREATE TABLE `table_map` (
   `id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(40) DEFAULT NULL,
-  `description` varchar(1024),
+  `description` longtext,
   `max_players` decimal(2,0) DEFAULT NULL,
   `map_type` varchar(15) DEFAULT NULL,
   `battle_type` varchar(15) DEFAULT NULL,
@@ -1033,9 +991,9 @@ CREATE TABLE `table_map` (
   `mapuid` mediumint(8) unsigned NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `Combo` (`name`,`version`),
-  KEY `filename` (`filename`),
+  UNIQUE KEY `map_filename` (`filename`),
   KEY `mapuid` (`mapuid`)
-)  AUTO_INCREMENT=5255 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=5692 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1048,15 +1006,14 @@ DROP TABLE IF EXISTS `table_map_broken`;
 CREATE TABLE `table_map_broken` (
   `broken_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
   `map_id` mediumint(8) unsigned NOT NULL,
-  `description` varchar(1024) NOT NULL,
+  `description` text NOT NULL,
   `user_id` mediumint(8) unsigned DEFAULT NULL,
   `approved` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`broken_id`),
   KEY `map_id` (`map_id`),
   KEY `user_id` (`user_id`),
-  CONSTRAINT `table_map_broken_ibfk_1` FOREIGN KEY (`map_id`) REFERENCES `table_map` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `table_map_broken_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  AUTO_INCREMENT=497 DEFAULT CHARSET=latin1;
+  CONSTRAINT `table_map_broken_ibfk_1` FOREIGN KEY (`map_id`) REFERENCES `table_map` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=586 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1070,14 +1027,13 @@ CREATE TABLE `table_map_comments` (
   `comment_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
   `map_id` mediumint(8) unsigned NOT NULL,
   `user_id` mediumint(8) unsigned NOT NULL,
-  `comment_varchar(512)` varchar(512) NOT NULL,
+  `comment_text` text NOT NULL,
   `comment_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`comment_id`),
   KEY `map_id` (`map_id`),
   KEY `user_id` (`user_id`),
-  CONSTRAINT `table_map_comments_ibfk_1` FOREIGN KEY (`map_id`) REFERENCES `table_map` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `table_map_comments_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  AUTO_INCREMENT=1831 DEFAULT CHARSET=latin1;
+  CONSTRAINT `table_map_comments_ibfk_1` FOREIGN KEY (`map_id`) REFERENCES `table_map` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2201 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1090,13 +1046,13 @@ DROP TABLE IF EXISTS `table_map_features`;
 CREATE TABLE `table_map_features` (
   `map_id` mediumint(8) unsigned NOT NULL,
   `rating` float NOT NULL DEFAULT '0',
-  `voters` varchar(512) NOT NULL,
+  `voters` text NOT NULL,
   `downloads` int(11) NOT NULL DEFAULT '0',
   `times_played` int(11) NOT NULL DEFAULT '0',
   `num_draws` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`map_id`),
   CONSTRAINT `table_map_features_ibfk_1` FOREIGN KEY (`map_id`) REFERENCES `table_map` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1109,7 +1065,7 @@ DROP TABLE IF EXISTS `table_map_unranked`;
 CREATE TABLE `table_map_unranked` (
   `id` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`)
-)  DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1126,9 +1082,8 @@ CREATE TABLE `table_map_uploaders` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `mapid` (`mapid`),
   KEY `userid` (`userid`),
-  CONSTRAINT `table_map_uploaders_ibfk_1` FOREIGN KEY (`mapid`) REFERENCES `table_map` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `table_map_uploaders_ibfk_2` FOREIGN KEY (`userid`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  AUTO_INCREMENT=1237 DEFAULT CHARSET=latin1;
+  CONSTRAINT `table_map_uploaders_ibfk_1` FOREIGN KEY (`mapid`) REFERENCES `table_map` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=1674 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1145,6 +1100,8 @@ CREATE TABLE `table_mod` (
   `version` smallint(5) unsigned NOT NULL,
   `author` varchar(100) NOT NULL,
   `ui` tinyint(4) NOT NULL,
+  `big` tinyint(3) unsigned NOT NULL,
+  `small` tinyint(3) unsigned NOT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `downloads` mediumint(8) unsigned NOT NULL DEFAULT '0',
   `likes` mediumint(8) unsigned NOT NULL DEFAULT '0',
@@ -1152,12 +1109,64 @@ CREATE TABLE `table_mod` (
   `description` varchar(255) NOT NULL,
   `filename` varchar(255) NOT NULL,
   `icon` varchar(255) NOT NULL,
+  `likers` longblob NOT NULL,
   `ranked` tinyint(4) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uid` (`uid`)
-)  AUTO_INCREMENT=509 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=795 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `test`
+--
+
+DROP TABLE IF EXISTS `test`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `test` (
+  `id` int(11) NOT NULL,
+  `file` longblob NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `test2`
+--
+
+DROP TABLE IF EXISTS `test2`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `test2` (
+  `id` int(11) NOT NULL,
+  `test` int(11) NOT NULL
+) ENGINE=MEMORY DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `test3`
+--
+
+DROP TABLE IF EXISTS `test3`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `test3` (
+  `id` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `test_game_replays`
+--
+
+DROP TABLE IF EXISTS `test_game_replays`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `test_game_replays` (
+  `UID` bigint(20) unsigned NOT NULL,
+  `file` longblob NOT NULL,
+  PRIMARY KEY (`UID`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `tutorial_sections`
@@ -1171,7 +1180,7 @@ CREATE TABLE `tutorial_sections` (
   `section` varchar(45) NOT NULL,
   `description` varchar(100) NOT NULL,
   PRIMARY KEY (`id`)
-)  AUTO_INCREMENT=4 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1191,7 +1200,22 @@ CREATE TABLE `tutorials` (
   PRIMARY KEY (`id`),
   KEY `sectionIdx` (`section`),
   CONSTRAINT `tutorials_ibfk_1` FOREIGN KEY (`section`) REFERENCES `tutorial_sections` (`id`)
-)  AUTO_INCREMENT=30 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `unique_id_users`
+--
+
+DROP TABLE IF EXISTS `unique_id_users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `unique_id_users` (
+  `id` mediumint(8) NOT NULL AUTO_INCREMENT,
+  `user_id` mediumint(8) unsigned NOT NULL,
+  `uniqueid_hash` char(32) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=589816 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1203,7 +1227,7 @@ DROP TABLE IF EXISTS `uniqueid`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `uniqueid` (
   `id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `userid` mediumint(8) unsigned NOT NULL,
+  `hash` char(32) DEFAULT NULL,
   `uuid` varchar(255) NOT NULL,
   `mem_SerialNumber` varchar(255) NOT NULL,
   `deviceID` varchar(255) NOT NULL,
@@ -1214,11 +1238,9 @@ CREATE TABLE `uniqueid` (
   `serialNumber` varchar(255) NOT NULL,
   `volumeSerialNumber` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `userid` (`userid`),
-  CONSTRAINT `uniqueid_ibfk_1` FOREIGN KEY (`userid`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  AUTO_INCREMENT=172442 DEFAULT CHARSET=latin1;
+  UNIQUE KEY `uid_hash_index` (`hash`)
+) ENGINE=InnoDB AUTO_INCREMENT=224488 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
 
 --
 -- Table structure for table `uniqueid_exempt`
@@ -1228,11 +1250,10 @@ DROP TABLE IF EXISTS `uniqueid_exempt`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `uniqueid_exempt` (
-  `user_id` mediumint(8) unsigned NOT NULL,
-  PRIMARY KEY (`user_id`),
-  KEY `userid` (`user_id`),
-  CONSTRAINT `uniqueid_exempt_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  DEFAULT CHARSET=latin1;
+  `idUser` mediumint(8) unsigned DEFAULT NULL,
+  `reason` varchar(255) NOT NULL,
+  UNIQUE KEY `idUser` (`idUser`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1247,7 +1268,7 @@ CREATE TABLE `updates` (
   `file` varchar(45) DEFAULT NULL,
   `md5` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`id`)
-)  AUTO_INCREMENT=133 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=133 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1262,7 +1283,7 @@ CREATE TABLE `updates_balancetesting` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1281,7 +1302,7 @@ CREATE TABLE `updates_balancetesting_files` (
   `obselete` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=99 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=331 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1296,7 +1317,7 @@ CREATE TABLE `updates_blackops` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=9 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1315,7 +1336,7 @@ CREATE TABLE `updates_blackops_files` (
   `obselete` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=8 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1330,7 +1351,7 @@ CREATE TABLE `updates_civilians` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1349,7 +1370,7 @@ CREATE TABLE `updates_civilians_files` (
   `obselete` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=7 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1364,7 +1385,7 @@ CREATE TABLE `updates_claustrophobia` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1383,7 +1404,7 @@ CREATE TABLE `updates_claustrophobia_files` (
   `obselete` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1398,7 +1419,7 @@ CREATE TABLE `updates_coop` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1417,7 +1438,7 @@ CREATE TABLE `updates_coop_files` (
   `obselete` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=47 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1432,7 +1453,7 @@ CREATE TABLE `updates_diamond` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1451,7 +1472,7 @@ CREATE TABLE `updates_diamond_files` (
   `obselete` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=9 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1466,7 +1487,7 @@ CREATE TABLE `updates_engyredesign` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1484,7 +1505,7 @@ CREATE TABLE `updates_engyredesign_files` (
   `md5` varchar(45) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=43 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=43 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1499,7 +1520,7 @@ CREATE TABLE `updates_faf` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=22 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1518,7 +1539,7 @@ CREATE TABLE `updates_faf_files` (
   `obselete` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=191 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=354 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1533,7 +1554,7 @@ CREATE TABLE `updates_gw` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1552,7 +1573,7 @@ CREATE TABLE `updates_gw_files` (
   `obselete` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=55 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1567,7 +1588,7 @@ CREATE TABLE `updates_koth` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1586,7 +1607,7 @@ CREATE TABLE `updates_koth_files` (
   `obselete` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=6 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1601,7 +1622,7 @@ CREATE TABLE `updates_labwars` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1620,7 +1641,7 @@ CREATE TABLE `updates_labwars_files` (
   `obselete` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=6 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1635,7 +1656,7 @@ CREATE TABLE `updates_matchmaker` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1654,7 +1675,7 @@ CREATE TABLE `updates_matchmaker_files` (
   `obselete` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1669,7 +1690,7 @@ CREATE TABLE `updates_murderparty` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=8 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1688,7 +1709,7 @@ CREATE TABLE `updates_murderparty_files` (
   `obselete` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1703,7 +1724,7 @@ CREATE TABLE `updates_nomads` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=10 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1722,7 +1743,7 @@ CREATE TABLE `updates_nomads_files` (
   `obselete` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=41 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=47 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1737,7 +1758,7 @@ CREATE TABLE `updates_phantomx` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1756,7 +1777,7 @@ CREATE TABLE `updates_phantomx_files` (
   `obselete` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=85 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=95 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1771,7 +1792,7 @@ CREATE TABLE `updates_supremeDestruction` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=5 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1790,7 +1811,7 @@ CREATE TABLE `updates_supremeDestruction_files` (
   `obselete` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=154 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=154 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1805,7 +1826,7 @@ CREATE TABLE `updates_vanilla` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1824,7 +1845,7 @@ CREATE TABLE `updates_vanilla_files` (
   `obselete` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=4 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1839,7 +1860,7 @@ CREATE TABLE `updates_wyvern` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=9 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1857,7 +1878,7 @@ CREATE TABLE `updates_wyvern_files` (
   `md5` varchar(45) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=4 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1872,7 +1893,7 @@ CREATE TABLE `updates_xtremewars` (
   `filename` varchar(45) NOT NULL,
   `path` varchar(45) NOT NULL,
   UNIQUE KEY `id` (`id`)
-)  AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1891,60 +1912,7 @@ CREATE TABLE `updates_xtremewars_files` (
   `obselete` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `fileId` (`fileId`)
-)  AUTO_INCREMENT=5 DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `user_added_replays`
---
-
-DROP TABLE IF EXISTS `user_added_replays`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `user_added_replays` (
-  `user_id` mediumint(8) unsigned NOT NULL,
-  `game_id` bigint(20) unsigned NOT NULL,
-  PRIMARY KEY (`user_id`,`game_id`),
-  KEY `game_id` (`game_id`),
-  CONSTRAINT `user_added_replays_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `user_added_replays_ibfk_2` FOREIGN KEY (`game_id`) REFERENCES `game_stats_bak` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `user_groups`
---
-
-DROP TABLE IF EXISTS `user_groups`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `user_groups` (
-  `id` mediumint(11) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` mediumint(8) unsigned NOT NULL,
-  `module` varchar(255) NOT NULL,
-  `group` varchar(255) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`),
-  CONSTRAINT `user_groups_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  AUTO_INCREMENT=10 DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `validate_account`
---
-
-DROP TABLE IF EXISTS `validate_account`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `validate_account` (
-  `ID` bigint(20) unsigned zerofill NOT NULL AUTO_INCREMENT,
-  `UserID` mediumint(8) unsigned NOT NULL,
-  `Key` varchar(32) NOT NULL,
-  `expDate` datetime NOT NULL,
-  PRIMARY KEY (`ID`),
-  KEY `UserID` (`UserID`),
-  CONSTRAINT `validate_account_ibfk_1` FOREIGN KEY (`UserID`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-)  AUTO_INCREMENT=82095 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1958,7 +1926,7 @@ CREATE TABLE `vault_admin` (
   `user_id` int(11) NOT NULL,
   `group` tinyint(4) NOT NULL COMMENT '0 - no privileges; 1 - moderator, can delete/edit comments and approve broken maps reports; 2 - admin, same as moderator plus can delete maps from vault',
   PRIMARY KEY (`user_id`)
-)  DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1973,7 +1941,7 @@ CREATE TABLE `version_lobby` (
   `file` varchar(100) DEFAULT NULL,
   `version` int(11) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`)
-)  AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1990,24 +1958,22 @@ CREATE TABLE `view_global_rating` (
   `numGames` smallint(4) unsigned NOT NULL DEFAULT '0',
   `is_active` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-)  DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Final view structure for view `search_player`
+-- Table structure for table `vm_exempt`
 --
 
-/*!50001 DROP TABLE IF EXISTS `search_player`*/;
-/*!50001 DROP VIEW IF EXISTS `search_player`*/;
-/*!50001 SET @saved_cs_client          = @@character_set_client */;
-/*!50001 SET @saved_cs_results         = @@character_set_results */;
-/*!50001 SET @saved_col_connection     = @@collation_connection */;
-/*!50001 SET character_set_client      = utf8 */;
-/*!50001 SET character_set_results     = utf8 */;
-/*!50001 SET collation_connection      = utf8_general_ci */;
-/*!50001 SET character_set_client      = @saved_cs_client */;
-/*!50001 SET character_set_results     = @saved_cs_results */;
-/*!50001 SET collation_connection      = @saved_col_connection */;
+DROP TABLE IF EXISTS `vm_exempt`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `vm_exempt` (
+  `idUser` mediumint(8) unsigned DEFAULT NULL,
+  `reason` varchar(255) NOT NULL,
+  UNIQUE KEY `idUser` (`idUser`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -2018,4 +1984,4 @@ CREATE TABLE `view_global_rating` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-10-01 14:46:57
+-- Dump completed on 2015-08-14 12:42:43

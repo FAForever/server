@@ -175,8 +175,7 @@ ALTER TABLE login MODIFY password CHAR(77);
 # UniqueID system rejig...
 
 # Uniqueid table becomes a place to associate hashes with hardware data.
-ALTER TABLE uniqueid ADD hash CHAR(32) AFTER userid;
-ALTER TABLE uniqueid DROP COLUMN userid;
+ALTER TABLE uniqueid ADD hash CHAR(32) AFTER userid, DROP COLUMN userid;
 UPDATE uniqueid SET hash = MD5(CONCAT(`uuid`, `mem_SerialNumber`, `deviceID`, `manufacturer`, `name`, `processorId`, `SMBIOSBIOSVersion`, `serialNumber`, `volumeSerialNumber`));
 
 # Discards duplicates. *cackles insanely*
