@@ -20,30 +20,30 @@ DELETE FROM login WHERE validated = 0;
 DELETE FROM login WHERE CHAR_LENGTH(password) != 64;
 
 # Duplicates of old versions of tables
-DROP TABLE avatars_list_copy_812015;
+DROP TABLE IF EXISTS avatars_list_copy_812015;
 DROP TABLE ladder_season_3_safe;
 
 # Defunct
-DROP TABLE nomads_beta;
-DROP TABLE test
-DROP TABLE test2
-DROP TABLE test3
+DROP TABLE IF EXISTS nomads_beta;
+DROP TABLE IF EXISTS test;
+DROP TABLE IF EXISTS test2;
+DROP TABLE IF EXISTS test3;
 
 # Not referenced from server or PHP code
-DROP TABLE replay_comment;
-DROP TABLE replay_review;
-DROP TABLE submitted_replays;
-DROP TABLE user_added_replays;
-DROP TABLE user_groups;
+DROP TABLE IF EXISTS replay_comment;
+DROP TABLE IF EXISTS replay_review;
+DROP TABLE IF EXISTS submitted_replays;
+DROP TABLE IF EXISTS user_added_replays;
+DROP TABLE IF EXISTS user_groups;
 
 # Probably an older version of the (also now dead) validated field in the login table.
-DROP TABLE validate_account;
+DROP TABLE IF EXISTS validate_account;
 
 # Replaced by a session cookie (yes, really)
-DROP TABLE steam_link_request;
+DROP TABLE IF EXISTS steam_link_request;
 
 # Was write-only, and all this data is now available in the new uniqueid tables anyway
-DROP TABLE steam_uniqueid;
+DROP TABLE IF EXISTS steam_uniqueid;
 
 # There was a hardcoded check that would filter out "thermo" maps. Let's just insert them all
 # into the blacklist table and move on with our lives.
@@ -208,7 +208,3 @@ ALTER TABLE game_stats DROP COLUMN EndTime;
 # Optimise all the tables we restructured (so we might recover space or be less fragmented or such)
 OPTIMIZE TABLE login;
 OPTIMIZE TABLE table_mod;
-
-
-
-sudo apt-get install php5-curl
