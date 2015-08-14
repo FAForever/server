@@ -396,13 +396,12 @@ class Game(BaseGame):
         with (yield from db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            # Lookup the map id.
-            yield from cursor.execute("SELECT id FROM table_map WHERE id filename = %s", self.mapName)
-            (mapId, ) = yield from cursor.fetchone()
+            # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
+            # so, and grab the map id at the same time.
+            yield from cursor.execute("SELECT table_map.id, table_map_unranked.id FROM table_map LEFT JOIN table_map_unranked ON table_map.id = table_map_unranked.id WHERE table_map.filename = %s", self.mapName)
+            (mapId, blacklist_flag) = yield from cursor.fetchone()
 
-            # Mark the game unranked if the map is blacklisted.
-            cursor.execute("SELECT id FROM table_map_unranked WHERE id = %s", mapId)
-            if cursor.rowcount > 0:
+            if blacklist_flag is not None:
                 self.mark_invalid(ValidityState.BAD_MAP)
 
             modId = self.parent.featured_mods[self.gamemod]['id']
