@@ -1,5 +1,6 @@
 import random
 
+
 from PySide.QtSql import QSqlQuery
 import asyncio
 import trueskill
@@ -9,7 +10,7 @@ from .gamesContainer import  GamesContainer
 from .ladderGame import Ladder1V1Game
 import server
 from server.players import Player, PlayerState
-from server.db import db_pool
+import server.db as db
 
 
 class Ladder1V1GamesContainer(GamesContainer):
@@ -26,7 +27,7 @@ class Ladder1V1GamesContainer(GamesContainer):
 
     @asyncio.coroutine
     def getLeague(self, season, player):
-        with (yield from db_pool) as conn:
+        with (yield from db.db_pool) as conn:
             with (yield from conn.cursor()) as cursor:
                 yield from cursor.execute("SELECT league FROM %s WHERE idUser = %s", (season, player.id))
                 (league, ) = yield from cursor.fetchone()
@@ -38,7 +39,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         if player not in self.players:
             league = yield from self.getLeague(config.LADDER_SEASON, player)
             if not league:
-                with (yield from db_pool) as conn:
+                with (yield from db.db_pool) as conn:
                     with (yield from conn.cursor()) as cursor:
                         yield from cursor.execute("INSERT INTO %s (`idUser` ,`league` ,`score`) "
                                                   "VALUES (%s, 1, 0)", (config.LADDER_SEASON, player.id))
@@ -68,65 +69,52 @@ class Ladder1V1GamesContainer(GamesContainer):
     def getMatchQuality(self, player1: Player, player2: Player):
         return trueskill.quality_1vs1(player1.ladder_rating, player2.ladder_rating)
 
+    @asyncio.coroutine
     def selected_maps(self, playerId):
-        query = QSqlQuery(self.db)
-        query.prepare("SELECT idMap FROM ladder_map_selection WHERE idUser = ?")
-        query.addBindValue(playerId)
-        query.exec_()
-        maps = set()
-        while query.next():
-            maps |= int(query.value(0))
-        return maps
+        with (yield from db.db_pool) as conn:
+            with(yield from conn.cursor()) as cursor:
+                yield from cursor.execute("SELECT idMap FROM ladder_map_selection WHERE idUser = %s", playerId)
+                return set((yield from cursor.fetchall()))
 
+    @asyncio.coroutine
     def popular_maps(self, count=50):
-        query = QSqlQuery()
-        query.prepare("SELECT `idMap` FROM `ladder_map_selection` GROUP BY `idMap` ORDER BY count(`idUser`) DESC LIMIT %i" % count)
-        query.exec_()
-        maps = set()
-        while query.next():
-            maps |= int(query.value(0))
-        return maps
+        with (yield from db.db_pool) as conn:
+            with (yield from conn.cursor()) as cursor:
+                yield from cursor.execute("SELECT `idMap` FROM `ladder_map_selection` GROUP BY `idMap` ORDER BY count(`idUser`) DESC LIMIT %i" % count)
+                return set(cursor.fetchall())
 
+    @asyncio.coroutine
     def getMapName(self, mapId):
-        query = QSqlQuery(self.db)
-        query.prepare("SELECT filename FROM table_map WHERE id = ?")
-        query.addBindValue(mapId)
-        query.exec_()
-        if query.size() > 0:
-            query.first()
-            return str(query.value(0)).split("/")[1].replace(".zip", "")
-        else:
-            return None
+        with (yield from db.db_pool) as conn:
+            with (yield from conn.cursor()) as cursor:
+                yield from cursor.execute("SELECT filename FROM table_map WHERE id = %s", (mapId))
+                (name, ) = yield from cursor.fetchone()
+                return str(name).split("/")[1].replace(".zip", "")
 
+    @asyncio.coroutine
     def get_recent_maps(self, player1, player2, count=5):
         """
         Find the `count` most recently played maps from players
         """
-        query = QSqlQuery()
-        query.prepare('(SELECT game_stats.mapId FROM game_player_stats '
-                      'INNER JOIN game_stats on game_stats.id = game_player_stats.gameId '
-                      'WHERE game_player_stats.playerId = ? '
-                      'ORDER BY gameId DESC LIMIT ?) '
-                      'UNION DISTINCT '
-                      '(SELECT game_stats.mapId FROM game_player_stats '
-                      'INNER JOIN game_stats on game_stats.id = game_player_stats.gameId '
-                      'WHERE game_player_stats.playerId = ? '
-                      'ORDER BY gameID DESC LIMIT ?)')
-        query.addBindValue(player1.id)
-        query.addBindValue(count)
-        query.addBindValue(player2.id)
-        query.addBindValue(count)
-        query.exec_()
-        maps = set()
-        while query.next():
-            maps |= query.value(0)
-        return maps
+        with (yield from db.db_pool) as conn:
+            with (yield from conn.cursor()) as cursor:
+                yield from cursor.execute('(SELECT game_stats.mapId FROM game_player_stats '
+                                          'INNER JOIN game_stats on game_stats.id = game_player_stats.gameId '
+                                          'WHERE game_player_stats.playerId = %s '
+                                          'ORDER BY gameId DESC LIMIT %s) '
+                                          'UNION DISTINCT '
+                                          '(SELECT game_stats.mapId FROM game_player_stats '
+                                          'INNER JOIN game_stats on game_stats.id = game_player_stats.gameId '
+                                          'WHERE game_player_stats.playerId = %s '
+                                          'ORDER BY gameID DESC LIMIT %s)', (player1.id, count, player2.id, count))
+                return set((yield from cursor.fetchall()))
 
+    @asyncio.coroutine
     def choose_ladder_map_pool(self, player1, player2):
         potential_maps = [
-            self.selected_maps(player1.id),
-            self.selected_maps(player2.id),
-            self.popular_maps()
+            (yield from self.selected_maps(player1.id)),
+            (yield from self.selected_maps(player2.id)),
+            (yield from self.popular_maps())
         ]
 
         pool = potential_maps[0] & potential_maps[1]
@@ -142,8 +130,9 @@ class Ladder1V1GamesContainer(GamesContainer):
         # Invariant: len(pool) >= 15, given that any potential pool has 15 or more
         # Since we select from top 50 popular maps, this should hold
 
-        return pool - self.get_recent_maps(player1, player2)
+        return pool - (yield from self.get_recent_maps(player1, player2))
 
+    @asyncio.coroutine
     def startGame(self, player1, player2):
         gameName = str(player1.login + " Vs " + player2.login)
         
@@ -151,7 +140,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         gameid = self.games_service.createUuid()
         player2.state = PlayerState.JOINING
 
-        map_pool = self.choose_ladder_map_pool(player1, player2)
+        map_pool = yield from self.choose_ladder_map_pool(player1, player2)
 
         mapChosen = random.choice(tuple(map_pool))
         map = self.getMapName(mapChosen)

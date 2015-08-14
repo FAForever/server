@@ -46,13 +46,13 @@ class GameService:
         Loads from the database the mostly-constant things that it doesn't make sense to query every
         time we need, but which can in principle change over time.
         """
-        with (yield from self.db_pool) as conn:
+        with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor(aiomysql.DictCursor)
 
             # Load the featured mods table into memory (the bits of it we care about).
             featured_mods = dict()
 
-            yield from cursor.execute("SELECT id, gamemod, description, name FROM game_featuredMods WHERE publish = 1")
+            yield from cursor.execute("SELECT id, gamemod, description, name FROM game_featuredMods")
 
             for i in range(0, cursor.rowcount):
                 row = yield from cursor.fetchone()
@@ -85,6 +85,8 @@ class GameService:
 
     def add_game_modes(self):
         for name, nice_name, container in games.game_modes:
+            if name not in self.featured_mods:
+                continue
             mode_description = self.featured_mods[name]['description']
 
             self._containers[name] = container(name=name,

@@ -9,6 +9,7 @@ these should be put in the ``conftest.py'' relative to it.
 import asyncio
 
 import logging
+import subprocess
 import sys
 
 import aiomysql
@@ -87,7 +88,7 @@ def application():
     from server.qt_compat import QtCore
     return QtCore.QCoreApplication([])
 
-@pytest.fixture(scope='function', autouse=True)
+@pytest.fixture(scope='session', autouse=True)
 def loop(request, application):
     loop = quamash.QEventLoop(application)
     loop.set_debug(True)
@@ -144,7 +145,7 @@ def db(sqlquery):
 def mock_db_pool(loop, db_pool, autouse=True):
     return db_pool
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def db_pool(request, loop):
     import server
 
@@ -160,19 +161,12 @@ def db_pool(request, loop):
 
     @asyncio.coroutine
     def setup():
-        with (yield from pool) as conn:
-            cur = yield from conn.cursor()
-            with open('db-structure.sql', 'r', encoding='utf-8') as data:
-                yield from cur.execute('DROP DATABASE IF EXISTS `%s`;' % db)
-                yield from cur.execute('CREATE DATABASE IF NOT EXISTS `%s`;' % db)
-                yield from cur.execute("USE `%s`;" % db)
-                yield from cur.execute(data.read())
-            with open('migration.sql', 'r', encoding='utf-8') as data:
-                yield from cur.execute(data.read())
-                yield from cur.close()
-            with open('tests/data/db-fixtures.sql', 'r', encoding='utf-8') as data:
-                yield from cur.execute(data.read())
-                yield from cur.close()
+        cmd = 'drop database if exists {}; create database {}; use {}; source {};'.format(db, db, db, 'db-structure.sql')
+        subprocess.check_call(['mysql', '-u{}'.format(user), '-p{}'.format(pw) if pw else '', '-e {}'.format(cmd)])
+        subprocess.check_call(['mysql',
+                               '-u{}'.format(user),
+                               '-p{}'.format(pw) if pw else '',
+                               '-e use {}; source {};'.format(db, 'tests/data/db-fixtures.sql')])
 
     def fin():
         pool.close()
