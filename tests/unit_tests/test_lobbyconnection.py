@@ -272,7 +272,6 @@ def test_command_admin_closelobby(mocker, fa_server_thread):
         'user': 'Totaltuna'
     })
 
-    fa_server_thread._logger.info.assert_called_with('Administrative action: {} closed game for {}'.format(player, tuna))
     tuna.lobbyThread.sendJSON.assert_any_call(dict(
         command='notice',
         style='info',
@@ -300,7 +299,6 @@ def test_command_admin_closeFA(mocker, fa_server_thread):
         'user': 'Totaltuna'
     })
 
-    fa_server_thread._logger.info.assert_called_with('Administrative action: {} closed game for {}'.format(player, tuna))
     tuna.lobbyThread.sendJSON.assert_any_call(dict(
         command='notice',
         style='info',
@@ -308,3 +306,4 @@ def test_command_admin_closeFA(mocker, fa_server_thread):
               "Please refer to our rules for the lobby/game here {rule_link}."
               .format(rule_link=config.RULE_LINK))
     ))
+

@@ -28,3 +28,11 @@ values
 delete from game_featuredMods;
 insert into game_featuredMods (id, gamemod, name, description, publish)
 values (1, 'faf', 'faf', 'Forged ALliance Forever', 1);
+
+delete from friends;
+insert into friends (idUser, idFoe)
+values(42, 56);
+
+delete from foes;
+insert into foes (idUser, idFoe)
+values(42, 57);

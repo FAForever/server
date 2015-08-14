@@ -15,7 +15,7 @@ import json
 import urllib.request, urllib.error, urllib.parse
 import datetime
 
-class replayServerThread(QObject):
+class replayServerThread(QObject):  # pragma: no cover
     """
     FA server thread spawned upon every incoming connection to
     prevent collisions.
