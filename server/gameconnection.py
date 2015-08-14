@@ -421,10 +421,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 if option_key == 'ScenarioFile':
                     raw = "%r" % option_value
                     path = raw.replace('\\', '/')
-                    mapname = str(path.split('/')[2]).lower()
-                    curMap = self.game.map_file_path
-                    if curMap != mapname:
-                        self.game.setGameMap(mapname)
+                    self.game.map_file_path = str(path.split('/')[2]).lower()
                 self._mark_dirty()
 
             elif key == 'GameMods':
