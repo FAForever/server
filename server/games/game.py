@@ -329,9 +329,9 @@ class Game(BaseGame):
         for item in to_remove:
             del self.AIs[item]
 
-    def validate_game(self):
+    def validate_game_settings(self):
         """
-        General rules for validation of game rankedness
+        Mark the game invalid if it has non-compliant options
         """
         for id in self.mods:
             if not self.mod_ranked(id):
@@ -378,7 +378,7 @@ class Game(BaseGame):
         self._players = self.players
         self.state = GameState.LIVE
         self._logger.info("Game launched")
-        self.validate_game()
+        self.validate_game_settings()
         self.on_game_launched()
 
     def on_game_launched(self):
