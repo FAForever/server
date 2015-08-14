@@ -115,7 +115,7 @@ class LobbyConnection(QObject):
         pass
 
     @asyncio.coroutine
-    def command_upload_mod(self, msg):
+    def command_upload_mod(self, msg): # pragma: no cover
         zipmap = msg['name']
         infos = msg['info']
         fileDatas = msg['data']
@@ -210,7 +210,7 @@ class LobbyConnection(QObject):
 
         self.sendJSON(dict(command="notice", style="info", text="Mod correctly uploaded."))
 
-    def command_upload_map(self, msg):
+    def command_upload_map(self, msg): # pragma: no cover
         zipmap = msg['name']
         infos = msg['info']
         fileDatas = msg['data']
