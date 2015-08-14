@@ -69,7 +69,7 @@ def test_start_game_uses_map_from_mappool(container: Ladder1V1GamesContainer, la
     map_pool = ladder_setup['popular_maps']
     container.choose_ladder_map_pool = get_coro_mock(return_value=map_pool)
     lobbythread.sendJSON = Mock()
-    container.getMapName = lambda i: i
+    container.getMapName = get_coro_mock(1)
     yield from container.startGame(ladder_setup['player1'], ladder_setup['player2'])
     args, kwargs = lobbythread.sendJSON.call_args
     assert int(args[0]['mapname']) in map_pool

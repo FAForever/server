@@ -143,7 +143,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         map_pool = yield from self.choose_ladder_map_pool(player1, player2)
 
         mapChosen = random.choice(tuple(map_pool))
-        map = self.getMapName(mapChosen)
+        map = yield from self.getMapName(mapChosen)
 
         ngame = Ladder1V1Game(gameid, self)
         ngame.game_mode = self.game_mode
