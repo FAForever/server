@@ -63,7 +63,7 @@ class Game(BaseGame):
     """
     init_mode = InitMode.NORMAL_LOBBY
 
-    def __init__(self, id, parent,
+    def __init__(self, id, game_service,
                  host=None,
                  name='None',
                  map='SCMP_007'):
@@ -82,8 +82,8 @@ class Game(BaseGame):
         :return: Game
         """
         self._results = {}
-        self.db = parent.db
-        self.parent = parent
+        self.db = game_service.db
+        self.game_service = game_service
         self._player_options = {}
         self.launched_at = None
         self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, id))
@@ -334,7 +334,7 @@ class Game(BaseGame):
         Mark the game invalid if it has non-compliant options
         """
         for id in self.mods:
-            if not id in self.parent.ranked_mods:
+            if not id in self.game_service.ranked_mods:
                 self.mark_invalid(ValidityState.BAD_MOD)
                 break
 
@@ -394,7 +394,7 @@ class Game(BaseGame):
             if blacklist_flag is not None:
                 self.mark_invalid(ValidityState.BAD_MAP)
 
-            modId = self.parent.featured_mods[self.gamemod]['id']
+            modId = self.game_service.featured_mods[self.gamemod]['id']
 
             # Write out the game_stats record.
             cursor.execute("INSERT INTO game_stats(gameType, gameMod, `host`, mapId, gameName)"
@@ -433,7 +433,7 @@ class Game(BaseGame):
                                 dev]
 
         if queryStr != "":
-            query = QSqlQuery(self.parent.db)
+            query = QSqlQuery(self.game_service.db)
             query.prepare(queryStr)
             for val in bind_values:
                 query.addBindValue(val)
@@ -444,7 +444,7 @@ class Game(BaseGame):
             self._logger.error("No player stat :(")
 
     def getGamemodVersion(self):
-        return self.parent.getGamemodVersion()
+        return self.game_service.getGamemodVersion()
 
     def setGameType(self, type):
         if type == "demoralization":
@@ -458,7 +458,7 @@ class Game(BaseGame):
 
     @property
     def gamemod(self):
-        return self.parent.game_mode
+        return self.game_service.game_mode
 
     def mark_invalid(self, reason):
         self._logger.info("marked as invalid because: {}".format(reason))

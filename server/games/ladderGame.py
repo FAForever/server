@@ -33,7 +33,7 @@ class Ladder1V1Game(Game):
             
             json = {
                 "command": "game_launch",
-                "mod": self.parent.gameTypeName,
+                "mod": self.game_service.gameTypeName,
                 "reason": "ranked",
                 "uid": self.id,
                 "mapname": map,
