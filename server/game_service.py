@@ -8,6 +8,7 @@ from server import games
 from server.decorators import with_logger
 from server.games.game import Game
 from server.players import Player
+from passwords import DB_TABLE
 
 @with_logger
 class GameService:
@@ -38,7 +39,7 @@ class GameService:
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute("SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'faf_lobby' AND TABLE_NAME = 'game_stats';")
+            yield from cursor.execute("SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = 'game_stats';" % DB_TABLE)
             (self.game_id_counter, ) = yield from cursor.fetchone()
 
     def really_update_static_ish_data(self):
