@@ -22,7 +22,7 @@ from quamash import QEventLoop
 from PySide import QtSql, QtCore
 from PySide.QtCore import QTimer
 
-from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
+from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME
 from server.db import ContextCursor
 from server.game_service import GameService
 from server.player_service import PlayerService
@@ -65,7 +65,7 @@ if __name__ == '__main__':
             db.setHostName(DB_SERVER)
             db.setPort(DB_PORT)
 
-            db.setDatabaseName(DB_TABLE)
+            db.setDatabaseName(DB_NAME)
             db.setUserName(DB_LOGIN)
             db.setPassword(DB_PASSWORD)
             db.setConnectOptions("MYSQL_OPT_RECONNECT=1")
@@ -89,7 +89,7 @@ if __name__ == '__main__':
                                                    user=DB_LOGIN,
                                                    password=DB_PASSWORD,
                                                    maxsize=10,
-                                                   db=DB_TABLE,
+                                                   db=DB_NAME,
                                                    loop=loop))
         db_pool = loop.run_until_complete(pool_fut)
 

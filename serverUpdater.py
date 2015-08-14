@@ -5,7 +5,7 @@ from logging import handlers
 from PySide.QtCore import QObject, QCoreApplication
 from PySide import QtNetwork,QtSql
 
-from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
+from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME
 import config
 from config import Config
 
@@ -32,7 +32,7 @@ class start(QObject):
             self.db.setHostName(DB_SERVER)
             self.db.setPort(DB_PORT)
 
-            self.db.setDatabaseName(DB_TABLE)
+            self.db.setDatabaseName(DB_NAME)
             self.db.setUserName(DB_LOGIN)
             self.db.setPassword(DB_PASSWORD)
             self.db.setConnectOptions("MYSQL_OPT_RECONNECT=1")

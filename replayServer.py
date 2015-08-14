@@ -6,7 +6,7 @@ from PySide.QtCore import QObject, QCoreApplication
 from PySide import QtSql, QtNetwork
 from configobj import ConfigObj
 
-from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_TABLE
+from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME
 config = ConfigObj("/etc/faforever/faforever.conf")
 
 
@@ -33,7 +33,7 @@ class start(QObject):
         self.db.setHostName(DB_SERVER)  
         self.db.setPort(DB_PORT)
 
-        self.db.setDatabaseName(DB_TABLE)  
+        self.db.setDatabaseName(DB_NAME)
         self.db.setUserName(DB_LOGIN)  
         self.db.setPassword(DB_PASSWORD)
         
