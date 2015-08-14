@@ -213,7 +213,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
 
             player_state = self.player.state
             if player_state == PlayerState.HOSTING:
-                map = self.game.mapName
+                map = self.game.map_file_path
                 self.send_HostGame(map)
             # If the player is joining, we connect him to host
             # followed by the rest of the players.
@@ -422,7 +422,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                     raw = "%r" % option_value
                     path = raw.replace('\\', '/')
                     mapname = str(path.split('/')[2]).lower()
-                    curMap = self.game.mapName
+                    curMap = self.game.map_file_path
                     if curMap != mapname:
                         self.game.setGameMap(mapname)
                 self._mark_dirty()
@@ -485,10 +485,10 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                         cursor = yield from conn.cursor()
                         # FIXME: Resolve used map earlier than this
                         yield from cursor.execute("SELECT id FROM coop_map WHERE filename LIKE '%/"
-                                                  + self.game.mapName+".%'")
+                                                  + self.game.map_file_path+".%'")
                         (mission, ) = yield from cursor.fetchone()
                         if not mission:
-                            self._logger.debug("can't find coop map: {}".format(self.game.mapName))
+                            self._logger.debug("can't find coop map: {}".format(self.game.map_file_path))
                             return
 
                         yield from cursor.execute("INSERT INTO `coop_leaderboard`"

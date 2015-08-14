@@ -280,7 +280,7 @@ def test_to_dict(game, create_player):
         "featured_mod": game.gamemod,
         "featured_mod_versions": game.getGamemodVersion(),
         "sim_mods": game.mods,
-        "mapname": game.mapName.lower(),
+        "map_file_path": game.map_file_path.lower(),
         "host": game.host.login,
         "num_players": len(game.players),
         "game_type": game.gameType,

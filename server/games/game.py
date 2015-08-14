@@ -92,7 +92,7 @@ class Game(BaseGame):
         self.max_players = 12
         self.host = host
         self.name = name
-        self.mapName = map
+        self.map_file_path = map
         self.password = None
         self._players = []
         self.options = []
@@ -388,7 +388,7 @@ class Game(BaseGame):
 
             # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
             # so, and grab the map id at the same time.
-            yield from cursor.execute("SELECT table_map.id, table_map_unranked.id FROM table_map LEFT JOIN table_map_unranked ON table_map.id = table_map_unranked.id WHERE table_map.filename = %s", self.mapName)
+            yield from cursor.execute("SELECT table_map.id, table_map_unranked.id FROM table_map LEFT JOIN table_map_unranked ON table_map.id = table_map_unranked.id WHERE table_map.filename = %s", self.map_file_path)
             (mapId, blacklist_flag) = yield from cursor.fetchone()
 
             if blacklist_flag is not None:
@@ -534,7 +534,7 @@ class Game(BaseGame):
             "featured_mod": self.gamemod,
             "featured_mod_versions": self.getGamemodVersion(),
             "sim_mods": self.mods,
-            "mapname": self.mapName.lower(),
+            "map_file_path": self.map_file_path.lower(),
             "host": self.host.login if self.host else '',
             "num_players": len(self.players),
             "game_type": self.gameType,
@@ -551,7 +551,7 @@ class Game(BaseGame):
         if map == '':
             return False
         else:
-            self.mapName = map
+            self.map_file_path = map
 
     def __eq__(self, other):
         if not isinstance(other, Game):
@@ -563,4 +563,4 @@ class Game(BaseGame):
         return self.id.__hash__()
 
     def __str__(self):
-        return "Game({},{},{},{})".format(self.id, self.host.login if self.host else '', self.mapName, len(self.players))
+        return "Game({},{},{},{})".format(self.id, self.host.login if self.host else '', self.map_file_path, len(self.players))

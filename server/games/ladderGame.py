@@ -29,7 +29,7 @@ class Ladder1V1Game(Game):
          
     def specialInit(self, player):
         if player.state == PlayerState.HOSTING:
-            map = self.mapName
+            map = self.map_file_path
             
             json = {
                 "command": "game_launch",
@@ -69,7 +69,7 @@ class Ladder1V1Game(Game):
 
         if self.isDraw():
             query = QSqlQuery(self.db)
-            queryStr = ("SELECT id FROM table_map WHERE filename LIKE '%" + self.mapName + "%'")
+            queryStr = ("SELECT id FROM table_map WHERE filename LIKE '%" + self.map_file_path + "%'")
             query.exec_(queryStr)
             while query.next():
                 mapId = query.value(0)

@@ -150,13 +150,13 @@ def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, pla
         protocol = mock.Mock()
         game_connection.protocol = protocol
         game_connection.player = players.hosting
-        game.mapName = 'some_map'
+        game.map_file_path = 'some_map'
 
         result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
         loop.run_until_complete(result)
 
         protocol.send_message.assert_any_call({'key': 'HostGame',
-                                               'commands': [game.mapName]})
+                                               'commands': [game.map_file_path]})
 
 
 def test_handle_action_GameState_lobby_calls_ConnectToHost(game_connection, loop, players, game):
@@ -172,7 +172,7 @@ def test_handle_action_GameState_lobby_calls_ConnectToHost(game_connection, loop
         game_connection.player = players.joining
         players.joining.game = game
         game.host = players.hosting
-        game.mapName = 'some_map'
+        game.map_file_path = 'some_map'
 
         result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
         loop.run_until_complete(result)
