@@ -390,49 +390,31 @@ class Game(BaseGame):
         self.update_game_player_stats()
 
     def update_game_stats(self):
-        mapId = 0
-        modId = 0
+        with (yield from db_pool) as conn:
+            cursor = yield from conn.cursor()
 
-        query = QSqlQuery(self.parent.db)
+            yield from cursor.execute("SELECT id FROM table_map WHERE id filename = %s", self.mapName)
+            (mapId, ) = cursor.fetchone()
 
-        queryStr = ("SELECT id FROM table_map WHERE id filename = %s" % self.mapName)
-        query.exec_(queryStr)
-        if query.size() > 0:
-            query.first()
-            mapId = query.value(0)
-
-        if mapId != 0:
-            query.prepare("SELECT * FROM table_map_unranked WHERE id = ?")
-            query.addBindValue(mapId)
-            query.exec_()
-            if query.size() > 0:
+            cursor.execute("SELECT id FROM table_map_unranked WHERE id = %s", mapId)
+            if cursor.rowcount > 0:
                 self.mark_invalid(ValidityState.BAD_MAP)
 
-        queryStr = ("SELECT id FROM game_featuredMods WHERE gamemod = %s" % self.gamemod)
-        query.exec_(queryStr)
+            # Should probably just keep all this crap in memory...
+            cursor.execute("SELECT id FROM game_featuredMods WHERE gamemod = %s", self.gamemod)
+            (modId, ) = cursor.fetchone()
 
-        if query.size() == 1:
-            query.first()
-            modId = query.value(0)
-        query = QSqlQuery(self.parent.db)
-        query.prepare("UPDATE game_stats set `startTime` = NOW(),"
-                      "gameType = ?,"
-                      "gameMod = ?,"
-                      "mapId = ?,"
-                      "gameName = ? "
-                      "WHERE id = ?")
-        query.addBindValue(str(self.gameType))
-        query.addBindValue(modId)
-        query.addBindValue(mapId)
-        query.addBindValue(self.name)
-        query.addBindValue(self.id)
-        if not query.exec_():
-            self._logger.debug("Error updating game_stats:")
-            self._logger.debug(query.lastError())
-            self._logger.debug(self.mapName.lower())
+            # Should probably refactor so we only insert once, instead of polluting the DB with spam
+            # for non-started games.
+            cursor.execute("UPDATE game_stats set `startTime` = NOW(),"
+                          "gameType = %s,"
+                          "gameMod = %s,"
+                          "mapId = %s,"
+                          "gameName = %s "
+                          "WHERE id = %s", self.gameType, modId, mapId, self.name, self.id)
 
-        queryStr = ("UPDATE table_map_features set times_played = (times_played +1) WHERE map_id LIKE " + str(mapId))
-        query.exec_(queryStr)
+            # This can probably be a trigger...
+            cursor.execute("UPDATE table_map_features set times_played = (times_played +1) WHERE map_id = %s", mapId)
 
     def update_game_player_stats(self):
         queryStr = ""
