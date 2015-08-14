@@ -6,7 +6,7 @@ from PySide import QtNetwork
 from PySide.QtSql import *
 import config
 from config import Config
-from server.db import db_pool
+import server.db as db
 
 import asyncio
 import os
@@ -64,7 +64,7 @@ class replayServerThread(QObject):
         descriptionField =  ".*[[:space:]]"+search+"[[:space:]].*"
         nameField = "%" + search + "%"
 
-        with (yield from db_pool) as conn:
+        with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
             queryStr = "SELECT `uid`, `t`.`name`,`version`,`author`,`ui`,`date`,`downloads`,`likes`,`played`,`description`,`filename`,`icon` \
                         FROM     (     SELECT `name`, MAX(`version`) AS max_version \

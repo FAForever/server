@@ -5,7 +5,7 @@ import time
 from PySide.QtSql import QSqlQuery
 import functools
 import trueskill
-from server.db import db_pool
+import server.db as db
 from server.proxy_map import ProxyMap
 from server.abc.base_game import GameConnectionState, BaseGame, InitMode
 from server.players import Player, PlayerState
@@ -218,7 +218,7 @@ class Game(BaseGame):
                 # Default to -1 if there is no result
                 results[player] = -1
 
-        with (yield from db_pool) as conn:
+        with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
             rows = []
@@ -383,7 +383,7 @@ class Game(BaseGame):
         Runs at game-start to populate the game_stats table (games that start are ones we actually
         care about recording stats for, after all)
         """
-        with (yield from db_pool) as conn:
+        with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
             # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
