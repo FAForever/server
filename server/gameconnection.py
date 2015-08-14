@@ -17,6 +17,7 @@ from server.game_service import GameService
 from server.players import PlayerState
 from server.protocol import GpgNetServerProtocol
 from server.subscribable import Subscribable
+from server.db import db_pool
 
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.users = users
         self.games = games
 
-        self.db_pool = server.db.db_pool
         self.log = logging.getLogger(__name__)
         self.initTime = time.time()
         self.proxies = {}
@@ -435,7 +435,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 if values[0] == "uids":
                     uids = values[1].split()
                     self.game.mods = {uid: "Unknown sim mod" for uid in uids}
-                    with (yield from self.db_pool) as conn:
+                    with (yield from db_pool) as conn:
                         cursor = yield from conn.cursor()
                         yield from cursor.execute("SELECT uid, name from table_mod WHERE uid in %s", (uids, ))
                         mods = yield from cursor.fetchall()
@@ -481,7 +481,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             elif key == 'OperationComplete':
                 if int(values[0]) == 1:
                     secondary, delta = int(values[1]), str(values[2])
-                    with (yield from self.db_pool) as conn:
+                    with (yield from db_pool) as conn:
                         cursor = yield from conn.cursor()
                         # FIXME: Resolve used map earlier than this
                         yield from cursor.execute("SELECT id FROM coop_map WHERE filename LIKE '%/"
@@ -531,7 +531,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 self.game.launch()
 
                 if len(self.game.mods) > 0:
-                    with (yield from self.db_pool) as conn:
+                    with (yield from db_pool) as conn:
                         cursor = yield from conn.cursor()
                         yield from cursor.execute("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid in %s",
                                                   (self.game.mods.keys(), ))

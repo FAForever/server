@@ -8,6 +8,7 @@ from .gamesContainer import  GamesContainer
 from .ladderGame import Ladder1V1Game
 import server
 from server.players import Player, PlayerState
+from server.db import db_pool
 
 
 class Ladder1V1GamesContainer(GamesContainer):
@@ -21,10 +22,9 @@ class Ladder1V1GamesContainer(GamesContainer):
         self.host = False
         self.join = False
         self.games_service = games_service
-        self.db_pool = server.db.db_pool
 
     def getLeague(self, season, player):
-        with (yield from self.db_pool) as conn:
+        with (yield from db_pool) as conn:
             with (yield from conn.cursor()) as cursor:
                 yield from cursor.execute("SELECT league FROM %s WHERE idUser = %s", (season, player.id))
                 (league, ) = yield from cursor.fetchone()
@@ -35,7 +35,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         if player not in self.players:
             league = self.getLeague(config.LADDER_SEASON, player)
             if not league:
-                with (yield from self.db_pool) as conn:
+                with (yield from db_pool) as conn:
                     with (yield from conn.cursor()) as cursor:
                         yield from cursor.execute("INSERT INTO %s (`idUser` ,`league` ,`score`) "
                                                   "VALUES (%s, 1, 0)", (config.LADDER_SEASON, player.id))

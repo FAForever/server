@@ -32,6 +32,7 @@ from trueskill import Rating
 from server.decorators import timed, with_logger
 from server.games.game import GameState
 from server.players import *
+from server.db import db_pool
 from .game_service import GameService
 from passwords import PRIVATE_KEY, MAIL_ADDRESS, VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY
 import config
@@ -49,7 +50,6 @@ class LobbyConnection(QObject):
         super(LobbyConnection, self).__init__()
         self.loop = loop
         self.db = db
-        self.db_pool = server.db.db_pool
         self.games = games
         self.players = players
         self.context = context
@@ -143,7 +143,7 @@ class LobbyConnection(QObject):
         ui = message["ui_only"]
         icon = ""
 
-        with (yield from self.db_pool) as conn:
+        with (yield from db_pool) as conn:
             cursor = yield from conn.cursor()
 
             yield from cursor.execute("SELECT * FROM table_mod WHERE uid = %s", uid)
@@ -201,7 +201,7 @@ class LobbyConnection(QObject):
         filename = "mods/%s" % zipmap
 
 
-        with (yield from self.db_pool) as conn:
+        with (yield from db_pool) as conn:
             cursor = yield from conn.cursor()
             yield from cursor.execute("INSERT INTO `table_mod`(`uid`, `name`, `version`, `author`, `ui`, `description`, `filename`, `icon`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
                                       uid, name, version, author, int(ui), description, filename, icon)
@@ -519,7 +519,7 @@ Thanks,\n\
     def send_tutorial_section(self):
         reply = []
 
-        with (yield from self.db_pool) as conn:
+        with (yield from db_pool) as conn:
             cursor = yield from conn.cursor()
 
             # Can probably replace two queries with one here if we're smart enough.
@@ -542,7 +542,7 @@ Thanks,\n\
     @timed()
     @asyncio.coroutine
     def send_coop_maps(self):
-        with (yield from self.db_pool) as conn:
+        with (yield from db_pool) as conn:
             cursor = yield from conn.cursor()
 
             yield from cursor.execute("SELECT name, description, filename, type, id FROM `coop_map`")
@@ -615,7 +615,7 @@ Thanks,\n\
 
         query += " = %s AND idUser = %s"
 
-        with (yield from self.db_pool) as conn:
+        with (yield from db_pool) as conn:
             cursor = yield from conn.cursor()
 
             yield from cursor.execute(query, self.players.get_player_id(target).id, self.player.id)
@@ -636,7 +636,7 @@ Thanks,\n\
 
         query += " values (%s,%s)"
 
-        with (yield from self.db_pool) as conn:
+        with (yield from db_pool) as conn:
             cursor = yield from conn.cursor()
 
             yield from cursor.execute(query, self.player.id, self.players.get_player_id(target))
@@ -889,7 +889,7 @@ Thanks,\n\
 
             # Check their client is reporting the right version number.
             # TODO: Do this somewhere less insane. (no need to query our db for this every login!)
-            with (yield from self.db_pool) as conn:
+            with (yield from db_pool) as conn:
                 cursor = yield from conn.cursor()
                 versionDB, updateFile = self.players.client_version_info
 
@@ -1476,7 +1476,7 @@ Thanks,\n\
     def command_modvault(self, message):
         type = message["type"]
 
-        with (yield from self.db_pool) as conn:
+        with (yield from db_pool) as conn:
             cursor = yield from conn.cursor()
             if type == "start":
                 yield from cursor.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon FROM table_mod ORDER BY likes DESC LIMIT 100")
