@@ -11,19 +11,18 @@ Options:
 import asyncio
 
 
+
 import sys
 import logging
 from logging import handlers
 import signal
 import socket
 
-import aiomysql
 from quamash import QEventLoop
 from PySide import QtSql, QtCore
 from PySide.QtCore import QTimer
 
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME
-from server.db import ContextCursor
 from server.game_service import GameService
 from server.player_service import PlayerService
 import config
