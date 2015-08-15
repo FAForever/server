@@ -32,7 +32,7 @@ def test_public_host(loop, game_server, players, player_service, db):
     nat_server, server = game_server
     with TestGPGClient(player.game_port, loop=loop, process_nat_packets=True) as client:
         yield from client.connect(*server.sockets[0].getsockname())
-        client.proto.send_gpgnet_message('Authenticate', ['42'])
+        client.proto.send_gpgnet_message('Authenticate', ['42', '1'])
         client.proto.send_GameState(['Idle'])
         client.proto.send_GameState(['Lobby'])
         yield from client.proto.writer.drain()
@@ -52,7 +52,7 @@ def test_stun_host(loop, game_server, players, player_service, db):
     nat_server, server = game_server
     with TestGPGClient(player.game_port, loop=loop, process_nat_packets=False) as client:
         yield from client.connect(*server.sockets[0].getsockname())
-        client.proto.send_gpgnet_message('Authenticate', ['42'])
+        client.proto.send_gpgnet_message('Authenticate', ['42', '1'])
         client.proto.send_GameState(['Idle'])
         client.proto.send_GameState(['Lobby'])
         yield from client.read_until('SendNatPacket')
