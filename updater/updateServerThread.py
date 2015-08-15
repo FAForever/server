@@ -13,7 +13,7 @@ from configobj import ConfigObj
 
 config = ConfigObj("/etc/faforever/faforever.conf")
 
-class updateServerThread(QObject):
+class updateServerThread(QObject):  # pragma: no cover
     """
     FA server thread spawned upon every incoming connection to
     prevent collisions.

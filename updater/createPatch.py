@@ -9,13 +9,13 @@ from configobj import ConfigObj
 
 config = ConfigObj("/etc/faforever/faforever.conf")
 
-class Process(QProcess):    
+class Process(QProcess):  # pragma: no cover
     def __init__(self, patch=None, *args, **kwargs):        
         QProcess.__init__(self, *args, **kwargs)
         self.patch = None
 
 
-class createPatch(QThread):
+class createPatch(QThread):  # pragma: no cover
     def __init__(self, patches, db, parent=None):
         QThread.__init__(self, parent)
         

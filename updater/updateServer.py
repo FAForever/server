@@ -7,7 +7,7 @@ from . import updateServerThread
 from . import createPatch
 
 
-class updateServer(QtNetwork.QTcpServer):
+class updateServer(QtNetwork.QTcpServer):  # pragma: no cover
     def __init__(self, parent=None):
         super(updateServer, self).__init__(parent)
         self.logger = logging.getLogger(__name__)
