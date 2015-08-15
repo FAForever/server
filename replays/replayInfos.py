@@ -1,4 +1,4 @@
-class replayInfos(object):
+class replayInfos(object):  # pragma: no cover
 
     def __init__(self):
 

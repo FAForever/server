@@ -151,7 +151,7 @@ enum ECmdStreamOp
 // }
 """
 
-class UNITCOMMAND(object):
+class UNITCOMMAND(object):  # pragma: no cover
     UNITCOMMAND_None = 0
     UNITCOMMAND_Stop = 1
     UNITCOMMAND_Move = 2
@@ -253,7 +253,7 @@ TABLE_BEGIN = 4
 TABLE_END = 5
 
 
-class replayParser(object):
+class replayParser(object):  # pragma: no cover
     def __init__(self, replayfile):
 
         replay = open(inFile, "rt")

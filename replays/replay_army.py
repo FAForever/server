@@ -1,4 +1,4 @@
-class ReplayArmy(object):
+class ReplayArmy(object):  # pragma: no cover
     def __init__(self):
 
         self.color = 0

@@ -1,6 +1,6 @@
 import bisect
 
-class replayArmyContainer(object):
+class replayArmyContainer(object):  # pragma: no cover
     def __init__(self):
         self.__armies = []
         self.__armyId = {}

@@ -9,7 +9,7 @@ UNIT16 = 8
 from . import replayServerThread
 
 
-class replayServer(QtNetwork.QTcpServer):
+class replayServer(QtNetwork.QTcpServer):  # pragma: no cover
     def __init__(self, parent=None):
         super(replayServer, self).__init__(parent)
         self.logger = logging.getLogger(__name__)
