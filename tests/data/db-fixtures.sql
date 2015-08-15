@@ -32,7 +32,10 @@ values
 (9, 'scmp_009/scmp_009.scenario_info.lua'),
 (10, 'scmp_010/scmp_010.scenario_info.lua'),
 (11, 'scmp_011/scmp_011.scenario_info.lua'),
-(12, 'scmp_012/scmp_012.scenario_info.lua');
+(12, 'scmp_012/scmp_012.scenario_info.lua'),
+(13, 'scmp_013/scmp_014.scenario_info.lua'),
+(14, 'scmp_014/scmp_014.scenario_info.lua'),
+(15, 'scmp_015/scmp_015.scenario_info.lua');
 
 -- featured mods
 delete from game_featuredMods;
