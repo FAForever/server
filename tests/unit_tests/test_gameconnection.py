@@ -1,14 +1,13 @@
 import asyncio
 
+
 import json
 
 from unittest import mock
 import pytest
-import time
 
 from server import proxy_map
 from server.connectivity import Connectivity, ConnectivityState
-from server.gameconnection import GameConnection
 from server.games import Game
 from server.players import PlayerState
 

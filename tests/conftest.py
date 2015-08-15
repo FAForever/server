@@ -12,7 +12,6 @@ import logging
 import subprocess
 import sys
 
-import aiomysql
 import pytest
 from unittest import mock
 from trueskill import Rating

@@ -1,4 +1,5 @@
 import asyncio
+
 import hashlib
 import zlib
 import cgi
@@ -25,12 +26,11 @@ from Crypto.Random.random import choice
 from Crypto.Cipher import Blowfish
 from Crypto.Cipher import AES
 import pygeoip
-import server
 from server.matchmaker import Search
 
 from server.decorators import timed, with_logger
 from server.games.game import GameState
-from server.players import *
+from server.players import Player, PlayerState
 import server.db as db
 from .game_service import GameService
 from passwords import PRIVATE_KEY, MAIL_ADDRESS, VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY

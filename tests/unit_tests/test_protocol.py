@@ -1,4 +1,4 @@
-from asyncio import StreamReader, StreamWriter
+from asyncio import StreamReader
 
 import asyncio
 from PySide.QtCore import QByteArray, QDataStream, QIODevice

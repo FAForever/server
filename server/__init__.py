@@ -14,8 +14,6 @@ __contact__ = 'admin@faforever.com'
 __license__ = 'GPLv3'
 __copyright__ = 'Copyright (c) 2011-2015 ' + __author__
 
-import asyncio
-from asyncio import AbstractEventLoop
 import json
 from .gameconnection import GameConnection
 from .natpacketserver import NatPacketServer

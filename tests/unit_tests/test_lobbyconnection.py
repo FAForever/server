@@ -1,6 +1,3 @@
-import asyncio
-from PySide import QtNetwork
-
 import pytest
 from unittest import mock
 from server import ServerContext, QDataStreamProtocol, GameState

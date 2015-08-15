@@ -1,8 +1,8 @@
 from unittest import mock
 
+
 from PySide import QtSql
 import pytest
-from server import GameService
 
 from server.games import Ladder1V1GamesContainer
 from server.players import Player
