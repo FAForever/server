@@ -237,8 +237,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         """
         try:
             message["command_id"] = message['action']
-            message["arguments"] = message['chuncks']
-            yield from self.handle_action(message["action"], message["chuncks"])
+            message["arguments"] = message['chunks']
+            yield from self.handle_action(message["action"], message["chunks"])
             self.notify(message)
         except ValueError as ex:  # pragma: no cover
             self.log.error("Garbage command {} {}".format(ex, message))

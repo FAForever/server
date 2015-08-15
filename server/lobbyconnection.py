@@ -103,10 +103,12 @@ class LobbyConnection(QObject):
         except (KeyError, ValueError) as ex:
             self._logger.warning("Garbage command: {}".format(message))
             self._logger.exception(ex)
+            self.abort()
         except Exception as ex:
             self.protocol.send_message({'command': 'invalid'})
             self._logger.warning("Error processing command")
             self._logger.exception(ex)
+            self.abort()
 
     def command_ping(self, msg):
         self.protocol.send_raw(self.protocol.pack_message('PONG'))

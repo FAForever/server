@@ -39,7 +39,7 @@ class GpgClientProtocol(GpgNetClientProtocol):
         self.receiver.on_message_received(message)
 
     def send_gpgnet_message(self, command_id, arguments):
-        self.protocol.send_message({'action': command_id, 'chuncks': arguments})
+        self.protocol.send_message({'action': command_id, 'chunks': arguments})
 
 
 
@@ -144,4 +144,4 @@ class TestGPGClient(QObject):
         s.close()
 
     def send_pong(self):
-        self.transport.send_message({'action': 'pong', 'chuncks': []})
+        self.transport.send_message({'action': 'pong', 'chunks': []})
