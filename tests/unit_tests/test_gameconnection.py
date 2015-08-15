@@ -25,7 +25,7 @@ def test_on_connection_made_no_player(game_connection):
     game_connection.abort = mock.Mock()
 
     yield from game_connection.on_connection_made(mock.Mock(), ('127.0.0.1', 5123))
-    yield from game_connection.handle_action('Authenticate', [42])
+    yield from game_connection.handle_action('Authenticate', [42, 1])
 
     game_connection.abort.assert_any_call()
 
@@ -38,7 +38,7 @@ def test_on_connection_made_no_game(game_connection, players):
     game_connection.abort = mock.Mock()
 
     yield from game_connection.on_connection_made(mock.Mock(), ('127.0.0.1', 5123))
-    yield from game_connection.handle_action('Authenticate', [42])
+    yield from game_connection.handle_action('Authenticate', [42, 1])
 
     game_connection.abort.assert_any_call()
 
