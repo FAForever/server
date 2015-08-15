@@ -106,7 +106,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         (self.ip, self.port) = peer_name
 
     @asyncio.coroutine
-    def authenticate(self, session):
+    def authenticate(self, session, player_id):
         """
         Perform very rudimentary authentication.
 
@@ -114,7 +114,12 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         behind the same public address which would cause problems with the old design.
         """
         try:
-            self._player = self.users.find_by_ip_and_session(self.ip, session)
+            self.player = self.users.players[player_id]
+            if self.player.session != session:
+                self.log.info("Player attempted to authenticate with game connection with mismatched id/session pair.")
+                self.abort()
+                return
+
             self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, self.ip, session))
 
             if self.player is None:
@@ -380,7 +385,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         """
         try:
             if key == 'Authenticate':
-                yield from self.authenticate(int(values[0]))
+                yield from self.authenticate(int(values[0]), int(values[1]))
             elif not self._authenticated.done():
                 @asyncio.coroutine
                 def queue_until_authed():

@@ -48,7 +48,7 @@ def test_search_await(mocker, loop, matchmaker_players):
 @asyncio.coroutine
 def test_queue_push(mocker, player_service, matchmaker_queue, matchmaker_players):
     p1, p2, _, _, _ = matchmaker_players
-    player_service.players = list(matchmaker_players)
+    player_service.players = {p1.id: p1, p2.id:p2}
 
     p1.on_matched_with = Mock()
     p2.on_matched_with = Mock()
@@ -64,7 +64,7 @@ def test_queue_race(mocker, player_service, matchmaker_queue):
                  Player('Brackman', id=2, ladder_rating=(2200, 150)), \
                  Player('Zoidberg', id=3, ladder_rating=(2300, 125))
 
-    player_service.players = [p1, p2, p3]
+    player_service.players = {p1.id: p1, p2.id:p2, p3.id:p3}
 
     p1.on_matched_with = Mock()
     p2.on_matched_with = Mock()
@@ -88,7 +88,8 @@ def test_queue_race(mocker, player_service, matchmaker_queue):
 
 @asyncio.coroutine
 def test_queue_cancel(mocker, player_service, matchmaker_queue, matchmaker_players):
-    player_service.players = list(matchmaker_players)
+    # Turn list of players into map from ids to players.
+    player_service.players = dict(map(lambda x: (x.id, x), list(matchmaker_players)))
 
     s1, s2 = Search(matchmaker_players[1]), Search(matchmaker_players[2])
     matchmaker_queue.push(s1)

@@ -1065,7 +1065,7 @@ Thanks,\n\
 
             self.protocol.send_messages(
                 [player.to_dict()
-                 for player in self.players.players]
+                 for player in self.players.players.values()]
             )
 
             query = QSqlQuery(self.db)
@@ -1106,7 +1106,7 @@ Thanks,\n\
             self.send_tutorial_section()
 
             player_info = self.player.to_dict()
-            for player in self.players.players:
+            for player in self.players.players.values:
                 if player != self.player:
                     lobby = player.lobby_connection
                     if lobby is not None:
@@ -1452,20 +1452,10 @@ Thanks,\n\
         """
         Simply dumps a dictionary into a string and feeds it into the QTCPSocket
         """
-        if "command" in data_dictionary:
-            if data_dictionary["command"] == "game_launch":
-                # if we join a game, we are not a potential player anymore
-                for player in self.players:
-                    if player.lobbyThread:
-                        player.lobbyThread.removePotentialPlayer(self.player.login)
-
         try:
             self.protocol.send_message(data_dictionary)
         except Exception as ex:
             self._logger.exception(ex)
 
     def on_connection_lost(self):
-        for player in self.players.players:
-            if player.lobbyThread:
-                player.lobbyThread.removePotentialPlayer(self.player.login)
         self.players.remove_player(self.player)

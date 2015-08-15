@@ -24,7 +24,7 @@ class MatchmakerQueue:
         :return:
         """
         self._logger.info("Notifying potential opponents")
-        for opponent in self.player_service.players:
+        for opponent in self.player_service.players.values():
             if {search.player, opponent} in self.filter:
                 opponent.notify_potential_match(search.player)
 
