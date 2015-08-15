@@ -45,6 +45,7 @@ def pytest_addoption(parser):
     parser.addoption('--mysql_username', action='store', default='root', help='mysql username to use for test database')
     parser.addoption('--mysql_password', action='store', default='', help='mysql password to use for test database')
     parser.addoption('--mysql_database', action='store', default='faf_test', help='mysql database to use for tests')
+    parser.addoption('--mysql_port',     action='store', default=3306, help='mysql port to use for tests')
 
 def pytest_configure(config):
     if config.getoption('--aiodebug'):
@@ -151,11 +152,12 @@ def db_pool(request, loop):
 
     def opt(val):
         return request.config.getoption(val)
-    host, user, pw, db = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt('--mysql_database')
+    host, user, pw, db, port = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt('--mysql_database'), opt('--mysql_port')
     pool_fut = asyncio.async(server.db.connect(loop=loop,
                                                host=host,
                                                user=user,
                                                password=pw,
+                                               port=port,
                                                db=db))
     pool = loop.run_until_complete(pool_fut)
 
