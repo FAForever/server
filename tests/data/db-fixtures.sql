@@ -21,8 +21,17 @@ values (1, NOW(), 'Test game', 0, 6);
 delete from table_map;
 insert into table_map (id, filename)
 values
+(1, 'scmp_001/scmp_001.scenario_info.lua'),
+(2, 'scmp_002/scmp_002.scenario_info.lua'),
+(3, 'scmp_003/scmp_003.scenario_info.lua'),
+(4, 'scmp_004/scmp_004.scenario_info.lua'),
 (5, 'scmp_005/scmp_005.scenario_info.lua'),
-(10, 'scmp_007/scmp_007.scenario_info.lua'),
+(6, 'scmp_006/scmp_006.scenario_info.lua'),
+(7, 'scmp_007/scmp_007.scenario_info.lua'),
+(8, 'scmp_008/scmp_008.scenario_info.lua'),
+(9, 'scmp_009/scmp_009.scenario_info.lua'),
+(10, 'scmp_010/scmp_010.scenario_info.lua'),
+(11, 'scmp_011/scmp_011.scenario_info.lua'),
 (12, 'scmp_012/scmp_012.scenario_info.lua');
 
 -- featured mods

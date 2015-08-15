@@ -156,7 +156,7 @@ def db_pool(request, loop):
     pool_fut = asyncio.async(server.db.connect(loop=loop,
                                                host=host,
                                                user=user,
-                                               password=pw,
+                                               password=pw or None,
                                                port=port,
                                                db=db))
     pool = loop.run_until_complete(pool_fut)
