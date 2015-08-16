@@ -4,7 +4,7 @@ from unittest import mock
 from PySide import QtSql
 import pytest
 
-from server.games import Ladder1V1GamesContainer
+from server.games import LadderService
 from server.players import Player
 
 
@@ -41,4 +41,4 @@ def ladder_setup(player1, player2, map_pool):
 
 @pytest.fixture()
 def container(monkeypatch, sqlquery, game_service):
-    return Ladder1V1GamesContainer(game_service, '')
+    return LadderService(game_service, '')

@@ -10,7 +10,7 @@ from server.players import Player, PlayerState
 import server.db as db
 
 
-class Ladder1V1GamesContainer:
+class LadderService:
     """Class for 1vs1 ladder games"""
     listable = False
 

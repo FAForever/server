@@ -1,5 +1,5 @@
 from collections import namedtuple
-from .ladderGamesContainer import Ladder1V1GamesContainer
+from .ladder_service import LadderService
 from .game import Game
 from .ladderGame import Ladder1V1Game
 from .custom_game import CustomGame

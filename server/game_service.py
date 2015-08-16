@@ -4,7 +4,7 @@ import aiocron
 import server.db as db
 from server import GameState
 from server.decorators import with_logger
-from server.games import FeaturedMod, Ladder1V1GamesContainer
+from server.games import FeaturedMod, LadderService
 from server.games.game import Game
 from server.players import Player
 from passwords import DB_NAME
@@ -92,7 +92,7 @@ class GameService:
             self.game_mode_versions['ladder1v1'] = self.game_mode_versions['faf']
 
             # meh meh
-            self.ladder_service = Ladder1V1GamesContainer(self, self.featured_mods['ladder1v1'].description)
+            self.ladder_service = LadderService(self, self.featured_mods['ladder1v1'].description)
 
     @aiocron.crontab('0 * * * *')
     @asyncio.coroutine
