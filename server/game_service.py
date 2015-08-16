@@ -99,7 +99,6 @@ class GameService:
             self._containers[name] = container(name=name,
                                                desc=mode_description,
                                                nice_name=nice_name,
-                                               db=self.db,
                                                games_service=self)
 
     # This is still used by ladderGamesContainer: refactoring to make this interaction less
