@@ -241,7 +241,7 @@ def test_command_admin_closelobby(mocker, fa_server_thread):
     player.login = 'Sheeo'
     tuna = mock.Mock()
     tuna.id = 55
-    fa_server_thread.players = {1: player, 55: tuna}
+    fa_server_thread.player_service = {1: player, 55: tuna}
 
     fa_server_thread.command_admin({
         'command': 'admin',
@@ -266,7 +266,7 @@ def test_command_admin_closeFA(mocker, fa_server_thread):
     player.id = 42
     tuna = mock.Mock()
     tuna.id = 55
-    fa_server_thread.players = {42: player, 55: tuna}
+    fa_server_thread.player_service = {42: player, 55: tuna}
 
     fa_server_thread.command_admin({
         'command': 'admin',
