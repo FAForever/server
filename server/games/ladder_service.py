@@ -60,38 +60,35 @@ class LadderService:
         player1.state = PlayerState.HOSTING
         player2.state = PlayerState.JOINING
 
-        (mapId, mapName) = random.choice(self.game_service.ladder_maps)
+        (map_id, map_path) = random.choice(self.game_service.ladder_maps)
 
-        ngame = LadderGame(self.game_service.createUuid(), self.game_service)
-        id = ngame.id
+        game = LadderGame(self.game_service.createUuid(), self.game_service)
 
-        player1.game = id
-        player2.game = id
+        player1.game = game
+        player2.game = game
+
+        game.map_file_path = map_path
 
         # Host is player 1
-        ngame.setGameMap(mapName)
-        
-        ngame.host = player1
-        ngame.name = str(player1.login + " Vs " + player2.login)
+        game.host = player1
+        game.name = str(player1.login + " Vs " + player2.login)
 
-        ngame.set_player_option(player1.id, 'StartSpot', 1)
-        ngame.set_player_option(player2.id, 'StartSpot', 2)
-        ngame.set_player_option(player1.id, 'Team', 1)
-        ngame.set_player_option(player2.id, 'Team', 2)
+        game.set_player_option(player1.id, 'StartSpot', 1)
+        game.set_player_option(player2.id, 'StartSpot', 2)
+        game.set_player_option(player1.id, 'Team', 1)
+        game.set_player_option(player2.id, 'Team', 2)
 
-        ngame.addPlayerToJoin(player2)
-
-        ngame.setLeaguePlayer(player1)
-        ngame.setLeaguePlayer(player2)
+        game.setLeaguePlayer(player1)
+        game.setLeaguePlayer(player2)
 
         # player 2 will be in game
         
         #warn both players
         json = {
             "command": "game_launch",
-            "mod": ngame.game_mode,
-            "mapname": mapName,
-            "mapid": mapId,
+            "mod": game.game_mode,
+            "mapname": map_path,
+            "mapid": map_id,
             "reason": "ranked",
             "uid": id,
             "args": ["/players 2", "/team 1"]
