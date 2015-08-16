@@ -168,13 +168,3 @@ class GameService:
 
     def __getitem__(self, item):
         return self.games[item]
-
-    def find_by_id(self, id: int):
-        """
-        Look up a game by ID
-        :rtype: Game
-        """
-        for container in self._containers:
-            game = self._containers[container].findGameById(id)
-            if game is not None:
-                return game
