@@ -120,24 +120,21 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 self.abort()
                 return
 
-            self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, self.ip, session))
+            self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, player_id, session))
 
-            if self.player is None:
+            if not self.player:
                 self.log.info("Player not found for IP: %s " % self.ip)
                 self.abort()
                 return
 
-            if self.player.game is None:
-                self.log.info("Player hasn't indicated that he wants to join a game")
+            if not self.player.game:
+                self.log.info("Player {} hasn't indicated that he wants to join a game".format(self.player))
                 self.abort()
                 return
 
             self.game = self.player.game
             self.player.game_connection = self
             self.lobby = self.player.lobby_connection
-
-            self.player.setPort = False
-            self.player.connectedToHost = False
 
             self.ping_task = asyncio.async(self.ping())
             self._state = GameConnectionState.INITIALIZED
