@@ -11,7 +11,7 @@ def mock_players(mock_db_pool):
     return m
 
 @pytest.fixture
-def mock_games(mock_players, db):
+def mock_games(mock_players):
     from server import GameService
-    return mock.create_autospec(GameService(mock_players, db))
+    return mock.create_autospec(GameService(mock_players))
 
