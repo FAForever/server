@@ -58,13 +58,6 @@ class Ladder1V1GamesContainer(GamesContainer):
             
             return 1
         return 0
-
-    def removePlayer(self, player):
-        if player in self.players:
-            self.players.remove(player)
-            player.state = PlayerState.IDLE
-            return 1
-        return 0
     
     def getMatchQuality(self, player1: Player, player2: Player):
         return trueskill.quality_1vs1(player1.ladder_rating, player2.ladder_rating)
@@ -174,12 +167,13 @@ class Ladder1V1GamesContainer(GamesContainer):
         self.addGame(ngame)
 
         #warn both players
-        json = {}
-        json["command"] = "game_launch"
-        json["mod"] = self.game_mode
-        json["mapname"] = str(map)
-        json["reason"] = "ranked"
-        json["uid"] = id
-        json["args"] = ["/players 2", "/team 1"]
+        json = {
+            "command": "game_launch",
+            "mod": self.game_mode,
+            "mapname":  str(map),
+            "reason": "ranked",
+            "uid": id,
+            "args": ["/players 2", "/team 1"]
+        }
         
         player1.lobbyThread.sendJSON(json)
