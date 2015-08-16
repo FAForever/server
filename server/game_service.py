@@ -42,8 +42,6 @@ class GameService:
         asyncio.get_event_loop().run_until_complete(asyncio.async(self.initialise_game_counter()))
         asyncio.get_event_loop().run_until_complete(asyncio.async(self.really_update_static_ish_data()))
 
-        self._containers = {}
-
     @asyncio.coroutine
     def initialise_game_counter(self):
         with (yield from db.db_pool) as conn:
@@ -139,11 +137,6 @@ class GameService:
         self.mark_dirty(game)
         return game
 
-    def getContainer(self, name):
-        if name in self._containers:
-            return self._containers[name]
-        return None
-
     @property
     def live_games(self):
         return [game for game in self.games.values()
@@ -155,9 +148,7 @@ class GameService:
                 if game.state == GameState.LOBBY or game.state == GameState.INITIALIZING]
 
     def remove_game(self, game: Game):
-        for c, g in self._containers.items():
-            if game in g.games:
-                g.games.remove(game)
+        del self.games[game.id]
 
     def all_game_modes(self):
         mods = []
