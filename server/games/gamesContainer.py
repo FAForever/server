@@ -22,7 +22,6 @@ class GamesContainer(object):
 
         self._logger.debug("Initialized {}".format(nice_name))
 
-
     def findGameById(self, id):
         """Find a game by the id"""
         for game in self.games:

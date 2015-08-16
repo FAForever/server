@@ -1,8 +1,6 @@
 import asyncio
-from itertools import repeat
 import aiocron
 import aiomysql
-from server import games
 
 import server.db as db
 from server import games
@@ -29,6 +27,9 @@ class GameService:
 
         # The ladder map pool. Each entry is an (id, name) tuple.
         self.ladder_maps = set()
+
+        # The set of active games
+        self.games = dict()
 
         # Cached versions for files by game_mode ( featured mod name )
         # For use by the patcher
@@ -139,6 +140,7 @@ class GameService:
         Main entrypoint for creating new games
         """
         game = Game(self.createUuid(), self, host, name, mapname)
+        self.games[game.id] = game
         game.game_mode = game_mode
         self._containers[game_mode].addGame(game)
 
@@ -179,6 +181,9 @@ class GameService:
                 'desc': g.desc
             })
         return modes
+
+    def __getitem__(self, item):
+        return self.games[item]
 
     def find_by_id(self, id: int):
         """

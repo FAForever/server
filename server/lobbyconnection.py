@@ -49,7 +49,7 @@ class LobbyConnection(QObject):
         super(LobbyConnection, self).__init__()
         self.loop = loop
         self.db = db
-        self.games = games
+        self.game_service = games
         self.players = players
         self.context = context
         self.ladderPotentialPlayers = []
@@ -572,11 +572,11 @@ Thanks,\n\
 
     @timed
     def send_mod_list(self):
-        self.protocol.send_messages(self.games.all_game_modes())
+        self.protocol.send_messages(self.game_service.all_game_modes())
 
     @timed()
     def send_game_list(self):
-        self.protocol.send_messages([game.to_dict() for game in self.games.active_games])
+        self.protocol.send_messages([game.to_dict() for game in self.game_service.active_games])
 
     def command_social_remove(self, message):
         query = "DELETE FROM "
@@ -1246,7 +1246,7 @@ Thanks,\n\
         password = message.get('password', None)
 
         self._logger.debug("joining: {}:{} with pw: {}".format(uuid, port, password))
-        game = self.games.find_by_id(uuid)
+        game = self.game_service[uuid]
         self._logger.debug("game found: {}".format(game))
 
         if not game or game.state != GameState.LOBBY:
@@ -1288,7 +1288,7 @@ Thanks,\n\
         if not self.search:
             self.search = Search(self.player)
 
-        container = self.games.getContainer(mod)
+        container = self.game_service.getContainer(mod)
         if container is not None:
             if mod == "ladder1v1":
                 if state == "stop":
@@ -1328,7 +1328,7 @@ Thanks,\n\
         mapname = message.get('mapname')
         password = message.get('password')
 
-        game = self.games.create_game(**{
+        game = self.game_service.create_game(**{
             'visibility': access,
             'game_mode': mod.lower(),
             'host': self.player,

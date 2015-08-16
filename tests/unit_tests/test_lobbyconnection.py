@@ -88,15 +88,16 @@ def test_command_game_host_creates_game(fa_server_thread,
 
 def test_command_game_join_calls_join_game(mocker,
                                            fa_server_thread,
-                                           mock_games,
+                                           game_service,
                                            test_game_info,
                                            players):
+    fa_server_thread.game_service = game_service
     mock_protocol = mocker.patch.object(fa_server_thread, 'protocol')
-    game = mock.create_autospec(Game(42, mock_games))
+    game = mock.create_autospec(Game(42, game_service))
     game.state = GameState.LOBBY
     game.password = None
     game.game_mode = 'faf'
-    mock_games.find_by_id.return_value = game
+    game_service.games[42] = game
     fa_server_thread.player = players.hosting
     players.hosting.in_game = False
     test_game_info['uid'] = 42
@@ -217,7 +218,7 @@ def test_avatar_select_no_avatar(mocker, fa_server_thread):
 
 def test_send_game_list(mocker, fa_server_thread):
     protocol = mocker.patch.object(fa_server_thread, 'protocol')
-    games = mocker.patch.object(fa_server_thread, 'games')
+    games = mocker.patch.object(fa_server_thread, 'game_service')
     game1, game2 = mock.create_autospec(Game(42, mock.Mock())), mock.create_autospec(Game(22, mock.Mock()))
     games.active_games = [game1, game2]
 
