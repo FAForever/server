@@ -212,6 +212,9 @@ INSERT INTO invalid_game_reasons(message) VALUES("Reason not known");
 ALTER TABLE game_stats DROP COLUMN EndTime;
 
 
+# No more ladder map selection.
+DROP TABLE ladder_map_selection;
+
 
 # Optimise all the tables we restructured (so we might recover space or be less fragmented or such)
 OPTIMIZE TABLE login;

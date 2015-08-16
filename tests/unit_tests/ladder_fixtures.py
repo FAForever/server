@@ -9,25 +9,13 @@ from server.players import Player
 
 
 @pytest.fixture()
-def popular_maps():
+def map_pool():
     return {1, 5, 10, 12, 15}
-
-
-@pytest.fixture()
-def player1_maps():
-    return {1, 3, 5, 6, 7, 8}
-
-
-@pytest.fixture()
-def player2_maps():
-    return {2, 4, 6, 9}
-
 
 def playerMock(lobbythread, id):
     player_mock = mock.create_autospec(spec=Player(''))
     player_mock.login = "Player %s" % id
     player_mock.id = id
-    player_mock.setGame = lambda uid: None
     player_mock.game_port = 4242
     player_mock.lobbyThread = lobbythread
     return player_mock
@@ -44,14 +32,11 @@ def player2(lobbythread):
 
 
 @pytest.fixture()
-def ladder_setup(player1, player2, player1_maps, player2_maps, popular_maps):
+def ladder_setup(player1, player2, map_pool):
     return {
         'player1': player1,
         'player2': player2,
-        'player1_maps': player1_maps,
-        'player2_maps': player2_maps,
-        'recently_played': {1, 4, 6, 8, 10},
-        'popular_maps': popular_maps
+        'map_pool': map_pool
     }
 
 @pytest.fixture()

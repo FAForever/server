@@ -27,6 +27,9 @@ class GameService:
         # A set of mod ids that are allowed in ranked games (everyone loves caching)
         self.ranked_mods = set()
 
+        # The ladder map pool. Each entry is an (id, name) tuple.
+        self.ladder_maps = set()
+
         # Synchronously initialise the game-id counter and static-ish-data.
         asyncio.get_event_loop().run_until_complete(asyncio.async(self.initialise_game_counter()))
         asyncio.get_event_loop().run_until_complete(asyncio.async(self.really_update_static_ish_data()))
@@ -68,6 +71,11 @@ class GameService:
             # Turn resultset into a list of ids
             rows = yield from cursor.fetchall()
             self.ranked_mods = set(map(lambda x: x[0], rows))
+
+            # Load all ladder maps
+            yield from cursor.execute("SELECT ladder_map.idmap, table_map.name FROM ladder_map INNER JOIN table_map ON table_map.id = ladder_map.idmap")
+            rows = yield from cursor.fetchall()
+            self.ladder_maps = set(rows)
 
     @aiocron.crontab('0 * * * *')
     @asyncio.coroutine

@@ -60,7 +60,6 @@ class LobbyConnection(QObject):
         self.missedPing = 0
         self.friendList = []
         self.foeList = []
-        self.ladderMapList = []
         self.leagueAvatar = None
         self.ip = None
         self.port = None
@@ -579,30 +578,6 @@ Thanks,\n\
     def send_game_list(self):
         self.protocol.send_messages([game.to_dict() for game in self.games.active_games])
 
-    def command_ladder_maps(self, message):
-        maplist = message['maps']
-        toAdd = set(maplist) - set(self.ladderMapList)
-        if len(toAdd) > 0:
-            for uid in toAdd:
-                query = QSqlQuery(self.db)
-                query.prepare("INSERT INTO ladder_map_selection (idUser, idMap) values (?,?)")
-                query.addBindValue(self.player.id)
-                query.addBindValue(uid)
-                if not query.exec_():
-                    self._logger.debug(query.lastError())
-
-        toRemove = set(self.ladderMapList) - set(maplist)
-        if len(toRemove) > 0:
-            for uid in toRemove:
-                query = QSqlQuery(self.db)
-                query.prepare("DELETE FROM ladder_map_selection WHERE idUser = ? and idMap = ?")
-                query.addBindValue(self.player.id)
-                query.addBindValue(uid)
-                if not query.exec_():
-                    self._logger.debug(query.lastError())
-
-        self.ladderMapList = maplist
-
     def command_social_remove(self, message):
         query = "DELETE FROM "
         if "friend" in message:
@@ -1076,14 +1051,6 @@ Thanks,\n\
 
                 jsonToSend = {"command": "social", "friends": self.friendList}
                 self.sendJSON(jsonToSend)
-
-            query = QSqlQuery(self.db)
-            query.prepare("SELECT idMap FROM ladder_map_selection WHERE idUser = ?")
-            query.addBindValue(self.player.id)
-            query.exec_()
-            if query.size() > 0:
-                while query.next():
-                    self.ladderMapList.append(int(query.value(0)))
 
             query = QSqlQuery(self.db)
             query.prepare(

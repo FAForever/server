@@ -63,94 +63,24 @@ class Ladder1V1GamesContainer(GamesContainer):
         return trueskill.quality_1vs1(player1.ladder_rating, player2.ladder_rating)
 
     @asyncio.coroutine
-    def selected_maps(self, playerId):
-        with (yield from db.db_pool) as conn:
-            with(yield from conn.cursor()) as cursor:
-                yield from cursor.execute("SELECT idMap FROM ladder_map_selection WHERE idUser = %s", playerId)
-                return set((yield from cursor.fetchall()))
-
-    @asyncio.coroutine
-    def popular_maps(self, count=50):
-        with (yield from db.db_pool) as conn:
-            with (yield from conn.cursor()) as cursor:
-                yield from cursor.execute("SELECT `idMap` FROM `ladder_map_selection` GROUP BY `idMap` ORDER BY count(`idUser`) DESC LIMIT %i" % count)
-                return set(cursor.fetchall())
-
-    @asyncio.coroutine
-    def getMapName(self, mapId):
-        with (yield from db.db_pool) as conn:
-            with (yield from conn.cursor()) as cursor:
-                yield from cursor.execute("SELECT filename FROM table_map WHERE id = %s", (mapId))
-                (name, ) = yield from cursor.fetchone()
-                return str(name).split("/")[1].replace(".zip", "")
-
-    @asyncio.coroutine
-    def get_recent_maps(self, player1, player2, count=5):
-        """
-        Find the `count` most recently played maps from players
-        """
-        with (yield from db.db_pool) as conn:
-            with (yield from conn.cursor()) as cursor:
-                yield from cursor.execute('(SELECT game_stats.mapId FROM game_player_stats '
-                                          'INNER JOIN game_stats on game_stats.id = game_player_stats.gameId '
-                                          'WHERE game_player_stats.playerId = %s '
-                                          'ORDER BY gameId DESC LIMIT %s) '
-                                          'UNION DISTINCT '
-                                          '(SELECT game_stats.mapId FROM game_player_stats '
-                                          'INNER JOIN game_stats on game_stats.id = game_player_stats.gameId '
-                                          'WHERE game_player_stats.playerId = %s '
-                                          'ORDER BY gameID DESC LIMIT %s)', (player1.id, count, player2.id, count))
-                return set((yield from cursor.fetchall()))
-
-    @asyncio.coroutine
-    def choose_ladder_map_pool(self, player1, player2):
-        potential_maps = [
-            (yield from self.selected_maps(player1.id)),
-            (yield from self.selected_maps(player2.id)),
-            (yield from self.popular_maps())
-        ]
-
-        pool = potential_maps[0] & potential_maps[1]
-
-        if len(pool) < 15:
-            expansion_pool = random.choice(potential_maps) - pool
-            pool |= set(random.sample(expansion_pool, min(len(expansion_pool), 15 - len(pool))))
-
-        if len(pool) < 15:
-            expansion_pool = potential_maps[2] - pool
-            pool |= set(random.sample(expansion_pool, min(len(expansion_pool), 15 - len(pool))))
-
-        # Invariant: len(pool) >= 15, given that any potential pool has 15 or more
-        # Since we select from top 50 popular maps, this should hold
-
-        return pool - (yield from self.get_recent_maps(player1, player2))
-
-    @asyncio.coroutine
     def startGame(self, player1, player2):
-        gameName = str(player1.login + " Vs " + player2.login)
-        
         player1.state = PlayerState.HOSTING
-        gameid = self.games_service.createUuid()
         player2.state = PlayerState.JOINING
 
-        map_pool = yield from self.choose_ladder_map_pool(player1, player2)
+        (mapId, mapName) = random.choice(self.games_service.ladder_maps)
 
-        mapChosen = random.choice(tuple(map_pool))
-        map = yield from self.getMapName(mapChosen)
-
-        ngame = Ladder1V1Game(gameid, self)
+        ngame = Ladder1V1Game(self.games_service.createUuid(), self, self.game_service)
         ngame.game_mode = self.game_mode
         id = ngame.id
 
-        player1.setGame(id)
-        player2.setGame(id)
+        player1.game = id
+        player2.game = id
 
-        #host is player 1
-        
-        ngame.setGameMap(map)
+        # Host is player 1
+        ngame.setGameMap(mapName)
         
         ngame.host = player1
-        ngame.name = gameName
+        ngame.name = str(player1.login + " Vs " + player2.login)
 
         ngame.set_player_option(player1.id, 'StartSpot', 1)
         ngame.set_player_option(player2.id, 'StartSpot', 2)
@@ -170,10 +100,10 @@ class Ladder1V1GamesContainer(GamesContainer):
         json = {
             "command": "game_launch",
             "mod": self.game_mode,
-            "mapname":  str(map),
+            "mapname": str(map),
             "reason": "ranked",
             "uid": id,
             "args": ["/players 2", "/team 1"]
         }
-        
+
         player1.lobbyThread.sendJSON(json)

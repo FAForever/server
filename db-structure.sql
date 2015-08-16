@@ -610,23 +610,6 @@ CREATE TABLE `ladder_map` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `ladder_map_selection`
---
-
-DROP TABLE IF EXISTS `ladder_map_selection`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `ladder_map_selection` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `idUser` mediumint(8) unsigned NOT NULL,
-  `idMap` mediumint(8) unsigned NOT NULL,
-  PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE KEY `unique_pair` (`idUser`,`idMap`) USING BTREE,
-  KEY `friendCnst` (`idMap`)
-) ENGINE=InnoDB AUTO_INCREMENT=221078 DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for table `ladder_season_1`
 --
 
