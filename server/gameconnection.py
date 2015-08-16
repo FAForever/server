@@ -30,12 +30,12 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
     """
     Responsible for connections to the game, using the GPGNet protocol
     """
-    def __init__(self, loop, users, games: GameService):
+    def __init__(self, loop, player_service, games: GameService):
         """
         Construct a new GameConnection
 
         :param loop: asyncio event loop to use
-        :param users: PlayersOnline
+        :param player_service: PlayerService
         :param games: GamesService
         :return:
         """
@@ -44,7 +44,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self._logger.info('GameConnection initializing')
         self._state = GameConnectionState.INITIALIZING
         self.loop = loop
-        self.users = users
+        self.player_service = player_service
         self.games = games
 
         self.log = logging.getLogger(__name__)
@@ -114,7 +114,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         behind the same public address which would cause problems with the old design.
         """
         try:
-            self.player = self.users.players[player_id]
+            self.player = self.player_service.players[player_id]
             if self.player.session != session:
                 self.log.info("Player attempted to authenticate with game connection with mismatched id/session pair.")
                 self.abort()
