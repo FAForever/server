@@ -181,13 +181,13 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
             self.game.add_game_connection(self)
             self.game.host = self.player
             strlog = (
-                "%s.%s.%s\t" % (str(self.player.login), str(self.game.id), str(self.game.gamemod)))
+                "%s.%s.%s\t" % (str(self.player.login), str(self.game.id), str(self.game.game_mode)))
             self.logGame = strlog
             self._send_create_lobby()
 
         elif state == PlayerState.JOINING:
             strlog = (
-                "%s.%s.%s\t" % (str(self.player.login), str(self.game.id), str(self.game.gamemod)))
+                "%s.%s.%s\t" % (str(self.player.login), str(self.game.id), str(self.game.game_mode)))
             self.logGame = strlog
             self._send_create_lobby()
 
@@ -210,8 +210,8 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                           self.player.id) as peer_test:
                 peer_status = yield from peer_test.determine_connectivity()
                 self._connectivity_state.set_result(peer_status)
-                self.send_gpgnet_message('ConnectivityState', [self.player.getId(),
-                                                       self.connectivity_state.state.value])
+                self.send_gpgnet_message('ConnectivityState', [self.player.id,
+                                                               self.connectivity_state.state.value])
 
             player_state = self.player.state
             if player_state == PlayerState.HOSTING:

@@ -70,7 +70,7 @@ class Game(BaseGame):
         """
         Initializes a new game
         :type id int
-        :type host: None
+        :type host: Player
         :type hostId: int
         :type hostIp: str
         :type hostLocalIp: str
@@ -338,7 +338,7 @@ class Game(BaseGame):
                 self.mark_invalid(ValidityState.BAD_MOD)
                 break
 
-        if self.gameOptions['Victory'] != Victory.DEMORALIZATION and self.gamemod != 'coop':
+        if self.gameOptions['Victory'] != Victory.DEMORALIZATION and self.game_mode != 'coop':
             self.mark_invalid(ValidityState.WRONG_VICTORY_CONDITION)
 
         elif self.gameOptions["FogOfWar"] != "explored":
@@ -394,7 +394,7 @@ class Game(BaseGame):
             if blacklist_flag is not None:
                 self.mark_invalid(ValidityState.BAD_MAP)
 
-            modId = self.game_service.featured_mods[self.gamemod]['id']
+            modId = self.game_service.featured_mods[self.game_mode]['id']
 
             # Write out the game_stats record.
             cursor.execute("INSERT INTO game_stats(gameType, gameMod, `host`, mapId, gameName)"
@@ -416,7 +416,7 @@ class Game(BaseGame):
                 continue
 
             if options['Team'] > 0 and options['StartSpot'] >= 0:
-                if self.gamemod == 'ladder1v1':
+                if self.game_mode == 'ladder1v1':
                     mean, dev = player.ladder_rating
                 else:
                     mean, dev = player.global_rating
@@ -445,10 +445,6 @@ class Game(BaseGame):
 
     def getGamemodVersion(self):
         return self.game_service.getGamemodVersion()
-
-    @property
-    def gamemod(self):
-        return self.game_service.game_mode
 
     def mark_invalid(self, reason):
         self._logger.info("marked as invalid because: {}".format(reason))
@@ -531,7 +527,7 @@ class Game(BaseGame):
             "uid": self.id,
             "title": self.name,
             "state": client_state,
-            "featured_mod": self.gamemod,
+            "featured_mod": self.game_mode,
             "featured_mod_versions": self.getGamemodVersion(),
             "sim_mods": self.mods,
             "map_file_path": self.map_file_path.lower(),

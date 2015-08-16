@@ -277,7 +277,7 @@ def test_to_dict(game, create_player):
         "uid": game.id,
         "title": game.name,
         "state": 'closed',
-        "featured_mod": game.gamemod,
+        "featured_mod": game.game_mode,
         "featured_mod_versions": game.getGamemodVersion(),
         "sim_mods": game.mods,
         "map_file_path": game.map_file_path.lower(),
