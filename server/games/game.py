@@ -473,22 +473,25 @@ class Game(BaseGame):
                             self.get_player_option(player.id, 'Team') == team}]
         return trueskill.rate(rating_groups, ranks)
 
+    @asyncio.coroutine
     def update_ratings(self):
         """ Update all scores from the DB before updating the results"""
         self._logger.debug("updating ratings")
 
-        player_ids = map(lambda p: p.id, self.players)
+        player_ids = list(map(lambda p: p.id, self.players))
 
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute("SELECT id, mean, deviation FROM global_rating WHERE id IN (%s)", (",".join(player_ids)))
+            yield from cursor.execute("SELECT id, mean, deviation "
+                                      "FROM global_rating "
+                                      "WHERE id IN (%s)", (player_ids))
 
             rows = yield from cursor.fetchall()
             for row in rows:
-                (id, mean, deviation) = row
+                (player_id, mean, deviation) = row
 
-                self.game_service.get_player(id).global_rating = (mean, deviation)
+                self.game_service[player_id].global_rating = (mean, deviation)
 
     def to_dict(self):
         client_state = {
