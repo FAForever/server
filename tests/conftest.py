@@ -235,11 +235,9 @@ def players(create_player):
     )
 
 @pytest.fixture
-def player_service(loop, players, mock_db_pool):
+def player_service(loop, players, db_pool):
     from server import PlayerService
-    p = mock.Mock(spec=PlayerService(mock_db_pool))
-    p.find_by_ip_and_session = mock.Mock(return_value=players.hosting)
-    return p
+    return PlayerService(db_pool)
 
 @pytest.fixture
 def game_service(loop, game, players, db, mock_db_pool):
