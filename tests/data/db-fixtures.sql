@@ -4,6 +4,11 @@ use faf_test;
 delete from login;
 insert into login (id, login, password) values (1, 'test', 'test_password');
 
+-- global rating
+delete from global_rating;
+insert into global_rating (id, mean, deviation, numGames, is_active)
+values (1, 2000, 125, 5, 1);
+
 -- UniqueID_exempt
 delete from uniqueid_exempt;
 insert into uniqueid_exempt (user_id) values (1);

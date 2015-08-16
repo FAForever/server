@@ -19,8 +19,8 @@ def test_create_game(loop, players, db_pool):
     assert game is not None
     assert game in service.dirty_games
 
-def test_all_games(loop, players, db, db_pool):
-    service = GameService(players, db)
+def test_all_games(loop, players, db_pool):
+    service = GameService(players)
     game = service.create_game(visibility='public',
                                game_mode='faf',
                                host=players.hosting,
@@ -29,8 +29,8 @@ def test_all_games(loop, players, db, db_pool):
                                password=None)
     assert game in service.active_games
 
-def test_all_game_modes(loop, players, db, db_pool):
-    service = GameService(players, db)
+def test_all_game_modes(loop, players, db_pool):
+    service = GameService(players)
     game_modes = service.all_game_modes()
 
     for info in game_modes:

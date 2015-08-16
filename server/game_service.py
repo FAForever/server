@@ -1,4 +1,5 @@
 import asyncio
+from itertools import repeat
 import aiocron
 import aiomysql
 from server import games
@@ -28,6 +29,10 @@ class GameService:
 
         # The ladder map pool. Each entry is an (id, name) tuple.
         self.ladder_maps = set()
+
+        # Cached versions for files by game_mode ( featured mod name )
+        # For use by the patcher
+        self.game_mode_versions = dict()
 
         # Synchronously initialise the game-id counter and static-ish-data.
         asyncio.get_event_loop().run_until_complete(asyncio.async(self.initialise_game_counter()))
@@ -74,6 +79,21 @@ class GameService:
             # Load all ladder maps
             yield from cursor.execute("SELECT ladder_map.idmap, table_map.name FROM ladder_map INNER JOIN table_map ON table_map.id = ladder_map.idmap")
             self.ladder_maps = yield from cursor.fetchall()
+
+            for (game_mode, name, container) in games.game_modes:
+                if game_mode == 'ladder1v1':
+                    continue
+                self.game_mode_versions[game_mode] = {}
+                t = "updates_{}".format(game_mode)
+                tfiles = t + "_files"
+                yield from cursor.execute("SELECT %s.fileId, MAX(%s.version) "
+                                          "FROM %s LEFT JOIN %s ON %s.fileId = %s.id "
+                                          "GROUP BY %s.fileId" % (tfiles, tfiles, tfiles, t, tfiles, t, tfiles))
+                rows = yield from cursor.fetchall()
+                for fileId, version in rows:
+                    self.game_mode_versions[game_mode][fileId] = version
+            # meh
+            self.game_mode_versions['ladder1v1'] = self.game_mode_versions['faf']
 
     @aiocron.crontab('0 * * * *')
     @asyncio.coroutine
@@ -156,11 +176,7 @@ class GameService:
                 'name': g.game_mode,
                 'fullname': g.gameNiceName,
                 'icon': None,
-                'host': g.host,
-                'join': g.join,
-                'live': g.live,
-                'desc': g.desc,
-                'options': []
+                'desc': g.desc
             })
         return modes
 

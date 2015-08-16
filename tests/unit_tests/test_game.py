@@ -1,6 +1,5 @@
 import logging
 from unittest import mock
-from unittest.mock import patch
 import asyncio
 
 import pytest
@@ -11,10 +10,8 @@ from server.gameconnection import GameConnection, GameConnectionState
 
 
 @pytest.fixture()
-def game(db):
-    mock_parent = mock.Mock()
-    mock_parent.db = db
-    return Game(42, mock_parent)
+def game(db, game_service):
+    return Game(42, game_service)
 
 
 def test_initialization(game: Game):
@@ -128,61 +125,13 @@ def test_game_launch_freezes_players(game: Game, players):
     assert game.players == {players.hosting, players.joining}
 
 
-def test_update_ratings(game: Game, players):
-    with patch('server.games.game.QSqlQuery') as query:
-        game.state = GameState.LOBBY
-        add_connected_player(game, players.hosting)
-        query().size.return_value = 1
-        query().value.side_effect = [2000, 125]
-        game.update_ratings()
-        assert players.hosting.global_rating == (2000, 125)
-
-
-def test_persist_rating_change_stats_by_game(game: Game, players):
-    with patch('server.games.game.QSqlQuery') as query:
-        game_stats_query = mock.Mock()
-        rating_query = mock.Mock()
-        query.side_effect = [game_stats_query, rating_query]
-        game.persist_rating_change_stats([
-            {players.hosting: Rating(1500, 250)},
-            {players.joining: Rating(1250, 125)}
-        ])
-        game_stats_query.prepare.assert_any_call(mock.ANY)
-        rating_query.prepare.assert_any_call(mock.ANY)
-        # Yeeaaaahhhh....
-        (((new_means,), _),
-         ((new_deviations,), _),
-         ((game_ids,), _),
-         ((player_ids,), _)) = game_stats_query.addBindValue.call_args_list
-        assert 1500 in new_means
-        assert 1250 in new_means
-        assert 250 in new_deviations
-        assert 125 in new_deviations
-        assert game.id in game_ids
-        assert players.hosting.id in player_ids
-        assert players.joining.id in player_ids
-
-
-def test_persist_rating_change_stats_by_player(game: Game, players):
-    with patch('server.games.game.QSqlQuery') as query:
-        game_stats_query = mock.Mock()
-        rating_query = mock.Mock()
-        query.side_effect = [game_stats_query, rating_query]
-        game.persist_rating_change_stats([
-            {players.hosting: Rating(1500, 250)},
-            {players.joining: Rating(1250, 125)}
-        ])
-        rating_query.prepare.assert_any_call(mock.ANY)
-        # Yeeaaaahhhh....
-        (((new_means,), _),
-         ((new_deviations,), _),
-         ((player_ids,), _)) = rating_query.addBindValue.call_args_list
-        assert 1500 in new_means
-        assert 1250 in new_means
-        assert 250 in new_deviations
-        assert 125 in new_deviations
-        assert players.hosting.id in player_ids
-        assert players.joining.id in player_ids
+@asyncio.coroutine
+def test_update_ratings(game: Game, players, db_pool, player_service, game_service):
+    player_service.players[players.hosting.id] = players.hosting
+    game.state = GameState.LOBBY
+    add_connected_player(game, players.hosting)
+    yield from game.update_ratings()
+    assert players.hosting.global_rating == (2000, 125)
 
 
 def test_game_teams_represents_active_teams(game: Game, players):
@@ -255,6 +204,7 @@ def test_on_game_end_calls_rate_game(game):
     game.rate_game.assert_any_call()
 
 
+@asyncio.coroutine
 def test_to_dict(game, create_player):
     game.state = GameState.LOBBY
     players = [

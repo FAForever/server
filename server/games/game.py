@@ -420,10 +420,10 @@ class Game(BaseGame):
             yield from cursor.executemany(query_str, query_args)
 
     def getGamemodVersion(self):
-        return self.game_service.getGamemodVersion()
+        return self.game_service.game_mode_versions[self.game_mode]
 
     def mark_invalid(self, reason):
-        self._logger.info("marked as invalid because: {}".format(reason))
+        self._logger.info("marked as invalid because: {}".format(repr(reason)))
         self.invalidReason = reason
 
     def get_army_result(self, army):
@@ -491,7 +491,7 @@ class Game(BaseGame):
             for row in rows:
                 (player_id, mean, deviation) = row
 
-                self.game_service[player_id].global_rating = (mean, deviation)
+                self.game_service.player_service[player_id].global_rating = (mean, deviation)
 
     def to_dict(self):
         client_state = {

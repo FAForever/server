@@ -48,8 +48,8 @@ def mock_players(mock_db_pool):
     return mock.create_autospec(PlayerService(mock_db_pool))
 
 @pytest.fixture
-def mock_games(mock_players, db):
-    return mock.create_autospec(GameService(mock_players, db))
+def mock_games(mock_players):
+    return mock.create_autospec(GameService(mock_players))
 
 @pytest.fixture
 def mock_protocol():
@@ -214,16 +214,6 @@ def test_avatar_select_no_avatar(mocker, fa_server_thread):
     mocker.patch('server.lobbyconnection.QSqlQuery')
     with pytest.raises(KeyError):
         fa_server_thread.command_avatar({'action': 'select'})
-
-def test_fa_state_invalid(fa_server_thread):
-    with pytest.raises(KeyError):
-        fa_server_thread.command_ladder_maps({})
-        fa_server_thread.command_ladder_maps(None)
-
-def test_ladder_maps_invalid_message(fa_server_thread):
-    with pytest.raises(KeyError):
-        fa_server_thread.command_ladder_maps({})
-        fa_server_thread.command_ladder_maps(None)
 
 def test_send_game_list(mocker, fa_server_thread):
     protocol = mocker.patch.object(fa_server_thread, 'protocol')

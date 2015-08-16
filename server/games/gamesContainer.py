@@ -22,20 +22,6 @@ class GamesContainer(object):
 
         self._logger.debug("Initialized {}".format(nice_name))
 
-    @asyncio.coroutine
-    def getGamemodVersion(self):
-        tableMod = "updates_" + self.game_mode
-        tableModFiles = tableMod + "_files"
-        value = {}
-        with (yield from db.db_pool) as conn:
-            with (yield from conn.cursor()) as cursor:
-                cursor.execute("SELECT fileId, MAX(version) "
-                               "FROM `%s` LEFT JOIN %s ON `fileId` = %s.id "
-                               "GROUP BY fileId", (tableModFiles, tableMod, tableMod))
-                rows = yield from cursor.fetchall()
-                for fileId, version in rows:
-                    value[fileId] = version
-        return value
 
     def findGameById(self, id):
         """Find a game by the id"""
