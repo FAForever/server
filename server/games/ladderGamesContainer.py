@@ -21,8 +21,6 @@ class Ladder1V1GamesContainer(GamesContainer):
         super(Ladder1V1GamesContainer, self).__init__(name, desc, nice_name, db, games_service)
 
         self.players = []
-        self.host = False
-        self.join = False
         self.game_service = games_service
 
     @asyncio.coroutine

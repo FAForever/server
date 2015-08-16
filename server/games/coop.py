@@ -18,6 +18,3 @@ class CoopGamesContainer(GamesContainer):
 
     def __init__(self, db, desc, games_service=None,  name='coop', nice_name='coop'):
         super(CoopGamesContainer, self).__init__(name, desc, nice_name, db, games_service)
-
-        self.host = False
-        self.join = False

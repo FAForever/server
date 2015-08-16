@@ -10,10 +10,6 @@ class GamesContainer(object):
     def __init__(self, name, desc, nice_name, db, games_service=None):
         self.games = []
 
-        self.host = True
-        self.live = True
-        self.join = True
-
         self.type = 0
 
         self.desc = desc
