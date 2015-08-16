@@ -157,27 +157,9 @@ class replayServerThread(QObject):  # pragma: no cover
         for uid in missions:
             
             missionsToSend[missions[uid]["rank"]] = missions[uid] 
-            
 
         self.sendJSON(dict(command = "coop_leaderboard", table = table, mission = missionuid, leaderboard=missionsToSend))
-    
-    def command_ladder_maps(self, message): 
-        user = message["user"]        
-        query = QSqlQuery(self.parent.db)
-            
-        query.prepare("SELECT ladder_map.`idmap`, table_map.name, filename, ((SELECT idUser FROM  ladder_map_selection WHERE idMap = ladder_map.`idmap` AND idUser = (SELECT id FROM login WHERE login = ?)) is not null)FROM `ladder_map` LEFT JOIN table_map ON `idmap` = table_map.id")            
-        query.addBindValue(user)
-        query.exec_()
-        finalresult = []
-        if query.size() > 0:
-            while query.next():
-                selected = False 
-                if query.value(3) != 0:
-                    selected = True
-                finalresult.append(dict(idmap = int(query.value(0)), mapname = query.value(1), maprealname = query.value(2), selected = selected))
 
-            self.sendJSON(dict(command = "ladder_maps", values = finalresult))
-                    
     def command_stats(self, message):
 
         typeState = message['type']
@@ -332,7 +314,6 @@ class replayServerThread(QObject):  # pragma: no cover
         elif typeState == "ladder_map_stat":
             idmap = message["mapid"]
 
-            
             # get correct time : last season !
             lastSeason = self.getLastSeason()
             
