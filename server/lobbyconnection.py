@@ -1036,7 +1036,7 @@ Thanks,\n\
 
             self.protocol.send_messages(
                 [player.to_dict()
-                 for player in self.player_service]
+                 for _, player in self.player_service]
             )
 
             query = QSqlQuery(self.db)

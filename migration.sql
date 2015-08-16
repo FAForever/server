@@ -230,3 +230,6 @@ DROP TABLE ladder_map_selection;
 # Optimise all the tables we restructured (so we might recover space or be less fragmented or such)
 OPTIMIZE TABLE login;
 OPTIMIZE TABLE table_mod;
+
+# Use the right datatype...
+USE fafclans;
