@@ -114,7 +114,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         behind the same public address which would cause problems with the old design.
         """
         try:
-            self.player = self.player_service.players[player_id]
+            self.player = self.player_service[player_id]
             if self.player.session != session:
                 self.log.info("Player attempted to authenticate with game connection with mismatched id/session pair.")
                 self.abort()
