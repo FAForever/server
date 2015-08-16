@@ -250,11 +250,12 @@ def test_command_admin_closelobby(mocker, fa_server_thread):
     player.login = 'Sheeo'
     tuna = mock.Mock()
     tuna.id = 55
+    fa_server_thread.players = {1: player, 55: tuna}
 
     fa_server_thread.command_admin({
         'command': 'admin',
         'action': 'closelobby',
-        'player_id': '55'
+        'user_id': 55
     })
 
     tuna.lobbyThread.sendJSON.assert_any_call(dict(
@@ -274,11 +275,12 @@ def test_command_admin_closeFA(mocker, fa_server_thread):
     player.id = 42
     tuna = mock.Mock()
     tuna.id = 55
+    fa_server_thread.players = {42: player, 55: tuna}
 
     fa_server_thread.command_admin({
         'command': 'admin',
         'action': 'closeFA',
-        'user_id': '55'
+        'user_id': 55
     })
 
     tuna.lobbyThread.sendJSON.assert_any_call(dict(

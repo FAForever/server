@@ -240,8 +240,6 @@ def player_service(loop, players, db_pool):
     return PlayerService(db_pool)
 
 @pytest.fixture
-def game_service(loop, game, players, db, mock_db_pool):
+def game_service(loop, player_service, db):
     from server import GameService
-    service = mock.create_autospec(GameService(players, db))
-    service.find_by_id.return_value = game
-    return service
+    return GameService(player_service, db)

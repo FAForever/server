@@ -624,7 +624,7 @@ Thanks,\n\
 
         if self.player.admin:
             if action == "closeFA":
-                player = self.players.get_player(message['user_id'])
+                player = self.players[message['user_id']]
                 if player:
                     self._logger.info('Administrative action: {} closed game for {}'.format(self.player, player))
                     player.lobbyThread.sendJSON(dict(command="notice", style="info",
@@ -635,7 +635,7 @@ Thanks,\n\
                     player.lobbyThread.sendJSON(dict(command="notice", style="kill"))
 
             elif action == "closelobby":
-                player = self.players.get_player(message['user_id'])
+                player = self.players[message['user_id']]
                 if player:
                     self._logger.info('Administrative action: {} closed game for {}'.format(self.player, player))
                     player.lobbyThread.sendJSON(dict(command="notice", style="info",
