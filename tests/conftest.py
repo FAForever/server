@@ -240,6 +240,6 @@ def player_service(loop, players, db_pool):
     return PlayerService(db_pool)
 
 @pytest.fixture
-def game_service(loop, player_service, db):
+def game_service(loop, player_service):
     from server import GameService
-    return GameService(player_service, db)
+    return GameService(player_service)

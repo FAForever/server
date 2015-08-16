@@ -93,7 +93,7 @@ if __name__ == '__main__':
         db_pool = loop.run_until_complete(pool_fut)
 
         players_online = PlayerService(db_pool)
-        games = GameService(players_online, db)
+        games = GameService(players_online)
 
         ctrl_server = loop.run_until_complete(server.run_control_server(loop, players_online, games))
 

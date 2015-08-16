@@ -2,7 +2,6 @@ from enum import IntEnum, unique
 import logging
 import time
 
-from PySide.QtSql import QSqlQuery
 import functools
 import trueskill
 import server.db as db
@@ -82,7 +81,6 @@ class Game(BaseGame):
         :return: Game
         """
         self._results = {}
-        self.db = game_service.db
         self.game_service = game_service
         self._player_options = {}
         self.launched_at = None
@@ -242,31 +240,17 @@ class Game(BaseGame):
             for player, new_rating in team.items()
         }
 
-        game_stats_query = QSqlQuery(self.db)
-        game_stats_query.prepare("UPDATE game_player_stats "
-                                 "SET after_mean = ?, after_deviation = ?, scoreTime = NOW() "
-                                 "WHERE gameId = ? AND playerId = ?")
-        rating_query = QSqlQuery(self.db)
-        rating_query.prepare("UPDATE {}_rating "
-                             "SET mean = ?, is_active=1, deviation = ?, numGames = (numGames + 1) "
-                             "WHERE id = ?".format(rating))
-        results = [[], [], [], []]
-        for player, new_rating in new_ratings.items():
-            results[0] += [new_rating.mu]
-            results[1] += [new_rating.sigma]
-            results[2] += [self.id]
-            results[3] += [player.id]
-        for col in results:
-            game_stats_query.addBindValue(col)
+        with (yield from db.db_pool) as conn:
+            cursor = yield from conn.cursor()
 
-        for col in [results[0], results[1], results[3]]:
-            rating_query.addBindValue(col)
+            for player, new_rating in new_ratings.items():
+                yield from cursor.execute("UPDATE game_player_stats "
+                                          "SET after_mean = ?, after_deviation = ?, scoreTime = NOW() "
+                                          "WHERE gameId = ? AND playerId = ?", new_rating.mu, new_rating.sigma, self.id, player.id)
 
-        if not game_stats_query.execBatch():
-            self._logger.critical("Error persisting ratings to game_player_stats: {}".format(game_stats_query.lastError()))
-
-        if not rating_query.execBatch():
-            self._logger.critical("Error persisting ratings to {}_rating: {}".format(rating, game_stats_query.lastError()))
+                yield from cursor.execute("UPDATE {}_rating "
+                                          "SET mean = ?, is_active=1, deviation = ?, numGames = (numGames + 1) "
+                                          "WHERE id = ?".format(rating), new_rating.mu, new_rating.sigma, player.id)
 
     def set_player_option(self, id, key, value):
         """
@@ -488,18 +472,19 @@ class Game(BaseGame):
     def update_ratings(self):
         """ Update all scores from the DB before updating the results"""
         self._logger.debug("updating ratings")
-        for player in self.players:
-            query = QSqlQuery(self.db)
-            query.prepare(
-                "SELECT mean, deviation FROM global_rating WHERE id = ?")
-            query.addBindValue(player.id)
-            query.exec_()
-            if query.size() > 0:
-                query.first()
-                player.global_rating = (query.value(0), query.value(1))
-            else:
-                self._logger.debug("error updating a player")
-                self._logger.debug(player.id)
+
+        player_ids = map(lambda p: p.id, self.players)
+
+        with (yield from db.db_pool) as conn:
+            cursor = yield from conn.cursor()
+
+            yield from cursor.execute("SELECT id, mean, deviation FROM global_rating WHERE id IN (%s)", (",".join(player_ids)))
+
+            rows = yield from cursor.fetchall()
+            for row in rows:
+                (id, mean, deviation) = row
+
+                self.game_service.get_player(id).global_rating = (mean, deviation)
 
     def to_dict(self):
         client_state = {
