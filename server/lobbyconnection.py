@@ -1288,7 +1288,7 @@ Thanks,\n\
         if not self.search:
             self.search = Search(self.player)
 
-        container = self.game_service.getContainer(mod)
+        container = self.game_service.ladder_service
         if container is not None:
             if mod == "ladder1v1":
                 if state == "stop":

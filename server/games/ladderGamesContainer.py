@@ -1,25 +1,20 @@
 import random
 
 
-from PySide.QtSql import QSqlQuery
 import asyncio
 import trueskill
 import config
 
-from .gamesContainer import  GamesContainer
 from .ladderGame import Ladder1V1Game
-import server
 from server.players import Player, PlayerState
 import server.db as db
 
 
-class Ladder1V1GamesContainer(GamesContainer):
+class Ladder1V1GamesContainer:
     """Class for 1vs1 ladder games"""
     listable = False
 
     def __init__(self, games_service, desc, name='ladder1v1', nice_name='ladder 1 vs 1'):
-        super(Ladder1V1GamesContainer, self).__init__(name, desc, nice_name, games_service)
-
         self.players = []
         self.game_service = games_service
 
@@ -68,7 +63,6 @@ class Ladder1V1GamesContainer(GamesContainer):
         (mapId, mapName) = random.choice(self.game_service.ladder_maps)
 
         ngame = Ladder1V1Game(self.game_service.createUuid(), self, self.game_service)
-        ngame.game_mode = self.game_mode
         id = ngame.id
 
         player1.game = id
@@ -92,12 +86,10 @@ class Ladder1V1GamesContainer(GamesContainer):
 
         # player 2 will be in game
         
-        self.addGame(ngame)
-
         #warn both players
         json = {
             "command": "game_launch",
-            "mod": self.game_mode,
+            "mod": ngame.game_mode,
             "mapname": mapName,
             "mapid": mapId,
             "reason": "ranked",

@@ -16,10 +16,3 @@ def test_start_game_uses_map_from_mappool(container: Ladder1V1GamesContainer, la
     yield from container.startGame(ladder_setup['player1'], ladder_setup['player2'])
     args, kwargs = lobbythread.sendJSON.call_args
     assert (args[0]['mapid'], args[0]['mapname']) in ladder_setup['map_pool']
-
-@asyncio.coroutine
-def test_keeps_track_of_started_games(container, ladder_setup, game_service):
-    game_service.ladder_maps = ladder_setup['map_pool']
-
-    yield from container.startGame(ladder_setup['player1'], ladder_setup['player2'])
-    assert len(container.games) == 1

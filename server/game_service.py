@@ -1,11 +1,10 @@
 import asyncio
 import aiocron
-import aiomysql
 
 import server.db as db
-from server import games, GameState
+from server import GameState
 from server.decorators import with_logger
-from server.games import FeaturedMod
+from server.games import FeaturedMod, Ladder1V1GamesContainer
 from server.games.game import Game
 from server.players import Player
 from passwords import DB_NAME
@@ -28,6 +27,9 @@ class GameService:
 
         # The ladder map pool. Each entry is an (id, name) tuple.
         self.ladder_maps = set()
+
+        # Temporary proxy for the ladder service
+        self.ladder_service = None
 
         # The set of active games
         self.games = dict()
@@ -88,6 +90,9 @@ class GameService:
                     self.game_mode_versions[mod.name][fileId] = version
             # meh
             self.game_mode_versions['ladder1v1'] = self.game_mode_versions['faf']
+
+            # meh meh
+            self.ladder_service = Ladder1V1GamesContainer(self, self.featured_mods['ladder1v1'].description)
 
     @aiocron.crontab('0 * * * *')
     @asyncio.coroutine
