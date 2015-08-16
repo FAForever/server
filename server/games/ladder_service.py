@@ -5,7 +5,7 @@ import asyncio
 import trueskill
 import config
 
-from .ladderGame import Ladder1V1Game
+from .ladder_game import LadderGame
 from server.players import Player, PlayerState
 import server.db as db
 
@@ -62,7 +62,7 @@ class LadderService:
 
         (mapId, mapName) = random.choice(self.game_service.ladder_maps)
 
-        ngame = Ladder1V1Game(self.game_service.createUuid(), self, self.game_service)
+        ngame = LadderGame(self.game_service.createUuid(), self, self.game_service)
         id = ngame.id
 
         player1.game = id
