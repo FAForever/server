@@ -44,10 +44,10 @@ class LadderService:
             mean, deviation = player.ladder_rating
 
             if deviation > 490:
-                player.lobbyThread.sendJSON(dict(command="notice", style="info", text="<i>Welcome to the matchmaker system.</i><br><br><b>You will be randomnly matched until the system learn and know enough about you.</b><br>After that, you will be only matched against someone of your level.<br><br><b>So don't worry if your first games are uneven, this will get better over time !</b>"))
+                player.lobby_connection.sendJSON(dict(command="notice", style="info", text="<i>Welcome to the matchmaker system.</i><br><br><b>You will be randomnly matched until the system learn and know enough about you.</b><br>After that, you will be only matched against someone of your level.<br><br><b>So don't worry if your first games are uneven, this will get better over time !</b>"))
             elif deviation > 250:
                 progress = (500.0 - deviation) / 2.5
-                player.lobbyThread.sendJSON(dict(command="notice", style="info", text="The system is still learning you. <b><br><br>The learning phase is " + str(progress)+"% complete<b>"))
+                player.lobby_connection.sendJSON(dict(command="notice", style="info", text="The system is still learning you. <b><br><br>The learning phase is " + str(progress)+"% complete<b>"))
             
             return 1
         return 0
@@ -97,4 +97,4 @@ class LadderService:
             "args": ["/players 2", "/team 1"]
         }
 
-        player1.lobbyThread.sendJSON(json)
+        player1.lobby_connection.sendJSON(json)

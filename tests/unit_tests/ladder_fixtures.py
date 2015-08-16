@@ -17,7 +17,7 @@ def playerMock(lobbythread, id):
     player_mock.login = "Player %s" % id
     player_mock.id = id
     player_mock.game_port = 4242
-    player_mock.lobbyThread = lobbythread
+    player_mock.lobby_connection = lobbythread
     return player_mock
 
 

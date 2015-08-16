@@ -249,7 +249,7 @@ def test_command_admin_closelobby(mocker, fa_server_thread):
         'user_id': 55
     })
 
-    tuna.lobbyThread.sendJSON.assert_any_call(dict(
+    tuna.lobby_connection.sendJSON.assert_any_call(dict(
         command='notice',
         style='info',
         text=("Your client was closed by an administrator (Sheeo). "
@@ -274,7 +274,7 @@ def test_command_admin_closeFA(mocker, fa_server_thread):
         'user_id': 55
     })
 
-    tuna.lobbyThread.sendJSON.assert_any_call(dict(
+    tuna.lobby_connection.sendJSON.assert_any_call(dict(
         command='notice',
         style='info',
         text=("Your game was closed by an administrator (Sheeo). "
