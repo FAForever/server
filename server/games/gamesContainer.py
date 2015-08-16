@@ -1,13 +1,13 @@
-from PySide import QtSql
+import asyncio
+import server.db as db
 from server.decorators import with_logger
-
 
 @with_logger
 class GamesContainer(object):
     """Class for containing games"""
     listable = True
 
-    def __init__(self, name, desc, nice_name, db, games_service=None):
+    def __init__(self, name, desc, nice_name, games_service=None):
         self.games = []
 
         self.type = 0
@@ -20,20 +20,21 @@ class GamesContainer(object):
 
         self.options = []
 
-        self.db = db
         self._logger.debug("Initialized {}".format(nice_name))
 
+    @asyncio.coroutine
     def getGamemodVersion(self):
         tableMod = "updates_" + self.game_mode
         tableModFiles = tableMod + "_files"
         value = {}
-        query = QtSql.QSqlQuery(self.db)
-        query.prepare("SELECT fileId, MAX(version) FROM `%s` LEFT JOIN %s ON `fileId` = %s.id GROUP BY fileId" % (tableModFiles, tableMod, tableMod))
-        query.exec_()
-        if query.size() != 0:
-            while query.next():
-                value[int(query.value(0))] = int(query.value(1)) 
-        
+        with (yield from db.db_pool) as conn:
+            with (yield from conn.cursor()) as cursor:
+                cursor.execute("SELECT fileId, MAX(version) "
+                               "FROM `%s` LEFT JOIN %s ON `fileId` = %s.id "
+                               "GROUP BY fileId", (tableModFiles, tableMod, tableMod))
+                rows = yield from cursor.fetchall()
+                for fileId, version in rows:
+                    value[fileId] = version
         return value
 
     def findGameById(self, id):
