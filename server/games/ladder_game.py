@@ -14,12 +14,11 @@ class LadderGame(Game):
     """Class for 1v1 ladder game"""
     init_mode = InitMode.AUTO_LOBBY
     
-    def __init__(self, id, container, game_service = None):
+    def __init__(self, id, game_service=None):
         super(self.__class__, self).__init__(id, game_service)
 
         self.hosted = False
-        self.container = container
-        
+
         self.results = []
         self.playerToJoin = None
         self.max_players = 2
@@ -34,7 +33,7 @@ class LadderGame(Game):
             
             json = {
                 "command": "game_launch",
-                "featured_mod": self.container.game_mode,
+                "featured_mod": self.game_mode,
                 "reason": "ranked",
                 "uid": self.id,
                 "mapname": map,

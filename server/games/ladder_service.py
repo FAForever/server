@@ -62,7 +62,7 @@ class LadderService:
 
         (mapId, mapName) = random.choice(self.game_service.ladder_maps)
 
-        ngame = LadderGame(self.game_service.createUuid(), self, self.game_service)
+        ngame = LadderGame(self.game_service.createUuid(), self.game_service)
         id = ngame.id
 
         player1.game = id
