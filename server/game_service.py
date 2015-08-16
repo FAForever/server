@@ -74,8 +74,7 @@ class GameService:
 
             # Load all ladder maps
             yield from cursor.execute("SELECT ladder_map.idmap, table_map.name FROM ladder_map INNER JOIN table_map ON table_map.id = ladder_map.idmap")
-            rows = yield from cursor.fetchall()
-            self.ladder_maps = set(rows)
+            self.ladder_maps = yield from cursor.fetchall()
 
     @aiocron.crontab('0 * * * *')
     @asyncio.coroutine

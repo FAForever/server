@@ -23,7 +23,7 @@ class Ladder1V1GamesContainer(GamesContainer):
         self.players = []
         self.host = False
         self.join = False
-        self.games_service = games_service
+        self.game_service = games_service
 
     @asyncio.coroutine
     def getLeague(self, season, player):
@@ -67,9 +67,9 @@ class Ladder1V1GamesContainer(GamesContainer):
         player1.state = PlayerState.HOSTING
         player2.state = PlayerState.JOINING
 
-        (mapId, mapName) = random.choice(self.games_service.ladder_maps)
+        (mapId, mapName) = random.choice(self.game_service.ladder_maps)
 
-        ngame = Ladder1V1Game(self.games_service.createUuid(), self, self.game_service)
+        ngame = Ladder1V1Game(self.game_service.createUuid(), self, self.game_service)
         ngame.game_mode = self.game_mode
         id = ngame.id
 
@@ -100,7 +100,8 @@ class Ladder1V1GamesContainer(GamesContainer):
         json = {
             "command": "game_launch",
             "mod": self.game_mode,
-            "mapname": str(map),
+            "mapname": mapName,
+            "mapid": mapId,
             "reason": "ranked",
             "uid": id,
             "args": ["/players 2", "/team 1"]
