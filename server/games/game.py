@@ -401,47 +401,35 @@ class Game(BaseGame):
                            "VALUES(%s, %s, %s, %s, %s)", self.gameType, modId, self.host.id, mapId, self.name)
 
     def update_game_player_stats(self):
-        queryStr = ""
-        bind_values = []
+        query_str = "INSERT INTO `game_player_stats` "\
+                   "(`gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) "\
+                   "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+
+        query_args = []
         for player in self.players:
             player_option = functools.partial(self.get_player_option, player.id)
             options = {key: player_option(key)
                        for key in ['Team', 'StartSpot', 'Color', 'Faction']}
-            valid = True
-            for key, val in options.items():
-                if val is None:
-                    self._logger.error("PlayerOption {} not set for {}".format(key, player))
-                    valid = False
-            if not valid:
-                continue
 
             if options['Team'] > 0 and options['StartSpot'] >= 0:
                 if self.game_mode == 'ladder1v1':
                     mean, dev = player.ladder_rating
                 else:
                     mean, dev = player.global_rating
-                queryStr += ("INSERT INTO `game_player_stats` "
-                             "(`gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) "
-                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?);")
-                bind_values += [self.id,
-                                str(player.id),
-                                options['Faction'],
-                                options['Color'],
-                                options['Team'],
-                                options['StartSpot'],
-                                mean,
-                                dev]
 
-        if queryStr != "":
-            query = QSqlQuery(self.game_service.db)
-            query.prepare(queryStr)
-            for val in bind_values:
-                query.addBindValue(val)
-            if not query.exec_():
-                self._logger.error(query.lastError())
-                self._logger.error(queryStr)
-        else:
-            self._logger.error("No player stat :(")
+                query_args += (self.id,
+                               str(player.id),
+                               options['Faction'],
+                               options['Color'],
+                               options['Team'],
+                               options['StartSpot'],
+                               mean,
+                               dev)
+
+        with (yield from db.db_pool) as conn:
+            cursor = yield from conn.cursor()
+
+            yield from cursor.executemany(query_str, query_args)
 
     def getGamemodVersion(self):
         return self.game_service.getGamemodVersion()

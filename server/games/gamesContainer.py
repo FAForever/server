@@ -47,5 +47,4 @@ class GamesContainer(object):
         """Add a game to the list"""
         if not game in self.games:
             self.games.append(game)
-            return 1
-        return 0
+
