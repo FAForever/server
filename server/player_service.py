@@ -75,28 +75,6 @@ class PlayerService(object):
     def remove_player(self, player):
         del self.players[player.id]
 
-    # DEPRECATED: All uses are being obsoleted by client protocol changes that cause ids to be sent
-    # instead of names, so this is going away soon.
-    #
-    # Get a player ID given the name. Checks the in-memory player list first, and falls back to a
-    # database query should the user be offline (generally should be used for things like the friend
-    # list where you expect the user should be online, and will only be offline if a rare race
-    # condition occurs)
-    def get_player_id(self, name):
-        online = self.findByName(name)
-        if online:
-            return online
-
-        with (yield from self.db_pool) as conn:
-            cursor = yield from conn.cursor()
-
-            yield from cursor.execute("SELECT id FROM login WHERE login = %s", name)
-            if cursor.rowcount != 1:
-                return 0
-            else:
-                id = yield from cursor.fetchone()
-                return id
-
     def get_permission_group(self, user_id):
         return self.privileged_users.get(user_id, 0)
 
@@ -105,6 +83,10 @@ class PlayerService(object):
 
     def has_blacklisted_domain(self, email):
         return len(self.blacklisted_email_domains.keys(email[::-1])) != 0
+
+    def get_player(self, player_id):
+        if player_id in self.players:
+            return self.players[player_id]
 
     @asyncio.coroutine
     def really_update_static_ish_data(self):
@@ -140,10 +122,3 @@ class PlayerService(object):
     @asyncio.coroutine
     def update_static_ish_data(self):
         self.really_update_static_ish_data()
-
-    # DEPRECATED: All uses are being obsoleted by client protocol changes that cause ids to be sent
-    # instead of names, so this is going away soon.
-    def findByName(self, name):
-        for player in self.players:
-            if player.login == name:
-                return player

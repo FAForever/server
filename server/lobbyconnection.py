@@ -607,10 +607,10 @@ Thanks,\n\
         query = "DELETE FROM "
         if "friend" in message:
             query += "friends WHERE idFriend"
-            target = message['friend']
+            target_id = message['friend']
         elif "foe" in message:
             query += "foes WHERE idFoe"
-            target = message['foe']
+            target_id = message['foe']
         else:
             self._logger.info("No-op social_remove ignored.")
             return
@@ -620,7 +620,7 @@ Thanks,\n\
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute(query, self.players.get_player_id(target).id, self.player.id)
+            yield from cursor.execute(query, target_id, self.player.id)
 
     @timed()
     @asyncio.coroutine
@@ -628,10 +628,10 @@ Thanks,\n\
         query = "INSERT INTO "
         if "friend" in message:
             query += "friends (idUser, idFriend)"
-            target = message['friend']
+            target_id = message['friend']
         elif "foe" in message:
             query += "foes (idUser, idFoe)"
-            target = message['foe']
+            target_id = message['foe']
         else:
             self._logger.info("No-op social_add ignored.")
             return
@@ -641,7 +641,7 @@ Thanks,\n\
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute(query, self.player.id, self.players.get_player_id(target))
+            yield from cursor.execute(query, self.player.id, target_id)
 
     @timed()
     def command_admin(self, message):
@@ -649,9 +649,7 @@ Thanks,\n\
 
         if self.player.admin:
             if action == "closeFA":
-                who = message['user']
-
-                player = self.players.findByName(who)
+                player = self.players.get_player(message['user_id'])
                 if player:
                     self._logger.info('Administrative action: {} closed game for {}'.format(self.player, player))
                     player.lobbyThread.sendJSON(dict(command="notice", style="info",
@@ -662,9 +660,7 @@ Thanks,\n\
                     player.lobbyThread.sendJSON(dict(command="notice", style="kill"))
 
             elif action == "closelobby":
-                who = message['user']
-
-                player = self.players.findByName(who)
+                player = self.players.get_player(message['user_id'])
                 if player:
                     self._logger.info('Administrative action: {} closed game for {}'.format(self.player, player))
                     player.lobbyThread.sendJSON(dict(command="notice", style="info",
@@ -734,11 +730,11 @@ Thanks,\n\
                     query.exec_()
         elif self.player.mod:
             if action == "join_channel":
-                whos = message['users']
+                user_ids = message['user_ids']
                 channel = message['channel']
 
-                for who in whos:
-                    player = self.players.findByName(who)
+                for user_id in user_ids:
+                    player = self.players.get_player(message[user_id])
                     if player:
                         player.lobbyThread.sendJSON(dict(command="social", autojoin=[channel]))
 

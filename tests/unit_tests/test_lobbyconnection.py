@@ -258,15 +258,14 @@ def test_command_admin_closelobby(mocker, fa_server_thread):
     mocker.patch.object(fa_server_thread, '_logger')
     config = mocker.patch('server.lobbyconnection.config')
     player = mocker.patch.object(fa_server_thread, 'player')
-    players = mocker.patch.object(fa_server_thread, 'players')
     player.login = 'Sheeo'
     tuna = mock.Mock()
-    players.findByName.return_value = tuna
+    tuna.id = 55
 
     fa_server_thread.command_admin({
         'command': 'admin',
         'action': 'closelobby',
-        'user': 'Totaltuna'
+        'player_id': '55'
     })
 
     tuna.lobbyThread.sendJSON.assert_any_call(dict(
@@ -282,18 +281,15 @@ def test_command_admin_closeFA(mocker, fa_server_thread):
     mocker.patch.object(fa_server_thread, '_logger')
     config = mocker.patch('server.lobbyconnection.config')
     player = mocker.patch.object(fa_server_thread, 'player')
-    players = mocker.patch.object(fa_server_thread, 'players')
     player.login = 'Sheeo'
     player.id = 42
     tuna = mock.Mock()
-    tuna.login = 'Totaltuna'
     tuna.id = 55
-    players.findByName.return_value = tuna
 
     fa_server_thread.command_admin({
         'command': 'admin',
         'action': 'closeFA',
-        'user': 'Totaltuna'
+        'user_id': '55'
     })
 
     tuna.lobbyThread.sendJSON.assert_any_call(dict(
