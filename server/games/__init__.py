@@ -18,6 +18,5 @@ game_modes = [
     ('civilians', 'Civilians Defense', GamesContainer),
     ('koth', 'King of the Hill', GamesContainer),
     ('claustrophobia', 'Claustrophobia', GamesContainer),
-    ('supremedestruction', 'Supreme Destruction', GamesContainer),
     ('coop', 'coop', CoopGamesContainer),
 ]
