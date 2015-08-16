@@ -15,9 +15,9 @@ class GameService:
     """
     Utility class for maintaining lifecycle of games
     """
-    def __init__(self, players):
+    def __init__(self, player_service):
         self._dirty_games = set()
-        self.players = players
+        self.player_service = player_service
         self.game_id_counter = 0
 
         # Populated below in really_update_static_ish_data.
