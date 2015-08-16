@@ -3,6 +3,7 @@ import logging
 import time
 
 import functools
+import asyncio
 import trueskill
 import server.db as db
 from server.proxy_map import ProxyMap
@@ -198,6 +199,7 @@ class Game(BaseGame):
         self.persist_results()
         self.rate_game()
 
+    @asyncio.coroutine
     def persist_results(self):
         """
         Persist game results into the database
@@ -227,6 +229,7 @@ class Game(BaseGame):
             yield from cursor.executemany("INSERT INTO game_player_stats (gameId, playerId, score, scoreTime) "
                                           "VALUES (%s, %s, %s, NOW())", rows)
 
+    @asyncio.coroutine
     def persist_rating_change_stats(self, rating_groups, rating='global'):
         """
         Persist computed ratings to the respective players' selected rating
@@ -362,6 +365,7 @@ class Game(BaseGame):
         self.update_game_stats()
         self.update_game_player_stats()
 
+    @asyncio.coroutine
     def update_game_stats(self):
         """
         Runs at game-start to populate the game_stats table (games that start are ones we actually
