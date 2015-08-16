@@ -17,8 +17,8 @@ class Ladder1V1GamesContainer(GamesContainer):
     """Class for 1vs1 ladder games"""
     listable = False
 
-    def __init__(self, db, games_service, name='ladder1v1', nice_name='ladder 1 vs 1'):
-        super(Ladder1V1GamesContainer, self).__init__(name, nice_name, db, games_service)
+    def __init__(self, db, games_service, desc, name='ladder1v1', nice_name='ladder 1 vs 1'):
+        super(Ladder1V1GamesContainer, self).__init__(name, desc, nice_name, db, games_service)
 
         self.players = []
         self.host = False
