@@ -45,7 +45,7 @@ values
 -- featured mods
 delete from game_featuredMods;
 insert into game_featuredMods (id, gamemod, name, description, publish)
-values (1, 'faf', 'faf', 'Forged ALliance Forever', 1);
+values (1, 'faf', 'FAF', 'Forged Alliance Forever', 1);
 
 delete from friends;
 insert into friends (idUser, idFriend)

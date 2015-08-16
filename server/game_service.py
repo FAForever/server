@@ -3,8 +3,9 @@ import aiocron
 import aiomysql
 
 import server.db as db
-from server import games
+from server import games, GameState
 from server.decorators import with_logger
+from server.games import FeaturedMod
 from server.games.game import Game
 from server.players import Player
 from passwords import DB_NAME
@@ -40,7 +41,6 @@ class GameService:
         asyncio.get_event_loop().run_until_complete(asyncio.async(self.really_update_static_ish_data()))
 
         self._containers = {}
-        self.add_game_modes()
 
     @asyncio.coroutine
     def initialise_game_counter(self):
@@ -56,21 +56,14 @@ class GameService:
         time we need, but which can in principle change over time.
         """
         with (yield from db.db_pool) as conn:
-            cursor = yield from conn.cursor(aiomysql.DictCursor)
+            cursor = yield from conn.cursor()
 
-            # Load the featured mods table into memory (the bits of it we care about).
-            featured_mods = dict()
-
-            yield from cursor.execute("SELECT id, gamemod, description, name FROM game_featuredMods")
+            yield from cursor.execute("SELECT gamemod, `name`, description, publish FROM game_featuredMods")
 
             for i in range(0, cursor.rowcount):
-                row = yield from cursor.fetchone()
-                featured_mods[row["gamemod"]] = row
+                name, full_name, description, publish = yield from cursor.fetchone()
+                self.featured_mods[name] = FeaturedMod(name, full_name, description, publish)
 
-            self.featured_mods = featured_mods
-
-            # Get an ordinary cursor back.
-            cursor = yield from conn.cursor()
             yield from cursor.execute("SELECT id FROM table_mod WHERE ranked = 1")
 
             # Turn resultset into a list of ids
@@ -81,18 +74,18 @@ class GameService:
             yield from cursor.execute("SELECT ladder_map.idmap, table_map.name FROM ladder_map INNER JOIN table_map ON table_map.id = ladder_map.idmap")
             self.ladder_maps = yield from cursor.fetchall()
 
-            for (game_mode, name, container) in games.game_modes:
-                if game_mode == 'ladder1v1':
+            for mod in self.featured_mods.values():
+                if mod.name == 'ladder1v1':
                     continue
-                self.game_mode_versions[game_mode] = {}
-                t = "updates_{}".format(game_mode)
+                self.game_mode_versions[mod.name] = {}
+                t = "updates_{}".format(mod.name)
                 tfiles = t + "_files"
                 yield from cursor.execute("SELECT %s.fileId, MAX(%s.version) "
                                           "FROM %s LEFT JOIN %s ON %s.fileId = %s.id "
                                           "GROUP BY %s.fileId" % (tfiles, tfiles, tfiles, t, tfiles, t, tfiles))
                 rows = yield from cursor.fetchall()
                 for fileId, version in rows:
-                    self.game_mode_versions[game_mode][fileId] = version
+                    self.game_mode_versions[mod.name][fileId] = version
             # meh
             self.game_mode_versions['ladder1v1'] = self.game_mode_versions['faf']
 
@@ -111,17 +104,6 @@ class GameService:
     def clear_dirty(self):
         self._dirty_games = set()
 
-    def add_game_modes(self):
-        for name, nice_name, container in games.game_modes:
-            if name not in self.featured_mods:
-                continue
-            mode_description = self.featured_mods[name]['description']
-
-            self._containers[name] = container(name=name,
-                                               desc=mode_description,
-                                               nice_name=nice_name,
-                                               games_service=self)
-
     # This is still used by ladderGamesContainer: refactoring to make this interaction less
     # ugly would be nice.
     def createUuid(self):
@@ -139,12 +121,11 @@ class GameService:
         """
         Main entrypoint for creating new games
         """
-        game = Game(self.createUuid(), self, host, name, mapname)
-        self.games[game.id] = game
-        game.game_mode = game_mode
-        self._containers[game_mode].addGame(game)
+        id = self.createUuid()
+        game = Game(id, self, host, name, mapname, game_mode=game_mode)
+        self.games[id] = game
 
-        self._logger.info("{} created in {} container".format(game, game_mode))
+        self._logger.info("{} created".format(game))
         game.access = visibility
 
         if password is not None:
@@ -159,11 +140,14 @@ class GameService:
         return None
 
     @property
-    def active_games(self):
-        games = []
-        for c, g in self._containers.items():
-            games += g.games
-        return games
+    def live_games(self):
+        return [game for game in self.games.values()
+                if game.state == GameState.LIVE]
+
+    @property
+    def pending_games(self):
+        return [game for game in self.games.values()
+                if game.state == GameState.LOBBY or game.state == GameState.INITIALIZING]
 
     def remove_game(self, game: Game):
         for c, g in self._containers.items():
@@ -171,16 +155,16 @@ class GameService:
                 g.games.remove(game)
 
     def all_game_modes(self):
-        modes = []
-        for c, g in self._containers.items():
-            modes.append({
+        mods = []
+        for name, mod in self.featured_mods.items():
+            mods.append({
                 'command': 'mod_info',
-                'name': g.game_mode,
-                'fullname': g.gameNiceName,
+                'name': name,
+                'fullname': mod.full_name,
                 'icon': None,
-                'desc': g.desc
+                'desc': mod.description
             })
-        return modes
+        return mods
 
     def __getitem__(self, item):
         return self.games[item]

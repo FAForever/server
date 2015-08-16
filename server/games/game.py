@@ -66,19 +66,13 @@ class Game(BaseGame):
     def __init__(self, id, game_service,
                  host=None,
                  name='None',
-                 map='SCMP_007'):
+                 map='SCMP_007',
+                 game_mode='faf'):
         """
         Initializes a new game
         :type id int
-        :type host: Player
-        :type hostId: int
-        :type hostIp: str
-        :type hostLocalIp: str
-        :type hostPort: int
-        :type state: str
         :type name: str
         :type map: str
-        :type mode: int
         :return: Game
         """
         self._results = {}
@@ -99,8 +93,7 @@ class Game(BaseGame):
         self.AIs = {}
         self.desyncs = 0
         self.validity = ValidityState.VALID
-        # Isn't this really a property of the game container?
-        self.game_mode = 'faf'
+        self.game_mode = game_mode
         self.state = GameState.INITIALIZING
         self.proxy_map = ProxyMap()
         self._connections = {}

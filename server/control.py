@@ -19,8 +19,8 @@ Games ({}):
 {}
     """.format(len(player_service.players),
                player_service.players,
-               len(game_service.active_games),
-               game_service.active_games)
+               len(game_service.live_games),
+               game_service.live_games)
         return web.Response(body=body.encode('utf-8'))
     return handler
 

@@ -576,7 +576,7 @@ Thanks,\n\
 
     @timed()
     def send_game_list(self):
-        self.protocol.send_messages([game.to_dict() for game in self.game_service.active_games])
+        self.protocol.send_messages([game.to_dict() for game in self.game_service.live_games])
 
     def command_social_remove(self, message):
         query = "DELETE FROM "

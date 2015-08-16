@@ -27,12 +27,4 @@ def test_all_games(loop, players, db_pool):
                                name='Test',
                                mapname='SCMP_007',
                                password=None)
-    assert game in service.active_games
-
-def test_all_game_modes(loop, players, db_pool):
-    service = GameService(players)
-    game_modes = service.all_game_modes()
-
-    for info in game_modes:
-        assert info['name'] in map(lambda f: f[0], server.games.game_modes)
-        assert info['fullname'] in map(lambda f: f[1], server.games.game_modes)
+    assert game in service.pending_games
