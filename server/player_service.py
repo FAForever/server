@@ -5,7 +5,7 @@ import marisa_trie
 from server.matchmaker import MatchmakerQueue
 
 
-class PlayerService(object):
+class PlayerService:
     def __init__(self, db_pool: aiomysql.Pool):
         self.players = dict()
         self.db_pool = db_pool
