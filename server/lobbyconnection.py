@@ -390,6 +390,42 @@ class LobbyConnection(QObject):
 
         self.sendJSON(dict(command="notice", style="info", text="Map correctly uploaded."))
 
+    def generate_expiring_request(lifetime, plaintext):
+        """
+        Generate the parameters needed for an expiring email request with the given payload.
+        Payload should be comma-delimited, and the consumer should expect to find and verify
+        a timestamp and nonce appended to the given plaintext.
+        """
+
+        # Add nonce
+        rng = Random.new()
+        nonce = ''.join(choice(string.ascii_uppercase + string.digits) for _ in range(256))
+
+        expiry = str(time.time() + lifetime)
+
+        plaintext = (plaintext + "," + expiry + "," + nonce).encode('utf-8')
+
+        # Pad the plaintext to the next full block with commas, because I can't be arsed to
+        # write an actually clever parser.
+        bs = Blowfish.block_size
+        paddinglen = bs - divmod(len(plaintext), bs)[1]
+        padding = b',' * paddinglen
+
+        plaintext += padding
+
+
+        # Generate random IV of size one block.
+        iv = rng.read(bs)
+        cipher = Blowfish.new(VERIFICATION_SECRET_KEY, Blowfish.MODE_CBC, iv)
+        ciphertext = cipher.encrypt(plaintext)
+
+        # Generate the verification hash.
+        verification = hashlib.sha256()
+        verification.update(plaintext + VERIFICATION_HASH_SECRET.encode('utf-8'))
+        verify_hex = verification.hexdigest()
+
+        return base64.urlsafe_b64encode(iv), base64.urlsafe_b64encode(ciphertext), verify_hex
+
     def command_create_account(self, message):
         login = message['login']
         user_email = message['email']
@@ -454,32 +490,10 @@ Please use a non-disposable email address.\n\n\
         #
         # We thus avoid a SYN-flood-like attack on the registration system.
 
-        expiry = str(time.time() + 3600 * 25)
+        iv, ciphertext, verification_hex = generate_expiring_request(3600 * 25, login + "," + password + "," + user_email)
 
-        # Add nonce
-        rng = Random.new()
-        nonce = ''.join(choice(string.ascii_uppercase + string.digits) for _ in range(256))
 
-        # The data payload we need on the PHP side
-        plaintext = (login + "," + password + "," + user_email + "," + expiry + "," + nonce).encode('utf-8')
-
-        bs = Blowfish.block_size
-        paddinglen = bs - divmod(len(plaintext), bs)[1]
-        padding = b',' * paddinglen
-
-        plaintext += padding
-
-        # Generate random IV of size one block.
-        iv = rng.read(bs)
-        cipher = Blowfish.new(VERIFICATION_SECRET_KEY, Blowfish.MODE_CBC, iv)
-        ciphertext = cipher.encrypt(plaintext)
-
-        # Generate the verification hash.
-        verification = hashlib.sha256()
-        verification.update(plaintext + VERIFICATION_HASH_SECRET.encode('utf-8'))
-        verify_hex = verification.hexdigest()
-
-        link = {'a': 'v', 'iv': base64.urlsafe_b64encode(iv), 'c': base64.urlsafe_b64encode(ciphertext), 'v': verify_hex}
+        link = {'a': 'v', 'iv': iv, 'c': ciphertext, 'v': verification_hex}
 
         passwordLink = Config['app_url'] + "validateAccount.php?" + urllib.parse.urlencode(link)
 
