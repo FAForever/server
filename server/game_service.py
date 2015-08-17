@@ -1,8 +1,9 @@
 import asyncio
+
 import aiocron
 
 import server.db as db
-from server import GameState
+from server import GameState, VisibilityState
 from server.decorators import with_logger
 
 from server.games import FeaturedMod, LadderService
@@ -116,7 +117,7 @@ class GameService:
         return self.game_id_counter - 1
 
     def create_game(self,
-                    visibility = VisibilityState.PUBLIC,
+                    visibility=VisibilityState.PUBLIC,
                     game_mode: str=None,
                     host: Player=None,
                     name: str=None,
