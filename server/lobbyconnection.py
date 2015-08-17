@@ -75,7 +75,8 @@ class LobbyConnection(QObject):
         self.protocol = protocol
         self.ip, self.port = peername
 
-    def abort(self):
+    def abort(self, logspam = ""):
+        self._logger.warning("Client %s dropped. %s" % (self.player.login, logspam))
         self._authenticated = False
         self.protocol.writer.write_eof()
         self.protocol.reader.feed_eof()
@@ -91,21 +92,19 @@ class LobbyConnection(QObject):
                 raise ValueError("Command is not a string")
             if not self._authenticated:
                 if cmd not in ['hello', 'ask_session', 'create_account', 'ping', 'pong']:
-                    self.abort()
+                    self.abort("Message invalid for unauthenticated connection: %s" % cmd)
             handler = getattr(self, 'command_{}'.format(cmd))
             if asyncio.iscoroutinefunction(handler):
                 yield from handler(message)
             else:
                 handler(message)
         except (KeyError, ValueError) as ex:
-            self._logger.warning("Garbage command: {}".format(message))
             self._logger.exception(ex)
-            self.abort()
+            self.abort("Garbage command: {}".format(message))
         except Exception as ex:
             self.protocol.send_message({'command': 'invalid'})
-            self._logger.warning("Error processing command")
             self._logger.exception(ex)
-            self.abort()
+            self.abort("Error processing command")
 
     def command_ping(self, msg):
         self.protocol.send_raw(self.protocol.pack_message('PONG'))
@@ -1093,8 +1092,8 @@ Thanks,\n\
         except Exception as ex:
             self._logger.exception(ex)
             self.sendJSON(dict(command="notice", style="error",
-                               text="Something went wrong during sign in"))
-            self.abort()
+                               text="The server experienced an error processing your login. If this persists, contact tech support (probably a bug)"))
+            self.abort("Error during signin")
 
     @timed
     def command_ask_session(self, message):
@@ -1318,8 +1317,7 @@ Thanks,\n\
         visibility = VisibilityState.from_string(message.get('visibility'))
         if not visibility:
             # Protocol violation.
-            self._logger.warning("%s sent a nonsense visibility code: %s" % (self.player.name, message.get('visibility')))
-            self.abort()
+            self.abort("%s sent a nonsense visibility code: %s" % (self.player.name, message.get('visibility')))
             return
 
         mod = message.get('mod')
