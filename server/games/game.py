@@ -35,6 +35,25 @@ class Victory(IntEnum):
         elif value == "sandbox":
             return Victory.SANDBOX
 
+@unique
+class VisibilityState(IntEnum):
+    PUBLIC = 0
+    FRIENDS = 1
+
+    @staticmethod
+    def from_string(value):
+        if value == "public":
+            return VisibilityState.PUBLIC
+        elif value == "friends":
+            return VisibilityState.FRIENDS
+
+    @staticmethod
+    def to_string(value):
+        if value == VisibilityState.PUBLIC:
+            return "public"
+        elif value == VisibilityState.FRIENDS:
+            return "friends"
+
 # Identifiers must be kept in sync with the contents of the invalid_game_reasons table.
 # New reasons added should have a description added to that table. Identifiers should never be
 # reused, and values should never be deleted from invalid_game_reasons.
@@ -81,7 +100,7 @@ class Game(BaseGame):
         self.launched_at = None
         self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, id))
         self.id = id
-        self.access = "public"
+        self.visibility = VisibilityState.PUBLIC
         self.max_players = 12
         self.host = host
         self.name = name
@@ -496,7 +515,8 @@ class Game(BaseGame):
         }.get(self.state, 'closed')
         return {
             "command": "game_info",
-            "access": self.access,
+            "visibility": VisibilityState.to_string(self.visibility),
+            "password_protected": self.password is not None,
             "uid": self.id,
             "title": self.name,
             "state": client_state,

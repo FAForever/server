@@ -4,6 +4,7 @@ import aiocron
 import server.db as db
 from server import GameState
 from server.decorators import with_logger
+
 from server.games import FeaturedMod, LadderService
 from server.games.game import Game
 from server.players import Player
@@ -115,7 +116,7 @@ class GameService:
         return self.game_id_counter - 1
 
     def create_game(self,
-                    visibility: str='public',
+                    visibility = VisibilityState.PUBLIC,
                     game_mode: str=None,
                     host: Player=None,
                     name: str=None,
@@ -129,10 +130,8 @@ class GameService:
         self.games[id] = game
 
         self._logger.info("{} created".format(game))
-        game.access = visibility
-
-        if password is not None:
-            game.password = password
+        game.visibility = visibility
+        game.password = password
 
         self.mark_dirty(game)
         return game

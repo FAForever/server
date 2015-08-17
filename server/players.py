@@ -35,6 +35,9 @@ class Player(BasePlayer):
         self.clan = clan
         self.country = None
 
+        self.friends = set()
+        self.foes = set()
+
         self.league = None
 
         self.admin = permissionGroup >= 2

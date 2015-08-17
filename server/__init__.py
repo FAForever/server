@@ -6,7 +6,7 @@ Copyright (c) 2015 Michael Søndergaard <sheeo@sheeo.dk>
 
 Distributed under GPLv3, see license.txt
 """
-from server.games.game import GameState
+from server.games.game import GameState, VisibilityState
 
 __version__ = '0.1'
 __author__ = 'Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard'
@@ -52,20 +52,49 @@ def run_lobby_server(address: (str, int),
     :param loop: Event loop to use
     :return ServerContext: A server object
     """
+    def encode(game):
+        # Crazy evil encoding scheme
+        return QDataStreamProtocol.pack_block(
+            QDataStreamProtocol.pack_qstring(json.dumps(game.to_dict()))
+        )
+
+
+    def report_dirty_private_game(game):
+        # Visibility can at this point only be FRIENDS: the initialisation of the game object will
+        # catch fire if client sends us something not in the enum, so we don't need to sanity check
+        # that here.
+
+        # To see this game, you must have an authenticated connection and be a friend of the host.
+        validation_func = lambda lobby_conn: lobby_conn.authenticated and game.host.friends.contains(lobby_conn.player.login)
+
+        message = encode(game)
+
+        ctx.broadcast_raw(message, validation_func)
+
     def report_dirty_games():
         dirties = games.dirty_games
         games.clear_dirty()
 
-        def encode(game):
-            return QDataStreamProtocol.pack_block(
-                QDataStreamProtocol.pack_qstring(json.dumps(game.to_dict()))
-            )
+        message_parts = []
         for game in dirties:
+            # Don't tell anyone about an ended game.
+            # TODO: Probably better to do this at the time of the state transition instead?
             if game.state == GameState.ENDED:
                 games.remove_game(game)
-        message = b''.join(map(encode, dirties))
+                continue
+
+            # These games shouldn't be broadcast, but instead privately sent to those who are
+            # allowed to see them.
+            if game.visibility != VisibilityState.PUBLIC:
+                report_dirty_private_game(game)
+                continue
+
+            message_parts.append(encode(game))
+
+        message = b''.join(message_parts)
         if len(message) > 0:
             ctx.broadcast_raw(message, validate_fn=lambda lobby_conn: lobby_conn.authenticated)
+
         loop.call_later(5, report_dirty_games)
 
     def ping_broadcast():

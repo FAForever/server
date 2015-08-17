@@ -1,6 +1,6 @@
 import pytest
 from unittest import mock
-from server import ServerContext, QDataStreamProtocol, GameState
+from server import ServerContext, QDataStreamProtocol, GameState, VisibilityState
 
 from server.game_service import GameService
 from server.games import Game
@@ -14,7 +14,7 @@ def test_game_info():
     return {
         'title': 'Test game',
         'gameport': '8000',
-        'access': 'public',
+        'visibility': VisibilityState.PUBLIC,
         'mod': 'faf',
         'mapname': 'scmp_007',
         'password': None,
@@ -25,9 +25,9 @@ def test_game_info():
 @pytest.fixture()
 def test_game_info_invalid():
     return {
-        'title': 'Tittle with non ASCI char \xc3',
+        'title': 'Title with non ASCI char \xc3',
         'gameport': '8000',
-        'access': 'public',
+        'visibility': VisibilityState.PUBLIC,
         'mod': 'faf',
         'mapname': 'scmp_007',
         'password': None,
@@ -76,7 +76,6 @@ def test_command_game_host_creates_game(fa_server_thread,
     fa_server_thread.protocol = mock.Mock()
     fa_server_thread.command_game_host(test_game_info)
     expected_call = {
-        'visibility': test_game_info['access'],
         'game_mode': test_game_info['mod'],
         'name': test_game_info['title'],
         'host': players.hosting,

@@ -29,7 +29,7 @@ import pygeoip
 from server.matchmaker import Search
 
 from server.decorators import timed, with_logger
-from server.games.game import GameState
+from server.games.game import GameState, VisibilityState
 from server.players import Player, PlayerState
 import server.db as db
 from .game_service import GameService
@@ -58,8 +58,6 @@ class LobbyConnection(QObject):
         self.player = None
         self.logPrefix = "\t"
         self.missedPing = 0
-        self.friendList = []
-        self.foeList = []
         self.leagueAvatar = None
         self.ip = None
         self.port = None
@@ -1039,6 +1037,8 @@ Thanks,\n\
                  for player in self.player_service]
             )
 
+            friends = []
+            foes = []
             query = QSqlQuery(self.db)
             query.prepare(
                 "SELECT login.login FROM friends JOIN login ON idFriend=login.id WHERE idUser = ?")
@@ -1047,10 +1047,11 @@ Thanks,\n\
 
             if query.size() > 0:
                 while query.next():
-                    self.friendList.append(str(query.value(0)))
+                    friends.append(str(query.value(0)))
 
-                jsonToSend = {"command": "social", "friends": self.friendList}
+                jsonToSend = {"command": "social", "friends": friends}
                 self.sendJSON(jsonToSend)
+                self.player.friends = set(friends)
 
             query = QSqlQuery(self.db)
             query.prepare(
@@ -1059,10 +1060,11 @@ Thanks,\n\
             query.exec_()
             if query.size() > 0:
                 while query.next():
-                    self.foeList.append(str(query.value(0)))
+                    foes.append(str(query.value(0)))
 
-                jsonToSend = {"command": "social", "foes": self.foeList}
+                jsonToSend = {"command": "social", "foes": foes}
                 self.sendJSON(jsonToSend)
+                self.player.foes = set(foes)
 
             self.send_mod_list()
             self.send_game_list()
@@ -1313,7 +1315,13 @@ Thanks,\n\
 
         title = cgi.escape(message.get('title', ''))
         port = message.get('gameport')
-        access = message.get('access')
+        visibility = VisibilityState.from_string(message.get('visibility'))
+        if not visibility:
+            # Protocol violation.
+            self._logger.warning("%s sent a nonsense visibility code: %s" % (self.player.name, message.get('visibility')))
+            self.abort()
+            return
+
         mod = message.get('mod')
         try:
             title.encode('ascii')
@@ -1329,7 +1337,7 @@ Thanks,\n\
         password = message.get('password')
 
         game = self.game_service.create_game(**{
-            'visibility': access,
+            'visibility': visibility,
             'game_mode': mod.lower(),
             'host': self.player,
             'name': title if title else self.player.login,

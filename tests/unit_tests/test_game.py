@@ -5,7 +5,7 @@ import asyncio
 import pytest
 
 from trueskill import Rating
-from server.games.game import Game, GameState, GameError
+from server.games.game import Game, GameState, GameError, VisibilityState
 from server.gameconnection import GameConnection, GameConnectionState
 
 
@@ -224,7 +224,8 @@ def test_to_dict(game, create_player):
     data = game.to_dict()
     expected = {
         "command": "game_info",
-        "access": game.access,
+        "visibility": VisibilityState.to_string(game.visibility),
+        "password_protected": game.password is not None,
         "uid": game.id,
         "title": game.name,
         "state": 'closed',
@@ -245,7 +246,7 @@ def test_to_dict(game, create_player):
     }
     assert data == expected
 
-
+# Eeeeeeeewwwww
 def test_equality(game):
     assert game == game
     assert game != Game(5, mock.Mock())
