@@ -155,6 +155,7 @@ class GameService:
         for name, mod in self.featured_mods.items():
             mods.append({
                 'command': 'mod_info',
+                'publish': mod.publish,
                 'name': name,
                 'fullname': mod.full_name,
                 'icon': None,
