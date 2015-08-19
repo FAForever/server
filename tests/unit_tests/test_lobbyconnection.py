@@ -14,7 +14,7 @@ def test_game_info():
     return {
         'title': 'Test game',
         'gameport': '8000',
-        'visibility': VisibilityState.PUBLIC,
+        'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
         'mod': 'faf',
         'mapname': 'scmp_007',
         'password': None,
@@ -27,7 +27,7 @@ def test_game_info_invalid():
     return {
         'title': 'Title with non ASCI char \xc3',
         'gameport': '8000',
-        'visibility': VisibilityState.PUBLIC,
+        'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
         'mod': 'faf',
         'mapname': 'scmp_007',
         'password': None,
@@ -79,6 +79,7 @@ def test_command_game_host_creates_game(fa_server_thread,
         'game_mode': test_game_info['mod'],
         'name': test_game_info['title'],
         'host': players.hosting,
+        'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
         'password': test_game_info['password'],
         'mapname': test_game_info['mapname'],
     }

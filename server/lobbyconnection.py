@@ -1329,7 +1329,7 @@ Thanks,\n\
         title = cgi.escape(message.get('title', ''))
         port = message.get('gameport')
         visibility = VisibilityState.from_string(message.get('visibility'))
-        if not visibility:
+        if not isinstance(visibility, VisibilityState):
             # Protocol violation.
             self.abort("%s sent a nonsense visibility code: %s" % (self.player.login, message.get('visibility')))
             return
@@ -1349,7 +1349,7 @@ Thanks,\n\
         password = message.get('password')
 
         game = self.game_service.create_game(**{
-            'visibility': visibility,
+            'visibility': VisibilityState.to_string(visibility),
             'game_mode': mod.lower(),
             'host': self.player,
             'name': title if title else self.player.login,
