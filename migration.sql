@@ -227,6 +227,11 @@ ALTER TABLE game_stats DROP COLUMN EndTime;
 DROP TABLE ladder_map_selection;
 
 
+# Featured mods that do not have an associated files or updates table cannot exist (all of these
+# rows seem to be fluff anyway, so let's just munch them)
+DELETE FROM game_featuredMods WHERE gamemod IN ("custom", "nftw", "aprilfools");
+
+
 # Optimise all the tables we restructured (so we might recover space or be less fragmented or such)
 OPTIMIZE TABLE login;
 OPTIMIZE TABLE table_mod;
