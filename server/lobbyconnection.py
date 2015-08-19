@@ -1331,7 +1331,7 @@ Thanks,\n\
         visibility = VisibilityState.from_string(message.get('visibility'))
         if not visibility:
             # Protocol violation.
-            self.abort("%s sent a nonsense visibility code: %s" % (self.player.name, message.get('visibility')))
+            self.abort("%s sent a nonsense visibility code: %s" % (self.player.login, message.get('visibility')))
             return
 
         mod = message.get('mod')
