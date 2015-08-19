@@ -42,7 +42,7 @@ def pytest_addoption(parser):
                      help='Enable asyncio debugging')
     parser.addoption('--mysql_host', action='store', default='127.0.0.1', help='mysql host to use for test database')
     parser.addoption('--mysql_username', action='store', default='root', help='mysql username to use for test database')
-    parser.addoption('--mysql_password', action='store', default='', help='mysql password to use for test database')
+    parser.addoption('--mysql_password', action='store', default=None, help='mysql password to use for test database')
     parser.addoption('--mysql_database', action='store', default='faf_test', help='mysql database to use for tests')
     parser.addoption('--mysql_port',     action='store', default=3306, help='mysql port to use for tests')
 
