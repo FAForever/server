@@ -75,7 +75,7 @@ class LobbyConnection(QObject):
         self.protocol = protocol
         self.ip, self.port = peername
 
-    def abort(self, logspam = ""):
+    def abort(self, logspam=""):
         self._logger.warning("Client %s dropped. %s" % (self.player.login, logspam))
         self._authenticated = False
         self.protocol.writer.write_eof()
