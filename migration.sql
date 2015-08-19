@@ -231,6 +231,9 @@ DROP TABLE ladder_map_selection;
 # rows seem to be fluff anyway, so let's just munch them)
 DELETE FROM game_featuredMods WHERE gamemod IN ("custom", "nftw", "aprilfools");
 
+# It is unclear why this was not set before...
+UPDATE game_featuredMods SET publish = 1 where gamemod = "faf";
+
 
 # Optimise all the tables we restructured (so we might recover space or be less fragmented or such)
 OPTIMIZE TABLE login;
