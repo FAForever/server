@@ -29,7 +29,6 @@ class ServerContext:
                                             host=host,
                                             port=port,
                                             loop=self.loop)
-        self._logger.info("Closed")
         return self._server
 
     def close(self):
