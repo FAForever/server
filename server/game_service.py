@@ -158,7 +158,6 @@ class GameService:
                 'publish': mod.publish,
                 'name': name,
                 'fullname': mod.full_name,
-                'icon': None,
                 'desc': mod.description
             })
         return mods
