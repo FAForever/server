@@ -390,6 +390,7 @@ class LobbyConnection(QObject):
 
         self.sendJSON(dict(command="notice", style="info", text="Map correctly uploaded."))
 
+    @staticmethod
     def generate_expiring_request(lifetime, plaintext):
         """
         Generate the parameters needed for an expiring email request with the given payload.
