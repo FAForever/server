@@ -490,7 +490,7 @@ Please use a non-disposable email address.\n\n\
         #
         # We thus avoid a SYN-flood-like attack on the registration system.
 
-        iv, ciphertext, verification_hex = generate_expiring_request(3600 * 25, login + "," + password + "," + user_email)
+        iv, ciphertext, verification_hex = self.generate_expiring_request(3600 * 25, login + "," + password + "," + user_email)
 
 
         link = {'a': 'v', 'iv': iv, 'c': ciphertext, 'v': verification_hex}
