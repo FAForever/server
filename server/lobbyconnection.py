@@ -1063,8 +1063,6 @@ Thanks,\n\
                 while query.next():
                     friends.append(str(query.value(0)))
 
-                jsonToSend = {"command": "social", "friends": friends}
-                self.sendJSON(jsonToSend)
                 self.player.friends = set(friends)
 
             query = QSqlQuery(self.db)
@@ -1076,8 +1074,6 @@ Thanks,\n\
                 while query.next():
                     foes.append(str(query.value(0)))
 
-                jsonToSend = {"command": "social", "foes": foes}
-                self.sendJSON(jsonToSend)
                 self.player.foes = set(foes)
 
             self.send_mod_list()
@@ -1098,10 +1094,7 @@ Thanks,\n\
             if self.player.clan is not None:
                 channels.append("#%s_clan" % self.player.clan)
 
-            jsonToSend = {"command": "social", "autojoin": channels}
-            self.sendJSON(jsonToSend)
-
-            jsonToSend = {"command": "social", "channels": channels}
+            jsonToSend = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes}
             self.sendJSON(jsonToSend)
 
         except Exception as ex:
