@@ -1076,13 +1076,6 @@ Thanks,\n\
             self.send_game_list()
             self.send_tutorial_section()
 
-            player_info = self.player.to_dict()
-            for player in self.player_service:
-                if player != self.player:
-                    lobby = player.lobby_connection
-                    if lobby is not None:
-                        lobby.sendJSON(player_info)
-
             channels = []
             if self.player.mod:
                 channels.append("#moderators")
