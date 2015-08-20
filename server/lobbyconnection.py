@@ -918,10 +918,6 @@ Thanks,\n\
                                  permissionGroup=permission_group,
                                  lobbyThread=self)
 
-            # If the user has any authority, tell them about it.
-            if self.player.mod:
-                self.sendJSON({"command": "social", "power": permission_group})
-
             yield from self.player_service.fetch_player_data(self.player)
 
             # Country
@@ -1094,7 +1090,7 @@ Thanks,\n\
             if self.player.clan is not None:
                 channels.append("#%s_clan" % self.player.clan)
 
-            jsonToSend = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes}
+            jsonToSend = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
             self.sendJSON(jsonToSend)
 
         except Exception as ex:
