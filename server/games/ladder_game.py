@@ -1,6 +1,7 @@
 import logging
+
 from server.abc.base_game import InitMode
-from server.players import PlayerState
+from server.players import PlayerState, Player
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ class LadderGame(Game):
             new_ratings = self.compute_rating()
             self.persist_rating_change_stats(new_ratings, rating='ladder1v1')
 
-    def is_winner(self, player):
+    def is_winner(self, player: Player):
         return self.get_army_result(self.get_player_option(player.id, 'Army')) > 0
 
     def on_game_end(self):
@@ -67,7 +68,7 @@ class LadderGame(Game):
         if self.validity != ValidityState.VALID:
             return
 
-        if self.isDraw():
+        if self.is_draw():
             query = QSqlQuery(self.db)
             queryStr = ("SELECT id FROM table_map WHERE filename LIKE '%" + self.map_file_path + "%'")
             query.exec_(queryStr)
@@ -156,11 +157,13 @@ class LadderGame(Game):
                             p.setLeague(league)
                             p.division = str(query.value(0))
 
-    def isDraw(self):
-        if len(dict(list(zip(list(self.gameResult.values()),list(self.gameResult.keys()))))) == 1:
-            return True
-        return False       
-  
+    def is_draw(self):
+        for army in self.armies:
+            for result in self._results[army]:
+                if result[1] == 'draw':
+                    return True
+        return False
+
     def get_army_result(self, army):
         """
         The head-to-head matchup ranking uses only win/loss as a factor
