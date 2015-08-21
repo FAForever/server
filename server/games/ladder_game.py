@@ -156,23 +156,11 @@ class LadderGame(Game):
                             p.setLeague(league)
                             p.division = str(query.value(0))
 
-    def addPlayerToJoin(self, player):
-        self.playerToJoin = player
-
-    def getPlayerToJoin(self):
-        return self.playerToJoin
-  
     def isDraw(self):
         if len(dict(list(zip(list(self.gameResult.values()),list(self.gameResult.keys()))))) == 1:
             return True
         return False       
   
-    def hostInGame(self):
-        return self.hosted 
-
-    def setHostInGame(self, state):
-        self.hosted = state        
-
     def get_army_result(self, army):
         """
         The head-to-head matchup ranking uses only win/loss as a factor
