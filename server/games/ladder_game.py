@@ -26,32 +26,6 @@ class LadderGame(Game):
 
     def setLeaguePlayer(self, player):
         self.leagues[player.login] = player.league
-         
-    def specialInit(self, player):
-        if player.state == PlayerState.HOSTING:
-            map = self.map_file_path
-            
-            json = {
-                "command": "game_launch",
-                "featured_mod": self.game_mode,
-                "reason": "ranked",
-                "uid": self.id,
-                "mapname": map,
-                "args": ["/players 2", "/team 2"]
-            }
-
-            self.set_player_option(player.id, 'Team', 1)
-            self.set_player_option(player.id, 'Army', 0)
-            self.set_player_option(player.id, 'StartSpot', 0)
-            self.set_player_option(player.id, 'Faction', player.faction)
-            self.set_player_option(player.id, 'Color', 1)
-
-        if player.state == PlayerState.JOINING:
-            self.set_player_option(player.id, 'Team', 1)
-            self.set_player_option(player.id, 'Army', 1)
-            self.set_player_option(player.id, 'StartSpot', 1)
-            self.set_player_option(player.id, 'Faction', player.faction)
-            self.set_player_option(player.id, 'Color', 2)
 
     def rate_game(self):
         if self.validity == ValidityState.VALID:

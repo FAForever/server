@@ -90,8 +90,9 @@ class LadderService:
             "mapname": map_path,
             "mapid": map_id,
             "reason": "ranked",
-            "uid": id,
+            "uid": game.id,
             "args": ["/players 2", "/team 1"]
         }
 
         player1.lobby_connection.sendJSON(json)
+
