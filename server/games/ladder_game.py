@@ -1,5 +1,7 @@
 import logging
+import asyncio
 
+import server.db as db
 from server.abc.base_game import InitMode
 from server.players import PlayerState, Player
 
@@ -10,6 +12,7 @@ from .game import Game, ValidityState
 from PySide.QtSql import QSqlQuery
 import operator
 import config
+
 
 class LadderGame(Game):
     """Class for 1v1 ladder game"""
@@ -67,17 +70,15 @@ class LadderGame(Game):
         super().on_game_end()
         if self.validity != ValidityState.VALID:
             return
+        asyncio.async(self._on_game_end())
 
-        if self.is_draw():
-            query = QSqlQuery(self.db)
-            queryStr = ("SELECT id FROM table_map WHERE filename LIKE '%" + self.map_file_path + "%'")
-            query.exec_(queryStr)
-            while query.next():
-                mapId = query.value(0)
-
-                queryStr = ("UPDATE table_map_features set num_draws = (num_draws +1) WHERE map_id LIKE " + str(mapId))
-                query = QSqlQuery(self.db)
-                query.exec_(queryStr)
+    @asyncio.coroutine
+    def _on_game_end(self):
+        if self.is_draw:
+            with (yield from db.db_pool) as conn:
+                with (yield from conn.cursor()) as cursor:
+                    yield from cursor.execute("UPDATE table_map_features SET num_draws = (num_draws +1) "
+                                              "WHERE map_id = %s", (self.map_id, ))
             return
 
         # And for the ladder !
@@ -157,6 +158,7 @@ class LadderGame(Game):
                             p.setLeague(league)
                             p.division = str(query.value(0))
 
+    @property
     def is_draw(self):
         for army in self.armies:
             for result in self._results[army]:
