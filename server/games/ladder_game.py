@@ -81,82 +81,68 @@ class LadderGame(Game):
                                               "WHERE map_id = %s", (self.map_id, ))
             return
 
-        # And for the ladder !
         evenLeague = True
         maxleague = max(iter(self.leagues.items()), key=operator.itemgetter(1))[1]
         if len(set(self.leagues.values())) != 1:
             evenLeague = False
 
-        query = QSqlQuery(self.db)
-        for player in self.players:
-            if self.is_winner(player):
-                # if not even league:
-                scoreToAdd = 1
-                if not evenLeague:
-                    if self.leagues[player] == maxleague:
-                        scoreToAdd = 0.5
+        with (yield from db.db_pool) as conn:
+            with (yield from conn.cursor()) as cursor:
+                for player in self.players:
+                    if self.is_winner(player):
+                        # if not even league:
+                        scoreToAdd = 1
+                        if not evenLeague:
+                            if self.leagues[player] == maxleague:
+                                scoreToAdd = 0.5
+                            else:
+                                scoreToAdd = 1.5
+
+                        yield from cursor.execute("UPDATE {} "
+                                                  "SET score = (score + %s) "
+                                                  "WHERE idUser = %s".format(config.LADDER_SEASON),
+                                                  (scoreToAdd, player.id))
                     else:
-                        scoreToAdd = 1.5
+                        # if not even league:
+                        scoreToRemove = 0.5
+                        if not evenLeague:
+                            if self.leagues[player] == maxleague:
+                                scoreToRemove = 1
+                            else:
+                                scoreToRemove = 0
 
-                query.prepare("UPDATE %s SET score = (score + ?) "
-                              "WHERE `idUser` = ?" % config.LADDER_SEASON)
-                query.addBindValue(scoreToAdd)
-                query.addBindValue(player.id)
-                query.exec_()
-                self._logger.debug(query.executedQuery())
-            else:
-                # if not even league:
-                scoreToRemove = 0.5
-                if not evenLeague:
-                    if self.leagues[player] == maxleague:
-                        scoreToRemove = 1
-                    else:
-                        scoreToRemove = 0
+                        yield from cursor.execute("UPDATE {} "
+                                                  "SET score = GREATEST(0, (score - %s))"
+                                                  "WHERE idUser = %s".format(config.LADDER_SEASON),
+                                                  (scoreToRemove, player.id))
 
-                query.prepare("UPDATE %s SET score = GREATEST(0,(score - ?))"
-                              "WHERE `idUser` = ?" % config.LADDER_SEASON)
-                query.addBindValue(scoreToRemove)
-                query.addBindValue(player.id)
-                query.exec_()
-                self._logger.debug(query.executedQuery())
+                    yield from cursor.execute("SELECT league, score FROM {}"
+                                              "WHERE `idUser` = %s".format(config.LADDER_SEASON),
+                                              (player.id, ))
+                    if cursor.rowcount == 0:
+                        pleague, pscore = yield from cursor.fetchone()
+                        # Minimum scores, by league, to move to next league
+                        league_incr_min = {1: 50, 2: 75, 3: 100, 4: 150}
+                        if pleague in league_incr_min and pscore > league_incr_min[pleague]:
+                            yield from cursor.execute("UPDATE {} SET league = league+1, score = 0"
+                                                      "WHERE `idUser` = %s".format(config.LADDER_SEASON),
+                                                      (player.id, ))
 
-            #check if the user must be promoted
-            query.prepare("SELECT league, score FROM %s"
-                          "WHERE `idUser` = ?" % config.LADDER_SEASON)
-            query.addBindValue(player.id)
-            query.exec_()
-            if query.size() != 0:
-                query.first()
-                pleague = int(query.value(0))
-                pscore = float(query.value(1))
-                # Minimum scores, by league, to move to next league
-                league_incr_min = {1: 50, 2: 75, 3: 100, 4: 150}
-                if pleague in league_incr_min and pscore > league_incr_min[pleague]:
-                    query.prepare("UPDATE %s SET league = league+1, score = 0"
-                                  "WHERE `idUser` = ?" % config.LADDER_SEASON)
-                    query.addBindValue(player.id)
-                    query.exec_()
+                        for p in self.players:
+                            yield from cursor.execute("SELECT score, league "
+                                                      "FROM {} "
+                                                      "WHERE idUser = %s".format(config.LADDER_SEASON),
+                                                      (player.id, ))
+                            if cursor.rowcount > 0:
+                                score, p.league = yield from cursor.fetchone()
 
-                for p in self.players:
-                    query.prepare("SELECT score, league FROM %s WHERE idUser = ?" % config.LADDER_SEASON)
-                    query.addBindValue(p.id)
-                    query.exec_()
-                    if query.size() > 0:
-                        query.first()
-                        score = float(query.value(0))
-                        league = int(query.value(1))
-
-                        query.prepare("SELECT name, `limit` "
-                                      "FROM `ladder_division` "
-                                      "WHERE `league` = ? AND `limit` >= ?"
-                                      "ORDER BY `limit` ASC LIMIT 1")
-                        query.addBindValue(league)
-                        query.addBindValue(score)
-                        query.exec_()
-                        if query.size() > 0:
-                            query.first()
-                            p.setLeague(league)
-                            p.division = str(query.value(0))
+                                yield from cursor.execute("SELECT name, `limit` "
+                                                          "FROM `ladder_division` "
+                                                          "WHERE `league` = ? AND `limit` >= ?"
+                                                          "ORDER BY `limit` ASC LIMIT 1",
+                                                          (p.league, score))
+                                if cursor.rowcount > 0:
+                                    p.division, _ = yield from cursor.fetchone()
 
     @property
     def is_draw(self):
