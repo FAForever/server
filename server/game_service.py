@@ -6,7 +6,7 @@ import server.db as db
 from server import GameState, VisibilityState
 from server.decorators import with_logger
 
-from server.games import FeaturedMod, LadderService
+from server.games import FeaturedMod, LadderService, LadderGame, CoopGame
 from server.games.game import Game
 from server.players import Player
 from passwords import DB_NAME
@@ -127,7 +127,18 @@ class GameService:
         Main entrypoint for creating new games
         """
         id = self.createUuid()
-        game = Game(id, self, host, name, mapname, game_mode=game_mode)
+        args = {"id": id,
+                       "host": host,
+                       "name": name,
+                       "map": mapname,
+                       "game_mode": game_mode,
+                       "game_service": self}
+        if game_mode == 'ladder1v1':
+            game = LadderGame(**args)
+        elif game_mode == 'coop':
+            game = CoopGame(**args)
+        else:
+            game = Game(**args)
         self.games[id] = game
 
         self._logger.info("{} created".format(game))

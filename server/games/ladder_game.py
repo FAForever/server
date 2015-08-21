@@ -14,8 +14,8 @@ class LadderGame(Game):
     """Class for 1v1 ladder game"""
     init_mode = InitMode.AUTO_LOBBY
     
-    def __init__(self, id, game_service=None):
-        super(self.__class__, self).__init__(id, game_service)
+    def __init__(self, id, *args, **kwargs):
+        super(self.__class__, self).__init__(id, *args, **kwargs)
 
         self.hosted = False
 
