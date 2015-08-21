@@ -906,7 +906,7 @@ Thanks,\n\
 
                 try:
                     yield from cursor.execute("UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s", (irc_pass, login))
-                except pymysql.OperationalError:
+                except (pymysql.OperationalError, pymysql.ProgrammingError):
                     self._logger.info("Failure updating NickServ password for {}".format(login))
 
             permission_group = self.player_service.get_permission_group(player_id)
