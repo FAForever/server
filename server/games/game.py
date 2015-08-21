@@ -94,6 +94,7 @@ class Game(BaseGame):
         :type map: str
         :return: Game
         """
+        super().__init__()
         self._results = {}
         self.game_service = game_service
         self._player_options = {}
@@ -104,6 +105,7 @@ class Game(BaseGame):
         self.max_players = 12
         self.host = host
         self.name = name
+        self.map_id = 0
         self.map_file_path = map
         self.password = None
         self._players = []
@@ -389,7 +391,7 @@ class Game(BaseGame):
             # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
             # so, and grab the map id at the same time.
             yield from cursor.execute("SELECT table_map.id, table_map_unranked.id FROM table_map LEFT JOIN table_map_unranked ON table_map.id = table_map_unranked.id WHERE table_map.filename = %s", self.map_file_path)
-            (mapId, blacklist_flag) = yield from cursor.fetchone()
+            (self.map_id, blacklist_flag) = yield from cursor.fetchone()
 
             if blacklist_flag is not None:
                 self.mark_invalid(ValidityState.BAD_MAP)
@@ -398,7 +400,7 @@ class Game(BaseGame):
 
             # Write out the game_stats record.
             cursor.execute("INSERT INTO game_stats(gameType, gameMod, `host`, mapId, gameName)"
-                           "VALUES(%s, %s, %s, %s, %s)", self.gameType, modId, self.host.id, mapId, self.name)
+                           "VALUES(%s, %s, %s, %s, %s)", self.gameType, modId, self.host.id, self.map_id, self.name)
 
     def update_game_player_stats(self):
         query_str = "INSERT INTO `game_player_stats` "\

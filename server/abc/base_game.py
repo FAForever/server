@@ -15,7 +15,7 @@ class InitMode(IntEnum):
     AUTO_LOBBY = 1
 
 
-class BaseGame():
+class BaseGame:
     __metaclass__ = ABCMeta
 
     @abstractmethod
