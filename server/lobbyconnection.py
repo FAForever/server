@@ -460,18 +460,19 @@ class LobbyConnection(QObject):
         username_pattern = re.compile(r"^[^,]{1,20}$")
         email_pattern = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$")
 
-        def reply_no():
-            self.protocol.send_raw(self.protocol.pack_message("LOGIN_AVAILABLE", "no", login))
+        def reply_no(error_msg):
+            self.sendJSON({
+                "command": "registration_response",
+                "result": "FAILURE",
+                "error": error_msg
+            })
+
         if not email_pattern.match(user_email):
-            self.sendJSON(dict(command="notice", style="info",
-                               text="Please use a valid email address."))
-            reply_no()
+            reply_no("Please use a valid email address.")
             return
 
         if not username_pattern.match(login):
-            self.sendJSON(dict(command="notice", style="info",
-                               text="Please don't use \",\" in your username."))
-            reply_no()
+            reply_no("Please don't use \",\" in your username.")
             return
 
         query = QSqlQuery(self.db)
@@ -480,12 +481,11 @@ class LobbyConnection(QObject):
         if not query.exec_():
             self._logger.debug("Error inserting login %s", login)
             self._logger.debug(query.lastError())
-            reply_no()
+            reply_no("The server experienced an error attempting to process your request. Panic.")
             return
 
         if query.size() != 0:
-            self._logger.debug("Login not available: %s", login)
-            reply_no()
+            reply_no("Sorry, that username is not available.")
             return
 
         if self.player_service.has_blacklisted_domain(user_email):
@@ -496,7 +496,6 @@ Please use a non-disposable email address.\n\n\
             self.send_email(text, login, email, 'Forged Alliance Forever - Account validation')
 
             return
-
 
         # We want the user to validate their email address before we create their account.
         #
@@ -536,7 +535,7 @@ Thanks,\n\
         self.sendJSON(dict(command="notice", style="info",
                            text="A e-mail has been sent with the instructions to validate your account"))
         self._logger.debug("sent mail")
-        self.protocol.send_raw(self.protocol.pack_message("LOGIN_AVAILABLE", "yes", login))
+        self.sendJSON(dict(command="registration_response", result="SUCCESS"))
 
     def send_email(self, text, to_name, to_email, subject):
         msg = MIMEText(text)
