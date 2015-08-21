@@ -79,3 +79,5 @@ def test_player_info_broadcast(loop, lobby_server):
     yield from p2.read_message()
 
     yield from read_until(p1, lambda m: 'player_info' in m.values() and m['login'] == 'Rhiza')
+    p1.close()
+    p2.close()
