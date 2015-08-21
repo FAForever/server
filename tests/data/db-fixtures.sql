@@ -3,11 +3,24 @@ use faf_test;
 -- Login table
 delete from login;
 insert into login (id, login, password) values (1, 'test', 'test_password');
+insert into login (id, login, password) values (2, 'Dostya', 'vodka');
+insert into login (id, login, password) values (3, 'Rhiza', 'puff_the_magic_dragon');
 
 -- global rating
 delete from global_rating;
 insert into global_rating (id, mean, deviation, numGames, is_active)
-values (1, 2000, 125, 5, 1);
+values
+(1, 2000, 125, 5, 1),
+(2, 1500, 75, 2, 1),
+(3, 1650, 62.52, 2, 1);
+
+-- ladder rating
+delete from ladder1v1_rating;
+insert into ladder1v1_rating (id, mean, deviation, numGames, is_active)
+values
+  (1, 2000, 125, 5, 1),
+  (2, 1500, 75, 2, 1),
+  (3, 1650, 62.52, 2, 1);
 
 -- UniqueID_exempt
 delete from uniqueid_exempt;

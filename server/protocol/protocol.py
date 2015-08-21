@@ -133,6 +133,22 @@ class QDataStreamProtocol(metaclass=ABCMeta):
                     message['legacy'].append(part)
             return message
 
+    @asyncio.coroutine
+    def drain(self):
+        """
+        Await the write buffer to empty.
+
+        See StreamWriter.drain()
+        """
+        yield from self.writer.drain()
+
+    def close(self):
+        """
+        Close writer stream
+        :return:
+        """
+        self.writer.close()
+
     def send_message(self, message: dict):
         self.writer.write(self.pack_message(json.dumps(message)))
 
