@@ -122,8 +122,14 @@ def test_command_game_host_calls_host_game_invalid_title(fa_server_thread,
     fa_server_thread.sendJSON.assert_called_once_with(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
 
 
-# Ask Session
-# TODO: @sheeo add special cases with Timer
+def test_abort(loop, mocker, fa_server_thread):
+    proto = mocker.patch.object(fa_server_thread, 'protocol')
+
+    fa_server_thread.abort()
+
+    proto.writer.write_eof.assert_any_call()
+
+
 def test_ask_session(fa_server_thread):
     fa_server_thread.sendJSON = mock.Mock()
     fa_server_thread.command_ask_session({})
