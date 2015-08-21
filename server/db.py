@@ -1,5 +1,4 @@
 import aiomysql
-import asyncio
 
 db_pool = None
 
@@ -11,8 +10,3 @@ def init_db_pool(pool: aiomysql.Pool):
 
 class CursorContext(aiomysql.Cursor):
     def __exit__(self, exc_type, exc_val, exc_tb):
-
-
-@asyncio.coroutine
-def cursor():
-    return CursorContext()
