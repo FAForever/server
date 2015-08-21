@@ -21,10 +21,6 @@ class LadderGame(Game):
     def __init__(self, id, *args, **kwargs):
         super(self.__class__, self).__init__(id, *args, **kwargs)
 
-        self.hosted = False
-
-        self.results = []
-        self.playerToJoin = None
         self.max_players = 2
         self.leagues = {}
 
@@ -43,7 +39,6 @@ class LadderGame(Game):
                 "mapname": map,
                 "args": ["/players 2", "/team 2"]
             }
-            self.playerToJoin.lobbyThread.sendJSON(json)
 
             self.set_player_option(player.id, 'Team', 1)
             self.set_player_option(player.id, 'Army', 0)
