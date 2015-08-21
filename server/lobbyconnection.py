@@ -42,6 +42,20 @@ gi = pygeoip.GeoIP('GeoIP.dat', pygeoip.MEMORY_CACHE)
 
 MAX_ACCOUNTS_PER_MACHINE = 3
 
+
+class ClientError(Exception):
+    """
+    Represents a ClientError
+
+    If recoverable is False, it is expected that the
+    connection be terminated immediately.
+    """
+    def __init__(self, message, recoverable=True, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.message = message
+        self.recoverable = recoverable
+
+
 @with_logger
 class LobbyConnection(QObject):
     @timed()
@@ -76,7 +90,10 @@ class LobbyConnection(QObject):
         self.ip, self.port = peername
 
     def abort(self, logspam=""):
-        self._logger.warning("Client %s dropped. %s" % (self.player.login, logspam))
+        if self.player:
+            self._logger.warning("Client %s dropped. %s" % (self.player.login, logspam))
+        else:
+            self._logger.warning("Aborting %s. %s" % (self.ip, logspam))
         self._authenticated = False
         self.protocol.writer.write_eof()
         self.protocol.reader.feed_eof()
@@ -98,6 +115,14 @@ class LobbyConnection(QObject):
                 yield from handler(message)
             else:
                 handler(message)
+        except ClientError as ex:
+            self.protocol.send_message(
+                {'command': 'notice',
+                 'style': 'error',
+                 'text': ex.message}
+            )
+            if not ex.recoverable:
+                self.abort(ex.message)
         except (KeyError, ValueError) as ex:
             self._logger.exception(ex)
             self.abort("Garbage command: {}".format(message))
@@ -738,20 +763,14 @@ Thanks,\n\
                                   "WHERE LOWER(login)=%s", login.lower())
 
         if cursor.rowcount != 1:
-            self.sendJSON(dict(command="notice", style="error",
-                               text="Login not found or password incorrect. They are case sensitive."))
-            return
+            raise ClientError("Login not found or password incorrect. They are case sensitive.")
 
         player_id, real_username, dbPassword, steamid, ban_reason = yield from cursor.fetchone()
         if dbPassword != password:
-            self.sendJSON(dict(command="notice", style="error",
-                               text="Login not found or password incorrect. They are case sensitive."))
-            return
+            raise ClientError("Login not found or password incorrect. They are case sensitive.")
 
         if ban_reason != None:
-            reason = "You are banned from FAF.\n Reason :\n " + ban_reason
-            self.sendJSON(dict(command="notice", style="error", text=reason))
-            return
+            raise ClientError("You are banned from FAF.\n Reason :\n {}".format(ban_reason))
 
         self._logger.debug("Login from: {}, {}".format(player_id, self.session))
         self._authenticated = True
@@ -865,232 +884,221 @@ Thanks,\n\
 
     @asyncio.coroutine
     def command_hello(self, message):
-        try:
-            version = message['version']
-            login = message['login'].strip()
-            password = message['password']
+        version = message['version']
+        login = message['login'].strip()
+        password = message['password']
 
-            self.logPrefix = login + "\t"
+        self.logPrefix = login + "\t"
 
-            # Check their client is reporting the right version number.
-            # TODO: Do this somewhere less insane. (no need to query our db for this every login!)
-            with (yield from db.db_pool) as conn:
-                cursor = yield from conn.cursor()
-                versionDB, updateFile = self.player_service.client_version_info
+        # Check their client is reporting the right version number.
+        # TODO: Do this somewhere less insane. (no need to query our db for this every login!)
+        with (yield from db.db_pool) as conn:
+            cursor = yield from conn.cursor()
+            versionDB, updateFile = self.player_service.client_version_info
 
-                # Version of zero represents a developer build.
-                if version < versionDB and version != 0:
-                    self.sendJSON(dict(command="welcome", update=updateFile))
+            # Version of zero represents a developer build.
+            if version < versionDB and version != 0:
+                self.sendJSON(dict(command="welcome", update=updateFile))
+                return
+
+            player_id, login, steamid = yield from self.check_user_login(cursor, login, password)
+
+            if not self.player_service.is_uniqueid_exempt(player_id):
+                # UniqueID check was rejected (too many accounts or tamper-evident madness)
+                if not self.validate_unique_id(cursor, player_id, steamid, message['unique_id']):
                     return
 
-                player_id, login, steamid = yield from self.check_user_login(cursor, login, password)
+            # Update the user's IRC registration (why the fuck is this here?!)
+            m = hashlib.md5()
+            m.update(password.encode())
+            passwordmd5 = m.hexdigest()
+            m = hashlib.md5()
+            # Since the password is hashed on the client, what we get at this point is really
+            # md5(md5(sha256(password))). This is entirely insane.
+            m.update(passwordmd5.encode())
+            irc_pass = "md5:" + str(m.hexdigest())
 
-                # Login was not approved.
-                if not player_id:
-                    return
+            try:
+                yield from cursor.execute("UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s", (irc_pass, login))
+            except (pymysql.OperationalError, pymysql.ProgrammingError):
+                self._logger.info("Failure updating NickServ password for {}".format(login))
 
-                if not self.player_service.is_uniqueid_exempt(player_id):
-                    # UniqueID check was rejected (too many accounts or tamper-evident madness)
-                    if not self.validate_unique_id(cursor, player_id, steamid, message['unique_id']):
-                        return
+        permission_group = self.player_service.get_permission_group(player_id)
+        self.player = Player(login=str(login),
+                             session=self.session,
+                             ip=self.ip,
+                             port=self.port,
+                             id=player_id,
+                             permissionGroup=permission_group,
+                             lobbyThread=self)
 
-                # Update the user's IRC registration (why the fuck is this here?!)
-                m = hashlib.md5()
-                m.update(password.encode())
-                passwordmd5 = m.hexdigest()
-                m = hashlib.md5()
-                # Since the password is hashed on the client, what we get at this point is really
-                # md5(md5(sha256(password))). This is entirely insane.
-                m.update(passwordmd5.encode())
-                irc_pass = "md5:" + str(m.hexdigest())
+        yield from self.player_service.fetch_player_data(self.player)
 
-                try:
-                    yield from cursor.execute("UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s", (irc_pass, login))
-                except (pymysql.OperationalError, pymysql.ProgrammingError):
-                    self._logger.info("Failure updating NickServ password for {}".format(login))
+        # Country
+        # -------
 
-            permission_group = self.player_service.get_permission_group(player_id)
-            self.player = Player(login=str(login),
-                                 session=self.session,
-                                 ip=self.ip,
-                                 port=self.port,
-                                 id=player_id,
-                                 permissionGroup=permission_group,
-                                 lobbyThread=self)
+        country = gi.country_code_by_addr(self.ip)
+        if country is not None:
+            self.player.country = str(country)
 
-            yield from self.player_service.fetch_player_data(self.player)
+        # LADDER LEAGUES ICONS
+        # --------------------
+        # If a user is top of their division or league, set their avatar appropriately.
 
-            # Country
-            # -------
+        # Query to extract the user's league and divison info.
+        # Naming a column `limit` was unwise.
+        query = QSqlQuery(self.db)
+        query.prepare(
+        "SELECT\
+          score,\
+          ladder_division.league,\
+          ladder_division.name AS division,\
+          ladder_division.limit AS `limit`\
+        FROM\
+          %s,\
+          ladder_division\
+        WHERE\
+          %s.idUser = ? AND\
+          %s.league = ladder_division.league AND\
+          ladder_division.limit >= %s.score\
+        ORDER BY ladder_division.limit ASC\
+        LIMIT 1;" % (config.LADDER_SEASON, config.LADDER_SEASON, config.LADDER_SEASON, config.LADDER_SEASON))
+        query.addBindValue(self.player.id)
+        query.exec_()
+        if query.size() > 0:
+            query.first()
+            score = float(query.value(0))
+            league = int(query.value(1))
+            self.player.league = league
+            self.player.division = str(query.value(2))
+            limit = int(query.value(3))
 
-            country = gi.country_code_by_addr(self.ip)
-            if country is not None:
-                self.player.country = str(country)
+            cancontinue = True
+            if league == 1 and score == 0:
+                cancontinue = False
 
-            # LADDER LEAGUES ICONS
-            # --------------------
-            # If a user is top of their division or league, set their avatar appropriately.
+            if cancontinue:
+                # check if top of the division :
+                query.prepare(
+                    "SELECT score, idUser FROM %s WHERE score <= ? and league = ? ORDER BY score DESC" % config.LADDER_SEASON)
+                query.addBindValue(limit)
+                query.addBindValue(league)
+                #query.addBindValue(self.player.getId())
+                query.exec_()
 
-            # Query to extract the user's league and divison info.
-            # Naming a column `limit` was unwise.
-            query = QSqlQuery(self.db)
-            query.prepare(
-            "SELECT\
-              score,\
-              ladder_division.league,\
-              ladder_division.name AS division,\
-              ladder_division.limit AS `limit`\
-            FROM\
-              %s,\
-              ladder_division\
-            WHERE\
-              %s.idUser = ? AND\
-              %s.league = ladder_division.league AND\
-              ladder_division.limit >= %s.score\
-            ORDER BY ladder_division.limit ASC\
-            LIMIT 1;" % (config.LADDER_SEASON, config.LADDER_SEASON, config.LADDER_SEASON, config.LADDER_SEASON))
-            query.addBindValue(self.player.id)
-            query.exec_()
-            if query.size() > 0:
-                query.first()
-                score = float(query.value(0))
-                league = int(query.value(1))
-                self.player.league = league
-                self.player.division = str(query.value(2))
-                limit = int(query.value(3))
+                if query.size() >= 4:
+                    query.first()
+                    for i in range(1, 4):
 
-                cancontinue = True
-                if league == 1 and score == 0:
-                    cancontinue = False
+                        score = float(query.value(0))
+                        idUser = int(query.value(1))
 
-                if cancontinue:
-                    # check if top of the division :
-                    query.prepare(
-                        "SELECT score, idUser FROM %s WHERE score <= ? and league = ? ORDER BY score DESC" % config.LADDER_SEASON)
-                    query.addBindValue(limit)
-                    query.addBindValue(league)
-                    #query.addBindValue(self.player.getId())
-                    query.exec_()
+                        if idUser != self.player.id or score <= 0:
+                            query.next()
+                            continue
 
-                    if query.size() >= 4:
-                        query.first()
-                        for i in range(1, 4):
+                        avatar = {
+                            "url": str(Config['content_url'] + "avatars/div" + str(i) + ".png")
+                        }
+                        if i == 1:
+                            avatar.tooltip = "First in my division!"
+                        elif i == 2:
+                            avatar.tooltip = "Second in my division!"
+                        elif i == 3:
+                            avatar.tooltip = "Third in my division!"
 
-                            score = float(query.value(0))
-                            idUser = int(query.value(1))
+                        self.player.avatar = avatar
+                        self.leagueAvatar = avatar
 
-                            if idUser != self.player.id or score <= 0:
-                                query.next()
-                                continue
+                        break
 
-                            avatar = {
-                                "url": str(Config['content_url'] + "avatars/div" + str(i) + ".png")
-                            }
-                            if i == 1:
-                                avatar.tooltip = "First in my division!"
-                            elif i == 2:
-                                avatar.tooltip = "Second in my division!"
-                            elif i == 3:
-                                avatar.tooltip = "Third in my division!"
+                # check if top of the league :
+                query.prepare(
+                    "SELECT score, idUser FROM %s  WHERE league = ? ORDER BY score DESC" % config.LADDER_SEASON)
+                query.addBindValue(league)
+                query.exec_()
+                if query.size() >= 4:
+                    query.first()
+                    for i in range(1, 4):
+                        score = float(query.value(0))
+                        idUser = int(query.value(1))
 
-                            self.player.avatar = avatar
-                            self.leagueAvatar = avatar
+                        if idUser != self.player.id or score <= 0:
+                            query.next()
+                            continue
 
-                            break
+                        avatar = {
+                            "url": str(Config['content_url'] + "avatars/league" + str(i) + ".png")
+                        }
+                        if i == 1:
+                            avatar.tooltip = "First in my League!"
+                        elif i == 2:
+                            avatar.tooltip = "Second in my League!"
+                        elif i == 3:
+                            avatar.tooltip = "Third in my League!"
 
-                    # check if top of the league :
-                    query.prepare(
-                        "SELECT score, idUser FROM %s  WHERE league = ? ORDER BY score DESC" % config.LADDER_SEASON)
-                    query.addBindValue(league)
-                    query.exec_()
-                    if query.size() >= 4:
-                        query.first()
-                        for i in range(1, 4):
-                            score = float(query.value(0))
-                            idUser = int(query.value(1))
+                        self.player.avatar = avatar
+                        self.leagueAvatar = avatar
+                        break
 
-                            if idUser != self.player.id or score <= 0:
-                                query.next()
-                                continue
+        ## AVATARS
+        ## -------------------
+        query.prepare(
+            "SELECT url, tooltip FROM `avatars` LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = ? AND `selected` = 1")
+        query.addBindValue(self.player.id)
+        query.exec_()
+        if query.size() > 0:
+            query.first()
+            avatar = {"url": str(query.value(0)), "tooltip": str(query.value(1))}
+            self.player.avatar = avatar
 
-                            avatar = {
-                                "url": str(Config['content_url'] + "avatars/league" + str(i) + ".png")
-                            }
-                            if i == 1:
-                                avatar.tooltip = "First in my League!"
-                            elif i == 2:
-                                avatar.tooltip = "Second in my League!"
-                            elif i == 3:
-                                avatar.tooltip = "Third in my League!"
+        self.player_service.addUser(self.player)
 
-                            self.player.avatar = avatar
-                            self.leagueAvatar = avatar
-                            break
+        self.sendJSON(dict(command="welcome", id=self.player.id, login=login))
 
-            ## AVATARS
-            ## -------------------
-            query.prepare(
-                "SELECT url, tooltip FROM `avatars` LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = ? AND `selected` = 1")
-            query.addBindValue(self.player.id)
-            query.exec_()
-            if query.size() > 0:
-                query.first()
-                avatar = {"url": str(query.value(0)), "tooltip": str(query.value(1))}
-                self.player.avatar = avatar
+        self.protocol.send_messages(
+            [player.to_dict()
+             for player in self.player_service]
+        )
 
-            self.player_service.addUser(self.player)
+        friends = []
+        foes = []
+        query = QSqlQuery(self.db)
+        query.prepare(
+            "SELECT login.login FROM friends JOIN login ON idFriend=login.id WHERE idUser = ?")
+        query.addBindValue(self.player.id)
+        query.exec_()
 
-            self.sendJSON(dict(command="welcome", id=self.player.id, login=login))
+        if query.size() > 0:
+            while query.next():
+                friends.append(str(query.value(0)))
 
-            self.protocol.send_messages(
-                [player.to_dict()
-                 for player in self.player_service]
-            )
+            self.player.friends = set(friends)
 
-            friends = []
-            foes = []
-            query = QSqlQuery(self.db)
-            query.prepare(
-                "SELECT login.login FROM friends JOIN login ON idFriend=login.id WHERE idUser = ?")
-            query.addBindValue(self.player.id)
-            query.exec_()
+        query = QSqlQuery(self.db)
+        query.prepare(
+            "SELECT login.login FROM foes JOIN login ON idFoe=login.id WHERE idUser = ?")
+        query.addBindValue(self.player.id)
+        query.exec_()
+        if query.size() > 0:
+            while query.next():
+                foes.append(str(query.value(0)))
 
-            if query.size() > 0:
-                while query.next():
-                    friends.append(str(query.value(0)))
+            self.player.foes = set(foes)
 
-                self.player.friends = set(friends)
+        self.send_mod_list()
+        self.send_game_list()
+        self.send_tutorial_section()
 
-            query = QSqlQuery(self.db)
-            query.prepare(
-                "SELECT login.login FROM foes JOIN login ON idFoe=login.id WHERE idUser = ?")
-            query.addBindValue(self.player.id)
-            query.exec_()
-            if query.size() > 0:
-                while query.next():
-                    foes.append(str(query.value(0)))
+        channels = []
+        if self.player.mod:
+            channels.append("#moderators")
 
-                self.player.foes = set(foes)
+        if self.player.clan is not None:
+            channels.append("#%s_clan" % self.player.clan)
 
-            self.send_mod_list()
-            self.send_game_list()
-            self.send_tutorial_section()
-
-            channels = []
-            if self.player.mod:
-                channels.append("#moderators")
-
-            if self.player.clan is not None:
-                channels.append("#%s_clan" % self.player.clan)
-
-            jsonToSend = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
-            self.sendJSON(jsonToSend)
-
-        except Exception as ex:
-            self._logger.exception(ex)
-            self.sendJSON(dict(command="notice", style="error",
-                               text="The server experienced an error processing your login. If this persists, contact tech support (probably a bug)"))
-            self.abort("Error during signin")
+        jsonToSend = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
+        self.sendJSON(jsonToSend)
 
     @timed
     def command_ask_session(self, message):
