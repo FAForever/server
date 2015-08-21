@@ -1119,33 +1119,7 @@ Thanks,\n\
     def command_avatar(self, message):
         action = message['action']
 
-        if action == "upload_avatar" and self.player.admin:
-            name = message["name"]
-            try:
-                avatarDatas = (zlib.decompress(base64.b64decode(message["file"])))
-            except:
-                raise KeyError('invalid file')
-            description = message["description"]
-
-            writeFile = QFile(Config['content_path'] + "avatars/%s" % name)
-
-            if writeFile.open(QIODevice.WriteOnly):
-                writeFile.write(avatarDatas)
-            writeFile.close()
-
-            query = QSqlQuery(self.db)
-            query.prepare(
-                "INSERT INTO avatars_list (`url`,`tooltip`) VALUES (?,?) ON DUPLICATE KEY UPDATE `tooltip` = ?;")
-            query.addBindValue(Config['content_url'] + "faf/avatars/" + name)
-            query.addBindValue(description)
-            query.addBindValue(description)
-
-            if not query.exec_():
-                self._logger.error("Failed to execute DB : " + query.lastQuery())
-                self.sendJSON(dict(command="notice", style="error", text="Avatar not correctly uploaded."))
-            else:
-                self.sendJSON(dict(command="notice", style="info", text="Avatar uploaded."))
-        elif action == "list_avatar":
+        if action == "list_avatar":
             avatarList = []
             if self.leagueAvatar:
                 avatarList.append(self.leagueAvatar)

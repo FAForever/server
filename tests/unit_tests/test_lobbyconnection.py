@@ -131,44 +131,6 @@ def test_ask_session(fa_server_thread):
     assert response['command'] == 'welcome'
 
 # Avatar
-def test_avatar_upload_admin(mocker, fa_server_thread):
-    mocker.patch('zlib.decompress')
-    mocker.patch('server.lobbyconnection.Config')
-    mocker.patch('server.lobbyconnection.QFile')
-    mocker.patch('server.lobbyconnection.QSqlQuery')
-
-    fa_server_thread.sendJSON = mock.Mock()
-    fa_server_thread.player = mock.Mock()
-    fa_server_thread.player.admin.return_value = True
-    fa_server_thread.command_avatar({'action': 'upload_avatar',
-                                     'name': '', 'file': '', 'description': ''})
-    fa_server_thread.sendJSON.assert_called_once_with(
-        dict(command="notice", style="info", text="Avatar uploaded."))
-
-
-def test_avatar_upload_admin_invalid_file(fa_server_thread):
-    fa_server_thread.sendJSON = mock.Mock()
-    fa_server_thread.player = mock.Mock()
-    fa_server_thread.player.admin.return_value = True
-    with pytest.raises(KeyError):
-        fa_server_thread.command_avatar({'action': 'upload_avatar',
-                                         'name': '', 'file': '', 'description': ''})
-
-def test_avatar_upload_admin_db_error(mocker, fa_server_thread):
-    mocker.patch('zlib.decompress')
-    mocker.patch('server.lobbyconnection.Config')
-    mocker.patch('server.lobbyconnection.QFile')
-    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
-
-    fa_server_thread.sendJSON = mock.Mock()
-    fa_server_thread.player = mock.Mock()
-    fa_server_thread.player.admin.return_value = True
-    mock_query.return_value.exec_.return_value = False
-    fa_server_thread.command_avatar({'action': 'upload_avatar',
-                                     'name': '', 'file': '', 'description': ''})
-    fa_server_thread.sendJSON.assert_called_once_with(
-        dict(command="notice", style="error", text="Avatar not correctly uploaded."))
-
 def test_avatar_upload_user(fa_server_thread):
     fa_server_thread.sendJSON = mock.Mock()
     fa_server_thread.player = mock.Mock()
