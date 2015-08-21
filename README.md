@@ -37,11 +37,7 @@ If you installed using the wheel, also run the `pyside_postinstall.py` script
 
 ## Running the tests
 
-Set the `QUAMASH_QTIMPL` environment variable to `PySide`.
-
-    export QUAMASH_QTIMPL=PySide
-
-Also create the `passwords.py` file. This can be done by copying `passwords.py.example`.
+Create the `passwords.py` file. This can be done by copying `passwords.py.example`.
 
     cp passwords.py.example passwords.py
 
