@@ -3,13 +3,12 @@ import asyncio
 
 import server.db as db
 from server.abc.base_game import InitMode
-from server.players import PlayerState, Player
+from server.players import Player
 
 logger = logging.getLogger(__name__)
 
 from .game import Game, ValidityState
 
-from PySide.QtSql import QSqlQuery
 import operator
 import config
 
