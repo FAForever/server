@@ -238,6 +238,3 @@ UPDATE game_featuredMods SET publish = 1 where gamemod = "faf";
 # Optimise all the tables we restructured (so we might recover space or be less fragmented or such)
 OPTIMIZE TABLE login;
 OPTIMIZE TABLE table_mod;
-
-# Use the right datatype...
-USE fafclans;
