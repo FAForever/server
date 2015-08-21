@@ -1057,9 +1057,11 @@ Thanks,\n\
         self.sendJSON(dict(command="welcome", id=self.player.id, login=login))
 
         # Tell player about everybody online
-        self.protocol.send_messages(
-            [player.to_dict()
-             for player in self.player_service]
+        self.sendJSON(
+            {
+                "command": "player_info",
+                "players": [player.to_dict() for player in self.player_service]
+            }
         )
 
         # Tell everyone else online about us
@@ -1069,7 +1071,12 @@ Thanks,\n\
             if player != self.player:
                 lobby = player.lobby_connection
                 if lobby is not None:
-                    lobby.sendJSON(player_info)
+                    lobby.sendJSON(
+                        {
+                            "command": "player_info",
+                            "players": [player_info]
+                        }
+                    )
 
         friends = []
         foes = []

@@ -137,14 +137,11 @@ class Player(BasePlayer):
             _, v = t
             return v is not None
         return dict(filter(filter_none, (
-            ('command', 'player_info'),
             ('login', self.login),
-            ('rating_mean', self.global_rating[0]),
-            ('rating_deviation', self.global_rating[1]),
-            ('ladder_rating_mean', self.ladder_rating[0]),
-            ('ladder_rating_deviation', self.ladder_rating[1]),
+            ('global_rating', self.global_rating),
+            ('ladder_rating', self.ladder_rating),
             ('number_of_games', self.numGames),
-            ('avatar', self.avatar or ''),
+            ('avatar', self.avatar),
             ('country', self.country),
             ('clan', self.clan)
         )))
