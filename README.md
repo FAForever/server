@@ -119,4 +119,3 @@ The stream API is deprecated, but currently the following message types are supp
 * `FA_CLOSED`: internal cleanup of the player
 * `UPLOAD_MOD, login, session, zipmap, infos, size, fileDaatas`: Upload a mod
 * `UPLOAD_MAP, login, session, zipmap, infos, size, fileDatas`: Upload a map
-* `CREATE_ACCOUNT, login, email, password_hash`: Send an email with a registration link

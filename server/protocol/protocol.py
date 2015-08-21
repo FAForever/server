@@ -94,17 +94,7 @@ class QDataStreamProtocol(metaclass=ABCMeta):
         # FIXME: New protocol will remove the need for this
 
         pos, action = self.read_qstring(block)
-        if action == 'CREATE_ACCOUNT':
-            pos, login = self.read_qstring(block, pos)
-            pos, email = self.read_qstring(block, pos)
-            pos, password = self.read_qstring(block, pos)
-            return {
-                'command': "create_account",
-                'login': login,
-                'email': email,
-                'password': password
-            }
-        elif action in ['UPLOAD_MAP', 'UPLOAD_MOD']:
+        if action in ['UPLOAD_MAP', 'UPLOAD_MOD']:
             pos, _ = self.read_qstring(block, pos)  # login
             pos, _ = self.read_qstring(block, pos)  # session
             pos, name = self.read_qstring(block, pos)

@@ -57,25 +57,6 @@ def test_QDataStreamProtocol_recv_malformed_message(protocol, reader):
         yield from protocol.read_message()
 
 @asyncio.coroutine
-def test_QDataStreamProtocol_recv_command_create_account(protocol, reader):
-    reader.feed_data(QDataStreamProtocol.pack_block(
-        b''.join([
-            QDataStreamProtocol.pack_qstring('CREATE_ACCOUNT'),
-            QDataStreamProtocol.pack_qstring('test_login'),
-            QDataStreamProtocol.pack_qstring('test_email'),
-            QDataStreamProtocol.pack_qstring('test_password')
-        ])
-    ))
-    reader.feed_eof()
-
-    message = yield from protocol.read_message()
-
-    assert message == {'command': "create_account",
-                       'login': 'test_login',
-                       'email': 'test_email',
-                       'password': 'test_password'}
-
-@asyncio.coroutine
 def test_QDataStreamProtocol_recv_large_array(protocol, reader):
     reader.feed_data(QDataStreamProtocol.pack_block(b''.join(
         [QDataStreamProtocol.pack_qstring('{"some_header": true}')] +
