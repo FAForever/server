@@ -36,6 +36,13 @@ def perform_login(proto, credentials):
     yield from proto.drain()
 
 @asyncio.coroutine
+def read_until(proto, pred):
+    while True:
+        msg = yield from proto.read_message()
+        if pred(msg):
+            return msg
+
+@asyncio.coroutine
 @slow
 def test_server_invalid_login(loop, lobby_server):
     proto = yield from connect_client(lobby_server)
@@ -61,4 +68,14 @@ def test_server_valid_login(loop, lobby_server):
     proto.close()
     yield from lobby_server.wait_closed()
 
+@asyncio.coroutine
+def test_player_info_broadcast(loop, lobby_server):
+    p1 = yield from connect_client(lobby_server)
+    p2 = yield from connect_client(lobby_server)
 
+    yield from perform_login(p1, ('Dostya', 'vodka'))
+    yield from p1.read_message()
+    yield from perform_login(p2, ('Rhiza', 'puff_the_magic_dragon'))
+    yield from p2.read_message()
+
+    yield from read_until(p1, lambda m: 'player_info' in m.values() and m['login'] == 'Rhiza')

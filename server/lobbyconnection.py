@@ -1056,10 +1056,20 @@ Thanks,\n\
 
         self.sendJSON(dict(command="welcome", id=self.player.id, login=login))
 
+        # Tell player about everybody online
         self.protocol.send_messages(
             [player.to_dict()
              for player in self.player_service]
         )
+
+        # Tell everyone else online about us
+        # FIXME: Introduce a system akin to DirtyGames
+        player_info = self.player.to_dict()
+        for player in self.player_service:
+            if player != self.player:
+                lobby = player.lobby_connection
+                if lobby is not None:
+                    lobby.sendJSON(player_info)
 
         friends = []
         foes = []
