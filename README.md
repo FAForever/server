@@ -116,6 +116,5 @@ The stream API is deprecated, but currently the following message types are supp
 
 * `PING`: response with a `PONG`
 * `PONG`: internal state changed to ponged
-* `FA_CLOSED`: internal cleanup of the player
 * `UPLOAD_MOD, login, session, zipmap, infos, size, fileDaatas`: Upload a mod
 * `UPLOAD_MAP, login, session, zipmap, infos, size, fileDatas`: Upload a map
