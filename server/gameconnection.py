@@ -118,15 +118,13 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         behind the same public address which would cause problems with the old design.
         """
         self.player = self.player_service[player_id]
+        assert self.player
         if self.player.session != session:
             raise AuthenticationError(
                 "Player attempted to authenticate with game connection with mismatched id/session pair.")
 
         if not self.player.lobby_connection:
             raise AuthenticationError("Player {} has no active lobby session".format(self.player))
-
-        if not self.player:
-            raise AuthenticationError("Player not found for IP: %s " % self.ip)
 
         self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, player_id, session))
 
