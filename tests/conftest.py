@@ -162,7 +162,7 @@ def db_pool(request, loop):
 
     @asyncio.coroutine
     def setup():
-        cmd = 'drop database if exists {}; create database {}; use {}; source {};'.format(db, db, db, 'db-structure.sql')
+        cmd = 'SET storage_engine=MEMORY; drop database if exists {}; create database {}; use {}; source {};'.format(db, db, db, 'db-structure.sql')
         subprocess.check_call(['mysql', '-u{}'.format(user), '-p{}'.format(pw) if pw else '', '-e {}'.format(cmd)])
         subprocess.check_call(['mysql',
                                '-u{}'.format(user),
