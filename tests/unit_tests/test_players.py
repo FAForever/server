@@ -66,8 +66,8 @@ def test_serialize():
                numGames=542)
     assert p.to_dict() == {
                     "login": 'Something',
-                    "global_rating": [1234, 68],
-                    "ladder_rating": [1500, 230],
+                    "global_rating": (1234, 68),
+                    "ladder_rating": (1500, 230),
                     "number_of_games": 542,
                     "clan": 'TOAST'
     }
