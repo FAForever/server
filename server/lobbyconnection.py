@@ -897,7 +897,7 @@ Thanks,\n\
 
             # Version of zero represents a developer build.
             if version < versionDB and version != 0:
-                self.sendJSON(dict(command="welcome", update=updateFile))
+                self.sendJSON(dict(command="update", update=updateFile))
                 return
 
             player_id, login, steamid = yield from self.check_user_login(cursor, login, password)
@@ -1118,7 +1118,7 @@ Thanks,\n\
 
     @timed
     def command_ask_session(self, message):
-        jsonToSend = {"command": "welcome", "session": self.session}
+        jsonToSend = {"command": "session", "session": self.session}
         self.sendJSON(jsonToSend)
 
     @timed
