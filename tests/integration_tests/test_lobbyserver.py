@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import pytest
 from server import run_lobby_server
 from server.protocol import QDataStreamProtocol
@@ -39,8 +40,12 @@ def perform_login(proto, credentials):
 def read_until(proto, pred):
     while True:
         msg = yield from proto.read_message()
-        if pred(msg):
-            return msg
+        try:
+            if pred(msg):
+                return msg
+        except (KeyError, ValueError):
+            logging.getLogger().info("read_until predicate raised during message: {}".format(msg))
+            pass
 
 @asyncio.coroutine
 @slow
@@ -78,6 +83,7 @@ def test_player_info_broadcast(loop, lobby_server):
     yield from perform_login(p2, ('Rhiza', 'puff_the_magic_dragon'))
     yield from p2.read_message()
 
-    yield from read_until(p1, lambda m: 'player_info' in m.values() and m['login'] == 'Rhiza')
+    yield from read_until(p1, lambda m: 'player_info' in m.values()
+                                        and any(map(lambda d: ('login', 'Rhiza') in d.items(), m['players'])))
     p1.close()
     p2.close()
