@@ -19,17 +19,21 @@ from server.protocol import GpgNetServerProtocol
 from server.subscribable import Subscribable
 import server.db as db
 
-
 logger = logging.getLogger(__name__)
 
-
 PROXY_SERVER = ('127.0.0.1', 12000)
+
+
+class AuthenticationError(Exception):
+    pass
+
 
 @with_logger
 class GameConnection(Subscribable, GpgNetServerProtocol):
     """
     Responsible for connections to the game, using the GPGNet protocol
     """
+
     def __init__(self, loop, player_service, games: GameService):
         """
         Construct a new GameConnection
@@ -113,35 +117,28 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         For now, this exists primarily to avoid conditions with players,
         behind the same public address which would cause problems with the old design.
         """
-        try:
-            self.player = self.player_service[player_id]
-            if self.player.session != session:
-                self.log.info("Player attempted to authenticate with game connection with mismatched id/session pair.")
-                self.abort()
-                return
+        self.player = self.player_service[player_id]
+        if self.player.session != session:
+            raise AuthenticationError(
+                "Player attempted to authenticate with game connection with mismatched id/session pair.")
 
-            self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, player_id, session))
+        if not self.player.lobby_connection:
+            raise AuthenticationError("Player {} has no active lobby session".format(self.player))
 
-            if not self.player:
-                self.log.info("Player not found for IP: %s " % self.ip)
-                self.abort()
-                return
+        if not self.player:
+            raise AuthenticationError("Player not found for IP: %s " % self.ip)
 
-            if not self.player.game:
-                self.log.info("Player {} hasn't indicated that he wants to join a game".format(self.player))
-                self.abort()
-                return
+        self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, player_id, session))
 
-            self.game = self.player.game
-            self.player.game_connection = self
-            self.lobby = self.player.lobby_connection
+        if not self.player.game:
+            raise AuthenticationError("Player {} hasn't indicated that he wants to join a game".format(self.player))
 
-            self.ping_task = asyncio.async(self.ping())
-            self._state = GameConnectionState.INITIALIZED
-            self._authenticated.set_result(session)
-        except (CancelledError, asyncio.InvalidStateError) as ex:
-            self._logger.exception(ex)
-            self.abort()
+        self.game = self.player.game
+        self.player.game_connection = self
+
+        self.ping_task = asyncio.async(self.ping())
+        self._state = GameConnectionState.INITIALIZED
+        self._authenticated.set_result(session)
 
     def send_message(self, message):
         self.protocol.send_message(message)
@@ -494,7 +491,9 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                                                   "(`mission`, `gameuid`, `secondary`, `time`) "
                                                   "VALUES (%s, %s, %s, %s);",
                                                   (mission, self.game.id, secondary, delta))
-
+        except AuthenticationError as e:
+            self.log.exception("Authentication error: {}".format(e))
+            self.abort()
         except Exception as e:  # pragma: no cover
             self.log.exception(e)
             self.log.exception(self.logGame + "Something awful happened in a game thread!")
