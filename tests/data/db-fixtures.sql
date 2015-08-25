@@ -2,9 +2,9 @@ use faf_test;
 
 -- Login table
 delete from login;
-insert into login (id, login, password) values (1, 'test', 'test_password');
-insert into login (id, login, password) values (2, 'Dostya', 'vodka');
-insert into login (id, login, password) values (3, 'Rhiza', 'puff_the_magic_dragon');
+insert into login (id, login, email, password) values (1, 'test', 'test@example.com', 'test_password');
+insert into login (id, login, email, password) values (2, 'Dostya', 'dostya@cybran.example.com', 'vodka');
+insert into login (id, login, email, password) values (3, 'Rhiza', 'rhiza@aeon.example.com', 'puff_the_magic_dragon');
 
 -- global rating
 delete from global_rating;
