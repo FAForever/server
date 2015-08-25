@@ -62,10 +62,7 @@ values (1, 'faf', 'FAF', 'Forged Alliance Forever', 1),
        (6, 'ladder1v1', 'FAF', 'Ladder games', 1),
        (25, 'coop', 'Coop', 'Multiplayer campaign games', 1);
 
-delete from friends;
-insert into friends (idUser, idFriend)
-values(42, 56);
-
-delete from foes;
-insert into foes (idUser, idFoe)
-values(42, 57);
+delete from friends_and_foes;
+insert into friends_and_foes (user_id, subject_id, `status`)
+values(42, 56, "FRIEND"),
+      (42, 57, "FOE");

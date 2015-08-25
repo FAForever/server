@@ -292,39 +292,13 @@ CREATE TABLE `featured_mods_owners` (
 ) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `foes`
---
-
-DROP TABLE IF EXISTS `foes`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `foes` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `idUser` mediumint(8) unsigned NOT NULL,
-  `idFoe` mediumint(8) unsigned NOT NULL,
-  PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE KEY `unique_pair` (`idUser`,`idFoe`) USING BTREE,
-  KEY `friendCnst` (`idFoe`)
-) ENGINE=InnoDB AUTO_INCREMENT=20595 DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `friends`
---
-
-DROP TABLE IF EXISTS `friends`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `friends` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `idUser` mediumint(8) unsigned NOT NULL,
-  `idFriend` mediumint(8) unsigned NOT NULL,
-  PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE KEY `unique_pair` (`idUser`,`idFriend`) USING BTREE,
-  KEY `friendCnst` (`idFriend`)
-) ENGINE=InnoDB AUTO_INCREMENT=200722 DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `friends_and_foes`;
+CREATE TABLE friends_and_foes (
+  user_id MEDIUMINT UNSIGNED NOT NULL,
+  subject_id MEDIUMINT UNSIGNED NOT NULL,
+  status ENUM("FRIEND", "FOE"),
+  PRIMARY KEY(user_id, subject_id)
+);
 
 --
 -- Table structure for table `game_featuredMods`

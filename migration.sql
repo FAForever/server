@@ -248,6 +248,27 @@ DELETE FROM game_featuredMods WHERE gamemod IN ("custom", "nftw", "aprilfools");
 UPDATE game_featuredMods SET publish = 1 where gamemod = "faf";
 
 
+
+# Merge friends and foes tables so "friend and foe" cannot be a thing anymore...
+
+# Turn everyone who is both a friend and a foe of someone into just a foe.
+DELETE FROM friends WHERE idFriend IN (SELECT * FROM (SELECT friends.idFriend FROM friends INNER JOIN foes ON friends.idUser = foes.idUser WHERE friends.idFriend = foes.idFoe) AS TOASTER);
+
+# The new table to hold friends/foes
+CREATE TABLE friends_and_foes (
+  user_id MEDIUMINT UNSIGNED NOT NULL,
+  subject_id MEDIUMINT UNSIGNED NOT NULL,
+  status ENUM("FRIEND", "FOE"),
+  PRIMARY KEY(user_id, subject_id)
+);
+
+# Copy the old friends and foes data over (safe because we know the pairings are unique now)
+INSERT INTO friends_and_foes(user_id, subject_id, status) SELECT foes.idUser, foes.idFoe, "FOE" AS status FROM foes;
+INSERT INTO friends_and_foes(user_id, subject_id, status) SELECT friends.idUser, friends.idfriend, "FRIEND" AS status FROM friends;
+
+DROP TABLE friends;
+DROP TABLE foes;
+
 # Optimise all the tables we restructured (so we might recover space or be less fragmented or such)
 OPTIMIZE TABLE login;
 OPTIMIZE TABLE table_mod;

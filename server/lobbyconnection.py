@@ -615,44 +615,36 @@ Thanks,\n\
         self.protocol.send_messages([game.to_dict() for game in self.game_service.live_games])
 
     def command_social_remove(self, message):
-        query = "DELETE FROM "
         if "friend" in message:
-            query += "friends WHERE idFriend"
             target_id = message['friend']
         elif "foe" in message:
-            query += "foes WHERE idFoe"
             target_id = message['foe']
         else:
-            self._logger.info("No-op social_remove ignored.")
+            self.abort("No-op social_remove.")
             return
-
-        query += " = %s AND idUser = %s"
 
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute(query, target_id, self.player.id)
+            yield from cursor.execute("DELETE FROM friends_and_foes WHERE user_id = %s AND subject_id = %s", self.player.id, target_id)
 
     @timed()
     @asyncio.coroutine
     def command_social_add(self, message):
-        query = "INSERT INTO "
         if "friend" in message:
-            query += "friends (idUser, idFriend)"
+            status = "FRIEND"
             target_id = message['friend']
         elif "foe" in message:
-            query += "foes (idUser, idFoe)"
+            status = "FOE"
             target_id = message['foe']
         else:
-            self._logger.info("No-op social_add ignored.")
+            self.abort("No-op social_add.")
             return
-
-        query += " values (%s,%s)"
 
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute(query, self.player.id, target_id)
+            yield from cursor.execute("INSERT INTO friends_and_foes(user_id, subject_id, `status`) VALUES(%s, %s, %s)", self.player.id, target_id, status)
 
     @timed()
     def command_admin(self, message):
@@ -1080,27 +1072,21 @@ Thanks,\n\
         friends = []
         foes = []
         query = QSqlQuery(self.db)
-        query.prepare(
-            "SELECT login.login FROM friends JOIN login ON idFriend=login.id WHERE idUser = ?")
+        query.prepare("SELECT `subject_id`, `status` FROM friends_and_foes WHERE user_id = ?")
         query.addBindValue(self.player.id)
         query.exec_()
 
-        if query.size() > 0:
-            while query.next():
-                friends.append(str(query.value(0)))
+        while query.next():
+            target_id = query.value(0)
+            status = query.value(1)
 
-            self.player.friends = set(friends)
+            if status == "FRIEND":
+                friends.append(target_id)
+            else:
+                foes.append(target_id)
 
-        query = QSqlQuery(self.db)
-        query.prepare(
-            "SELECT login.login FROM foes JOIN login ON idFoe=login.id WHERE idUser = ?")
-        query.addBindValue(self.player.id)
-        query.exec_()
-        if query.size() > 0:
-            while query.next():
-                foes.append(str(query.value(0)))
-
-            self.player.foes = set(foes)
+        self.player.friends = set(friends)
+        self.player.foes = set(foes)
 
         self.send_mod_list()
         self.send_game_list()

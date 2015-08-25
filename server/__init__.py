@@ -65,7 +65,7 @@ def run_lobby_server(address: (str, int),
         # that here.
 
         # To see this game, you must have an authenticated connection and be a friend of the host.
-        validation_func = lambda lobby_conn: lobby_conn.authenticated and game.host.friends.contains(lobby_conn.player.login)
+        validation_func = lambda lobby_conn: lobby_conn.authenticated and game.host.friends.contains(lobby_conn.player.id)
 
         message = encode(game)
 
