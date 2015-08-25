@@ -130,7 +130,8 @@ ALTER TABLE login ADD COLUMN salt CHAR(16) AFTER password;
 # Steam-checking now occurs in PHP when you try and add the account (so the steamid field is
 # never set before the check is performed), sessions no longer need to live in the db, and the
 # new cryptographic signup mechanism means we don't need the `validated` flag any more.
-ALTER TABLE login DROP COLUMN validated, DROP COLUMN session, DROP COLUMN steamchecked;
+# ladderCancelled is unused in the new ladder system.
+ALTER TABLE login DROP COLUMN validated, DROP COLUMN session, DROP COLUMN steamchecked, DROP COLUMN ladderCancelled;
 
 # Allocate extra space for pbkdf2 metadata in password field.
 ALTER TABLE login MODIFY password CHAR(77);
