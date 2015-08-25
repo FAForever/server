@@ -134,7 +134,7 @@ def test_ask_session(lobbyconnection):
     lobbyconnection.sendJSON = mock.Mock()
     lobbyconnection.command_ask_session({})
     (response, ), _ = lobbyconnection.sendJSON.call_args
-    assert response['command'] == 'welcome'
+    assert response['command'] == 'session'
 
 # Avatar
 def test_avatar_upload_user(lobbyconnection):
