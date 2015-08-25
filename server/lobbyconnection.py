@@ -1357,4 +1357,5 @@ Thanks,\n\
             self._logger.exception(ex)
 
     def on_connection_lost(self):
-        self.player_service.remove_player(self.player)
+        if self.player:
+            self.player_service.remove_player(self.player)
