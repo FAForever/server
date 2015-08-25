@@ -1279,7 +1279,7 @@ Thanks,\n\
 
         self.sendJSON({"command": "game_launch",
                        "mod": mod,
-                       "uid": game.uuid,
+                       "uid": game.id,
                        "args": ["/numgames " + str(self.player.numGames)]})
 
     @asyncio.coroutine
