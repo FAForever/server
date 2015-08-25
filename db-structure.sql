@@ -765,12 +765,10 @@ CREATE TABLE `login` (
   `salt` char(16) DEFAULT NULL,
   `email` VARCHAR(254) CHARACTER SET latin1 COLLATE latin1_bin NOT NULL,
   `ip` varchar(15) CHARACTER SET latin1 COLLATE latin1_bin DEFAULT NULL,
-  `uniqueId` varchar(45) DEFAULT NULL,
   `steamid` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_login` (`login`),
   UNIQUE KEY `unique_email` (`email`),
-  UNIQUE KEY `uniqueId` (`uniqueId`),
   UNIQUE KEY `steamid` (`steamid`)
 ) ENGINE=InnoDB AUTO_INCREMENT=146315 DEFAULT CHARSET=latin1 COMMENT='login';
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -789,12 +787,10 @@ CREATE TABLE `login_with_duplicated_users` (
   `salt` char(16) DEFAULT NULL,
   `email` VARCHAR(254) CHARACTER SET latin1 COLLATE latin1_bin NOT NULL,
   `ip` varchar(15) CHARACTER SET latin1 COLLATE latin1_bin DEFAULT NULL,
-  `uniqueId` varchar(45) DEFAULT NULL,
   `steamid` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_login` (`login`),
   UNIQUE KEY `unique_email` (`email`),
-  UNIQUE KEY `uniqueId` (`uniqueId`),
   UNIQUE KEY `steamid` (`steamid`)
 ) ENGINE=InnoDB AUTO_INCREMENT=146315 DEFAULT CHARSET=latin1 COMMENT='login';
 /*!40101 SET character_set_client = @saved_cs_client */;

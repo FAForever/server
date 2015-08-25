@@ -132,7 +132,15 @@ ALTER TABLE login ADD COLUMN salt CHAR(16) AFTER password;
 # never set before the check is performed), sessions no longer need to live in the db, and the
 # new cryptographic signup mechanism means we don't need the `validated` flag any more.
 # ladderCancelled is unused in the new ladder system.
-ALTER TABLE login DROP COLUMN validated, DROP COLUMN session, DROP COLUMN steamchecked, DROP COLUMN ladderCancelled;
+# The uniqueId field doesn't hold any information that isn't in the uniqueId table, and since we
+# allow multiple accounts for each UID, this column (and associated unique index) needs to go.
+# The unique_id_users table associates user ids with uniqueIDs, allowing us to verify if users are
+# being naughty.
+ALTER TABLE login DROP COLUMN validated,
+                  DROP COLUMN session,
+                  DROP COLUMN steamchecked,
+                  DROP COLUMN ladderCancelled,
+                  DROP COLUMN uniqueId;
 
 # Allocate extra space for pbkdf2 metadata in password field.
 ALTER TABLE login MODIFY password CHAR(77) NOT NULL;
