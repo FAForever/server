@@ -136,7 +136,10 @@ ALTER TABLE login DROP COLUMN validated, DROP COLUMN session, DROP COLUMN steamc
 # Allocate extra space for pbkdf2 metadata in password field.
 ALTER TABLE login MODIFY password CHAR(77);
 
-
+# Email addresses can be up to 254 characters long, and highly variable length fields should be
+# VARCHAR not CHAR type anyway, else you waste a ton of storage (was CHAR(64))
+# For now preserving ZeP's insane case sensitivity until we figure out what to do about that...
+ALTER TABLE login MODIFY email VARCHAR(254) COLLATE latin1_bin;
 
 
 # Re-combine the game stat data (skipped for now)
