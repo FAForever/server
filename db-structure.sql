@@ -761,7 +761,7 @@ DROP TABLE IF EXISTS `login`;
 CREATE TABLE `login` (
   `id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
   `login` varchar(20) CHARACTER SET latin1 COLLATE latin1_bin NOT NULL,
-  `password` char(77) DEFAULT NULL,
+  `password` char(77) NOT NULL,
   `salt` char(16) DEFAULT NULL,
   `email` VARCHAR(254) CHARACTER SET latin1 COLLATE latin1_bin NOT NULL,
   `ip` varchar(15) CHARACTER SET latin1 COLLATE latin1_bin DEFAULT NULL,
@@ -785,7 +785,7 @@ DROP TABLE IF EXISTS `login_with_duplicated_users`;
 CREATE TABLE `login_with_duplicated_users` (
   `id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
   `login` varchar(20) CHARACTER SET latin1 COLLATE latin1_bin NOT NULL,
-  `password` char(77) DEFAULT NULL,
+  `password` char(77) NOT NULL,
   `salt` char(16) DEFAULT NULL,
   `email` VARCHAR(254) CHARACTER SET latin1 COLLATE latin1_bin NOT NULL,
   `ip` varchar(15) CHARACTER SET latin1 COLLATE latin1_bin DEFAULT NULL,

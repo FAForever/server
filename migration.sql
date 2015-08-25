@@ -125,6 +125,7 @@ CREATE TRIGGER map_play_count AFTER INSERT ON game_stats FOR EACH ROW UPDATE tab
 
 # Add support for password salting
 
+# Can't be not-null, because incremental rehashing.
 ALTER TABLE login ADD COLUMN salt CHAR(16) AFTER password;
 
 # Steam-checking now occurs in PHP when you try and add the account (so the steamid field is
@@ -134,12 +135,12 @@ ALTER TABLE login ADD COLUMN salt CHAR(16) AFTER password;
 ALTER TABLE login DROP COLUMN validated, DROP COLUMN session, DROP COLUMN steamchecked, DROP COLUMN ladderCancelled;
 
 # Allocate extra space for pbkdf2 metadata in password field.
-ALTER TABLE login MODIFY password CHAR(77);
+ALTER TABLE login MODIFY password CHAR(77) NOT NULL;
 
 # Email addresses can be up to 254 characters long, and highly variable length fields should be
 # VARCHAR not CHAR type anyway, else you waste a ton of storage (was CHAR(64))
 # For now preserving ZeP's insane case sensitivity until we figure out what to do about that...
-ALTER TABLE login MODIFY email VARCHAR(254) COLLATE latin1_bin;
+ALTER TABLE login MODIFY email VARCHAR(254) COLLATE latin1_bin NOT NULL;
 
 
 # Re-combine the game stat data (skipped for now)
