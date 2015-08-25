@@ -58,24 +58,12 @@ def run_lobby_server(address: (str, int),
             QDataStreamProtocol.pack_qstring(json.dumps(game.to_dict()))
         )
 
-
-    def report_dirty_private_game(game):
-        # Visibility can at this point only be FRIENDS: the initialisation of the game object will
-        # catch fire if client sends us something not in the enum, so we don't need to sanity check
-        # that here.
-
-        # To see this game, you must have an authenticated connection and be a friend of the host.
-        validation_func = lambda lobby_conn: lobby_conn.authenticated and game.host.friends.contains(lobby_conn.player.id)
-
-        message = encode(game)
-
-        ctx.broadcast_raw(message, validation_func)
-
     def report_dirty_games():
         dirties = games.dirty_games
         games.clear_dirty()
 
-        message_parts = []
+        # TODO: This spams squillions of messages: we should implement per-connection message
+        # aggregation at the next abstraction layer down :P
         for game in dirties:
             # Don't tell anyone about an ended game.
             # TODO: Probably better to do this at the time of the state transition instead?
@@ -83,17 +71,18 @@ def run_lobby_server(address: (str, int),
                 games.remove_game(game)
                 continue
 
+            # So we're going to be broadcasting this to _somebody_...
+            message = encode(game)
+
             # These games shouldn't be broadcast, but instead privately sent to those who are
             # allowed to see them.
-            if game.visibility != VisibilityState.PUBLIC:
-                report_dirty_private_game(game)
-                continue
+            if game.visibility == VisibilityState.FRIENDS:
+                # To see this game, you must have an authenticated connection and be a friend of the host.
+                validation_func = lambda lobby_conn: game.host.friends.contains(lobby_conn.player.id)
+            else:
+                validation_func = lambda lobby_conn: not game.host.foes.contains(lobby_conn.player.id)
 
-            message_parts.append(encode(game))
-
-        message = b''.join(message_parts)
-        if len(message) > 0:
-            ctx.broadcast_raw(message, validate_fn=lambda lobby_conn: lobby_conn.authenticated)
+            ctx.broadcast_raw(message, lambda lobby_conn: lobby_conn.authenticated and validation_func(lobby_conn))
 
         loop.call_later(5, report_dirty_games)
 

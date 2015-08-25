@@ -1056,7 +1056,7 @@ Thanks,\n\
         )
 
         # Tell everyone else online about us
-        # FIXME: Introduce a system akin to DirtyGames
+        # FIXME: Introduce a system akin to dirty_games
         player_info = self.player.to_dict()
         for player in self.player_service:
             if player != self.player:
