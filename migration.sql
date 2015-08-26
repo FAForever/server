@@ -68,17 +68,15 @@ ALTER TABLE table_map DROP INDEX filename;
 
 # Of course, ZeP fucked this up and there are two maps that have duplicates. Prune them.
 # This takes a while (2 minutes on dev), given the need to use a temporary table. It'd take longer
-# than that to think of a cleverer way of doing it, sooo....
-CREATE TEMPORARY TABLE old_stats LIKE game_player_stats;
+# than that to think of a cleverer way of doing it, sooo...
+#
+# Prune any game records that point to these maps (there's only a few, and there's not really a way
+# to save them).CREATE TEMPORARY TABLE old_stats LIKE game_player_stats;
 INSERT INTO old_stats SELECT * FROM game_player_stats;
 DELETE FROM game_player_stats WHERE id IN (SELECT old_stats.id as id FROM game_stats INNER JOIN old_stats on old_stats.gameId = game_stats.id where mapId IN(954, 10));
 DELETE FROM game_stats WHERE mapId IN (954, 10);
 DELETE FROM table_map WHERE id in (954, 10);
 DROP TABLE old_stats;
-
-# Prune any game records that point to these maps (there's only a few, and there's not really a way
-# to save them).
-
 
 CREATE UNIQUE INDEX map_filename ON table_map (filename);
 
