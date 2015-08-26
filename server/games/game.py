@@ -54,6 +54,7 @@ class VisibilityState(IntEnum):
         elif value == VisibilityState.FRIENDS:
             return "friends"
 
+
 # Identifiers must be kept in sync with the contents of the invalid_game_reasons table.
 # New reasons added should have a description added to that table. Identifiers should never be
 # reused, and values should never be deleted from invalid_game_reasons.
@@ -71,9 +72,9 @@ class ValidityState(IntEnum):
     BAD_MOD = 10
     COOP_NOT_RANKED = 11
 
+
 class GameError(Exception):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    pass
 
 
 class Game(BaseGame):
