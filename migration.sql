@@ -97,6 +97,10 @@ CREATE UNIQUE INDEX map_filename ON table_map (filename);
 # This removes about 1/3 of the rows from the table.
 DELETE FROM game_stats WHERE startTime IS NULL AND gameMod IS NULL and mapId IS NULL and gameName IS NULL;
 
+# Same again for the 430221(ish) records from the split-out table.
+DELETE FROM game_stats_bak WHERE startTime IS NULL AND gameMod IS NULL and mapId IS NULL and gameName IS NULL;
+
+
 # Now we only write once, at game-start, the timestamp can look after itself.
 ALTER TABLE game_stats MODIFY COLUMN startTime timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 
