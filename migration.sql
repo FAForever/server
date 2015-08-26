@@ -100,19 +100,16 @@ DELETE FROM game_stats WHERE startTime IS NULL AND gameMod IS NULL and mapId IS 
 # Same again for the 430221(ish) records from the split-out table.
 DELETE FROM game_stats_bak WHERE startTime IS NULL AND gameMod IS NULL and mapId IS NULL and gameName IS NULL;
 
-
 # Now we only write once, at game-start, the timestamp can look after itself.
-ALTER TABLE game_stats MODIFY COLUMN startTime timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
-
-# Since we always insert all the rows at once, nullity isn't a thing...
+# Since we always insert all the columns at once, nullity isn't a thing...
 # Switching from text to VARCHAR, as there's no need to store these values outside the row (and the lookup overheads
 # are unnecessary).
-ALTER TABLE game_stats MODIFY COLUMN gameType enum('0','1','2','3') NOT NULL,
+ALTER TABLE game_stats MODIFY COLUMN startTime timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                       MODIFY COLUMN gameType enum('0','1','2','3') NOT NULL,
                        MODIFY COLUMN gameMod tinyint(3) UNSIGNED NOT NULL,
                        MODIFY COLUMN `host` mediumint(8) UNSIGNED NOT NULL,
                        MODIFY COLUMN mapId mediumint(8) UNSIGNED NOT NULL,
                        MODIFY COLUMN gameName VARCHAR(128) NOT NULL;
-
 
 # Update map play count with a trigger on game_stats, instead of having to do another SQL call from Python-land.
 # (Now we're only inserting when a game actually starts, we can do this)
