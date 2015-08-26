@@ -52,8 +52,8 @@ values
 
 -- game_stats table
 delete from game_stats;
-insert into game_stats (id, startTime, gameName, gameType, gameMod, `host`, mapId)
-values (1, NOW(), 'Test game', '0', 6, 1, 1);
+insert into game_stats (id, startTime, gameName, gameType, gameMod, `host`, mapId, validity)
+values (1, NOW(), 'Test game', '0', 6, 1, 1, 0);
 
 -- featured mods
 delete from game_featuredMods;
