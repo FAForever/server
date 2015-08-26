@@ -104,12 +104,16 @@ DELETE FROM game_stats_bak WHERE startTime IS NULL AND gameMod IS NULL and mapId
 # Since we always insert all the columns at once, nullity isn't a thing...
 # Switching from text to VARCHAR, as there's no need to store these values outside the row (and the lookup overheads
 # are unnecessary).
-ALTER TABLE game_stats MODIFY COLUMN startTime timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+# It's also not really necessary to have an unsigned BIGINT for the id: 2^64 games would take much,
+# much longer than the expected lifetime of the universe, methinks.
+ALTER TABLE game_stats MODIFY COLUMN id int UNSIGNED NOT NULL,
+                       MODIFY COLUMN startTime timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                        MODIFY COLUMN gameType enum('0','1','2','3') NOT NULL,
                        MODIFY COLUMN gameMod tinyint(3) UNSIGNED NOT NULL,
                        MODIFY COLUMN `host` mediumint(8) UNSIGNED NOT NULL,
                        MODIFY COLUMN mapId mediumint(8) UNSIGNED NOT NULL,
-                       MODIFY COLUMN gameName VARCHAR(128) NOT NULL;
+                       MODIFY COLUMN gameName VARCHAR(128) NOT NULL,
+                       ADD COLUMN validity tinyint UNSIGNED NOT NULL;
 
 # Update map play count with a trigger on game_stats, instead of having to do another SQL call from Python-land.
 # (Now we're only inserting when a game actually starts, we can do this)

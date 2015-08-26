@@ -397,13 +397,14 @@ DROP TABLE IF EXISTS `game_stats`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `game_stats` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `id` int unsigned NOT NULL,
   `startTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `gameType` enum('0','1','2','3') NOT NULL,
   `gameMod` tinyint(3) unsigned NOT NULL,
   `host` mediumint(8) unsigned NOT NULL,
   `mapId` mediumint(8) unsigned NOT NULL,
   `gameName` varchar(128) NOT NULL,
+  `validity` tinyint NOT NULL,
   PRIMARY KEY (`id`),
   KEY `startTime` (`startTime`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3638965 DEFAULT CHARSET=latin1;
@@ -433,14 +434,14 @@ DROP TABLE IF EXISTS `game_stats_bak`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `game_stats_bak` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `startTime` timestamp NULL DEFAULT NULL,
-  `EndTime` timestamp NULL DEFAULT NULL,
+  `startTime` timestamp NULL NOT NULL,
+  `EndTime` timestamp NULL NOT NULL,
   `gameType` enum('0','1','2','3') DEFAULT '0',
-  `gameMod` tinyint(3) unsigned DEFAULT NULL,
-  `host` mediumint(8) unsigned DEFAULT NULL,
-  `mapId` mediumint(8) unsigned DEFAULT NULL COMMENT 'map id',
+  `gameMod` tinyint(3) unsigned NOT NULL,
+  `host` mediumint(8) unsigned NOT NULL,
+  `mapId` mediumint(8) unsigned NOT NULL,
   `gameName` tinytext,
-  `valid` tinyint(1) NOT NULL DEFAULT '1',
+  `validity` tinyint NOT NULL,
   PRIMARY KEY (`id`),
   KEY `gameMod` (`gameMod`),
   KEY `host` (`host`),

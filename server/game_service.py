@@ -49,7 +49,18 @@ class GameService:
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute("SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = 'game_stats';" % DB_NAME)
+            # InnoDB, unusually, doesn't allow insertion of values greater than the next expected
+            # value into an auto_increment field. We'd like to do that, because we no longer insert
+            # games into the database when they don't start, so game ids aren't contiguous (as
+            # unstarted games consume ids that never get written out).
+            # So, id has to just be an integer primary key, no auto-increment: we handle its
+            # incrementing here in game service, but have to do this slightly expensive query on
+            # startup (though the primary key index probably makes it super fast anyway).
+            # This is definitely a better choice than inserting useless rows when games are created,
+            # doing LAST_UPDATE_ID to get the id number, and then doing an UPDATE when the actual
+            # data to go into the row becomes available: we now only do a single insert for each
+            # game, and don't end up with 800,000 junk rows in the database.
+            yield from cursor.execute("SELECT MAX(id) FROM game_stats")
             (self.game_id_counter, ) = yield from cursor.fetchone()
 
     def really_update_static_ish_data(self):
@@ -114,7 +125,7 @@ class GameService:
     def createUuid(self):
         self.game_id_counter += 1
 
-        return self.game_id_counter - 1
+        return self.game_id_counter
 
     def create_game(self,
                     visibility=VisibilityState.PUBLIC,
@@ -127,12 +138,14 @@ class GameService:
         Main entrypoint for creating new games
         """
         id = self.createUuid()
-        args = {"id": id,
-                       "host": host,
-                       "name": name,
-                       "map": mapname,
-                       "game_mode": game_mode,
-                       "game_service": self}
+        args = {
+            "id": id,
+            "host": host,
+            "name": name,
+            "map": mapname,
+            "game_mode": game_mode,
+            "game_service": self
+        }
         if game_mode == 'ladder1v1':
             game = LadderGame(**args)
         elif game_mode == 'coop':

@@ -383,7 +383,7 @@ class Game(BaseGame):
     def update_game_stats(self):
         """
         Runs at game-start to populate the game_stats table (games that start are ones we actually
-        care about recording stats for, after all)
+        care about recording stats for, after all).
         """
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
@@ -399,8 +399,10 @@ class Game(BaseGame):
             modId = self.game_service.featured_mods[self.game_mode]['id']
 
             # Write out the game_stats record.
-            cursor.execute("INSERT INTO game_stats(gameType, gameMod, `host`, mapId, gameName)"
-                           "VALUES(%s, %s, %s, %s, %s)", self.gameType, modId, self.host.id, self.map_id, self.name)
+            # In some cases, games can be invalidated while running: we check for those cases when
+            # the game ends and update this record as appropriate.
+            yield from cursor.execute("INSERT INTO game_stats(id, gameType, gameMod, `host`, mapId, gameName, validity)"
+                                      "VALUES(%s, %s, %s, %s, %s, %s, %s)", self.id, self.gameType, modId, self.host.id, self.map_id, self.name, self.validity)
 
     def update_game_player_stats(self):
         query_str = "INSERT INTO `game_player_stats` "\
@@ -436,9 +438,21 @@ class Game(BaseGame):
     def getGamemodVersion(self):
         return self.game_service.game_mode_versions[self.game_mode]
 
-    def mark_invalid(self, reason):
-        self._logger.info("marked as invalid because: {}".format(repr(reason)))
-        self.invalidReason = reason
+    def mark_invalid(self, new_validity_state):
+        self._logger.info("marked as invalid because: {}".format(repr(new_validity_state)))
+        self.validity = new_validity_state
+
+        # If we haven't started yet, the invalidity will be persisted to the database when we start.
+        # Otherwise, we have to do a special update query to write this information out.
+        if self.state == GameState.LOBBY:
+            return
+
+        # Currently, we can only end up here if a game desynced or was a custom game that terminated
+        # too quickly.
+        with (yield from db.db_pool) as conn:
+            cursor = yield from conn.cursor()
+
+            yield from cursor.execute("UPDATE game_stats SET validity = %s WHERE id = %s", new_validity_state, self.id)
 
     def get_army_result(self, army):
         """
