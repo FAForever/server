@@ -21,10 +21,6 @@ class LadderGame(Game):
         super(self.__class__, self).__init__(id, *args, **kwargs)
 
         self.max_players = 2
-        self.player_leagues = {}
-
-    def set_player_league(self, player):
-        self.player_leagues[player] = player.league
 
     def rate_game(self):
         if self.validity == ValidityState.VALID:
@@ -49,10 +45,10 @@ class LadderGame(Game):
                                               "WHERE map_id = %s", (self.map_id, ))
             return
 
-        evenLeague = True
-        maxleague = max(iter(self.player_leagues.items()), key=operator.itemgetter(1))[1]
-        if len(set(self.player_leagues.values())) != 1:
-            evenLeague = False
+        # The highest league of any player in the game, and a flag indicating if all players are in
+        # the same league.
+        maxleague = max(iter(self.players), key=operator.itemgetter("league"))
+        evenLeague = all(self.players, lambda p: p.league == self.players[0].league)
 
         with (yield from db.db_pool) as conn:
             with (yield from conn.cursor()) as cursor:
@@ -60,7 +56,7 @@ class LadderGame(Game):
                     if self.is_winner(player):
                         scoreToAdd = 1
                         if not evenLeague:
-                            if self.player_leagues[player] == maxleague:
+                            if player.league == maxleague:
                                 scoreToAdd = 0.5
                             else:
                                 scoreToAdd = 1.5
@@ -72,7 +68,7 @@ class LadderGame(Game):
                     else:
                         scoreToRemove = 0.5
                         if not evenLeague:
-                            if self.player_leagues[player] == maxleague:
+                            if player.league == maxleague:
                                 scoreToRemove = 1
                             else:
                                 scoreToRemove = 0
