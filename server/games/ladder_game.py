@@ -81,27 +81,33 @@ class LadderGame(Game):
                     # Minimum scores, by league, to move to next league
                     # But, but, these are defined in the database (threshold values)
                     #  Why are they hardcoded here?!
+                    # This query shouldprobably be replaced with a trigger that makes sure to update
+                    # league counters whenever an update happens.
+                    # Alternatively, and perhaps preferably, we can just stop tracking leagues
+                    # explicitly in the database: just store scores and infer leagues from it using
+                    # thresholds defined in a league-defining table.
                     league_incr_min = {1: 50, 2: 75, 3: 100, 4: 150}
                     if pleague in league_incr_min and pscore > league_incr_min[pleague]:
                         yield from cursor.execute("UPDATE {} SET league = league+1, score = 0"
                                                   "WHERE `idUser` = %s".format(config.LADDER_SEASON),
                                                   (player.id, ))
 
+                    # Wait, what?
                     for p in self.players:
                         yield from cursor.execute("SELECT score, league "
                                                   "FROM {} "
                                                   "WHERE idUser = %s".format(config.LADDER_SEASON),
                                                   (player.id, ))
-                        if cursor.rowcount > 0:
-                            score, p.league = yield from cursor.fetchone()
 
-                            yield from cursor.execute("SELECT name, threshold "
-                                                      "FROM `ladder_division` "
-                                                      "WHERE `league` = ? AND threshold >= ?"
-                                                      "ORDER BY threshold ASC LIMIT 1",
-                                                      (p.league, score))
-                            if cursor.rowcount > 0:
-                                p.division, _ = yield from cursor.fetchone()
+                        score, p.league = yield from cursor.fetchone()
+
+                        yield from cursor.execute("SELECT name, threshold "
+                                                  "FROM `ladder_division` "
+                                                  "WHERE `league` = ? AND threshold >= ?"
+                                                  "ORDER BY threshold ASC LIMIT 1",
+                                                  (p.league, score))
+                        if cursor.rowcount > 0:
+                            p.division, _ = yield from cursor.fetchone()
 
     @property
     def is_draw(self):
