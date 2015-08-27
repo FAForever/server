@@ -88,6 +88,8 @@ class LadderGame(Game):
                     if cursor.rowcount == 0:
                         pleague, pscore = yield from cursor.fetchone()
                         # Minimum scores, by league, to move to next league
+                        # But, but, these are defined in the database (threshold values)
+                        #  Why are they hardcoded here?!
                         league_incr_min = {1: 50, 2: 75, 3: 100, 4: 150}
                         if pleague in league_incr_min and pscore > league_incr_min[pleague]:
                             yield from cursor.execute("UPDATE {} SET league = league+1, score = 0"

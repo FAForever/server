@@ -75,8 +75,10 @@ class LadderService:
 
         game.set_player_option(player1.id, 'StartSpot', 1)
         game.set_player_option(player2.id, 'StartSpot', 2)
-        game.set_player_option(player1.id, 'Team', 1)
-        game.set_player_option(player2.id, 'Team', 2)
+
+        # Remembering that "Team 1" corresponds to "-": the non-team.
+        game.set_player_option(player1.id, 'Team', 2)
+        game.set_player_option(player2.id, 'Team', 3)
 
         game.setLeaguePlayer(player1)
         game.setLeaguePlayer(player2)
