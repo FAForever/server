@@ -101,13 +101,16 @@ class LadderGame(Game):
 
                         score, p.league = yield from cursor.fetchone()
 
-                        yield from cursor.execute("SELECT name, threshold "
+                        # Update the player's division. We should probably make the league/division
+                        # threshold tables live in memory in ladder_service. (and move all of this
+                        # logic there, too).
+                        yield from cursor.execute("SELECT name "
                                                   "FROM `ladder_division` "
                                                   "WHERE `league` = ? AND threshold >= ?"
                                                   "ORDER BY threshold ASC LIMIT 1",
                                                   (p.league, score))
-                        if cursor.rowcount > 0:
-                            p.division, _ = yield from cursor.fetchone()
+
+                        p.division = yield from cursor.fetchone()
 
     @property
     def is_draw(self):
