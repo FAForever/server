@@ -14,7 +14,7 @@ class LadderService:
     """Class for 1vs1 ladder games"""
     listable = False
 
-    def __init__(self, games_service, desc, name='ladder1v1', nice_name='ladder 1 vs 1'):
+    def __init__(self, games_service):
         self.players = []
         self.game_service = games_service
 

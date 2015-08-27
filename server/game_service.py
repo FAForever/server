@@ -103,7 +103,7 @@ class GameService:
             self.game_mode_versions['ladder1v1'] = self.game_mode_versions['faf']
 
             # meh meh
-            self.ladder_service = LadderService(self, self.featured_mods['ladder1v1'].description)
+            self.ladder_service = LadderService(self)
 
     @aiocron.crontab('0 * * * *')
     @asyncio.coroutine
