@@ -935,23 +935,22 @@ Thanks,\n\
         # --------------------
         # If a user is top of their division or league, set their avatar appropriately.
 
-        # Query to extract the user's league and divison info.
-        # Naming a column `limit` was unwise.
+        # Query to extract the user's league and division info.
         query = QSqlQuery(self.db)
         query.prepare(
         "SELECT\
           score,\
           ladder_division.league,\
           ladder_division.name AS division,\
-          ladder_division.limit AS `limit`\
+          ladder_division.threshold AS threshold`\
         FROM\
           %s,\
           ladder_division\
         WHERE\
           %s.idUser = ? AND\
           %s.league = ladder_division.league AND\
-          ladder_division.limit >= %s.score\
-        ORDER BY ladder_division.limit ASC\
+          ladder_division.threshold >= %s.score\
+        ORDER BY ladder_division.threshold ASC\
         LIMIT 1;" % (config.LADDER_SEASON, config.LADDER_SEASON, config.LADDER_SEASON, config.LADDER_SEASON))
         query.addBindValue(self.player.id)
         query.exec_()
@@ -961,17 +960,19 @@ Thanks,\n\
             league = int(query.value(1))
             self.player.league = league
             self.player.division = str(query.value(2))
-            limit = int(query.value(3))
+            threshold = int(query.value(3))
 
             cancontinue = True
             if league == 1 and score == 0:
                 cancontinue = False
 
+            # Is it just me, or is most of what follows completely bananas?
+            # I mean _honestly_.
             if cancontinue:
                 # check if top of the division :
                 query.prepare(
                     "SELECT score, idUser FROM %s WHERE score <= ? and league = ? ORDER BY score DESC" % config.LADDER_SEASON)
-                query.addBindValue(limit)
+                query.addBindValue(threshold)
                 query.addBindValue(league)
                 #query.addBindValue(self.player.getId())
                 query.exec_()

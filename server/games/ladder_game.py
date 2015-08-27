@@ -104,10 +104,10 @@ class LadderGame(Game):
                             if cursor.rowcount > 0:
                                 score, p.league = yield from cursor.fetchone()
 
-                                yield from cursor.execute("SELECT name, `limit` "
+                                yield from cursor.execute("SELECT name, threshold "
                                                           "FROM `ladder_division` "
-                                                          "WHERE `league` = ? AND `limit` >= ?"
-                                                          "ORDER BY `limit` ASC LIMIT 1",
+                                                          "WHERE `league` = ? AND threshold >= ?"
+                                                          "ORDER BY threshold ASC LIMIT 1",
                                                           (p.league, score))
                                 if cursor.rowcount > 0:
                                     p.division, _ = yield from cursor.fetchone()

@@ -486,7 +486,7 @@ CREATE TABLE `ladder_division` (
   `id` int(10) unsigned NOT NULL,
   `name` varchar(255) NOT NULL,
   `league` tinyint(3) unsigned NOT NULL,
-  `limit` int(10) unsigned NOT NULL,
+  `threshold` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;

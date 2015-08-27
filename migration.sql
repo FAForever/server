@@ -272,6 +272,12 @@ INSERT INTO friends_and_foes(user_id, subject_id, status) SELECT friends.idUser,
 DROP TABLE friends;
 DROP TABLE foes;
 
+
+
+# Don't name tables after SQL queries
+ALTER TABLE ladder_division CHANGE COLUMN `limit` `threshold` int unsigned NOT NULL;
+
+
 # Optimise all the tables we restructured (so we might recover space or be less fragmented or such)
 OPTIMIZE TABLE login;
 OPTIMIZE TABLE table_mod;
