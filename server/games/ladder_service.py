@@ -11,7 +11,10 @@ import server.db as db
 
 
 class LadderService:
-    """Class for 1vs1 ladder games"""
+    """
+    Service responsible for managing the 1v1 ladder. Does matchmaking, updates statistics, and
+    launches the games.
+    """
     listable = False
 
     def __init__(self, games_service):

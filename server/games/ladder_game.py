@@ -54,29 +54,24 @@ class LadderGame(Game):
             with (yield from conn.cursor()) as cursor:
                 for player in self.players:
                     if self.is_winner(player):
-                        scoreToAdd = 1
+                        score_change = 1
                         if not evenLeague:
                             if player.league == maxleague:
-                                scoreToAdd = 0.5
+                                score_change = 0.5
                             else:
-                                scoreToAdd = 1.5
-
-                        yield from cursor.execute("UPDATE {} "
-                                                  "SET score = (score + %s) "
-                                                  "WHERE idUser = %s".format(config.LADDER_SEASON),
-                                                  (scoreToAdd, player.id))
+                                score_change = 1.5
                     else:
-                        scoreToRemove = 0.5
+                        score_change = -0.5
                         if not evenLeague:
                             if player.league == maxleague:
-                                scoreToRemove = 1
+                                score_change = 1
                             else:
-                                scoreToRemove = 0
+                                score_change = 0
 
-                        yield from cursor.execute("UPDATE {} "
-                                                  "SET score = GREATEST(0, (score - %s))"
-                                                  "WHERE idUser = %s".format(config.LADDER_SEASON),
-                                                  (scoreToRemove, player.id))
+                    yield from cursor.execute("UPDATE {} "
+                                              "SET score = GREATEST(0, (score + %s))"
+                                              "WHERE idUser = %s".format(config.LADDER_SEASON),
+                                              (score_change, player.id))
 
                     yield from cursor.execute("SELECT league, score FROM {}"
                                               "WHERE `idUser` = %s".format(config.LADDER_SEASON),
