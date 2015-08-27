@@ -24,7 +24,7 @@ class LadderGame(Game):
         self.leagues = {}
 
     def set_player_league(self, player):
-        self.leagues[player.login] = player.league
+        self.leagues[player] = player.league
 
     def rate_game(self):
         if self.validity == ValidityState.VALID:
