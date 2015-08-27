@@ -58,7 +58,6 @@ class LadderGame(Game):
             with (yield from conn.cursor()) as cursor:
                 for player in self.players:
                     if self.is_winner(player):
-                        # if not even league:
                         scoreToAdd = 1
                         if not evenLeague:
                             if self.leagues[player] == maxleague:
@@ -71,7 +70,6 @@ class LadderGame(Game):
                                                   "WHERE idUser = %s".format(config.LADDER_SEASON),
                                                   (scoreToAdd, player.id))
                     else:
-                        # if not even league:
                         scoreToRemove = 0.5
                         if not evenLeague:
                             if self.leagues[player] == maxleague:
