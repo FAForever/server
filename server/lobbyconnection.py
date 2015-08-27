@@ -882,7 +882,6 @@ Thanks,\n\
         self.logPrefix = login + "\t"
 
         # Check their client is reporting the right version number.
-        # TODO: Do this somewhere less insane. (no need to query our db for this every login!)
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
             versionDB, updateFile = self.player_service.client_version_info
