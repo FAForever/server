@@ -80,8 +80,8 @@ class LadderService:
         game.set_player_option(player1.id, 'Team', 2)
         game.set_player_option(player2.id, 'Team', 3)
 
-        game.setLeaguePlayer(player1)
-        game.setLeaguePlayer(player2)
+        game.set_player_league(player1)
+        game.set_player_league(player2)
 
         # player 2 will be in game
         

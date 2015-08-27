@@ -23,7 +23,7 @@ class LadderGame(Game):
         self.max_players = 2
         self.leagues = {}
 
-    def setLeaguePlayer(self, player):
+    def set_player_league(self, player):
         self.leagues[player.login] = player.league
 
     def rate_game(self):
