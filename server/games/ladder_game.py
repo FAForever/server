@@ -88,29 +88,18 @@ class LadderGame(Game):
                     # thresholds defined in a league-defining table.
                     league_incr_min = {1: 50, 2: 75, 3: 100, 4: 150}
                     if pleague in league_incr_min and pscore > league_incr_min[pleague]:
-                        yield from cursor.execute("UPDATE {} SET league = league+1, score = 0"
+                        pleague += 1
+                        yield from cursor.execute("UPDATE {} SET league = %s, score = 0"
                                                   "WHERE `idUser` = %s".format(config.LADDER_SEASON),
-                                                  (player.id, ))
+                                                  (player.id, pleague))
 
-                    # Wait, what?
-                    for p in self.players:
-                        yield from cursor.execute("SELECT score, league "
-                                                  "FROM {} "
-                                                  "WHERE idUser = %s".format(config.LADDER_SEASON),
-                                                  (player.id, ))
+                    yield from cursor.execute("SELECT name "
+                                              "FROM `ladder_division` "
+                                              "WHERE `league` = ? AND threshold >= ?"
+                                              "ORDER BY threshold ASC LIMIT 1",
+                                              (pleague, pscore))
 
-                        score, p.league = yield from cursor.fetchone()
-
-                        # Update the player's division. We should probably make the league/division
-                        # threshold tables live in memory in ladder_service. (and move all of this
-                        # logic there, too).
-                        yield from cursor.execute("SELECT name "
-                                                  "FROM `ladder_division` "
-                                                  "WHERE `league` = ? AND threshold >= ?"
-                                                  "ORDER BY threshold ASC LIMIT 1",
-                                                  (p.league, score))
-
-                        p.division = yield from cursor.fetchone()
+                    player.division = yield from cursor.fetchone()
 
     @property
     def is_draw(self):
