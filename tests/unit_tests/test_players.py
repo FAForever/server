@@ -3,7 +3,7 @@ from unittest import mock
 
 from trueskill import Rating
 
-from faf.faction import Faction
+from faf.factions import Faction
 from server.players import Player
 
 

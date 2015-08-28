@@ -2,7 +2,7 @@ from abc import ABCMeta
 
 from trueskill import Rating
 
-from faf.faction import Faction
+from faf.factions import Faction
 
 
 class BasePlayer:
