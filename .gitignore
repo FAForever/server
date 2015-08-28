@@ -1,5 +1,5 @@
 passwords.py
-server.egg-info/
+*.egg-info/
 *.pyc
 *.swp
 .idea/
