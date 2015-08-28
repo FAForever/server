@@ -1,8 +1,9 @@
 import gc
-
 from unittest import mock
+
 from trueskill import Rating
-from server.abc.faction import Faction
+
+from faf.faction import Faction
 from server.players import Player
 
 

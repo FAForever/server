@@ -1,11 +1,11 @@
-from abc import ABCMeta, abstractproperty
+from abc import ABCMeta
 
 from trueskill import Rating
 
-from server.abc.faction import Faction
+from faf.faction import Faction
 
 
-class BasePlayer():
+class BasePlayer:
     """
     Abstract base class for players
     """
