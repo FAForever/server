@@ -19,4 +19,3 @@ aiocron
 marisa-trie
 git+https://github.com/FAForever/faftools.git@develop#egg=faftools
 git+https://github.com/jaybaird/python-bloomfilter.git@2bbe01ad49965bf759e31781e6820408068862ac#egg=pybloom
--e .
