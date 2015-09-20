@@ -1,10 +1,8 @@
 FROM python:3.4.3
 
-ENTRYPOINT ["faf-server"]
-
 RUN apt-get update
 
-RUN yes '' | apt-get install libqt4-dev
+RUN yes '' | apt-get install libqt4-dev mysql-client
 
 RUN pip install --upgrade pip
 
@@ -12,12 +10,14 @@ COPY requirements.txt /tmp/requirements.txt
 
 RUN pip install --trusted-host content.dev.faforever.com -r /tmp/requirements.txt
 
-COPY . /tmp/
+ADD . /code/
 
-COPY passwords.py.example /tmp/passwords.py
+COPY passwords.example.py /code/passwords.py
 
-WORKDIR /tmp/
+WORKDIR /code/
 
 RUN pip install -e .
 
-RUN py.test
+VOLUME ["/code/logs"]
+
+CMD ["./server.py"]

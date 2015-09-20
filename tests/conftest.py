@@ -11,6 +11,7 @@ import asyncio
 import logging
 import subprocess
 import sys
+from passwords import DB_SERVER, DB_LOGIN, DB_PORT, DB_PASSWORD, DB_NAME
 
 import pytest
 from unittest import mock
@@ -40,11 +41,11 @@ def pytest_addoption(parser):
                      help='Also run slow tests')
     parser.addoption('--aiodebug', action='store_true', default=False,
                      help='Enable asyncio debugging')
-    parser.addoption('--mysql_host', action='store', default='127.0.0.1', help='mysql host to use for test database')
-    parser.addoption('--mysql_username', action='store', default='root', help='mysql username to use for test database')
-    parser.addoption('--mysql_password', action='store', default=None, help='mysql password to use for test database')
+    parser.addoption('--mysql_host', action='store', default=DB_SERVER, help='mysql host to use for test database')
+    parser.addoption('--mysql_username', action='store', default=DB_LOGIN, help='mysql username to use for test database')
+    parser.addoption('--mysql_password', action='store', default=DB_PASSWORD, help='mysql password to use for test database')
     parser.addoption('--mysql_database', action='store', default='faf_test', help='mysql database to use for tests')
-    parser.addoption('--mysql_port',     action='store', default=3306, help='mysql port to use for tests')
+    parser.addoption('--mysql_port',     action='store', default=int(DB_PORT), help='mysql port to use for tests')
 
 def pytest_configure(config):
     if config.getoption('--aiodebug'):
@@ -162,11 +163,15 @@ def db_pool(request, loop):
 
     @asyncio.coroutine
     def setup():
-        cmd = 'SET storage_engine=MEMORY; drop database if exists {}; create database {}; use {}; source {};'.format(db, db, db, 'db-structure.sql')
+        cmd = 'SET default_storage_engine=MEMORY; drop database if exists {}; create database {}; use {}; source {};'.format(db, db, db, 'db-structure.sql')
         try:
-            subprocess.check_output(['mysql', '-u{}'.format(user), '-p{}'.format(pw) if pw else '', '-e {}'.format(cmd)],
+            subprocess.check_output(['mysql',
+                                     '-h{}'.format(host),
+                                     '-u{}'.format(user),
+                                     '-p{}'.format(pw) if pw else '', '-e {}'.format(cmd)],
                                     stderr=subprocess.STDOUT)
             subprocess.check_call(['mysql',
+                                   '-h{}'.format(host),
                                    '-u{}'.format(user),
                                    '-p{}'.format(pw) if pw else '',
                                    '-e use {}; source {};'.format(db, 'tests/data/db-fixtures.sql')],

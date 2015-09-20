@@ -62,7 +62,7 @@ if __name__ == '__main__':
         else:
             db = QtSql.QSqlDatabase(args['--db'])
             db.setHostName(DB_SERVER)
-            db.setPort(DB_PORT)
+            db.setPort(int(DB_PORT))
 
             db.setDatabaseName(DB_NAME)
             db.setUserName(DB_LOGIN)
@@ -84,7 +84,7 @@ if __name__ == '__main__':
         timer.start(200)
 
         pool_fut = asyncio.async(server.db.connect(host=DB_SERVER,
-                                                   port=DB_PORT,
+                                                   port=int(DB_PORT),
                                                    user=DB_LOGIN,
                                                    password=DB_PASSWORD,
                                                    maxsize=10,
