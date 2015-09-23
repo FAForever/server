@@ -16,6 +16,7 @@ before_script:
 script:
   - pip install -e .
   - export QUAMASH_QTIMPL=PySide
+  - export DB_ENV_MYSQL_ROOT_PASSWORD=
   - py.test --slow --cov-report term-missing --cov=server
   - pyflakes . || true
 
