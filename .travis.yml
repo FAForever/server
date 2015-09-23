@@ -5,17 +5,14 @@ python:
 
 install:
   - cp passwords.example.py passwords.py
-  - sudo apt-get install libqt4-dev
   - "pip install --upgrade pip"
   - "pip install --trusted-host content.dev.faforever.com -r requirements.txt"
-  - python ~/virtualenv/python${TRAVIS_PYTHON_VERSION}/bin/pyside_postinstall.py -install
 
 before_script:
   - "mysql -e 'create database faf_test;'"
 
 script:
   - pip install -e .
-  - export QUAMASH_QTIMPL=PySide
   - export DB_ENV_MYSQL_ROOT_PASSWORD=
   - py.test --slow --cov-report term-missing --cov=server
   - pyflakes . || true
