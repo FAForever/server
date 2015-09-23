@@ -1,8 +1,8 @@
-FROM python:3.4.3
+FROM python:3.5
 
 RUN apt-get update
 
-RUN yes '' | apt-get install libqt4-dev mysql-client
+RUN yes '' | apt-get install mysql-client
 
 RUN pip install --upgrade pip
 
