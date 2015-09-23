@@ -4,7 +4,7 @@ python:
   - "3.4"
 
 install:
-  - cp passwords.py.example passwords.py
+  - cp passwords.example.py passwords.py
   - sudo apt-get install libqt4-dev
   - "pip install --upgrade pip"
   - "pip install --trusted-host content.dev.faforever.com -r requirements.txt"
