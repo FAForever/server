@@ -20,7 +20,7 @@ class NatPacketServer(Subscribable):
         self._subscribers = {}
 
     def close(self):
-        self.loop.remove_reader(self._recv())
+        self.loop.remove_reader(self._socket.fileno())
         try:
             self._socket.shutdown(socket.SHUT_RDWR)
         except OSError as ex:
