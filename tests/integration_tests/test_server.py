@@ -16,7 +16,7 @@ slow = pytest.mark.slow
 TEST_ADDRESS = ('127.0.0.1', None)
 
 @pytest.fixture
-def game_server(mocker, loop, request, player_service, game_service, db, mock_db_pool):
+def game_server(mocker, loop, request, player_service, game_service, mock_db_pool):
     player = Player(login='Foo', session=42, id=1)
     game = Game(1, game_service, host=player)
     # Evil hack to keep 'game' in memory.
@@ -46,11 +46,10 @@ from server.protocol import QDataStreamProtocol
 slow = pytest.mark.slow
 
 @pytest.fixture
-def lobby_server(request, loop, db_pool, player_service, game_service, db):
+def lobby_server(request, loop, db_pool, player_service, game_service):
     server = loop.run_until_complete(run_lobby_server(('127.0.0.1', None),
                                                       player_service,
                                                       game_service,
-                                                      db,
                                                       loop))
 
     def fin():
@@ -143,7 +142,7 @@ def connect_and_sign_in(credentials, lobby_server):
 
 @asyncio.coroutine
 @slow
-def test_public_host(loop, game_server, lobby_server, player_service, db):
+def test_public_host(loop, game_server, lobby_server, player_service):
     nat_server, server = game_server
 
     player_id, session, proto = yield from connect_and_sign_in(('Dostya', 'vodka'), lobby_server)

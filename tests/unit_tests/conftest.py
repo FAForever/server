@@ -12,7 +12,7 @@ def lobbythread():
 
 
 @pytest.fixture
-def game_connection(request, game, loop, player_service, players, game_service, transport, connected_game_socket):
+def game_connection(request, game, loop, player_service, players, game_service, transport):
     from server import GameConnection, LobbyConnection
     conn = GameConnection(loop=loop, player_service=player_service, games=game_service)
     conn._transport = transport

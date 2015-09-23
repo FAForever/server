@@ -6,7 +6,19 @@ Copyright (c) 2015 Michael Søndergaard <sheeo@sheeo.dk>
 
 Distributed under GPLv3, see license.txt
 """
+import json
+import server.db
+import config
+
 from server.games.game import GameState, VisibilityState
+from .gameconnection import GameConnection
+from .natpacketserver import NatPacketServer
+from server.lobbyconnection import LobbyConnection
+from server.protocol import QDataStreamProtocol
+from server.servercontext import ServerContext
+from server.player_service import PlayerService
+from server.game_service import GameService
+from server.control import init as run_control_server
 
 __version__ = '0.1'
 __author__ = 'Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard'
@@ -14,18 +26,6 @@ __contact__ = 'admin@faforever.com'
 __license__ = 'GPLv3'
 __copyright__ = 'Copyright (c) 2011-2015 ' + __author__
 
-import json
-from .gameconnection import GameConnection
-from .natpacketserver import NatPacketServer
-
-import config
-from server.lobbyconnection import LobbyConnection
-from server.protocol import QDataStreamProtocol
-from server.servercontext import ServerContext
-from server.player_service import PlayerService
-from server.game_service import GameService
-from server.control import init as run_control_server
-import server.db
 
 __all__ = [
     'run_lobby_server',
@@ -40,7 +40,6 @@ __all__ = [
 def run_lobby_server(address: (str, int),
                      player_service: PlayerService,
                      games: GameService,
-                     db,
                      loop):
     """
     Run the lobby server
@@ -48,7 +47,6 @@ def run_lobby_server(address: (str, int),
     :param address: Address to listen on
     :param player_service: Service to talk to about players
     :param games: Service to talk to about games
-    :param db: QSqlDatabase
     :param loop: Event loop to use
     :return ServerContext: A server object
     """
@@ -94,7 +92,6 @@ def run_lobby_server(address: (str, int),
         return LobbyConnection(context=ctx,
                                games=games,
                                players=player_service,
-                               db=db,
                                loop=loop)
     ctx = ServerContext(initialize_connection, name="LobbyServer", loop=loop)
     loop.call_later(5, report_dirty_games)

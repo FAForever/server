@@ -1,8 +1,6 @@
 import asyncio
 import socket
 
-from PySide.QtCore import QObject
-from PySide.QtNetwork import QUdpSocket
 from unittest import mock
 from server.decorators import with_logger
 from server.protocol import QDataStreamProtocol
@@ -44,14 +42,14 @@ class GpgClientProtocol(GpgNetClientProtocol):
 
 
 @with_logger
-class TestGPGClient(QObject):
+class TestGPGClient:
     """
     Client used for acting as a GPGNet client.
     This means communicating with the GameServer
     through the GpgClientProtocol, and being able to
     send/receive out-of-band UDP messages.
     """
-    def __init__(self, udp_port, loop, process_nat_packets=True, parent=None):
+    def __init__(self, udp_port, loop, process_nat_packets=True):
         """
         Initialize the test client
         :param loop: asyncio event loop:
@@ -64,21 +62,15 @@ class TestGPGClient(QObject):
         :param parent:
         :return:
         """
-        super(TestGPGClient, self).__init__(parent)
+        super(TestGPGClient, self).__init__()
         self.process_nat_packets = process_nat_packets
         self._logger.debug("Listening for UDP on: %s" % udp_port)
         self.messages = mock.MagicMock()
         self.udp_messages = mock.MagicMock()
         self.loop = loop
-        self.udp_socket = QUdpSocket()
-        self.udp_socket.connected.connect(self._on_connected)
-        self.udp_socket.error.connect(self._on_error)
-        self.udp_socket.stateChanged.connect(self._on_state_change)
-        self.udp_socket.readyRead.connect(self._on_udp_message)
 
         self.proto = None
         self.client_pair = None
-        self.udp_socket.bind(udp_port)
 
     @asyncio.coroutine
     def connect(self, host, port):

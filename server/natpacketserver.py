@@ -3,7 +3,6 @@ import socket
 from server.subscribable import Subscribable
 from .decorators import with_logger
 
-
 @with_logger
 class NatPacketServer(Subscribable):
     def __init__(self, loop, port):

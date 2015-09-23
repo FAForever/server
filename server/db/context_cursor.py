@@ -14,3 +14,7 @@ class ContextCursor(aiomysql.Cursor):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         asyncio.async(self.close())
+
+    @property
+    def size(self):
+        return self.rowcount

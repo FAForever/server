@@ -1,7 +1,6 @@
 from unittest import mock
 
 
-from PySide import QtSql
 import pytest
 
 from server.games import LadderService

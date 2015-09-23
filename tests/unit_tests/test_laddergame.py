@@ -7,9 +7,8 @@ from server.games.game import GameState
 from tests.unit_tests.test_game import add_connected_players
 
 @pytest.fixture()
-def laddergame(db):
+def laddergame():
     mock_parent = mock.Mock()
-    mock_parent.db = db
     return LadderGame(1, mock_parent)
 
 

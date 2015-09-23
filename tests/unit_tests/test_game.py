@@ -10,7 +10,7 @@ from server.gameconnection import GameConnection, GameConnectionState
 
 
 @pytest.fixture()
-def game(db, game_service):
+def game(game_service):
     return Game(42, game_service)
 
 
@@ -18,11 +18,10 @@ def test_initialization(game: Game):
     assert game.state == GameState.INITIALIZING
 
 
-def test_instance_logging(db):
+def test_instance_logging():
     logger = logging.getLogger('{}.5'.format(Game.__qualname__))
     logger.info = mock.Mock()
     mock_parent = mock.Mock()
-    mock_parent.db = db
     game = Game(5, mock_parent)
     logger.info.assert_called_with("{} created".format(game))
 

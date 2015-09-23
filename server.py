@@ -18,10 +18,6 @@ from logging import handlers
 import signal
 import socket
 
-from quamash import QEventLoop
-from PySide import QtSql, QtCore
-from PySide.QtCore import QTimer
-
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME
 from server.game_service import GameService
 from server.player_service import PlayerService
@@ -35,8 +31,6 @@ if __name__ == '__main__':
             logger.info("Received signal, shutting down")
             if not done.done():
                 done.set_result(0)
-
-        app = QtCore.QCoreApplication(sys.argv)
 
         if config.LIBRARY_PATH:
             app.addLibraryPath(config.LIBRARY_PATH)
@@ -56,32 +50,9 @@ if __name__ == '__main__':
         rootlogger.addHandler(logHandler)
         rootlogger.setLevel(config.LOG_LEVEL)
 
-        if args['--nodb']:
-            from unittest import mock
-            db = mock.Mock()
-        else:
-            db = QtSql.QSqlDatabase(args['--db'])
-            db.setHostName(DB_SERVER)
-            db.setPort(int(DB_PORT))
-
-            db.setDatabaseName(DB_NAME)
-            db.setUserName(DB_LOGIN)
-            db.setPassword(DB_PASSWORD)
-            db.setConnectOptions("MYSQL_OPT_RECONNECT=1")
-
-        if not db.open():
-            logger.error(db.lastError().text())
-            sys.exit(1)
-
         # Make sure we can shutdown gracefully
         signal.signal(signal.SIGTERM, signal_handler)
         signal.signal(signal.SIGINT, signal_handler)
-
-        def poll_signal():
-            pass
-        timer = QTimer()
-        timer.timeout.connect(poll_signal)
-        timer.start(200)
 
         pool_fut = asyncio.async(server.db.connect(host=DB_SERVER,
                                                    port=int(DB_PORT),
@@ -101,7 +72,6 @@ if __name__ == '__main__':
             server.run_lobby_server(('', 8001),
                                     players_online,
                                     games,
-                                    db,
                                     loop)
         )
         for sock in lobby_server.sockets:

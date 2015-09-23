@@ -11,7 +11,7 @@ import asyncio
 import logging
 import subprocess
 import sys
-from passwords import DB_SERVER, DB_LOGIN, DB_PORT, DB_PASSWORD, DB_NAME
+from passwords import DB_SERVER, DB_LOGIN, DB_PORT, DB_PASSWORD
 
 import pytest
 from unittest import mock
@@ -20,9 +20,7 @@ from trueskill import Rating
 logging.getLogger().setLevel(logging.DEBUG)
 
 import os
-os.environ['QUAMASH_QTIMPL'] = 'PySide'
 
-import quamash
 
 def async_test(f):
     def wrapper(*args, **kwargs):
@@ -32,9 +30,11 @@ def async_test(f):
         loop.run_until_complete(future)
     return wrapper
 
+
 def pytest_pycollect_makeitem(collector, name, obj):
     if name.startswith('test_') and asyncio.iscoroutinefunction(obj):
         return list(collector._genfunctions(name, obj))
+
 
 def pytest_addoption(parser):
     parser.addoption('--slow', action='store_true', default=False,
@@ -46,6 +46,7 @@ def pytest_addoption(parser):
     parser.addoption('--mysql_password', action='store', default=DB_PASSWORD, help='mysql password to use for test database')
     parser.addoption('--mysql_database', action='store', default='faf_test', help='mysql database to use for tests')
     parser.addoption('--mysql_port',     action='store', default=int(DB_PORT), help='mysql port to use for tests')
+
 
 def pytest_configure(config):
     if config.getoption('--aiodebug'):
@@ -84,44 +85,9 @@ def pytest_pyfunc_call(pyfuncitem):
         raise err
     return True
 
-@pytest.fixture(scope='session')
-def application():
-    from server.qt_compat import QtCore
-    return QtCore.QCoreApplication([])
-
 @pytest.fixture(scope='session', autouse=True)
-def loop(request, application):
-    loop = quamash.QEventLoop(application)
-    loop.set_debug(True)
-    asyncio.set_event_loop(loop)
-    additional_exceptions = []
-
-    def finalize():
-        sys.excepthook = orig_excepthook
-        try:
-            loop.close()
-        except KeyError:
-            pass
-        finally:
-            asyncio.set_event_loop(None)
-            for exc in additional_exceptions:
-                if (
-                        os.name == 'nt' and
-                        isinstance(exc['exception'], WindowsError) and
-                        exc['exception'].winerror == 6
-                ):
-                    # ignore Invalid Handle Errors
-                    continue
-                raise exc['exception']
-    def except_handler(loop, ctx):
-        additional_exceptions.append(ctx)
-    def excepthook(type, *args):
-        loop.stop()
-    orig_excepthook = sys.excepthook
-    sys.excepthook = excepthook
-    loop.set_exception_handler(except_handler)
-    request.addfinalizer(finalize)
-    return loop
+def loop(request):
+    return asyncio.get_event_loop()
 
 @pytest.fixture
 def sqlquery():
@@ -132,15 +98,6 @@ def sqlquery():
     query.prepare = mock.MagicMock()
     query.addBindValue = lambda v: None
     return query
-
-@pytest.fixture
-def db(sqlquery):
-    # Since PySide does strict type checking, we cannot mock this directly
-    from server.qt_compat import QtSql
-    db = QtSql.QSqlDatabase()
-    db.exec_ = lambda q: sqlquery
-    db.isOpen = mock.Mock(return_value=True)
-    return db
 
 @pytest.fixture
 def mock_db_pool(loop, db_pool, autouse=True):
@@ -190,23 +147,14 @@ def db_pool(request, loop):
     return pool
 
 @pytest.fixture
-def connected_game_socket():
-    from server.qt_compat import QtNetwork
-    game_socket = mock.Mock(spec=QtNetwork.QTcpSocket)
-    game_socket.state = mock.Mock(return_value=QtNetwork.QTcpSocket.ConnectedState)
-    game_socket.isValid = mock.Mock(return_value=True)
-    return game_socket
-
-@pytest.fixture
 def transport():
     return mock.Mock(spec=asyncio.Transport)
 
 @pytest.fixture
-def game(players, db):
+def game(players):
     from server.games import Game
     from server.abc.base_game import InitMode
     mock_parent = mock.Mock()
-    mock_parent.db = db
     game = mock.create_autospec(spec=Game(1, mock_parent))
     players.hosting.getGame = mock.Mock(return_value=game)
     players.joining.getGame = mock.Mock(return_value=game)

@@ -71,10 +71,9 @@ def test_ping_hit(game_connection):
     assert game_connection.abort.mock_calls == []
 
 
-def test_abort(game_connection, game, players, connected_game_socket):
+def test_abort(game_connection, game, players):
     game_connection.player = players.hosting
     game_connection.game = game
-    game_connection.socket = connected_game_socket
 
     game_connection.abort()
 

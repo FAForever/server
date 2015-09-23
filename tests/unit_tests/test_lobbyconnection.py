@@ -56,12 +56,11 @@ def mock_protocol():
     return mock.create_autospec(QDataStreamProtocol(mock.Mock(), mock.Mock()))
 
 @pytest.fixture
-def lobbyconnection(loop, mock_context, mock_protocol, mock_games, mock_players, mock_player, db):
+def lobbyconnection(loop, mock_context, mock_protocol, mock_games, mock_players, mock_player):
     lc = LobbyConnection(loop,
                          context=mock_context,
                          games=mock_games,
-                         players=mock_players,
-                         db=db)
+                         players=mock_players)
     lc.player = mock_player
     lc.protocol = mock_protocol
     return lc
@@ -135,54 +134,6 @@ def test_ask_session(lobbyconnection):
     lobbyconnection.command_ask_session({})
     (response, ), _ = lobbyconnection.sendJSON.call_args
     assert response['command'] == 'session'
-
-# Avatar
-def test_avatar_upload_user(lobbyconnection):
-    lobbyconnection.sendJSON = mock.Mock()
-    lobbyconnection.player = mock.Mock()
-    lobbyconnection.player.admin.return_value = False
-    with pytest.raises(KeyError):
-        lobbyconnection.command_avatar({'action': 'upload_avatar',
-                                         'name': '', 'file': '', 'description': ''})
-
-def test_avatar_list_avatar(mocker, lobbyconnection):
-    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
-
-    lobbyconnection.sendJSON = mock.Mock()
-    mock_query.return_value.size.return_value = 1
-    mock_query.return_value.next.side_effect = [True, True, False]
-    lobbyconnection.command_avatar({'action': 'list_avatar'})
-    (response, ), _ = lobbyconnection.sendJSON.call_args
-    assert response['command'] == 'avatar'
-    assert len(response['avatarlist']) == 2
-
-# TODO: @sheeo return JSON message on empty avatar list?
-def test_avatar_list_avatar_empty(mocker, lobbyconnection):
-    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
-
-    lobbyconnection.sendJSON = mock.Mock()
-    mock_query.return_value.size.return_value = 0
-    lobbyconnection.command_avatar({'action': 'list_avatar'})
-    assert lobbyconnection.sendJSON.mock_calls == []
-
-def test_avatar_select(mocker, lobbyconnection):
-    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
-
-    lobbyconnection.sendJSON = mock.Mock()
-    lobbyconnection.command_avatar({'action': 'select', 'avatar': ''})
-    assert mock_query.return_value.exec_.call_count == 2
-
-def test_avatar_select_remove(mocker, lobbyconnection):
-    mock_query = mocker.patch('server.lobbyconnection.QSqlQuery')
-
-    lobbyconnection.sendJSON = mock.Mock()
-    lobbyconnection.command_avatar({'action': 'select', 'avatar': None})
-    assert mock_query.return_value.exec_.call_count == 1
-
-def test_avatar_select_no_avatar(mocker, lobbyconnection):
-    mocker.patch('server.lobbyconnection.QSqlQuery')
-    with pytest.raises(KeyError):
-        lobbyconnection.command_avatar({'action': 'select'})
 
 def test_send_game_list(mocker, lobbyconnection):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
