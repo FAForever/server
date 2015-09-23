@@ -10,44 +10,18 @@ master|develop
 
 ## Installation
 
-Install Python 3.4 or later. Pre-requisites are listed in `requirements.txt`,
-install using `pip install -r requirements.txt`.
+Install [docker](https://www.docker.com).
 
-Instructions for Ubuntu (12 and 14.10):
+Follow the steps to get [faf-db](https://github.com/FAForever/db) setup, the following assumes the db container is called `faf-db`.
 
-If you do not have pip for python 3 yet, install it.
-
-    sudo apt-get install python3-pip
-
-Then install the dependencies of the repo.
-
-    sudo pip3 install -r requirements.txt
-    
-Also install PySide, either from source using pip
-
-    sudo pip3 install PySide
-
-or use the prebuilt wheel distributed by FAF, for use on travis-ci:
-
-    sudo pip3 install PySide --no-index --find-links=http://content.dev.faforever.com/wheel/
-
-If you installed using the wheel, also run the `pyside_postinstall.py` script
-
-    sudo python3 /usr/local/bin/pyside_postinstall.py -install
+    docker build -t faf/server .
+    docker run --link faf-db:db -p8001:8001 -p8000:8000 -p30351:30351 faf/server
 
 ## Running the tests
 
-Create the `passwords.py` file. This can be done by copying `passwords.py.example`.
-
-    cp passwords.py.example passwords.py
-
-Ensure that the `server` package is importable.
-
-    pip install -e .
-
 Run `py.test`
 
-    py.test tests/
+    docker run --link faf-db:db faf/server bash -c py.test
 
 # Contributing
 
