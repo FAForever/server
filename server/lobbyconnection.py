@@ -183,18 +183,18 @@ class LobbyConnection(QObject):
 
         # Yield the database connection back to the pool here, as we shouldn't hold it while doing
         # crazy expensive zipfile manipulation crap.
-        writeFile = QFile(Config['content_path'] + "vault/mods/%s" % zipmap)
+        writeFile = QFile(config.CONTENT_PATH + "vault/mods/%s" % zipmap)
 
         if writeFile.open(QIODevice.WriteOnly):
             writeFile.write(fileDatas)
 
         writeFile.close()
 
-        if not zipfile.is_zipfile(Config['content_path'] + "vault/mods/%s" % zipmap):
+        if not zipfile.is_zipfile(config.CONTENT_PATH + "vault/mods/%s" % zipmap):
             self.sendJSON(
                 dict(command="notice", style="error", text="Cannot unzip mod. Upload error ?"))
             return
-        zip = zipfile.ZipFile(Config['content_path'] + "vault/mods/%s" % zipmap, "r",
+        zip = zipfile.ZipFile(config.CONTENT_PATH + "vault/mods/%s" % zipmap, "r",
                               zipfile.ZIP_DEFLATED)
 
         # Is the zipfile corrupt?
@@ -212,7 +212,7 @@ class LobbyConnection(QObject):
             if filename.endswith(".png"):
                 source = zip.open(member)
                 target = open(
-                    os.path.join(Config['content_path'] + "vault/mods_thumbs/",
+                    os.path.join(config.CONTENT_PATH + "vault/mods_thumbs/",
                                  zipmap.replace(".zip", ".png")), "wb")
                 icon = zipmap.replace(".zip", ".png")
 
@@ -302,19 +302,19 @@ class LobbyConnection(QObject):
                 dict(command="notice", style="error", text="This map is already in the database !"))
             return
 
-        writeFile = QFile(Config['content_path'] + "vault/maps/%s" % zipmap)
+        writeFile = QFile(config.CONTENT_PATH + "vault/maps/%s" % zipmap)
 
         if writeFile.open(QIODevice.WriteOnly):
             writeFile.write(fileDatas)
         writeFile.close()
 
         # Corrupt zipfile?
-        if not zipfile.is_zipfile(Config['content_path'] + "vault/maps/%s" % zipmap):
+        if not zipfile.is_zipfile(config.CONTENT_PATH + "vault/maps/%s" % zipmap):
             self.sendJSON(
                 dict(command="notice", style="error", text="Cannot unzip map. Upload error ?"))
             return
 
-        zip = zipfile.ZipFile(Config['content_path'] + "vault/maps/%s" % zipmap, "r",
+        zip = zipfile.ZipFile(config.CONTENT_PATH + "vault/maps/%s" % zipmap, "r",
                               zipfile.ZIP_DEFLATED)
 
         if zip.testzip() is None:
@@ -325,7 +325,7 @@ class LobbyConnection(QObject):
                 if filename.endswith(".small.png"):
                     source = zip.open(member)
                     target = open(
-                        os.path.join(Config['content_path'] + "vault/map_previews/small/",
+                        os.path.join(config.CONTENT_PATH + "vault/map_previews/small/",
                                      filename.replace(".small.png", ".png")), "wb")
 
                     shutil.copyfileobj(source, target)
@@ -334,7 +334,7 @@ class LobbyConnection(QObject):
                 elif filename.endswith(".large.png"):
                     source = zip.open(member)
                     target = open(
-                        os.path.join(Config['content_path'] + "vault/map_previews/large/",
+                        os.path.join(config.CONTENT_PATH + "vault/map_previews/large/",
                                      filename.replace(".large.png", ".png")), "wb")
 
                     shutil.copyfileobj(source, target)
@@ -520,7 +520,7 @@ Please use a non-disposable email address.\n\n\
 
         link = {'a': 'v', 'iv': iv, 'c': ciphertext, 'v': verification_hex}
 
-        passwordLink = Config['app_url'] + "validateAccount.php?" + urllib.parse.urlencode(link)
+        passwordLink = config.APP_URL + "validateAccount.php?" + urllib.parse.urlencode(link)
 
         text = "Dear " + login + ",\n\n\
 Please visit the following link to validate your FAF account:\n\
@@ -851,8 +851,8 @@ Thanks,\n\
 
                 self.sendJSON(dict(command="notice", style="error",
                                    text="This computer is already associated with too many FAF accounts: %s.<br><br>You might want to try SteamLink: <a href='" +
-                                        Config['app_url'] + "faf/steam.php'>" +
-                                        Config['app_url'] + "faf/steam.php</a>" %
+                                        config.APP_URL + "faf/steam.php'>" +
+                                        config.APP_URL + "faf/steam.php</a>" %
                                         names.join(", ")))
 
                 return False
@@ -989,7 +989,7 @@ Thanks,\n\
                             continue
 
                         avatar = {
-                            "url": str(Config['content_url'] + "avatars/div" + str(i) + ".png")
+                            "url": str(config.CONTENT_URL + "avatars/div" + str(i) + ".png")
                         }
                         if i == 1:
                             avatar.tooltip = "First in my division!"
@@ -1019,7 +1019,7 @@ Thanks,\n\
                             continue
 
                         avatar = {
-                            "url": str(Config['content_url'] + "avatars/league" + str(i) + ".png")
+                            "url": str(config.CONTENT_URL + "avatars/league" + str(i) + ".png")
                         }
                         if i == 1:
                             avatar.tooltip = "First in my League!"
@@ -1280,10 +1280,10 @@ Thanks,\n\
                 for i in range(0, cursor.rowcount):
                     uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = yield from cursor.fetchone()
                     date = date.toTime_t()
-                    link = Config['content_url'] + "vault/" + filename
+                    link = config.CONTENT_URL + "vault/" + filename
                     thumbstr = ""
                     if icon != "":
-                        thumbstr = Config['content_url'] + "vault/mods_thumbs/" + urllib.parse.quote(icon)
+                        thumbstr = config.CONTENT_URL + "vault/mods_thumbs/" + urllib.parse.quote(icon)
 
                     out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
                                comments=[], description=description, played=played, likes=likes,
@@ -1297,10 +1297,10 @@ Thanks,\n\
 
                 uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = yield from cursor.fetchone()
                 date = date.toTime_t()
-                link = Config['content_url'] + "vault/" + filename
+                link = config.CONTENT_URL + "vault/" + filename
                 thumbstr = ""
                 if icon != "":
-                    thumbstr = Config['content_url'] + "vault/mods_thumbs/" + urllib.parse.quote(icon)
+                    thumbstr = config.CONTENT_URL + "vault/mods_thumbs/" + urllib.parse.quote(icon)
 
                 out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
                            comments=[], description=description, played=played, likes=likes + 1,

@@ -25,5 +25,8 @@ trueskill.setup(mu=1500, sigma=500, beta=250, tau=5, draw_probability=0.10)
 
 RULE_LINK = Config.get('rule_url', 'http://forums.faforever.com/forums/viewtopic.php?f=2&t=581#p5710')
 WIKI_LINK = Config.get('wiki_url', 'http://wiki.faforever.com')
+APP_URL = Config.get('app_url', 'http://app.faforever.com')
+CONTENT_URL = Config.get('content_url', 'http://content.faforever.com')
+CONTENT_PATH = Config.get('content_path', '/var/www/content/') # Must have trailing slash
 
 LADDER_SEASON = Config.get('ladder_season', "ladder_season_5")
