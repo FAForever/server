@@ -211,17 +211,7 @@ CREATE TABLE unique_id_users (id mediumint(8) NOT NULL AUTO_INCREMENT PRIMARY KE
 INSERT INTO unique_id_users (user_id, uniqueid_hash) SELECT userid, MD5( CONCAT( `uuid` , `mem_SerialNumber` , `deviceID` , `manufacturer` , `name` , `processorId` , `SMBIOSBIOSVersion` , `serialNumber` , `volumeSerialNumber` ) ) FROM uniqueid;
 
 # A table for whitelisting ids.
-DROP TABLE IF EXISTS `uniqueid_exempt`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `uniqueid_exempt` (
-  `user_id` mediumint(8) unsigned DEFAULT NULL,
-  `reason` varchar(255) NOT NULL,
-  UNIQUE KEY `user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE = 'utf8_unicode_ci';
-/*!40101 SET character_set_client = @saved_cs_client */;
-
-
+ALTER TABLE `uniqueid_exempt` CHANGE `idUser` `user_id` MEDIUMINT(8) UNSIGNED;
 
 # Persist game-unrankedness-reasons to the database
 
