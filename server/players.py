@@ -137,6 +137,7 @@ class Player(BasePlayer):
             _, v = t
             return v is not None
         return dict(filter(filter_none, (
+            ('id', self.id),
             ('login', self.login),
             ('global_rating', self.global_rating),
             ('ladder_rating', self.ladder_rating),
