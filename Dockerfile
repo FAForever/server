@@ -13,6 +13,9 @@ RUN pip install --trusted-host content.dev.faforever.com -r /tmp/requirements.tx
 ADD . /code/
 
 COPY passwords.example.py /code/passwords.py
+RUN mkdir /etc/faforever
+RUN mkdir /var/log/faforever
+COPY faforever.conf /etc/faforever/faforever.conf
 
 WORKDIR /code/
 
