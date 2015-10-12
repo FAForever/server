@@ -553,12 +553,6 @@ class Game(BaseGame):
             }
         }
 
-    def setGameMap(self, map):
-        if map == '':
-            return False
-        else:
-            self.map_file_path = map
-
     def __eq__(self, other):
         if not isinstance(other, Game):
             return False
