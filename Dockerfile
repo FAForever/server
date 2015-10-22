@@ -2,7 +2,7 @@ FROM python:3.4.3
 
 RUN apt-get update
 
-RUN yes '' | apt-get install libqt4-dev mysql-client
+RUN yes '' | apt-get install libqt4-dev mysql-client cmake
 
 RUN pip install --upgrade pip
 
