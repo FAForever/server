@@ -218,10 +218,17 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
                 yield from self.ConnectToHost(self.game.host.game_connection)
                 self._state = GameConnectionState.CONNECTED_TO_HOST
                 self.game.add_game_connection(self)
+                connections = []
                 for peer in self.game.connections:
                     if peer != self and peer.player != self.game.host:
-                        self.log.debug("{} connecting to {}".format(self.player, peer))
-                        asyncio.async(self.ConnectToPeer(peer))
+                        self.log.debug("Establish connection {} to {}".format(self.player, peer))
+                        connections.append(self.EstablishConnection(peer))
+
+                results = await asyncio.gather(*connections, return_Exceptions=true)
+                for r in results:
+                    # Connect by the results here
+
+
         except Exception as e:
             self.log.exception(e)
 
@@ -272,7 +279,6 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         Connect two peers
         :return: None
         """
-        connection, own_addr, peer_addr = yield from self.EstablishConnection(peer)
         if connection == ConnectivityState.PUBLIC or connection == ConnectivityState.STUN:
             self.send_ConnectToPeer(peer_addr,
                                     peer.player.login,
