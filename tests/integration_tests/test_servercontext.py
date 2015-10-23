@@ -2,7 +2,9 @@ import asyncio
 import pytest
 from unittest import mock
 
-from server import ServerContext, QDataStreamProtocol
+from server import ServerContext
+from server.protocol import QDataStreamProtocol
+
 
 @pytest.fixture
 def mock_server(loop):

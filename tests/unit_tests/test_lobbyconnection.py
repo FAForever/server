@@ -1,7 +1,7 @@
 import pytest
 from unittest import mock
-from server import ServerContext, QDataStreamProtocol, GameState, VisibilityState
-
+from server import ServerContext, GameState, VisibilityState
+from server.protocol import QDataStreamProtocol
 from server.game_service import GameService
 from server.games import Game
 from server.lobbyconnection import LobbyConnection

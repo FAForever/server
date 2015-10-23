@@ -1,14 +1,17 @@
 import asyncio
 import socket
-
+from typing import Union
 from unittest import mock
+
+from typing import List
+
 from server.decorators import with_logger
 from server.protocol import QDataStreamProtocol
 from server.protocol.gpgnet import GpgNetClientProtocol
 
 
 @with_logger
-class GpgClientProtocol(GpgNetClientProtocol):
+class GpgClientProtocol:
     def __init__(self, receiver, reader, writer):
         super().__init__()
         self.receiver = receiver
@@ -40,48 +43,62 @@ class GpgClientProtocol(GpgNetClientProtocol):
         self.protocol.send_message({'action': command_id, 'chunks': arguments})
 
 
+@with_logger
+class UDPClientProtocol:
+    def __init__(self):
+        self.transport = None
+        self.messages = {}
+
+    def connection_made(self, transport: asyncio.DatagramProtocol):
+        print("UDPClientProtocol connection_made")
+        self.transport = transport
+
+    def datagram_received(self, data: bytes, addr):
+        print("Datagram_received: {}".format(data))
+        if addr not in self.messages:
+            self.messages[addr] = []
+        self.messages[addr].append(data)
+
+    def send_datagram(self, message: str):
+        self.transport.sendto(message.encode())
 
 @with_logger
-class TestGPGClient:
+class TestGPGClient(GpgNetClientProtocol):
     """
-    Client used for acting as a GPGNet client.
+    Client used for acting as a GPGNet client (The game itself).
+
     This means communicating with the GameServer
     through the GpgClientProtocol, and being able to
     send/receive out-of-band UDP messages.
     """
-    def __init__(self, udp_port, loop, process_nat_packets=True):
-        """
-        Initialize the test client
-        :param loop: asyncio event loop:
-            The event loop to use for listening on UDP
-        :param address: QHostAddress:
-            The address to connect to
-        :param port: int:
-            The port number to connect to
-        :param udp_port:
-        :param parent:
-        :return:
-        """
+    def __init__(self, loop, process_nat_packets=True):
         super(TestGPGClient, self).__init__()
         self.process_nat_packets = process_nat_packets
-        self._logger.debug("Listening for UDP on: %s" % udp_port)
         self.messages = mock.MagicMock()
         self.udp_messages = mock.MagicMock()
         self.loop = loop
 
-        self.proto = None
-        self.client_pair = None
+        self._gpg_proto = None
+        self._udp_transport, self._udp_protocol = (None, None)
+        self._gpg_socket_pair = None
+
+    def send_gpgnet_message(self, command_id, arguments: List[Union[int, str, bool]]) -> None:
+        self._gpg_proto.protocol.send_message({'action': command_id, 'chunks': arguments})
 
     @asyncio.coroutine
-    def connect(self, host, port):
-        self._logger.debug("Connecting to %s: %s" % (host, port))
-        self.client_pair = yield from asyncio.open_connection(host, port)
-        self.proto = GpgClientProtocol(self, *self.client_pair)
+    def connect(self, host, port, udp_port):
+        self._logger.debug("Listening on 127.0.0.1:6112/udp, endpoint is %s:%s/udp" % (host, udp_port))
+        self._udp_transport, self._udp_protocol = yield from self.loop.create_datagram_endpoint(UDPClientProtocol,
+                                                                           local_addr=('127.0.0.1', 6112),
+                                                                           remote_addr=(host, udp_port))
+        self._logger.debug("Connecting to %s:%s/tcp" % (host, port))
+        self._gpg_socket_pair = yield from asyncio.open_connection(host, port)
+        self._gpg_proto = GpgClientProtocol(self, *self._gpg_socket_pair)
 
     @asyncio.coroutine
     def read_until(self, value=None):
         while True:
-            msg = yield from self.proto.read_message()
+            msg = yield from self._gpg_proto.read_message()
             if 'key' in msg and msg['key'] == value:
                 return
 
@@ -89,7 +106,7 @@ class TestGPGClient:
     def read_until_eof(self):
         try:
             while True:
-                yield from self.proto.read_message()
+                yield from self._gpg_proto.read_message()
         except Exception as ex:
             self._logger.debug(ex)
 
@@ -100,8 +117,7 @@ class TestGPGClient:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.proto.close()
-        self.udp_socket.abort()
+        self._gpg_proto.close()
 
     def _on_udp_message(self):
         try:
@@ -109,7 +125,7 @@ class TestGPGClient:
                 data, host, port = self.udp_socket.readDatagram(self.udp_socket.pendingDatagramSize())
                 self._logger.debug("UDP(%s:%s)<< %s" % (host.toString(), port, data.data()))
                 if self.process_nat_packets and data.data()[0] == 0x08:
-                    self.proto.send_ProcessNatPacket(["{}:{}".format(host.toString(), port),
+                    self._gpg_proto.send_ProcessNatPacket(["{}:{}".format(host.toString(), port),
                                                 data.data()[1:].decode()])
 
                 self.udp_messages(str(data))

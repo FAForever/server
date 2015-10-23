@@ -153,19 +153,19 @@ def test_public_host(loop, game_server, lobby_server, player_service):
                          visibility=VisibilityState.to_string(VisibilityState.PUBLIC)))
     yield from proto.drain()
 
-    with TestGPGClient(6112, loop=loop, process_nat_packets=True) as client:
-        yield from client.connect(*server.sockets[0].getsockname())
-        client.proto.send_gpgnet_message('Authenticate', [session, player_id])
-        client.proto.send_GameState(['Idle'])
-        client.proto.send_GameState(['Lobby'])
-        yield from client.proto.writer.drain()
+    with TestGPGClient(loop=loop, process_nat_packets=True) as client:
+        yield from client.connect(*server.sockets[0].getsockname(), config.LOBBY_UDP_PORT)
+        client.send_gpgnet_message('Authenticate', [session, player_id])
+        client.send_GameState(['Idle'])
+        client.send_GameState(['Lobby'])
+        yield from client._gpg_proto.writer.drain()
         yield from client.read_until('ConnectivityState')
         assert call("\x08Are you public? %s" % player_id)\
                in client.udp_messages.mock_calls
         assert call({"key": "ConnectivityState",
                     "commands": [player_id, "PUBLIC"]})\
                in client.messages.mock_calls
-        client.proto.write_eof()
+        client._gpg_proto.write_eof()
 
 
 @asyncio.coroutine
@@ -180,11 +180,11 @@ def test_stun_host(loop, game_server, lobby_server, player_service, db):
                             visibility=VisibilityState.to_string(VisibilityState.PUBLIC)))
     yield from proto.drain()
 
-    with TestGPGClient(6112, loop=loop, process_nat_packets=False) as client:
+    with TestGPGClient(loop=loop, process_nat_packets=False) as client:
         yield from client.connect(*server.sockets[0].getsockname())
-        client.proto.send_gpgnet_message('Authenticate', [session, player_id])
-        client.proto.send_GameState(['Idle'])
-        client.proto.send_GameState(['Lobby'])
+        client.send_gpgnet_message('Authenticate', [session, player_id])
+        client.send_GameState(['Idle'])
+        client.send_GameState(['Lobby'])
         yield from client.read_until('SendNatPacket')
         assert call({"key": "SendNatPacket",
                 "commands": ["%s:%s" % (config.LOBBY_IP, config.LOBBY_UDP_PORT),
@@ -196,4 +196,4 @@ def test_stun_host(loop, game_server, lobby_server, player_service, db):
         assert call({'key': 'ConnectivityState',
                      'commands': [player_id, 'STUN']})\
                in client.messages.mock_calls
-        client.proto.write_eof()
+        client._gpg_proto.write_eof()
