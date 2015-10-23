@@ -290,16 +290,13 @@ class LobbyConnection:
             reply_no("Please don't use \",\" in your username.")
             return
 
-        query = QSqlQuery(self.db)
-        query.prepare("SELECT id FROM `login` WHERE LOWER(`login`) = ?")
-        query.addBindValue(login.lower())
-        if not query.exec_():
-            self._logger.debug("Error inserting login %s", login)
-            self._logger.debug(query.lastError())
-            reply_no("The server experienced an error attempting to process your request. Panic.")
-            return
+        with (yield from db.db_pool) as conn:
+            cursor = yield from conn.cursor()
+            yield from cursor.execute("SELECT id FROM `login` WHERE LOWER(`login`) = %s",
+                                      (login.lower()))
+            (user_id, ) = yield from cursor.fetchone()
 
-        if query.size() != 0:
+        if not user_id:
             reply_no("Sorry, that username is not available.")
             return
 
