@@ -764,19 +764,16 @@ Thanks,\n\
 
         friends = []
         foes = []
-        query = QSqlQuery(self.db)
-        query.prepare("SELECT `subject_id`, `status` FROM friends_and_foes WHERE user_id = ?")
-        query.addBindValue(self.player.id)
-        query.exec_()
+        with (yield from db.db_pool) as conn:
+            cursor = yield from conn.cursor()
+            yield from cursor.execute("SELECT `subject_id`, `status` "
+                                      "FROM friends_and_foes WHERE user_id = %s", (self.player.id,))
 
-        while query.next():
-            target_id = query.value(0)
-            status = query.value(1)
-
-            if status == "FRIEND":
-                friends.append(target_id)
-            else:
-                foes.append(target_id)
+            for target_id, status in (yield from cursor.fetchall()):
+                if status == "FRIEND":
+                    friends.append(target_id)
+                else:
+                    foes.append(target_id)
 
         self.player.friends = set(friends)
         self.player.foes = set(foes)
