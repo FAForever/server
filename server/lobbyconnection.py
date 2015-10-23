@@ -18,8 +18,6 @@ import string
 import email
 from email.mime.text import MIMEText
 
-from PySide.QtCore import QIODevice, QFile, QObject
-from PySide.QtSql import QSqlQuery
 from Crypto import Random
 from Crypto.Random.random import choice
 from Crypto.Cipher import Blowfish
@@ -56,7 +54,7 @@ class ClientError(Exception):
 
 
 @with_logger
-class LobbyConnection(QObject):
+class LobbyConnection:
     @timed()
     def __init__(self, loop, context=None, games: GameService=None, players=None, db=None):
         super(LobbyConnection, self).__init__()
