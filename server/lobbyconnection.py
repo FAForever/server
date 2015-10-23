@@ -486,26 +486,25 @@ Thanks,\n\
                     player.lobby_connection.abort()
 
             elif action == "requestavatars":
-                query = QSqlQuery(self.db)
-                query.prepare("SELECT url, tooltip FROM `avatars_list`")
-                query.exec_()
-                if query.size() > 0:
-                    avatarList = []
-                    while query.next():
-                        avatar = {"url": str(query.value(0)), "tooltip": str(query.value(1))}
-                        avatarList.append(avatar)
+                with (yield from db.db_pool) as conn:
+                    cursor = yield from conn.cursor()
+                    yield from cursor.execute("SELECT url, tooltip FROM `avatars_list`")
 
-                    jsonToSend = {"command": "admin", "avatarlist": avatarList}
-                    self.sendJSON(jsonToSend)
+                    avatars = yield from cursor.fetchall()
+                    data = {"command": "admin", "avatarlist": []}
+                    for url, tooltip in avatars:
+                        data['avatarlist'].append({"url": url, "tooltip": tooltip})
+
+                    self.sendJSON(data)
 
             elif action == "remove_avatar":
                 idavatar = message["idavatar"]
                 iduser = message["iduser"]
-                query = QSqlQuery(self.db)
-                query.prepare("DELETE FROM `avatars` WHERE `idUser` = ? AND `idAvatar` = ?")
-                query.addBindValue(iduser)
-                query.addBindValue(idavatar)
-                query.exec_()
+                with (yield from db.db_pool) as conn:
+                    cursor = yield from conn.cursor()
+                    yield from cursor.execute("DELETE FROM `avatars` "
+                                              "WHERE `idUser` = %s "
+                                              "AND `idAvatar` = %s", (idavatar, iduser))
 
             elif action == "list_avatar_users":
                 avatar = message['avatar']
