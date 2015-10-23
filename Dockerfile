@@ -15,7 +15,7 @@ ADD . /code/
 COPY passwords.example.py /code/passwords.py
 RUN mkdir /etc/faforever
 RUN mkdir /var/log/faforever
-COPY faforever.conf /etc/faforever/faforever.conf
+COPY example.conf /etc/faforever/faforever.conf
 
 WORKDIR /code/
 
