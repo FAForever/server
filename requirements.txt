@@ -1,6 +1,5 @@
 typing
 -f http://content.dev.faforever.com/wheel/
-PySide==1.2.2
 aiohttp
 aiomysql
 configobj
@@ -13,7 +12,6 @@ pytest-mock
 pytest-qt
 pytest-cov
 pyflakes
-quamash
 rsa
 trueskill
 aiocron
