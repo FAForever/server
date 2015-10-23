@@ -726,14 +726,15 @@ Thanks,\n\
 
         ## AVATARS
         ## -------------------
-        query.prepare(
-            "SELECT url, tooltip FROM `avatars` LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = ? AND `selected` = 1")
-        query.addBindValue(self.player.id)
-        query.exec_()
-        if query.size() > 0:
-            query.first()
-            avatar = {"url": str(query.value(0)), "tooltip": str(query.value(1))}
-            self.player.avatar = avatar
+        with (yield from db.db_pool) as conn:
+            cursor = yield from conn.cursor()
+            yield from cursor.execute(
+                "SELECT url, tooltip FROM `avatars` "
+                "LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` "
+                "WHERE `idUser` = %s AND `selected` = 1", (self.player.id, ))
+            url, tooltip = yield from cursor.fetchone()
+            if url:
+                self.player.avatar = {"url": url, "tooltip": tooltip}
 
         self.player_service.addUser(self.player)
 
