@@ -506,23 +506,6 @@ Thanks,\n\
                                               "WHERE `idUser` = %s "
                                               "AND `idAvatar` = %s", (idavatar, iduser))
 
-            elif action == "list_avatar_users":
-                avatar = message['avatar']
-                if avatar is not None:
-                    query = QSqlQuery(self.db)
-                    query.prepare(
-                        "SELECT `idUser`, `login`, `idAvatar` FROM `avatars` LEFT JOIN `login` ON `login`.`id` = `idUser`  WHERE `idAvatar` = (SELECT id FROM avatars_list WHERE avatars_list.url = ?)")
-                    query.addBindValue(avatar)
-                    query.exec_()
-                    if query.size() > 0:
-                        avatarList = []
-                        while query.next():
-                            avatar = {"iduser": str(query.value(0)), "login": str(query.value(1))}
-                            avatarid = query.value(2)
-                            avatarList.append(avatar)
-
-                jsonToSend = {"command": "admin", "player_avatar_list": avatarList, "avatar_id": avatarid}
-                self.sendJSON(jsonToSend)
 
             elif action == "add_avatar":
                 who = message['user']
