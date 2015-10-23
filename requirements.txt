@@ -1,5 +1,5 @@
 -f http://content.dev.faforever.com/wheel/
-PySide
+PySide==1.2.2
 aiohttp
 aiomysql
 configobj
