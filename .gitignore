@@ -1,4 +1,5 @@
 passwords.py
+.cache
 *.egg-info/
 *.pyc
 *.swp
