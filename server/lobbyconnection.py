@@ -1,7 +1,6 @@
 import asyncio
 
 import hashlib
-import zlib
 import cgi
 import base64
 import json
@@ -138,7 +137,7 @@ class LobbyConnection(QObject):
         pass
 
     @asyncio.coroutine
-    def command_upload_mod(self, msg): # pragma: no cover
+    def command_upload_mod(self, msg):  # pragma: no cover
         zipmap = msg['name']
         infos = msg['info']
         fileDatas = msg['data']
@@ -1323,11 +1322,6 @@ Thanks,\n\
             elif type == "download":
                 uid = message["uid"]
                 yield from cursor.execute("UPDATE `table_mod` SET downloads=downloads+1 WHERE uid = %s", uid)
-                # TODO: add response message
-
-            elif type == "addcomment":
-                # TODO: implement
-                raise NotImplementedError('addcomment not implemented')
             else:
                 raise ValueError('invalid type argument')
 

@@ -1,3 +1,4 @@
+typing
 -f http://content.dev.faforever.com/wheel/
 PySide==1.2.2
 aiohttp

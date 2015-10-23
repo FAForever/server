@@ -37,6 +37,7 @@ def game_server(mocker, loop, request, player_service, game_service, mock_db_poo
 
     request.addfinalizer(fin)
     return nat_server, server
+
 import asyncio
 import logging
 import pytest

@@ -14,7 +14,7 @@ from server.games.game import GameState, VisibilityState
 from .gameconnection import GameConnection
 from .natpacketserver import NatPacketServer
 from server.lobbyconnection import LobbyConnection
-from server.protocol import QDataStreamProtocol
+from server.protocol import Protocol, QDataStreamProtocol
 from server.servercontext import ServerContext
 from server.player_service import PlayerService
 from server.game_service import GameService

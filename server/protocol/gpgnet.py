@@ -1,5 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
+
+from typing import List, Union
 from server.abc.base_game import InitMode
 
 
@@ -112,15 +114,13 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
 
 
 class GpgNetClientProtocol(metaclass=ABCMeta):
-    def send_GameState(self, arguments):
+    def send_GameState(self, arguments: List[Union[int, str, bool]]) -> None:
         """
         Sent by the client when the state of LobbyComm changes
-        :param arguments:
-        :return:
         """
         self.send_gpgnet_message('GameState', arguments)
 
-    def send_ProcessNatPacket(self, arguments):
+    def send_ProcessNatPacket(self, arguments: List[Union[int, str, bool]]) -> None:
         """
         Sent by the client when it received a nat packet
         :param arguments:
@@ -129,5 +129,5 @@ class GpgNetClientProtocol(metaclass=ABCMeta):
         self.send_gpgnet_message('ProcessNatPacket', arguments)
 
     @abstractmethod
-    def send_gpgnet_message(self, command_id, arguments):
+    def send_gpgnet_message(self, command_id, arguments: List[Union[int, str, bool]]) -> None:
         pass  # pragma: no cover
