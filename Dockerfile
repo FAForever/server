@@ -1,8 +1,10 @@
 FROM python:3.5
 
+# Apt-install mysql client and cleanup temporary files afterwards
 RUN apt-get update
-
 RUN yes '' | apt-get install mysql-client
+RUN apt-get clean
+RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN pip install --upgrade pip
 
