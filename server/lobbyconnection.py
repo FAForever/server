@@ -506,24 +506,24 @@ Thanks,\n\
                                               "WHERE `idUser` = %s "
                                               "AND `idAvatar` = %s", (idavatar, iduser))
 
-
             elif action == "add_avatar":
                 who = message['user']
                 avatar = message['avatar']
 
-                query = QSqlQuery(self.db)
-                if avatar is None:
-                    query.prepare(
-                        "DELETE FROM `avatars` WHERE `idUser` = (SELECT `id` FROM `login` WHERE `login`.`login` = ?)")
-                    query.addBindValue(who)
-                    query.exec_()
-                else:
-                    query.prepare(
-                        "INSERT INTO `avatars`(`idUser`, `idAvatar`) VALUES ((SELECT id FROM login WHERE login.login = ?),(SELECT id FROM avatars_list WHERE avatars_list.url = ?)) ON DUPLICATE KEY UPDATE `idAvatar` = (SELECT id FROM avatars_list WHERE avatars_list.url = ?)")
-                    query.addBindValue(who)
-                    query.addBindValue(avatar)
-                    query.addBindValue(avatar)
-                    query.exec_()
+                with (yield from db.db_pool) as conn:
+                    cursor = yield from conn.cursor()
+                    if avatar is None:
+                        yield from cursor.execute(
+                            "DELETE FROM `avatars` "
+                            "WHERE `idUser` = "
+                            "(SELECT `id` FROM `login` WHERE `login`.`login` = %s)", (who, ))
+                    else:
+                        yield from cursor.execute(
+                            "INSERT INTO `avatars`(`idUser`, `idAvatar`) "
+                            "VALUES ((SELECT id FROM login WHERE login.login = %s),"
+                            "(SELECT id FROM avatars_list WHERE avatars_list.url = %s)) "
+                            "ON DUPLICATE KEY UPDATE `idAvatar` = (SELECT id FROM avatars_list WHERE avatars_list.url = %s)",
+                            (who, avatar, avatar))
         elif self.player.mod:
             if action == "join_channel":
                 user_ids = message['user_ids']
