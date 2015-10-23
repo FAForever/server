@@ -8,6 +8,7 @@ docopt
 pycrypto
 pygeoip
 pytest>=2.7.0
+mocker
 pytest-mock
 pytest-qt
 pytest-cov
