@@ -732,8 +732,9 @@ Thanks,\n\
                 "SELECT url, tooltip FROM `avatars` "
                 "LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` "
                 "WHERE `idUser` = %s AND `selected` = 1", (self.player.id, ))
-            url, tooltip = yield from cursor.fetchone()
-            if url:
+            avatar = yield from cursor.fetchone()
+            if avatar:
+                url, tooltip = avatar
                 self.player.avatar = {"url": url, "tooltip": tooltip}
 
         self.player_service.addUser(self.player)
