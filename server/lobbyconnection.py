@@ -803,41 +803,34 @@ Thanks,\n\
 
         if action == "list_avatar":
             avatarList = []
-            if self.leagueAvatar:
-                avatarList.append(self.leagueAvatar)
 
-            query = QSqlQuery(self.db)
-            query.prepare(
-                "SELECT url, tooltip FROM `avatars` LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = ?")
-            query.addBindValue(self.player.id)
-            query.exec_()
-            if query.size() > 0:
+            with (yield from db.db_pool) as conn:
+                cursor = yield from conn.cursor()
+                yield from cursor.execute(
+                    "SELECT url, tooltip FROM `avatars` "
+                    "LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = %s", (self.player.id, ))
 
-                while query.next():
-                    avatar = {"url": str(query.value(0)), "tooltip": str(query.value(1))}
+                avatars = yield from cursor.fetchall()
+                for url, tooltip in avatars:
+                    avatar = {"url": url, "tooltip": tooltip}
                     avatarList.append(avatar)
 
-            if len(avatarList) > 0:
-                jsonToSend = {"command": "avatar", "avatarlist": avatarList}
-                self.sendJSON(jsonToSend)
+                if len(avatarList) > 0:
+                    jsonToSend = {"command": "avatar", "avatarlist": avatarList}
+                    self.sendJSON(jsonToSend)
 
         elif action == "select":
             avatar = message['avatar']
 
-            query = QSqlQuery(self.db)
-
-            # remove old avatar
-            query.prepare(
-                "UPDATE `avatars` SET `selected` = 0 WHERE `idUser` = ?")
-            query.addBindValue(self.player.id)
-            query.exec_()
-            if avatar is not None:
-                query = QSqlQuery(self.db)
-                query.prepare(
-                    "UPDATE `avatars` SET `selected` = 1 WHERE `idAvatar` = (SELECT id FROM avatars_list WHERE avatars_list.url = ?) and `idUser` = ?")
-                query.addBindValue(avatar)
-                query.addBindValue(self.player.id)
-                query.exec_()
+            with (yield from db.db_pool) as conn:
+                cursor = yield from conn.cursor()
+                yield from cursor.execute(
+                    "UPDATE `avatars` SET `selected` = 0 WHERE `idUser` = %s", (self.player.id, ))
+                if avatar is not None:
+                    yield from cursor.execute(
+                        "UPDATE `avatars` SET `selected` = 1 WHERE `idAvatar` ="
+                        "(SELECT id FROM avatars_list WHERE avatars_list.url = ?) and "
+                        "`idUser` = ?", (avatar, self.player.id))
         else:
             raise KeyError('invalid action')
 
