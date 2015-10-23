@@ -457,7 +457,7 @@ Thanks,\n\
 
             yield from cursor.execute("INSERT INTO friends_and_foes(user_id, subject_id, `status`) VALUES(%s, %s, %s)", self.player.id, target_id, status)
 
-    @timed()
+    @asyncio.coroutine
     def command_admin(self, message):
         action = message['action']
 

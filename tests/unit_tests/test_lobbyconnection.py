@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from unittest import mock
 from server import ServerContext, GameState, VisibilityState
@@ -152,17 +154,19 @@ def test_send_mod_list(mocker, lobbyconnection, mock_games):
 
     protocol.send_messages.assert_called_with(mock_games.all_game_modes())
 
+@asyncio.coroutine
 def test_command_admin_closelobby(mocker, lobbyconnection):
     mocker.patch.object(lobbyconnection, 'protocol')
     mocker.patch.object(lobbyconnection, '_logger')
     config = mocker.patch('server.lobbyconnection.config')
     player = mocker.patch.object(lobbyconnection, 'player')
     player.login = 'Sheeo'
+    player.admin = True
     tuna = mock.Mock()
     tuna.id = 55
     lobbyconnection.player_service = {1: player, 55: tuna}
 
-    lobbyconnection.command_admin({
+    yield from lobbyconnection.command_admin({
         'command': 'admin',
         'action': 'closelobby',
         'user_id': 55
@@ -176,6 +180,7 @@ def test_command_admin_closelobby(mocker, lobbyconnection):
               .format(rule_link=config.RULE_LINK))
     ))
 
+@asyncio.coroutine
 def test_command_admin_closeFA(mocker, lobbyconnection):
     mocker.patch.object(lobbyconnection, 'protocol')
     mocker.patch.object(lobbyconnection, '_logger')
@@ -187,7 +192,7 @@ def test_command_admin_closeFA(mocker, lobbyconnection):
     tuna.id = 55
     lobbyconnection.player_service = {42: player, 55: tuna}
 
-    lobbyconnection.command_admin({
+    yield from lobbyconnection.command_admin({
         'command': 'admin',
         'action': 'closeFA',
         'user_id': 55
