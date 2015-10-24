@@ -584,8 +584,12 @@ class replayServerThread(QObject):
     def command_search(self, message):
         mod     = message["mod"]
         mapname = message["map"]
-        player  = message["player"]
         rating  = message.get("rating", 0)
+
+        try:
+            replayId = int(message("player"))
+        except ValueError:
+            player = message("player")
 
         modUid = -1
         mapUid = -1
@@ -624,6 +628,8 @@ WHERE  (-1 = ? OR game_stats.gameMod = ?) \
 AND (mean - 3*deviation) >= ? \
 AND (-1 = ? OR mapId = ?) \n"
 
+        if replayId:
+            queryStr += " AND game_stats.id = " + replayId
         if player != "" :
             query.prepare("SELECT id from login where LOWER(login) REGEXP ?")
             query.addBindValue(player.lower())
