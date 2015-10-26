@@ -79,7 +79,6 @@ Can be combined !, e.g. `{command: social, teaminvite: <...>, friends: <..>}`
 
 * [deprecated] `{command: ask_session}`: response with an welcome command and an valid session (can be delayed)
 * `{command: fa_state, state: <on|...>}`: notify the server if the game has launched or closed
-* `{command: ladder_maps, maps: <map_ids>}`: select user specific maps for the ladder
 * `{command: quit_team}`: Leave a team
 * `{command: accept_team_proposal, leader: <leader_name>}`: Accept Team Invitation
 * `{command: hello, version: <...>, login: <...>, password: <...>, unique_id: <...>, (session: <...>)}`: Accept Team Invitation
