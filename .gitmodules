@@ -1,0 +1,3 @@
+[submodule "db"]
+	path = db
+	url = https://github.com/FAForever/db.git
