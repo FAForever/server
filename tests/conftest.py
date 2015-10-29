@@ -163,7 +163,7 @@ def db_pool(request, loop):
 
     @asyncio.coroutine
     def setup():
-        cmd = 'SET default_storage_engine=MEMORY; drop database if exists {}; create database {}; use {}; source {};'.format(db, db, db, 'db-structure.sql')
+        cmd = 'SET default_storage_engine=MEMORY; drop database if exists {}; create database {}; use {}; source {};'.format(db, db, db, 'db/db-structure.sql')
         try:
             subprocess.check_output(['mysql',
                                      '-h{}'.format(host),
