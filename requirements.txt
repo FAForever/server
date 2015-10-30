@@ -8,7 +8,7 @@ docopt
 pycrypto
 pygeoip
 pytest>=2.7.0
-pytest-mock
+pytest-mock==0.7
 pytest-qt
 pytest-cov
 pyflakes
