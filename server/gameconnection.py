@@ -16,7 +16,6 @@ from server.decorators import with_logger, timed
 from server.game_service import GameService
 from server.players import PlayerState
 from server.protocol import GpgNetServerProtocol
-from server.subscribable import Subscribable
 import server.db as db
 
 logger = logging.getLogger(__name__)
@@ -29,7 +28,7 @@ class AuthenticationError(Exception):
 
 
 @with_logger
-class GameConnection(Subscribable, GpgNetServerProtocol):
+class GameConnection(GpgNetServerProtocol):
     """
     Responsible for connections to the game, using the GPGNet protocol
     """
