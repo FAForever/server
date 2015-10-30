@@ -36,7 +36,7 @@ async def test_sends_udp(loop: asyncio.BaseEventLoop):
         recv_fut = server.await_packet(msg)
 
         async with NatPacketServer(tx_addr) as sender:
-            sender.sendto(("\x08"+msg).encode(), rx_addr)
+            sender.send_natpacket_to(msg, rx_addr)
 
         await recv_fut
         received_msg, _ = recv_fut.result()

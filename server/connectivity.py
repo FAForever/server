@@ -16,7 +16,7 @@ async def send_natpacket(addr, msg):
     if not _natserver:
         _natserver = NatPacketServer()
         await _natserver.listen()
-    _natserver.sendto(msg.encode(), addr)
+    _natserver.send_natpacket_to(msg, addr)
 
 logger = logging.getLogger(__name__)
 

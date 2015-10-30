@@ -159,8 +159,8 @@ def test_public_host(loop, game_server, lobby_server, player_service):
         client.send_GameState(['Lobby'])
         yield from client._gpg_proto.writer.drain()
         yield from client.read_until('ConnectivityState')
-        expected_mssage = "Are you public? {}".format(player_id)
-        assert client.received_udp_from(expected_mssage,
+        expected_message = "Are you public? {}".format(player_id)
+        assert client.received_udp_from(expected_message,
                                         (server_host, config.LOBBY_UDP_PORT))
         assert call({"key": "ConnectivityState",
                     "commands": [player_id, "PUBLIC"]})\

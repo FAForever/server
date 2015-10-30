@@ -121,6 +121,8 @@ class TestGPGClient(GpgNetClientProtocol):
         self.messages(message)
 
     def on_received_udp(self, msg, addr):
+        # strip the \x08 byte from NAT packets
+        msg = msg[1:]
         self.udp_messages(msg, addr)
         if self.process_nat_packets:
             self._gpg_proto.send_gpgnet_message('ProcessNatPacket', ["{}:{}".format(*addr), msg])

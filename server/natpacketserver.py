@@ -55,10 +55,9 @@ class NatPacketServer:
         self.server.close()
 
     def await_packet(self, message: str):
-        print("Awaiting message: {}".format(message))
         fut = asyncio.Future()
         self.protocol.add_future("\x08{}".format(message).encode(), fut)
         return fut
 
-    def sendto(self, msg, addr):
-        self.protocol.transport.sendto(msg, addr)
+    def send_natpacket_to(self, msg: str, addr):
+        self.protocol.transport.sendto(("\x08"+msg).encode(), addr)
