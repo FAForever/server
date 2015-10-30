@@ -8,7 +8,7 @@ docopt
 pycrypto
 pygeoip
 pytest==2.8.2
-pytest-mock==0.7
+pytest-mock
 pytest-cov
 pyflakes
 rsa
