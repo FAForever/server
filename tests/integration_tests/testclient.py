@@ -4,6 +4,7 @@ from typing import Union
 from unittest import mock
 
 from typing import List
+from unittest.mock import call
 
 from server.decorators import with_logger
 from server.protocol import QDataStreamProtocol
@@ -45,22 +46,25 @@ class GpgClientProtocol:
 
 @with_logger
 class UDPClientProtocol:
-    def __init__(self):
+    def __init__(self, on_message):
         self.transport = None
-        self.messages = {}
+        self.on_message = on_message
 
     def connection_made(self, transport: asyncio.DatagramProtocol):
-        print("UDPClientProtocol connection_made")
+        print("UDPClientProtocol listening")
         self.transport = transport
 
     def datagram_received(self, data: bytes, addr):
-        print("Datagram_received: {}".format(data))
-        if addr not in self.messages:
-            self.messages[addr] = []
-        self.messages[addr].append(data)
+        self.on_message(data.decode(), addr)
 
-    def send_datagram(self, message: str):
-        self.transport.sendto(message.encode())
+    def connection_lost(self, exc):
+        print(exc)
+
+    def send_datagram(self, msg: str):
+        self.transport.sendto(msg.encode())
+
+    def sendto(self, msg: str, addr):
+        self.transport.sendto(msg.encode(), addr)
 
 @with_logger
 class TestGPGClient(GpgNetClientProtocol):
@@ -88,9 +92,9 @@ class TestGPGClient(GpgNetClientProtocol):
     @asyncio.coroutine
     def connect(self, host, port, udp_port):
         self._logger.debug("Listening on 127.0.0.1:6112/udp, endpoint is %s:%s/udp" % (host, udp_port))
-        self._udp_transport, self._udp_protocol = yield from self.loop.create_datagram_endpoint(UDPClientProtocol,
-                                                                           local_addr=('127.0.0.1', 6112),
-                                                                           remote_addr=(host, udp_port))
+        self._udp_transport, self._udp_protocol =\
+            yield from self.loop.create_datagram_endpoint(lambda: UDPClientProtocol(self.on_received_udp),
+                                                          local_addr=('127.0.0.1', 6112))
         self._logger.debug("Connecting to %s:%s/tcp" % (host, port))
         self._gpg_socket_pair = yield from asyncio.open_connection(host, port)
         self._gpg_proto = GpgClientProtocol(self, *self._gpg_socket_pair)
@@ -110,29 +114,25 @@ class TestGPGClient(GpgNetClientProtocol):
         except Exception as ex:
             self._logger.debug(ex)
 
+    def received_udp_from(self, message, addr):
+        return call(message, addr) in self.udp_messages.mock_calls
+
     def on_message_received(self, message):
         self.messages(message)
+
+    def on_received_udp(self, msg, addr):
+        self.udp_messages(msg, addr)
+        if self.process_nat_packets:
+            self._gpg_proto.send_gpgnet_message('ProcessNatPacket', ["{}:{}".format(*addr), msg])
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._gpg_proto.close()
-
-    def _on_udp_message(self):
-        try:
-            while self.udp_socket.hasPendingDatagrams():
-                data, host, port = self.udp_socket.readDatagram(self.udp_socket.pendingDatagramSize())
-                self._logger.debug("UDP(%s:%s)<< %s" % (host.toString(), port, data.data()))
-                if self.process_nat_packets and data.data()[0] == 0x08:
-                    self._gpg_proto.send_ProcessNatPacket(["{}:{}".format(host.toString(), port),
-                                                data.data()[1:].decode()])
-
-                self.udp_messages(str(data))
-        except Exception as ex:
-            self._logger.critical('Exception')
-            self._logger.exception(ex)
-            raise
+        if self._gpg_proto:
+            self._gpg_proto.close()
+        if self._udp_protocol:
+            self._udp_protocol.transport.close()
 
     def _on_connected(self):
         self._logger.debug("Connected")
@@ -146,10 +146,7 @@ class TestGPGClient(GpgNetClientProtocol):
 
     def send_udp_natpacket(self, msg, host, port):
         self._logger.debug("Sending UDP: {}:{}>>{}".format(host, port, msg))
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect((host, port))
-        s.sendall('\x08{}'.format(msg).encode())
-        s.close()
+        self._udp_protocol.sendto('\x08'+msg, (host, port))
 
     def send_pong(self):
         self.transport.send_message({'action': 'pong', 'chunks': []})

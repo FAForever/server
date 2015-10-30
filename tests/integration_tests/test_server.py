@@ -1,6 +1,5 @@
 import asyncio
-
-
+from unittest import mock
 from unittest.mock import call
 import pytest
 import config
@@ -32,7 +31,6 @@ def game_server(mocker, loop, request, player_service, game_service, mock_db_poo
 
     def fin():
         server.close()
-        nat_server.close()
         loop.run_until_complete(server.wait_closed())
 
     request.addfinalizer(fin)
@@ -154,23 +152,24 @@ def test_public_host(loop, game_server, lobby_server, player_service):
     yield from proto.drain()
 
     with TestGPGClient(loop=loop, process_nat_packets=True) as client:
+        server_host, server_port = server.sockets[0].getsockname()
         yield from client.connect(*server.sockets[0].getsockname(), config.LOBBY_UDP_PORT)
         client.send_gpgnet_message('Authenticate', [session, player_id])
         client.send_GameState(['Idle'])
         client.send_GameState(['Lobby'])
         yield from client._gpg_proto.writer.drain()
         yield from client.read_until('ConnectivityState')
-        assert call("\x08Are you public? %s" % player_id)\
-               in client.udp_messages.mock_calls
+        expected_mssage = "Are you public? {}".format(player_id)
+        assert client.received_udp_from(expected_mssage,
+                                        (server_host, config.LOBBY_UDP_PORT))
         assert call({"key": "ConnectivityState",
                     "commands": [player_id, "PUBLIC"]})\
                in client.messages.mock_calls
-        client._gpg_proto.write_eof()
 
 
 @asyncio.coroutine
 @slow
-def test_stun_host(loop, game_server, lobby_server, player_service, db):
+def test_stun_host(loop, game_server, lobby_server, player_service):
     nat_server, server = game_server
 
     player_id, session, proto = yield from connect_and_sign_in(('Dostya', 'vodka'), lobby_server)
@@ -181,7 +180,7 @@ def test_stun_host(loop, game_server, lobby_server, player_service, db):
     yield from proto.drain()
 
     with TestGPGClient(loop=loop, process_nat_packets=False) as client:
-        yield from client.connect(*server.sockets[0].getsockname())
+        yield from client.connect(*server.sockets[0].getsockname(), config.LOBBY_UDP_PORT)
         client.send_gpgnet_message('Authenticate', [session, player_id])
         client.send_GameState(['Idle'])
         client.send_GameState(['Lobby'])
@@ -196,4 +195,4 @@ def test_stun_host(loop, game_server, lobby_server, player_service, db):
         assert call({'key': 'ConnectivityState',
                      'commands': [player_id, 'STUN']})\
                in client.messages.mock_calls
-        client._gpg_proto.write_eof()
+

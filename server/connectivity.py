@@ -3,11 +3,20 @@ from concurrent.futures import CancelledError, TimeoutError
 import asyncio
 import logging
 from enum import Enum, unique
-import socket
 
 import config
 from .decorators import with_logger
 
+from server.natpacketserver import NatPacketServer
+
+_natserver = None
+
+async def send_natpacket(addr, msg):
+    global _natserver
+    if not _natserver:
+        _natserver = NatPacketServer()
+        await _natserver.listen()
+    _natserver.sendto(msg.encode(), addr)
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +39,6 @@ class ConnectivityState(Enum):
 
 Connectivity = namedtuple('Connectivity', ['addr', 'state'])
 
-def send_natpacket(addr, message):
-    logger.debug("UDP(%s,%s)>>: %s" % (addr[0], addr[1], message))
-    s = socket.socket(type=socket.SOCK_DGRAM)
-    s.setblocking(False)
-    s.sendto(b'\x08'+message.encode(), addr)
-    s.close()
 
 @with_logger
 class TestPeer:
@@ -61,11 +64,10 @@ class TestPeer:
         self.server_packets = []
 
     def __enter__(self):
-        self.connection.subscribe(self, ['ProcessNatPacket', 'ProcessServerNatPacket'])
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.connection.unsubscribe(self, ['ProcessNatPacket', 'ProcessServerNatPacket'])
+        pass
 
     @asyncio.coroutine
     def determine_connectivity(self):
@@ -86,41 +88,30 @@ class TestPeer:
             pass
         return Connectivity(addr=None, state=ConnectivityState.PROXY)
 
-    def handle_ProcessNatPacket(self, arguments):
-        self._logger.debug("handle_ProcessNatPacket {}".format(arguments))
-        self.client_packets.append(arguments)
-
-    def handle_ProcessServerNatPacket(self, arguments):
-        self._logger.debug("handle_ProcessServerNatPacket {}".format(arguments))
-        self.server_packets.append(arguments)
-
-    @asyncio.coroutine
-    def test_public(self):
+    async def test_public(self):
         self._logger.debug("Testing PUBLIC")
-        self._logger.debug(self.client_packets)
         message = "Are you public? {}".format(self.identifier)
         for i in range(0, 3):
-            send_natpacket(self.remote_addr, message)
-            yield from asyncio.sleep(0.2)
-        return any(map(lambda packets: message in packets, self.client_packets))
+            await send_natpacket(self.remote_addr, message)
+        try:
+            result = await asyncio.wait_for(self.connection.await_natpacket("{}:{}".format(config.LOBBY_IP, config.LOBBY_UDP_PORT)), 1)
+            return result == message
+        except (CancelledError, TimeoutError):
+            return False
 
-    def received_server_packet(self):
-        for packet in self.server_packets:
-            print(packet)
-            if len(packet) >= 2 and packet[1] == "Hello {}".format(self.identifier):
-                return packet[0]
-
-    @asyncio.coroutine
-    def test_stun(self):
+    async def test_stun(self):
         self._logger.debug("Testing STUN")
+        message = "Hello {}".format(self.identifier)
         for i in range(0, 3):
+            fut = _natserver.await_packet(message)
             self.connection.send_gpgnet_message('SendNatPacket', ["%s:%s" % (config.LOBBY_IP,
                                                                      config.LOBBY_UDP_PORT),
-                                                          "Hello %s" % self.identifier])
-            resolution = self.received_server_packet()
-            if resolution:
-                self._logger.info("Resolved client to {}".format(resolution))
-                return resolution
-            yield from asyncio.sleep(0.1)
-        return self.received_server_packet()
+                                                          message])
+            await asyncio.sleep(0.1)
+            try:
+                received, addr = await asyncio.wait_for(fut, 0.5)
+                if received == message:
+                    return addr
+            except (CancelledError, TimeoutError):
+                pass
 

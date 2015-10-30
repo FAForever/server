@@ -540,7 +540,7 @@ class Game(BaseGame):
             "featured_mod": self.game_mode,
             "featured_mod_versions": self.getGamemodVersion(),
             "sim_mods": self.mods,
-            "map_file_path": self.map_file_path.lower(),
+            "map_file_path": (self.map_file_path or "").lower(),
             "host": self.host.login if self.host else '',
             "num_players": len(self.players),
             "game_type": self.gameType,

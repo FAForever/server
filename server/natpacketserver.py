@@ -1,56 +1,64 @@
-import socket
+import asyncio
+from copy import deepcopy
 
-from server.subscribable import Subscribable
+import config
 from .decorators import with_logger
 
+
 @with_logger
-class NatPacketServer(Subscribable):
-    def __init__(self, loop, port):
-        super().__init__()
-        self.loop = loop
-        self.port = port
-        self._logger.debug("{id} Listening on {port}".format(id=id(self), port=port))
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind(('', port))
-        s.setblocking(False)
-        loop.add_reader(s.fileno(), self._recv)
-        self._socket = s
-        self._subscribers = {}
+class NatServerProtocol(asyncio.DatagramProtocol):
+    def __init__(self):
+        self.transport = None
+        self._futures = {}
 
-    def close(self):
-        self.loop.remove_reader(self._socket.fileno())
+    def add_future(self, msg, fut):
+        self._logger.debug("Added listener for {}".format(msg))
+        self._futures[msg] = fut
+
+    def connection_made(self, transport):
+        self.transport = transport
+
+    def datagram_received(self, data, addr):
+        self._logger.debug("{}/udp<<: {}".format(addr, data))
         try:
-            self._socket.shutdown(socket.SHUT_RDWR)
-        except OSError as ex:
-            self._logger.exception(ex)
-        finally:
-            self._socket.close()
+            if data in self._futures:
+                # Strip the \x08 byte for NAT messages
+                self._futures[data].set_result((data[1:].decode(), addr))
+                del self._futures[data]
+        except Exception as e:
+            self._logger.exception(e)
 
-    def __enter__(self):
+    def connection_lost(self, exc):
+        # Normally losing a connection isn't something we care about
+        # but for UDP transports it means trouble
+        self._logger.exception(exc)
+
+    def error_received(self, exc):
+        self._logger.exception(exc)
+
+@with_logger
+class NatPacketServer:
+    def __init__(self, addr=('0.0.0.0', config.LOBBY_UDP_PORT), loop=None):
+        self.addr = addr
+        self.loop = loop or asyncio.get_event_loop()
+        self.server, self.protocol = None, None
+        self._waiters = {}
+
+    async def __aenter__(self):
+        await self.listen()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
+    async def listen(self):
+        self.server, self.protocol = await self.loop.create_datagram_endpoint(NatServerProtocol, self.addr)
 
-    def _recv(self):
-        try:
-            data, addr = self._socket.recvfrom(512)
-            self._logger.debug("Received UDP {} from {}".format(data, addr))
-            if data[0] == 0x8:
-                self._logger.debug("Emitting with: {} {} {} ".format(data[1:].decode(),
-                    addr[0], addr[1]))
-                self.notify({
-                    'command_id': 'ProcessServerNatPacket',
-                    'arguments': ["{}:{}".format(addr[0], addr[1]), data[1:].decode()]
-                })
-                self._socket.sendto(b"\x08OK", addr)
-        except OSError as ex:
-            if ex.errno == socket.EWOULDBLOCK:
-                pass
-            else:
-                self._logger.critical(ex)
-                raise ex
-        except Exception as ex:
-            self._logger.critical(ex)
-            raise ex
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        self.server.close()
+
+    def await_packet(self, message: str):
+        print("Awaiting message: {}".format(message))
+        fut = asyncio.Future()
+        self.protocol.add_future("\x08{}".format(message).encode(), fut)
+        return fut
+
+    def sendto(self, msg, addr):
+        self.protocol.transport.sendto(msg, addr)

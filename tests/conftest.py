@@ -76,6 +76,7 @@ def pytest_pyfunc_call(pyfuncitem):
     for arg in pyfuncitem._fixtureinfo.argnames:
         testargs[arg] = funcargs[arg]
     loop = testargs.get('loop', asyncio.get_event_loop())
+    loop.set_debug(True)
     coro = asyncio.wait_for(testfn(**testargs), 5)
 
     try:

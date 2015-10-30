@@ -70,5 +70,6 @@ class ServerContext:
             self._logger.exception(ex)
         finally:
             del self.connections[connection]
-            protocol.writer.close()
+            if self.loop.is_running():
+                protocol.writer.close()
             connection.on_connection_lost()

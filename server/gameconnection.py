@@ -1,5 +1,5 @@
 import asyncio
-
+from collections import defaultdict
 from concurrent.futures import CancelledError
 import socket
 import time
@@ -47,6 +47,7 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         self.protocol = None
         self._logger.info('GameConnection initializing')
         self._state = GameConnectionState.INITIALIZING
+        self._waiters = defaultdict(list)
         self.loop = loop
         self.player_service = player_service
         self.games = games
@@ -234,19 +235,27 @@ class GameConnection(Subscribable, GpgNetServerProtocol):
         :return:
         """
         try:
-            message["command_id"] = message['action']
-            message["arguments"] = message['chunks']
-            yield from self.handle_action(message["action"], message["chunks"])
-            self.notify(message)
+            cmd_id, args = message['action'], message['chunks']
+            message["command_id"] = cmd_id
+            message["arguments"] = args
+            yield from self.handle_action(cmd_id, args)
+            if cmd_id in self._waiters:
+                for waiter in self._waiters[cmd_id]:
+                    waiter.set_result(message)
+                    self._waiters[cmd_id].remove(waiter)
         except ValueError as ex:  # pragma: no cover
             self.log.error("Garbage command {} {}".format(ex, message))
 
-    def handle_ProcessServerNatPacket(self, arguments):
-        self.log.debug("handle_ProcessServerNatPacket {}".format(self))
-        self.notify({
-            'command_id': 'ProcessServerNatPacket',
-            'arguments': arguments
-        })
+    def await_message(self, message):
+        fut = asyncio.Future()
+        self._waiters[message].append(fut)
+        return fut
+
+    async def await_natpacket(self, sender):
+        while True:
+            packet = await self.await_message('ProcessNatPacket')
+            if packet['arguments'][0] == sender:
+                return packet['arguments'][1]
 
     @asyncio.coroutine
     def ConnectToHost(self, peer):
