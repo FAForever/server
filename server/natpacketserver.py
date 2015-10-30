@@ -1,5 +1,4 @@
 import asyncio
-from copy import deepcopy
 
 import config
 from .decorators import with_logger
