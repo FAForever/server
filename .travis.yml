@@ -6,7 +6,7 @@ python:
 install:
   - cp passwords.example.py passwords.py
   - "pip install --upgrade pip"
-  - "pip install --trusted-host content.dev.faforever.com -r requirements.txt"
+  - "pip install --use-wheel --trusted-host content.dev.faforever.com -r requirements.txt"
 
 before_script:
   - "mysql -e 'create database faf_test;'"
