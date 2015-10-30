@@ -76,9 +76,9 @@ def run_lobby_server(address: (str, int),
             # allowed to see them.
             if game.visibility == VisibilityState.FRIENDS:
                 # To see this game, you must have an authenticated connection and be a friend of the host.
-                validation_func = lambda lobby_conn: game.host.friends.contains(lobby_conn.player.id)
+                validation_func = lambda lobby_conn: lobby_conn.player.id in game.host.friends
             else:
-                validation_func = lambda lobby_conn: not game.host.foes.contains(lobby_conn.player.id)
+                validation_func = lambda lobby_conn: lobby_conn.player.id not in game.host.foes
 
             ctx.broadcast_raw(message, lambda lobby_conn: lobby_conn.authenticated and validation_func(lobby_conn))
 
