@@ -9,7 +9,6 @@ pycrypto
 pygeoip
 pytest==2.8.2
 pytest-mock==0.7
-pytest-qt
 pytest-cov
 pyflakes
 rsa
