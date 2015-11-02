@@ -1,7 +1,7 @@
 typing
 -f http://content.dev.faforever.com/wheel/
 aiohttp
-aiomysql
+aiomysql==0.0.5
 configobj
 coveralls
 docopt
