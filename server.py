@@ -10,9 +10,6 @@ Options:
 
 import asyncio
 
-
-
-import sys
 import logging
 from logging import handlers
 import signal
@@ -32,12 +29,7 @@ if __name__ == '__main__':
             if not done.done():
                 done.set_result(0)
 
-        if config.LIBRARY_PATH:
-            app.addLibraryPath(config.LIBRARY_PATH)
-
-        loop = QEventLoop(app)
-        asyncio.set_event_loop(loop)
-
+        loop = asyncio.get_event_loop()
         done = asyncio.Future()
 
         from docopt import docopt
