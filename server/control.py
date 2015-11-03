@@ -23,7 +23,7 @@ class ControlServer:
 
     def players(self, request):
         body = json.dumps({
-            'data': list(map(lambda p: p.to_dict(), self.player_service.players))
+            'data': list(map(lambda p: p.to_dict(), self.player_service.players.values()))
         })
         return web.Response(body=body.encode())
 
