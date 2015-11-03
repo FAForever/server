@@ -464,7 +464,6 @@ Thanks,\n\
         self.sendJSON(dict(command="notice", style="kick"))
         self.abort()
 
-
     @asyncio.coroutine
     def command_admin(self, message):
         action = message['action']
@@ -486,7 +485,7 @@ Thanks,\n\
                 if player:
                     self._logger.info('Administrative action: {} closed game for {}'.format(self.player, player))
                     player.lobby_connection.kick(
-                        ("Your client was closed by an administrator ({admin_name}). "
+                        message=("Your client was closed by an administrator ({admin_name}). "
                          "Please refer to our rules for the lobby/game here {rule_link}."
                           .format(admin_name=self.player.login,
                                   rule_link=config.RULE_LINK)))

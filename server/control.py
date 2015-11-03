@@ -28,7 +28,7 @@ class ControlServer:
         return web.Response(body=body.encode())
 
     async def kick_player(self, request):
-        player = self.player_service.players[request.match_info.get('player_id')]
+        player = self.player_service.players[int(request.match_info.get('player_id'))]
         assert isinstance(player.lobby_connection, LobbyConnection)
         player.lobby_connection.kick("test")
         return web.Response()

@@ -172,13 +172,11 @@ def test_command_admin_closelobby(mocker, lobbyconnection):
         'user_id': 55
     })
 
-    tuna.lobby_connection.sendJSON.assert_any_call(dict(
-        command='notice',
-        style='info',
-        text=("Your client was closed by an administrator (Sheeo). "
+    tuna.lobby_connection.kick.assert_any_call(
+        message=("Your client was closed by an administrator (Sheeo). "
               "Please refer to our rules for the lobby/game here {rule_link}."
               .format(rule_link=config.RULE_LINK))
-    ))
+    )
 
 @asyncio.coroutine
 def test_command_admin_closeFA(mocker, lobbyconnection):
