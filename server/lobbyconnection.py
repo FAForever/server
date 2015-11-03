@@ -457,6 +457,14 @@ Thanks,\n\
 
             yield from cursor.execute("INSERT INTO friends_and_foes(user_id, subject_id, `status`) VALUES(%s, %s, %s)", self.player.id, target_id, status)
 
+    def kick(self, message=None):
+        if message:
+            self.sendJSON(dict(command="notice", style="info",
+                                                  text=message))
+        self.sendJSON(dict(command="notice", style="kick"))
+        self.abort()
+
+
     @asyncio.coroutine
     def command_admin(self, message):
         action = message['action']
@@ -477,13 +485,11 @@ Thanks,\n\
                 player = self.player_service[message['user_id']]
                 if player:
                     self._logger.info('Administrative action: {} closed game for {}'.format(self.player, player))
-                    player.lobby_connection.sendJSON(dict(command="notice", style="info",
-                                       text=("Your client was closed by an administrator ({admin_name}). "
-                                             "Please refer to our rules for the lobby/game here {rule_link}."
-                                       .format(admin_name=self.player.login,
-                                               rule_link=config.RULE_LINK))))
-                    player.lobby_connection.sendJSON(dict(command="notice", style="kick"))
-                    player.lobby_connection.abort()
+                    player.lobby_connection.kick(
+                        ("Your client was closed by an administrator ({admin_name}). "
+                         "Please refer to our rules for the lobby/game here {rule_link}."
+                          .format(admin_name=self.player.login,
+                                  rule_link=config.RULE_LINK)))
 
             elif action == "requestavatars":
                 with (yield from db.db_pool) as conn:

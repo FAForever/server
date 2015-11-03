@@ -1,6 +1,7 @@
 import weakref
 
 from enum import IntEnum, unique
+
 from .abc.base_player import BasePlayer
 
 @unique
@@ -65,14 +66,14 @@ class Player(BasePlayer):
         return self.lobby_connection
 
     @property
-    def lobby_connection(self):
+    def lobby_connection(self) -> "LobbyConnection":
         """
         Weak reference to the LobbyConnection of this player
         """
         return self._lobby_connection()
 
     @lobby_connection.setter
-    def lobby_connection(self, value):
+    def lobby_connection(self, value: "LobbyConnection"):
         self._lobby_connection = weakref.ref(value)
 
     @property
