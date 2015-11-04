@@ -742,7 +742,7 @@ Thanks,\n\
                 url, tooltip = avatar
                 self.player.avatar = {"url": url, "tooltip": tooltip}
 
-        self.player_service.addUser(self.player)
+        self.player_service[self.player.id] = self.player
 
         self.sendJSON(dict(command="welcome", id=self.player.id, login=login))
 

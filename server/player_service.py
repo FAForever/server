@@ -29,6 +29,9 @@ class PlayerService:
     def __getitem__(self, item):
         return self.players[item]
 
+    def __setitem__(self, key, value):
+        self.players[key] = value
+
     @asyncio.coroutine
     def update_rating(self, player, rating='global'):
         """
@@ -72,9 +75,6 @@ class PlayerService:
                 (player.clan, _) = yield from cur.fetchone()
             except (pymysql.ProgrammingError, pymysql.OperationalError):
                 pass
-
-    def addUser(self, newplayer):
-        self.players[newplayer.id] = newplayer
 
     def remove_player(self, player):
         del self.players[player.id]

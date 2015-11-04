@@ -30,7 +30,7 @@ class ControlServer:
     async def kick_player(self, request):
         player = self.player_service.players[int(request.match_info.get('player_id'))]
         assert isinstance(player.lobby_connection, LobbyConnection)
-        player.lobby_connection.kick("test")
+        player.lobby_connection.kick()
         return web.Response()
 
 @asyncio.coroutine
