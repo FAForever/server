@@ -516,8 +516,8 @@ class GameConnection(GpgNetServerProtocol):
         :return: None
         """
         if state == 'Idle':
-            # FA has just connected to us
             self._handle_idle_state()
+            self._mark_dirty()
 
         elif state == 'Lobby':
             # The game is initialized and awaiting commands
