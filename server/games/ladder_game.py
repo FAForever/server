@@ -43,6 +43,9 @@ class LadderGame(Game):
         :param army:
         :return:
         """
+        if army not in self._results:
+            return 0
+
         for result in self._results[army]:
             if result[1] == 'victory':
                 return 1

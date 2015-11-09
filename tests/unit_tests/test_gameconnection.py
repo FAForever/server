@@ -6,10 +6,10 @@ import json
 from unittest import mock
 import pytest
 
-from server import proxy_map
+from server import proxy_map, GameConnection
 from server.connectivity import Connectivity, ConnectivityState
 from server.games import Game
-from server.players import PlayerState
+from server.players import PlayerState, Player
 
 slow = pytest.mark.slow
 
@@ -301,3 +301,10 @@ def test_ConnectToHost_public_proxy(connections, players):
 @asyncio.coroutine
 def test_ConnectToPeer_(loop):
     pass
+
+
+@asyncio.coroutine
+def test_json_stats(game_connection, game_stats_service, players, game):
+    game_stats_service.process_game_stats = mock.Mock()
+    yield from game_connection.handle_action('JsonStats', ['{"stats": {}}'])
+    game.report_army_stats.assert_called_once_with('{"stats": {}}')

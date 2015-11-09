@@ -15,9 +15,10 @@ class GameService:
     """
     Utility class for maintaining lifecycle of games
     """
-    def __init__(self, player_service):
+    def __init__(self, player_service, game_stats_service):
         self._dirty_games = set()
         self.player_service = player_service
+        self.game_stats_service = game_stats_service
         self.game_id_counter = 0
 
         # Populated below in really_update_static_ish_data.
@@ -104,7 +105,7 @@ class GameService:
             self.game_mode_versions['ladder1v1'] = self.game_mode_versions['faf']
 
             # meh meh
-            self.ladder_service = LadderService(self)
+            self.ladder_service = LadderService(self, self.game_stats_service)
 
     @property
     def dirty_games(self):
@@ -140,7 +141,8 @@ class GameService:
             "name": name,
             "map": mapname,
             "game_mode": game_mode,
-            "game_service": self
+            "game_service": self,
+            "game_stats_service": self.game_stats_service
         }
         if game_mode == 'ladder1v1':
             game = LadderGame(**args)

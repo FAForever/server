@@ -478,6 +478,9 @@ Thanks,\n\
         self.sendJSON(dict(command="notice", style="kick"))
         self.abort()
 
+    def send_updated_achievements(self, updated_achievements):
+        self.sendJSON(dict(command="updated_achievements", updated_achievements=updated_achievements))
+
     @asyncio.coroutine
     def command_admin(self, message):
         action = message['action']

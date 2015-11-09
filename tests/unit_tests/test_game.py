@@ -5,6 +5,8 @@ import asyncio
 import pytest
 
 from trueskill import Rating
+
+from server import GameStatsService
 from server.games.game import Game, GameState, GameError, VisibilityState
 from server.gameconnection import GameConnection, GameConnectionState
 from server.players import Player
@@ -12,19 +14,25 @@ from tests.utils import CoroMock
 
 
 @pytest.fixture()
-def game(game_service):
-    return Game(42, game_service)
+def game_stats_service():
+    service = mock.Mock(spec=GameStatsService)
+    service.process_game_stats = CoroMock()
+    return service
+
+@pytest.fixture()
+def game(game_service, game_stats_service):
+    return Game(42, game_service, game_stats_service)
 
 
 def test_initialization(game: Game):
     assert game.state == GameState.INITIALIZING
 
 
-def test_instance_logging():
+def test_instance_logging(game_stats_service):
     logger = logging.getLogger('{}.5'.format(Game.__qualname__))
     logger.info = mock.Mock()
     mock_parent = mock.Mock()
-    game = Game(5, mock_parent)
+    game = Game(5, mock_parent, game_stats_service)
     logger.info.assert_called_with("{} created".format(game))
 
 
@@ -178,8 +186,8 @@ async def test_compute_rating_computes_global_ratings(game: Game, players):
     players.joining.global_rating = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
-    game.add_result(players.hosting, 0, 'victory', 1)
-    game.add_result(players.joining, 1, 'defeat', 0)
+    await game.add_result(players.hosting, 0, 'victory', 1)
+    await game.add_result(players.joining, 1, 'defeat', 0)
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 2)
     groups = game.compute_rating()
@@ -195,8 +203,8 @@ async def test_compute_rating_computes_ladder_ratings(game: Game, players):
     players.joining.ladder_rating = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
-    game.add_result(players.hosting, 0, 'victory', 1)
-    game.add_result(players.joining, 1, 'defeat', 0)
+    await game.add_result(players.hosting, 0, 'victory', 1)
+    await game.add_result(players.joining, 1, 'defeat', 0)
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 2)
     groups = game.compute_rating(rating='ladder')
@@ -222,7 +230,7 @@ async def test_compute_rating_balanced_teamgame(game: Game, create_player):
         game.set_player_option(player.id, 'Army', player.id - 1)
     await game.launch()
     for player, result, _ in players:
-        game.add_result(player, player.id - 1, 'score', result)
+        await game.add_result(player, player.id - 1, 'score', result)
     result = game.compute_rating()
     for team in result:
         for player, new_rating in team.items():
@@ -292,7 +300,7 @@ async def test_persist_results(game):
     add_connected_players(game, players)
     await game.launch()
     assert len(game.players) == 2
-    game.add_result(0, 1, 'VICTORY', 5)
+    await game.add_result(0, 1, 'VICTORY', 5)
     await game.on_game_end()
 
     assert game.get_army_result(1) == 5
@@ -303,9 +311,27 @@ async def test_persist_results(game):
 
 def test_equality(game):
     assert game == game
-    assert game != Game(5, mock.Mock())
+    assert game != Game(5, mock.Mock(), mock.Mock())
 
 
 def test_hashing(game):
     # game.id == 42
-    assert {game: 1, Game(42, mock.Mock()): 1} == {game: 1}
+    assert {game: 1, Game(42, mock.Mock(), mock.Mock()): 1} == {game: 1}
+
+async def test_report_army_stats_sends_stats_for_defeated_player(game: Game):
+    game.state = GameState.LOBBY
+    players = [
+        Player(id=1, login='Dostya', global_rating=(1500, 500)),
+        Player(id=2, login='Rhiza', global_rating=(1500, 500))
+    ]
+    add_connected_players(game, players)
+
+    await game.launch()
+    await game.add_result(0, 1, 'defeat', -1)
+
+    with open("tests/data/game_stats_simple_win.json", "r") as stats_file:
+        stats = stats_file.read()
+
+    await game.report_army_stats(stats)
+
+    game._game_stats_service.process_game_stats.assert_called_once_with(players[1], game, stats)

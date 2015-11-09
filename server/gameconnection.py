@@ -5,16 +5,14 @@ import socket
 import time
 import logging
 import functools
-
 import json
 import config
-
 from server.abc.base_game import GameConnectionState
 from server.connectivity import TestPeer, ConnectivityState
 from server.games.game import Game, GameState, Victory
 from server.decorators import with_logger, timed
 from server.game_service import GameService
-from server.players import PlayerState
+from server.players import PlayerState, Player
 from server.protocol import GpgNetServerProtocol
 import server.db as db
 
@@ -89,6 +87,9 @@ class GameConnection(GpgNetServerProtocol):
 
     @property
     def player(self):
+        """
+        :rtype: Player
+        """
         return self._player
 
     @player.setter
@@ -161,7 +162,7 @@ class GameConnection(GpgNetServerProtocol):
             except (RuntimeError, CancelledError):  # pragma: no cover
                 break
 
-    def _handle_idle_state(self):
+    async def _handle_idle_state(self):
         """
         This message is sent by FA when it doesn't know what to do.
         :return: None
@@ -225,9 +226,8 @@ class GameConnection(GpgNetServerProtocol):
         except Exception as e:
             self.log.exception(e)
 
-    @asyncio.coroutine
     @timed(limit=0.1)
-    def on_message_received(self, message):
+    async def on_message_received(self, message):
         """
         Main entry point when reading messages
         :param message:
@@ -237,7 +237,7 @@ class GameConnection(GpgNetServerProtocol):
             cmd_id, args = message['action'], message['chunks']
             message["command_id"] = cmd_id
             message["arguments"] = args
-            yield from self.handle_action(cmd_id, args)
+            await self.handle_action(cmd_id, args)
             if cmd_id in self._waiters:
                 for waiter in self._waiters[cmd_id]:
                     waiter.set_result(message)
@@ -373,8 +373,7 @@ class GameConnection(GpgNetServerProtocol):
         except (CancelledError, asyncio.TimeoutError):
             return None
 
-    @asyncio.coroutine
-    def handle_action(self, key, values):
+    async def handle_action(self, key, values):
         """
         Handle GpgNetSend messages, wrapped in the JSON protocol
         :param key: command type
@@ -385,13 +384,13 @@ class GameConnection(GpgNetServerProtocol):
         """
         try:
             if key == 'Authenticate':
-                yield from self.authenticate(int(values[0]), int(values[1]))
+                await self.authenticate(int(values[0]), int(values[1]))
             elif not self._authenticated.done():
-                @asyncio.coroutine
-                def queue_until_authed():
-                    yield from self._authenticated
-                    yield from self.handle_action(key, values)
-                asyncio.async(queue_until_authed())
+                async def queue_until_authed():
+                    await self._authenticated
+                    await self.handle_action(key, values)
+
+                asyncio.ensure_future(queue_until_authed())
                 return
             elif key == 'pong':
                 self.last_pong = time.time()
@@ -409,7 +408,7 @@ class GameConnection(GpgNetServerProtocol):
 
             elif key == 'GameState':
                 state = values[0]
-                yield from self.handle_game_state(state)
+                await self.handle_game_state(state)
                 self._mark_dirty()
 
             elif key == 'GameOption':
@@ -437,10 +436,10 @@ class GameConnection(GpgNetServerProtocol):
                 if values[0] == "uids":
                     uids = values[1].split()
                     self.game.mods = {uid: "Unknown sim mod" for uid in uids}
-                    with (yield from db.db_pool) as conn:
-                        cursor = yield from conn.cursor()
-                        yield from cursor.execute("SELECT uid, name from table_mod WHERE uid in %s", (uids, ))
-                        mods = yield from cursor.fetchall()
+                    with (await db.db_pool) as conn:
+                        cursor = await conn.cursor()
+                        await cursor.execute("SELECT uid, name from table_mod WHERE uid in %s", (uids,))
+                        mods = await cursor.fetchall()
                         for (uid, name) in mods:
                             self.game.mods[uid] = name
                 self._mark_dirty()
@@ -472,10 +471,10 @@ class GameConnection(GpgNetServerProtocol):
                 result = str(values[1])
                 try:
                     if not any(map(functools.partial(str.startswith, result),
-                            ['score', 'default', 'victory', 'draw'])):
+                                   ['score', 'defeat', 'victory', 'draw'])):
                         raise ValueError()  # pragma: no cover
                     result = result.split(' ')
-                    self.game.add_result(self.player, army, result[0], int(result[1]))
+                    await self.game.add_result(self.player, army, result[0], int(result[1]))
                 except (KeyError, ValueError):  # pragma: no cover
                     self.log.warn("Invalid result for {} reported: {}".format(army, result))
                     pass
@@ -483,20 +482,24 @@ class GameConnection(GpgNetServerProtocol):
             elif key == 'OperationComplete':
                 if int(values[0]) == 1:
                     secondary, delta = int(values[1]), str(values[2])
-                    with (yield from db.db_pool) as conn:
-                        cursor = yield from conn.cursor()
+                    with (await db.db_pool) as conn:
+                        cursor = await conn.cursor()
                         # FIXME: Resolve used map earlier than this
-                        yield from cursor.execute("SELECT id FROM coop_map WHERE filename LIKE '%/"
-                                                  + self.game.map_file_path+".%'")
-                        (mission, ) = yield from cursor.fetchone()
+                        await cursor.execute("SELECT id FROM coop_map WHERE filename LIKE '%/"
+                                             + self.game.map_file_path + ".%'")
+                        (mission,) = await cursor.fetchone()
                         if not mission:
                             self._logger.debug("can't find coop map: {}".format(self.game.map_file_path))
                             return
 
-                        yield from cursor.execute("INSERT INTO `coop_leaderboard`"
-                                                  "(`mission`, `gameuid`, `secondary`, `time`) "
-                                                  "VALUES (%s, %s, %s, %s);",
-                                                  (mission, self.game.id, secondary, delta))
+                        await cursor.execute("INSERT INTO `coop_leaderboard`"
+                                             "(`mission`, `gameuid`, `secondary`, `time`) "
+                                             "VALUES (%s, %s, %s, %s);",
+                                             (mission, self.game.id, secondary, delta))
+            elif key == 'JsonStats':
+                await self.game.report_army_stats(values[0])
+
+
         except AuthenticationError as e:
             self.log.exception("Authentication error: {}".format(e))
             self.abort()
@@ -508,15 +511,14 @@ class GameConnection(GpgNetServerProtocol):
     def on_ProcessNatPacket(self, address_and_port, message):
         self.nat_packets[message] = address_and_port
 
-    @asyncio.coroutine
-    def handle_game_state(self, state):
+    async def handle_game_state(self, state):
         """
         Changes in game state
         :param state: new state
         :return: None
         """
         if state == 'Idle':
-            self._handle_idle_state()
+            await self._handle_idle_state()
             self._mark_dirty()
 
         elif state == 'Lobby':
@@ -528,17 +530,17 @@ class GameConnection(GpgNetServerProtocol):
             #
             # We do not yield from the task, since we
             # need to keep processing other commands while it runs
-            asyncio.async(self._handle_lobby_state())
+            asyncio.ensure_future(self._handle_lobby_state())
 
         elif state == 'Launching':
             if self.player.state == PlayerState.HOSTING:
-                yield from self.game.launch()
+                await self.game.launch()
 
                 if len(self.game.mods) > 0:
-                    with (yield from db.db_pool) as conn:
-                        cursor = yield from conn.cursor()
-                        yield from cursor.execute("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid in %s",
-                                                  (self.game.mods.keys(), ))
+                    with (await db.db_pool) as conn:
+                        cursor = await conn.cursor()
+                        await cursor.execute("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid in %s",
+                                             (self.game.mods.keys(),))
 
     def _send_create_lobby(self):
         """
@@ -558,13 +560,13 @@ class GameConnection(GpgNetServerProtocol):
                               self.player.login,
                               self.player.id, 1)
 
-    def ConnectThroughProxy(self, peer, recurse=True):
+    async def ConnectThroughProxy(self, peer, recurse=True):
         try:
             n_proxy = self.game.proxy_map.map(self.player, peer.player)
 
             if n_proxy < 0:
                 self.log.debug(self.logGame + "Maximum proxies used")  # pragma: no cover
-                self.abort()
+                await self.abort()
 
             self.game._logger.debug("%s is connecting through proxy to %s on port %i" % (
                 self.player, peer.player, n_proxy))
@@ -615,7 +617,7 @@ class GameConnection(GpgNetServerProtocol):
 
     def on_connection_lost(self):
         try:
-            if self.state == GameConnectionState.CONNECTED_TO_HOST\
+            if self.state == GameConnectionState.CONNECTED_TO_HOST \
                     and self.game.state == GameState.LOBBY:
                 for peer in self.game.connections:
                     peer.send_DisconnectFromPeer(self.player.id)
@@ -628,7 +630,8 @@ class GameConnection(GpgNetServerProtocol):
             if self.connectivity_state and self.connectivity_state.state == ConnectivityState.PROXY:
                 wiki_link = "{}index.php?title=Connection_issues_and_solutions".format(config.WIKI_LINK)
                 text = "Your network is not setup right.<br>The server had to make you connect to other players by proxy.<br>Please visit <a href='{}'>{}</a>" + \
-                       "to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs,".format(wiki_link, wiki_link)
+                       "to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs,".format(
+                           wiki_link, wiki_link)
 
                 if self.lobby:
                     self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))

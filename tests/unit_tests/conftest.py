@@ -1,8 +1,7 @@
 import asyncio
-
 from unittest import mock
-
 import pytest
+
 
 @pytest.fixture()
 def lobbythread():
@@ -21,8 +20,10 @@ def game_connection(request, game, loop, player_service, players, game_service, 
     conn.lobby = mock.Mock(spec=LobbyConnection)
     conn._authenticated = asyncio.Future()
     conn._authenticated.set_result(42)
+
     def fin():
         conn.abort()
+
     request.addfinalizer(fin)
     return conn
 
@@ -30,6 +31,7 @@ def game_connection(request, game, loop, player_service, players, game_service, 
 @pytest.fixture
 def connections(loop, player_service, game_service, transport, game):
     from server import GameConnection
+
     def make_connection(player, connectivity):
         conn = GameConnection(loop=loop, player_service=player_service, games=game_service)
         conn.protocol = mock.Mock()

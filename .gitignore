@@ -1,4 +1,5 @@
 passwords.py
+faf-server.pem
 .cache
 *.egg-info/
 *.pyc

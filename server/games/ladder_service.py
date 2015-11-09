@@ -17,9 +17,10 @@ class LadderService:
     """
     listable = False
 
-    def __init__(self, games_service):
+    def __init__(self, games_service, game_stats_service):
         self.players = []
         self.game_service = games_service
+        self.game_stats_service = game_stats_service
 
     @asyncio.coroutine
     def getLeague(self, season, player):
@@ -65,7 +66,7 @@ class LadderService:
 
         (map_id, map_path) = random.choice(self.game_service.ladder_maps)
 
-        game = LadderGame(self.game_service.createUuid(), self.game_service)
+        game = LadderGame(self.game_service.createUuid(), self.game_service, self.game_stats_service)
 
         player1.game = game
         player2.game = game

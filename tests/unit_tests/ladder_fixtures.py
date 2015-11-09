@@ -39,5 +39,5 @@ def ladder_setup(player1, player2, map_pool):
     }
 
 @pytest.fixture()
-def ladder_service(monkeypatch, sqlquery, game_service):
-    return LadderService(game_service)
+def ladder_service(game_service, game_stats_service):
+    return LadderService(game_service, game_stats_service)

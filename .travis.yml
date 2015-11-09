@@ -5,6 +5,7 @@ python:
 
 install:
   - cp passwords.example.py passwords.py
+  - cp faf-server.example.pem faf-server.pem
   - "pip install --upgrade pip"
   - "pip install --use-wheel --trusted-host content.dev.faforever.com -r requirements.txt"
 

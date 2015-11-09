@@ -156,7 +156,7 @@ def game(players):
     from server.games import Game
     from server.abc.base_game import InitMode
     mock_parent = mock.Mock()
-    game = mock.create_autospec(spec=Game(1, mock_parent))
+    game = mock.create_autospec(spec=Game(1, mock_parent, mock.Mock()))
     players.hosting.getGame = mock.Mock(return_value=game)
     players.joining.getGame = mock.Mock(return_value=game)
     players.peer.getGame = mock.Mock(return_value=game)
@@ -197,6 +197,26 @@ def player_service(loop, players, db_pool):
     return PlayerService(db_pool)
 
 @pytest.fixture
-def game_service(loop, player_service):
+def game_service(loop, player_service, game_stats_service):
     from server import GameService
-    return GameService(player_service)
+    return GameService(player_service, game_stats_service)
+
+@pytest.fixture
+def api_accessor():
+    from server.api.api_accessor import ApiAccessor
+    return ApiAccessor()
+
+@pytest.fixture
+def event_service(api_accessor):
+    from server.stats.event_service import EventService
+    return EventService(api_accessor)
+
+@pytest.fixture
+def achievement_service(api_accessor):
+    from server.stats.achievement_service import AchievementService
+    return AchievementService(api_accessor)
+
+@pytest.fixture
+def game_stats_service(event_service, achievement_service):
+    from server.stats.game_stats_service import GameStatsService
+    return GameStatsService(event_service, achievement_service)

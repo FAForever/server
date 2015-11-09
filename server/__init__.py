@@ -11,6 +11,7 @@ import server.db
 import config
 
 from server.games.game import GameState, VisibilityState
+from server.stats.game_stats_service import GameStatsService
 from .gameconnection import GameConnection
 from .natpacketserver import NatPacketServer
 from server.lobbyconnection import LobbyConnection

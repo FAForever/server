@@ -1,0 +1,12 @@
+{
+  "stats": [
+    {
+      "type": "Human",
+      "name": "Someone"
+    },
+    {
+      "type": "Human",
+      "name": "SomeoneElse"
+    }
+  ]
+}

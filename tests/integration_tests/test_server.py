@@ -15,9 +15,9 @@ slow = pytest.mark.slow
 TEST_ADDRESS = ('127.0.0.1', None)
 
 @pytest.fixture
-def game_server(mocker, loop, request, player_service, game_service, mock_db_pool):
+def game_server(mocker, loop, request, player_service, game_service, mock_db_pool, game_stats_service):
     player = Player(login='Foo', session=42, id=1)
-    game = Game(1, game_service, host=player)
+    game = Game(1, game_service, game_stats_service, host=player)
     # Evil hack to keep 'game' in memory.
     player._xgame = game
     player.game = game

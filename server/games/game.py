@@ -1,3 +1,4 @@
+from functools import partial
 from enum import IntEnum, unique
 import logging
 import time
@@ -87,7 +88,7 @@ class Game(BaseGame):
     """
     init_mode = InitMode.NORMAL_LOBBY
 
-    def __init__(self, id, game_service,
+    def __init__(self, id, game_service, game_stats_service,
                  host=None,
                  name='None',
                  map='SCMP_007',
@@ -101,6 +102,9 @@ class Game(BaseGame):
         """
         super().__init__()
         self._results = {}
+        self._army_stats = None
+        self._players_with_unsent_army_stats = []
+        self._game_stats_service = game_stats_service
         self.game_service = game_service
         self._player_options = {}
         self.launched_at = None
@@ -164,7 +168,7 @@ class Game(BaseGame):
         return frozenset({self.get_player_option(player.id, 'Team')
                           for player in self.players})
 
-    def add_result(self, reporter: Union[Player, int], army: int, result_type: str, score: int):
+    async def add_result(self, reporter: Union[Player, int], army: int, result_type: str, score: int):
         """
         As computed by the game.
         :param reporter:
@@ -173,11 +177,35 @@ class Game(BaseGame):
         :param score:
         :return:
         """
-        assert army in self.armies
+        if army not in self.armies:
+            self._logger.debug(
+                "Ignoring results for unknown army {}: {} {} reported by: {}".format(army, result_type, score, reporter))
+            return
+
         if army not in self._results:
             self._results[army] = []
         self._logger.info("{} reported result for army {}: {} {}".format(reporter, army, result_type, score))
         self._results[army].append((reporter, result_type.lower(), score))
+
+        await self._process_pending_army_stats()
+
+    async def _process_pending_army_stats(self):
+        for player in self._players_with_unsent_army_stats:
+            army = self.get_player_option(player.id, 'Army')
+            if army not in self._results:
+                continue
+
+            for result in self._results[army]:
+                if result[1] in ['defeat', 'victory', 'draw']:
+                    await self._process_army_stats_for_player(player)
+                    break
+
+    async def _process_army_stats_for_player(self, player):
+        if self._army_stats is None or self.gameOptions["CheatsEnabled"] != "false":
+            return
+
+        self._players_with_unsent_army_stats.remove(player)
+        await self._game_stats_service.process_game_stats(player, self, self._army_stats)
 
     def add_game_connection(self, game_connection):
         """
@@ -204,8 +232,11 @@ class Game(BaseGame):
         assert game_connection in self._connections.values()
         del self._connections[game_connection.player]
         self._logger.info("Removed game connection {}".format(game_connection))
+
         if len(self._connections) == 0:
             await self.on_game_end()
+        else:
+            await self._process_pending_army_stats()
 
     async def on_game_end(self):
         self.state = GameState.ENDED
@@ -215,6 +246,9 @@ class Game(BaseGame):
 
         await self.persist_results()
         await self.rate_game()
+
+        for player in self._players_with_unsent_army_stats:
+            await self._process_army_stats_for_player(player)
 
     async def load_results(self):
         """
@@ -231,7 +265,7 @@ class Game(BaseGame):
             for player_id, startspot, score in results:
                 # FIXME: Assertion about startspot == army
                 # FIXME: Reporter not retained in database
-                self.add_result(0, startspot, 'score', score)
+                await self.add_result(0, startspot, 'score', score)
 
     async def persist_results(self):
         """
@@ -398,6 +432,7 @@ class Game(BaseGame):
         assert self.state == GameState.LOBBY
         self.launched_at = time.time()
         self._players = self.players
+        self._players_with_unsent_army_stats = list(self._players)
         self.state = GameState.LIVE
         self._logger.info("Game launched")
         await self.validate_game_settings()
@@ -499,7 +534,7 @@ class Game(BaseGame):
 
             await cursor.execute("UPDATE game_stats "
                                  "SET validity = %s "
-                                 "WHERE id = %s", new_validity_state.value, self.id)
+                                 "WHERE id = %s", (new_validity_state.value, self.id))
 
     def get_army_result(self, army):
         """
@@ -567,6 +602,10 @@ class Game(BaseGame):
                 (player_id, mean, deviation) = row
 
                 self.game_service.player_service[player_id].global_rating = (mean, deviation)
+
+    async def report_army_stats(self, stats):
+        self._army_stats = stats
+        await self._process_pending_army_stats()
 
     def to_dict(self):
         client_state = {

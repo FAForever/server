@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 from unittest import mock
-from server import ServerContext, GameState, VisibilityState
+from server import ServerContext, GameState, VisibilityState, GameStatsService
 from server.protocol import QDataStreamProtocol
 from server.game_service import GameService
 from server.games import Game
@@ -50,8 +50,8 @@ def mock_players(mock_db_pool):
     return mock.create_autospec(PlayerService(mock_db_pool))
 
 @pytest.fixture
-def mock_games(mock_players):
-    return mock.create_autospec(GameService(mock_players))
+def mock_games(mock_players, game_stats_service):
+    return mock.create_autospec(GameService(mock_players, game_stats_service))
 
 @pytest.fixture
 def mock_protocol():
@@ -91,10 +91,11 @@ def test_command_game_join_calls_join_game(mocker,
                                            lobbyconnection,
                                            game_service,
                                            test_game_info,
-                                           players):
+                                           players,
+                                           game_stats_service):
     lobbyconnection.game_service = game_service
     mock_protocol = mocker.patch.object(lobbyconnection, 'protocol')
-    game = mock.create_autospec(Game(42, game_service))
+    game = mock.create_autospec(Game(42, game_service, game_stats_service))
     game.state = GameState.LOBBY
     game.password = None
     game.game_mode = 'faf'
@@ -137,10 +138,11 @@ def test_ask_session(lobbyconnection):
     (response, ), _ = lobbyconnection.sendJSON.call_args
     assert response['command'] == 'session'
 
-def test_send_game_list(mocker, lobbyconnection):
+def test_send_game_list(mocker, lobbyconnection, game_stats_service):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
     games = mocker.patch.object(lobbyconnection, 'game_service')
-    game1, game2 = mock.create_autospec(Game(42, mock.Mock())), mock.create_autospec(Game(22, mock.Mock()))
+    game1, game2 = mock.create_autospec(Game(42, mock.Mock(), game_stats_service)),\
+                   mock.create_autospec(Game(22, mock.Mock(), game_stats_service))
     games.live_games = [game1, game2]
 
     lobbyconnection.send_game_list()
