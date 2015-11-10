@@ -425,6 +425,7 @@ Thanks,\n\
     def send_game_list(self):
         self.protocol.send_messages([game.to_dict() for game in self.game_service.live_games])
 
+    @asyncio.coroutine
     def command_social_remove(self, message):
         if "friend" in message:
             target_id = message['friend']
@@ -437,7 +438,8 @@ Thanks,\n\
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute("DELETE FROM friends_and_foes WHERE user_id = %s AND subject_id = %s", self.player.id, target_id)
+            yield from cursor.execute("DELETE FROM friends_and_foes WHERE user_id = %s AND subject_id = %s",
+                                      (self.player.id, target_id))
 
     @timed()
     @asyncio.coroutine
@@ -449,13 +451,13 @@ Thanks,\n\
             status = "FOE"
             target_id = message['foe']
         else:
-            self.abort("No-op social_add.")
             return
 
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute("INSERT INTO friends_and_foes(user_id, subject_id, `status`) VALUES(%s, %s, %s)", self.player.id, target_id, status)
+            yield from cursor.execute("INSERT INTO friends_and_foes(user_id, subject_id, `status`) VALUES(%s, %s, %s)",
+                                      (self.player.id, target_id, status))
 
     def kick(self, message=None):
         if message:
