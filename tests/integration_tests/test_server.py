@@ -73,7 +73,8 @@ def get_session(proto):
 def perform_login(proto, credentials):
     login, pw = credentials
     proto.send_message({'command': 'hello',
-                        'version': 0,
+                        'version': '1.0.0-dev',
+                        'user_agent': 'faf-client',
                         'login': login,
                         'password': pw,
                         'unique_id': 'some_id'})

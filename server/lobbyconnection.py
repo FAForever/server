@@ -18,6 +18,7 @@ import string
 import email
 from email.mime.text import MIMEText
 
+import semver
 from Crypto import Random
 from Crypto.Random.random import choice
 from Crypto.Cipher import Blowfish
@@ -675,7 +676,7 @@ Thanks,\n\
 
     @asyncio.coroutine
     def command_hello(self, message):
-        version = message['version']
+        version = str(message['version'])
         login = message['login'].strip()
         password = message['password']
 
@@ -686,9 +687,12 @@ Thanks,\n\
             cursor = yield from conn.cursor()
             versionDB, updateFile = self.player_service.client_version_info
 
-            # Version of zero represents a developer build.
-            if version < versionDB and version != 0:
-                self.sendJSON(dict(command="update", update=updateFile))
+            if semver.compare(versionDB, version) > 0\
+                    and message.get('user_agent') != 'downlords-faf-client':
+                self._logger.exception("{} vs {} = {}".format(versionDB, version, semver.compare(versionDB, version)))
+                self.sendJSON(dict(command="update",
+                                   update=updateFile,
+                                   new_version=versionDB))
                 return
 
             player_id, login, steamid = yield from self.check_user_login(cursor, login, password)

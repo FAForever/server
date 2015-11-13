@@ -203,4 +203,3 @@ def test_command_admin_closeFA(mocker, lobbyconnection):
               "Please refer to our rules for the lobby/game here {rule_link}."
               .format(rule_link=config.RULE_LINK))
     ))
-

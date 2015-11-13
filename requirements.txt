@@ -6,6 +6,7 @@ configobj
 coveralls
 docopt
 pycrypto
+semver
 pygeoip
 pytest==2.8.2
 pytest-mock

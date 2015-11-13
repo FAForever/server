@@ -14,7 +14,7 @@ class PlayerService:
         # Static-ish data fields.
         self.privileged_users = {}
         self.uniqueid_exempt = {}
-        self.client_version_info = (0, None)
+        self.client_version_info = ('0.0.0', None)
         self.blacklisted_email_domains = {}
 
         self.ladder_queue = MatchmakerQueue('ladder1v1', self)

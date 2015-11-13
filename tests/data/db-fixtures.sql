@@ -28,7 +28,7 @@ insert into uniqueid_exempt (user_id, reason) values (1, 'Because test');
 
 -- Lobby version table
 delete from version_lobby;
-insert into version_lobby (id, `file`, version) values (1, 'some-installer.msi', 125);
+insert into version_lobby (id, `file`, version) values (1, 'some-installer.msi', '0.10.125');
 
 -- Sample maps
 delete from table_map;
