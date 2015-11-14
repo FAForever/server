@@ -400,7 +400,7 @@ class Game(BaseGame):
         self._players = self.players
         self.state = GameState.LIVE
         self._logger.info("Game launched")
-        self.validate_game_settings()
+        await self.validate_game_settings()
         await self.on_game_launched()
 
     async def on_game_launched(self):
