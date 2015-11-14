@@ -9,7 +9,6 @@ from server.decorators import with_logger
 from server.games import FeaturedMod, LadderService, LadderGame, CoopGame
 from server.games.game import Game
 from server.players import Player
-from passwords import DB_NAME
 
 @with_logger
 class GameService:
@@ -41,8 +40,10 @@ class GameService:
         self.game_mode_versions = dict()
 
         # Synchronously initialise the game-id counter and static-ish-data.
-        asyncio.get_event_loop().run_until_complete(asyncio.async(self.initialise_game_counter()))
-        asyncio.get_event_loop().run_until_complete(asyncio.async(self.really_update_static_ish_data()))
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(asyncio.async(self.initialise_game_counter()))
+        loop.run_until_complete(loop.create_task(self.update_data()))
+        self._update_cron = aiocron.crontab('0 * * * *', func=self.update_data)
 
     @asyncio.coroutine
     def initialise_game_counter(self):
@@ -63,29 +64,29 @@ class GameService:
             yield from cursor.execute("SELECT MAX(id) FROM game_stats")
             (self.game_id_counter, ) = yield from cursor.fetchone()
 
-    def really_update_static_ish_data(self):
+    async def update_data(self):
         """
         Loads from the database the mostly-constant things that it doesn't make sense to query every
         time we need, but which can in principle change over time.
         """
-        with (yield from db.db_pool) as conn:
-            cursor = yield from conn.cursor()
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
 
-            yield from cursor.execute("SELECT `id`, `gamemod`, `name`, description, publish FROM game_featuredMods")
+            await cursor.execute("SELECT `id`, `gamemod`, `name`, description, publish FROM game_featuredMods")
 
             for i in range(0, cursor.rowcount):
-                id, name, full_name, description, publish = yield from cursor.fetchone()
+                id, name, full_name, description, publish = await cursor.fetchone()
                 self.featured_mods[name] = FeaturedMod(id, name, full_name, description, publish)
 
-            yield from cursor.execute("SELECT id FROM table_mod WHERE ranked = 1")
+            await cursor.execute("SELECT id FROM table_mod WHERE ranked = 1")
 
             # Turn resultset into a list of ids
-            rows = yield from cursor.fetchall()
+            rows = await cursor.fetchall()
             self.ranked_mods = set(map(lambda x: x[0], rows))
 
             # Load all ladder maps
-            yield from cursor.execute("SELECT ladder_map.idmap, table_map.name FROM ladder_map INNER JOIN table_map ON table_map.id = ladder_map.idmap")
-            self.ladder_maps = yield from cursor.fetchall()
+            await cursor.execute("SELECT ladder_map.idmap, table_map.name FROM ladder_map INNER JOIN table_map ON table_map.id = ladder_map.idmap")
+            self.ladder_maps = await cursor.fetchall()
 
             for mod in self.featured_mods.values():
                 if mod.name == 'ladder1v1':
@@ -93,10 +94,10 @@ class GameService:
                 self.game_mode_versions[mod.name] = {}
                 t = "updates_{}".format(mod.name)
                 tfiles = t + "_files"
-                yield from cursor.execute("SELECT %s.fileId, MAX(%s.version) "
-                                          "FROM %s LEFT JOIN %s ON %s.fileId = %s.id "
-                                          "GROUP BY %s.fileId" % (tfiles, tfiles, tfiles, t, tfiles, t, tfiles))
-                rows = yield from cursor.fetchall()
+                await cursor.execute("SELECT %s.fileId, MAX(%s.version) "
+                                     "FROM %s LEFT JOIN %s ON %s.fileId = %s.id "
+                                     "GROUP BY %s.fileId" % (tfiles, tfiles, tfiles, t, tfiles, t, tfiles))
+                rows = await cursor.fetchall()
                 for fileId, version in rows:
                     self.game_mode_versions[mod.name][fileId] = version
             # meh
@@ -104,11 +105,6 @@ class GameService:
 
             # meh meh
             self.ladder_service = LadderService(self)
-
-    @aiocron.crontab('0 * * * *')
-    @asyncio.coroutine
-    def update_static_ish_data(self):
-        self.really_update_static_ish_data()
 
     @property
     def dirty_games(self):

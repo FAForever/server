@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class LadderGame(Game):
-    """Class for 1v1 ladder game"""
+    """Class for 1v1 ladder games"""
     init_mode = InitMode.AUTO_LOBBY
 
     def __init__(self, id, *args, **kwargs):

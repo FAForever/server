@@ -18,7 +18,8 @@ class PlayerService:
         self.blacklisted_email_domains = {}
 
         self.ladder_queue = MatchmakerQueue('ladder1v1', self)
-        asyncio.get_event_loop().run_until_complete(asyncio.async(self.really_update_static_ish_data()))
+        asyncio.get_event_loop().run_until_complete(asyncio.async(self.update_data()))
+        self._update_cron = aiocron.crontab('0 * * * *', func=self.update_data)
 
     def __len__(self):
         return len(self.players)
@@ -92,37 +93,31 @@ class PlayerService:
         if player_id in self.players:
             return self.players[player_id]
 
-    @asyncio.coroutine
-    def really_update_static_ish_data(self):
+    async def update_data(self):
         """
         Update rarely-changing data, such as the admin list and the list of users exempt from the
         uniqueid check.
         """
-        with (yield from self.db_pool) as conn:
-            cursor = yield from conn.cursor()
+        async with self.db_pool.get() as conn:
+            cursor = await conn.cursor()
 
             # Admins/mods
-            yield from cursor.execute("SELECT `user_id`, `group` FROM lobby_admin")
-            rows = yield from cursor.fetchall()
+            await cursor.execute("SELECT `user_id`, `group` FROM lobby_admin")
+            rows = await cursor.fetchall()
             self.privileged_users = dict(rows)
 
             # UniqueID-exempt users.
-            yield from cursor.execute("SELECT `user_id` FROM uniqueid_exempt")
-            rows = yield from cursor.fetchall()
+            await cursor.execute("SELECT `user_id` FROM uniqueid_exempt")
+            rows = await cursor.fetchall()
             self.uniqueid_exempt = frozenset(map(lambda x: x[0], rows))
 
             # Client version number
-            yield from cursor.execute("SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1")
-            self.client_version_info = yield from cursor.fetchone()
+            await cursor.execute("SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1")
+            self.client_version_info = await cursor.fetchone()
 
             # Blacklisted email domains (we don't like disposable email)
-            yield from cursor.execute("SELECT domain FROM email_domain_blacklist")
-            rows = yield from cursor.fetchall()
+            await cursor.execute("SELECT domain FROM email_domain_blacklist")
+            rows = await cursor.fetchall()
             # Get list of reversed blacklisted domains (so we can (pre)suffix-match incoming emails
             # in sublinear time)
             self.blacklisted_email_domains = marisa_trie.Trie(map(lambda x: x[0][::-1], rows))
-
-    @aiocron.crontab('0 * * * *')
-    @asyncio.coroutine
-    def update_static_ish_data(self):
-        self.really_update_static_ish_data()
