@@ -54,6 +54,12 @@ class ClientError(Exception):
         self.recoverable = recoverable
 
 
+class AuthenticationError(Exception):
+    def __init__(self, message, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.message = message
+
+
 @with_logger
 class LobbyConnection:
     @timed()
@@ -113,6 +119,11 @@ class LobbyConnection:
                 yield from handler(message)
             else:
                 handler(message)
+        except AuthenticationError as ex:
+            self.protocol.send_message(
+                {'command': 'authentication_failed',
+                 'text': ex.message}
+            )
         except ClientError as ex:
             self.protocol.send_message(
                 {'command': 'notice',
@@ -555,11 +566,11 @@ Thanks,\n\
                                   "WHERE LOWER(login)=%s", login.lower())
 
         if cursor.rowcount != 1:
-            raise ClientError("Login not found or password incorrect. They are case sensitive.")
+            raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
 
         player_id, real_username, dbPassword, steamid, ban_reason = yield from cursor.fetchone()
         if dbPassword != password:
-            raise ClientError("Login not found or password incorrect. They are case sensitive.")
+            raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
 
         if ban_reason != None:
             raise ClientError("You are banned from FAF.\n Reason :\n {}".format(ban_reason))

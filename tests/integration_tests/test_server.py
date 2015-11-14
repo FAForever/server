@@ -97,8 +97,7 @@ def test_server_invalid_login(loop, lobby_server):
     proto = yield from connect_client(lobby_server)
     yield from perform_login(proto, ('Cat', 'epic'))
     msg = yield from proto.read_message()
-    assert msg == {'command': 'notice',
-                   'style': 'error',
+    assert msg == {'command': 'authentication_failed',
                    'text': 'Login not found or password incorrect. They are case sensitive.'}
     lobby_server.close()
     proto.close()
