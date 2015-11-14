@@ -74,7 +74,6 @@ class LobbyConnection:
         self.warned = False
         self._authenticated = False
         self.player = None
-        self.logPrefix = "\t"
         self.missedPing = 0
         self.leagueAvatar = None
         self.ip = None
@@ -690,8 +689,6 @@ Thanks,\n\
         version = message['version']
         login = message['login'].strip()
         password = message['password']
-
-        self.logPrefix = login + "\t"
 
         # Check their client is reporting the right version number.
         with (yield from db.db_pool) as conn:
