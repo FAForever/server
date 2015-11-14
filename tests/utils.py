@@ -1,4 +1,7 @@
 import asyncio
+from asyncio import coroutine
+from unittest.mock import Mock
+
 
 @asyncio.coroutine
 def wait_signal(signal, timeout=0.5):
@@ -8,3 +11,10 @@ def wait_signal(signal, timeout=0.5):
             future.set_result(True)
     signal.connect(fire)
     yield from asyncio.wait_for(future, timeout)
+
+
+def CoroMock():
+    coro = Mock(name="CoroutineResult")
+    corofunc = Mock(name="CoroutineFunction", side_effect=coroutine(coro))
+    corofunc.coro = coro
+    return corofunc

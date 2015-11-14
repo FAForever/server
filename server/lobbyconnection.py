@@ -689,7 +689,6 @@ Thanks,\n\
 
             if semver.compare(versionDB, version) > 0\
                     and message.get('user_agent') != 'downlords-faf-client':
-                self._logger.exception("{} vs {} = {}".format(versionDB, version, semver.compare(versionDB, version)))
                 self.sendJSON(dict(command="update",
                                    update=updateFile,
                                    new_version=versionDB))

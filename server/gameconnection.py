@@ -597,7 +597,7 @@ class GameConnection(GpgNetServerProtocol):
                 return
             self._state = GameConnectionState.ENDED
             if self.game:
-                self.game.remove_game_connection(self)
+                self.loop.create_task(self.game.remove_game_connection(self))
             self._mark_dirty()
             self.log.debug("{}.abort()".format(self))
             del self.player.game

@@ -7,6 +7,8 @@ import pytest
 from trueskill import Rating
 from server.games.game import Game, GameState, GameError, VisibilityState
 from server.gameconnection import GameConnection, GameConnectionState
+from server.players import Player
+from tests.utils import CoroMock
 
 
 @pytest.fixture()
@@ -89,25 +91,27 @@ def test_add_game_connection_throws_if_not_lobby_state(game: Game, players, game
     assert players.hosting not in game.players
 
 
-def test_remove_game_connection(game: Game, players, game_connection):
+async def test_remove_game_connection(game: Game, players, game_connection):
     game.state = GameState.LOBBY
     game_connection.player = players.hosting
     game_connection.state = GameConnectionState.CONNECTED_TO_HOST
     game.add_game_connection(game_connection)
-    game.remove_game_connection(game_connection)
+    await game.remove_game_connection(game_connection)
     assert players.hosting not in game.players
 
 
-def test_game_end_when_no_more_connections(game: Game, game_connection):
+async def test_game_end_when_no_more_connections(game: Game, game_connection):
     game.state = GameState.LOBBY
-    game.on_game_end = mock.Mock()
+
+    game.on_game_end = CoroMock()
     game_connection.state = GameConnectionState.CONNECTED_TO_HOST
     game.add_game_connection(game_connection)
-    game.remove_game_connection(game_connection)
+    await game.remove_game_connection(game_connection)
+
     game.on_game_end.assert_any_call()
 
 
-def test_game_launch_freezes_players(game: Game, players):
+async def test_game_launch_freezes_players(game: Game, players):
     conn1 = game_connection()
     conn1.state = GameConnectionState.CONNECTED_TO_HOST
     conn1.player = players.hosting
@@ -120,7 +124,7 @@ def test_game_launch_freezes_players(game: Game, players):
     game.launch()
     assert game.state == GameState.LIVE
     assert game.players == {players.hosting, players.joining}
-    game.remove_game_connection(conn1)
+    await game.remove_game_connection(conn1)
     assert game.players == {players.hosting, players.joining}
 
 
@@ -195,10 +199,10 @@ def test_compute_rating_balanced_teamgame(game: Game, create_player):
             assert new_rating != player.global_rating
 
 
-def test_on_game_end_calls_rate_game(game):
+async def test_on_game_end_calls_rate_game(game):
     game.rate_game = mock.Mock()
     game.state = GameState.LIVE
-    game.on_game_end()
+    await game.on_game_end()
     assert game.state == GameState.ENDED
     game.rate_game.assert_any_call()
 
@@ -245,7 +249,24 @@ def test_to_dict(game, create_player):
     }
     assert data == expected
 
-# Eeeeeeeewwwww
+async def test_persist_results(game):
+    game.state = GameState.LOBBY
+    players = [
+        Player(id=1, login='Dostya', global_rating=(1500, 500)),
+        Player(id=2, login='Rhiza', global_rating=(1500, 500))
+    ]
+    add_connected_players(game, players)
+    game.launch()
+    game.add_result(0, 1, 'VICTORY', 5)
+    await game.on_game_end()
+
+    assert game.get_army_result(1) == 5
+
+    await game.load_results()
+    assert game.get_army_result(1) == 5
+
+
+
 def test_equality(game):
     assert game == game
     assert game != Game(5, mock.Mock())

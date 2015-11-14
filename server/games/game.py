@@ -4,6 +4,8 @@ import time
 
 import functools
 import asyncio
+from typing import Union
+
 import trueskill
 import server.db as db
 from server.proxy_map import ProxyMap
@@ -163,11 +165,13 @@ class Game(BaseGame):
         return frozenset({self.get_player_option(player.id, 'Team')
                           for player in self.players})
 
-    def add_result(self, reporter, army, result_type, score):
+    def add_result(self, reporter: Union[Player, int], army: int, result_type: str, score: int):
         """
         As computed by the game.
-        :param army: army
-        :param result: str
+        :param reporter:
+        :param army:
+        :param result_type:
+        :param score:
         :return:
         """
         assert army in self.armies
@@ -189,7 +193,7 @@ class Game(BaseGame):
         self._logger.info("Added game connection {}".format(game_connection))
         self._connections[game_connection.player] = game_connection
 
-    def remove_game_connection(self, game_connection):
+    async def remove_game_connection(self, game_connection):
         """
         Remove a game connection from this game
 
@@ -202,20 +206,34 @@ class Game(BaseGame):
         del self._connections[game_connection.player]
         self._logger.info("Removed game connection {}".format(game_connection))
         if len(self._connections) == 0:
-            self.on_game_end()
+            await self.on_game_end()
 
-    def on_game_end(self):
+    async def on_game_end(self):
         self.state = GameState.ENDED
         self._logger.info("Game ended")
         if self.desyncs > 20:
             self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
 
-
-        self.persist_results()
+        await self.persist_results()
         self.rate_game()
 
-    @asyncio.coroutine
-    def persist_results(self):
+    async def load_results(self):
+        """
+        Load results from the database
+        :return:
+        """
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT `playerId`, `place`, `score` "
+                                 "FROM `game_player_stats` "
+                                 "WHERE `gameId`=%s", (self.id, ))
+            results = await cursor.fetchall()
+            for player_id, startspot, score in results:
+                # FIXME: Assertion about startspot == army
+                # FIXME: Reporter not retained in database
+                self.add_result(0, startspot, 'score', score)
+
+    async def persist_results(self):
         """
         Persist game results into the database
         :return:
@@ -233,16 +251,16 @@ class Game(BaseGame):
                 # Default to -1 if there is no result
                 results[player] = -1
 
-        with (yield from db.db_pool) as conn:
-            cursor = yield from conn.cursor()
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
 
             rows = []
             for player, result in results.items():
                 self._logger.info("Result for player {}: {}".format(player, result))
                 rows.append((self.id, player.id, result))
 
-            yield from cursor.executemany("INSERT INTO game_player_stats (gameId, playerId, score, scoreTime) "
-                                          "VALUES (%s, %s, %s, NOW())", rows)
+            await cursor.executemany("INSERT INTO game_player_stats (gameId, playerId, score, scoreTime) "
+                                     "VALUES (%s, %s, %s, NOW())", rows)
 
     @asyncio.coroutine
     def persist_rating_change_stats(self, rating_groups, rating='global'):
