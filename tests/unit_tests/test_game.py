@@ -301,7 +301,6 @@ async def test_persist_results(game):
     await game.load_results()
     assert game.get_army_result(1) == 5
 
-
 def test_equality(game):
     assert game == game
     assert game != Game(5, mock.Mock())

@@ -483,7 +483,7 @@ class Game(BaseGame):
     def getGamemodVersion(self):
         return self.game_service.game_mode_versions[self.game_mode]
 
-    def mark_invalid(self, new_validity_state):
+    async def mark_invalid(self, new_validity_state: ValidityState):
         self._logger.info("marked as invalid because: {}".format(repr(new_validity_state)))
         self.validity = new_validity_state
 
@@ -494,10 +494,12 @@ class Game(BaseGame):
 
         # Currently, we can only end up here if a game desynced or was a custom game that terminated
         # too quickly.
-        with (yield from db.db_pool) as conn:
-            cursor = yield from conn.cursor()
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
 
-            yield from cursor.execute("UPDATE game_stats SET validity = %s WHERE id = %s", new_validity_state, self.id)
+            await cursor.execute("UPDATE game_stats "
+                                 "SET validity = %s "
+                                 "WHERE id = %s", new_validity_state.value, self.id)
 
     def get_army_result(self, army):
         """
