@@ -211,10 +211,10 @@ class Game(BaseGame):
         self.state = GameState.ENDED
         self._logger.info("Game ended")
         if self.desyncs > 20:
-            self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
+            await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
 
         await self.persist_results()
-        self.rate_game()
+        await self.rate_game()
 
     async def load_results(self):
         """
@@ -361,32 +361,32 @@ class Game(BaseGame):
         for item in to_remove:
             del self.AIs[item]
 
-    def validate_game_settings(self):
+    async def validate_game_settings(self):
         """
         Mark the game invalid if it has non-compliant options
         """
         for id in self.mods:
-            if not id in self.game_service.ranked_mods:
-                self.mark_invalid(ValidityState.BAD_MOD)
+            if id not in self.game_service.ranked_mods:
+                await self.mark_invalid(ValidityState.BAD_MOD)
                 break
 
         if self.gameOptions['Victory'] != Victory.DEMORALIZATION and self.game_mode != 'coop':
-            self.mark_invalid(ValidityState.WRONG_VICTORY_CONDITION)
+            await self.mark_invalid(ValidityState.WRONG_VICTORY_CONDITION)
 
         elif self.gameOptions["FogOfWar"] != "explored":
-            self.mark_invalid(ValidityState.NO_FOG_OF_WAR)
+            await self.mark_invalid(ValidityState.NO_FOG_OF_WAR)
 
         elif self.gameOptions["CheatsEnabled"] != "false":
-            self.mark_invalid(ValidityState.CHEATS_ENABLED)
+            await self.mark_invalid(ValidityState.CHEATS_ENABLED)
 
         elif self.gameOptions["PrebuiltUnits"] != "Off":
-            self.mark_invalid(ValidityState.PREBUILT_ENABLED)
+            await self.mark_invalid(ValidityState.PREBUILT_ENABLED)
 
         elif self.gameOptions["NoRushOption"] != "Off":
-            self.mark_invalid(ValidityState.NORUSH_ENABLED)
+            await self.mark_invalid(ValidityState.NORUSH_ENABLED)
 
         elif self.gameOptions["RestrictedCategories"] != 0:
-            self.mark_invalid(ValidityState.BAD_UNIT_RESTRICTIONS)
+            await self.mark_invalid(ValidityState.BAD_UNIT_RESTRICTIONS)
 
     async def launch(self):
         """
@@ -430,7 +430,7 @@ class Game(BaseGame):
                 (self.map_id, blacklist_flag) = result
 
                 if blacklist_flag:
-                    self.mark_invalid(ValidityState.BAD_MAP)
+                    yield from self.mark_invalid(ValidityState.BAD_MAP)
 
             modId = self.game_service.featured_mods[self.game_mode].id
 

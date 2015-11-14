@@ -19,10 +19,10 @@ class BaseGame:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def on_game_end(self):
+    async def on_game_end(self):
         pass  # pragma: no cover
 
-    def rate_game(self):
+    async def rate_game(self):
         pass  # pragma: no cover
 
     @property

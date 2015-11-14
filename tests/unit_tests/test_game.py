@@ -231,7 +231,7 @@ async def test_compute_rating_balanced_teamgame(game: Game, create_player):
 
 
 async def test_on_game_end_calls_rate_game(game):
-    game.rate_game = mock.Mock()
+    game.rate_game = CoroMock()
     game.state = GameState.LIVE
     await game.on_game_end()
     assert game.state == GameState.ENDED
