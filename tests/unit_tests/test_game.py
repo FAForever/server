@@ -48,6 +48,9 @@ def add_connected_players(game: Game, players):
         add_connected_player(game, player)
         game.set_player_option(player.id, 'Army', army)
         game.set_player_option(player.id, 'StartSpot', army)
+        game.set_player_option(player.id, 'Team', army)
+        game.set_player_option(player.id, 'Faction', 0)
+        game.set_player_option(player.id, 'Color', 0)
 
 
 def test_set_player_option(game, players, game_connection):
@@ -257,10 +260,12 @@ async def test_persist_results(game):
     ]
     add_connected_players(game, players)
     game.launch()
+    assert len(game.players) == 2
     game.add_result(0, 1, 'VICTORY', 5)
     await game.on_game_end()
 
     assert game.get_army_result(1) == 5
+    assert len(game.players) == 2
 
     await game.load_results()
     assert game.get_army_result(1) == 5

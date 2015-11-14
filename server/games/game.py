@@ -148,13 +148,10 @@ class Game(BaseGame):
           - Empty list
         :return: frozenset
         """
-        if self.state == GameState.LIVE:
-            result = self._players
-        elif self.state == GameState.LOBBY:
-            result = self._connections.keys()
+        if self.state == GameState.LOBBY:
+            return frozenset(self._connections.keys())
         else:
-            result = []
-        return frozenset(result)
+            return frozenset(self._players)
 
     @property
     def connections(self):
@@ -222,6 +219,7 @@ class Game(BaseGame):
         Load results from the database
         :return:
         """
+        self._results = {}
         async with db.db_pool.get() as conn:
             cursor = await conn.cursor()
             await cursor.execute("SELECT `playerId`, `place`, `score` "
@@ -257,10 +255,14 @@ class Game(BaseGame):
             rows = []
             for player, result in results.items():
                 self._logger.info("Result for player {}: {}".format(player, result))
-                rows.append((self.id, player.id, result))
+                faction = self.get_player_option(player.id, 'Faction')
+                color = self.get_player_option(player.id, 'Color')
+                team = self.get_player_option(player.id, 'Team')
+                startspot = self.get_player_option(player.id, 'StartSpot')
+                rows.append((self.id, player.id, result, faction, color, team, startspot, player.global_rating[0], player.global_rating[1]))
 
-            await cursor.executemany("INSERT INTO game_player_stats (gameId, playerId, score, scoreTime) "
-                                     "VALUES (%s, %s, %s, NOW())", rows)
+            await cursor.executemany("INSERT INTO game_player_stats (`gameId`, `playerId`, `score`, `scoreTime`, `AI`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) "
+                                     "VALUES (%s, %s, %s, NOW(), 0, %s, %s, %s, %s, %s, %s)", rows)
 
     @asyncio.coroutine
     def persist_rating_change_stats(self, rating_groups, rating='global'):
