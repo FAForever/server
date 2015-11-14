@@ -37,7 +37,15 @@ def game_connection(state=GameConnectionState.INITIALIZING, player=None):
 
 
 def add_connected_player(game: Game, player):
-    game.add_game_connection(game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=player))
+    game.game_service.player_service[player.id] = player
+    gc = game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=player)
+    game.set_player_option(player.id, 'Army', 0)
+    game.set_player_option(player.id, 'StartSpot', 0)
+    game.set_player_option(player.id, 'Team', 0)
+    game.set_player_option(player.id, 'Faction', 0)
+    game.set_player_option(player.id, 'Color', 0)
+    game.add_game_connection(gc)
+    return gc
 
 
 def add_connected_players(game: Game, players):
@@ -51,6 +59,7 @@ def add_connected_players(game: Game, players):
         game.set_player_option(player.id, 'Team', army)
         game.set_player_option(player.id, 'Faction', 0)
         game.set_player_option(player.id, 'Color', 0)
+    game.host = players[0]
 
 
 def test_set_player_option(game, players, game_connection):
@@ -128,22 +137,19 @@ async def test_clear_slot(game: Game, game_connection: GameConnection):
     assert game.get_player_option(1, 'Army') == -1
     assert game.get_player_option(2, 'StartSpot') == 1
 
-
-
 async def test_game_launch_freezes_players(game: Game, players):
-    conn1 = game_connection()
-    conn1.state = GameConnectionState.CONNECTED_TO_HOST
-    conn1.player = players.hosting
-    conn2 = game_connection()
-    conn2.player = players.joining
-    conn2.state = GameConnectionState.CONNECTED_TO_HOST
+    await game.clear_data()
     game.state = GameState.LOBBY
-    game.add_game_connection(conn1)
-    game.add_game_connection(conn2)
-    game.launch()
+    host_conn = add_connected_player(game, players.hosting)
+    game.host = players.hosting
+    add_connected_player(game, players.joining)
+
+    await game.launch()
+
     assert game.state == GameState.LIVE
     assert game.players == {players.hosting, players.joining}
-    await game.remove_game_connection(conn1)
+
+    await game.remove_game_connection(host_conn)
     assert game.players == {players.hosting, players.joining}
 
 
@@ -164,12 +170,14 @@ def test_game_teams_represents_active_teams(game: Game, players):
     assert game.teams == {1, 2}
 
 
-def test_compute_rating_computes_global_ratings(game: Game, players):
+async def test_compute_rating_computes_global_ratings(game: Game, players):
+    await game.clear_data()
+
     game.state = GameState.LOBBY
     players.hosting.global_rating = Rating(1500, 250)
     players.joining.global_rating = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
-    game.launch()
+    await game.launch()
     game.add_result(players.hosting, 0, 'victory', 1)
     game.add_result(players.joining, 1, 'defeat', 0)
     game.set_player_option(players.hosting.id, 'Team', 1)
@@ -179,12 +187,14 @@ def test_compute_rating_computes_global_ratings(game: Game, players):
     assert players.joining in groups[1]
 
 
-def test_compute_rating_computes_ladder_ratings(game: Game, players):
+async def test_compute_rating_computes_ladder_ratings(game: Game, players):
+    await game.clear_data()
+
     game.state = GameState.LOBBY
     players.hosting.ladder_rating = Rating(1500, 250)
     players.joining.ladder_rating = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
-    game.launch()
+    await game.launch()
     game.add_result(players.hosting, 0, 'victory', 1)
     game.add_result(players.joining, 1, 'defeat', 0)
     game.set_player_option(players.hosting.id, 'Team', 1)
@@ -194,7 +204,9 @@ def test_compute_rating_computes_ladder_ratings(game: Game, players):
     assert players.joining in groups[1]
 
 
-def test_compute_rating_balanced_teamgame(game: Game, create_player):
+async def test_compute_rating_balanced_teamgame(game: Game, create_player):
+    await game.clear_data()
+
     game.state = GameState.LOBBY
     players = [
         (create_player(**info), result, team) for info, result, team in [
@@ -208,14 +220,14 @@ def test_compute_rating_balanced_teamgame(game: Game, create_player):
     for player, _, team in players:
         game.set_player_option(player.id, 'Team', team)
         game.set_player_option(player.id, 'Army', player.id - 1)
-    game.launch()
+    await game.launch()
     for player, result, _ in players:
         game.add_result(player, player.id - 1, 'score', result)
     result = game.compute_rating()
     for team in result:
         for player, new_rating in team.items():
             assert player in game.players
-            assert new_rating != player.global_rating
+            assert new_rating != Rating(*player.global_rating)
 
 
 async def test_on_game_end_calls_rate_game(game):
@@ -226,8 +238,9 @@ async def test_on_game_end_calls_rate_game(game):
     game.rate_game.assert_any_call()
 
 
-@asyncio.coroutine
-def test_to_dict(game, create_player):
+async def test_to_dict(game, create_player):
+    await game.clear_data()
+
     game.state = GameState.LOBBY
     players = [
         (create_player(**info), result, team) for info, result, team in [
@@ -242,7 +255,7 @@ def test_to_dict(game, create_player):
         game.set_player_option(player.id, 'Team', team)
         game.set_player_option(player.id, 'Army', player.id - 1)
     game.host = players[0][0]
-    game.launch()
+    await game.launch()
     data = game.to_dict()
     expected = {
         "command": "game_info",
@@ -269,13 +282,15 @@ def test_to_dict(game, create_player):
     assert data == expected
 
 async def test_persist_results(game):
+    await game.clear_data()
+
     game.state = GameState.LOBBY
     players = [
         Player(id=1, login='Dostya', global_rating=(1500, 500)),
         Player(id=2, login='Rhiza', global_rating=(1500, 500))
     ]
     add_connected_players(game, players)
-    game.launch()
+    await game.launch()
     assert len(game.players) == 2
     game.add_result(0, 1, 'VICTORY', 5)
     await game.on_game_end()
@@ -287,11 +302,9 @@ async def test_persist_results(game):
     assert game.get_army_result(1) == 5
 
 
-
 def test_equality(game):
     assert game == game
     assert game != Game(5, mock.Mock())
-    assert game != True
 
 
 def test_hashing(game):

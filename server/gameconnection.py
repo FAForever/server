@@ -532,7 +532,7 @@ class GameConnection(GpgNetServerProtocol):
 
         elif state == 'Launching':
             if self.player.state == PlayerState.HOSTING:
-                self.game.launch()
+                yield from self.game.launch()
 
                 if len(self.game.mods) > 0:
                     with (yield from db.db_pool) as conn:

@@ -71,11 +71,11 @@ class GameService:
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute("SELECT gamemod, `name`, description, publish FROM game_featuredMods")
+            yield from cursor.execute("SELECT `id`, `gamemod`, `name`, description, publish FROM game_featuredMods")
 
             for i in range(0, cursor.rowcount):
-                name, full_name, description, publish = yield from cursor.fetchone()
-                self.featured_mods[name] = FeaturedMod(name, full_name, description, publish)
+                id, name, full_name, description, publish = yield from cursor.fetchone()
+                self.featured_mods[name] = FeaturedMod(id, name, full_name, description, publish)
 
             yield from cursor.execute("SELECT id FROM table_mod WHERE ranked = 1")
 

@@ -1,16 +1,16 @@
 from enum import IntEnum, unique
 import logging
 import time
-
 import functools
 import asyncio
 from typing import Union
-
 import trueskill
+from trueskill import Rating
 import server.db as db
 from server.proxy_map import ProxyMap
 from server.abc.base_game import GameConnectionState, BaseGame, InitMode
 from server.players import Player, PlayerState
+
 
 @unique
 class GameState(IntEnum):
@@ -18,6 +18,7 @@ class GameState(IntEnum):
     LOBBY = 1
     LIVE = 2
     ENDED = 3
+
 
 @unique
 class Victory(IntEnum):
@@ -36,6 +37,7 @@ class Victory(IntEnum):
             return Victory.ERADICATION
         elif value == "sandbox":
             return Victory.SANDBOX
+
 
 @unique
 class VisibilityState(IntEnum):
@@ -123,7 +125,7 @@ class Game(BaseGame):
         self._connections = {}
         self.gameOptions = {'FogOfWar': 'explored',
                             'GameSpeed': 'normal',
-                            'Victory': 'demoralization',
+                            'Victory': Victory.from_gpgnet_string('demoralization'),
                             'CheatsEnabled': 'false',
                             'PrebuiltUnits': 'Off',
                             'NoRushOption': 'Off',
@@ -175,7 +177,7 @@ class Game(BaseGame):
         if army not in self._results:
             self._results[army] = []
         self._logger.info("{} reported result for army {}: {} {}".format(reporter, army, result_type, score))
-        self._results[army].append((reporter, result_type, score))
+        self._results[army].append((reporter, result_type.lower(), score))
 
     def add_game_connection(self, game_connection):
         """
@@ -224,7 +226,7 @@ class Game(BaseGame):
             cursor = await conn.cursor()
             await cursor.execute("SELECT `playerId`, `place`, `score` "
                                  "FROM `game_player_stats` "
-                                 "WHERE `gameId`=%s", (self.id, ))
+                                 "WHERE `gameId`=%s", (self.id,))
             results = await cursor.fetchall()
             for player_id, startspot, score in results:
                 # FIXME: Assertion about startspot == army
@@ -234,6 +236,8 @@ class Game(BaseGame):
     async def persist_results(self):
         """
         Persist game results into the database
+
+        Requires the game to have been launched and the appropriate rows to exist in the database.
         :return:
         """
 
@@ -255,14 +259,19 @@ class Game(BaseGame):
             rows = []
             for player, result in results.items():
                 self._logger.info("Result for player {}: {}".format(player, result))
-                faction = self.get_player_option(player.id, 'Faction')
-                color = self.get_player_option(player.id, 'Color')
-                team = self.get_player_option(player.id, 'Team')
-                startspot = self.get_player_option(player.id, 'StartSpot')
-                rows.append((self.id, player.id, result, faction, color, team, startspot, player.global_rating[0], player.global_rating[1]))
+                rows.append((player.id, result, self.id))
 
-            await cursor.executemany("INSERT INTO game_player_stats (`gameId`, `playerId`, `score`, `scoreTime`, `AI`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) "
-                                     "VALUES (%s, %s, %s, NOW(), 0, %s, %s, %s, %s, %s, %s)", rows)
+            await cursor.executemany("UPDATE game_player_stats "
+                                     "SET `playerId`=%s, `score`=%s, `scoreTime`=NOW() "
+                                     "WHERE `gameId`=%s", rows)
+
+    async def clear_data(self):
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("DELETE FROM game_player_stats "
+                                 "WHERE gameId=%s", (self.id,))
+            await cursor.execute("DELETE FROM game_stats "
+                                 "WHERE id=%s", (self.id,))
 
     @asyncio.coroutine
     def persist_rating_change_stats(self, rating_groups, rating='global'):
@@ -276,7 +285,7 @@ class Game(BaseGame):
             player: new_rating
             for team in rating_groups
             for player, new_rating in team.items()
-        }
+            }
 
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
@@ -284,7 +293,8 @@ class Game(BaseGame):
             for player, new_rating in new_ratings.items():
                 yield from cursor.execute("UPDATE game_player_stats "
                                           "SET after_mean = ?, after_deviation = ?, scoreTime = NOW() "
-                                          "WHERE gameId = ? AND playerId = ?", new_rating.mu, new_rating.sigma, self.id, player.id)
+                                          "WHERE gameId = ? AND playerId = ?", new_rating.mu, new_rating.sigma, self.id,
+                                          player.id)
 
                 yield from cursor.execute("UPDATE {}_rating "
                                           "SET mean = ?, is_active=1, deviation = ?, numGames = (numGames + 1) "
@@ -378,7 +388,7 @@ class Game(BaseGame):
         elif self.gameOptions["RestrictedCategories"] != 0:
             self.mark_invalid(ValidityState.BAD_UNIT_RESTRICTIONS)
 
-    def launch(self):
+    async def launch(self):
         """
         Mark the game as live.
 
@@ -391,14 +401,14 @@ class Game(BaseGame):
         self.state = GameState.LIVE
         self._logger.info("Game launched")
         self.validate_game_settings()
-        self.on_game_launched()
+        await self.on_game_launched()
 
-    def on_game_launched(self):
+    async def on_game_launched(self):
         for player in self.players:
             player.state = PlayerState.PLAYING
-        self.update_ratings()
-        self.update_game_stats()
-        self.update_game_player_stats()
+        await self.update_ratings()
+        await self.update_game_stats()
+        await self.update_game_player_stats()
 
     @asyncio.coroutine
     def update_game_stats(self):
@@ -411,24 +421,36 @@ class Game(BaseGame):
 
             # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
             # so, and grab the map id at the same time.
-            yield from cursor.execute("SELECT table_map.id, table_map_unranked.id FROM table_map LEFT JOIN table_map_unranked ON table_map.id = table_map_unranked.id WHERE table_map.filename = %s", self.map_file_path)
-            (self.map_id, blacklist_flag) = yield from cursor.fetchone()
+            yield from cursor.execute("SELECT table_map.id, table_map_unranked.id "
+                                      "FROM table_map LEFT JOIN table_map_unranked "
+                                      "ON table_map.id = table_map_unranked.id "
+                                      "WHERE table_map.filename = %s", (self.map_file_path,))
+            result = yield from cursor.fetchone()
+            if result:
+                (self.map_id, blacklist_flag) = result
 
-            if blacklist_flag is not None:
-                self.mark_invalid(ValidityState.BAD_MAP)
+                if blacklist_flag:
+                    self.mark_invalid(ValidityState.BAD_MAP)
 
-            modId = self.game_service.featured_mods[self.game_mode]['id']
+            modId = self.game_service.featured_mods[self.game_mode].id
 
             # Write out the game_stats record.
             # In some cases, games can be invalidated while running: we check for those cases when
             # the game ends and update this record as appropriate.
             yield from cursor.execute("INSERT INTO game_stats(id, gameType, gameMod, `host`, mapId, gameName, validity)"
-                                      "VALUES(%s, %s, %s, %s, %s, %s, %s)", self.id, self.gameType, modId, self.host.id, self.map_id, self.name, self.validity)
+                                      "VALUES(%s, %s, %s, %s, %s, %s, %s)",
+                                      (self.id,
+                                       str(self.gameOptions.get('Victory').value),
+                                       modId,
+                                       self.host.id,
+                                       self.map_id,
+                                       self.name,
+                                       self.validity.value))
 
-    def update_game_player_stats(self):
-        query_str = "INSERT INTO `game_player_stats` "\
-                   "(`gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`) "\
-                   "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+    async def update_game_player_stats(self):
+        query_str = "INSERT INTO `game_player_stats` " \
+                    "(`gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`, `AI`, `score`) " \
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
         query_args = []
         for player in self.players:
@@ -442,19 +464,21 @@ class Game(BaseGame):
                 else:
                     mean, dev = player.global_rating
 
-                query_args += (self.id,
-                               str(player.id),
-                               options['Faction'],
-                               options['Color'],
-                               options['Team'],
-                               options['StartSpot'],
-                               mean,
-                               dev)
+                query_args.append((self.id,
+                                   str(player.id),
+                                   options['Faction'],
+                                   options['Color'],
+                                   options['Team'],
+                                   options['StartSpot'],
+                                   mean,
+                                   dev,
+                                   0,
+                                   -1))
 
-        with (yield from db.db_pool) as conn:
-            cursor = yield from conn.cursor()
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
 
-            yield from cursor.executemany(query_str, query_args)
+            await cursor.executemany(query_str, query_args)
 
     def getGamemodVersion(self):
         return self.game_service.game_mode_versions[self.game_mode]
@@ -517,9 +541,9 @@ class Game(BaseGame):
         ranks = [score for team, score in sorted(team_scores.items())]
         rating_groups = []
         for team in sorted(self.teams):
-            rating_groups += [{player: getattr(player, '{}_rating'.format(rating))
-                            for player in self.players if
-                            self.get_player_option(player.id, 'Team') == team}]
+            rating_groups += [{player: Rating(*getattr(player, '{}_rating'.format(rating)))
+                               for player in self.players if
+                               self.get_player_option(player.id, 'Team') == team}]
         return trueskill.rate(rating_groups, ranks)
 
     @asyncio.coroutine
@@ -532,9 +556,9 @@ class Game(BaseGame):
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute("SELECT id, mean, deviation "
-                                      "FROM global_rating "
-                                      "WHERE id IN (%s)", (player_ids))
+            yield from cursor.execute("SELECT `id`, `mean`, `deviation` "
+                                      "FROM `global_rating` "
+                                      "WHERE `id` IN %s", (player_ids,))
 
             rows = yield from cursor.fetchall()
             for row in rows:
@@ -570,7 +594,7 @@ class Game(BaseGame):
                 team: [player.login for player in self.players
                        if self.get_player_option(player.id, 'Team') == team]
                 for team in self.teams
-            }
+                }
         }
 
     def __eq__(self, other):
@@ -583,4 +607,5 @@ class Game(BaseGame):
         return self.id.__hash__()
 
     def __str__(self):
-        return "Game({},{},{},{})".format(self.id, self.host.login if self.host else '', self.map_file_path, len(self.players))
+        return "Game({},{},{},{})".format(self.id, self.host.login if self.host else '', self.map_file_path,
+                                          len(self.players))
