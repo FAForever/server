@@ -113,6 +113,22 @@ async def test_game_end_when_no_more_connections(game: Game, game_connection):
 
     game.on_game_end.assert_any_call()
 
+async def test_clear_slot(game: Game, game_connection: GameConnection):
+    game.state = GameState.LOBBY
+    players = [
+        Player(id=1, login='Dostya', global_rating=(1500, 500)),
+        Player(id=2, login='Rhiza', global_rating=(1500, 500))
+    ]
+    add_connected_players(game, players)
+
+    game.clear_slot(0)
+
+    assert game.get_player_option(1, 'StartSpot') == -1
+    assert game.get_player_option(1, 'Team') == -1
+    assert game.get_player_option(1, 'Army') == -1
+    assert game.get_player_option(2, 'StartSpot') == 1
+
+
 
 async def test_game_launch_freezes_players(game: Game, players):
     conn1 = game_connection()
