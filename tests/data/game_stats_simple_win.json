@@ -1,6 +1,7 @@
 {
   "stats": [
     {
+      "faction": 1,
       "type": "Human",
       "name": "TestUser",
       "units": {
@@ -19,6 +20,7 @@
       }
     },
     {
+      "faction": 1,
       "type": "Human",
       "name": "TestUser2",
       "units": {

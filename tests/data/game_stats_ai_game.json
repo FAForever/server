@@ -2,6 +2,7 @@
   "stats": [
     {
       "type": "Human",
+      "faction": 1,
       "name": "TestUser",
       "units": {
         "air": {"built": 0, "kills": 0, "lost": 0},
@@ -19,6 +20,7 @@
       }
     },
     {
+      "faction": 2,
       "type": "AI",
       "name": "Some name",
       "units": {

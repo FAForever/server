@@ -179,7 +179,8 @@ class Game(BaseGame):
         """
         if army not in self.armies:
             self._logger.debug(
-                "Ignoring results for unknown army {}: {} {} reported by: {}".format(army, result_type, score, reporter))
+                "Ignoring results for unknown army {}: {} {} reported by: {}".format(army, result_type, score,
+                                                                                     reporter))
             return
 
         if army not in self._results:
@@ -445,42 +446,41 @@ class Game(BaseGame):
         await self.update_game_stats()
         await self.update_game_player_stats()
 
-    @asyncio.coroutine
-    def update_game_stats(self):
+    async def update_game_stats(self):
         """
         Runs at game-start to populate the game_stats table (games that start are ones we actually
         care about recording stats for, after all).
         """
-        with (yield from db.db_pool) as conn:
-            cursor = yield from conn.cursor()
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
 
             # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
             # so, and grab the map id at the same time.
-            yield from cursor.execute("SELECT table_map.id, table_map_unranked.id "
-                                      "FROM table_map LEFT JOIN table_map_unranked "
-                                      "ON table_map.id = table_map_unranked.id "
-                                      "WHERE table_map.filename = %s", (self.map_file_path,))
-            result = yield from cursor.fetchone()
+            await cursor.execute("SELECT table_map.id, table_map_unranked.id "
+                                 "FROM table_map LEFT JOIN table_map_unranked "
+                                 "ON table_map.id = table_map_unranked.id "
+                                 "WHERE table_map.filename = %s", (self.map_file_path,))
+            result = await cursor.fetchone()
             if result:
                 (self.map_id, blacklist_flag) = result
 
                 if blacklist_flag:
-                    yield from self.mark_invalid(ValidityState.BAD_MAP)
+                    await self.mark_invalid(ValidityState.BAD_MAP)
 
             modId = self.game_service.featured_mods[self.game_mode].id
 
             # Write out the game_stats record.
             # In some cases, games can be invalidated while running: we check for those cases when
             # the game ends and update this record as appropriate.
-            yield from cursor.execute("INSERT INTO game_stats(id, gameType, gameMod, `host`, mapId, gameName, validity)"
-                                      "VALUES(%s, %s, %s, %s, %s, %s, %s)",
-                                      (self.id,
-                                       str(self.gameOptions.get('Victory').value),
-                                       modId,
-                                       self.host.id,
-                                       self.map_id,
-                                       self.name,
-                                       self.validity.value))
+            await cursor.execute("INSERT INTO game_stats(id, gameType, gameMod, `host`, mapId, gameName, validity)"
+                                 "VALUES(%s, %s, %s, %s, %s, %s, %s)",
+                                 (self.id,
+                                  str(self.gameOptions.get('Victory').value),
+                                  modId,
+                                  self.host.id,
+                                  self.map_id,
+                                  self.name,
+                                  self.validity.value))
 
     async def update_game_player_stats(self):
         query_str = "INSERT INTO `game_player_stats` " \
@@ -583,21 +583,20 @@ class Game(BaseGame):
                                self.get_player_option(player.id, 'Team') == team}]
         return trueskill.rate(rating_groups, ranks)
 
-    @asyncio.coroutine
-    def update_ratings(self):
+    async def update_ratings(self):
         """ Update all scores from the DB before updating the results"""
         self._logger.debug("updating ratings")
 
         player_ids = list(map(lambda p: p.id, self.players))
 
-        with (yield from db.db_pool) as conn:
-            cursor = yield from conn.cursor()
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
 
-            yield from cursor.execute("SELECT `id`, `mean`, `deviation` "
-                                      "FROM `global_rating` "
-                                      "WHERE `id` IN %s", (player_ids,))
+            await cursor.execute("SELECT `id`, `mean`, `deviation` "
+                                 "FROM `global_rating` "
+                                 "WHERE `id` IN %s", (player_ids,))
 
-            rows = yield from cursor.fetchall()
+            rows = await cursor.fetchall()
             for row in rows:
                 (player_id, mean, deviation) = row
 

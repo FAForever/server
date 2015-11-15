@@ -13,8 +13,8 @@ def wait_signal(signal, timeout=0.5):
     yield from asyncio.wait_for(future, timeout)
 
 
-def CoroMock():
-    coro = Mock(name="CoroutineResult")
+def CoroMock(**kwargs):
+    coro = Mock(name="CoroutineResult", **kwargs)
     corofunc = Mock(name="CoroutineFunction", side_effect=coroutine(coro))
     corofunc.coro = coro
     return corofunc

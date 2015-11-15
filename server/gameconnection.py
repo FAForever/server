@@ -256,14 +256,13 @@ class GameConnection(GpgNetServerProtocol):
             if packet['arguments'][0] == sender:
                 return packet['arguments'][1]
 
-    @asyncio.coroutine
-    def ConnectToHost(self, peer):
+    async def ConnectToHost(self, peer):
         """
         Connect self to a given peer (host)
         :return:
         """
         assert peer.player.state == PlayerState.HOSTING
-        connection, own_addr, peer_addr = yield from self.EstablishConnection(peer)
+        connection, own_addr, peer_addr = await self.EstablishConnection(peer)
         if connection == ConnectivityState.PUBLIC or connection == ConnectivityState.STUN:
             self.send_JoinGame(peer_addr,
                                peer.player.login,
@@ -272,15 +271,14 @@ class GameConnection(GpgNetServerProtocol):
                                     self.player.login,
                                     self.player.id)
         else:
-            self.ConnectThroughProxy(peer)
+            await self.ConnectThroughProxy(peer)
 
-    @asyncio.coroutine
-    def ConnectToPeer(self, peer):
+    async def ConnectToPeer(self, peer):
         """
         Connect two peers
         :return: None
         """
-        connection, own_addr, peer_addr = yield from self.EstablishConnection(peer)
+        connection, own_addr, peer_addr = await self.EstablishConnection(peer)
         if connection == ConnectivityState.PUBLIC or connection == ConnectivityState.STUN:
             self.send_ConnectToPeer(peer_addr,
                                     peer.player.login,
@@ -291,8 +289,7 @@ class GameConnection(GpgNetServerProtocol):
         else:
             self.ConnectThroughProxy(peer)
 
-    @asyncio.coroutine
-    def EstablishConnection(self, peer):
+    async def EstablishConnection(self, peer):
         """
         Attempt to establish a full duplex UDP connection
         between self and peer.
@@ -302,7 +299,7 @@ class GameConnection(GpgNetServerProtocol):
         """
         own_state = self._connectivity_state
         peer_state = peer._connectivity_state
-        (done, pending) = yield from asyncio.wait([own_state, peer_state])
+        (done, pending) = await asyncio.wait([own_state, peer_state])
         if pending:
             self._logger.debug("Aborting due to lack of connectivity")
             self.abort()
@@ -312,7 +309,7 @@ class GameConnection(GpgNetServerProtocol):
             return ConnectivityState.PUBLIC, own_addr, peer_addr
         elif peer_state == ConnectivityState.STUN or own_state == ConnectivityState.STUN:
             self._logger.debug("Connecting {} to host {} using STUN".format(self, peer))
-            (own_addr, peer_addr) = yield from self.STUN(peer)
+            (own_addr, peer_addr) = await self.STUN(peer)
             if peer_addr is None or own_addr is None:
                 self._logger.debug("STUN between {} {} failed".format(self, peer))
                 self._logger.debug("Resolved addresses: {}, {}".format(peer_addr, own_addr))
@@ -323,17 +320,16 @@ class GameConnection(GpgNetServerProtocol):
         self._logger.debug("Connecting {} to host {} through proxy".format(self, peer))
         return ConnectivityState.PROXY, None, None
 
-    @asyncio.coroutine
-    def STUN(self, peer):
+    async def STUN(self, peer):
         """
         Perform a STUN sequence between self and peer
 
         :param peer:
         :return: (own_addr, remote_addr) | None
         """
-        own_addr = asyncio.async(self.ProbePeerNAT(peer))
-        remote_addr = asyncio.async(peer.ProbePeerNAT(self))
-        (done, pending) = yield from asyncio.wait([own_addr, remote_addr])
+        own_addr = asyncio.ensure_future(self.ProbePeerNAT(peer))
+        remote_addr = asyncio.ensure_future(peer.ProbePeerNAT(self))
+        (done, pending) = await asyncio.wait([own_addr, remote_addr])
         assert len(pending) == 0
         assert len(done) == 2
         own_addr, remote_addr = own_addr.result(), remote_addr.result()
@@ -343,14 +339,13 @@ class GameConnection(GpgNetServerProtocol):
         if own_addr is not None:
             # Remote received our packet, we didn't receive theirs
             # Instruct remote to try our new address
-            remote_addr = yield from peer.ProbePeerNAT(self, use_address=own_addr)
+            remote_addr = await peer.ProbePeerNAT(self, use_address=own_addr)
         elif remote_addr is not None:
             # Opposite of the above
-            own_addr = yield from self.ProbePeerNAT(peer, use_address=remote_addr)
+            own_addr = await self.ProbePeerNAT(peer, use_address=remote_addr)
         return own_addr, remote_addr
 
-    @asyncio.coroutine
-    def ProbePeerNAT(self, peer, use_address=None):
+    async def ProbePeerNAT(self, peer, use_address=None):
         """
         Instruct self to send an identifiable nat packet to peer
 
@@ -368,7 +363,7 @@ class GameConnection(GpgNetServerProtocol):
         try:
             received_message = asyncio.Future()
             peer.nat_packets[nat_message] = received_message
-            yield from asyncio.wait_for(received_message, 4)
+            await asyncio.wait_for(received_message, 4)
             return received_message.result()
         except (CancelledError, asyncio.TimeoutError):
             return None
@@ -436,7 +431,7 @@ class GameConnection(GpgNetServerProtocol):
                 if values[0] == "uids":
                     uids = values[1].split()
                     self.game.mods = {uid: "Unknown sim mod" for uid in uids}
-                    with (await db.db_pool) as conn:
+                    with await db.db_pool.get() as conn:
                         cursor = await conn.cursor()
                         await cursor.execute("SELECT uid, name from table_mod WHERE uid in %s", (uids,))
                         mods = await cursor.fetchall()
@@ -482,7 +477,7 @@ class GameConnection(GpgNetServerProtocol):
             elif key == 'OperationComplete':
                 if int(values[0]) == 1:
                     secondary, delta = int(values[1]), str(values[2])
-                    with (await db.db_pool) as conn:
+                    with await db.db_pool.get() as conn:
                         cursor = await conn.cursor()
                         # FIXME: Resolve used map earlier than this
                         await cursor.execute("SELECT id FROM coop_map WHERE filename LIKE '%/"
@@ -537,7 +532,7 @@ class GameConnection(GpgNetServerProtocol):
                 await self.game.launch()
 
                 if len(self.game.mods) > 0:
-                    with (await db.db_pool) as conn:
+                    with await db.db_pool.get() as conn:
                         cursor = await conn.cursor()
                         await cursor.execute("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid in %s",
                                              (self.game.mods.keys(),))
@@ -579,7 +574,7 @@ class GameConnection(GpgNetServerProtocol):
                 self.send_ConnectToProxy(*call)
 
             if recurse:
-                peer.ConnectThroughProxy(self, False)
+                await peer.ConnectThroughProxy(self, False)
         except Exception as e:  # pragma: no cover
             self.log.exception(e)
 

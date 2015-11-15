@@ -161,12 +161,11 @@ async def test_game_launch_freezes_players(game: Game, players):
     assert game.players == {players.hosting, players.joining}
 
 
-@asyncio.coroutine
-def test_update_ratings(game: Game, players, db_pool, player_service, game_service):
+async def test_update_ratings(game: Game, players, db_pool, player_service, game_service):
     player_service.players[players.hosting.id] = players.hosting
     game.state = GameState.LOBBY
     add_connected_player(game, players.hosting)
-    yield from game.update_ratings()
+    await game.update_ratings()
     assert players.hosting.global_rating == (2000, 125)
 
 
@@ -319,6 +318,7 @@ def test_hashing(game):
     assert {game: 1, Game(42, mock.Mock(), mock.Mock()): 1} == {game: 1}
 
 async def test_report_army_stats_sends_stats_for_defeated_player(game: Game):
+    game.id = 43
     game.state = GameState.LOBBY
     players = [
         Player(id=1, login='Dostya', global_rating=(1500, 500)),

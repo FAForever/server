@@ -26,7 +26,7 @@ async def test_update_multiple(service: AchievementService):
         { "achievement_id": "2-3-4", "current_state": "REVEALED", "newly_unlocked": false},
         { "achievement_id": "3-4-5", "current_state": "LOCKED", "current_steps": 2, "newly_unlocked": false},
         { "achievement_id": "4-5-6", "current_state": "UNLOCKED", "current_steps": 50, "newly_unlocked": false}
-    ]}'''
+    ]}'''.encode('utf-8')
     service.api_accessor.api_post.coro.return_value = (None, content)
 
     queue = []
@@ -43,6 +43,6 @@ async def test_update_multiple(service: AchievementService):
     ]
 
     result = await service.execute_batch_update(42, queue)
-    assert result == json.loads(content)['updated_achievements']
+    assert result == json.loads(content.decode('utf-8'))['updated_achievements']
 
-    service.api_accessor.api_post.assert_called_once_with("/achievements/updateMultiple", 42, body=dict(updates=queue))
+    service.api_accessor.api_post.assert_called_once_with("/achievements/updateMultiple", 42, data=dict(updates=queue))

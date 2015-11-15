@@ -1,7 +1,9 @@
 {
   "stats": [
     {
+      "faction": 4,
       "type": "Human",
+      "name": "TestUser",
       "general": {
         "score": 5370,
         "currentcap": {
@@ -48,7 +50,6 @@
           "rate": 0
         }
       },
-      "name": "TestUser",
       "units": {
         "uel0303": {
           "built": 7
@@ -294,6 +295,7 @@
       }
     },
     {
+      "faction": 1,
       "type": "Human",
       "general": {
         "score": 6751,

@@ -19,8 +19,7 @@ class GameStatsService:
         for army_stats in json.loads(stats_json)['stats']:
             if army_stats['type'] == 'AI' and army_stats['name'] != 'civilian':
                 self._logger.debug("Ignoring AI game reported by {}".format(player.login))
-                # FIXME testing only, re-add later
-                # return
+                return
 
             if army_stats['type'] == 'Human':
                 number_of_humans += 1
@@ -28,8 +27,7 @@ class GameStatsService:
             if army_stats['name'] == player.login:
                 stats = army_stats
 
-        # FIXME testing only, change back to < 2
-        if number_of_humans < 1:
+        if number_of_humans < 2:
             self._logger.debug("Ignoring single player game reported by {}".format(player.login))
             return
 

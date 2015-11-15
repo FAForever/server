@@ -9,7 +9,7 @@ import pytest
 from server import proxy_map, GameConnection
 from server.connectivity import Connectivity, ConnectivityState
 from server.games import Game
-from server.players import PlayerState, Player
+from server.players import PlayerState
 
 slow = pytest.mark.slow
 
@@ -281,14 +281,13 @@ def test_ConnectToHost_public_stun(loop, connections, players):
                                                host_conn.player.login,
                                                host_conn.player.id)
 
-@asyncio.coroutine
-def test_ConnectToHost_public_proxy(connections, players):
+async def test_ConnectToHost_public_proxy(connections, players):
     host_conn = connections.make_connection(players.hosting, LOCAL_PUBLIC)
     peer_conn = connections.make_connection(players.joining, LOCAL_PROXY)
     host_conn.send_ConnectToProxy = mock.Mock()
     peer_conn.send_ConnectToProxy = mock.Mock()
     host_conn.game.proxy_map = proxy_map.ProxyMap()
-    yield from peer_conn.ConnectToHost(host_conn)
+    await peer_conn.ConnectToHost(host_conn)
     host_conn.send_ConnectToProxy.assert_called_with(0,
                                                      peer_conn.player.ip,
                                                      peer_conn.player.login,
@@ -303,8 +302,7 @@ def test_ConnectToPeer_(loop):
     pass
 
 
-@asyncio.coroutine
-def test_json_stats(game_connection, game_stats_service, players, game):
+async def test_json_stats(game_connection, game_stats_service, players, game):
     game_stats_service.process_game_stats = mock.Mock()
-    yield from game_connection.handle_action('JsonStats', ['{"stats": {}}'])
+    await game_connection.handle_action('JsonStats', ['{"stats": {}}'])
     game.report_army_stats.assert_called_once_with('{"stats": {}}')

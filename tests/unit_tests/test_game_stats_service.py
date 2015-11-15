@@ -130,15 +130,6 @@ async def test_process_game_stats(game_stats_service, event_service, achievement
     assert event_service.execute_batch_update.called
 
 
-async def test_process_game_stats_no_army_for_user(game_stats_service, player, game, achievement_service, event_service):
-    with open("tests/data/game_stats_no_army_for_user.json", "r") as stats_file:
-        stats = stats_file.read()
-
-    await game_stats_service.process_game_stats(player, game, stats)
-    assert len(achievement_service.mock_calls) == 0
-    assert len(event_service.mock_calls) == 0
-
-
 async def test_process_game_stats_single_player(game_stats_service, player, game, achievement_service, event_service):
     with open("tests/data/game_stats_single_player.json", "r") as stats_file:
         stats = stats_file.read()
@@ -153,16 +144,6 @@ async def test_process_game_stats_ai_game(game_stats_service, player, game, achi
         stats = stats_file.read()
 
     await game_stats_service.process_game_stats(player, game, stats)
-    assert len(achievement_service.mock_calls) == 0
-    assert len(event_service.mock_calls) == 0
-
-
-async def test_process_game_stats_unknown_faction(game_stats_service, player, achievement_service, event_service):
-    with open("tests/data/game_stats_unknown_faction.json", "r") as stats_file:
-        stats = stats_file.read()
-
-    await game_stats_service.process_game_stats(player, game, stats)
-
     assert len(achievement_service.mock_calls) == 0
     assert len(event_service.mock_calls) == 0
 
@@ -255,67 +236,6 @@ def test_category_stats_won_more_naval_and_three_experimentals(game_stats_servic
     achievement_service.increment.assert_any_call(ACH_I_LOVE_BIG_TOYS, 1, [])
     achievement_service.increment.assert_any_call(ACH_EXPERIMENTALIST, 1, [])
     assert len(achievement_service.mock_calls) == 7
-
-
-def test_get_played_faction_aeon(game_stats_service):
-    stats = {
-        'units': {
-            'ual0001': {'built': 1},
-            'url0001': {'built': 0},
-            'uel0001': {'built': 0},
-            'xsl0001': {'built': 0}
-        }
-    }
-    assert game_stats_service._get_played_faction(stats) == Faction.aeon
-
-
-def test_get_played_faction_cybran(game_stats_service):
-    stats = {
-        'units': {
-            'ual0001': {'built': 0},
-            'url0001': {'built': 1},
-            'uel0001': {'built': 0},
-            'xsl0001': {'built': 0}
-        }
-    }
-    assert game_stats_service._get_played_faction(stats) == Faction.cybran
-
-
-def test_get_played_faction_uef(game_stats_service):
-    stats = {
-        'units': {
-            'ual0001': {'built': 0},
-            'url0001': {'built': 0},
-            'uel0001': {'built': 1},
-            'xsl0001': {'built': 0}
-        }
-    }
-    assert game_stats_service._get_played_faction(stats) == Faction.uef
-
-
-def test_get_played_faction_seraphim(game_stats_service):
-    stats = {
-        'units': {
-            'ual0001': {'built': 0},
-            'url0001': {'built': 0},
-            'uel0001': {'built': 0},
-            'xsl0001': {'built': 1}
-        }
-    }
-    assert game_stats_service._get_played_faction(stats) == Faction.seraphim
-
-
-def test_get_played_faction_unknown(game_stats_service):
-    stats = {
-        'units': {
-            'ual0001': {'built': 0},
-            'url0001': {'built': 0},
-            'uel0001': {'built': 0},
-            'xsl0001': {'built': 0},
-            'foo0001': {'built': 1}
-        }
-    }
-    assert game_stats_service._get_played_faction(stats) is None
 
 
 def test_faction_played_aeon_survived(game_stats_service, player, achievement_service, event_service):
