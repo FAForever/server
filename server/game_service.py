@@ -72,11 +72,11 @@ class GameService:
         async with db.db_pool.get() as conn:
             cursor = await conn.cursor()
 
-            await cursor.execute("SELECT `id`, `gamemod`, `name`, description, publish FROM game_featuredMods")
+            await cursor.execute("SELECT `id`, `gamemod`, `name`, description, publish, `order` FROM game_featuredMods")
 
             for i in range(0, cursor.rowcount):
-                id, name, full_name, description, publish = await cursor.fetchone()
-                self.featured_mods[name] = FeaturedMod(id, name, full_name, description, publish)
+                id, name, full_name, description, publish, order = await cursor.fetchone()
+                self.featured_mods[name] = FeaturedMod(id, name, full_name, description, publish, order)
 
             await cursor.execute("SELECT id FROM table_mod WHERE ranked = 1")
 
@@ -177,6 +177,7 @@ class GameService:
                 'command': 'mod_info',
                 'publish': mod.publish,
                 'name': name,
+                'order': mod.order,
                 'fullname': mod.full_name,
                 'desc': mod.description
             })
