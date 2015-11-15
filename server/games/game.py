@@ -499,7 +499,7 @@ class Game(BaseGame):
 
             await cursor.execute("UPDATE game_stats "
                                  "SET validity = %s "
-                                 "WHERE id = %s", new_validity_state.value, self.id)
+                                 "WHERE id = %s", new_validity_state.value, (self.id, ))
 
     def get_army_result(self, army):
         """
