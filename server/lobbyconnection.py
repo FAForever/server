@@ -994,7 +994,7 @@ Thanks,\n\
 
                     out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
                                comments=[], description=description, played=played, likes=likes,
-                               downloads=downloads, date=date.timestamp(), uid=uid, name=name, version=version, author=author,
+                               downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
                                ui=ui)
                     self.sendJSON(out)
 
@@ -1010,7 +1010,7 @@ Thanks,\n\
 
                 out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
                            comments=[], description=description, played=played, likes=likes + 1,
-                           downloads=downloads, date=date.timestamp(), uid=uid, name=name, version=version, author=author,
+                           downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
                            ui=ui)
 
                 try:
