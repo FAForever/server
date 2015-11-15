@@ -33,15 +33,6 @@ class LadderService:
     @asyncio.coroutine
     def addPlayer(self, player):
         if player not in self.players:
-            league = yield from self.getLeague(config.LADDER_SEASON, player)
-            if not league:
-                with (yield from db.db_pool) as conn:
-                    with (yield from conn.cursor()) as cursor:
-                        yield from cursor.execute("INSERT INTO %s (`idUser` ,`league` ,`score`) "
-                                                  "VALUES (%s, 1, 0)", (config.LADDER_SEASON, player.id))
-
-            player.league = league
-
             self.players.append(player)
             player.state = PlayerState.SEARCHING_LADDER
             mean, deviation = player.ladder_rating
