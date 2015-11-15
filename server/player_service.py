@@ -78,7 +78,8 @@ class PlayerService:
                 pass
 
     def remove_player(self, player):
-        del self.players[player.id]
+        if player.id in self.players:
+            del self.players[player.id]
 
     def get_permission_group(self, user_id):
         return self.privileged_users.get(user_id, 0)
