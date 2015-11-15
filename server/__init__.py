@@ -67,7 +67,6 @@ def run_lobby_server(address: (str, int),
             # TODO: Probably better to do this at the time of the state transition instead?
             if game.state == GameState.ENDED:
                 games.remove_game(game)
-                continue
 
             # So we're going to be broadcasting this to _somebody_...
             message = encode(game)
