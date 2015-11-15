@@ -203,6 +203,7 @@ class Game(BaseGame):
         """
         assert game_connection in self._connections.values()
         del self._connections[game_connection.player]
+        del game_connection.player.game
         self._logger.info("Removed game connection {}".format(game_connection))
         if len(self._connections) == 0:
             await self.on_game_end()
