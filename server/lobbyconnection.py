@@ -987,7 +987,6 @@ Thanks,\n\
 
                 for i in range(0, cursor.rowcount):
                     uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = yield from cursor.fetchone()
-                    date = date.toTime_t()
                     link = config.CONTENT_URL + "vault/" + filename
                     thumbstr = ""
                     if icon != "":
