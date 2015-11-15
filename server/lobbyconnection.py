@@ -994,7 +994,7 @@ Thanks,\n\
 
                     out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
                                comments=[], description=description, played=played, likes=likes,
-                               downloads=downloads, date=date, uid=uid, name=name, version=version, author=author,
+                               downloads=downloads, date=date.timestamp(), uid=uid, name=name, version=version, author=author,
                                ui=ui)
                     self.sendJSON(out)
 
@@ -1003,7 +1003,6 @@ Thanks,\n\
                 yield from cursor.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likers FROM `table_mod` WHERE uid = ? LIMIT 1")
 
                 uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = yield from cursor.fetchone()
-                date = date.toTime_t()
                 link = config.CONTENT_URL + "vault/" + filename
                 thumbstr = ""
                 if icon != "":
@@ -1011,7 +1010,7 @@ Thanks,\n\
 
                 out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
                            comments=[], description=description, played=played, likes=likes + 1,
-                           downloads=downloads, date=date, uid=uid, name=name, version=version, author=author,
+                           downloads=downloads, date=date.timestamp(), uid=uid, name=name, version=version, author=author,
                            ui=ui)
 
                 try:
