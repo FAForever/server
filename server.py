@@ -17,6 +17,7 @@ import socket
 
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME
 from server.game_service import GameService
+from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
 import config
 import server
@@ -57,6 +58,8 @@ if __name__ == '__main__':
 
         players_online = PlayerService(db_pool)
         games = GameService(players_online)
+        matchmaker_queue = MatchmakerQueue('ladder1v1', players_online, games)
+        players_online.ladder_queue = matchmaker_queue
 
         ctrl_server = loop.run_until_complete(server.run_control_server(loop, players_online, games))
 

@@ -17,7 +17,7 @@ class PlayerService:
         self.client_version_info = ('0.0.0', None)
         self.blacklisted_email_domains = {}
 
-        self.ladder_queue = MatchmakerQueue('ladder1v1', self)
+        self.ladder_queue = None
         asyncio.get_event_loop().run_until_complete(asyncio.async(self.update_data()))
         self._update_cron = aiocron.crontab('0 * * * *', func=self.update_data)
 
