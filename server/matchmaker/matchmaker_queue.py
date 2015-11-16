@@ -62,8 +62,7 @@ class MatchmakerQueue:
     def __len__(self):
         return self.queue.__len__()
 
-    @asyncio.coroutine
-    def search(self, player, start_time=None, search=None):
+    async def search(self, player, start_time=None, search=None):
         """
         Search for a match.
 
@@ -93,9 +92,9 @@ class MatchmakerQueue:
 
                 self._logger.debug("Found nobody searching, created new search object in queue: {}".format(search))
                 self.queue[player] = search
-                yield from search.await_match()
+                await search.await_match()
                 self.notify_potential_opponents(search, False)
-            except CancelledError:
                 del self.queue[search.player]
+            except CancelledError:
                 pass
 
