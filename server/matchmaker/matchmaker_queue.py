@@ -19,17 +19,18 @@ class MatchmakerQueue:
         self.filter = ScalableBloomFilter(mode=ScalableBloomFilter.SMALL_SET_GROWTH)
         self._logger.info("MatchmakerQueue initialized for {}, using bloom filter: {}".format(queue_name, self.filter))
 
-    def notify_potential_opponents(self, search: Search):
+    def notify_potential_opponents(self, search: Search, potential=True):
         """
         Notify opponents who might potentially match the given search object
-        :param search:
+        :param search: search object to notify for
+        :param potential: Whether or not we've started or stopped searching
         :return:
         """
         self._logger.info("Notifying potential opponents")
         for opponent in self.player_service.players.values():
             quality = search.quality_with(opponent)
             if quality >= search.match_threshold:
-                opponent.notify_potential_match(search.player)
+                opponent.notify_potential_match(search.player, potential)
 
     def push(self, search: Search):
         """
@@ -92,11 +93,12 @@ class MatchmakerQueue:
                         self.match(search, opponent_search)
                         return
 
-                self.notify_potential_opponents(search)
+                self.notify_potential_opponents(search, True)
 
                 self._logger.debug("Found nobody searching, created new search object in queue: {}".format(search))
                 self.queue[player] = search
                 yield from search.await_match()
+                self.notify_potential_opponents(search, False)
             except CancelledError:
                 del self.queue[search.player]
                 pass
