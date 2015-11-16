@@ -16,8 +16,7 @@ class MatchmakerQueue:
         self.queue_name = queue_name
         self.rating_prop = 'ladder_rating'
         self.queue = OrderedDict()
-        self.filter = ScalableBloomFilter(mode=ScalableBloomFilter.SMALL_SET_GROWTH)
-        self._logger.info("MatchmakerQueue initialized for {}, using bloom filter: {}".format(queue_name, self.filter))
+        self._logger.info("MatchmakerQueue initialized for {}".format(queue_name))
 
     def notify_potential_opponents(self, search: Search, potential=True):
         """
@@ -28,6 +27,8 @@ class MatchmakerQueue:
         """
         self._logger.info("Notifying potential opponents")
         for opponent in self.player_service.players.values():
+            if opponent == search.player:
+                continue
             quality = search.quality_with(opponent)
             if quality >= search.match_threshold:
                 opponent.notify_potential_match(search.player, potential)
@@ -48,7 +49,6 @@ class MatchmakerQueue:
         :param s2:
         :return:
         """
-        self.filter.add({s1.player, s2.player})
         if (s1.is_matched or s2.is_matched) or (s1.is_cancelled or s2.is_cancelled):
             return
         s1.match(s2)
@@ -80,15 +80,11 @@ class MatchmakerQueue:
                 for opponent, opponent_search in self.queue.items():
                     if opponent == player:
                         continue
-                    if {player, opponent} in self.filter\
-                            or search.matches_with(opponent_search):
-                        self.match(search, opponent_search)
-                        return
 
                     quality = search.quality_with(player)
                     threshold = search.match_threshold
                     self._logger.debug("Game quality between {} and {}: {} (threshold: {})"
-                                      .format(player, opponent, quality, threshold))
+                                        .format(player, opponent, quality, threshold))
                     if quality >= threshold:
                         self.match(search, opponent_search)
                         return
