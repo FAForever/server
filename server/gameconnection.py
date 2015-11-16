@@ -204,6 +204,8 @@ class GameConnection(GpgNetServerProtocol):
                           self.player.game_port,
                           self.player.id) as peer_test:
                 peer_status = yield from peer_test.determine_connectivity()
+                if self._connectivity_state.cancelled():
+                    return
                 self._connectivity_state.set_result(peer_status)
                 self.send_gpgnet_message('ConnectivityState', [self.player.id,
                                                                self.connectivity_state.state.value])
