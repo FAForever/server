@@ -24,8 +24,9 @@ from Crypto.Random.random import choice
 from Crypto.Cipher import Blowfish
 from Crypto.Cipher import AES
 import pygeoip
-from server.matchmaker import Search
 
+import server
+from server.matchmaker import Search
 from server.decorators import timed, with_logger
 from server.games.game import GameState, VisibilityState
 from server.players import Player, PlayerState
@@ -91,6 +92,7 @@ class LobbyConnection:
     def on_connection_made(self, protocol: QDataStreamProtocol, peername: (str, int)):
         self.protocol = protocol
         self.ip, self.port = peername
+        server.stats.incr("server.connections")
 
     def abort(self, logspam=""):
         if self.player:
@@ -709,6 +711,8 @@ Thanks,\n\
                         return
 
             player_id, login, steamid = yield from self.check_user_login(cursor, login, password)
+            server.stats.incr('user.logins')
+            server.stats.gauge('users.online', len(self.player_service))
 
             if not self.player_service.is_uniqueid_exempt(player_id):
                 # UniqueID check was rejected (too many accounts or tamper-evident madness)
@@ -935,6 +939,7 @@ Thanks,\n\
 
     @timed()
     def command_game_host(self, message):
+        server.stats.incr('game.hosted')
         assert isinstance(self.player, Player)
 
         title = cgi.escape(message.get('title', ''))

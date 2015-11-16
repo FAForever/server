@@ -7,6 +7,9 @@ Copyright (c) 2015 Michael Søndergaard <sheeo@sheeo.dk>
 Distributed under GPLv3, see license.txt
 """
 import json
+
+import aiomeasures
+
 import server.db
 import config
 
@@ -36,6 +39,7 @@ __all__ = [
     'protocol'
 ]
 
+stats = aiomeasures.StatsD(config.STATSD_SERVER)
 
 def run_lobby_server(address: (str, int),
                      player_service: PlayerService,
@@ -59,6 +63,7 @@ def run_lobby_server(address: (str, int),
     def report_dirty_games():
         dirties = games.dirty_games
         games.clear_dirty()
+        stats.gauge('games.dirty', len(dirties))
 
         # TODO: This spams squillions of messages: we should implement per-connection message
         # aggregation at the next abstraction layer down :P
