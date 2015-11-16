@@ -27,7 +27,8 @@ class MatchmakerQueue:
         """
         self._logger.info("Notifying potential opponents")
         for opponent in self.player_service.players.values():
-            if {search.player, opponent} in self.filter:
+            quality = search.quality_with(opponent)
+            if quality >= search.match_threshold:
                 opponent.notify_potential_match(search.player)
 
     def push(self, search: Search):

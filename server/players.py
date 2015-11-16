@@ -124,7 +124,11 @@ class Player(BasePlayer):
         return "{}:{}".format(self.ip, self.game_port)
 
     def notify_potential_match(self, player):
-        pass
+        if self.lobby_connection:
+            self.lobby_connection.sendJSON({
+                'command': 'matchmaker_info',
+                'potential': True
+            })
 
     def to_dict(self):
         """
