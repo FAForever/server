@@ -918,7 +918,7 @@ Thanks,\n\
         if mod == "ladder1v1":
             if state == "stop":
                 if self.search:
-                    self._logger.info("{} stopped for ladder: {}".format(self.player, self.search))
+                    self._logger.info("{} stopped searching for ladder: {}".format(self.player, self.search))
                     self.search.cancel()
 
             elif state == "start":

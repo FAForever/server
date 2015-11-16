@@ -150,7 +150,7 @@ class Player(BasePlayer):
         )))
 
     def __str__(self):
-        return "Player({}, {})".format(self.login, self.id)
+        return "Player({}, {}, {}, {})".format(self.login, self.id, self.global_rating, self.ladder_rating)
 
     def __repr__(self):
         return self.__str__()
