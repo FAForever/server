@@ -73,8 +73,8 @@ class LadderService:
         launch_command = {
             "command": "game_launch",
             "mod": game.game_mode,
-            "mapname": map_path[5:],  # FIXME: Database filenames contain the maps/ prefix.
-                                      # Really in the future, just send a better description
+            "mapname": map_path[5:-4],  # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
+                                        # Really in the future, just send a better description
             "mapid": map_id,
             "reason": "ranked",
             "uid": game.id,
