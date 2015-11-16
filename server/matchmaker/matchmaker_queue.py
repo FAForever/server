@@ -90,9 +90,10 @@ class MatchmakerQueue:
 
                 self.notify_potential_opponents(search, True)
 
-                self._logger.debug("Found nobody searching, created new search object in queue: {}".format(search))
+                self._logger.debug("Found nobody searching, pushing to queue: {}".format(search))
                 self.queue[player] = search
                 await search.await_match()
+                self._logger.debug("Search complete".format(search))
                 self.notify_potential_opponents(search, False)
                 del self.queue[search.player]
             except CancelledError:

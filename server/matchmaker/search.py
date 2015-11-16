@@ -4,9 +4,6 @@ import time
 from server.decorators import with_logger
 from trueskill import quality_1vs1, Rating
 
-from server.games import Game
-
-
 @with_logger
 class Search:
     """
@@ -86,7 +83,8 @@ class Search:
         Wait for this search to complete
         :return:
         """
-        return asyncio.wait_for(self._match, None)
+        await asyncio.wait_for(self._match, None)
+        return self._match
 
     def cancel(self):
         """
@@ -94,3 +92,6 @@ class Search:
         :return:
         """
         self._match.cancel()
+
+    def __str__(self):
+        return "Search({}, {}, {})".format(self.player, self.match_threshold, self.search_expansion)
