@@ -49,7 +49,7 @@ class LadderService:
         player1.state = PlayerState.HOSTING
         player2.state = PlayerState.JOINING
 
-        (map_id, map_path) = random.choice(self.game_service.ladder_maps)
+        (map_id, map_name, map_path) = random.choice(self.game_service.ladder_maps)
 
         game = LadderGame(self.game_service.createUuid(), self.game_service)
         self.game_service.games[game.id] = game
@@ -57,7 +57,7 @@ class LadderService:
         player1.game = game
         player2.game = game
 
-        game.map_file_path = map_path
+        game.map_path = map_path
 
         # Host is player 1
         game.host = player1

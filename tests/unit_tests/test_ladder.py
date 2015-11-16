@@ -15,4 +15,4 @@ def test_start_game_uses_map_from_mappool(ladder_service: LadderService, ladder_
     lobbythread.sendJSON = Mock()
     yield from ladder_service.start_game(ladder_setup['player1'], ladder_setup['player2'])
     args, kwargs = lobbythread.sendJSON.call_args
-    assert (args[0]['mapid'], args[0]['mapname']) in ladder_setup['map_pool']
+    assert (args[0]['mapid'], '', args[0]['mapname']) in ladder_setup['map_pool']
