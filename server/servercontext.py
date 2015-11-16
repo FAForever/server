@@ -1,4 +1,6 @@
 import asyncio
+
+import server
 from server.decorators import with_logger
 from server.protocol import QDataStreamProtocol
 
@@ -40,6 +42,7 @@ class ServerContext:
         return connection in self.connections.keys()
 
     def broadcast_raw(self, message, validate_fn=lambda a: True):
+        server.stats.incr('server.broadcasts')
         for conn, proto in self.connections.items():
             if validate_fn(conn):
                 proto.send_raw(message)

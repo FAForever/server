@@ -3,6 +3,7 @@ import json
 import struct
 from asyncio import StreamReader, StreamWriter
 
+import server
 from server.decorators import with_logger
 from .protocol import Protocol
 
@@ -141,11 +142,14 @@ class QDataStreamProtocol(Protocol):
         self.writer.close()
 
     def send_message(self, message: dict):
+        server.stats.incr('server.sent_messages')
         self.writer.write(self.pack_message(json.dumps(message)))
 
     def send_messages(self, messages):
+        server.stats.incr('server.sent_messages')
         payload = [self.pack_message(json.dumps(msg)) for msg in messages]
         self.writer.writelines(payload)
 
     def send_raw(self, data):
+        server.stats.incr('server.sent_messages')
         self.writer.write(data)
