@@ -126,9 +126,6 @@ class Player(BasePlayer):
     def notify_potential_match(self, player):
         pass
 
-    def on_matched_with(self, player):
-        pass
-
     def to_dict(self):
         """
         Return a dictionary representing this player object

@@ -4,6 +4,9 @@ import time
 from server.decorators import with_logger
 from trueskill import quality_1vs1, Rating
 
+from server.games import Game
+
+
 @with_logger
 class Search:
     """
@@ -77,15 +80,13 @@ class Search:
         """
         self._logger.info("Matched {} with {}".format(self.player, other.player))
         self._match.set_result(other)
-        self.player.on_matched_with(other.player)
 
-    @asyncio.coroutine
-    def await_match(self):
+    async def await_match(self):
         """
         Wait for this search to complete
         :return:
         """
-        yield from self._match
+        return self._match
 
     def cancel(self):
         """

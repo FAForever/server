@@ -910,23 +910,23 @@ Thanks,\n\
                                    text="You are banned from the matchmaker. Contact an admin to have the reason."))
                 return
 
-        if not self.search:
-            self.search = Search(self.player)
-
         container = self.game_service.ladder_service
-        if container is not None:
-            if mod == "ladder1v1":
-                if state == "stop":
+        if mod == "ladder1v1":
+            if state == "stop":
+                if self.search:
+                    self._logger.info("{} stopped for ladder: {}".format(self.player, self.search))
                     self.search.cancel()
 
-                elif state == "start":
-                    self.player.game_port = message['gameport']
-                    self.player.faction = message['faction']
+            elif state == "start":
+                if not self.search:
+                    self.search = Search(self.player)
+                self.player.game_port = message['gameport']
+                self.player.faction = message['faction']
 
-                    yield from container.addPlayer(self.player)
+                container.addPlayer(self.player)
 
-                    self._logger.info("{} is searching for ladder".format(self.player))
-                    asyncio.async(self.player_service.ladder_queue.search(self.player, search=self.search))
+                self._logger.info("{} is searching for ladder: {}".format(self.player, self.search))
+                asyncio.async(self.player_service.ladder_queue.search(self.player, search=self.search))
 
     def command_coop_list(self, message):
         """ Request for coop map list"""

@@ -30,7 +30,6 @@ class LadderService:
                 if league:
                     return league
 
-    @asyncio.coroutine
     def addPlayer(self, player):
         if player not in self.players:
             self.players.append(player)
@@ -42,21 +41,18 @@ class LadderService:
             elif deviation > 250:
                 progress = (500.0 - deviation) / 2.5
                 player.lobby_connection.sendJSON(dict(command="notice", style="info", text="The system is still learning you. <b><br><br>The learning phase is " + str(progress)+"% complete<b>"))
-            
-            return 1
-        return 0
-    
+
     def getMatchQuality(self, player1: Player, player2: Player):
         return trueskill.quality_1vs1(player1.ladder_rating, player2.ladder_rating)
 
-    @asyncio.coroutine
-    def startGame(self, player1, player2):
+    async def start_game(self, player1, player2):
         player1.state = PlayerState.HOSTING
         player2.state = PlayerState.JOINING
 
         (map_id, map_path) = random.choice(self.game_service.ladder_maps)
 
         game = LadderGame(self.game_service.createUuid(), self.game_service)
+        self.game_service.games[game.id] = game
 
         player1.game = game
         player2.game = game
@@ -74,10 +70,7 @@ class LadderService:
         game.set_player_option(player1.id, 'Team', 2)
         game.set_player_option(player2.id, 'Team', 3)
 
-        # player 2 will be in game
-        
-        #warn both players
-        json = {
+        launch_command = {
             "command": "game_launch",
             "mod": game.game_mode,
             "mapname": map_path,
@@ -87,5 +80,6 @@ class LadderService:
             "args": ["/players 2", "/team 1"]
         }
 
-        player1.lobby_connection.sendJSON(json)
-
+        player1.lobby_connection.sendJSON(launch_command)
+        await asyncio.sleep(4)
+        player2.lobby_connection.sendJSON(launch_command)

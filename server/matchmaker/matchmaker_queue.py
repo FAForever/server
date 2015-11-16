@@ -9,8 +9,9 @@ from .search import Search
 
 @with_logger
 class MatchmakerQueue:
-    def __init__(self, queue_name: str, player_service: "PlayerService"):
+    def __init__(self, queue_name: str, player_service: "PlayerService", game_service: "GameService"):
         self.player_service = player_service
+        self.game_service = game_service
         self.queue_name = queue_name
         self.rating_prop = 'ladder_rating'
         self.queue = OrderedDict()
@@ -53,6 +54,7 @@ class MatchmakerQueue:
             del self.queue[s1.player]
         if s2.player in self.queue:
             del self.queue[s2.player]
+        asyncio.ensure_future(self.game_service.ladder_service.start_game(s1.player, s2.player))
 
     def __len__(self):
         return self.queue.__len__()
