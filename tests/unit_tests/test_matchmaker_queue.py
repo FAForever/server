@@ -7,8 +7,8 @@ from server.players import Player
 
 
 @pytest.fixture
-def matchmaker_queue(player_service):
-    return MatchmakerQueue('test_queue', player_service)
+def matchmaker_queue(player_service, game_service):
+    return MatchmakerQueue('test_queue', player_service, game_service)
 
 @pytest.fixture
 def matchmaker_players():
