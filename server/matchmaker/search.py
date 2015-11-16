@@ -86,7 +86,7 @@ class Search:
         Wait for this search to complete
         :return:
         """
-        return asyncio.wait_for(self._match)
+        return asyncio.wait_for(self._match, None)
 
     def cancel(self):
         """
