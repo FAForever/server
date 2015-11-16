@@ -46,19 +46,6 @@ def test_search_await(mocker, loop, matchmaker_players):
     assert await_coro.done()
 
 @asyncio.coroutine
-def test_queue_push(mocker, player_service, matchmaker_queue, matchmaker_players):
-    p1, p2, _, _, _ = matchmaker_players
-    player_service.players = {p1.id: p1, p2.id:p2}
-
-    p1.on_matched_with = Mock()
-    p2.on_matched_with = Mock()
-    asyncio.async(matchmaker_queue.search(p1))
-    yield from matchmaker_queue.search(p2)
-
-    p1.on_matched_with.assert_called_with(p2)
-    p2.on_matched_with.assert_called_with(p1)
-
-@asyncio.coroutine
 def test_queue_race(mocker, player_service, matchmaker_queue):
     p1, p2, p3 = Player('Dostya', id=1, ladder_rating=(2300, 150)), \
                  Player('Brackman', id=2, ladder_rating=(2200, 150)), \
@@ -82,8 +69,6 @@ def test_queue_race(mocker, player_service, matchmaker_queue):
     except (TimeoutError, CancelledError):
         pass
 
-    p1.on_matched_with.assert_called_with(p2)
-    p2.on_matched_with.assert_called_with(p1)
     assert len(matchmaker_queue) == 1
 
 @asyncio.coroutine
