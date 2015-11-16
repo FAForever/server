@@ -918,8 +918,9 @@ Thanks,\n\
                     self.search.cancel()
 
             elif state == "start":
-                if not self.search:
-                    self.search = Search(self.player)
+                if self.search:
+                    self.search.cancel()
+                self.search = Search(self.player)
                 self.player.game_port = message['gameport']
                 self.player.faction = message['faction']
 
