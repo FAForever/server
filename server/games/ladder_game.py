@@ -13,7 +13,7 @@ class LadderGame(Game):
 
     def __init__(self, id, *args, **kwargs):
         super(self.__class__, self).__init__(id, *args, **kwargs)
-
+        self.game_mode = 'ladder1v1'
         self.max_players = 2
 
     async def rate_game(self):
