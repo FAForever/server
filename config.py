@@ -17,8 +17,7 @@ LIBRARY_PATH = Config.get('library_path', None)
 
 logging.info("Setting default log level {}".format(LOG_LEVEL))
 
-logging.getLogger('quamash').setLevel(logging.INFO)
-logging.getLogger('server.subscribable').setLevel(logging.INFO)
+logging.getLogger('aiomeasures').setLevel(logging.INFO)
 
 logging.getLogger().setLevel(logging.DEBUG)
 
