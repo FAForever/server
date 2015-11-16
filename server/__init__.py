@@ -63,7 +63,6 @@ def run_lobby_server(address: (str, int),
     def report_dirty_games():
         dirties = games.dirty_games
         games.clear_dirty()
-        stats.gauge('games.dirty', len(dirties))
 
         # TODO: This spams squillions of messages: we should implement per-connection message
         # aggregation at the next abstraction layer down :P
