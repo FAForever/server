@@ -167,6 +167,11 @@ class GameService:
                 if game.state == GameState.LIVE]
 
     @property
+    def open_games(self):
+        return [game for game in self.games.values()
+                if game.state == GameState.LOBBY]
+
+    @property
     def pending_games(self):
         return [game for game in self.games.values()
                 if game.state == GameState.LOBBY or game.state == GameState.INITIALIZING]
