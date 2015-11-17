@@ -4,6 +4,7 @@ import aiocron
 import marisa_trie
 import pymysql
 from server.matchmaker import MatchmakerQueue
+from server.players import Player
 
 
 class PlayerService:
@@ -27,7 +28,7 @@ class PlayerService:
     def __iter__(self):
         return self.players.values().__iter__()
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> Player:
         return self.players[item]
 
     def __setitem__(self, key, value):
