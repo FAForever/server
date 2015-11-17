@@ -1,14 +1,15 @@
-from concurrent.futures import CancelledError
+from concurrent.futures import CancelledError, TimeoutError
 from unittest.mock import Mock
 import asyncio
 import pytest
 from server.matchmaker import MatchmakerQueue, Search
 from server.players import Player
+from tests.utils import CoroMock
 
 
 @pytest.fixture
 def matchmaker_queue(player_service, game_service):
-    return MatchmakerQueue('test_queue', player_service, game_service)
+    return MatchmakerQueue('test_queue', player_service, Mock())
 
 @pytest.fixture
 def matchmaker_players():
@@ -53,14 +54,13 @@ def test_queue_race(mocker, player_service, matchmaker_queue):
 
     player_service.players = {p1.id: p1, p2.id:p2, p3.id:p3}
 
-    p1.on_matched_with = Mock()
-    p2.on_matched_with = Mock()
-    p3.on_matched_with = Mock()
-
     s1, s2 = Search(p1), Search(p2)
 
     matchmaker_queue.push(s1)
     matchmaker_queue.push(s2)
+
+    matchmaker_queue.game_service.ladder_service.start_game = CoroMock()
+
 
     try:
         yield from asyncio.gather(matchmaker_queue.search(p1, search=s1),

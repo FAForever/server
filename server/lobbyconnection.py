@@ -32,6 +32,7 @@ from server.games.game import GameState, VisibilityState
 from server.players import Player, PlayerState
 import server.db as db
 from .game_service import GameService
+from .player_service import PlayerService
 from passwords import PRIVATE_KEY, MAIL_ADDRESS, VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY
 import config
 from config import Config
@@ -64,7 +65,7 @@ class AuthenticationError(Exception):
 @with_logger
 class LobbyConnection:
     @timed()
-    def __init__(self, loop, context=None, games: GameService=None, players=None, db=None):
+    def __init__(self, loop, context=None, games: GameService=None, players: PlayerService=None, db=None):
         super(LobbyConnection, self).__init__()
         self.loop = loop
         self.db = db
@@ -743,7 +744,13 @@ Thanks,\n\
                              permissionGroup=permission_group,
                              lobbyThread=self)
 
+        if self.player.id in self.player_service and self.player_service[self.player.id].lobby_connection:
+            old_conn = self.player_service[self.player.id].lobby_connection
+            old_conn.send_warning("You have been signed out because you signed in elsewhere.", fatal=True)
+
         yield from self.player_service.fetch_player_data(self.player)
+
+        self.player_service[self.player.id] = self.player
 
         # Country
         # -------
@@ -765,7 +772,6 @@ Thanks,\n\
                 url, tooltip = avatar
                 self.player.avatar = {"url": url, "tooltip": tooltip}
 
-        self.player_service[self.player.id] = self.player
 
         self.sendJSON(dict(command="welcome", id=self.player.id, login=login))
 
@@ -1039,7 +1045,21 @@ Thanks,\n\
             else:
                 raise ValueError('invalid type argument')
 
-    @timed()
+    def send_warning(self, message: str, fatal: bool=False):
+        """
+        Display a warning message to the client
+        :param message: Warning message to display
+        :param fatal: Whether or not the warning is fatal.
+                      If the client receives a fatal warning it should disconnect
+                      and not attempt to reconnect.
+        :return: None
+        """
+        self.sendJSON({'command': 'notice',
+                       'style': 'info' if not fatal else 'error',
+                       'text': message})
+        if fatal:
+            self.abort(message)
+
     def sendJSON(self, data_dictionary):
         """
         Simply dumps a dictionary into a string and feeds it into the QTCPSocket
