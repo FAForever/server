@@ -10,6 +10,14 @@ class Search:
     Represents the state of a users search for a match.
     """
     def __init__(self, player, start_time=None, rating_prop='ladder_rating'):
+        """
+        Default ctor for a search
+
+        :param player: player to use for searching
+        :param start_time: optional start time for the search
+        :param rating_prop: 'ladder_rating' or 'global_rating'
+        :return: the search object
+        """
         self.rating_prop = rating_prop
         self.player = player
         self.start_time = start_time or time.time()
