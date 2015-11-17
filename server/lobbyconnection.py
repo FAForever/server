@@ -742,7 +742,7 @@ Thanks,\n\
                              port=self.port,
                              id=player_id,
                              permissionGroup=permission_group,
-                             lobbyThread=self)
+                             lobby_connection=self)
 
         if self.player.id in self.player_service and self.player_service[self.player.id].lobby_connection:
             old_conn = self.player_service[self.player.id].lobby_connection

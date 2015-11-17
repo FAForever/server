@@ -20,7 +20,7 @@ class Player(BasePlayer):
     information about players.
     """
     def __init__(self, login=None, session=0, ip=None, port=None, id=0,
-                 global_rating=(1500, 500), ladder_rating=(1500, 500), clan=None, numGames=0, permissionGroup=0, lobbyThread=None):
+                 global_rating=(1500, 500), ladder_rating=(1500, 500), clan=None, numGames=0, permissionGroup=0, lobby_connection=None):
         super().__init__(id, login)
 
         # The id of the user in the `login` table of the database.
@@ -61,9 +61,6 @@ class Player(BasePlayer):
     def getAddress(self):
         return "%s:%s" % (str(self.ip), str(self.game_port))
 
-    @property
-    def lobbyThread(self):
-        return self.lobby_connection
 
     @property
     def lobby_connection(self) -> "LobbyConnection":
