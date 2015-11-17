@@ -37,11 +37,8 @@ if __name__ == '__main__':
         args = docopt(__doc__, version='FAF Server')
 
         rootlogger = logging.getLogger("")
-        logHandler = handlers.RotatingFileHandler(config.LOG_PATH + "server.log", backupCount=1024, maxBytes=16777216)
-        logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
-        logHandler.setFormatter(logFormatter)
-        rootlogger.addHandler(logHandler)
         rootlogger.setLevel(config.LOG_LEVEL)
+        logger.info("Using StatsD server: ".format(config.STATSD_SERVER))
 
         # Make sure we can shutdown gracefully
         signal.signal(signal.SIGTERM, signal_handler)
