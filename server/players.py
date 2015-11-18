@@ -52,8 +52,8 @@ class Player(BasePlayer):
         self.faction = 1
 
         self._lobby_connection = lambda: None
-        if lobbyThread is not None:
-            self.lobby_connection = lobbyThread
+        if lobby_connection is not None:
+            self.lobby_connection = lobby_connection
 
         self._game = lambda: None
         self._game_connection = lambda: None
