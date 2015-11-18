@@ -74,7 +74,9 @@ class PlayerService:
                     "LEFT JOIN `fafclans`.players_list "
                     "ON `fafclans`.players_list.player_id = `fafclans`.`clan_tags`.player_id "
                     "WHERE `faf_id` = %s", player.id)
-                (player.clan, _) = yield from cur.fetchone()
+                result = yield from cur.fetchone()
+                if result:
+                    (player.clan, ) = result
             except (pymysql.ProgrammingError, pymysql.OperationalError):
                 pass
 
