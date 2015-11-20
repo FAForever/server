@@ -13,6 +13,7 @@ pytest==2.8.2
 pytest-mock
 pytest-cov
 pyflakes
+msgpack-python
 rsa
 trueskill
 aiocron
