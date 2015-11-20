@@ -172,6 +172,10 @@ class GameService:
                 if game.state == GameState.LOBBY]
 
     @property
+    def all_games(self):
+        return self.games.values()
+
+    @property
     def pending_games(self):
         return [game for game in self.games.values()
                 if game.state == GameState.LOBBY or game.state == GameState.INITIALIZING]

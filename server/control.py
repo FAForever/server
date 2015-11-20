@@ -18,7 +18,7 @@ class ControlServer:
         self.player_service = player_service
 
     def games(self, request):
-        body = repr(self.game_service.live_games).encode()
+        body = repr(self.game_service.all_games).encode()
         return web.Response(body=body)
 
     def players(self, request):
