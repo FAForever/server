@@ -8,6 +8,7 @@ import json
 from aiohttp import web
 import logging
 from server import PlayerService, GameService, LobbyConnection
+from server.games import Game
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ class ControlServer:
         self.player_service = player_service
 
     def games(self, request):
-        body = repr(self.game_service.all_games).encode()
+        body = repr(map(Game.to_dict, self.game_service.all_games)).encode()
         return web.Response(body=body)
 
     def players(self, request):
