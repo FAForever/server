@@ -17,6 +17,7 @@ import socket
 
 from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME
 from server.game_service import GameService
+from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
 from server.stats.game_stats_service import GameStatsService, EventService, AchievementService
 from server.api.api_accessor import ApiAccessor
@@ -38,11 +39,8 @@ if __name__ == '__main__':
         args = docopt(__doc__, version='FAF Server')
 
         rootlogger = logging.getLogger("")
-        logHandler = handlers.RotatingFileHandler(config.LOG_PATH + "server.log", backupCount=1024, maxBytes=16777216)
-        logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(name)-20s %(message)s')
-        logHandler.setFormatter(logFormatter)
-        rootlogger.addHandler(logHandler)
         rootlogger.setLevel(config.LOG_LEVEL)
+        logger.info("Using StatsD server: ".format(config.STATSD_SERVER))
 
         # Make sure we can shutdown gracefully
         signal.signal(signal.SIGTERM, signal_handler)
@@ -63,6 +61,8 @@ if __name__ == '__main__':
         achievement_service = AchievementService(api_accessor)
         game_stats_service = GameStatsService(event_service, achievement_service)
         games = GameService(players_online, game_stats_service)
+        matchmaker_queue = MatchmakerQueue('ladder1v1', players_online, games)
+        players_online.ladder_queue = matchmaker_queue
 
         ctrl_server = loop.run_until_complete(server.run_control_server(loop, players_online, games))
 

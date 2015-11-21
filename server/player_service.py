@@ -4,6 +4,7 @@ import aiocron
 import marisa_trie
 import pymysql
 from server.matchmaker import MatchmakerQueue
+from server.players import Player
 
 
 class PlayerService:
@@ -17,7 +18,7 @@ class PlayerService:
         self.client_version_info = ('0.0.0', None)
         self.blacklisted_email_domains = {}
 
-        self.ladder_queue = MatchmakerQueue('ladder1v1', self)
+        self.ladder_queue = None
         asyncio.get_event_loop().run_until_complete(asyncio.async(self.update_data()))
         self._update_cron = aiocron.crontab('0 * * * *', func=self.update_data)
 
@@ -27,7 +28,7 @@ class PlayerService:
     def __iter__(self):
         return self.players.values().__iter__()
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> Player:
         return self.players[item]
 
     def __setitem__(self, key, value):
@@ -73,12 +74,15 @@ class PlayerService:
                     "LEFT JOIN `fafclans`.players_list "
                     "ON `fafclans`.players_list.player_id = `fafclans`.`clan_tags`.player_id "
                     "WHERE `faf_id` = %s", player.id)
-                (player.clan, _) = yield from cur.fetchone()
+                result = yield from cur.fetchone()
+                if result:
+                    (player.clan, ) = result
             except (pymysql.ProgrammingError, pymysql.OperationalError):
                 pass
 
     def remove_player(self, player):
-        del self.players[player.id]
+        if player.id in self.players:
+            del self.players[player.id]
 
     def get_permission_group(self, user_id):
         return self.privileged_users.get(user_id, 0)

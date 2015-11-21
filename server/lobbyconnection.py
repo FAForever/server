@@ -24,13 +24,15 @@ from Crypto.Random.random import choice
 from Crypto.Cipher import Blowfish
 from Crypto.Cipher import AES
 import pygeoip
-from server.matchmaker import Search
 
+import server
+from server.matchmaker import Search
 from server.decorators import timed, with_logger
 from server.games.game import GameState, VisibilityState
 from server.players import Player, PlayerState
 import server.db as db
 from .game_service import GameService
+from .player_service import PlayerService
 from passwords import PRIVATE_KEY, MAIL_ADDRESS, VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY
 import config
 from config import Config
@@ -63,7 +65,7 @@ class AuthenticationError(Exception):
 @with_logger
 class LobbyConnection:
     @timed()
-    def __init__(self, loop, context=None, games: GameService=None, players=None, db=None):
+    def __init__(self, loop, context=None, games: GameService=None, players: PlayerService=None, db=None):
         super(LobbyConnection, self).__init__()
         self.loop = loop
         self.db = db
@@ -74,7 +76,6 @@ class LobbyConnection:
         self.warned = False
         self._authenticated = False
         self.player = None
-        self.logPrefix = "\t"
         self.missedPing = 0
         self.leagueAvatar = None
         self.ip = None
@@ -92,6 +93,7 @@ class LobbyConnection:
     def on_connection_made(self, protocol: QDataStreamProtocol, peername: (str, int)):
         self.protocol = protocol
         self.ip, self.port = peername
+        server.stats.incr("server.connections")
 
     def abort(self, logspam=""):
         if self.player:
@@ -435,7 +437,7 @@ Thanks,\n\
 
     @timed()
     def send_game_list(self):
-        self.protocol.send_messages([game.to_dict() for game in self.game_service.live_games])
+        self.protocol.send_messages([game.to_dict() for game in self.game_service.open_games])
 
     @asyncio.coroutine
     def command_social_remove(self, message):
@@ -500,7 +502,7 @@ Thanks,\n\
             elif action == "closelobby":
                 player = self.player_service[message['user_id']]
                 if player:
-                    self._logger.info('Administrative action: {} closed game for {}'.format(self.player, player))
+                    self._logger.info('Administrative action: {} closed client for {}'.format(self.player, player))
                     player.lobby_connection.kick(
                         message=("Your client was closed by an administrator ({admin_name}). "
                          "Please refer to our rules for the lobby/game here {rule_link}."
@@ -694,8 +696,6 @@ Thanks,\n\
         login = message['login'].strip()
         password = message['password']
 
-        self.logPrefix = login + "\t"
-
         # Check their client is reporting the right version number.
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
@@ -715,6 +715,8 @@ Thanks,\n\
                         return
 
             player_id, login, steamid = yield from self.check_user_login(cursor, login, password)
+            server.stats.incr('user.logins')
+            server.stats.gauge('users.online', len(self.player_service))
 
             if not self.player_service.is_uniqueid_exempt(player_id):
                 # UniqueID check was rejected (too many accounts or tamper-evident madness)
@@ -743,9 +745,15 @@ Thanks,\n\
                              port=self.port,
                              id=player_id,
                              permissionGroup=permission_group,
-                             lobbyThread=self)
+                             lobby_connection=self)
+
+        if self.player.id in self.player_service and self.player_service[self.player.id].lobby_connection:
+            old_conn = self.player_service[self.player.id].lobby_connection
+            old_conn.send_warning("You have been signed out because you signed in elsewhere.", fatal=True)
 
         yield from self.player_service.fetch_player_data(self.player)
+
+        self.player_service[self.player.id] = self.player
 
         # Country
         # -------
@@ -767,7 +775,6 @@ Thanks,\n\
                 url, tooltip = avatar
                 self.player.avatar = {"url": url, "tooltip": tooltip}
 
-        self.player_service[self.player.id] = self.player
 
         self.sendJSON(dict(command="welcome", id=self.player.id, login=login))
 
@@ -916,23 +923,24 @@ Thanks,\n\
                                    text="You are banned from the matchmaker. Contact an admin to have the reason."))
                 return
 
-        if not self.search:
-            self.search = Search(self.player)
-
         container = self.game_service.ladder_service
-        if container is not None:
-            if mod == "ladder1v1":
-                if state == "stop":
+        if mod == "ladder1v1":
+            if state == "stop":
+                if self.search:
+                    self._logger.info("{} stopped searching for ladder: {}".format(self.player, self.search))
                     self.search.cancel()
 
-                elif state == "start":
-                    self.player.game_port = message['gameport']
-                    self.player.faction = message['faction']
+            elif state == "start":
+                if self.search:
+                    self.search.cancel()
+                self.search = Search(self.player)
+                self.player.game_port = message['gameport']
+                self.player.faction = message['faction']
 
-                    yield from container.addPlayer(self.player)
+                container.addPlayer(self.player)
 
-                    self._logger.info("{} is searching for ladder".format(self.player))
-                    asyncio.async(self.player_service.ladder_queue.search(self.player, search=self.search))
+                self._logger.info("{} is searching for ladder: {}".format(self.player, self.search))
+                asyncio.async(self.player_service.ladder_queue.search(self.player, search=self.search))
 
     def command_coop_list(self, message):
         """ Request for coop map list"""
@@ -940,6 +948,7 @@ Thanks,\n\
 
     @timed()
     def command_game_host(self, message):
+        server.stats.incr('game.hosted')
         assert isinstance(self.player, Player)
 
         title = cgi.escape(message.get('title', ''))
@@ -993,7 +1002,6 @@ Thanks,\n\
 
                 for i in range(0, cursor.rowcount):
                     uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = yield from cursor.fetchone()
-                    date = date.toTime_t()
                     link = config.CONTENT_URL + "vault/" + filename
                     thumbstr = ""
                     if icon != "":
@@ -1001,7 +1009,7 @@ Thanks,\n\
 
                     out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
                                comments=[], description=description, played=played, likes=likes,
-                               downloads=downloads, date=date, uid=uid, name=name, version=version, author=author,
+                               downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
                                ui=ui)
                     self.sendJSON(out)
 
@@ -1010,7 +1018,6 @@ Thanks,\n\
                 yield from cursor.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likers FROM `table_mod` WHERE uid = ? LIMIT 1")
 
                 uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = yield from cursor.fetchone()
-                date = date.toTime_t()
                 link = config.CONTENT_URL + "vault/" + filename
                 thumbstr = ""
                 if icon != "":
@@ -1018,7 +1025,7 @@ Thanks,\n\
 
                 out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
                            comments=[], description=description, played=played, likes=likes + 1,
-                           downloads=downloads, date=date, uid=uid, name=name, version=version, author=author,
+                           downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
                            ui=ui)
 
                 try:
@@ -1041,7 +1048,21 @@ Thanks,\n\
             else:
                 raise ValueError('invalid type argument')
 
-    @timed()
+    def send_warning(self, message: str, fatal: bool=False):
+        """
+        Display a warning message to the client
+        :param message: Warning message to display
+        :param fatal: Whether or not the warning is fatal.
+                      If the client receives a fatal warning it should disconnect
+                      and not attempt to reconnect.
+        :return: None
+        """
+        self.sendJSON({'command': 'notice',
+                       'style': 'info' if not fatal else 'error',
+                       'text': message})
+        if fatal:
+            self.abort(message)
+
     def sendJSON(self, data_dictionary):
         """
         Simply dumps a dictionary into a string and feeds it into the QTCPSocket

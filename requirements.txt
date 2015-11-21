@@ -2,6 +2,7 @@ typing
 -f http://content.dev.faforever.com/wheel/
 aiohttp
 aiomysql
+aiomeasures
 configobj
 coveralls
 docopt
@@ -12,6 +13,7 @@ pytest==2.8.2
 pytest-mock
 pytest-cov
 pyflakes
+msgpack-python
 rsa
 trueskill
 aiocron

@@ -7,6 +7,9 @@ Copyright (c) 2015 Michael Søndergaard <sheeo@sheeo.dk>
 Distributed under GPLv3, see license.txt
 """
 import json
+
+import aiomeasures
+
 import server.db
 import config
 
@@ -37,6 +40,7 @@ __all__ = [
     'protocol'
 ]
 
+stats = aiomeasures.StatsD(config.STATSD_SERVER)
 
 def run_lobby_server(address: (str, int),
                      player_service: PlayerService,
@@ -68,7 +72,6 @@ def run_lobby_server(address: (str, int),
             # TODO: Probably better to do this at the time of the state transition instead?
             if game.state == GameState.ENDED:
                 games.remove_game(game)
-                continue
 
             # So we're going to be broadcasting this to _somebody_...
             message = encode(game)

@@ -3,11 +3,12 @@ Tiny local-only http server for getting stats and performing various tasks
 """
 
 import asyncio
-import json
+import msgpack
 
 from aiohttp import web
 import logging
 from server import PlayerService, GameService, LobbyConnection
+from server.games import Game
 
 logger = logging.getLogger(__name__)
 
@@ -18,14 +19,12 @@ class ControlServer:
         self.player_service = player_service
 
     def games(self, request):
-        body = repr(self.game_service.live_games).encode()
-        return web.Response(body=body)
+        body = repr(list(map(Game.to_dict, self.game_service.all_games))).encode()
+        return web.Response(body=msgpack.packb(body), content_type='application/x-msgpack')
 
     def players(self, request):
-        body = json.dumps({
-            'data': list(map(lambda p: p.to_dict(), self.player_service.players.values()))
-        })
-        return web.Response(body=body.encode())
+        body = list(map(lambda p: p.to_dict(), self.player_service.players.values()))
+        return web.Response(body=msgpack.packb(body), content_type='application/x-msgpack')
 
     async def kick_player(self, request):
         player = self.player_service.players[int(request.match_info.get('player_id'))]

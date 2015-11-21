@@ -137,6 +137,11 @@ class Game(BaseGame):
 
         self.mods = []
         self._logger.info("{} created".format(self))
+        asyncio.get_event_loop().call_later(20, self.timeout_game)
+
+    def timeout_game(self):
+        if self.state == GameState.INITIALIZING:
+            self.state = GameState.ENDED
 
     @property
     def armies(self):
@@ -232,6 +237,8 @@ class Game(BaseGame):
         """
         assert game_connection in self._connections.values()
         del self._connections[game_connection.player]
+        if game_connection.player:
+            del game_connection.player.game
         self._logger.info("Removed game connection {}".format(game_connection))
 
         if len(self._connections) == 0:
@@ -624,7 +631,7 @@ class Game(BaseGame):
             "featured_mod": self.game_mode,
             "featured_mod_versions": self.getGamemodVersion(),
             "sim_mods": self.mods,
-            "map_file_path": (self.map_file_path or "").lower(),
+            "mapname": (self.map_file_path or "").lower(),
             "host": self.host.login if self.host else '',
             "num_players": len(self.players),
             "game_type": self.gameType,

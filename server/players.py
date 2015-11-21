@@ -20,7 +20,7 @@ class Player(BasePlayer):
     information about players.
     """
     def __init__(self, login=None, session=0, ip=None, port=None, id=0,
-                 global_rating=(1500, 500), ladder_rating=(1500, 500), clan=None, numGames=0, permissionGroup=0, lobbyThread=None):
+                 global_rating=(1500, 500), ladder_rating=(1500, 500), clan=None, numGames=0, permissionGroup=0, lobby_connection=None):
         super().__init__(id, login)
 
         # The id of the user in the `login` table of the database.
@@ -52,8 +52,8 @@ class Player(BasePlayer):
         self.faction = 1
 
         self._lobby_connection = lambda: None
-        if lobbyThread is not None:
-            self.lobby_connection = lobbyThread
+        if lobby_connection is not None:
+            self.lobby_connection = lobby_connection
 
         self._game = lambda: None
         self._game_connection = lambda: None
@@ -61,9 +61,6 @@ class Player(BasePlayer):
     def getAddress(self):
         return "%s:%s" % (str(self.ip), str(self.game_port))
 
-    @property
-    def lobbyThread(self):
-        return self.lobby_connection
 
     @property
     def lobby_connection(self) -> "LobbyConnection":
@@ -123,11 +120,12 @@ class Player(BasePlayer):
     def address_and_port(self):
         return "{}:{}".format(self.ip, self.game_port)
 
-    def notify_potential_match(self, player):
-        pass
-
-    def on_matched_with(self, player):
-        pass
+    def notify_potential_match(self, player, potential):
+        if self.lobby_connection:
+            self.lobby_connection.sendJSON({
+                'command': 'matchmaker_info',
+                'potential': potential
+            })
 
     def to_dict(self):
         """
@@ -149,7 +147,7 @@ class Player(BasePlayer):
         )))
 
     def __str__(self):
-        return "Player({}, {})".format(self.login, self.id)
+        return "Player({}, {}, {}, {})".format(self.login, self.id, self.global_rating, self.ladder_rating)
 
     def __repr__(self):
         return self.__str__()

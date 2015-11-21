@@ -10,6 +10,14 @@ class Search:
     Represents the state of a users search for a match.
     """
     def __init__(self, player, start_time=None, rating_prop='ladder_rating'):
+        """
+        Default ctor for a search
+
+        :param player: player to use for searching
+        :param start_time: optional start time for the search
+        :param rating_prop: 'ladder_rating' or 'global_rating'
+        :return: the search object
+        """
         self.rating_prop = rating_prop
         self.player = player
         self.start_time = start_time or time.time()
@@ -77,15 +85,14 @@ class Search:
         """
         self._logger.info("Matched {} with {}".format(self.player, other.player))
         self._match.set_result(other)
-        self.player.on_matched_with(other.player)
 
-    @asyncio.coroutine
-    def await_match(self):
+    async def await_match(self):
         """
         Wait for this search to complete
         :return:
         """
-        yield from self._match
+        await asyncio.wait_for(self._match, None)
+        return self._match
 
     def cancel(self):
         """
@@ -93,3 +100,6 @@ class Search:
         :return:
         """
         self._match.cancel()
+
+    def __str__(self):
+        return "Search({}, {}, {})".format(self.player, self.match_threshold, self.search_expansion)

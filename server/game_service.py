@@ -27,7 +27,7 @@ class GameService:
         # A set of mod ids that are allowed in ranked games (everyone loves caching)
         self.ranked_mods = set()
 
-        # The ladder map pool. Each entry is an (id, name) tuple.
+        # The ladder map pool. Each entry is an (id, name, filename) tuple.
         self.ladder_maps = set()
 
         # Temporary proxy for the ladder service
@@ -73,11 +73,11 @@ class GameService:
         async with db.db_pool.get() as conn:
             cursor = await conn.cursor()
 
-            await cursor.execute("SELECT `id`, `gamemod`, `name`, description, publish FROM game_featuredMods")
+            await cursor.execute("SELECT `id`, `gamemod`, `name`, description, publish, `order` FROM game_featuredMods")
 
             for i in range(0, cursor.rowcount):
-                id, name, full_name, description, publish = await cursor.fetchone()
-                self.featured_mods[name] = FeaturedMod(id, name, full_name, description, publish)
+                id, name, full_name, description, publish, order = await cursor.fetchone()
+                self.featured_mods[name] = FeaturedMod(id, name, full_name, description, publish, order)
 
             await cursor.execute("SELECT id FROM table_mod WHERE ranked = 1")
 
@@ -86,7 +86,11 @@ class GameService:
             self.ranked_mods = set(map(lambda x: x[0], rows))
 
             # Load all ladder maps
-            await cursor.execute("SELECT ladder_map.idmap, table_map.name FROM ladder_map INNER JOIN table_map ON table_map.id = ladder_map.idmap")
+            await cursor.execute("SELECT ladder_map.idmap, "
+                                 "table_map.name, "
+                                 "table_map.filename "
+                                 "FROM ladder_map "
+                                 "INNER JOIN table_map ON table_map.id = ladder_map.idmap")
             self.ladder_maps = await cursor.fetchall()
 
             for mod in self.featured_mods.values():
@@ -165,6 +169,15 @@ class GameService:
                 if game.state == GameState.LIVE]
 
     @property
+    def open_games(self):
+        return [game for game in self.games.values()
+                if game.state == GameState.LOBBY]
+
+    @property
+    def all_games(self):
+        return self.games.values()
+
+    @property
     def pending_games(self):
         return [game for game in self.games.values()
                 if game.state == GameState.LOBBY or game.state == GameState.INITIALIZING]
@@ -179,6 +192,7 @@ class GameService:
                 'command': 'mod_info',
                 'publish': mod.publish,
                 'name': name,
+                'order': mod.order,
                 'fullname': mod.full_name,
                 'desc': mod.description
             })

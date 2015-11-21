@@ -31,18 +31,8 @@ class LadderService:
                 if league:
                     return league
 
-    @asyncio.coroutine
     def addPlayer(self, player):
         if player not in self.players:
-            league = yield from self.getLeague(config.LADDER_SEASON, player)
-            if not league:
-                with (yield from db.db_pool) as conn:
-                    with (yield from conn.cursor()) as cursor:
-                        yield from cursor.execute("INSERT INTO %s (`idUser` ,`league` ,`score`) "
-                                                  "VALUES (%s, 1, 0)", (config.LADDER_SEASON, player.id))
-
-            player.league = league
-
             self.players.append(player)
             player.state = PlayerState.SEARCHING_LADDER
             mean, deviation = player.ladder_rating
@@ -52,26 +42,23 @@ class LadderService:
             elif deviation > 250:
                 progress = (500.0 - deviation) / 2.5
                 player.lobby_connection.sendJSON(dict(command="notice", style="info", text="The system is still learning you. <b><br><br>The learning phase is " + str(progress)+"% complete<b>"))
-            
-            return 1
-        return 0
-    
+
     def getMatchQuality(self, player1: Player, player2: Player):
         return trueskill.quality_1vs1(player1.ladder_rating, player2.ladder_rating)
 
-    @asyncio.coroutine
-    def startGame(self, player1, player2):
+    async def start_game(self, player1, player2):
         player1.state = PlayerState.HOSTING
         player2.state = PlayerState.JOINING
 
-        (map_id, map_path) = random.choice(self.game_service.ladder_maps)
+        (map_id, map_name, map_path) = random.choice(self.game_service.ladder_maps)
 
         game = LadderGame(self.game_service.createUuid(), self.game_service, self.game_stats_service)
+        self.game_service.games[game.id] = game
 
         player1.game = game
         player2.game = game
 
-        game.map_file_path = map_path
+        game.map_path = map_path
 
         # Host is player 1
         game.host = player1
@@ -79,23 +66,24 @@ class LadderService:
 
         game.set_player_option(player1.id, 'StartSpot', 1)
         game.set_player_option(player2.id, 'StartSpot', 2)
+        game.set_player_option(player1.id, 'Army', 1)
+        game.set_player_option(player2.id, 'Army', 2)
 
         # Remembering that "Team 1" corresponds to "-": the non-team.
         game.set_player_option(player1.id, 'Team', 2)
         game.set_player_option(player2.id, 'Team', 3)
 
-        # player 2 will be in game
-        
-        #warn both players
-        json = {
+        launch_command = {
             "command": "game_launch",
             "mod": game.game_mode,
-            "mapname": map_path,
+            "mapname": map_path[5:-4],  # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
+                                        # Really in the future, just send a better description
             "mapid": map_id,
             "reason": "ranked",
             "uid": game.id,
             "args": ["/players 2", "/team 1"]
         }
 
-        player1.lobby_connection.sendJSON(json)
-
+        player1.lobby_connection.sendJSON(launch_command)
+        await asyncio.sleep(4)
+        player2.lobby_connection.sendJSON(launch_command)

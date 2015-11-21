@@ -3,30 +3,35 @@ from collections import OrderedDict
 from concurrent.futures import CancelledError
 from pybloom import ScalableBloomFilter
 
+import server
 from server.decorators import with_logger
 from .search import Search
 
 
 @with_logger
 class MatchmakerQueue:
-    def __init__(self, queue_name: str, player_service: "PlayerService"):
+    def __init__(self, queue_name: str, player_service: "PlayerService", game_service: "GameService"):
         self.player_service = player_service
+        self.game_service = game_service
         self.queue_name = queue_name
         self.rating_prop = 'ladder_rating'
         self.queue = OrderedDict()
-        self.filter = ScalableBloomFilter(mode=ScalableBloomFilter.SMALL_SET_GROWTH)
-        self._logger.info("MatchmakerQueue initialized for {}, using bloom filter: {}".format(queue_name, self.filter))
+        self._logger.info("MatchmakerQueue initialized for {}".format(queue_name))
 
-    def notify_potential_opponents(self, search: Search):
+    def notify_potential_opponents(self, search: Search, potential=True):
         """
         Notify opponents who might potentially match the given search object
-        :param search:
+        :param search: search object to notify for
+        :param potential: Whether or not we've started or stopped searching
         :return:
         """
         self._logger.info("Notifying potential opponents")
         for opponent in self.player_service.players.values():
-            if {search.player, opponent} in self.filter:
-                opponent.notify_potential_match(search.player)
+            if opponent == search.player:
+                continue
+            quality = search.quality_with(opponent)
+            if quality >= search.match_threshold:
+                opponent.notify_potential_match(search.player, potential)
 
     def push(self, search: Search):
         """
@@ -44,7 +49,6 @@ class MatchmakerQueue:
         :param s2:
         :return:
         """
-        self.filter.add({s1.player, s2.player})
         if (s1.is_matched or s2.is_matched) or (s1.is_cancelled or s2.is_cancelled):
             return
         s1.match(s2)
@@ -53,12 +57,12 @@ class MatchmakerQueue:
             del self.queue[s1.player]
         if s2.player in self.queue:
             del self.queue[s2.player]
+        asyncio.ensure_future(self.game_service.ladder_service.start_game(s1.player, s2.player))
 
     def __len__(self):
         return self.queue.__len__()
 
-    @asyncio.coroutine
-    def search(self, player, start_time=None, search=None):
+    async def search(self, player, start_time=None, search=None):
         """
         Search for a match.
 
@@ -69,30 +73,29 @@ class MatchmakerQueue:
         :param player: Player to search for a matchup for
         """
         search = search or Search(player, start_time)
-        try:
-            self._logger.debug("Searching for matchup for {}".format(player))
-            for opponent, opponent_search in self.queue.items():
-                if opponent == player:
-                    continue
-                if {player, opponent} in self.filter\
-                        or search.matches_with(opponent_search):
-                    self.match(search, opponent_search)
-                    return
+        with server.stats.timer('matchmaker.search'):
+            try:
+                self._logger.debug("Searching for matchup for {}".format(player))
+                for opponent, opponent_search in self.queue.items():
+                    if opponent == player:
+                        continue
 
-                quality = search.quality_with(player)
-                threshold = search.match_threshold
-                self._logger.debug("Game quality between {} and {}: {} (threshold: {})"
-                                  .format(player, opponent, quality, threshold))
-                if quality >= threshold:
-                    self.match(search, opponent_search)
-                    return
+                    quality = search.quality_with(player)
+                    threshold = search.match_threshold
+                    self._logger.debug("Game quality between {} and {}: {} (threshold: {})"
+                                        .format(player, opponent, quality, threshold))
+                    if quality >= threshold:
+                        self.match(search, opponent_search)
+                        return
 
-            self.notify_potential_opponents(search)
+                self.notify_potential_opponents(search, True)
 
-            self._logger.debug("Found nobody searching, created new search object in queue: {}".format(search))
-            self.queue[player] = search
-            yield from search.await_match()
-        except CancelledError:
-            del self.queue[search.player]
-            pass
+                self._logger.debug("Found nobody searching, pushing to queue: {}".format(search))
+                self.queue[player] = search
+                await search.await_match()
+                self._logger.debug("Search complete".format(search))
+                self.notify_potential_opponents(search, False)
+                del self.queue[search.player]
+            except CancelledError:
+                pass
 

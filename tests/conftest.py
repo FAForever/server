@@ -88,6 +88,8 @@ def pytest_pyfunc_call(pyfuncitem):
 
 @pytest.fixture(scope='session', autouse=True)
 def loop(request):
+    import server
+    server.stats = mock.MagicMock()
     return asyncio.get_event_loop()
 
 @pytest.fixture

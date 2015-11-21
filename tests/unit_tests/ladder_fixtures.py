@@ -9,7 +9,7 @@ from server.players import Player
 
 @pytest.fixture()
 def map_pool():
-    return [(1, 'scmp_001'), (5, 'scmp_05'), (10, 'scmp_010'), (12, 'scmp_012'), (11, 'scmp_0011')]
+    return [(1, '', 'scmp_001'), (5, '', 'scmp_05'), (10, '', 'scmp_010'), (12, '', 'scmp_012'), (11, '', 'scmp_0011')]
 
 def playerMock(lobbythread, id):
     player_mock = mock.create_autospec(spec=Player(''))

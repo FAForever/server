@@ -2,6 +2,7 @@ import logging
 
 import trueskill
 from configobj import ConfigObj
+import os
 
 Config = ConfigObj("/etc/faforever/faforever.conf").get('global', {})
 
@@ -16,12 +17,13 @@ LIBRARY_PATH = Config.get('library_path', None)
 
 logging.info("Setting default log level {}".format(LOG_LEVEL))
 
-logging.getLogger('quamash').setLevel(logging.INFO)
-logging.getLogger('server.subscribable').setLevel(logging.INFO)
+logging.getLogger('aiomeasures').setLevel(logging.INFO)
 
 logging.getLogger().setLevel(logging.DEBUG)
 
 trueskill.setup(mu=1500, sigma=500, beta=250, tau=5, draw_probability=0.10)
+
+STATSD_SERVER = os.getenv('STATSD_SERVER', '127.0.0.1:8125')
 
 RULE_LINK = Config.get('rule_url', 'http://forums.faforever.com/forums/viewtopic.php?f=2&t=581#p5710')
 WIKI_LINK = Config.get('wiki_url', 'http://wiki.faforever.com')

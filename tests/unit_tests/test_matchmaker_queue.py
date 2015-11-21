@@ -1,14 +1,15 @@
-from concurrent.futures import CancelledError
+from concurrent.futures import CancelledError, TimeoutError
 from unittest.mock import Mock
 import asyncio
 import pytest
 from server.matchmaker import MatchmakerQueue, Search
 from server.players import Player
+from tests.utils import CoroMock
 
 
 @pytest.fixture
-def matchmaker_queue(player_service):
-    return MatchmakerQueue('test_queue', player_service)
+def matchmaker_queue(player_service, game_service):
+    return MatchmakerQueue('test_queue', player_service, Mock())
 
 @pytest.fixture
 def matchmaker_players():
@@ -46,19 +47,6 @@ def test_search_await(mocker, loop, matchmaker_players):
     assert await_coro.done()
 
 @asyncio.coroutine
-def test_queue_push(mocker, player_service, matchmaker_queue, matchmaker_players):
-    p1, p2, _, _, _ = matchmaker_players
-    player_service.players = {p1.id: p1, p2.id:p2}
-
-    p1.on_matched_with = Mock()
-    p2.on_matched_with = Mock()
-    asyncio.async(matchmaker_queue.search(p1))
-    yield from matchmaker_queue.search(p2)
-
-    p1.on_matched_with.assert_called_with(p2)
-    p2.on_matched_with.assert_called_with(p1)
-
-@asyncio.coroutine
 def test_queue_race(mocker, player_service, matchmaker_queue):
     p1, p2, p3 = Player('Dostya', id=1, ladder_rating=(2300, 150)), \
                  Player('Brackman', id=2, ladder_rating=(2200, 150)), \
@@ -66,14 +54,13 @@ def test_queue_race(mocker, player_service, matchmaker_queue):
 
     player_service.players = {p1.id: p1, p2.id:p2, p3.id:p3}
 
-    p1.on_matched_with = Mock()
-    p2.on_matched_with = Mock()
-    p3.on_matched_with = Mock()
-
     s1, s2 = Search(p1), Search(p2)
 
     matchmaker_queue.push(s1)
     matchmaker_queue.push(s2)
+
+    matchmaker_queue.game_service.ladder_service.start_game = CoroMock()
+
 
     try:
         yield from asyncio.gather(matchmaker_queue.search(p1, search=s1),
@@ -82,8 +69,6 @@ def test_queue_race(mocker, player_service, matchmaker_queue):
     except (TimeoutError, CancelledError):
         pass
 
-    p1.on_matched_with.assert_called_with(p2)
-    p2.on_matched_with.assert_called_with(p1)
     assert len(matchmaker_queue) == 1
 
 @asyncio.coroutine
