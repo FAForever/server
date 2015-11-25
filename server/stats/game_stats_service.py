@@ -56,7 +56,7 @@ class GameStatsService:
 
         self._category_stats(unit_stats, survived, a_queue, e_queue)
         self._faction_played(faction, survived, a_queue, e_queue)
-        self._killed_acus(unit_stats['cdr']['kills'], survived, a_queue)
+        self._killed_acus(unit_stats['cdr']['killed'], survived, a_queue)
         self._built_mercies(self._count(unit_stats, lambda x: x['built'], Unit.MERCY), a_queue)
         self._built_fire_beetles(self._count(unit_stats, lambda x: x['built'], Unit.FIRE_BEETLE), a_queue)
         self._built_salvations(self._count(unit_stats, lambda x: x['built'], Unit.SALVATION), survived, a_queue)
