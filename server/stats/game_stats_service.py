@@ -91,22 +91,22 @@ class GameStatsService:
         built_experimentals = unit_stats['experimental']['built']
 
         self._record_event(EVENT_BUILT_AIR_UNITS, built_air, events_queue)
-        self._record_event(EVENT_FALLEN_AIR_UNITS, unit_stats['air']['lost'], events_queue)
+        self._record_event(EVENT_LOST_AIR_UNITS, unit_stats['air']['lost'], events_queue)
         self._record_event(EVENT_BUILT_LAND_UNITS, built_land, events_queue)
-        self._record_event(EVENT_FALLEN_LAND_UNITS, unit_stats['land']['lost'], events_queue)
+        self._record_event(EVENT_LOST_LAND_UNITS, unit_stats['land']['lost'], events_queue)
         self._record_event(EVENT_BUILT_NAVAL_UNITS, built_naval, events_queue)
-        self._record_event(EVENT_FALLEN_NAVAL_UNITS, unit_stats['naval']['lost'], events_queue)
-        self._record_event(EVENT_FALLEN_ACUS, unit_stats['cdr']['lost'], events_queue)
+        self._record_event(EVENT_LOST_NAVAL_UNITS, unit_stats['naval']['lost'], events_queue)
+        self._record_event(EVENT_LOST_ACUS, unit_stats['cdr']['lost'], events_queue)
         self._record_event(EVENT_BUILT_TECH_1_UNITS, unit_stats['tech1']['built'], events_queue)
-        self._record_event(EVENT_FALLEN_TECH_1_UNITS, unit_stats['tech1']['lost'], events_queue)
+        self._record_event(EVENT_LOST_TECH_1_UNITS, unit_stats['tech1']['lost'], events_queue)
         self._record_event(EVENT_BUILT_TECH_2_UNITS, unit_stats['tech2']['built'], events_queue)
-        self._record_event(EVENT_FALLEN_TECH_2_UNITS, unit_stats['tech2']['lost'], events_queue)
+        self._record_event(EVENT_LOST_TECH_2_UNITS, unit_stats['tech2']['lost'], events_queue)
         self._record_event(EVENT_BUILT_TECH_3_UNITS, unit_stats['tech3']['built'], events_queue)
-        self._record_event(EVENT_FALLEN_TECH_3_UNITS, unit_stats['tech3']['lost'], events_queue)
+        self._record_event(EVENT_LOST_TECH_3_UNITS, unit_stats['tech3']['lost'], events_queue)
         self._record_event(EVENT_BUILT_EXPERIMENTALS, built_experimentals, events_queue)
-        self._record_event(EVENT_FALLEN_EXPERIMENTALS, unit_stats['experimental']['lost'], events_queue)
+        self._record_event(EVENT_LOST_EXPERIMENTALS, unit_stats['experimental']['lost'], events_queue)
         self._record_event(EVENT_BUILT_ENGINEERS, unit_stats['engineer']['built'], events_queue)
-        self._record_event(EVENT_FALLEN_ENGINEERS, unit_stats['engineer']['lost'], events_queue)
+        self._record_event(EVENT_LOST_ENGINEERS, unit_stats['engineer']['lost'], events_queue)
 
         if survived:
             if built_air > built_land and built_air > built_naval:
