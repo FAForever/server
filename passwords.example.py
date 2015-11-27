@@ -18,5 +18,5 @@ MAIL_PASSWORD = ""
 
 API_CLIENT_ID = "6ccaf75b-a1f3-48be-bac3-4e9ffba81eb7"
 API_CLIENT_SECRET = "banana"
-API_TOKEN_URI = "http://dev.faforever.com:8090/jwt/auth"
-API_BASE_URL = "http://localhost:8080/jwt"
+API_TOKEN_URI = "http://api.dev.faforever.com/jwt/auth"
+API_BASE_URL = "http://api.dev.faforever.com/jwt"
