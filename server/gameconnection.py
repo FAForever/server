@@ -433,7 +433,7 @@ class GameConnection(GpgNetServerProtocol):
                 if values[0] == "uids":
                     uids = values[1].split()
                     self.game.mods = {uid: "Unknown sim mod" for uid in uids}
-                    with await db.db_pool.get() as conn:
+                    async with db.db_pool.get() as conn:
                         cursor = await conn.cursor()
                         await cursor.execute("SELECT uid, name from table_mod WHERE uid in %s", (uids,))
                         mods = await cursor.fetchall()
@@ -534,7 +534,7 @@ class GameConnection(GpgNetServerProtocol):
                 await self.game.launch()
 
                 if len(self.game.mods) > 0:
-                    with await db.db_pool.get() as conn:
+                    async with db.db_pool.get() as conn:
                         cursor = await conn.cursor()
                         await cursor.execute("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid in %s",
                                              (self.game.mods.keys(),))
