@@ -86,9 +86,9 @@ The test is as follows:
 * The server will send a UDP packet to the client's address on the requested port, containing the following data:
 
 
-    \x08Are you public? <user_id>
+    \x08Are you public? {user_id}
 
-Where `<user_id>` is the user ID of the signed in user.
+Where `{user_id}` is the user ID of the signed in user.
 
 On receipt of a UDP packet of the given form, the client must send the following
 response:
