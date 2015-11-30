@@ -8,7 +8,7 @@ import functools
 import json
 import config
 from server.abc.base_game import GameConnectionState
-from server.connectivity import TestPeer, ConnectivityState
+from server.connectivity import ConnectivityTest, ConnectivityState
 from server.games.game import Game, GameState, Victory
 from server.decorators import with_logger, timed
 from server.game_service import GameService
@@ -26,7 +26,32 @@ class AuthenticationError(Exception):
 
 
 @with_logger
-class GameConnection(GpgNetServerProtocol):
+class NatHelper:
+    def __init__(self):
+        self.nat_packets = {}
+
+    async def wait_for_natpacket(self, message, sender=None):
+        fut = asyncio.Future()
+        self.nat_packets[message] = fut
+        self._logger.info("Awaiting nat packet {} from {}".format(message, sender or 'anywhere'))
+        addr, msg = await fut
+        if fut.done():
+            self._logger.info("Received {} from {}".format(msg, addr))
+            if (addr == sender or sender is None) and msg == message:
+                return addr, msg
+        else:
+            return False
+
+    def process_nat_packet(self, address, message):
+        self._logger.info("<<{}: {}".format(address, message))
+        if message in self.nat_packets and isinstance(self.nat_packets[message], asyncio.Future):
+            if not self.nat_packets[message].done():
+                self.nat_packets[message].set_result((address, message))
+                del self.nat_packets[message]
+
+
+@with_logger
+class GameConnection(GpgNetServerProtocol, NatHelper):
     """
     Responsible for connections to the game, using the GPGNet protocol
     """
@@ -62,7 +87,6 @@ class GameConnection(GpgNetServerProtocol):
         self.ip, self.port = None, None
         self.lobby = None
         self._transport = None
-        self.nat_packets = {}
         self.ping_task = None
 
         self._connectivity_state = asyncio.Future()
@@ -158,10 +182,10 @@ class GameConnection(GpgNetServerProtocol):
         appropriately
         """
         try:
-            with TestPeer(self,
-                          self.player.ip,
-                          self.player.game_port,
-                          self.player.id) as peer_test:
+            with ConnectivityTest(self,
+                                  self.player.ip,
+                                  self.player.game_port,
+                                  self.player.id) as peer_test:
                 peer_status = yield from peer_test.determine_connectivity()
                 if self._connectivity_state.cancelled():
                     return
@@ -204,18 +228,6 @@ class GameConnection(GpgNetServerProtocol):
                     self._waiters[cmd_id].remove(waiter)
         except ValueError as ex:  # pragma: no cover
             self.log.error("Garbage command {} {}".format(ex, message))
-
-    async def wait_for_natpacket(self, message, sender=None):
-        fut = asyncio.Future()
-        self.nat_packets[message] = fut
-        self._logger.info("Awaiting nat packet {} from {}".format(message, sender or 'anywhere'))
-        addr, msg = await fut
-        if fut.done():
-            self._logger.info("Received {} from {}".format(msg, addr))
-            if (addr == sender or sender is None) and msg == message:
-                return addr, msg
-        else:
-            return False
 
     async def ConnectToHost(self, peer):
         """
@@ -338,11 +350,7 @@ class GameConnection(GpgNetServerProtocol):
         try:
             if command == 'ProcessNatPacket':
                 address, message = args[0], args[1]
-                self._logger.info("{}.ProcessNatPacket: {} {}".format(self, args[0], args[1]))
-                if message in self.nat_packets and isinstance(self.nat_packets[message], asyncio.Future):
-                    if not self.nat_packets[message].done():
-                        self.nat_packets[message].set_result((address, message))
-                        del self.nat_packets[message]
+                self.process_nat_packet(address, message)
 
             elif command == 'Desync':
                 self.game.desyncs += 1

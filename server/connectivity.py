@@ -41,7 +41,7 @@ Connectivity = namedtuple('Connectivity', ['addr', 'state'])
 
 
 @with_logger
-class TestPeer:
+class ConnectivityTest:
     """
     Determine the connectivity state of a single peer.
     """
@@ -54,7 +54,7 @@ class TestPeer:
         """
         :return: None
         """
-        super(TestPeer, self).__init__()
+        super(ConnectivityTest, self).__init__()
         self.connection = connection
         self.connectivity_state = None
         self.remote_addr = (host, port)

@@ -84,7 +84,7 @@ def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, pla
     """
     :type game_connection: GameConnection
     """
-    with mock.patch('server.gameconnection.TestPeer') as peer_test:
+    with mock.patch('server.gameconnection.ConnectivityTest') as peer_test:
         fut = asyncio.Future()
         fut.set_result(Connectivity(addr='127.0.0.1:6112', state=ConnectivityState.PUBLIC))
         peer_test().__enter__().determine_connectivity.return_value = fut
@@ -101,7 +101,7 @@ def test_handle_action_GameState_lobby_calls_ConnectToHost(game_connection, loop
     """
     :type game_connection: GameConnection
     """
-    with mock.patch('server.gameconnection.TestPeer') as peer_test:
+    with mock.patch('server.gameconnection.ConnectivityTest') as peer_test:
         fut = asyncio.Future()
         fut.set_result(LOCAL_PUBLIC)
         peer_test().__enter__().determine_connectivity.return_value = fut
