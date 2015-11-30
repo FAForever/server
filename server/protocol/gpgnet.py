@@ -101,7 +101,7 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
         self.on_ProcessNatPacket(arguments[0], arguments[1])
 
     def send_gpgnet_message(self, command_id, arguments):
-        message = {"key": command_id, "commands": arguments}
+        message = {"command": command_id, "args": arguments}
         self.send_message(message)
 
     @abstractmethod

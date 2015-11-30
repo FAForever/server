@@ -43,7 +43,6 @@ class GameConnection(GpgNetServerProtocol):
         """
         super().__init__()
         self.lobby_connection = lobby_connection
-        self.protocol = None
         self._logger.info('GameConnection initializing')
         self._state = GameConnectionState.INITIALIZING
         self._waiters = defaultdict(list)
@@ -60,7 +59,6 @@ class GameConnection(GpgNetServerProtocol):
 
         self.last_pong = time.time()
 
-        self._authenticated = asyncio.Future()
         self.ip, self.port = None, None
         self.lobby = None
         self._transport = None
@@ -98,55 +96,9 @@ class GameConnection(GpgNetServerProtocol):
     def player(self, val):
         self._player = val
 
-    @asyncio.coroutine
-    def on_connection_made(self, protocol, peer_name):
-        """
-        Accept a connected socket for this GameConnection
-
-        Will look up the user using the provided users service,
-        followed by obtaining the Game object that the user wishes to join.
-        :raise AssertionError
-        :return: bool
-        """
-        self._logger.debug("Accepting connection from {}".format(peer_name))
-        self.protocol = protocol
-        (self.ip, self.port) = peer_name
-
-    @asyncio.coroutine
-    def authenticate(self, session, player_id):
-        """
-        Perform very rudimentary authentication.
-
-        For now, this exists primarily to avoid conditions with players,
-        behind the same public address which would cause problems with the old design.
-        """
-        self.player = self.player_service[player_id]
-        assert self.player
-        if self.player.session != session:
-            raise AuthenticationError(
-                "Player attempted to authenticate with game connection with mismatched id/session pair.")
-
-        if not self.player.lobby_connection:
-            raise AuthenticationError("Player {} has no active lobby session".format(self.player))
-
-        self.log.debug("Resolved user to {} through lookup by {}:{}".format(self.player, player_id, session))
-
-        if not self.player.game:
-            raise AuthenticationError("Player {} hasn't indicated that he wants to join a game".format(self.player))
-
-        self.game = self.player.game
-        self.player.game_connection = self
-
-        self.ping_task = asyncio.async(self.ping())
-        self._state = GameConnectionState.INITIALIZED
-        self._authenticated.set_result(session)
-
     def send_message(self, message):
-        if self.protocol:
-            self.protocol.send_message(message)
-        if self.lobby_connection:
-            self.lobby_connection.send({**message,
-                                        'target': 'game'})
+        self.lobby_connection.send({**message,
+                                    'target': 'game'})
 
     @asyncio.coroutine
     def ping(self):
@@ -384,20 +336,7 @@ class GameConnection(GpgNetServerProtocol):
         :return: None
         """
         try:
-            if command == 'Authenticate':
-                await self.authenticate(int(args[0]), int(args[1]))
-            elif not self._authenticated.done():
-                async def queue_until_authed():
-                    await self._authenticated
-                    await self.handle_action(command, args)
-
-                asyncio.ensure_future(queue_until_authed())
-                return
-            elif command == 'pong':
-                self.last_pong = time.time()
-                return
-
-            elif command == 'ProcessNatPacket':
+            if command == 'ProcessNatPacket':
                 address, message = args[0], args[1]
                 self._logger.info("{}.ProcessNatPacket: {} {}".format(self, args[0], args[1]))
                 if message in self.nat_packets and isinstance(self.nat_packets[message], asyncio.Future):

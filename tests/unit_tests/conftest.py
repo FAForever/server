@@ -23,8 +23,6 @@ def game_connection(request, game, loop, player_service, players, game_service, 
     conn.player = players.hosting
     conn.game = game
     conn.lobby = mock.Mock(spec=LobbyConnection)
-    conn._authenticated = asyncio.Future()
-    conn._authenticated.set_result(42)
 
     def fin():
         conn.abort()
