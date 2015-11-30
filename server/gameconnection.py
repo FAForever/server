@@ -31,16 +31,18 @@ class GameConnection(GpgNetServerProtocol):
     Responsible for connections to the game, using the GPGNet protocol
     """
 
-    def __init__(self, loop, player_service, games: GameService):
+    def __init__(self, loop, lobby_connection, player_service, games: GameService):
         """
         Construct a new GameConnection
 
         :param loop: asyncio event loop to use
+        :param lobby_connection: The lobby connection we're associated with
         :param player_service: PlayerService
         :param games: GamesService
         :return:
         """
         super().__init__()
+        self.lobby_connection = lobby_connection
         self.protocol = None
         self._logger.info('GameConnection initializing')
         self._state = GameConnectionState.INITIALIZING
@@ -140,7 +142,11 @@ class GameConnection(GpgNetServerProtocol):
         self._authenticated.set_result(session)
 
     def send_message(self, message):
-        self.protocol.send_message(message)
+        if self.protocol:
+            self.protocol.send_message(message)
+        if self.lobby_connection:
+            self.lobby_connection.send({**message,
+                                        'target': 'game'})
 
     @asyncio.coroutine
     def ping(self):
@@ -370,47 +376,45 @@ class GameConnection(GpgNetServerProtocol):
         except (CancelledError, asyncio.TimeoutError):
             return None
 
-    async def handle_action(self, key, values):
+    async def handle_action(self, command, args):
         """
         Handle GpgNetSend messages, wrapped in the JSON protocol
-        :param key: command type
-        :param values: command parameters
-        :type key str
-        :type values list
+        :param command: command type
+        :param arguments: command arguments
         :return: None
         """
         try:
-            if key == 'Authenticate':
-                await self.authenticate(int(values[0]), int(values[1]))
+            if command == 'Authenticate':
+                await self.authenticate(int(args[0]), int(args[1]))
             elif not self._authenticated.done():
                 async def queue_until_authed():
                     await self._authenticated
-                    await self.handle_action(key, values)
+                    await self.handle_action(command, args)
 
                 asyncio.ensure_future(queue_until_authed())
                 return
-            elif key == 'pong':
+            elif command == 'pong':
                 self.last_pong = time.time()
                 return
 
-            elif key == 'ProcessNatPacket':
-                address, message = values[0], values[1]
-                self._logger.info("{}.ProcessNatPacket: {} {}".format(self, values[0], values[1]))
+            elif command == 'ProcessNatPacket':
+                address, message = args[0], args[1]
+                self._logger.info("{}.ProcessNatPacket: {} {}".format(self, args[0], args[1]))
                 if message in self.nat_packets and isinstance(self.nat_packets[message], asyncio.Future):
                     if not self.nat_packets[message].done():
                         self.nat_packets[message].set_result(address)
 
-            elif key == 'Desync':
+            elif command == 'Desync':
                 self.game.desyncs += 1
 
-            elif key == 'GameState':
-                state = values[0]
+            elif command == 'GameState':
+                state = args[0]
                 await self.handle_game_state(state)
                 self._mark_dirty()
 
-            elif key == 'GameOption':
-                option_key = values[0]
-                option_value = values[1]
+            elif command == 'GameOption':
+                option_key = args[0]
+                option_value = args[1]
                 if option_key == 'Victory':
                     self.game.gameOptions['Victory'] = Victory.from_gpgnet_string(option_value)
                 elif option_key in self.game.gameOptions:
@@ -425,13 +429,13 @@ class GameConnection(GpgNetServerProtocol):
                     self.game.map_file_path = str(path.split('/')[2]).lower()
                 self._mark_dirty()
 
-            elif key == 'GameMods':
-                if values[0] == "activated":
-                    if values[1] == 0:
+            elif command == 'GameMods':
+                if args[0] == "activated":
+                    if args[1] == 0:
                         self.game.mods = {}
 
-                if values[0] == "uids":
-                    uids = values[1].split()
+                if args[0] == "uids":
+                    uids = args[1].split()
                     self.game.mods = {uid: "Unknown sim mod" for uid in uids}
                     async with db.db_pool.get() as conn:
                         cursor = await conn.cursor()
@@ -441,31 +445,31 @@ class GameConnection(GpgNetServerProtocol):
                             self.game.mods[uid] = name
                 self._mark_dirty()
 
-            elif key == 'PlayerOption':
+            elif command == 'PlayerOption':
                 if self.player.state == PlayerState.HOSTING:
-                    id = values[0]
-                    key = values[1]
-                    value = values[2]
-                    self.game.set_player_option(int(id), key, value)
+                    id = args[0]
+                    command = args[1]
+                    value = args[2]
+                    self.game.set_player_option(int(id), command, value)
                     self._mark_dirty()
 
-            elif key == 'AIOption':
+            elif command == 'AIOption':
                 if self.player.state == PlayerState.HOSTING:
-                    name = values[0]
-                    key = values[1]
-                    value = values[2]
-                    self.game.set_ai_option(str(name), key, value)
+                    name = args[0]
+                    command = args[1]
+                    value = args[2]
+                    self.game.set_ai_option(str(name), command, value)
                     self._mark_dirty()
 
-            elif key == 'ClearSlot':
+            elif command == 'ClearSlot':
                 if self.player.state == PlayerState.HOSTING:
-                    slot = values[0]
+                    slot = args[0]
                     self.game.clear_slot(slot)
                 self._mark_dirty()
 
-            elif key == 'GameResult':
-                army = int(values[0])
-                result = str(values[1])
+            elif command == 'GameResult':
+                army = int(args[0])
+                result = str(args[1])
                 try:
                     if not any(map(functools.partial(str.startswith, result),
                                    ['score', 'defeat', 'victory', 'draw'])):
@@ -476,9 +480,9 @@ class GameConnection(GpgNetServerProtocol):
                     self.log.warn("Invalid result for {} reported: {}".format(army, result))
                     pass
 
-            elif key == 'OperationComplete':
-                if int(values[0]) == 1:
-                    secondary, delta = int(values[1]), str(values[2])
+            elif command == 'OperationComplete':
+                if int(args[0]) == 1:
+                    secondary, delta = int(args[1]), str(args[2])
                     with await db.db_pool.get() as conn:
                         cursor = await conn.cursor()
                         # FIXME: Resolve used map earlier than this
@@ -493,8 +497,8 @@ class GameConnection(GpgNetServerProtocol):
                                              "(`mission`, `gameuid`, `secondary`, `time`) "
                                              "VALUES (%s, %s, %s, %s);",
                                              (mission, self.game.id, secondary, delta))
-            elif key == 'JsonStats':
-                await self.game.report_army_stats(values[0])
+            elif command == 'JsonStats':
+                await self.game.report_army_stats(args[0])
 
 
         except AuthenticationError as e:

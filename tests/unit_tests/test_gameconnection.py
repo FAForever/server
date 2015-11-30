@@ -82,7 +82,7 @@ def test_abort(game_connection, game, players):
 @asyncio.coroutine
 def test_handle_action_GameState_idle_adds_connection(game_connection, players, game):
     players.joining.game = game
-    game_connection.protocol = mock.Mock()
+    game_connection.lobby_connection = mock.Mock()
     game_connection.player = players.hosting
     game_connection.game = game
 
@@ -263,12 +263,10 @@ def test_ConnectToHost_public_stun(loop, connections, players):
 
     result = asyncio.async(peer_conn.ConnectToHost(host_conn))
     yield from asyncio.sleep(0.5)
-    asyncio.async(host_conn.handle_action('ProcessNatPacket',
-                            [peer_conn.player.address_and_port,
-                             "Hello from {}".format(peer_conn.player.id)]))
-    asyncio.async(peer_conn.handle_action('ProcessNatPacket',
-                            [host_conn.player.address_and_port,
-                             "Hello from {}".format(host_conn.player.id)]))
+    asyncio.async(host_conn.handle_action('ProcessNatPacket', [peer_conn.player.address_and_port,
+                                                               "Hello from {}".format(peer_conn.player.id)]))
+    asyncio.async(peer_conn.handle_action('ProcessNatPacket', [host_conn.player.address_and_port,
+                                                               "Hello from {}".format(host_conn.player.id)]))
     yield from result
     peer_conn.send_SendNatPacket.assert_any_call(host_conn.player.address_and_port,
                                                     "Hello from {}".format(peer_conn.player.id))

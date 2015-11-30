@@ -26,6 +26,7 @@ from Crypto.Cipher import AES
 import pygeoip
 
 import server
+from server import GameConnection
 from server.matchmaker import Search
 from server.decorators import timed, with_logger
 from server.games.game import GameState, VisibilityState
@@ -75,8 +76,8 @@ class LobbyConnection:
         self.ladderPotentialPlayers = []
         self.warned = False
         self._authenticated = False
-        self.player = None
-        self.missedPing = 0
+        self.player = None  # type: Player
+        self.game_connection = None  # type: GameConnection
         self.leagueAvatar = None
         self.ip = None
         self.port = None
@@ -104,19 +105,28 @@ class LobbyConnection:
         self.protocol.writer.write_eof()
         self.protocol.reader.feed_eof()
 
+    def ensure_authenticated(self, cmd):
+        if not self._authenticated:
+            if cmd not in ['hello', 'ask_session', 'create_account', 'ping', 'pong']:
+                self.abort("Message invalid for unauthenticated connection: %s" % cmd)
+                return False
+        return True
+
     @asyncio.coroutine
     def on_message_received(self, message):
         """
         Dispatches incoming messages
         """
+        self._logger.debug("<<: {}".format(message))
         try:
             cmd = message['command']
-            if not isinstance(cmd, str):
-                raise ValueError("Command is not a string")
-            if not self._authenticated:
-                if cmd not in ['hello', 'ask_session', 'create_account', 'ping', 'pong']:
-                    self.abort("Message invalid for unauthenticated connection: %s" % cmd)
+            if not self.ensure_authenticated(cmd):
+                return
+            if message.get('target') == 'game':
+                self.game_connection.handle_action(cmd, message.get('args', []))
+                return
             handler = getattr(self, 'command_{}'.format(cmd))
+            self._logger.debug("Dispatching using {}".format(handler))
             if asyncio.iscoroutinefunction(handler):
                 yield from handler(message)
             else:
@@ -1063,14 +1073,20 @@ Thanks,\n\
         if fatal:
             self.abort(message)
 
+    def send(self, message):
+        """
+
+        :param message:
+        :return:
+        """
+        self._logger.debug(">>: {}".format(message))
+        self.protocol.send_message(message)
+
     def sendJSON(self, data_dictionary):
         """
-        Simply dumps a dictionary into a string and feeds it into the QTCPSocket
+        Deprecated alias for send
         """
-        try:
-            self.protocol.send_message(data_dictionary)
-        except Exception as ex:
-            self._logger.exception(ex)
+        self.send(data_dictionary)
 
     def on_connection_lost(self):
         if self.player:
