@@ -39,6 +39,29 @@ class ConnectivityState(Enum):
 
 Connectivity = namedtuple('Connectivity', ['addr', 'state'])
 
+@with_logger
+class NatHelper:
+    def __init__(self):
+        self.nat_packets = {}
+
+    async def wait_for_natpacket(self, message, sender=None):
+        fut = asyncio.Future()
+        self.nat_packets[message] = fut
+        self._logger.info("Awaiting nat packet {} from {}".format(message, sender or 'anywhere'))
+        addr, msg = await fut
+        if fut.done():
+            self._logger.info("Received {} from {}".format(msg, addr))
+            if (addr == sender or sender is None) and msg == message:
+                return addr, msg
+        else:
+            return False
+
+    def process_nat_packet(self, address, message):
+        self._logger.info("<<{}: {}".format(address, message))
+        if message in self.nat_packets and isinstance(self.nat_packets[message], asyncio.Future):
+            if not self.nat_packets[message].done():
+                self.nat_packets[message].set_result((address, message))
+                del self.nat_packets[message]
 
 @with_logger
 class ConnectivityTest:

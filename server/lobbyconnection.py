@@ -27,6 +27,7 @@ import pygeoip
 
 import server
 from server import GameConnection
+from server.connectivity import NatHelper
 from server.matchmaker import Search
 from server.decorators import timed, with_logger
 from server.games.game import GameState, VisibilityState
@@ -64,7 +65,7 @@ class AuthenticationError(Exception):
 
 
 @with_logger
-class LobbyConnection:
+class LobbyConnection(NatHelper):
     @timed()
     def __init__(self, loop, context=None, games: GameService=None, players: PlayerService=None, db=None):
         super(LobbyConnection, self).__init__()
