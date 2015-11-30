@@ -33,7 +33,7 @@ __copyright__ = 'Copyright (c) 2011-2015 ' + __author__
 
 __all__ = [
     'run_lobby_server',
-    'run_game_server',
+    'run_nat_server',
     'games',
     'control',
     'abc',
@@ -100,22 +100,17 @@ def run_lobby_server(address: (str, int),
     ctx = ServerContext(initialize_connection, name="LobbyServer", loop=loop)
     loop.call_later(5, report_dirty_games)
     loop.call_soon(ping_broadcast)
-    return ctx.listen(*address)
+    loop.run_until_complete(ctx.listen(*address))
+    return ctx
 
 
-def run_game_server(address: (str, int),
-                    player_service: PlayerService,
-                    games: GameService,
-                    loop):
+def run_nat_server(addr: (str, int),
+                   player_service: PlayerService,
+                   loop):
     """
     Run the game server
 
     :return (NatPacketServer, ServerContext): A pair of server objects
     """
-    nat_packet_server = NatPacketServer(loop, config.LOBBY_UDP_PORT)
-
-    def initialize_connection():
-        return GameConnection(loop, player_service, games)
-    ctx = ServerContext(initialize_connection, name='GameServer', loop=loop)
-    server = ctx.listen(*address)
-    return nat_packet_server, server
+    server = NatPacketServer(addr, loop)
+    return server.listen()

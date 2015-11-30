@@ -31,7 +31,7 @@ class ConnectivityState(Enum):
             The peer must first send an outbound packet
             before being able to receive on the inbound port
         - PROXY:
-            The peer is unable to connect by other means than proxy
+            The peer is unable to connect by other means than a TCP proxy
     """
     PUBLIC = "PUBLIC"
     STUN = "STUN"
@@ -91,11 +91,13 @@ class TestPeer:
     async def test_public(self):
         self._logger.debug("Testing PUBLIC")
         message = "Are you public? {}".format(self.identifier)
+        received_packet = self.connection.wait_for_natpacket(message)
         for i in range(0, 3):
             await send_natpacket(self.remote_addr, message)
         try:
-            result = await asyncio.wait_for(self.connection.await_natpacket("{}:{}".format(config.LOBBY_IP, config.LOBBY_UDP_PORT)), 1)
-            return result == message
+            result = await asyncio.wait_for(received_packet, 1)
+            self._logger.info("Result: {}".format(result))
+            return True
         except (CancelledError, TimeoutError):
             return False
 

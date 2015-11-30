@@ -205,16 +205,17 @@ class GameConnection(GpgNetServerProtocol):
         except ValueError as ex:  # pragma: no cover
             self.log.error("Garbage command {} {}".format(ex, message))
 
-    def await_message(self, message):
+    async def wait_for_natpacket(self, message, sender=None):
         fut = asyncio.Future()
-        self._waiters[message].append(fut)
-        return fut
-
-    async def await_natpacket(self, sender):
-        while True:
-            packet = await self.await_message('ProcessNatPacket')
-            if packet['arguments'][0] == sender:
-                return packet['arguments'][1]
+        self.nat_packets[message] = fut
+        self._logger.info("Awaiting nat packet {} from {}".format(message, sender or 'anywhere'))
+        addr, msg = await fut
+        if fut.done():
+            self._logger.info("Received {} from {}".format(msg, addr))
+            if (addr == sender or sender is None) and msg == message:
+                return addr, msg
+        else:
+            return False
 
     async def ConnectToHost(self, peer):
         """
@@ -321,10 +322,9 @@ class GameConnection(GpgNetServerProtocol):
                 ip, port = addr.split(":")
                 self.send_SendNatPacket("{}:{}".format(ip, int(port) + i), nat_message)
         try:
-            received_message = asyncio.Future()
-            peer.nat_packets[nat_message] = received_message
-            await asyncio.wait_for(received_message, 4)
-            return received_message.result()
+            waiter = self.wait_for_natpacket(nat_message)
+            address, message = await asyncio.wait_for(waiter, 4)
+            return address
         except (CancelledError, asyncio.TimeoutError):
             return None
 
@@ -341,7 +341,8 @@ class GameConnection(GpgNetServerProtocol):
                 self._logger.info("{}.ProcessNatPacket: {} {}".format(self, args[0], args[1]))
                 if message in self.nat_packets and isinstance(self.nat_packets[message], asyncio.Future):
                     if not self.nat_packets[message].done():
-                        self.nat_packets[message].set_result(address)
+                        self.nat_packets[message].set_result((address, message))
+                        del self.nat_packets[message]
 
             elif command == 'Desync':
                 self.game.desyncs += 1
@@ -499,29 +500,6 @@ class GameConnection(GpgNetServerProtocol):
                               self.player.game_port,
                               self.player.login,
                               self.player.id, 1)
-
-    async def ConnectThroughProxy(self, peer, recurse=True):
-        try:
-            n_proxy = self.game.proxy_map.map(self.player, peer.player)
-
-            if n_proxy < 0:
-                self.log.debug(self.logGame + "Maximum proxies used")  # pragma: no cover
-                await self.abort()
-
-            self.game._logger.debug("%s is connecting through proxy to %s on port %i" % (
-                self.player, peer.player, n_proxy))
-            call = (n_proxy, peer.player.ip, str(peer.player.login), int(peer.player.id))
-            self.log.debug(call)
-            self.log.debug("Game host is {}".format(self.game.host))
-            if peer.player == self.game.host:
-                self.send_JoinProxy(*call)
-            else:
-                self.send_ConnectToProxy(*call)
-
-            if recurse:
-                await peer.ConnectThroughProxy(self, False)
-        except Exception as e:  # pragma: no cover
-            self.log.exception(e)
 
     def _mark_dirty(self):
         if self.game:

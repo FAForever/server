@@ -20,23 +20,30 @@ class ServerContext:
         self.connections = {}
         self._transport = None
         self._logger.info("{} initialized with loop: {}".format(self, loop))
+        self.addr = None
 
     def __repr__(self):
         return "ServerContext({})".format(self.name)
 
-    @asyncio.coroutine
-    def listen(self, host, port):
+    async def listen(self, host, port):
+        self.addr = (host, port)
         self._logger.info("ServerContext.listen({},{})".format(host, port))
-        self._server = yield from asyncio.start_server(self.client_connected,
+        self._server = await asyncio.start_server(self.client_connected,
                                             host=host,
                                             port=port,
                                             loop=self.loop)
         return self._server
 
+    @property
+    def sockets(self):
+        return self._server.sockets
+
+    def wait_closed(self):
+        return self._server.wait_closed()
+
     def close(self):
         self._server.close()
         self._logger.info("Closed")
-        del self._server
 
     def __contains__(self, connection):
         return connection in self.connections.keys()

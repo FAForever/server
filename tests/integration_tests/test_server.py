@@ -1,33 +1,25 @@
-import asyncio
-from unittest import mock
 from unittest.mock import call
 import pytest
 import config
 
-from server import run_game_server, VisibilityState
-from server.games import Game
-from server.players import Player, PlayerState
+from server import run_nat_server, VisibilityState
 
-from tests.integration_tests.testclient import TestGPGClient
+from tests.integration_tests.testclient import TestClient
 
 slow = pytest.mark.slow
 
 TEST_ADDRESS = ('127.0.0.1', None)
 
 @pytest.fixture
-def game_server(mocker, loop, request, player_service, game_service, mock_db_pool, game_stats_service):
-    player = Player(login='Foo', session=42, id=1)
-    game = Game(1, game_service, game_stats_service, host=player)
-    # Evil hack to keep 'game' in memory.
-    player._xgame = game
-    player.game = game
-    player.ip = '127.0.0.1'
-    player.game_port = 6112
-    player.state = PlayerState.HOSTING
-    player_service.players = {1: player}
-
-    nat_server, server = run_game_server(TEST_ADDRESS, player_service, game_service, loop)
-    server = loop.run_until_complete(server)
+def nat_server(mocker,
+               loop,
+               request,
+               player_service,
+               game_service,
+               mock_db_pool,
+               game_stats_service):
+    nat_server = run_nat_server(('0.0.0.0', config.LOBBY_UDP_PORT), player_service, loop)
+    server = loop.run_until_complete(nat_server)
 
     def fin():
         server.close()
@@ -46,17 +38,17 @@ slow = pytest.mark.slow
 
 @pytest.fixture
 def lobby_server(request, loop, db_pool, player_service, game_service):
-    server = loop.run_until_complete(run_lobby_server(('127.0.0.1', None),
-                                                      player_service,
-                                                      game_service,
-                                                      loop))
+    ctx = run_lobby_server(('127.0.0.1', None),
+                           player_service,
+                           game_service,
+                           loop)
 
     def fin():
-        server.close()
-        loop.run_until_complete(server.wait_closed())
+        ctx.close()
+        loop.run_until_complete(ctx.wait_closed())
     request.addfinalizer(fin)
 
-    return server
+    return ctx
 
 @asyncio.coroutine
 def connect_client(server):
@@ -91,17 +83,14 @@ def read_until(proto, pred):
             logging.getLogger().info("read_until predicate raised during message: {}".format(msg))
             pass
 
-@asyncio.coroutine
 @slow
-def test_server_invalid_login(loop, lobby_server):
-    proto = yield from connect_client(lobby_server)
-    yield from perform_login(proto, ('Cat', 'epic'))
-    msg = yield from proto.read_message()
+async def test_server_invalid_login(loop, lobby_server):
+    proto = await connect_client(lobby_server)
+    await perform_login(proto, ('Cat', 'epic'))
+    msg = await proto.read_message()
     assert msg == {'command': 'authentication_failed',
                    'text': 'Login not found or password incorrect. They are case sensitive.'}
-    lobby_server.close()
     proto.close()
-    yield from lobby_server.wait_closed()
 
 @asyncio.coroutine
 @slow
@@ -140,60 +129,56 @@ def connect_and_sign_in(credentials, lobby_server):
     player_id = (yield from proto.read_message())['id']
     return player_id, session, proto
 
-@asyncio.coroutine
 @slow
-def test_public_host(loop, game_server, lobby_server, player_service):
-    nat_server, server = game_server
-
-    player_id, session, proto = yield from connect_and_sign_in(('Dostya', 'vodka'), lobby_server)
+async def test_public_host(loop, lobby_server, player_service):
+    player_id, session, proto = await connect_and_sign_in(('Dostya', 'vodka'),
+                                                           lobby_server)
 
     proto.send_message(dict(command='game_host',
                          mod='faf',
                          visibility=VisibilityState.to_string(VisibilityState.PUBLIC)))
-    yield from proto.drain()
+    await proto.drain()
 
-    with TestGPGClient(loop=loop, process_nat_packets=True) as client:
-        server_host, server_port = server.sockets[0].getsockname()
-        yield from client.connect(*server.sockets[0].getsockname(), config.LOBBY_UDP_PORT)
-        client.send_gpgnet_message('Authenticate', [session, player_id])
+    with TestClient(loop=loop, process_nat_packets=True, proto=proto) as client:
+        await client.listen_udp()
         client.send_GameState(['Idle'])
         client.send_GameState(['Lobby'])
-        yield from client._gpg_proto.writer.drain()
-        yield from client.read_until('ConnectivityState')
-        expected_message = "Are you public? {}".format(player_id)
+        await client._proto.writer.drain()
+        await client.read_until('ConnectivityState')
+        expected_message = 'Are you public? {}'.format(player_id)
         assert client.received_udp_from(expected_message,
-                                        (server_host, config.LOBBY_UDP_PORT))
-        assert call({"key": "ConnectivityState",
-                    "commands": [player_id, "PUBLIC"]})\
+                                        (lobby_server.addr[0], config.LOBBY_UDP_PORT))
+        assert call({"command": "ConnectivityState",
+                     "target": "game",
+                     "args": [player_id, "PUBLIC"]})\
                in client.messages.mock_calls
 
 
 @asyncio.coroutine
-@slow
-def test_stun_host(loop, game_server, lobby_server, player_service):
-    nat_server, server = game_server
+async def test_stun_host(loop, lobby_server, player_service):
 
-    player_id, session, proto = yield from connect_and_sign_in(('Dostya', 'vodka'), lobby_server)
+    player_id, session, proto = await connect_and_sign_in(('Dostya', 'vodka'), lobby_server)
 
     proto.send_message(dict(command='game_host',
                             mod='faf',
                             visibility=VisibilityState.to_string(VisibilityState.PUBLIC)))
-    yield from proto.drain()
+    await proto.drain()
 
-    with TestGPGClient(loop=loop, process_nat_packets=False) as client:
-        yield from client.connect(*server.sockets[0].getsockname(), config.LOBBY_UDP_PORT)
-        client.send_gpgnet_message('Authenticate', [session, player_id])
+    with TestClient(loop=loop, process_nat_packets=False, proto=proto) as client:
+        await client.listen_udp()
         client.send_GameState(['Idle'])
         client.send_GameState(['Lobby'])
-        yield from client.read_until('SendNatPacket')
-        assert call({"key": "SendNatPacket",
-                "commands": ["%s:%s" % (config.LOBBY_IP, config.LOBBY_UDP_PORT),
+        await client.read_until('SendNatPacket')
+        assert call({"command": "SendNatPacket",
+                     "target": "game",
+                     "args": ["%s:%s" % (config.LOBBY_IP, config.LOBBY_UDP_PORT),
                              "Hello %s" % player_id]})\
                in client.messages.mock_calls
 
         client.send_udp_natpacket('Hello {}'.format(player_id), '127.0.0.1', config.LOBBY_UDP_PORT)
-        yield from client.read_until('ConnectivityState')
-        assert call({'key': 'ConnectivityState',
-                     'commands': [player_id, 'STUN']})\
+        await client.read_until('ConnectivityState')
+        assert call({'command': 'ConnectivityState',
+                     'target': 'game',
+                     'args': [player_id, 'STUN']})\
                in client.messages.mock_calls
 

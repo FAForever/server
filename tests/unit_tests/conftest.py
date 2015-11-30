@@ -37,11 +37,11 @@ def connections(loop, player_service, game_service, transport, game):
 
     def make_connection(player, connectivity):
         lc = LobbyConnection(loop)
+        lc.protocol = mock.Mock()
         conn = GameConnection(loop=loop,
                               lobby_connection=lc,
                               player_service=player_service,
                               games=game_service)
-        conn.protocol = mock.Mock()
         conn.player = player
         conn.game = game
         conn._transport = transport

@@ -74,12 +74,6 @@ if __name__ == '__main__':
         )
         for sock in lobby_server.sockets:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-        nat_packet_server, game_server = \
-            server.run_game_server(('', 8000),
-                                   players_online,
-                                   games,
-                                   loop)
-        game_server = loop.run_until_complete(game_server)
 
         loop.run_until_complete(done)
         loop.close()

@@ -112,8 +112,7 @@ class LobbyConnection:
                 return False
         return True
 
-    @asyncio.coroutine
-    def on_message_received(self, message):
+    async def on_message_received(self, message):
         """
         Dispatches incoming messages
         """
@@ -123,12 +122,14 @@ class LobbyConnection:
             if not self.ensure_authenticated(cmd):
                 return
             if message.get('target') == 'game':
-                self.game_connection.handle_action(cmd, message.get('args', []))
+                if not self.game_connection:
+                    raise ClientError("You aren't in a game")
+                await self.game_connection.handle_action(cmd, message.get('args', []))
                 return
             handler = getattr(self, 'command_{}'.format(cmd))
             self._logger.debug("Dispatching using {}".format(handler))
             if asyncio.iscoroutinefunction(handler):
-                yield from handler(message)
+                await handler(message)
             else:
                 handler(message)
         except AuthenticationError as ex:
@@ -958,6 +959,12 @@ Thanks,\n\
 
     @timed()
     def command_game_host(self, message):
+        if self.game_connection:
+            self.send(dict(command="notice",
+                           style="error",
+                           text="You are already in a game"))
+            return
+
         server.stats.incr('game.hosted')
         assert isinstance(self.player, Player)
 
@@ -976,10 +983,6 @@ Thanks,\n\
             self.sendJSON(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
             return
 
-        if self.player.in_game:
-            self.sendJSON(dict(command="notice", style="error", text="You are already in a game"))
-            return
-
         mapname = message.get('mapname')
         password = message.get('password')
 
@@ -991,6 +994,13 @@ Thanks,\n\
             'mapname': mapname,
             'password': password
         })
+
+        self.game_connection = GameConnection(self.loop,
+                                              self,
+                                              self.player_service,
+                                              self.game_service)
+        self.game_connection.player = self.player
+        self.game_connection.game = game
 
         self.player.state = PlayerState.HOSTING
         self.player.game = game
