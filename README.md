@@ -63,6 +63,10 @@ three `ConnectivityState` categories:
 * `STUN`: The client is able to exchange UDP messages after having punched a hole through it's nat
 * `PROXY`: The client is incapable of sending/receiving UDP messages
 
+The messages currently mimick the GPGNet protocol, as to remain relatively compatible with the
+game, this explains the use of CamelCase in the command names. A client that is `PUBLIC` may choose
+to let the game listen directly on the game port for game sessions.
+
 The procedure is initiated by the client, with the following request:
 
 #### TestConnectivity Request
@@ -125,4 +129,115 @@ When the test is complete, the server will send the following reply:
 | Parameter  | Value             | Description                             |
 |------------|-------------------|-----------------------------------------|
 | `state`    | ConnectivityState | The determined state, as describe above |
+
+
+## Hosting a game
+
+Before hosting a game, the client must ensure that it has completed the Connectivity test as described 
+above.
+
+#### Request
+
+    {
+        "command": "game_host"
+        "title": string,
+        "gameport": int,
+        "mapname": string,
+        "password": string,
+        "visibility": VisibilityState,
+        "relay_address": string
+    }
+
+If the connectivity state was STUN or PROXY, the client must include the relay_address parameter.
+
+| Parameter       | Type            | Description                        |
+|-----------------|-----------------|------------------------------------|
+| `title`         | string          | The wanted title of the game       |
+| `gameport`      | int             | The port number to use             |
+| `mapname`       | string          | Name of the map                    |
+| `password`      | string          | Password                           |
+| `visibility`    | VisibilityState | "public" or "friends"              |
+| `relay_address` | string          | address of allocated TURN relay    |
+
+On receipt of the request, the server assumes that the client is ready to receive UDP messages
+on the advertised game port. It should also be ready to receive GPGNet format messages targeted at "game".
+
+If the client needs to launch the game before it is ready to receive
+UDP messages, it is recommended to wait sending this message before the game has launched and is in the
+'Idle' state.
+
+#### Response
+
+    {
+        "command": "game_launch",
+        "mod": string,
+        "uid": int
+    }
+
+If successful, the server replies with the above command, where `uid` is the associated
+ID of the game and `mod` is the featured mod in use.
+
+A series of GPGNet commands targeted at "game" will follow. These are described in the GPGNet section.
+
+## Joining a game
+
+Before joining a game, the client must ensure that it has completed the Connectivity test as described 
+above.
+
+#### Request
+
+    {
+        "command": "game_join"
+        "uid": int,
+        "gameport": int,
+        "password": string,
+        "relay_address": string
+    }
+
+If the connectivity state is STUN or PROXY, the client must include the relay_address parameter.
+
+| Parameter       | Type            | Description                        |
+|-----------------|-----------------|------------------------------------|
+| `uid`           | int             | ID of the game to join             |
+| `gameport`      | int             | The port number to use             |
+| `password`      | string          | Password                           |
+| `relay_address` | string          | address of allocated TURN relay    |
+
+On receipt of the request, the server assumes that the client is ready to receive UDP messages
+on the advertised game port. It should also be ready to receive GPGNet format messages targeted at "game".
+
+If the client needs to launch the game before it is ready to receive
+UDP messages, it is recommended to wait sending this message before the game has launched and is in the
+'Idle' state.
+
+#### Response
+
+    {
+        "command": "game_launch",
+        "mod": string,
+        "uid": int,
+        "sim_mods": [string]
+    }
+
+| Parameter       | Type            | Description                        |
+|-----------------|-----------------|------------------------------------|
+| `sim_mods`      | [string]        | List of mod id's in the game       |
+
+
+If successful, the server replies with the above command, where `uid` is the associated
+ID of the game and `mod` is the featured mod in use.
+
+A series of GPGNet commands targeted at "game" will follow. These are described in the GPGNet section.
+
+## GPGNet
+
+The GPGNet protocol is used to control the game itself, report scores, and connection bottlenecks.
+
+All GPGNet messages are of the form:
+ 
+    {
+        "command": string, 
+        "target": "game",
+        "args": [string|int|bool]
+    }
 
