@@ -53,41 +53,79 @@ With most carrying a footer containing:
     LOGIN: QString
     SESSION: QString
 
-With a few message-types (`UPLOAD_MOD`, `UPLOAD_MAP`), there are more fields.
+## Connectivity
 
-## Incoming Packages
+Before the client is able to host/join games, the client must perform a
+connection test with the server. This test serves to categorize the peer into one of
+three `ConnectivityState` categories:
 
-##### Mod Vault
+* `PUBLIC`: The client is capable of receiving UDP messages a priori on the advertised game port
+* `STUN`: The client is able to exchange UDP messages after having punched a hole through it's nat
+* `PROXY`: The client is incapable of sending/receiving UDP messages
 
-* `{command: modvault, type: start}`: show the last 100 mods
-* `{command: modvault, type: like, uid: <uid>}`: check if user liked the mod, otherwise increase the like counter
-* `{command: modvault, type: download, uid: <uid>}`: notify server about an download (for download counter), does not start the download
-* `{command: modvault, type: addcomment}`: not implemented
+The procedure is initiated by the client, with the following request:
 
-##### Social
-Can be combined !, e.g. `{command: social, teaminvite: <...>, friends: <..>}`
-* `{command: social, teaminvite: <player_name>}`: Invite a Player to a Team 
-* `{command: social, friends: <list of ALL friends>}`: Update the friends on the db
-* `{command: social, foes: <list of ALL foes>}`: Update the foe (muted players) on the db
+#### TestConnectivity Request
 
-##### Avatar
-* `{command: avatar, action: upload_avatar, name: <avatar_name>, file: <file_content>, description: <desc>}`: Admin Command to upload an avatar
-* `{command: avatar, action: list_avatar}`: Send a list of available avatars
-* `{command: avatar, action: select, avatar: <avatar_url>}`: Select a valid avatar for the player
+    {
+        "command": "InitiateTest",
+        "target": "connectivity",
+        "port": int
+    }
 
-##### Misc
+| Parameter  | Value  | Description                           |
+|------------|--------|---------------------------------------|
+| `port`     | int    | Port number to perform the test using |
 
-* [deprecated] `{command: ask_session}`: response with an welcome command and an valid session (can be delayed)
-* `{command: fa_state, state: <on|...>}`: notify the server if the game has launched or closed
-* `{command: quit_team}`: Leave a team
-* `{command: accept_team_proposal, leader: <leader_name>}`: Accept Team Invitation
-* `{command: hello, version: <...>, login: <...>, password: <...>, unique_id: <...>, (session: <...>)}`: Accept Team Invitation
 
-##  Stream
+Before sending this message, the client must ensure that it is listening for UDP
+messages on the given port.
 
-The stream API is deprecated, but currently the following message types are supported:
+The test is as follows:
 
-* `PING`: response with a `PONG`
-* `PONG`: internal state changed to ponged
-* `UPLOAD_MOD, login, session, zipmap, infos, size, fileDaatas`: Upload a mod
-* `UPLOAD_MAP, login, session, zipmap, infos, size, fileDatas`: Upload a map
+* The server will send a UDP packet to the client's address on the requested port, containing the following data:
+
+
+    \x08Are you public? <user_id>
+
+Where `<user_id>` is the user ID of the signed in user.
+
+On receipt of a UDP packet of the given form, the client must send the following
+response:
+
+    {
+        "command": "ProcessNatPacket",
+        "target": "connectivity",
+        "args": [address, message]
+    }
+
+| Parameter     | Value     | Description                               |
+|---------------|-----------|-------------------------------------------|
+| `address`     | string    | The address that the UDP packet came from |
+| `message`     | string    | The message that was received             |
+
+
+If the server doesn't receive the expected response, it will send the following request:
+
+    {
+        "command": "SendNatPacket",
+        "target": "connectivity",
+        "args": [address, message]
+    }
+
+The client must form a UDP packet containing `\x08`+message and send it to the given `address`.
+
+When the test is complete, the server will send the following reply:
+
+#### TestConnectivity Response
+
+    {
+        "command": "ConnectivityState",
+        "target": "connectivity",
+        "state": string
+    }
+
+| Parameter  | Value             | Description                             |
+|------------|-------------------|-----------------------------------------|
+| `state`    | ConnectivityState | The determined state, as describe above |
+
