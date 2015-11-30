@@ -15,7 +15,7 @@ Install [docker](https://www.docker.com).
 Follow the steps to get [faf-db](https://github.com/FAForever/db) setup, the following assumes the db container is called `faf-db`.
 
     docker build -t faf/server .
-    docker run --link faf-db:db -p 8001:8001 -p 8000:8000 -p 30351:30351 faf/server
+    docker run --link faf-db:db -p 8001:8001 -p 30351:30351 faf/server
 
 ## Running the tests
 

@@ -66,12 +66,11 @@ if __name__ == '__main__':
 
         ctrl_server = loop.run_until_complete(server.run_control_server(loop, players_online, games))
 
-        lobby_server = loop.run_until_complete(
-            server.run_lobby_server(('', 8001),
+        lobby_server = server.run_lobby_server(('', 8001),
                                     players_online,
                                     games,
                                     loop)
-        )
+
         for sock in lobby_server.sockets:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
 
