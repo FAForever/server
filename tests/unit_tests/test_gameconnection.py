@@ -160,13 +160,12 @@ def test_handle_action_GameResult_calls_add_result(game, loop, game_connection):
     loop.run_until_complete(result)
     game.add_result.assert_called_once_with(game_connection.player, 0, 'score', -5)
 
-@asyncio.coroutine
-def test_ConnectToHost_public_public(connections, players):
+async def test_ConnectToHost_public_public(connections, players):
     host_conn = connections.make_connection(players.hosting, LOCAL_PUBLIC)
     peer_conn = connections.make_connection(players.joining, LOCAL_PUBLIC)
     host_conn.send_ConnectToPeer = mock.Mock()
     peer_conn.send_JoinGame = mock.Mock()
-    yield from peer_conn.ConnectToHost(host_conn)
+    await peer_conn.ConnectToHost(host_conn)
     host_conn.send_ConnectToPeer.assert_called_with(peer_conn.player.address_and_port,
                                                     peer_conn.player.login,
                                                     peer_conn.player.id)
