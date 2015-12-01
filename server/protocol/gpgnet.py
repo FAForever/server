@@ -92,24 +92,12 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
         """
         self.send_gpgnet_message('ping', [])
 
-    def handle_ProcessNatPacket(self, arguments):
-        """
-        Handle incoming ProcessNatPacket messages
-
-        :param arguments: Tuple of ("address:port", message) describing the received nat packet
-        """
-        self.on_ProcessNatPacket(arguments[0], arguments[1])
-
     def send_gpgnet_message(self, command_id, arguments):
         message = {"command": command_id, "args": arguments}
         self.send_message(message)
 
     @abstractmethod
     def send_message(self, message):
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def on_ProcessNatPacket(self, sender, message):
         pass  # pragma: no cover
 
 

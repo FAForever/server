@@ -1,11 +1,9 @@
 import asyncio
 from collections import defaultdict
 from concurrent.futures import CancelledError
-import socket
 import time
 import logging
 import functools
-import json
 import config
 from server.abc.base_game import GameConnectionState
 from server.connectivity import ConnectivityTest, ConnectivityState, NatHelper
@@ -431,9 +429,6 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
             self.log.exception(e)
             self.log.exception(self.logGame + "Something awful happened in a game thread!")
             self.abort()
-
-    def on_ProcessNatPacket(self, address_and_port, message):
-        self.nat_packets[message] = address_and_port
 
     async def handle_game_state(self, state):
         """
