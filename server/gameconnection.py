@@ -522,13 +522,8 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
                     and self.game.state == GameState.LOBBY:
                 for peer in self.game.connections:
                     peer.send_DisconnectFromPeer(self.player.id)
-            if self.game:
-                if self.game.proxy_map.unmap(self.player.login):
-                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    s.connect(PROXY_SERVER)
-                    s.sendall(json.dumps(dict(command="cleanup", sourceip=self.player.ip)).encode())
-                    s.close()
-            if self.connectivity_state and self.connectivity_state.state == ConnectivityState.PROXY:
+            if self.connectivity_state and\
+               self.connectivity_state.state == ConnectivityState.PROXY:
                 wiki_link = "{}index.php?title=Connection_issues_and_solutions".format(config.WIKI_LINK)
                 text = "Your network is not setup right.<br>The server had to make you connect to other players by proxy.<br>Please visit <a href='{}'>{}</a>" + \
                        "to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs,".format(

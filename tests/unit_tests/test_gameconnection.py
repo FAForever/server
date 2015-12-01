@@ -3,7 +3,7 @@ import json
 
 from unittest import mock
 
-from server import proxy_map, GameConnection
+from server import GameConnection
 from server.connectivity import Connectivity, ConnectivityState
 from server.games import Game
 from server.players import PlayerState
@@ -159,21 +159,6 @@ def test_handle_action_GameResult_calls_add_result(game, loop, game_connection):
     result = asyncio.async(game_connection.handle_action('GameResult', [0, 'score -5']))
     loop.run_until_complete(result)
     game.add_result.assert_called_once_with(game_connection.player, 0, 'score', -5)
-
-
-def test_on_connection_lost_proxy_cleanup(game_connection, players):
-    game_connection.game = mock.Mock()
-    game_connection.game.proxy = mock.Mock()
-    game_connection.game.proxy.unmap.return_value = True
-    game_connection.player = players.hosting
-    game_connection._connectivity_state.set_result(LOCAL_PROXY)
-
-    with mock.patch('server.gameconnection.socket') as socket:
-        game_connection.on_connection_lost()
-
-        socket.socket().sendall.assert_called_with(json.dumps(dict(command='cleanup', sourceip=players.hosting.ip)).encode())
-
-
 
 @asyncio.coroutine
 def test_ConnectToHost_public_public(connections, players):

@@ -8,7 +8,6 @@ from typing import Union
 import trueskill
 from trueskill import Rating
 import server.db as db
-from server.proxy_map import ProxyMap
 from server.abc.base_game import GameConnectionState, BaseGame, InitMode
 from server.players import Player, PlayerState
 
@@ -124,7 +123,6 @@ class Game(BaseGame):
         self.validity = ValidityState.VALID
         self.game_mode = game_mode
         self.state = GameState.INITIALIZING
-        self.proxy_map = ProxyMap()
         self._connections = {}
         self.gameOptions = {'FogOfWar': 'explored',
                             'GameSpeed': 'normal',
