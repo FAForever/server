@@ -325,7 +325,7 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
         try:
             if command == 'ProcessNatPacket':
                 address, message = args[0], args[1]
-                self.process_nat_packet(address, message)
+                self.process_nat_packet(address.split(':'), message)
 
             elif command == 'Desync':
                 self.game.desyncs += 1

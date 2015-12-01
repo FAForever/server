@@ -5,6 +5,7 @@ import logging
 from enum import Enum, unique
 
 import config
+from server.types import Address
 from .decorators import with_logger
 
 from server.natpacketserver import NatPacketServer
@@ -44,7 +45,7 @@ class NatHelper:
     def __init__(self):
         self.nat_packets = {}
 
-    async def wait_for_natpacket(self, message, sender=None):
+    async def wait_for_natpacket(self, message: str, sender: Address=None):
         fut = asyncio.Future()
         self.nat_packets[message] = fut
         self._logger.info("Awaiting nat packet {} from {}".format(message, sender or 'anywhere'))
@@ -56,12 +57,20 @@ class NatHelper:
         else:
             return False
 
-    def process_nat_packet(self, address, message):
-        self._logger.info("<<{}: {}".format(address, message))
+    def process_nat_packet(self, address: Address, message: str):
+        self._logger.debug("<<{}: {}".format(address, message))
         if message in self.nat_packets and isinstance(self.nat_packets[message], asyncio.Future):
             if not self.nat_packets[message].done():
                 self.nat_packets[message].set_result((address, message))
                 del self.nat_packets[message]
+
+    def send_nat_packet(self, address: Address, message: str):
+        self._logger.debug(">>{}/udp: {}".format(address, message))
+        self.send({
+            "command": "SendNatPacket",
+            "target": "connectivity",
+            "args": ["{}:{}".format(*address), message]
+        })
 
 @with_logger
 class ConnectivityTest:
