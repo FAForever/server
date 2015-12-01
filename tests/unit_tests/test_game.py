@@ -278,7 +278,6 @@ async def test_to_dict(game, create_player):
         "host": game.host.login,
         "num_players": len(game.players),
         "game_type": game.gameType,
-        "options": game.options,
         "max_players": game.max_players,
         "teams": {
             team: [player.login for player in game.players
