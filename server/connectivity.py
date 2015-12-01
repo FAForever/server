@@ -70,7 +70,7 @@ class ConnectivityTest:
     """
 
     def __init__(self,
-                 connection,
+                 connection: NatHelper,
                  host: str,
                  port: int,
                  identifier: str):
