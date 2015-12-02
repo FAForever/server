@@ -30,6 +30,9 @@ class NatServerProtocol(asyncio.DatagramProtocol):
         except Exception as e:
             self._logger.exception(e)
 
+    def sendto(self, msg, addr):
+        self.transport.sendto(msg, addr)
+
     def connection_lost(self, exc):
         # Normally losing a connection isn't something we care about
         # but for UDP transports it means trouble
