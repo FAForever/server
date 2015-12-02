@@ -20,10 +20,13 @@ class NatServerProtocol(asyncio.DatagramProtocol):
     def datagram_received(self, data, addr):
         self._logger.debug("{}/udp<<: {}".format(addr, data))
         try:
+            msg = data[1:].decode()
             if data in self._futures:
                 # Strip the \x08 byte for NAT messages
-                self._futures[data].set_result((data[1:].decode(), addr))
+                self._futures[data].set_result((msg, addr))
                 del self._futures[data]
+            # Echo back the message
+            self.transport.sendto("OK: {}".format(msg).encode(), addr)
         except Exception as e:
             self._logger.exception(e)
 
