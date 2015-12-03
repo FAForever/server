@@ -59,4 +59,5 @@ class NatPacketServer:
         return fut
 
     def send_natpacket_to(self, msg: str, addr):
+        self._logger.debug(">>{}/udp: {}".format(addr, msg))
         self.protocol.transport.sendto(("\x08"+msg).encode(), addr)

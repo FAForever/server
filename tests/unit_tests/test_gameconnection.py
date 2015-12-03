@@ -4,13 +4,13 @@ import json
 from unittest import mock
 
 from server import GameConnection
-from server.connectivity import Connectivity, ConnectivityState
+from server.connectivity import ConnectivityResult, ConnectivityState
 from server.games import Game
 from server.players import PlayerState
 
-LOCAL_PUBLIC = Connectivity(addr='127.0.0.1:6112', state=ConnectivityState.PUBLIC)
-LOCAL_STUN = Connectivity(addr='127.0.0.1:6112', state=ConnectivityState.STUN)
-LOCAL_PROXY = Connectivity(addr=None, state=ConnectivityState.PROXY)
+LOCAL_PUBLIC = ConnectivityResult(addr='127.0.0.1:6112', state=ConnectivityState.PUBLIC)
+LOCAL_STUN = ConnectivityResult(addr='127.0.0.1:6112', state=ConnectivityState.STUN)
+LOCAL_PROXY = ConnectivityResult(addr=None, state=ConnectivityState.BLOCKED)
 
 def assert_message_sent(game_connection, command, args):
     game_connection.lobby_connection.send.assert_called_with({
@@ -84,38 +84,30 @@ def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, pla
     """
     :type game_connection: GameConnection
     """
-    with mock.patch('server.gameconnection.ConnectivityTest') as peer_test:
-        fut = asyncio.Future()
-        fut.set_result(Connectivity(addr='127.0.0.1:6112', state=ConnectivityState.PUBLIC))
-        peer_test().__enter__().determine_connectivity.return_value = fut
-        game_connection.player = players.hosting
-        game.map_file_path = 'some_map'
+    game_connection.player = players.hosting
+    game.map_file_path = 'some_map'
 
-        result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
-        loop.run_until_complete(result)
+    result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
+    loop.run_until_complete(result)
 
-        assert_message_sent(game_connection, 'HostGame', [game.map_file_path])
+    assert_message_sent(game_connection, 'HostGame', [game.map_file_path])
 
 
 def test_handle_action_GameState_lobby_calls_ConnectToHost(game_connection, loop, players, game):
     """
     :type game_connection: GameConnection
     """
-    with mock.patch('server.gameconnection.ConnectivityTest') as peer_test:
-        fut = asyncio.Future()
-        fut.set_result(LOCAL_PUBLIC)
-        peer_test().__enter__().determine_connectivity.return_value = fut
-        game_connection.send_message = mock.MagicMock()
-        game_connection.ConnectToHost = mock.Mock()
-        game_connection.player = players.joining
-        players.joining.game = game
-        game.host = players.hosting
-        game.map_file_path = 'some_map'
+    game_connection.send_message = mock.MagicMock()
+    game_connection.ConnectToHost = mock.Mock()
+    game_connection.player = players.joining
+    players.joining.game = game
+    game.host = players.hosting
+    game.map_file_path = 'some_map'
 
-        result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
-        loop.run_until_complete(result)
+    result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
+    loop.run_until_complete(result)
 
-        game_connection.ConnectToHost.assert_called_with(players.hosting.game_connection)
+    game_connection.ConnectToHost.assert_called_with(players.hosting.game_connection)
 
 def test_handle_action_GameState_launching_calls_launch(game_connection, loop, players, game):
     """

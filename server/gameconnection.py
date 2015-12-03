@@ -6,7 +6,8 @@ import logging
 import functools
 import config
 from server.abc.base_game import GameConnectionState
-from server.connectivity import ConnectivityTest, ConnectivityState, NatHelper
+from server.abc.dispatcher import Receiver
+from server.connectivity import ConnectivityState
 from server.games.game import Game, GameState, Victory
 from server.decorators import with_logger, timed
 from server.game_service import GameService
@@ -24,12 +25,15 @@ class AuthenticationError(Exception):
 
 
 @with_logger
-class GameConnection(GpgNetServerProtocol, NatHelper):
+class GameConnection(GpgNetServerProtocol, Receiver):
     """
     Responsible for connections to the game, using the GPGNet protocol
     """
 
-    def __init__(self, loop, lobby_connection, player_service, games: GameService):
+    def __init__(self, loop: asyncio.BaseEventLoop,
+                 lobby_connection: "LobbyConnection",
+                 player_service: "PlayerService",
+                 games: GameService):
         """
         Construct a new GameConnection
 
@@ -63,6 +67,7 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
         self.ping_task = None
 
         self._connectivity_state = asyncio.Future()
+        self.lobby_connection.subscribe_to('game', self)
 
     @property
     def state(self):
@@ -155,17 +160,6 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
         appropriately
         """
         try:
-            with ConnectivityTest(self,
-                                  self.player.ip,
-                                  self.player.game_port,
-                                  self.player.id) as peer_test:
-                peer_status = yield from peer_test.determine_connectivity()
-                if self._connectivity_state.cancelled():
-                    return
-                self._connectivity_state.set_result(peer_status)
-                self.send_gpgnet_message('ConnectivityState', [self.player.id,
-                                                               self.connectivity_state.state.value])
-
             player_state = self.player.state
             if player_state == PlayerState.HOSTING:
                 map = self.game.map_file_path
@@ -191,9 +185,7 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
         :return:
         """
         try:
-            cmd_id, args = message['action'], message['chunks']
-            message["command_id"] = cmd_id
-            message["arguments"] = args
+            cmd_id, args = message['command'], message['args']
             await self.handle_action(cmd_id, args)
             if cmd_id in self._waiters:
                 for waiter in self._waiters[cmd_id]:
@@ -264,7 +256,7 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
             else:
                 return ConnectivityState.STUN, own_addr, peer_addr
         self._logger.debug("Connecting {} to host {} through proxy".format(self, peer))
-        return ConnectivityState.PROXY, None, None
+        return ConnectivityState.BLOCKED, None, None
 
     async def STUN(self, peer):
         """

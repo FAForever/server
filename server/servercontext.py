@@ -3,6 +3,7 @@ import asyncio
 import server
 from server.decorators import with_logger
 from server.protocol import QDataStreamProtocol
+from server.types import Address
 
 
 @with_logger
@@ -60,7 +61,7 @@ class ServerContext:
         protocol = QDataStreamProtocol(stream_reader, stream_writer)
         try:
             connection = self._connection_factory()
-            yield from connection.on_connection_made(protocol, stream_writer.get_extra_info('peername'))
+            yield from connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info('peername')))
             self.connections[connection] = protocol
         except Exception as ex:
             self._logger.exception(ex)

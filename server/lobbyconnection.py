@@ -10,6 +10,11 @@ import os
 import shutil
 import random
 import re
+from collections import defaultdict
+from typing import List
+from typing import Mapping
+from typing import Optional
+
 import pymysql
 import rsa
 import time
@@ -27,12 +32,14 @@ import pygeoip
 
 import server
 from server import GameConnection
-from server.connectivity import NatHelper
+from server.abc.dispatcher import Dispatcher, Receiver
+from server.connectivity import Connectivity, ConnectivityTest
 from server.matchmaker import Search
 from server.decorators import timed, with_logger
 from server.games.game import GameState, VisibilityState
 from server.players import Player, PlayerState
 import server.db as db
+from server.types import Address
 from .game_service import GameService
 from .player_service import PlayerService
 from passwords import PRIVATE_KEY, MAIL_ADDRESS, VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY
@@ -65,7 +72,7 @@ class AuthenticationError(Exception):
 
 
 @with_logger
-class LobbyConnection(NatHelper):
+class LobbyConnection(Dispatcher):
     @timed()
     def __init__(self, loop, context=None, games: GameService=None, players: PlayerService=None, db=None):
         super(LobbyConnection, self).__init__()
@@ -79,9 +86,10 @@ class LobbyConnection(NatHelper):
         self._authenticated = False
         self.player = None  # type: Player
         self.game_connection = None  # type: GameConnection
+        self.connectivity = None  # type: Connectivity
         self.leagueAvatar = None
-        self.ip = None
-        self.port = None
+        self.peer_address = None  # type: Optional[Address]
+        self._subscribers = defaultdict(list)  # type: Mapping[str, List[Receiver]]
         self.session = int(random.randrange(0, 4294967295))
         self.protocol = None
         self._logger.debug("LobbyConnection initialized")
@@ -92,9 +100,9 @@ class LobbyConnection(NatHelper):
         return self._authenticated
 
     @asyncio.coroutine
-    def on_connection_made(self, protocol: QDataStreamProtocol, peername: (str, int)):
+    def on_connection_made(self, protocol: QDataStreamProtocol, peername: Address):
         self.protocol = protocol
-        self.ip, self.port = peername
+        self.peer_address = peername
         server.stats.incr("server.connections")
 
     def abort(self, logspam=""):
@@ -113,6 +121,9 @@ class LobbyConnection(NatHelper):
                 return False
         return True
 
+    def subscribe_to(self, command_id: str, receiver: Receiver) -> None:
+        self._subscribers[command_id].append(receiver)
+
     async def on_message_received(self, message):
         """
         Dispatches incoming messages
@@ -122,7 +133,12 @@ class LobbyConnection(NatHelper):
             cmd = message['command']
             if not self.ensure_authenticated(cmd):
                 return
-            if message.get('target') == 'game':
+            target = message.get('target')
+            if target in self._subscribers:
+                for sub in self._subscribers[target]:
+                    await sub.on_message_received(message)
+                return
+            if target == 'game':
                 if not self.game_connection:
                     raise ClientError("You aren't in a game")
                 await self.game_connection.handle_action(cmd, message.get('args', []))
@@ -159,102 +175,6 @@ class LobbyConnection(NatHelper):
 
     def command_pong(self, msg):
         pass
-
-    @asyncio.coroutine
-    def command_upload_mod(self, msg):  # pragma: no cover
-        zipmap = msg['name']
-        infos = msg['info']
-        fileDatas = msg['data']
-        message = infos
-
-        for key, readable in {
-            'name': "mod name",
-            'uid': "uid",
-            'description': "description",
-            'author': 'author',
-            'ui_only': 'mod type',
-            'version': 'version',
-        }.items():
-            if key not in message:
-                self.sendJSON(dict(command="notice", style="error", text="No {} provided.".format(readable)))
-                return
-
-        # Is this a hilariously flawed attempt to avoid SQL injection?
-        name = message["name"].replace("'", "\\'")
-        description = message["description"].replace("'", "\\'")
-
-        uid = message["uid"]
-        version = message["version"]
-        author = message["author"]
-        ui = message["ui_only"]
-        icon = ""
-
-        with (yield from db.db_pool) as conn:
-            cursor = yield from conn.cursor()
-
-            yield from cursor.execute("SELECT * FROM table_mod WHERE uid = %s", uid)
-            if cursor.rowcount > 0:
-                error = name + " uid " + uid + "already exists in the database."
-                self.sendJSON(dict(command="notice", style="error", text=error))
-                return
-
-            yield from cursor.execute("SELECT filename FROM table_mod WHERE filename LIKE '%" + zipmap + "%'")
-            if cursor.rowcount > 0:
-                self.sendJSON(dict(command="notice", style="error",
-                                   text="This file (%s) is already in the database !" % str(zipmap)))
-                return
-
-        # Yield the database connection back to the pool here, as we shouldn't hold it while doing
-        # crazy expensive zipfile manipulation crap.
-        writeFile = QFile(config.CONTENT_PATH + "vault/mods/%s" % zipmap)
-
-        if writeFile.open(QIODevice.WriteOnly):
-            writeFile.write(fileDatas)
-
-        writeFile.close()
-
-        if not zipfile.is_zipfile(config.CONTENT_PATH + "vault/mods/%s" % zipmap):
-            self.sendJSON(
-                dict(command="notice", style="error", text="Cannot unzip mod. Upload error ?"))
-            return
-        zip = zipfile.ZipFile(config.CONTENT_PATH + "vault/mods/%s" % zipmap, "r",
-                              zipfile.ZIP_DEFLATED)
-
-        # Is the zipfile corrupt?
-        if zip.testzip() is not None:
-            self.sendJSON(dict(command="notice", style="error", text="The generated zipfile was corrupt!"))
-            zip.close()
-            return
-
-        for member in zip.namelist():
-            #QCoreApplication.processEvents()
-            filename = os.path.basename(member)
-            if not filename:
-                continue
-
-            if filename.endswith(".png"):
-                source = zip.open(member)
-                target = open(
-                    os.path.join(config.CONTENT_PATH + "vault/mods_thumbs/",
-                                 zipmap.replace(".zip", ".png")), "wb")
-                icon = zipmap.replace(".zip", ".png")
-
-                shutil.copyfileobj(source, target)
-                source.close()
-                target.close()
-
-        #add the datas in the db
-        filename = "mods/%s" % zipmap
-
-
-        with (yield from db.db_pool) as conn:
-            cursor = yield from conn.cursor()
-            yield from cursor.execute("INSERT INTO `table_mod`(`uid`, `name`, `version`, `author`, `ui`, `description`, `filename`, `icon`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
-                                      uid, name, version, author, int(ui), description, filename, icon)
-
-        zip.close()
-
-        self.sendJSON(dict(command="notice", style="info", text="Mod correctly uploaded."))
 
     @staticmethod
     def generate_expiring_request(lifetime, plaintext):
@@ -697,7 +617,7 @@ Thanks,\n\
             yield from cursor.execute("INSERT INTO unique_id_users(user_id, uniqueid_hash) VALUES(%s, %s)", player_id, uid_hash)
 
         # TODO: Mildly unpleasant
-        yield from cursor.execute("UPDATE login SET ip = %s WHERE id = %s", (self.ip, player_id))
+        yield from cursor.execute("UPDATE login SET ip = %s WHERE id = %s", (self.peer_address.host, player_id))
 
         return True
 
@@ -753,11 +673,12 @@ Thanks,\n\
         permission_group = self.player_service.get_permission_group(player_id)
         self.player = Player(login=str(login),
                              session=self.session,
-                             ip=self.ip,
-                             port=self.port,
+                             ip=self.peer_address.host,
+                             port=None,
                              id=player_id,
                              permissionGroup=permission_group,
                              lobby_connection=self)
+        self.connectivity = Connectivity(self, self.peer_address.host, self.player)
 
         if self.player.id in self.player_service and self.player_service[self.player.id].lobby_connection:
             old_conn = self.player_service[self.player.id].lobby_connection
@@ -770,7 +691,7 @@ Thanks,\n\
         # Country
         # -------
 
-        country = gi.country_code_by_addr(self.ip)
+        country = gi.country_code_by_addr(self.peer_address.host)
         if country is not None:
             self.player.country = str(country)
 

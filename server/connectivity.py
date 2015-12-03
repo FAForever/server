@@ -1,16 +1,19 @@
-from collections import namedtuple
+from typing import NamedTuple, Optional, List
 from concurrent.futures import CancelledError, TimeoutError
 import asyncio
 import logging
 from enum import Enum, unique
 
 import config
+from server.abc.dispatcher import Dispatcher, Receiver
+from server.players import Player
 from server.types import Address
 from .decorators import with_logger
 
 from server.natpacketserver import NatPacketServer
 
 _natserver = None
+
 
 async def send_natpacket(addr, msg):
     global _natserver
@@ -19,7 +22,9 @@ async def send_natpacket(addr, msg):
         await _natserver.listen()
     _natserver.send_natpacket_to(msg, addr)
 
+
 logger = logging.getLogger(__name__)
+
 
 @unique
 class ConnectivityState(Enum):
@@ -36,18 +41,59 @@ class ConnectivityState(Enum):
     """
     PUBLIC = "PUBLIC"
     STUN = "STUN"
-    PROXY = "PROXY"
+    BLOCKED = "BLOCKED"
 
-Connectivity = namedtuple('Connectivity', ['addr', 'state'])
+
+ConnectivityResult = NamedTuple('ConnectivityResult', [('addr', Optional[Address]),
+                                                       ('state', ConnectivityState)])
+
 
 @with_logger
-class NatHelper:
-    def __init__(self):
-        self.nat_packets = {}
+class Connectivity(Receiver):
+    """
+    Processes Nat packets and determines connectivity state of peers.
+
+    Used initially to determine the connectivity state of a player,
+    then used while the game lobby is active to establish connections
+    between players.
+    """
+    def __init__(self, dispatcher: Dispatcher, host: str, player: Player):
+        self.player = player
+        self.result = asyncio.Future()
+        self._test = None
+        self._nat_packets = {}
+        self._dispatcher = dispatcher
+        self.host = host
+        dispatcher.subscribe_to('connectivity', self)
+
+    async def on_message_received(self, message: dict) -> None:
+        cmd, args = message.get('command'), message.get('args', [])
+        if cmd == 'ProcessNatPacket':
+            self.process_nat_packet(Address.from_string(args[0]), args[1])
+        elif cmd == 'InitiateTest':
+            asyncio.ensure_future(self.initiate_test(args[0]))
+
+    async def initiate_test(self, port: int):
+        self._test = ConnectivityTest(self, self.host, port, self.player)
+        try:
+            result = await self._test.determine_connectivity()
+            self.result.set_result(result)
+            self.send('ConnectivityState', [result.state.value,
+                                            "{}:{}".format(*result.addr)
+                                            if result.addr else ""])
+        except CancelledError as e:
+            self.result.set_exception(e)
+
+    def send(self, command_id: str, args: Optional[list]=None):
+        self._dispatcher.send({
+            'command': command_id,
+            'target': 'connectivity',
+            'args': args or []
+        })
 
     async def wait_for_natpacket(self, message: str, sender: Address=None):
         fut = asyncio.Future()
-        self.nat_packets[message] = fut
+        self._nat_packets[message] = fut
         self._logger.info("Awaiting nat packet {} from {}".format(message, sender or 'anywhere'))
         addr, msg = await fut
         if fut.done():
@@ -59,18 +105,15 @@ class NatHelper:
 
     def process_nat_packet(self, address: Address, message: str):
         self._logger.debug("<<{}: {}".format(address, message))
-        if message in self.nat_packets and isinstance(self.nat_packets[message], asyncio.Future):
-            if not self.nat_packets[message].done():
-                self.nat_packets[message].set_result((address, message))
-                del self.nat_packets[message]
+        if message in self._nat_packets and isinstance(self._nat_packets[message], asyncio.Future):
+            if not self._nat_packets[message].done():
+                self._nat_packets[message].set_result((address, message))
+                del self._nat_packets[message]
 
     def send_nat_packet(self, address: Address, message: str):
         self._logger.debug(">>{}/udp: {}".format(address, message))
-        self.send({
-            "command": "SendNatPacket",
-            "target": "connectivity",
-            "args": ["{}:{}".format(*address), message]
-        })
+        self.send('SendNatPacket', ["{}:{}".format(*address), message])
+
 
 @with_logger
 class ConnectivityTest:
@@ -79,19 +122,19 @@ class ConnectivityTest:
     """
 
     def __init__(self,
-                 connection: NatHelper,
+                 connection: Connectivity,
                  host: str,
                  port: int,
-                 identifier: str):
+                 player: Player):
         """
         :return: None
         """
         super(ConnectivityTest, self).__init__()
-        self.connection = connection
+        self._connectivity = connection  # type: Connectivity
         self.connectivity_state = None
         self.remote_addr = (host, port)
-        self.identifier = identifier
-        self.connection.log.debug("Testing peer connectivity")
+        self.player = player
+        self.identifier = player.id
         self.client_packets = []
         self.server_packets = []
 
@@ -101,29 +144,29 @@ class ConnectivityTest:
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
-    @asyncio.coroutine
-    def determine_connectivity(self):
+    async def determine_connectivity(self):
         """
         Determine connectivity of peer
 
         :return: Connectivity(addr, ConnectivityState)
         """
         try:
-            if (yield from self.test_public()):
-                return Connectivity(addr="{}:{}".format(*self.remote_addr), state=ConnectivityState.PUBLIC)
-            addr = yield from self.test_stun()
+            public = await self.test_public()
+            if public:
+                return ConnectivityResult(addr=Address(*self.remote_addr), state=ConnectivityState.PUBLIC)
+            addr = await self.test_stun()
             if addr:
-                return Connectivity(addr=addr, state=ConnectivityState.STUN)
+                return ConnectivityResult(addr=Address(*addr), state=ConnectivityState.STUN)
             else:
-                return Connectivity(addr=None, state=ConnectivityState.PROXY)
+                return ConnectivityResult(addr=None, state=ConnectivityState.BLOCKED)
         except (TimeoutError, CancelledError):
             pass
-        return Connectivity(addr=None, state=ConnectivityState.PROXY)
+        return ConnectivityResult(addr=None, state=ConnectivityState.BLOCKED)
 
     async def test_public(self):
         self._logger.debug("Testing PUBLIC")
         message = "Are you public? {}".format(self.identifier)
-        received_packet = self.connection.wait_for_natpacket(message)
+        received_packet = self._connectivity.wait_for_natpacket(message)
         for i in range(0, 3):
             await send_natpacket(self.remote_addr, message)
         try:
@@ -136,11 +179,12 @@ class ConnectivityTest:
     async def test_stun(self):
         self._logger.debug("Testing STUN")
         message = "Hello {}".format(self.identifier)
+        fut = _natserver.await_packet(message)
         for i in range(0, 3):
-            fut = _natserver.await_packet(message)
-            self.connection.send_gpgnet_message('SendNatPacket', ["%s:%s" % (config.LOBBY_IP,
-                                                                     config.LOBBY_UDP_PORT),
-                                                          message])
+            self._connectivity.send('SendNatPacket',
+                                    ["%s:%s" % (config.LOBBY_IP,
+                                            config.LOBBY_UDP_PORT),
+                                     message])
             await asyncio.sleep(0.1)
             try:
                 received, addr = await asyncio.wait_for(fut, 0.5)
@@ -148,4 +192,3 @@ class ConnectivityTest:
                     return addr
             except (CancelledError, TimeoutError):
                 pass
-
