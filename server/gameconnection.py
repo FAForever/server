@@ -137,7 +137,6 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             self._send_create_lobby()
 
         elif state == PlayerState.JOINING:
-            self.game.add_game_connection(self)
             self._send_create_lobby()
 
         else:
@@ -199,6 +198,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         peer.send_ConnectToPeer(own_addr,
                                 self.player.login,
                                 self.player.id)
+        self.game.add_game_connection(self)
 
     async def ConnectToPeer(self, peer):
         """
