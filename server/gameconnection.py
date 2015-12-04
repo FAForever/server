@@ -56,7 +56,6 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         self.initTime = time.time()
         self.proxies = {}
         self._player = None
-        self.logGame = "\t"
         self._game = None
 
         self.last_pong = time.time()
@@ -128,7 +127,6 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         :return: None
         """
         assert self.game
-        self.send_Ping()
         state = self.player.state
 
         if state == PlayerState.HOSTING:
@@ -136,15 +134,10 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             self._state = GameConnectionState.CONNECTED_TO_HOST
             self.game.add_game_connection(self)
             self.game.host = self.player
-            strlog = (
-                "%s.%s.%s\t" % (str(self.player.login), str(self.game.id), str(self.game.game_mode)))
-            self.logGame = strlog
             self._send_create_lobby()
 
         elif state == PlayerState.JOINING:
-            strlog = (
-                "%s.%s.%s\t" % (str(self.player.login), str(self.game.id), str(self.game.game_mode)))
-            self.logGame = strlog
+            self.game.add_game_connection(self)
             self._send_create_lobby()
 
         else:
@@ -169,7 +162,6 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             elif player_state == PlayerState.JOINING:
                 yield from self.ConnectToHost(self.game.host.game_connection)
                 self._state = GameConnectionState.CONNECTED_TO_HOST
-                self.game.add_game_connection(self)
                 for peer in self.game.connections:
                     if peer != self and peer.player != self.game.host:
                         self.log.debug("{} connecting to {}".format(self.player, peer))
@@ -413,7 +405,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             self.abort()
         except Exception as e:  # pragma: no cover
             self.log.exception(e)
-            self.log.exception(self.logGame + "Something awful happened in a game thread!")
+            self.log.exception("Something awful happened in a game thread!")
             self.abort()
 
     async def handle_game_state(self, state):
