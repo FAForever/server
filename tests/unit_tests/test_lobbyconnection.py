@@ -101,6 +101,7 @@ def test_command_game_join_calls_join_game(mocker,
     game.state = GameState.LOBBY
     game.password = None
     game.game_mode = 'faf'
+    game.id = 42
     game_service.games[42] = game
     lobbyconnection.player = players.hosting
     players.hosting.in_game = False

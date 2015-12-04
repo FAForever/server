@@ -835,19 +835,7 @@ Thanks,\n\
             self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
             return
 
-        self.player.state = PlayerState.JOINING
-        self.player.game_port = port
-        self.player.game = game
-
-        response = {"command": "game_launch",
-                    "mod": game.game_mode,
-                    "uid": uuid,
-                    "args": ["/numgames " + str(self.player.numGames)]}
-
-        if len(game.mods) > 0:
-            response["sim_mods"] = game.mods
-
-        self.sendJSON(response)
+        self.launch_game(game, port, False)
 
     @asyncio.coroutine
     def command_game_matchmaking(self, message):
@@ -919,20 +907,24 @@ Thanks,\n\
             'mapname': mapname,
             'password': password
         })
+        self.launch_game(game, port, True)
 
+    def launch_game(self, game, port, is_host=False):
         self.game_connection = GameConnection(self.loop,
                                               self,
                                               self.player_service,
                                               self.game_service)
         self.game_connection.player = self.player
         self.game_connection.game = game
+        if is_host:
+            game.host = self.player
 
-        self.player.state = PlayerState.HOSTING
+        self.player.state = PlayerState.HOSTING if is_host else PlayerState.JOINING
         self.player.game = game
         self.player.game_port = port
 
         self.sendJSON({"command": "game_launch",
-                       "mod": mod,
+                       "mod": game.game_mode,
                        "uid": game.id,
                        "args": ["/numgames " + str(self.player.numGames)]})
 
