@@ -910,11 +910,13 @@ Thanks,\n\
         self.launch_game(game, port, True)
 
     def launch_game(self, game, port, is_host=False):
+        # FIXME: Setting up a ridiculous amount of cyclic pointers here
         self.game_connection = GameConnection(self.loop,
                                               self,
                                               self.player_service,
                                               self.game_service)
         self.game_connection.player = self.player
+        self.player.game_connection = self.game_connection
         self.game_connection.game = game
         if is_host:
             game.host = self.player
