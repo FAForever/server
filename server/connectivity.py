@@ -107,9 +107,9 @@ class Connectivity(Receiver):
 
         :return: resolved_address
         """
-        assert peer.connectivity_state
+        assert peer.connectivity.result
         nat_message = "Hello from {}".format(self.player.id)
-        addr = peer.connectivity_state.addr if not use_address else use_address
+        addr = peer.connectivity.result.addr if not use_address else use_address
         self._logger.debug("{} probing {} at {} with msg: {}".format(self, peer, addr, nat_message))
         for _ in range(3):
             for i in range(0, 4):
