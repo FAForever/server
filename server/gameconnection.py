@@ -509,15 +509,6 @@ class GameConnection(GpgNetServerProtocol, Receiver):
                     and self.game.state == GameState.LOBBY:
                 for peer in self.game.connections:
                     peer.send_DisconnectFromPeer(self.player.id)
-            if self.connectivity_state and\
-               self.connectivity_state.state == ConnectivityState.PROXY:
-                wiki_link = "{}index.php?title=Connection_issues_and_solutions".format(config.WIKI_LINK)
-                text = "Your network is not setup right.<br>The server had to make you connect to other players by proxy.<br>Please visit <a href='{}'>{}</a>" + \
-                       "to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs,".format(
-                           wiki_link, wiki_link)
-
-                if self.lobby:
-                    self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
         except Exception as e:  # pragma: no cover
             self._logger.exception(e)
             pass
