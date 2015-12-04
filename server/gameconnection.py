@@ -452,6 +452,8 @@ class GameConnection(GpgNetServerProtocol, Receiver):
                         cursor = await conn.cursor()
                         await cursor.execute("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid in %s",
                                              (self.game.mods.keys(),))
+        elif state == 'Ended':
+            self.on_connection_lost()
 
     def _send_create_lobby(self):
         """
