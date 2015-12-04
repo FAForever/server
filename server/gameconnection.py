@@ -231,8 +231,6 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             if peer_addr is None or own_addr is None:
                 self._logger.debug("STUN between {} {} failed".format(self, peer_connection))
                 self._logger.debug("Resolved addresses: {}, {}".format(peer_addr, own_addr))
-                self._logger.debug("Own nat packets: {}".format(self.nat_packets))
-                self._logger.debug("Peer nat packets: {}".format(peer_connection.nat_packets))
                 if self.player.id < peer_connection.player.id:
                     return self.TURN(peer_connection)
                 else:
