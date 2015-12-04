@@ -66,6 +66,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         self.ping_task = None
 
         self.connectivity_state = self.lobby_connection.connectivity.state
+        self.connectivity = self.lobby_connection.connectivity
         self.lobby_connection.subscribe_to('game', self)
 
     @property
@@ -252,8 +253,8 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         :param peer:
         :return: (own_addr, remote_addr) | None
         """
-        own_addr = asyncio.ensure_future(self.ProbePeerNAT(peer))
-        remote_addr = asyncio.ensure_future(peer.ProbePeerNAT(self))
+        own_addr = asyncio.ensure_future(self.connectivity.ProbePeerNAT(peer))
+        remote_addr = asyncio.ensure_future(peer.connectivity.ProbePeerNAT(self))
         (done, pending) = await asyncio.wait([own_addr, remote_addr])
         assert len(pending) == 0
         assert len(done) == 2
@@ -264,33 +265,11 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         if own_addr is not None:
             # Remote received our packet, we didn't receive theirs
             # Instruct remote to try our new address
-            remote_addr = await peer.ProbePeerNAT(self, use_address=own_addr)
+            remote_addr = await peer.connectivity.ProbePeerNAT(self, use_address=own_addr)
         elif remote_addr is not None:
             # Opposite of the above
-            own_addr = await self.ProbePeerNAT(peer, use_address=remote_addr)
+            own_addr = await self.connectivity.ProbePeerNAT(peer, use_address=remote_addr)
         return own_addr, remote_addr
-
-    async def ProbePeerNAT(self, peer, use_address=None):
-        """
-        Instruct self to send an identifiable nat packet to peer
-
-        :return: resolved_address
-        """
-        assert peer.connectivity_state
-        nat_message = "Hello from {}".format(self.player.id)
-        addr = peer.connectivity_state.addr if not use_address else use_address
-        self._logger.debug("{} probing {} at {} with msg: {}".format(self, peer, addr, nat_message))
-        for _ in range(3):
-            for i in range(0, 4):
-                self._logger.debug("{} sending NAT packet {} to {}".format(self, i, addr))
-                ip, port = addr
-                self.send_SendNatPacket("{}:{}".format(ip, int(port) + i), nat_message)
-        try:
-            waiter = self.wait_for_natpacket(nat_message)
-            address, message = await asyncio.wait_for(waiter, 4)
-            return address
-        except (CancelledError, asyncio.TimeoutError):
-            return None
 
     async def handle_action(self, command, args):
         """

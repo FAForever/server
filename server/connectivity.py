@@ -101,6 +101,29 @@ class Connectivity(Receiver):
             'args': args or []
         })
 
+    async def ProbePeerNAT(self, peer, use_address=None):
+        """
+        Instruct self to send an identifiable nat packet to peer
+
+        :return: resolved_address
+        """
+        assert peer.connectivity_state
+        nat_message = "Hello from {}".format(self.player.id)
+        addr = peer.connectivity_state.addr if not use_address else use_address
+        self._logger.debug("{} probing {} at {} with msg: {}".format(self, peer, addr, nat_message))
+        for _ in range(3):
+            for i in range(0, 4):
+                self._logger.debug("{} sending NAT packet {} to {}".format(self, i, addr))
+                ip, port = addr
+                self.send('SendNatPacket', ["{}:{}".format(ip, int(port) + i),
+                                            nat_message])
+        try:
+            waiter = self.wait_for_natpacket(nat_message)
+            address, message = await asyncio.wait_for(waiter, 4)
+            return address
+        except (CancelledError, asyncio.TimeoutError):
+            return None
+
     async def wait_for_natpacket(self, message: str, sender: Address=None):
         fut = asyncio.Future()
         self._nat_packets[message] = fut
