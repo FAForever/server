@@ -7,7 +7,7 @@ import functools
 import config
 from server.abc.base_game import GameConnectionState
 from server.abc.dispatcher import Receiver
-from server.connectivity import ConnectivityState
+from server.connectivity import Connectivity, ConnectivityState, ConnectivityResult
 from server.games.game import Game, GameState, Victory
 from server.decorators import with_logger, timed
 from server.game_service import GameService
@@ -65,8 +65,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         self._transport = None
         self.ping_task = None
 
-        self.connectivity_state = self.lobby_connection.connectivity.state
-        self.connectivity = self.lobby_connection.connectivity
+        self.connectivity = self.lobby_connection.connectivity  # type: Connectivity
         self.lobby_connection.subscribe_to('game', self)
 
     @property
@@ -219,8 +218,8 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         :param peer_connection: Client to connect to
         :return: (ConnectivityState, own_addr, remote_addr)
         """
-        own = self.connectivity_state
-        peer = peer_connection.connectivity_state
+        own = self.connectivity.result  # type: ConnectivityResult
+        peer = peer_connection.connectivity.result  # type: ConnectivityResult
         if peer.state == ConnectivityState.PUBLIC \
                 and own.state == ConnectivityState.PUBLIC:
             self._logger.debug("Connecting {} to host {} directly".format(self, peer_connection))
@@ -234,7 +233,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
                 if self.player.id < peer_connection.player.id:
                     return self.TURN(peer_connection)
                 else:
-                    return peer.TURN(self)
+                    return peer_connection.TURN(self)
             else:
                 return own_addr, peer_addr
         else:

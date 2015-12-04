@@ -807,7 +807,7 @@ Thanks,\n\
 
     @property
     def able_to_launch_game(self):
-        return self.connectivity.state and not self.game_connection
+        return self.connectivity.result and not self.game_connection
 
     @timed
     def command_game_join(self, message):

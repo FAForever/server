@@ -59,7 +59,7 @@ class Connectivity(Receiver):
     """
     def __init__(self, dispatcher: Dispatcher, host: str, player: Player):
         self.player = player
-        self.result = asyncio.Future()
+        self._result = asyncio.Future()
         self._test = None
         self._nat_packets = {}
         self._dispatcher = dispatcher
@@ -68,9 +68,9 @@ class Connectivity(Receiver):
         dispatcher.subscribe_to('connectivity', self)
 
     @property
-    def state(self):
-        if self.result.done():
-            return self.result.result()
+    def result(self) -> Optional[ConnectivityResult]:
+        if self._result.done():
+            return self._result.result()
         else:
             return None
 
@@ -87,12 +87,12 @@ class Connectivity(Receiver):
         self._test = ConnectivityTest(self, self.host, port, self.player)
         try:
             result = await self._test.determine_connectivity()
-            self.result.set_result(result)
+            self._result.set_result(result)
             self.send('ConnectivityState', [result.state.value,
                                             "{}:{}".format(*result.addr)
                                             if result.addr else ""])
         except CancelledError as e:
-            self.result.set_exception(e)
+            self._result.set_exception(e)
 
     def send(self, command_id: str, args: Optional[list]=None):
         self._dispatcher.send({
