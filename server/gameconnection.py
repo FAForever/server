@@ -239,7 +239,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         else:
             self._logger.info("Connection blocked")
 
-    async def TURN(self, peer):
+    def TURN(self, peer):
         self.send_gpgnet_message('CreatePermission', [peer.address_and_port()])
         return self.lobby_connection.connectivity.relay_address, peer.address_and_port()
 
