@@ -134,9 +134,10 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             self._state = GameConnectionState.CONNECTED_TO_HOST
             self.game.add_game_connection(self)
             self.game.host = self.player
-
+        elif state == PlayerState.JOINING:
+            pass
         else:
-            self.log.debug("QUIT - No player action :(")
+            self.log.exception("Unknown PlayerState")
             self.abort()
 
     @asyncio.coroutine
