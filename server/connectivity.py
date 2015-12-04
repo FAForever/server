@@ -64,6 +64,7 @@ class Connectivity(Receiver):
         self._nat_packets = {}
         self._dispatcher = dispatcher
         self.host = host
+        self.relay_address = None
         dispatcher.subscribe_to('connectivity', self)
 
     @property
@@ -79,8 +80,8 @@ class Connectivity(Receiver):
             self.process_nat_packet(Address.from_string(args[0]), args[1])
         elif cmd == 'InitiateTest':
             asyncio.ensure_future(self.initiate_test(args[0]))
-        elif cmd == 'InitiateRelayTest':
-            asyncio.ensure_future(self.initiate_relay_test(args[0]))
+        elif cmd == 'RelayAddress':
+            self.relay_address = args[0]
 
     async def initiate_test(self, port: int):
         self._test = ConnectivityTest(self, self.host, port, self.player)
@@ -92,14 +93,6 @@ class Connectivity(Receiver):
                                             if result.addr else ""])
         except CancelledError as e:
             self.result.set_exception(e)
-
-    async def initiate_relay_test(self, relay_address: str):
-        # Send some packets to the relay address
-        assert relay_address.startswith(config.LOBBY_IP)
-        host, port = relay_address.split(':')
-        port = int(port)
-        for i in range(1, 10):
-            await send_natpacket((host, port), 'Relay warmup packet {}'.format(i))
 
     def send(self, command_id: str, args: Optional[list]=None):
         self._dispatcher.send({

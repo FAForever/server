@@ -65,7 +65,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         self._transport = None
         self.ping_task = None
 
-        self._connectivity_state = asyncio.Future()
+        self.connectivity_state = self.lobby_connection.connectivity.state
         self.lobby_connection.subscribe_to('game', self)
 
     @property
@@ -189,7 +189,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         :return:
         """
         assert peer.player.state == PlayerState.HOSTING
-        connection, own_addr, peer_addr = await self.EstablishConnection(peer)
+        own_addr, peer_addr = await self.EstablishConnection(peer)
         self.send_JoinGame(peer_addr,
                            peer.player.login,
                            peer.player.id)
@@ -202,7 +202,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         Connect two peers
         :return: None
         """
-        connection, own_addr, peer_addr = await self.EstablishConnection(peer)
+        own_addr, peer_addr = await self.EstablishConnection(peer)
         self.send_ConnectToPeer(peer_addr,
                                 peer.player.login,
                                 peer.player.id)
@@ -210,36 +210,40 @@ class GameConnection(GpgNetServerProtocol, Receiver):
                                 self.player.login,
                                 self.player.id)
 
-    async def EstablishConnection(self, peer):
+    async def EstablishConnection(self, peer_connection: "GameConnection"):
         """
         Attempt to establish a full duplex UDP connection
         between self and peer.
 
-        :param peer: Client to connect to
+        :param peer_connection: Client to connect to
         :return: (ConnectivityState, own_addr, remote_addr)
         """
-        own_state = self._connectivity_state
-        peer_state = peer._connectivity_state
-        (done, pending) = await asyncio.wait([own_state, peer_state])
-        if pending:
-            self._logger.debug("Aborting due to lack of connectivity")
-            self.abort()
-        ((own_addr, own_state), (peer_addr, peer_state)) = own_state.result(), peer_state.result()
-        if peer_state == ConnectivityState.PUBLIC and own_state == ConnectivityState.PUBLIC:
-            self._logger.debug("Connecting {} to host {} directly".format(self, peer))
-            return ConnectivityState.PUBLIC, own_addr, peer_addr
-        elif peer_state == ConnectivityState.STUN or own_state == ConnectivityState.STUN:
-            self._logger.debug("Connecting {} to host {} using STUN".format(self, peer))
-            (own_addr, peer_addr) = await self.STUN(peer)
+        own = self.connectivity_state
+        peer = peer_connection.connectivity_state
+        if peer.state == ConnectivityState.PUBLIC \
+                and own.state == ConnectivityState.PUBLIC:
+            self._logger.debug("Connecting {} to host {} directly".format(self, peer_connection))
+            return own.addr, peer.addr
+        elif peer.state == ConnectivityState.STUN or own.state == ConnectivityState.STUN:
+            self._logger.debug("Connecting {} to host {} using STUN".format(self, peer_connection))
+            (own_addr, peer_addr) = await self.STUN(peer_connection)
             if peer_addr is None or own_addr is None:
-                self._logger.debug("STUN between {} {} failed".format(self, peer))
+                self._logger.debug("STUN between {} {} failed".format(self, peer_connection))
                 self._logger.debug("Resolved addresses: {}, {}".format(peer_addr, own_addr))
                 self._logger.debug("Own nat packets: {}".format(self.nat_packets))
-                self._logger.debug("Peer nat packets: {}".format(peer.nat_packets))
+                self._logger.debug("Peer nat packets: {}".format(peer_connection.nat_packets))
+                if self.player.id < peer_connection.player.id:
+                    return self.TURN(peer_connection)
+                else:
+                    return peer.TURN(self)
             else:
-                return ConnectivityState.STUN, own_addr, peer_addr
-        self._logger.debug("Connecting {} to host {} through proxy".format(self, peer))
-        return ConnectivityState.BLOCKED, None, None
+                return own_addr, peer_addr
+        else:
+            self._logger.info("Connection blocked")
+
+    async def TURN(self, peer):
+        self.send_gpgnet_message('CreatePermission', [peer.address_and_port()])
+        return self.lobby_connection.connectivity.relay_address, peer.address_and_port()
 
     async def STUN(self, peer):
         """
@@ -462,8 +466,6 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             self.log.debug("Exception in abort(): {}".format(ex))
             pass
         finally:
-            if not self._connectivity_state.done():
-                self._connectivity_state.cancel()
             if self.ping_task is not None:
                 self.ping_task.cancel()
             if self._player:
@@ -481,18 +483,6 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             pass
         finally:
             self.abort()
-
-    @property
-    def connectivity_state(self):
-        if not self._connectivity_state.done():
-            return None
-        else:
-            return self._connectivity_state.result()
-
-    @connectivity_state.setter
-    def connectivity_state(self, val):
-        if not self._connectivity_state.done():
-            self._connectivity_state.set_result(val)
 
     def address_and_port(self):
         return "{}:{}".format(self.player.ip, self.player.game_port)

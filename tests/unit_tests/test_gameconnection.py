@@ -122,19 +122,6 @@ def test_handle_action_GameResult_calls_add_result(game, loop, game_connection):
     loop.run_until_complete(result)
     game.add_result.assert_called_once_with(game_connection.player, 0, 'score', -5)
 
-async def test_ConnectToHost_public_public(connections, players):
-    host_conn = connections.make_connection(players.hosting, LOCAL_PUBLIC)
-    peer_conn = connections.make_connection(players.joining, LOCAL_PUBLIC)
-    host_conn.send_ConnectToPeer = mock.Mock()
-    peer_conn.send_JoinGame = mock.Mock()
-    await peer_conn.ConnectToHost(host_conn)
-    host_conn.send_ConnectToPeer.assert_called_with(peer_conn.player.address_and_port,
-                                                    peer_conn.player.login,
-                                                    peer_conn.player.id)
-    peer_conn.send_JoinGame.assert_called_with(host_conn.player.address_and_port,
-                                               host_conn.player.login,
-                                               host_conn.player.id)
-
 async def test_json_stats(game_connection, game_stats_service, players, game):
     game_stats_service.process_game_stats = mock.Mock()
     await game_connection.handle_action('JsonStats', ['{"stats": {}}'])
