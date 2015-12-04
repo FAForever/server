@@ -283,7 +283,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         for _ in range(3):
             for i in range(0, 4):
                 self._logger.debug("{} sending NAT packet {} to {}".format(self, i, addr))
-                ip, port = addr.split(":")
+                ip, port = addr
                 self.send_SendNatPacket("{}:{}".format(ip, int(port) + i), nat_message)
         try:
             waiter = self.wait_for_natpacket(nat_message)
