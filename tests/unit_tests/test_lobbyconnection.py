@@ -3,6 +3,7 @@ import asyncio
 import pytest
 from unittest import mock
 from server import ServerContext, GameState, VisibilityState, GameStatsService
+from server.connectivity import Connectivity
 from server.protocol import QDataStreamProtocol
 from server.game_service import GameService
 from server.games import Game
@@ -64,6 +65,7 @@ def lobbyconnection(loop, mock_context, mock_protocol, mock_games, mock_players,
                          games=mock_games,
                          players=mock_players)
     lc.player = mock_player
+    lc.connectivity = mock.create_autospec(Connectivity)
     lc.protocol = mock_protocol
     return lc
 

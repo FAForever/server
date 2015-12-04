@@ -201,15 +201,12 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         """
         assert peer.player.state == PlayerState.HOSTING
         connection, own_addr, peer_addr = await self.EstablishConnection(peer)
-        if connection == ConnectivityState.PUBLIC or connection == ConnectivityState.STUN:
-            self.send_JoinGame(peer_addr,
-                               peer.player.login,
-                               peer.player.id)
-            peer.send_ConnectToPeer(own_addr,
-                                    self.player.login,
-                                    self.player.id)
-        else:
-            await self.ConnectThroughProxy(peer)
+        self.send_JoinGame(peer_addr,
+                           peer.player.login,
+                           peer.player.id)
+        peer.send_ConnectToPeer(own_addr,
+                                self.player.login,
+                                self.player.id)
 
     async def ConnectToPeer(self, peer):
         """
@@ -217,15 +214,12 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         :return: None
         """
         connection, own_addr, peer_addr = await self.EstablishConnection(peer)
-        if connection == ConnectivityState.PUBLIC or connection == ConnectivityState.STUN:
-            self.send_ConnectToPeer(peer_addr,
-                                    peer.player.login,
-                                    peer.player.id)
-            peer.send_ConnectToPeer(own_addr,
-                                    self.player.login,
-                                    self.player.id)
-        else:
-            self.ConnectThroughProxy(peer)
+        self.send_ConnectToPeer(peer_addr,
+                                peer.player.login,
+                                peer.player.id)
+        peer.send_ConnectToPeer(own_addr,
+                                self.player.login,
+                                self.player.id)
 
     async def EstablishConnection(self, peer):
         """
@@ -453,7 +447,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
                         await cursor.execute("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid in %s",
                                              (self.game.mods.keys(),))
         elif state == 'Ended':
-            self.on_connection_lost()
+            await self.on_connection_lost()
 
     def _send_create_lobby(self):
         """
@@ -488,8 +482,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             if self._state is GameConnectionState.ENDED:
                 return
             self._state = GameConnectionState.ENDED
-            if self.game:
-                self.loop.create_task(self.game.remove_game_connection(self))
+            self.loop.create_task(self.game.remove_game_connection(self))
             self._mark_dirty()
             self.log.debug("{}.abort()".format(self))
             del self.player.game
@@ -505,8 +498,9 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             if self._player:
                 self._player.state = PlayerState.IDLE
 
-    def on_connection_lost(self):
+    async def on_connection_lost(self):
         try:
+            await self.game.remove_game_connection(self)
             if self.state == GameConnectionState.CONNECTED_TO_HOST \
                     and self.game.state == GameState.LOBBY:
                 for peer in self.game.connections:

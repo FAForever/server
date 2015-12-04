@@ -805,12 +805,18 @@ Thanks,\n\
         else:
             raise KeyError('invalid action')
 
+    @property
+    def able_to_launch_game(self):
+        return self.connectivity.state and not self.game_connection
+
     @timed
     def command_game_join(self, message):
         """
         We are going to join a game.
         """
         assert isinstance(self.player, Player)
+        if not self.able_to_launch_game:
+            raise ClientError("You are already in a game or haven't run the connectivity test yet")
 
         uuid = message['uid']
         port = message['gameport']
@@ -881,11 +887,8 @@ Thanks,\n\
 
     @timed()
     def command_game_host(self, message):
-        if self.game_connection:
-            self.send(dict(command="notice",
-                           style="error",
-                           text="You are already in a game"))
-            return
+        if not self.able_to_launch_game:
+            raise ClientError("You are already in a game or haven't run the connectivity test yet")
 
         server.stats.incr('game.hosted')
         assert isinstance(self.player, Player)

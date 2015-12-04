@@ -66,6 +66,13 @@ class Connectivity(Receiver):
         self.host = host
         dispatcher.subscribe_to('connectivity', self)
 
+    @property
+    def state(self):
+        if self.result.done():
+            return self.result.result()
+        else:
+            return None
+
     async def on_message_received(self, message: dict) -> None:
         cmd, args = message.get('command'), message.get('args', [])
         if cmd == 'ProcessNatPacket':
