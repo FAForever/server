@@ -134,10 +134,6 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             self._state = GameConnectionState.CONNECTED_TO_HOST
             self.game.add_game_connection(self)
             self.game.host = self.player
-            self._send_create_lobby()
-
-        elif state == PlayerState.JOINING:
-            self._send_create_lobby()
 
         else:
             self.log.debug("QUIT - No player action :(")
@@ -161,6 +157,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             elif player_state == PlayerState.JOINING:
                 yield from self.ConnectToHost(self.game.host.game_connection)
                 self._state = GameConnectionState.CONNECTED_TO_HOST
+                self.game.add_game_connection(self)
                 for peer in self.game.connections:
                     if peer != self and peer.player != self.game.host:
                         self.log.debug("{} connecting to {}".format(self.player, peer))
@@ -198,7 +195,6 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         peer.send_ConnectToPeer(own_addr,
                                 self.player.login,
                                 self.player.id)
-        self.game.add_game_connection(self)
 
     async def ConnectToPeer(self, peer):
         """
@@ -440,24 +436,6 @@ class GameConnection(GpgNetServerProtocol, Receiver):
                                              (self.game.mods.keys(),))
         elif state == 'Ended':
             await self.on_connection_lost()
-
-    def _send_create_lobby(self):
-        """
-        Used for initializing the game to start listening on UDP
-        :param rankedMode int:
-            If 1: The game uses autolobby.lua
-               0: The game uses lobby.lua
-        :return: None
-        """
-        assert self.game is not None
-        if self.game.name is not None:
-            if self.game.name.startswith('#'):
-                self.send_gpgnet_message("P2PReconnect", [])
-
-        self.send_CreateLobby(self.game.init_mode,
-                              self.player.game_port,
-                              self.player.login,
-                              self.player.id, 1)
 
     def _mark_dirty(self):
         if self.game:

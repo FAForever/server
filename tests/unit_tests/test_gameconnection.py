@@ -49,36 +49,6 @@ def test_handle_action_GameState_idle_non_searching_player_aborts(game_connectio
 
     game_connection.abort.assert_any_call()
 
-async def test_handle_action_GameState_idle_as_peer_sends_CreateLobby(game_connection, players):
-    """
-    :type game_connection: GameConnection
-    """
-    game_connection.player = players.joining
-
-    await game_connection.handle_action('GameState', ['Idle'])
-
-    assert_message_sent(game_connection,
-                        'CreateLobby',
-                        [0, players.joining.game_port,
-                         players.joining.login,
-                         players.joining.id,
-                         1])
-
-async def test_handle_action_GameState_idle_as_host_sends_CreateLobby(game_connection, players):
-    """
-    :type game_connection: GameConnection
-    """
-    game_connection.player = players.hosting
-
-    await game_connection.handle_action('GameState', ['Idle'])
-
-    assert_message_sent(game_connection,
-                        'CreateLobby',
-                        [0, players.hosting.game_port,
-                         players.hosting.login,
-                         players.hosting.id,
-                         1])
-
 
 def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, players, game):
     """
