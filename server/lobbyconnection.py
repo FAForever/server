@@ -1017,6 +1017,8 @@ Thanks,\n\
         """
         self.send(data_dictionary)
 
-    def on_connection_lost(self):
+    async def on_connection_lost(self):
+        if self.game_connection:
+            await self.game_connection.on_connection_lost()
         if self.player:
             self.player_service.remove_player(self.player)
