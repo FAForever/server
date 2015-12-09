@@ -33,7 +33,7 @@ import pygeoip
 import server
 from server import GameConnection
 from server.abc.dispatcher import Dispatcher, Receiver
-from server.connectivity import Connectivity, ConnectivityTest
+from server.connectivity import Connectivity, ConnectivityTest, ConnectivityState
 from server.matchmaker import Search
 from server.decorators import timed, with_logger
 from server.games.game import GameState, VisibilityState
@@ -818,6 +818,9 @@ Thanks,\n\
         if not self.able_to_launch_game:
             raise ClientError("You are already in a game or haven't run the connectivity test yet")
 
+        if self.connectivity.result.state == ConnectivityState.STUN:
+            self.connectivity.relay_address = Address(*message['relay_address'])
+
         uuid = message['uid']
         port = message['gameport']
         password = message.get('password', None)
@@ -878,7 +881,9 @@ Thanks,\n\
         if not self.able_to_launch_game:
             raise ClientError("You are already in a game or haven't run the connectivity test yet")
 
-        server.stats.incr('game.hosted')
+        if self.connectivity.result.state == ConnectivityState.STUN:
+            self.connectivity.relay_address = Address(*message['relay_address'])
+
         assert isinstance(self.player, Player)
 
         title = cgi.escape(message.get('title', ''))
@@ -908,6 +913,7 @@ Thanks,\n\
             'password': password
         })
         self.launch_game(game, port, True)
+        server.stats.incr('game.hosted')
 
     def launch_game(self, game, port, is_host=False):
         # FIXME: Setting up a ridiculous amount of cyclic pointers here
