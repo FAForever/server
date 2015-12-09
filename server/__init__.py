@@ -7,6 +7,7 @@ Copyright (c) 2015 Michael Søndergaard <sheeo@sheeo.dk>
 Distributed under GPLv3, see license.txt
 """
 import json
+import logging
 
 import aiomeasures
 
@@ -62,31 +63,34 @@ def run_lobby_server(address: (str, int),
         )
 
     def report_dirty_games():
-        dirties = games.dirty_games
-        games.clear_dirty()
+        try:
+            dirties = games.dirty_games
+            games.clear_dirty()
 
-        # TODO: This spams squillions of messages: we should implement per-connection message
-        # aggregation at the next abstraction layer down :P
-        for game in dirties:
-            # Don't tell anyone about an ended game.
-            # TODO: Probably better to do this at the time of the state transition instead?
-            if game.state == GameState.ENDED:
-                games.remove_game(game)
+            # TODO: This spams squillions of messages: we should implement per-connection message
+            # aggregation at the next abstraction layer down :P
+            for game in dirties:
+                # Don't tell anyone about an ended game.
+                # TODO: Probably better to do this at the time of the state transition instead?
+                if game.state == GameState.ENDED:
+                    games.remove_game(game)
 
-            # So we're going to be broadcasting this to _somebody_...
-            message = encode(game)
+                # So we're going to be broadcasting this to _somebody_...
+                message = encode(game)
 
-            # These games shouldn't be broadcast, but instead privately sent to those who are
-            # allowed to see them.
-            if game.visibility == VisibilityState.FRIENDS:
-                # To see this game, you must have an authenticated connection and be a friend of the host.
-                validation_func = lambda lobby_conn: lobby_conn.player.id in game.host.friends
-            else:
-                validation_func = lambda lobby_conn: lobby_conn.player.id not in game.host.foes
+                # These games shouldn't be broadcast, but instead privately sent to those who are
+                # allowed to see them.
+                if game.visibility == VisibilityState.FRIENDS:
+                    # To see this game, you must have an authenticated connection and be a friend of the host.
+                    validation_func = lambda lobby_conn: lobby_conn.player.id in game.host.friends
+                else:
+                    validation_func = lambda lobby_conn: lobby_conn.player.id not in game.host.foes
 
-            ctx.broadcast_raw(message, lambda lobby_conn: lobby_conn.authenticated and validation_func(lobby_conn))
-
-        loop.call_later(5, report_dirty_games)
+                ctx.broadcast_raw(message, lambda lobby_conn: lobby_conn.authenticated and validation_func(lobby_conn))
+        except Exception as e:
+            logging.getLogger().exception(e)
+        finally:
+            loop.call_later(5, report_dirty_games)
 
     def ping_broadcast():
         ctx.broadcast_raw(QDataStreamProtocol.pack_block(QDataStreamProtocol.pack_qstring('PING')))
