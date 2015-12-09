@@ -130,6 +130,22 @@ class Connectivity(Receiver):
         else:
             return False
 
+    async def create_binding(self, peer: 'Connectivity'):
+        """
+        Create a binding on the relay allocated to 'self'
+
+        Returns the address from which messages coming from 'peer'
+        come from
+        """
+        assert self.result
+        assert peer.result
+        self.send('CreatePermission', peer.result.addr)
+        pkt = 'Bind {}'.format(peer.player.id)
+        for i in range(0, 4):
+            peer.send_nat_packet(self.relay_address, pkt)
+        addr, msg = await self.wait_for_natpacket(pkt)
+        return addr
+
     def process_nat_packet(self, address: Address, message: str):
         self._logger.debug("<<{}: {}".format(address, message))
         if message in self._nat_packets and isinstance(self._nat_packets[message], asyncio.Future):

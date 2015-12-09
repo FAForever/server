@@ -231,17 +231,17 @@ class GameConnection(GpgNetServerProtocol, Receiver):
                 self._logger.debug("STUN between {} {} failed".format(self, peer_connection))
                 self._logger.debug("Resolved addresses: {}, {}".format(peer_addr, own_addr))
                 if self.player.id < peer_connection.player.id:
-                    return self.TURN(peer_connection)
+                    return await self.TURN(peer_connection)
                 else:
-                    return peer_connection.TURN(self)
+                    return await peer_connection.TURN(self)
             else:
                 return own_addr, peer_addr
         else:
             self._logger.info("Connection blocked")
 
-    def TURN(self, peer):
-        self.send_gpgnet_message('CreatePermission', [peer.address_and_port()])
-        return self.lobby_connection.connectivity.relay_address, peer.address_and_port()
+    async def TURN(self, peer: 'GameConnection'):
+        addr = await self.connectivity.create_binding(peer.connectivity)
+        return self.lobby_connection.connectivity.relay_address, addr
 
     async def STUN(self, peer):
         """
