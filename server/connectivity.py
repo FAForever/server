@@ -138,8 +138,9 @@ class Connectivity(Receiver):
         come from
         """
         assert self.result
+        assert self.relay_address
         assert peer.result
-        self.send('CreatePermission', peer.result.addr)
+        self.send('CreatePermission', "{}:{}".format(peer.result.addr))
         pkt = 'Bind {}'.format(peer.player.id)
         for i in range(0, 4):
             peer.send_nat_packet(self.relay_address, pkt)
