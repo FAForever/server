@@ -216,7 +216,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         between self and peer.
 
         :param peer_connection: Client to connect to
-        :return: (ConnectivityState, own_addr, remote_addr)
+        :return: (own_addr, remote_addr)
         """
         own = self.connectivity.result  # type: ConnectivityResult
         peer = peer_connection.connectivity.result  # type: ConnectivityResult
@@ -241,7 +241,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
 
     async def TURN(self, peer: 'GameConnection'):
         addr = await self.connectivity.create_binding(peer.connectivity)
-        return self.lobby_connection.connectivity.relay_address, addr
+        return addr, self.lobby_connection.connectivity.relay_address
 
     async def STUN(self, peer):
         """
