@@ -107,9 +107,10 @@ class Connectivity(Receiver):
         self._logger.debug("{} probing {} at {} with msg: {}".format(self, peer, addr, nat_message))
         for _ in range(3):
             for i in range(0, 4):
-                self._logger.debug("{} sending NAT packet {} to {}".format(self, i, addr))
                 ip, port = addr
-                self.send('SendNatPacket', ["{}:{}".format(ip, int(port) + i),
+                port = int(port) + i
+                self._logger.debug("{} sending NAT packet {} to {}:{}".format(self, i, ip, port))
+                self.send('SendNatPacket', ["{}:{}".format(ip, port),
                                             nat_message])
         try:
             waiter = self.wait_for_natpacket(nat_message)
