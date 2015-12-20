@@ -6,7 +6,7 @@ import os
 
 Config = ConfigObj("/etc/faforever/faforever.conf").get('global', {})
 
-LOBBY_IP = Config.get('lobby_ip', '127.0.0.1')
+LOBBY_IP = os.getenv('LOBBY_IP', '37.58.123.3')
 LOBBY_UDP_PORT = Config.get('lobby_udp_port', 30351)
 
 LOG_PATH = Config.get('logpath', './logs/')

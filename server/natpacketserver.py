@@ -20,12 +20,18 @@ class NatServerProtocol(asyncio.DatagramProtocol):
     def datagram_received(self, data, addr):
         self._logger.debug("{}/udp<<: {}".format(addr, data))
         try:
+            msg = data[1:].decode()
             if data in self._futures:
                 # Strip the \x08 byte for NAT messages
-                self._futures[data].set_result((data[1:].decode(), addr))
+                self._futures[data].set_result((msg, addr))
                 del self._futures[data]
+            # Echo back the message
+            self.transport.sendto("OK: {}".format(msg).encode(), addr)
         except Exception as e:
             self._logger.exception(e)
+
+    def sendto(self, msg, addr):
+        self.transport.sendto(msg, addr)
 
     def connection_lost(self, exc):
         # Normally losing a connection isn't something we care about
@@ -59,4 +65,5 @@ class NatPacketServer:
         return fut
 
     def send_natpacket_to(self, msg: str, addr):
+        self._logger.debug(">>{}/udp: {}".format(addr, msg))
         self.protocol.transport.sendto(("\x08"+msg).encode(), addr)

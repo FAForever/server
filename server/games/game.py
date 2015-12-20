@@ -8,7 +8,6 @@ from typing import Union
 import trueskill
 from trueskill import Rating
 import server.db as db
-from server.proxy_map import ProxyMap
 from server.abc.base_game import GameConnectionState, BaseGame, InitMode
 from server.players import Player, PlayerState
 
@@ -118,14 +117,12 @@ class Game(BaseGame):
         self.map_file_path = map
         self.password = None
         self._players = []
-        self.options = []
         self.gameType = 0
         self.AIs = {}
         self.desyncs = 0
         self.validity = ValidityState.VALID
         self.game_mode = game_mode
         self.state = GameState.INITIALIZING
-        self.proxy_map = ProxyMap()
         self._connections = {}
         self.gameOptions = {'FogOfWar': 'explored',
                             'GameSpeed': 'normal',
@@ -635,7 +632,6 @@ class Game(BaseGame):
             "host": self.host.login if self.host else '',
             "num_players": len(self.players),
             "game_type": self.gameType,
-            "options": self.options,
             "max_players": self.max_players,
             "teams": {
                 team: [player.login for player in self.players

@@ -3,6 +3,7 @@ import asyncio
 import server
 from server.decorators import with_logger
 from server.protocol import QDataStreamProtocol
+from server.types import Address
 
 
 @with_logger
@@ -54,21 +55,20 @@ class ServerContext:
             if validate_fn(conn):
                 proto.send_raw(message)
 
-    @asyncio.coroutine
-    def client_connected(self, stream_reader, stream_writer):
+    async def client_connected(self, stream_reader, stream_writer):
         self._logger.info("{}: Client connected".format(self))
         protocol = QDataStreamProtocol(stream_reader, stream_writer)
         try:
             connection = self._connection_factory()
-            yield from connection.on_connection_made(protocol, stream_writer.get_extra_info('peername'))
+            await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info('peername')))
             self.connections[connection] = protocol
         except Exception as ex:
             self._logger.exception(ex)
             return
         try:
             while True:
-                message = yield from protocol.read_message()
-                yield from connection.on_message_received(message)
+                message = await protocol.read_message()
+                await connection.on_message_received(message)
         except ConnectionResetError:
             pass
         except ConnectionAbortedError:
@@ -80,6 +80,5 @@ class ServerContext:
             self._logger.exception(ex)
         finally:
             del self.connections[connection]
-            if self.loop.is_running():
-                protocol.writer.close()
-            connection.on_connection_lost()
+            protocol.writer.close()
+            await connection.on_connection_lost()

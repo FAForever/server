@@ -1,14 +1,13 @@
 import asyncio
 from collections import defaultdict
 from concurrent.futures import CancelledError
-import socket
 import time
 import logging
 import functools
-import json
 import config
 from server.abc.base_game import GameConnectionState
-from server.connectivity import ConnectivityTest, ConnectivityState, NatHelper
+from server.abc.dispatcher import Receiver
+from server.connectivity import Connectivity, ConnectivityState, ConnectivityResult
 from server.games.game import Game, GameState, Victory
 from server.decorators import with_logger, timed
 from server.game_service import GameService
@@ -26,12 +25,15 @@ class AuthenticationError(Exception):
 
 
 @with_logger
-class GameConnection(GpgNetServerProtocol, NatHelper):
+class GameConnection(GpgNetServerProtocol, Receiver):
     """
     Responsible for connections to the game, using the GPGNet protocol
     """
 
-    def __init__(self, loop, lobby_connection, player_service, games: GameService):
+    def __init__(self, loop: asyncio.BaseEventLoop,
+                 lobby_connection: "LobbyConnection",
+                 player_service: "PlayerService",
+                 games: GameService):
         """
         Construct a new GameConnection
 
@@ -54,7 +56,6 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
         self.initTime = time.time()
         self.proxies = {}
         self._player = None
-        self.logGame = "\t"
         self._game = None
 
         self.last_pong = time.time()
@@ -64,7 +65,8 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
         self._transport = None
         self.ping_task = None
 
-        self._connectivity_state = asyncio.Future()
+        self.connectivity = self.lobby_connection.connectivity  # type: Connectivity
+        self.lobby_connection.subscribe_to('game', self)
 
     @property
     def state(self):
@@ -125,7 +127,6 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
         :return: None
         """
         assert self.game
-        self.send_Ping()
         state = self.player.state
 
         if state == PlayerState.HOSTING:
@@ -133,19 +134,10 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
             self._state = GameConnectionState.CONNECTED_TO_HOST
             self.game.add_game_connection(self)
             self.game.host = self.player
-            strlog = (
-                "%s.%s.%s\t" % (str(self.player.login), str(self.game.id), str(self.game.game_mode)))
-            self.logGame = strlog
-            self._send_create_lobby()
-
         elif state == PlayerState.JOINING:
-            strlog = (
-                "%s.%s.%s\t" % (str(self.player.login), str(self.game.id), str(self.game.game_mode)))
-            self.logGame = strlog
-            self._send_create_lobby()
-
+            pass
         else:
-            self.log.debug("QUIT - No player action :(")
+            self.log.exception("Unknown PlayerState")
             self.abort()
 
     @asyncio.coroutine
@@ -157,17 +149,6 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
         appropriately
         """
         try:
-            with ConnectivityTest(self,
-                                  self.player.ip,
-                                  self.player.game_port,
-                                  self.player.id) as peer_test:
-                peer_status = yield from peer_test.determine_connectivity()
-                if self._connectivity_state.cancelled():
-                    return
-                self._connectivity_state.set_result(peer_status)
-                self.send_gpgnet_message('ConnectivityState', [self.player.id,
-                                                               self.connectivity_state.state.value])
-
             player_state = self.player.state
             if player_state == PlayerState.HOSTING:
                 map = self.game.map_file_path
@@ -193,9 +174,7 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
         :return:
         """
         try:
-            cmd_id, args = message['action'], message['chunks']
-            message["command_id"] = cmd_id
-            message["arguments"] = args
+            cmd_id, args = message['command'], message['args']
             await self.handle_action(cmd_id, args)
             if cmd_id in self._waiters:
                 for waiter in self._waiters[cmd_id]:
@@ -210,63 +189,59 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
         :return:
         """
         assert peer.player.state == PlayerState.HOSTING
-        connection, own_addr, peer_addr = await self.EstablishConnection(peer)
-        if connection == ConnectivityState.PUBLIC or connection == ConnectivityState.STUN:
-            self.send_JoinGame(peer_addr,
-                               peer.player.login,
-                               peer.player.id)
-            peer.send_ConnectToPeer(own_addr,
-                                    self.player.login,
-                                    self.player.id)
-        else:
-            await self.ConnectThroughProxy(peer)
+        own_addr, peer_addr = await self.EstablishConnection(peer)
+        self.send_JoinGame(peer_addr,
+                           peer.player.login,
+                           peer.player.id)
+        peer.send_ConnectToPeer(own_addr,
+                                self.player.login,
+                                self.player.id)
 
     async def ConnectToPeer(self, peer):
         """
         Connect two peers
         :return: None
         """
-        connection, own_addr, peer_addr = await self.EstablishConnection(peer)
-        if connection == ConnectivityState.PUBLIC or connection == ConnectivityState.STUN:
-            self.send_ConnectToPeer(peer_addr,
-                                    peer.player.login,
-                                    peer.player.id)
-            peer.send_ConnectToPeer(own_addr,
-                                    self.player.login,
-                                    self.player.id)
-        else:
-            self.ConnectThroughProxy(peer)
+        own_addr, peer_addr = await self.EstablishConnection(peer)
+        self.send_ConnectToPeer(peer_addr,
+                                peer.player.login,
+                                peer.player.id)
+        peer.send_ConnectToPeer(own_addr,
+                                self.player.login,
+                                self.player.id)
 
-    async def EstablishConnection(self, peer):
+    async def EstablishConnection(self, peer_connection: "GameConnection"):
         """
         Attempt to establish a full duplex UDP connection
         between self and peer.
 
-        :param peer: Client to connect to
-        :return: (ConnectivityState, own_addr, remote_addr)
+        :param peer_connection: Client to connect to
+        :return: (own_addr, remote_addr)
         """
-        own_state = self._connectivity_state
-        peer_state = peer._connectivity_state
-        (done, pending) = await asyncio.wait([own_state, peer_state])
-        if pending:
-            self._logger.debug("Aborting due to lack of connectivity")
-            self.abort()
-        ((own_addr, own_state), (peer_addr, peer_state)) = own_state.result(), peer_state.result()
-        if peer_state == ConnectivityState.PUBLIC and own_state == ConnectivityState.PUBLIC:
-            self._logger.debug("Connecting {} to host {} directly".format(self, peer))
-            return ConnectivityState.PUBLIC, own_addr, peer_addr
-        elif peer_state == ConnectivityState.STUN or own_state == ConnectivityState.STUN:
-            self._logger.debug("Connecting {} to host {} using STUN".format(self, peer))
-            (own_addr, peer_addr) = await self.STUN(peer)
+        own = self.connectivity.result  # type: ConnectivityResult
+        peer = peer_connection.connectivity.result  # type: ConnectivityResult
+        if peer.state == ConnectivityState.PUBLIC \
+                and own.state == ConnectivityState.PUBLIC:
+            self._logger.debug("Connecting {} to host {} directly".format(self, peer_connection))
+            return own.addr, peer.addr
+        elif peer.state == ConnectivityState.STUN or own.state == ConnectivityState.STUN:
+            self._logger.debug("Connecting {} to host {} using STUN".format(self, peer_connection))
+            (own_addr, peer_addr) = await self.STUN(peer_connection)
             if peer_addr is None or own_addr is None:
-                self._logger.debug("STUN between {} {} failed".format(self, peer))
+                self._logger.debug("STUN between {} {} failed".format(self, peer_connection))
                 self._logger.debug("Resolved addresses: {}, {}".format(peer_addr, own_addr))
-                self._logger.debug("Own nat packets: {}".format(self.nat_packets))
-                self._logger.debug("Peer nat packets: {}".format(peer.nat_packets))
+                if self.player.id < peer_connection.player.id:
+                    return await self.TURN(peer_connection)
+                else:
+                    return await peer_connection.TURN(self)
             else:
-                return ConnectivityState.STUN, own_addr, peer_addr
-        self._logger.debug("Connecting {} to host {} through proxy".format(self, peer))
-        return ConnectivityState.PROXY, None, None
+                return own_addr, peer_addr
+        else:
+            self._logger.info("Connection blocked")
+
+    async def TURN(self, peer: 'GameConnection'):
+        addr = await self.connectivity.create_binding(peer.connectivity)
+        return addr, self.lobby_connection.connectivity.relay_address
 
     async def STUN(self, peer):
         """
@@ -275,8 +250,8 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
         :param peer:
         :return: (own_addr, remote_addr) | None
         """
-        own_addr = asyncio.ensure_future(self.ProbePeerNAT(peer))
-        remote_addr = asyncio.ensure_future(peer.ProbePeerNAT(self))
+        own_addr = asyncio.ensure_future(self.connectivity.ProbePeerNAT(peer))
+        remote_addr = asyncio.ensure_future(peer.connectivity.ProbePeerNAT(self))
         (done, pending) = await asyncio.wait([own_addr, remote_addr])
         assert len(pending) == 0
         assert len(done) == 2
@@ -287,33 +262,11 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
         if own_addr is not None:
             # Remote received our packet, we didn't receive theirs
             # Instruct remote to try our new address
-            remote_addr = await peer.ProbePeerNAT(self, use_address=own_addr)
+            remote_addr = await peer.connectivity.ProbePeerNAT(self, use_address=own_addr)
         elif remote_addr is not None:
             # Opposite of the above
-            own_addr = await self.ProbePeerNAT(peer, use_address=remote_addr)
+            own_addr = await self.connectivity.ProbePeerNAT(peer, use_address=remote_addr)
         return own_addr, remote_addr
-
-    async def ProbePeerNAT(self, peer, use_address=None):
-        """
-        Instruct self to send an identifiable nat packet to peer
-
-        :return: resolved_address
-        """
-        assert peer.connectivity_state
-        nat_message = "Hello from {}".format(self.player.id)
-        addr = peer.connectivity_state.addr if not use_address else use_address
-        self._logger.debug("{} probing {} at {} with msg: {}".format(self, peer, addr, nat_message))
-        for _ in range(3):
-            for i in range(0, 4):
-                self._logger.debug("{} sending NAT packet {} to {}".format(self, i, addr))
-                ip, port = addr.split(":")
-                self.send_SendNatPacket("{}:{}".format(ip, int(port) + i), nat_message)
-        try:
-            waiter = self.wait_for_natpacket(nat_message)
-            address, message = await asyncio.wait_for(waiter, 4)
-            return address
-        except (CancelledError, asyncio.TimeoutError):
-            return None
 
     async def handle_action(self, command, args):
         """
@@ -325,7 +278,7 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
         try:
             if command == 'ProcessNatPacket':
                 address, message = args[0], args[1]
-                self.process_nat_packet(address, message)
+                self.process_nat_packet(address.split(':'), message)
 
             elif command == 'Desync':
                 self.game.desyncs += 1
@@ -429,11 +382,8 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
             self.abort()
         except Exception as e:  # pragma: no cover
             self.log.exception(e)
-            self.log.exception(self.logGame + "Something awful happened in a game thread!")
+            self.log.exception("Something awful happened in a game thread!")
             self.abort()
-
-    def on_ProcessNatPacket(self, address_and_port, message):
-        self.nat_packets[message] = address_and_port
 
     async def handle_game_state(self, state):
         """
@@ -465,24 +415,8 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
                         cursor = await conn.cursor()
                         await cursor.execute("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid in %s",
                                              (self.game.mods.keys(),))
-
-    def _send_create_lobby(self):
-        """
-        Used for initializing the game to start listening on UDP
-        :param rankedMode int:
-            If 1: The game uses autolobby.lua
-               0: The game uses lobby.lua
-        :return: None
-        """
-        assert self.game is not None
-        if self.game.name is not None:
-            if self.game.name.startswith('#'):
-                self.send_gpgnet_message("P2PReconnect", [])
-
-        self.send_CreateLobby(self.game.init_mode,
-                              self.player.game_port,
-                              self.player.login,
-                              self.player.id, 1)
+        elif state == 'Ended':
+            await self.on_connection_lost()
 
     def _mark_dirty(self):
         if self.game:
@@ -499,8 +433,7 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
             if self._state is GameConnectionState.ENDED:
                 return
             self._state = GameConnectionState.ENDED
-            if self.game:
-                self.loop.create_task(self.game.remove_game_connection(self))
+            self.loop.create_task(self.game.remove_game_connection(self))
             self._mark_dirty()
             self.log.debug("{}.abort()".format(self))
             del self.player.game
@@ -509,50 +442,23 @@ class GameConnection(GpgNetServerProtocol, NatHelper):
             self.log.debug("Exception in abort(): {}".format(ex))
             pass
         finally:
-            if not self._connectivity_state.done():
-                self._connectivity_state.cancel()
             if self.ping_task is not None:
                 self.ping_task.cancel()
             if self._player:
                 self._player.state = PlayerState.IDLE
 
-    def on_connection_lost(self):
+    async def on_connection_lost(self):
         try:
+            await self.game.remove_game_connection(self)
             if self.state == GameConnectionState.CONNECTED_TO_HOST \
                     and self.game.state == GameState.LOBBY:
                 for peer in self.game.connections:
                     peer.send_DisconnectFromPeer(self.player.id)
-            if self.game:
-                if self.game.proxy_map.unmap(self.player.login):
-                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    s.connect(PROXY_SERVER)
-                    s.sendall(json.dumps(dict(command="cleanup", sourceip=self.player.ip)).encode())
-                    s.close()
-            if self.connectivity_state and self.connectivity_state.state == ConnectivityState.PROXY:
-                wiki_link = "{}index.php?title=Connection_issues_and_solutions".format(config.WIKI_LINK)
-                text = "Your network is not setup right.<br>The server had to make you connect to other players by proxy.<br>Please visit <a href='{}'>{}</a>" + \
-                       "to fix this.<br><br>The proxy server costs us a lot of bandwidth. It's free to use, but if you are using it often,<br>it would be nice to donate for the server maintenance costs,".format(
-                           wiki_link, wiki_link)
-
-                if self.lobby:
-                    self.lobby.sendJSON(dict(command="notice", style="info", text=str(text)))
         except Exception as e:  # pragma: no cover
             self._logger.exception(e)
             pass
         finally:
             self.abort()
-
-    @property
-    def connectivity_state(self):
-        if not self._connectivity_state.done():
-            return None
-        else:
-            return self._connectivity_state.result()
-
-    @connectivity_state.setter
-    def connectivity_state(self, val):
-        if not self._connectivity_state.done():
-            self._connectivity_state.set_result(val)
 
     def address_and_port(self):
         return "{}:{}".format(self.player.ip, self.player.game_port)

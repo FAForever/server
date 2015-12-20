@@ -29,26 +29,6 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
         """
         self.send_gpgnet_message('ConnectToPeer', [address_and_port, player_name, player_uid])
 
-    def send_ConnectToProxy(self, local_proxy_port: int, ip: str, player_name: str, player_uid: int):
-        """
-        Tells the FAF client to connect to the given peer by proxy
-        :param local_proxy_port: Which local proxy port to use
-        :param ip: remote address
-        :param player_name: Remote player name
-        :param player_uid: Remote player identifier
-        """
-        self.send_gpgnet_message('ConnectToProxy', [local_proxy_port, ip, player_name, player_uid])
-
-    def send_JoinProxy(self, local_proxy_port: int, ip: str, player_name: str, player_uid: int):
-        """
-        Tells the FAF client to join the given game by proxy
-        :param local_proxy_port: Which local proxy port to use
-        :param ip: remote address
-        :param player_name: Remote player name
-        :param player_uid: Remote player identifier
-        """
-        self.send_gpgnet_message('JoinProxy', [local_proxy_port, ip, player_name, player_uid])
-
     def send_JoinGame(self, address_and_port: str, remote_player_name: str, remote_player_uid: int):
         """
         Tells the game to join the given peer by address_and_port
@@ -92,24 +72,12 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
         """
         self.send_gpgnet_message('ping', [])
 
-    def handle_ProcessNatPacket(self, arguments):
-        """
-        Handle incoming ProcessNatPacket messages
-
-        :param arguments: Tuple of ("address:port", message) describing the received nat packet
-        """
-        self.on_ProcessNatPacket(arguments[0], arguments[1])
-
     def send_gpgnet_message(self, command_id, arguments):
         message = {"command": command_id, "args": arguments}
         self.send_message(message)
 
     @abstractmethod
     def send_message(self, message):
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def on_ProcessNatPacket(self, sender, message):
         pass  # pragma: no cover
 
 

@@ -59,7 +59,10 @@ class PlayerService:
             cur = yield from conn.cursor()
             yield from cur.execute('SELECT mean, deviation, numGames FROM `global_rating` '
                                    'WHERE id=%s', player.id)
-            (mean, dev, num_games) = yield from cur.fetchone()
+            result = yield from cur.fetchone()
+            if not result:
+                result = (1500, 500, 0)
+            (mean, dev, num_games) = result
             player.global_rating = (mean, dev)
             player.numGames = num_games
             yield from cur.execute('SELECT mean, deviation FROM `ladder1v1_rating` '
