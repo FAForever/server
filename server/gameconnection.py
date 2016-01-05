@@ -116,9 +116,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             self.send_Ping()
             try:
                 yield from asyncio.sleep(20)
-            # quamash will yield a runtime error if the qtimer was already deleted
-            # asyncio yields a cancelled error which we use to break the loop
-            except (RuntimeError, CancelledError):  # pragma: no cover
+            except CancelledError:  # pragma: no cover
                 break
 
     async def _handle_idle_state(self):
