@@ -75,6 +75,7 @@ class ValidityState(IntEnum):
     TOO_SHORT = 9
     BAD_MOD = 10
     COOP_NOT_RANKED = 11
+    MUTUAL_DRAW = 12
 
 
 class GameError(Exception):
@@ -146,6 +147,14 @@ class Game(BaseGame):
                           for player in self.players})
 
     @property
+    def is_mutually_agreed_draw(self):
+        for army in self.armies:
+            for result in self._results[army]:
+                if result[2] != 'mutual_draw':
+                    return False
+        return True
+
+    @property
     def players(self):
         """
         Players in the game
@@ -199,7 +208,7 @@ class Game(BaseGame):
                 continue
 
             for result in self._results[army]:
-                if result[1] in ['defeat', 'victory', 'draw']:
+                if result[1] in ['defeat', 'victory', 'draw', 'mutual_draw']:
                     await self._process_army_stats_for_player(player)
                     break
 
@@ -244,16 +253,25 @@ class Game(BaseGame):
             await self._process_pending_army_stats()
 
     async def on_game_end(self):
-        self.state = GameState.ENDED
-        self._logger.info("Game ended")
-        if self.desyncs > 20:
-            await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
+        if self.state == GameState.LOBBY:
+            self._logger.info("Game cancelled pre launch")
+        elif self.state == GameState.INITIALIZING:
+            self._logger.info("Game cancelled pre initialization")
+        elif self.state == GameState.LIVE:
+            self.state = GameState.ENDED
+            self._logger.info("Game finished normally")
 
-        await self.persist_results()
-        await self.rate_game()
+            if self.desyncs > 20:
+                await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
 
-        for player in self._players_with_unsent_army_stats:
-            await self._process_army_stats_for_player(player)
+            if time.time() - self.launched_at > 4*60 and self.is_mutually_agreed_draw:
+                await self.mark_invalid(ValidityState.MUTUAL_DRAW)
+
+            await self.persist_results()
+            await self.rate_game()
+
+            for player in self._players_with_unsent_army_stats:
+                await self._process_army_stats_for_player(player)
 
     async def load_results(self):
         """

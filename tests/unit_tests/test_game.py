@@ -3,6 +3,7 @@ from unittest import mock
 import asyncio
 
 import pytest
+import time
 
 from trueskill import Rating
 
@@ -240,6 +241,7 @@ async def test_compute_rating_balanced_teamgame(game: Game, create_player):
 async def test_on_game_end_calls_rate_game(game):
     game.rate_game = CoroMock()
     game.state = GameState.LIVE
+    game.launched_at = time.time()
     await game.on_game_end()
     assert game.state == GameState.ENDED
     game.rate_game.assert_any_call()
