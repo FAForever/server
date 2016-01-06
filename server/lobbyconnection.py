@@ -820,10 +820,7 @@ Thanks,\n\
             raise ClientError("You are already in a game or haven't run the connectivity test yet")
 
         if self.connectivity.result.state == ConnectivityState.STUN:
-            addr = Address(*message['relay_address'])
-            host = ipaddress.ip_address(addr.host)
-            assert not host.is_loopback and not host.is_private
-            self.connectivity.relay_address = addr
+            self.connectivity.relay_address = Address(*message['relay_address'])
 
         uuid = message['uid']
         port = message['gameport']

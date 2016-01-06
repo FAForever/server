@@ -1,3 +1,4 @@
+import ipaddress
 from typing import NamedTuple, Optional, List
 from concurrent.futures import CancelledError, TimeoutError
 import asyncio
@@ -64,8 +65,19 @@ class Connectivity(Receiver):
         self._nat_packets = {}
         self._dispatcher = dispatcher
         self.host = host
-        self.relay_address = None
+        self._relay_addr = None
         dispatcher.subscribe_to('connectivity', self)
+
+    @property
+    def relay_address(self):
+        return self._relay_addr
+
+    @relay_address.setter
+    def relay_address(self, val):
+        addr = Address(*val)
+        host = ipaddress.ip_address(addr.host)
+        assert not host.is_loopback and not host.is_private
+        self._relay_addr = addr
 
     @property
     def result(self) -> Optional[ConnectivityResult]:
@@ -78,7 +90,7 @@ class Connectivity(Receiver):
         elif cmd == 'InitiateTest':
             asyncio.ensure_future(self.initiate_test(args[0]))
         elif cmd == 'RelayAddress':
-            self.relay_address = args[0]
+            self.relay_address = Address(*args[0])
 
     async def initiate_test(self, port: int):
         self._test = ConnectivityTest(self, self.host, port, self.player)
