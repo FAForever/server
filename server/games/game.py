@@ -182,10 +182,10 @@ class Game(BaseGame):
     async def add_result(self, reporter: Union[Player, int], army: int, result_type: str, score: int):
         """
         As computed by the game.
-        :param reporter:
-        :param army:
-        :param result_type:
-        :param score:
+        :param reporter: a player instance or the player ID
+        :param army: the army number being reported for
+        :param result_type: a string representing the result
+        :param score: an arbitrary number assigned with the result
         :return:
         """
         if army not in self.armies:
