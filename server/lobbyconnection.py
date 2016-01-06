@@ -109,7 +109,7 @@ class LobbyConnection(Dispatcher):
         if self.player:
             self._logger.warning("Client %s dropped. %s" % (self.player.login, logspam))
         else:
-            self._logger.warning("Aborting %s. %s" % (self.ip, logspam))
+            self._logger.warning("Aborting %s. %s" % (self.peer_address.host, logspam))
         self._authenticated = False
         self.protocol.writer.write_eof()
         self.protocol.reader.feed_eof()
