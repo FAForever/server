@@ -3,6 +3,7 @@ import asyncio
 import hashlib
 import cgi
 import base64
+import ipaddress
 import json
 import urllib.parse
 import zipfile
@@ -819,7 +820,10 @@ Thanks,\n\
             raise ClientError("You are already in a game or haven't run the connectivity test yet")
 
         if self.connectivity.result.state == ConnectivityState.STUN:
-            self.connectivity.relay_address = Address(*message['relay_address'])
+            addr = Address(*message['relay_address'])
+            host = ipaddress.ip_address(addr.host)
+            assert not host.is_loopback and not host.is_private
+            self.connectivity.relay_address = addr
 
         uuid = message['uid']
         port = message['gameport']
