@@ -241,8 +241,8 @@ class Game(BaseGame):
         :param
         :return: None
         """
-        assert game_connection in self._connections.values()
-        del self._connections[game_connection.player]
+        if game_connection in self._connections.values():
+            del self._connections[game_connection.player]
         if game_connection.player:
             del game_connection.player.game
         self._logger.info("Removed game connection {}".format(game_connection))
