@@ -16,8 +16,6 @@ import server.db as db
 
 logger = logging.getLogger(__name__)
 
-PROXY_SERVER = ('127.0.0.1', 12000)
-
 
 class AuthenticationError(Exception):
     pass
