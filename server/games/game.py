@@ -258,7 +258,6 @@ class Game(BaseGame):
         elif self.state == GameState.INITIALIZING:
             self._logger.info("Game cancelled pre initialization")
         elif self.state == GameState.LIVE:
-            self.state = GameState.ENDED
             self._logger.info("Game finished normally")
 
             if self.desyncs > 20:
@@ -272,6 +271,7 @@ class Game(BaseGame):
 
             for player in self._players_with_unsent_army_stats:
                 await self._process_army_stats_for_player(player)
+        self.state = GameState.ENDED
 
     async def load_results(self):
         """
