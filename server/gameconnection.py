@@ -4,7 +4,6 @@ from concurrent.futures import CancelledError
 import time
 import logging
 import functools
-import config
 from server.abc.base_game import GameConnectionState
 from server.abc.dispatcher import Receiver
 from server.connectivity import Connectivity, ConnectivityState, ConnectivityResult
@@ -63,7 +62,6 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         self.ip, self.port = None, None
         self.lobby = None
         self._transport = None
-        self.ping_task = None
 
         self.connectivity = self.lobby_connection.connectivity  # type: Connectivity
         self.lobby_connection.subscribe_to('game', self)
@@ -434,16 +432,11 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             self.loop.create_task(self.game.remove_game_connection(self))
             self._mark_dirty()
             self.log.debug("{}.abort()".format(self))
+            self.player.state = PlayerState.IDLE
             del self.player.game
             del self.player.game_connection
         except Exception as ex:  # pragma: no cover
             self.log.debug("Exception in abort(): {}".format(ex))
-            pass
-        finally:
-            if self.ping_task is not None:
-                self.ping_task.cancel()
-            if self._player:
-                self._player.state = PlayerState.IDLE
 
     async def on_connection_lost(self):
         try:
