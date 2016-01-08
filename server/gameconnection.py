@@ -224,14 +224,13 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             if peer_addr is None or own_addr is None:
                 self._logger.debug("STUN between {} {} failed".format(self, peer_connection))
                 self._logger.debug("Resolved addresses: {}, {}".format(peer_addr, own_addr))
-                if self.player.id < peer_connection.player.id:
+                if self.player.id < peer_connection.player.id and own.state == ConnectivityState.STUN:
                     return await self.TURN(peer_connection)
-                else:
+                elif peer.state == ConnectivityState.STUN:
                     return tuple(reversed(await peer_connection.TURN(self)))
             else:
                 return own_addr, peer_addr
-        else:
-            self._logger.info("Connection blocked")
+        self._logger.error("Connection blocked")
 
     async def TURN(self, peer: 'GameConnection'):
         addr = await self.connectivity.create_binding(peer.connectivity)
