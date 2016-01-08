@@ -435,6 +435,8 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             del self.player.game_connection
         except Exception as ex:  # pragma: no cover
             self.log.debug("Exception in abort(): {}".format(ex))
+        finally:
+            self.lobby_connection.unsubscribe_from('game', self)
 
     async def on_connection_lost(self):
         try:
