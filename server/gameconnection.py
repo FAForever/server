@@ -97,24 +97,6 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         self.lobby_connection.send({**message,
                                     'target': 'game'})
 
-    @asyncio.coroutine
-    def ping(self):
-        """
-        Ping the relay server to check if the player is still there.
-        """
-        while True:
-            if self._state == GameConnectionState.ENDED:
-                break
-            if time.time() - self.last_pong > 30:
-                self._logger.debug('Missed ping, terminating')
-                self.abort()
-                break
-            self.send_Ping()
-            try:
-                yield from asyncio.sleep(20)
-            except CancelledError:  # pragma: no cover
-                break
-
     async def _handle_idle_state(self):
         """
         This message is sent by FA when it doesn't know what to do.
