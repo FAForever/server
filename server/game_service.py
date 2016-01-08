@@ -183,7 +183,8 @@ class GameService:
                 if game.state == GameState.LOBBY or game.state == GameState.INITIALIZING]
 
     def remove_game(self, game: Game):
-        del self.games[game.id]
+        if game.id in self.games:
+            del self.games[game.id]
 
     def all_game_modes(self):
         mods = []

@@ -70,8 +70,6 @@ def run_lobby_server(address: (str, int),
             # TODO: This spams squillions of messages: we should implement per-connection message
             # aggregation at the next abstraction layer down :P
             for game in dirties:
-                # Don't tell anyone about an ended game.
-                # TODO: Probably better to do this at the time of the state transition instead?
                 if game.state == GameState.ENDED:
                     games.remove_game(game)
 
