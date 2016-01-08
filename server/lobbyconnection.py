@@ -80,7 +80,7 @@ class LobbyConnection(Dispatcher):
         self.loop = loop
         self.db = db
         self.game_service = games
-        self.player_service = players
+        self.player_service = players  # type: PlayerService
         self.context = context
         self.ladderPotentialPlayers = []
         self.warned = False
