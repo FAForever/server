@@ -227,7 +227,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
                 if self.player.id < peer_connection.player.id:
                     return await self.TURN(peer_connection)
                 else:
-                    return await peer_connection.TURN(self)
+                    return tuple(reversed(await peer_connection.TURN(self)))
             else:
                 return own_addr, peer_addr
         else:
@@ -235,7 +235,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
 
     async def TURN(self, peer: 'GameConnection'):
         addr = await self.connectivity.create_binding(peer.connectivity)
-        return addr, self.lobby_connection.connectivity.relay_address
+        return self.lobby_connection.connectivity.relay_address, addr
 
     async def STUN(self, peer):
         """
