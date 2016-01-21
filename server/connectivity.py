@@ -88,7 +88,9 @@ class Connectivity(Receiver):
         if cmd == 'ProcessNatPacket':
             self.process_nat_packet(Address.from_string(args[0]), args[1])
         elif cmd == 'InitiateTest':
-            asyncio.ensure_future(self.initiate_test(args[0]))
+            port = args[0]
+            assert 1024 < port < 65535
+            asyncio.ensure_future(self.initiate_test(port))
         elif cmd == 'RelayAddress':
             self.relay_address = Address(*args[0])
 
