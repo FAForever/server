@@ -16,6 +16,7 @@ from typing import List
 from typing import Mapping
 from typing import Optional
 
+import datetime
 import pymysql
 import rsa
 import time
@@ -501,7 +502,8 @@ Thanks,\n\
                                   "login.login as username,"
                                   "login.password as password,"
                                   "login.steamid as steamid,"
-                                  "lobby_ban.reason as reason "
+                                  "lobby_ban.reason as reason,"
+                                  "lobby_ban.expires_at as expires_at "
                                   "FROM login "
                                   "LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser "
                                   "WHERE LOWER(login)=%s", login.lower())
@@ -509,11 +511,11 @@ Thanks,\n\
         if cursor.rowcount != 1:
             raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
 
-        player_id, real_username, dbPassword, steamid, ban_reason = yield from cursor.fetchone()
+        player_id, real_username, dbPassword, steamid, ban_expiry, ban_reason = yield from cursor.fetchone()
         if dbPassword != password:
             raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
 
-        if ban_reason != None:
+        if ban_reason is not None and datetime.datetime.now() < ban_expiry:
             raise ClientError("You are banned from FAF.\n Reason :\n {}".format(ban_reason))
 
         self._logger.debug("Login from: {}, {}, {}".format(player_id, login, self.session))
