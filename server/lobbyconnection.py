@@ -511,7 +511,7 @@ Thanks,\n\
         if cursor.rowcount != 1:
             raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
 
-        player_id, real_username, dbPassword, steamid, ban_expiry, ban_reason = yield from cursor.fetchone()
+        player_id, real_username, dbPassword, steamid, ban_reason, ban_expiry = yield from cursor.fetchone()
         if dbPassword != password:
             raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
 
