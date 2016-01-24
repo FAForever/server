@@ -48,6 +48,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         self.loop = loop
         self.player_service = player_service
         self.games = games
+        self._rehost = False
 
         self.log = logging.getLogger(__name__)
         self.initTime = time.time()
@@ -113,7 +114,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         elif state == PlayerState.JOINING:
             pass
         else:
-            self.log.exception("Unknown PlayerState")
+            self.log.exception("Invalid PlayerState: "+repr(state))
             self.abort()
 
     @asyncio.coroutine
@@ -351,6 +352,9 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             elif command == 'JsonStats':
                 await self.game.report_army_stats(args[0])
 
+            elif command == 'Rehost':
+                self._rehost = True
+
 
         except AuthenticationError as e:
             self.log.exception("Authentication error: {}".format(e))
@@ -414,6 +418,17 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             self.player.state = PlayerState.IDLE
             del self.player.game
             del self.player.game_connection
+
+            if self._rehost:
+                rehost_message = dict(
+                    title=self.game.name,
+                    gameport=self.player.game_port,
+                    visibility=self.game.visibility,
+                    mod=self.game.game_mode,
+                    mapname=self.game.map_file_path,
+                    password=self.game.password
+                )
+                self.lobby_connection.command_game_host(rehost_message, True)
         except Exception as ex:  # pragma: no cover
             self.log.debug("Exception in abort(): {}".format(ex))
         finally:

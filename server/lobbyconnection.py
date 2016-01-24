@@ -883,7 +883,7 @@ Thanks,\n\
         asyncio.async(self.send_coop_maps())
 
     @timed()
-    def command_game_host(self, message):
+    def command_game_host(self, message, is_rehost=False):
         if not self.able_to_launch_game:
             raise ClientError("You are already in a game or haven't run the connectivity test yet")
 
@@ -918,10 +918,10 @@ Thanks,\n\
             'mapname': mapname,
             'password': password
         })
-        self.launch_game(game, port, True)
+        self.launch_game(game, port, True, is_rehost)
         server.stats.incr('game.hosted')
 
-    def launch_game(self, game, port, is_host=False):
+    def launch_game(self, game, port, is_host=False, is_rehost=False):
         # FIXME: Setting up a ridiculous amount of cyclic pointers here
         self.game_connection = GameConnection(self.loop,
                                               self,
@@ -937,10 +937,14 @@ Thanks,\n\
         self.player.game = game
         self.player.game_port = port
 
+        args = ["/numgames " + str(self.player.numGames)]
+        if is_rehost:
+            args.append("/rehost")
+
         self.sendJSON({"command": "game_launch",
                        "mod": game.game_mode,
                        "uid": game.id,
-                       "args": ["/numgames " + str(self.player.numGames)]})
+                       "args": args})
 
     @asyncio.coroutine
     def command_modvault(self, message):

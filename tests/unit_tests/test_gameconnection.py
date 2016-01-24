@@ -2,11 +2,13 @@ import asyncio
 import json
 
 from unittest import mock
+from unittest.mock import Mock
 
 from server import GameConnection
 from server.connectivity import ConnectivityResult, ConnectivityState
 from server.games import Game
 from server.players import PlayerState
+from tests.utils import CoroMock
 
 LOCAL_PUBLIC = ConnectivityResult(addr='127.0.0.1:6112', state=ConnectivityState.PUBLIC)
 LOCAL_STUN = ConnectivityResult(addr='127.0.0.1:6112', state=ConnectivityState.STUN)
@@ -121,6 +123,42 @@ def test_handle_action_GameResult_calls_add_result(game, loop, game_connection):
     result = asyncio.async(game_connection.handle_action('GameResult', [0, 'score -5']))
     loop.run_until_complete(result)
     game.add_result.assert_called_once_with(game_connection.player, 0, 'score', -5)
+
+
+def test_rehost_initially_false(game_connection):
+    assert not game_connection._rehost
+
+
+async def test_rehost_true_after_Rehost_from_game(loop, game_connection):
+    await game_connection.handle_action('Rehost', [])
+
+    assert game_connection._rehost
+
+
+async def test_handle_action_Rehost_sends_game_host_message_after_disconnect(game, game_connection):
+    game_connection.game = Mock(spec=Game)
+    game_connection.game.remove_game_connection = CoroMock()
+    game_connection.game.name = 'Game name'
+    game_connection.game.visibility = 'public'
+    game_connection.game.game_mode = 'faf'
+    game_connection.game.map_file_path = 'SCMP_007'
+    game_connection.game.password = 'myPwd'
+    game_connection.player.game_port = 1234
+
+    await game_connection.handle_action('Rehost', [])
+
+    assert len(game_connection.lobby_connection.command_game_host.mock_calls) == 0
+
+    await game_connection.on_connection_lost()
+
+    game_connection.lobby_connection.command_game_host.assert_called_with(dict(
+        title='Game name',
+        gameport=1234,
+        visibility='public',
+        mod='faf',
+        mapname='SCMP_007',
+        password='myPwd'
+    ), True)
 
 async def test_json_stats(game_connection, game_stats_service, players, game):
     game_stats_service.process_game_stats = mock.Mock()
