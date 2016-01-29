@@ -95,7 +95,6 @@ class MatchmakerQueue:
                 await search.await_match()
                 self._logger.debug("Search complete".format(search))
                 self.notify_potential_opponents(search, False)
-                del self.queue[search.player]
             except CancelledError:
                 pass
 
