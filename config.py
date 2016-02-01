@@ -29,6 +29,6 @@ RULE_LINK = Config.get('rule_url', 'http://forums.faforever.com/forums/viewtopic
 WIKI_LINK = Config.get('wiki_url', 'http://wiki.faforever.com')
 APP_URL = Config.get('app_url', 'http://app.faforever.com')
 CONTENT_URL = Config.get('content_url', 'http://content.faforever.com')
-CONTENT_PATH = Config.get('content_path', '/var/www/content/') # Must have trailing slash
+CONTENT_PATH = Config.get('content_path', '/content/')  # Must have trailing slash
 
 LADDER_SEASON = Config.get('ladder_season', "ladder_season_5")
