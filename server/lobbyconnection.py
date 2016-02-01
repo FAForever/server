@@ -145,7 +145,7 @@ class LobbyConnection(Dispatcher):
                 return
             if target == 'game':
                 if not self.game_connection:
-                    raise ClientError("You aren't in a game")
+                    return
                 await self.game_connection.handle_action(cmd, message.get('args', []))
                 return
             handler = getattr(self, 'command_{}'.format(cmd))
