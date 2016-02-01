@@ -641,6 +641,8 @@ Thanks,\n\
 
             if message.get('user_agent', None) != 'downlords-faf-client':
                 try:
+                    if "+" in version:
+                        version = version.split('+')[0]
                     if semver.compare(versionDB, version) > 0:
                         self.sendJSON(dict(command="update",
                                            update=updateFile,
