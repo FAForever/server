@@ -149,9 +149,12 @@ class Game(BaseGame):
     @property
     def is_mutually_agreed_draw(self):
         for army in self.armies:
-            for result in self._results[army]:
-                if result[2] != 'mutual_draw':
-                    return False
+            if army in self._results:
+                for result in self._results[army]:
+                    if result[2] != 'mutual_draw':
+                        return False
+            else:
+                return False
         return True
 
     @property
