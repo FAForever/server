@@ -651,6 +651,7 @@ class Game(BaseGame):
             "num_players": len(self.players),
             "game_type": self.gameType,
             "max_players": self.max_players,
+            "launched_at": self.launched_at,
             "teams": {
                 team: [player.login for player in self.players
                        if self.get_player_option(player.id, 'Team') == team]

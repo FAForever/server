@@ -281,6 +281,7 @@ async def test_to_dict(game, create_player):
         "num_players": len(game.players),
         "game_type": game.gameType,
         "max_players": game.max_players,
+        "launched_at": game.launched_at,
         "teams": {
             team: [player.login for player in game.players
                    if game.get_player_option(player.id, 'Team') == team]
