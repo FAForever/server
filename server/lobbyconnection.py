@@ -628,33 +628,41 @@ Thanks,\n\
 
         return True
 
+    def check_version(self, message):
+        versionDB, updateFile = self.player_service.client_version_info
+        update_msg = dict(command="update",
+                          update=updateFile,
+                          new_version=versionDB)
+
+        if 'version' not in message or 'user_agent' not in message:
+            update_msg['command'] = 'welcome'
+            # For compatibility with 0.10.x updating mechanism
+            self.sendJSON(update_msg)
+            return False
+
+        version = message.get('version')
+
+        # Check their client is reporting the right version number.
+        if message.get('user_agent', None) != 'downlords-faf-client':
+            try:
+                if "+" in version:
+                    version = version.split('+')[0]
+                if semver.compare(versionDB, version) > 0:
+                    self.sendJSON(update_msg)
+                    return False
+            except ValueError:
+                self.sendJSON(update_msg)
+                return False
+        return True
 
     @asyncio.coroutine
     def command_hello(self, message):
-        version = message['version']
         login = message['login'].strip()
         password = message['password']
 
         # Check their client is reporting the right version number.
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
-            versionDB, updateFile = self.player_service.client_version_info
-
-            if message.get('user_agent', None) != 'downlords-faf-client':
-                try:
-                    if "+" in version:
-                        version = version.split('+')[0]
-                    if semver.compare(versionDB, version) > 0:
-                        self.sendJSON(dict(command="update",
-                                           update=updateFile,
-                                           new_version=versionDB))
-                        return
-                except ValueError:
-                        self.sendJSON(dict(command="update",
-                                           update=updateFile,
-                                           new_version=versionDB))
-                        return
-
             player_id, login, steamid = yield from self.check_user_login(cursor, login, password)
             server.stats.incr('user.logins')
             server.stats.gauge('users.online', len(self.player_service))
@@ -774,8 +782,13 @@ Thanks,\n\
 
     @timed
     def command_ask_session(self, message):
-        jsonToSend = {"command": "session", "session": self.session}
-        self.sendJSON(jsonToSend)
+        if self.check_version(message):
+            self.sendJSON({
+                "command": "session",
+                "session": self.session
+            })
+        else:
+            self.abort('Outdated client: {}'.format(message))
 
     @timed
     def command_avatar(self, message):

@@ -135,12 +135,6 @@ def test_abort(loop, mocker, lobbyconnection):
     proto.writer.write_eof.assert_any_call()
 
 
-def test_ask_session(lobbyconnection):
-    lobbyconnection.sendJSON = mock.Mock()
-    lobbyconnection.command_ask_session({})
-    (response, ), _ = lobbyconnection.sendJSON.call_args
-    assert response['command'] == 'session'
-
 def test_send_game_list(mocker, lobbyconnection, game_stats_service):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
     games = mocker.patch.object(lobbyconnection, 'game_service')  # type: GameService
