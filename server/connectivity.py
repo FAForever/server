@@ -120,11 +120,10 @@ class Connectivity(Receiver):
         addr = peer.connectivity.result.addr if not use_address else use_address
         self._logger.debug("{} probing {} at {} with msg: {}".format(self, peer, addr, nat_message))
         for _ in range(3):
-            for i in range(0, 4):
-                self._logger.debug("{} sending NAT packet {} to {}".format(self, i, addr))
-                ip, port = addr
-                self.send('SendNatPacket', ["{}:{}".format(ip, int(port) + i),
-                                            nat_message])
+            self._logger.debug("{} sending NAT packet to {}".format(self, addr))
+            ip, port = addr
+            self.send('SendNatPacket', ["{}:{}".format(ip, int(port)),
+                                        nat_message])
         try:
             waiter = self.wait_for_natpacket(nat_message)
             address, message = await asyncio.wait_for(waiter, 4)
