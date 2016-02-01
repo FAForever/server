@@ -787,8 +787,6 @@ Thanks,\n\
                 "command": "session",
                 "session": self.session
             })
-        else:
-            self.abort('Outdated client: {}'.format(message))
 
     @timed
     def command_avatar(self, message):
