@@ -1,4 +1,5 @@
 import asyncio
+from unittest.mock import Mock
 
 import pytest
 from unittest import mock
@@ -88,6 +89,35 @@ def test_command_game_host_creates_game(lobbyconnection,
     }
     mock_games.create_game\
         .assert_called_with(**expected_call)
+
+
+def test_command_game_host_rehost(mocker,
+                                  lobbyconnection,
+                                  game_service,
+                                  test_game_info,
+                                  players,
+                                  game_stats_service):
+    game = mock.create_autospec(Game(42, game_service, game_stats_service))
+    game.state = GameState.LOBBY
+    game.password = None
+    game.game_mode = 'faf'
+    game.id = 42
+
+    game_service.create_game = Mock(return_value=game)
+    lobbyconnection.game_service = game_service
+    lobbyconnection.player = players.hosting
+
+    mock_protocol = mocker.patch.object(lobbyconnection, 'protocol')
+
+    lobbyconnection.command_game_host(test_game_info, is_rehost=True)
+
+    expected_reply = {
+        'command': 'game_launch',
+        'mod': 'faf',
+        'uid': 42,
+        'args': ['/numgames {}'.format(players.hosting.numGames), '/rehost']
+    }
+    mock_protocol.send_message.assert_called_with(expected_reply)
 
 def test_command_game_join_calls_join_game(mocker,
                                            lobbyconnection,
