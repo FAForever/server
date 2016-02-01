@@ -127,7 +127,8 @@ class LobbyConnection(Dispatcher):
         self._subscribers[command_id].append(receiver)
 
     def unsubscribe_from(self, command_id: str, receiver: Receiver) -> None:
-        self._subscribers[command_id].remove(receiver)
+        if receiver in self._subscribers.get(command_id, []):
+            self._subscribers[command_id].remove(receiver)
 
     async def on_message_received(self, message):
         """
