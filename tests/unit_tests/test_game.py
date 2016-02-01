@@ -272,7 +272,7 @@ async def test_to_dict(game, create_player):
         "password_protected": game.password is not None,
         "uid": game.id,
         "title": game.name,
-        "state": 'closed',
+        "state": 'playing',
         "featured_mod": game.game_mode,
         "featured_mod_versions": game.getGamemodVersion(),
         "sim_mods": game.mods,
