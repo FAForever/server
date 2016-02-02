@@ -228,17 +228,18 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         own_addr = asyncio.ensure_future(self.connectivity.ProbePeerNAT(peer))
         remote_addr = asyncio.ensure_future(peer.connectivity.ProbePeerNAT(self))
         (done, pending) = await asyncio.wait([own_addr, remote_addr], return_when=asyncio.FIRST_COMPLETED)
-        own_addr, remote_addr = own_addr.result(), remote_addr.result()
-        if own_addr is not None and remote_addr is not None:
+        if own_addr.done() and remote_addr.done() and not own_addr.cancelled() and not remote_addr.cancelled():
             # Both peers got it the first time
-            return own_addr, remote_addr
-        if own_addr is not None:
+            return own_addr.result(), remote_addr.result()
+        if own_addr.done() and not own_addr.cancelled():
             # Remote received our packet, we didn't receive theirs
             # Instruct remote to try our new address
-            remote_addr = await peer.connectivity.ProbePeerNAT(self, use_address=own_addr)
-        elif remote_addr is not None:
+            own_addr = own_addr.result()
+            remote_addr = await peer.connectivity.ProbePeerNAT(self, use_address=own_addr.result())
+        elif remote_addr.done() and not remote_addr.cancelled():
             # Opposite of the above
-            own_addr = await self.connectivity.ProbePeerNAT(peer, use_address=remote_addr)
+            remote_addr = remote_addr.result()
+            own_addr = await self.connectivity.ProbePeerNAT(peer, use_address=remote_addr.result())
         for p in pending:
             if not p.done():
                 p.cancel()
