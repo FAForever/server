@@ -134,7 +134,6 @@ class LobbyConnection(Dispatcher):
         """
         Dispatches incoming messages
         """
-        self._logger.debug("<<: {}".format(message))
         try:
             cmd = message['command']
             if not self.ensure_authenticated(cmd):
@@ -150,7 +149,6 @@ class LobbyConnection(Dispatcher):
                 await self.game_connection.handle_action(cmd, message.get('args', []))
                 return
             handler = getattr(self, 'command_{}'.format(cmd))
-            self._logger.debug("Dispatching using {}".format(handler))
             if asyncio.iscoroutinefunction(handler):
                 await handler(message)
             else:
