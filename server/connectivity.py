@@ -125,7 +125,7 @@ class Connectivity(Receiver):
             self.send('SendNatPacket', ["{}:{}".format(ip, int(port)),
                                         nat_message])
         try:
-            waiter = self.wait_for_natpacket(nat_message)
+            waiter = peer.connectivity.wait_for_natpacket(nat_message)
             address, message = await asyncio.wait_for(waiter, 4)
             return address
         except (CancelledError, asyncio.TimeoutError):
