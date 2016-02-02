@@ -235,11 +235,11 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             # Remote received our packet, we didn't receive theirs
             # Instruct remote to try our new address
             own_addr = own_addr.result()
-            remote_addr = await peer.connectivity.ProbePeerNAT(self, use_address=own_addr.result())
+            remote_addr = await peer.connectivity.ProbePeerNAT(self, use_address=own_addr)
         elif remote_addr.done() and not remote_addr.cancelled():
             # Opposite of the above
             remote_addr = remote_addr.result()
-            own_addr = await self.connectivity.ProbePeerNAT(peer, use_address=remote_addr.result())
+            own_addr = await self.connectivity.ProbePeerNAT(peer, use_address=remote_addr)
         for p in pending:
             if not p.done():
                 p.cancel()
