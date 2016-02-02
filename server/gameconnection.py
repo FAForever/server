@@ -251,11 +251,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         :return: None
         """
         try:
-            if command == 'ProcessNatPacket':
-                address, message = args[0], args[1]
-                self.process_nat_packet(address.split(':'), message)
-
-            elif command == 'Desync':
+            if command == 'Desync':
                 self.game.desyncs += 1
 
             elif command == 'GameState':
