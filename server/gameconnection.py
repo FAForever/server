@@ -227,9 +227,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         """
         own_addr = asyncio.ensure_future(self.connectivity.ProbePeerNAT(peer))
         remote_addr = asyncio.ensure_future(peer.connectivity.ProbePeerNAT(self))
-        (done, pending) = await asyncio.wait([own_addr, remote_addr])
-        assert len(pending) == 0
-        assert len(done) == 2
+        (done, pending) = await asyncio.wait([own_addr, remote_addr], return_when=asyncio.FIRST_COMPLETED)
         own_addr, remote_addr = own_addr.result(), remote_addr.result()
         if own_addr is not None and remote_addr is not None:
             # Both peers got it the first time
@@ -241,6 +239,9 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         elif remote_addr is not None:
             # Opposite of the above
             own_addr = await self.connectivity.ProbePeerNAT(peer, use_address=remote_addr)
+        for p in pending:
+            if not p.done():
+                p.cancel()
         return own_addr, remote_addr
 
     async def handle_action(self, command, args):
