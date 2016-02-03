@@ -643,6 +643,8 @@ Thanks,\n\
         # Check their client is reporting the right version number.
         if message.get('user_agent', None) != 'downlords-faf-client':
             try:
+                if "-" in version:
+                    version = version.split('-')[0]
                 if "+" in version:
                     version = version.split('+')[0]
                 if semver.compare(versionDB, version) > 0:
