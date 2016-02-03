@@ -244,7 +244,7 @@ class ConnectivityTest:
                                      message])
             await asyncio.sleep(0.1)
             try:
-                received, addr = await asyncio.wait_for(fut, 0.5)
+                received, addr = await asyncio.wait_for(fut, 1)
                 if received == message:
                     return addr
             except (CancelledError, TimeoutError):
