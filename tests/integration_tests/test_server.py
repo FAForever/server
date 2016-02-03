@@ -56,7 +56,7 @@ def connect_client(server):
 
 @asyncio.coroutine
 def get_session(proto):
-    proto.send_message({'command': 'ask_session'})
+    proto.send_message({'command': 'ask_session', 'user_agent': 'faf-client', 'version': '0.11.16'})
     yield from proto.drain()
     msg = yield from proto.read_message()
     return msg['session']
