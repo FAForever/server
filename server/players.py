@@ -20,7 +20,7 @@ class Player(BasePlayer):
     information about players.
     """
     def __init__(self, login=None, session=0, ip=None, port=None, id=0,
-                 global_rating=(1500, 500), ladder_rating=(1500, 500), clan=None, numGames=0, permissionGroup=0, lobby_connection=None):
+                 global_rating=None, ladder_rating=None, clan=None, numGames=0, permissionGroup=0, lobby_connection=None):
         super().__init__(id, login)
 
         # The id of the user in the `login` table of the database.
@@ -28,6 +28,10 @@ class Player(BasePlayer):
         self.ip = ip
         self._game_port = port
 
+        if global_rating is None:
+            global_rating = (1500, 500)
+        if ladder_rating is None:
+            ladder_rating = (1500, 500)
         self.global_rating = global_rating
         self.ladder_rating = ladder_rating
 
