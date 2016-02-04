@@ -44,7 +44,7 @@ import server.db as db
 from server.types import Address
 from .game_service import GameService
 from .player_service import PlayerService
-from passwords import PRIVATE_KEY, MAIL_ADDRESS, VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY
+from passwords import PRIVATE_KEY, VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY
 import config
 from config import Config
 from server.protocol import QDataStreamProtocol
@@ -302,14 +302,14 @@ Thanks,\n\
         msg = MIMEText(text)
 
         msg['Subject'] = subject
-        msg['From'] = email.utils.formataddr(('Forged Alliance Forever', MAIL_ADDRESS))
+        msg['From'] = email.utils.formataddr(('Forged Alliance Forever', "admin@faforever.com"))
         msg['To'] = email.utils.formataddr((to_name, to_email))
 
         self._logger.debug("sending mail to " + to_email)
         s = smtplib.SMTP_SSL(config.SMTP_SERVER, config.SMTP_PORT, timeout=5)
         s.login(config.SMTP_USERNAME, config.SMTP_PASSWORD)
 
-        s.sendmail(MAIL_ADDRESS, [to_email], msg.as_string())
+        s.sendmail("admin@faforever.com", [to_email], msg.as_string())
         s.quit()
 
     @timed()
