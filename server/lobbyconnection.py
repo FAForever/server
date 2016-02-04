@@ -700,9 +700,9 @@ Thanks,\n\
             old_conn.send_warning("You have been signed out because you signed in elsewhere.", fatal=True)
 
         yield from self.player_service.fetch_player_data(self.player)
-        self._authenticated = True
 
         self.player_service[self.player.id] = self.player
+        self._authenticated = True
 
         # Country
         # -------
@@ -882,6 +882,7 @@ Thanks,\n\
             elif state == "start":
                 if self.search:
                     self.search.cancel()
+                assert self.player is not None
                 self.search = Search(self.player)
                 self.player.game_port = message['gameport']
                 self.player.faction = message['faction']
@@ -889,12 +890,11 @@ Thanks,\n\
                 container.addPlayer(self.player)
 
                 self._logger.info("{} is searching for ladder: {}".format(self.player, self.search))
-                assert self.player is not None
-                asyncio.async(self.player_service.ladder_queue.search(self.player, search=self.search))
+                asyncio.ensure_future(self.player_service.ladder_queue.search(self.player, search=self.search))
 
     def command_coop_list(self, message):
         """ Request for coop map list"""
-        asyncio.async(self.send_coop_maps())
+        asyncio.ensure_future(self.send_coop_maps())
 
     @timed()
     def command_game_host(self, message):
