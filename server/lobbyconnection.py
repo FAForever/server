@@ -867,6 +867,10 @@ Thanks,\n\
         port = message.get('gameport', None)
         if not self.able_to_launch_game:
             raise ClientError("You are already in a game or are otherwise having connection problems. Please report this issue using HELP -> Tech support.")
+
+        if self.connectivity.result.state == ConnectivityState.STUN:
+            self.connectivity.relay_address = Address(*message['relay_address'])
+
         if port:
             self.player.game_port = port
         state = message['state']
