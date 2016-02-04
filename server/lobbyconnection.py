@@ -865,6 +865,8 @@ Thanks,\n\
     def command_game_matchmaking(self, message):
         mod = message.get('mod', 'ladder1v1')
         port = message.get('gameport', None)
+        if not self.able_to_launch_game:
+            raise ClientError("You are already in a game or are otherwise having connection problems. Please report this issue using HELP -> Tech support.")
         if port:
             self.player.game_port = port
         state = message['state']
