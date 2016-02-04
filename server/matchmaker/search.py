@@ -4,6 +4,9 @@ import time
 from server.decorators import with_logger
 from trueskill import quality_1vs1, Rating
 
+from server.players import Player
+
+
 @with_logger
 class Search:
     """
@@ -56,6 +59,8 @@ class Search:
                 return max(q - self.search_expansion, 0)
 
     def quality_with(self, opponent):
+        if not isinstance(opponent, Player):
+            raise TypeError("{} is not a valid player to match with".format(opponent))
         return quality_1vs1(Rating(*getattr(self.player, self.rating_prop)),
                             Rating(*getattr(opponent, self.rating_prop)))
 
