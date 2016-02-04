@@ -73,8 +73,8 @@ class LadderService:
         game.set_player_option(player1.id, 'Team', 2)
         game.set_player_option(player2.id, 'Team', 3)
 
-        mapname = map_path[5:-4],  # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
-                                   # Really in the future, just send a better description
+        mapname = map_path[5:-4]  # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
+                                  # Really in the future, just send a better description
 
         player1.lobby_connection.launch_game(game, player1.game_port, is_host=True, use_map=mapname)
         await asyncio.sleep(4)
