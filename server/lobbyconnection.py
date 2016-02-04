@@ -845,19 +845,21 @@ Thanks,\n\
         password = message.get('password', None)
 
         self._logger.debug("joining: {}:{} with pw: {}".format(uuid, port, password))
-        game = self.game_service[uuid]
-        self._logger.debug("game found: {}".format(game))
+        try:
+            game = self.game_service[uuid]
+            if not game or game.state != GameState.LOBBY:
+                self._logger.debug("Game not in lobby state: {}".format(game))
+                self.sendJSON(dict(command="notice", style="info", text="The game you are trying to join is not ready."))
+                return
 
-        if not game or game.state != GameState.LOBBY:
-            self._logger.debug("Game not in lobby state: {}".format(game))
-            self.sendJSON(dict(command="notice", style="info", text="The game you are trying to join is not ready."))
-            return
+            if game.password != password:
+                self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
+                return
 
-        if game.password != password:
-            self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
-            return
+            self.launch_game(game, port, False)
+        except KeyError:
+            self.sendJSON(dict(command="notice", style="info", text="The host has left the game"))
 
-        self.launch_game(game, port, False)
 
     @asyncio.coroutine
     def command_game_matchmaking(self, message):
