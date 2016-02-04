@@ -862,6 +862,9 @@ Thanks,\n\
     @asyncio.coroutine
     def command_game_matchmaking(self, message):
         mod = message.get('mod', 'ladder1v1')
+        port = message.get('gameport', None)
+        if port:
+            self.player.game_port = port
         state = message['state']
 
         with (yield from db.db_pool) as conn:
@@ -935,7 +938,7 @@ Thanks,\n\
         self.launch_game(game, port, True)
         server.stats.incr('game.hosted')
 
-    def launch_game(self, game, port, is_host=False):
+    def launch_game(self, game, port, is_host=False, use_map=None):
         # FIXME: Setting up a ridiculous amount of cyclic pointers here
         self.game_connection = GameConnection(self.loop,
                                               self,
@@ -950,11 +953,13 @@ Thanks,\n\
         self.player.state = PlayerState.HOSTING if is_host else PlayerState.JOINING
         self.player.game = game
         self.player.game_port = port
-
-        self.sendJSON({"command": "game_launch",
+        cmd = {"command": "game_launch",
                        "mod": game.game_mode,
                        "uid": game.id,
-                       "args": ["/numgames " + str(self.player.numGames)]})
+                       "args": ["/numgames " + str(self.player.numGames)]}
+        if use_map:
+            cmd['mapname'] = use_map
+        self.sendJSON(cmd)
 
     @asyncio.coroutine
     def command_modvault(self, message):

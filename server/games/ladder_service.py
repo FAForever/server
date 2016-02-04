@@ -73,17 +73,9 @@ class LadderService:
         game.set_player_option(player1.id, 'Team', 2)
         game.set_player_option(player2.id, 'Team', 3)
 
-        launch_command = {
-            "command": "game_launch",
-            "mod": game.game_mode,
-            "mapname": map_path[5:-4],  # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
-                                        # Really in the future, just send a better description
-            "mapid": map_id,
-            "reason": "ranked",
-            "uid": game.id,
-            "args": ["/players 2", "/team 1"]
-        }
+        mapname = map_path[5:-4],  # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
+                                   # Really in the future, just send a better description
 
-        player1.lobby_connection.sendJSON(launch_command)
+        player1.lobby_connection.launch_game(game, player1.game_port, is_host=True, use_map=mapname)
         await asyncio.sleep(4)
-        player2.lobby_connection.sendJSON(launch_command)
+        player2.lobby_connection.launch_game(game, player2.game_port, is_host=True, use_map=mapname)
