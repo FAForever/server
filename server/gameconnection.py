@@ -295,6 +295,8 @@ class GameConnection(GpgNetServerProtocol, Receiver):
 
             elif command == 'PlayerOption':
                 if self.player.state == PlayerState.HOSTING:
+                    if not len(args) == 3:
+                        self._logger.exception("Malformed playeroption args: {}".format(args))
                     id = args[0]
                     command = args[1]
                     value = args[2]
