@@ -77,4 +77,4 @@ class LadderService:
                                   # Really in the future, just send a better description
         player1.lobby_connection.launch_game(game, player1.game_port, is_host=True, use_map=mapname)
         await asyncio.sleep(4)
-        player2.lobby_connection.launch_game(game, player2.game_port, is_host=True, use_map=mapname)
+        player2.lobby_connection.launch_game(game, player2.game_port, is_host=False, use_map=mapname)
