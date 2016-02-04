@@ -889,6 +889,7 @@ Thanks,\n\
                 container.addPlayer(self.player)
 
                 self._logger.info("{} is searching for ladder: {}".format(self.player, self.search))
+                assert self.player is not None
                 asyncio.async(self.player_service.ladder_queue.search(self.player, search=self.search))
 
     def command_coop_list(self, message):

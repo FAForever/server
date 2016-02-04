@@ -20,6 +20,7 @@ class Search:
         """
         self.rating_prop = rating_prop
         self.player = player
+        assert getattr(self.player, rating_prop) is not None
         self.start_time = start_time or time.time()
         self._match = asyncio.Future()
 
