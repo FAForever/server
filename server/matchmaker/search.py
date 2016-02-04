@@ -32,7 +32,7 @@ class Search:
         # give the system a chance at placing them
         self._deviation_quality = {
             450: 0.5,
-            350: 0.5,
+            350: 0.6,
             300: 0.7,
             250: 0.75,
             0: 0.8
@@ -61,6 +61,8 @@ class Search:
     def quality_with(self, opponent):
         if not isinstance(opponent, Player):
             raise TypeError("{} is not a valid player to match with".format(opponent))
+        if not getattr(opponent, self.rating_prop):
+            return 0
         return quality_1vs1(Rating(*getattr(self.player, self.rating_prop)),
                             Rating(*getattr(opponent, self.rating_prop)))
 
