@@ -384,11 +384,11 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             if self.player.state == PlayerState.HOSTING:
                 await self.game.launch()
 
-                if len(self.game.mods) > 0:
+                if len(self.game.mods.keys()) > 0:
                     async with db.db_pool.get() as conn:
                         cursor = await conn.cursor()
                         await cursor.execute("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid in %s",
-                                             self.game.mods)
+                                             self.game.mods.keys())
         elif state == 'Ended':
             await self.on_connection_lost()
 

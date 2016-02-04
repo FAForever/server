@@ -133,7 +133,7 @@ class Game(BaseGame):
                             'NoRushOption': 'Off',
                             'RestrictedCategories': 0}
 
-        self.mods = []
+        self.mods = {}
         self._logger.info("{} created".format(self))
         asyncio.get_event_loop().call_later(20, self.timeout_game)
 
@@ -426,7 +426,7 @@ class Game(BaseGame):
         """
         Mark the game invalid if it has non-compliant options
         """
-        for id in self.mods:
+        for id in self.mods.keys():
             if id not in self.game_service.ranked_mods:
                 await self.mark_invalid(ValidityState.BAD_MOD)
                 break
