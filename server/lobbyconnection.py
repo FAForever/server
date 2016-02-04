@@ -517,7 +517,6 @@ Thanks,\n\
             raise ClientError("You are banned from FAF.\n Reason :\n {}".format(ban_reason))
 
         self._logger.debug("Login from: {}, {}, {}".format(player_id, login, self.session))
-        self._authenticated = True
 
         return player_id, real_username, steamid
 
@@ -701,6 +700,7 @@ Thanks,\n\
             old_conn.send_warning("You have been signed out because you signed in elsewhere.", fatal=True)
 
         yield from self.player_service.fetch_player_data(self.player)
+        self._authenticated = True
 
         self.player_service[self.player.id] = self.player
 
