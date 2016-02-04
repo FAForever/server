@@ -865,15 +865,22 @@ Thanks,\n\
     def command_game_matchmaking(self, message):
         mod = message.get('mod', 'ladder1v1')
         port = message.get('gameport', None)
+        state = message['state']
+
         if not self.able_to_launch_game:
             raise ClientError("You are already in a game or are otherwise having connection problems. Please report this issue using HELP -> Tech support.")
+
+        if state == "stop":
+            if self.search:
+                self._logger.info("{} stopped searching for ladder: {}".format(self.player, self.search))
+                self.search.cancel()
+            return
 
         if self.connectivity.result.state == ConnectivityState.STUN:
             self.connectivity.relay_address = Address(*message['relay_address'])
 
         if port:
             self.player.game_port = port
-        state = message['state']
 
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
@@ -885,12 +892,7 @@ Thanks,\n\
 
         container = self.game_service.ladder_service
         if mod == "ladder1v1":
-            if state == "stop":
-                if self.search:
-                    self._logger.info("{} stopped searching for ladder: {}".format(self.player, self.search))
-                    self.search.cancel()
-
-            elif state == "start":
+            if state == "start":
                 if self.search:
                     self.search.cancel()
                 assert self.player is not None
