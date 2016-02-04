@@ -1,5 +1,6 @@
 import logging
 
+
 import trueskill
 from configobj import ConfigObj
 import os
@@ -32,3 +33,8 @@ CONTENT_URL = Config.get('content_url', 'http://content.faforever.com')
 CONTENT_PATH = Config.get('content_path', '/content/')  # Must have trailing slash
 
 LADDER_SEASON = Config.get('ladder_season', "ladder_season_5")
+
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.mandrillapp.com")
+SMTP_PORT = os.getenv("SMTP_PORT", 587)
+SMTP_USERNAME = os.getenv("SMTP_USERNAME", "admin@faforever.com")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")

@@ -306,9 +306,8 @@ Thanks,\n\
         msg['To'] = email.utils.formataddr((to_name, to_email))
 
         self._logger.debug("sending mail to " + to_email)
-        s = smtplib.SMTP_SSL(Config['smtp_server'], 465, Config['smtp_server'],
-                             timeout=5)
-        s.login(Config['smtp_username'], Config['smtp_password'])
+        s = smtplib.SMTP_SSL(config.SMTP_SERVER, config.SMTP_PORT, timeout=5)
+        s.login(config.SMTP_USERNAME, config.SMTP_PASSWORD)
 
         s.sendmail(MAIL_ADDRESS, [to_email], msg.as_string())
         s.quit()
