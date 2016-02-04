@@ -267,6 +267,7 @@ class Game(BaseGame):
                 await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
 
             if time.time() - self.launched_at > 4*60 and self.is_mutually_agreed_draw:
+                self._logger.info("Game is a mutual draw")
                 await self.mark_invalid(ValidityState.MUTUAL_DRAW)
 
             await self.persist_results()
