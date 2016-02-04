@@ -519,7 +519,7 @@ class Game(BaseGame):
             options = {key: player_option(key)
                        for key in ['Team', 'StartSpot', 'Color', 'Faction']}
 
-            if options['Team'] > 0 and options['StartSpot'] >= 0:
+            if options.get('Team', 0) > 0 and options.get('StartSpot', 0) >= 0:
                 if self.game_mode == 'ladder1v1':
                     mean, dev = player.ladder_rating
                 else:
