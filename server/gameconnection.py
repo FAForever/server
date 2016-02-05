@@ -273,7 +273,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
 
                 if option_key == 'ScenarioFile':
                     raw = "%r" % option_value
-                    self.game.map_file_path = raw.replace('\\', '/')
+                    self.game.map_scenario_path = raw.replace('\\', '/').replace("'", '')
                 self._mark_dirty()
 
             elif command == 'GameMods':

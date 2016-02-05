@@ -115,7 +115,8 @@ class Game(BaseGame):
         self.host = host
         self.name = name
         self.map_id = 0
-        self.map_file_path = map
+        self.map_file_path = '/maps/%s.zip' % map
+        self.map_scenario_path = None
         self.password = None
         self._players = []
         self.gameType = 0
@@ -670,7 +671,13 @@ class Game(BaseGame):
         Map folder name
         :return:
         """
-        return self.map_file_path[5:-4].lower()
+        try:
+            if self.map_scenario_path:
+                return str(self.map_file_path.split('/')[2]).lower()
+            elif self.map_file_path:
+                return self.map_file_path[5:-4].lower()
+        except IndexError:
+            return 'scmp_007'
 
     def __eq__(self, other):
         if not isinstance(other, Game):
