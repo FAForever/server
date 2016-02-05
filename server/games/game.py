@@ -245,10 +245,12 @@ class Game(BaseGame):
         :param
         :return: None
         """
-        if game_connection in self._connections.values():
-            del self._connections[game_connection.player]
+        if game_connection not in self._connections.values():
+            return
+        del self._connections[game_connection.player]
         if game_connection.player:
             del game_connection.player.game
+
         self._logger.info("Removed game connection {}".format(game_connection))
 
         if len(self._connections) == 0 or (self.host == game_connection.player and self.state != GameState.LIVE):
