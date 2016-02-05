@@ -1,11 +1,12 @@
 import ipaddress
-from typing import NamedTuple, Optional, List
-from concurrent.futures import CancelledError, TimeoutError
 import asyncio
 import logging
-from enum import Enum, unique
-
 import config
+import server
+
+from typing import NamedTuple, Optional
+from concurrent.futures import CancelledError, TimeoutError
+from enum import Enum, unique
 from server.abc.dispatcher import Dispatcher, Receiver
 from server.players import Player
 from server.types import Address
@@ -180,7 +181,7 @@ class ConnectivityTest:
         self.identifier = player.id
         self.client_packets = []
         self.server_packets = []
-        self._natserver = None
+        self._natserver = server.NatPacketServer.instance
 
     def __enter__(self):
         return self

@@ -64,6 +64,7 @@ if __name__ == '__main__':
 
         natpacket_server = NatPacketServer(addresses=config.LOBBY_NAT_ADDRESSES, loop=loop)
         loop.run_until_complete(natpacket_server.listen())
+        server.NatPacketServer.instance = natpacket_server
 
         games = GameService(players_online, game_stats_service)
         matchmaker_queue = MatchmakerQueue('ladder1v1', players_online, games)

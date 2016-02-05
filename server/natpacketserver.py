@@ -1,8 +1,5 @@
 import asyncio
-
-import config
 from .decorators import with_logger, _logger
-
 
 @with_logger
 class NatServerProtocol(asyncio.DatagramProtocol):
@@ -49,6 +46,8 @@ class NatServerProtocol(asyncio.DatagramProtocol):
 
 @with_logger
 class NatPacketServer:
+    instance = None
+
     def __init__(self, addresses=None, loop=None):
         if not addresses:
             self.addresses = ('0.0.0.0', 6112)
@@ -58,6 +57,7 @@ class NatPacketServer:
         self.loop = loop or asyncio.get_event_loop()
         self.servers = {}
         self._waiters = {}
+        NatPacketServer.instance = self
 
     async def __aenter__(self):
         await self.listen()
