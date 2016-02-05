@@ -251,7 +251,7 @@ class Game(BaseGame):
             del game_connection.player.game
         self._logger.info("Removed game connection {}".format(game_connection))
 
-        if len(self._connections) == 0 or self.host == game_connection.player:
+        if len(self._connections) == 0 or (self.host == game_connection.player and self.state != GameState.LIVE):
             await self.on_game_end()
         else:
             await self._process_pending_army_stats()
