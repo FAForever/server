@@ -593,7 +593,7 @@ class Game(BaseGame):
         assert self.state == GameState.LIVE or self.state == GameState.ENDED
         team_scores = {}
         ffa_scores = []
-        for player in self.players:
+        for player in sorted(self.players, key=lambda p: self.get_player_option(p.id, 'Army')):
             team = self.get_player_option(player.id, 'Team')
             army = self.get_player_option(player.id, 'Army')
             if not team:
@@ -609,14 +609,14 @@ class Game(BaseGame):
                                                                                         player=player))
             elif team == 1:
                 ffa_scores.append((player, self.get_army_result(army)))
-        ranks = [score for team, score in sorted(team_scores.items())]
+        ranks = [score for team, score in sorted(team_scores.items(), key=lambda t: t[0])]
         rating_groups = []
         for team in sorted(self.teams):
             if team != 1:
                 rating_groups += [{player: Rating(*getattr(player, '{}_rating'.format(rating)))
                                    for player in self.players if
                                    self.get_player_option(player.id, 'Team') == team}]
-        for player, score in ffa_scores:
+        for player, score in sorted(ffa_scores, key=lambda x: self.get_player_option(x[0].id, 'Army')):
             rating_groups += [{player: Rating(*getattr(player, '{}_rating'.format(rating)))}]
             ranks.append(score)
         self._logger.debug("Rating groups: {}".format(rating_groups))
