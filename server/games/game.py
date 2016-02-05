@@ -347,12 +347,13 @@ class Game(BaseGame):
             player: new_rating
             for team in rating_groups
             for player, new_rating in team.items()
-            }
+        }
 
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
             for player, new_rating in new_ratings.items():
+                self._logger.debug("New rating for {}: {}".format(player, new_rating))
                 yield from cursor.execute("UPDATE game_player_stats "
                                           "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
                                           "WHERE gameId = %s AND playerId = %s",
