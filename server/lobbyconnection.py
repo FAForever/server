@@ -733,20 +733,8 @@ Thanks,\n\
                 "players": [player.to_dict() for player in self.player_service]
             }
         )
-
         # Tell everyone else online about us
-        # FIXME: Introduce a system akin to dirty_games
-        player_info = self.player.to_dict()
-        for player in self.player_service:
-            if player != self.player:
-                lobby = player.lobby_connection
-                if lobby is not None:
-                    lobby.sendJSON(
-                        {
-                            "command": "player_info",
-                            "players": [player_info]
-                        }
-                    )
+        self.player_service.mark_dirty(self.player)
 
         friends = []
         foes = []

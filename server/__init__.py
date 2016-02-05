@@ -55,25 +55,39 @@ def run_lobby_server(address: (str, int),
     :param loop: Event loop to use
     :return ServerContext: A server object
     """
-    def encode(game):
+    def encode_game(game):
         # Crazy evil encoding scheme
         return QDataStreamProtocol.pack_block(
             QDataStreamProtocol.pack_qstring(json.dumps(game.to_dict()))
         )
 
-    def report_dirty_games():
+    def encode_players(players):
+        return QDataStreamProtocol.pack_block(
+            QDataStreamProtocol.pack_qstring(json.dumps(
+                    {
+                        'command': 'player_info',
+                        'players': [player.to_dict() for player in players]
+                    }
+            ))
+        )
+
+    def report_dirties():
         try:
-            dirties = games.dirty_games
+            dirty_games = games.dirty_games
+            dirty_players = player_service.dirty_players
             games.clear_dirty()
+            player_service.clear_dirty()
+
+            ctx.broadcast_raw(encode_players(dirty_players), lambda lobby_conn: lobby_conn.authenticated)
 
             # TODO: This spams squillions of messages: we should implement per-connection message
             # aggregation at the next abstraction layer down :P
-            for game in dirties:
+            for game in dirty_games:
                 if game.state == GameState.ENDED:
                     games.remove_game(game)
 
                 # So we're going to be broadcasting this to _somebody_...
-                message = encode(game)
+                message = encode_game(game)
 
                 # These games shouldn't be broadcast, but instead privately sent to those who are
                 # allowed to see them.
@@ -87,7 +101,7 @@ def run_lobby_server(address: (str, int),
         except Exception as e:
             logging.getLogger().exception(e)
         finally:
-            loop.call_later(5, report_dirty_games)
+            loop.call_later(5, report_dirties)
 
     def ping_broadcast():
         ctx.broadcast_raw(QDataStreamProtocol.pack_block(QDataStreamProtocol.pack_qstring('PING')))
@@ -99,7 +113,7 @@ def run_lobby_server(address: (str, int),
                                players=player_service,
                                loop=loop)
     ctx = ServerContext(initialize_connection, name="LobbyServer", loop=loop)
-    loop.call_later(5, report_dirty_games)
+    loop.call_later(5, report_dirties)
     loop.call_soon(ping_broadcast)
     loop.run_until_complete(ctx.listen(*address))
     return ctx

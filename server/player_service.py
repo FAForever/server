@@ -17,6 +17,7 @@ class PlayerService:
         self.uniqueid_exempt = {}
         self.client_version_info = ('0.0.0', None)
         self.blacklisted_email_domains = {}
+        self._dirty_players = set()
 
         self.ladder_queue = None
         asyncio.get_event_loop().run_until_complete(asyncio.async(self.update_data()))
@@ -33,6 +34,16 @@ class PlayerService:
 
     def __setitem__(self, key, value):
         self.players[key] = value
+
+    @property
+    def dirty_players(self):
+        return self._dirty_players
+
+    def mark_dirty(self, player):
+        self._dirty_players.add(player)
+
+    def clear_dirty(self):
+        self._dirty_players = set()
 
     @asyncio.coroutine
     def update_rating(self, player, rating='global'):
