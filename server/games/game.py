@@ -310,7 +310,7 @@ class Game(BaseGame):
             try:
                 result = self.get_army_result(army)
                 results[player] = result
-                self._logger.info('Result for army {}: {}'.format(army, result))
+                self._logger.info('Result for army {}, player: {}: {}'.format(army, player, result))
             except KeyError:
                 # Default to -1 if there is no result
                 results[player] = -1
@@ -619,11 +619,13 @@ class Game(BaseGame):
         for player, score in ffa_scores:
             rating_groups += [{player: Rating(*getattr(player, '{}_rating'.format(rating)))}]
             ranks.append(score)
+        self._logger.debug("Rating groups: {}".format(rating_groups))
+        self._logger.debug("Ranks: {}".format(ranks))
         return trueskill.rate(rating_groups, ranks)
 
     async def update_ratings(self):
         """ Update all scores from the DB before updating the results"""
-        self._logger.debug("updating ratings")
+        self._logger.debug("Updating ratings")
 
         player_ids = list(map(lambda p: p.id, self.players))
 
