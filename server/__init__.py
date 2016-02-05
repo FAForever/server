@@ -14,16 +14,16 @@ import aiomeasures
 import server.db
 import config
 
-from server.games.game import GameState, VisibilityState
-from server.stats.game_stats_service import GameStatsService
+from .games.game import GameState, VisibilityState
+from .stats.game_stats_service import GameStatsService
 from .gameconnection import GameConnection
 from .natpacketserver import NatPacketServer
-from server.lobbyconnection import LobbyConnection
-from server.protocol import Protocol, QDataStreamProtocol
-from server.servercontext import ServerContext
-from server.player_service import PlayerService
-from server.game_service import GameService
-from server.control import init as run_control_server
+from .lobbyconnection import LobbyConnection
+from .protocol import Protocol, QDataStreamProtocol
+from .servercontext import ServerContext
+from .player_service import PlayerService
+from .game_service import GameService
+from .control import init as run_control_server
 
 __version__ = '0.1'
 __author__ = 'Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard'
