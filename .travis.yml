@@ -15,7 +15,7 @@ before_script:
 script:
   - pip install -e .
   - export FAF_DB_PASSWORD=
-  - py.test --slow --cov-report term-missing --cov=server
+  - py.test --cov-report term-missing --cov=server
   - pyflakes . || true
 
 after_success:
