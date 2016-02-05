@@ -1,7 +1,6 @@
 import asyncio
 from collections import OrderedDict
 from concurrent.futures import CancelledError
-from pybloom import ScalableBloomFilter
 
 import server
 from server.decorators import with_logger
