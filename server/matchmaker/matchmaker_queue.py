@@ -79,7 +79,7 @@ class MatchmakerQueue:
                     if opponent == player:
                         continue
 
-                    quality = search.quality_with(player)
+                    quality = search.quality_with(opponent)
                     threshold = search.match_threshold
                     self._logger.debug("Game quality between {} and {}: {} (threshold: {})"
                                         .format(player, opponent, quality, threshold))
