@@ -23,8 +23,9 @@ class NatServerProtocol(asyncio.DatagramProtocol):
                 if not self._futures[data].done():
                     self._futures[data].set_result((msg, addr))
                 del self._futures[data]
-            # Echo back the message
-            self.transport.sendto("OK: {}".format(msg).encode(), addr)
+        except UnicodeDecodeError:
+            # We don't care about random folks sending us data
+            pass
         except Exception as e:
             self._logger.exception(e)
 
