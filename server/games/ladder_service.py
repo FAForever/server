@@ -22,15 +22,6 @@ class LadderService:
         self.game_service = games_service
         self.game_stats_service = game_stats_service
 
-    @asyncio.coroutine
-    def getLeague(self, season, player):
-        with (yield from db.db_pool) as conn:
-            with (yield from conn.cursor()) as cursor:
-                yield from cursor.execute("SELECT league FROM %s WHERE idUser = %s", (season, player.id))
-                (league, ) = yield from cursor.fetchone()
-                if league:
-                    return league
-
     def addPlayer(self, player):
         if player not in self.players:
             self.players.append(player)
