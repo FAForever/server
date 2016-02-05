@@ -670,7 +670,7 @@ class Game(BaseGame):
         Map folder name
         :return:
         """
-        return self.map_file_path[5:-4]
+        return self.map_file_path[5:-4].lower()
 
     def __eq__(self, other):
         if not isinstance(other, Game):
