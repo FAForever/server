@@ -131,7 +131,10 @@ class QDataStreamProtocol(Protocol):
 
         See StreamWriter.drain()
         """
-        await self.writer.drain()
+        try:
+            await self.writer.drain()
+        except Exception as e:
+            pass
 
     def close(self):
         """
