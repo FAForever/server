@@ -55,12 +55,13 @@ def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, pla
     :type game_connection: GameConnection
     """
     game_connection.player = players.hosting
-    game.map_file_path = 'some_map'
+    game.map_file_path = 'maps/some_map.zip'
+    game.map_folder_name = 'some_map'
 
     result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
     loop.run_until_complete(result)
 
-    assert_message_sent(game_connection, 'HostGame', [game.map_file_path])
+    assert_message_sent(game_connection, 'HostGame', [game.map_folder_name])
 
 
 def test_handle_action_GameState_lobby_calls_ConnectToHost(game_connection, loop, players, game):

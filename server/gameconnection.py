@@ -127,7 +127,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         try:
             player_state = self.player.state
             if player_state == PlayerState.HOSTING:
-                self.send_HostGame(self.game.map_file_path)
+                self.send_HostGame(self.game.map_folder_name)
             # If the player is joining, we connect him to host
             # followed by the rest of the players.
             elif player_state == PlayerState.JOINING:

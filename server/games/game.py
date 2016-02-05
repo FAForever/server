@@ -650,7 +650,8 @@ class Game(BaseGame):
             "featured_mod": self.game_mode,
             "featured_mod_versions": self.getGamemodVersion(),
             "sim_mods": self.mods,
-            "mapname": (self.map_file_path or "").lower(),
+            "mapname": self.map_folder_name,
+            "map_file_path": self.map_file_path,
             "host": self.host.login if self.host else '',
             "num_players": len(self.players),
             "game_type": self.gameType,
@@ -662,6 +663,14 @@ class Game(BaseGame):
                 for team in self.teams
                 }
         }
+
+    @property
+    def map_folder_name(self):
+        """
+        Map folder name
+        :return:
+        """
+        return self.map_file_path[5:-4]
 
     def __eq__(self, other):
         if not isinstance(other, Game):
