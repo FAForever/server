@@ -357,6 +357,8 @@ class Game(BaseGame):
                                           "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
                                           "WHERE gameId = %s AND playerId = %s",
                                           (new_rating.mu, new_rating.sigma, self.id, player.id))
+                if rating == 'ladder':
+                    rating = 'ladder1v1' # FIXME: Be consistent about the naming of this
 
                 yield from cursor.execute("UPDATE {}_rating "
                                           "SET mean = %s, is_active=1, deviation = %s, numGames = (numGames + 1) "
