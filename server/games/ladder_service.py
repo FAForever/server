@@ -54,6 +54,10 @@ class LadderService:
 
         game.set_player_option(player1.id, 'StartSpot', 1)
         game.set_player_option(player2.id, 'StartSpot', 2)
+        game.set_player_option(player1.id, 'Faction', player1.faction)
+        game.set_player_option(player2.id, 'Faction', player2.faction)
+        game.set_player_option(player1.id, 'Color', 1)
+        game.set_player_option(player2.id, 'Color', 2)
         game.set_player_option(player1.id, 'Army', 1)
         game.set_player_option(player2.id, 'Army', 2)
 
