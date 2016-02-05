@@ -609,7 +609,7 @@ class Game(BaseGame):
                                                                                         player=player))
             elif team == 1:
                 ffa_scores.append((player, self.get_army_result(army)))
-        ranks = [score for team, score in sorted(team_scores.items(), key=lambda t: t[0])]
+        ranks = [-score for team, score in sorted(team_scores.items(), key=lambda t: t[0])]
         rating_groups = []
         for team in sorted(self.teams):
             if team != 1:
@@ -618,7 +618,7 @@ class Game(BaseGame):
                                    self.get_player_option(player.id, 'Team') == team}]
         for player, score in sorted(ffa_scores, key=lambda x: self.get_player_option(x[0].id, 'Army')):
             rating_groups += [{player: Rating(*getattr(player, '{}_rating'.format(rating)))}]
-            ranks.append(score)
+            ranks.append(-score)
         self._logger.debug("Rating groups: {}".format(rating_groups))
         self._logger.debug("Ranks: {}".format(ranks))
         return trueskill.rate(rating_groups, ranks)
