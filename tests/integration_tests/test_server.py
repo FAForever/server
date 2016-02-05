@@ -145,30 +145,3 @@ async def test_public_host(loop, lobby_server, player_service):
         client.send_GameState(['Lobby'])
         await client._proto.writer.drain()
 
-#@asyncio.coroutine
-#async def test_stun_host(loop, lobby_server, player_service):
-#    player_id, session, proto = await connect_and_sign_in(('Dostya', 'vodka'), lobby_server)
-#
-#    proto.send_message(dict(command='game_host',
-#                            mod='faf',
-#                            visibility=VisibilityState.to_string(VisibilityState.PUBLIC)))
-#    await proto.drain()
-#
-#    with TestClient(loop=loop, process_nat_packets=False, proto=proto) as client:
-#        await client.listen_udp()
-#        client.send_GameState(['Idle'])
-#        client.send_GameState(['Lobby'])
-#        await client.read_until('SendNatPacket')
-#        assert call({"command": "SendNatPacket",
-#                     "target": "game",
-#                     "args": ["%s:%s" % (config.LOBBY_IP, config.LOBBY_UDP_PORT),
-#                             "Hello %s" % player_id]})\
-#               in client.messages.mock_calls
-#
-#        client.send_udp_natpacket('Hello {}'.format(player_id), '127.0.0.1', config.LOBBY_UDP_PORT)
-#        await client.read_until('ConnectivityState')
-#        assert call({'command': 'ConnectivityState',
-#                     'target': 'game',
-#                     'args': [player_id, 'STUN']})\
-#               in client.messages.mock_calls
-
