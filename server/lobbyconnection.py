@@ -818,8 +818,8 @@ Thanks,\n\
                 if avatar is not None:
                     yield from cursor.execute(
                         "UPDATE `avatars` SET `selected` = 1 WHERE `idAvatar` ="
-                        "(SELECT id FROM avatars_list WHERE avatars_list.url = ?) and "
-                        "`idUser` = ?", (avatar, self.player.id))
+                        "(SELECT id FROM avatars_list WHERE avatars_list.url = %s) and "
+                        "`idUser` = %s", (avatar, self.player.id))
         else:
             raise KeyError('invalid action')
 
