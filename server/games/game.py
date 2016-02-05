@@ -687,13 +687,12 @@ class Game(BaseGame):
         :return:
         """
         try:
-            if self.map_scenario_path:
-                return str(self.map_scenario_path.split('/')[2]).lower()
-        except IndexError:
+            return str(self.map_scenario_path.split('/')[2]).lower()
+        except (IndexError, AttributeError):
             if self.map_file_path:
                 return self.map_file_path[5:-4].lower()
             else:
-                return 'scmp_007'
+                return 'scmp_009'
 
     def __eq__(self, other):
         if not isinstance(other, Game):
