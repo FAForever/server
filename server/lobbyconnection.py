@@ -786,7 +786,7 @@ Thanks,\n\
                 "session": self.session
             })
 
-    @timed
+    @asyncio.coroutine
     def command_avatar(self, message):
         action = message['action']
 
