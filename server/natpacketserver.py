@@ -87,5 +87,5 @@ class NatPacketServer:
             protocol.transport.sendto(("\x08"+msg).encode(), addr)
 
     def remove_future(self, msg):
-        for server, proto in self.servers:
+        for server, proto in self.servers.items():
             proto.remove_future(msg)
