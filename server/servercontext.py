@@ -69,6 +69,7 @@ class ServerContext:
             while True:
                 message = await protocol.read_message()
                 await connection.on_message_received(message)
+                await connection.drain()
         except ConnectionResetError:
             pass
         except ConnectionAbortedError:
