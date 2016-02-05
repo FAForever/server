@@ -355,12 +355,12 @@ class Game(BaseGame):
             for player, new_rating in new_ratings.items():
                 yield from cursor.execute("UPDATE game_player_stats "
                                           "SET after_mean = ?, after_deviation = ?, scoreTime = NOW() "
-                                          "WHERE gameId = ? AND playerId = ?", new_rating.mu, new_rating.sigma, self.id,
-                                          player.id)
+                                          "WHERE gameId = ? AND playerId = ?",
+                                          (new_rating.mu, new_rating.sigma, self.id, player.id))
 
                 yield from cursor.execute("UPDATE {}_rating "
                                           "SET mean = ?, is_active=1, deviation = ?, numGames = (numGames + 1) "
-                                          "WHERE id = ?".format(rating), new_rating.mu, new_rating.sigma, player.id)
+                                          "WHERE id = ?".format(rating), (new_rating.mu, new_rating.sigma, player.id))
 
     def set_player_option(self, id, key, value):
         """
