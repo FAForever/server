@@ -58,14 +58,10 @@ class ServerContext:
     async def client_connected(self, stream_reader, stream_writer):
         self._logger.info("{}: Client connected".format(self))
         protocol = QDataStreamProtocol(stream_reader, stream_writer)
+        connection = self._connection_factory()
         try:
-            connection = self._connection_factory()
             await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info('peername')))
             self.connections[connection] = protocol
-        except Exception as ex:
-            self._logger.exception(ex)
-            return
-        try:
             while True:
                 message = await protocol.read_message()
                 await connection.on_message_received(message)
