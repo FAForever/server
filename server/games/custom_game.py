@@ -14,5 +14,5 @@ class CustomGame(Game):
         if time.time() - self.launched_at < limit:
             await self.mark_invalid(ValidityState.TOO_SHORT)
         if self.validity == ValidityState.VALID:
-            new_ratings = self.compute_rating()
+            new_ratings = self.compute_rating(rating='global')
             await self.persist_rating_change_stats(new_ratings, rating='global')

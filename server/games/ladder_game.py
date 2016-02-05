@@ -18,8 +18,8 @@ class LadderGame(Game):
 
     async def rate_game(self):
         if self.validity == ValidityState.VALID:
-            new_ratings = self.compute_rating(rating='ladder1v1')
-            await self.persist_rating_change_stats(new_ratings, rating='ladder1v1')
+            new_ratings = self.compute_rating(rating='ladder')
+            await self.persist_rating_change_stats(new_ratings, rating='ladder')
 
     def is_winner(self, player: Player):
         return self.get_army_result(self.get_player_option(player.id, 'Army')) > 0
