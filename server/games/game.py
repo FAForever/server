@@ -115,7 +115,7 @@ class Game(BaseGame):
         self.host = host
         self.name = name
         self.map_id = 0
-        self.map_file_path = '/maps/%s.zip' % map
+        self.map_file_path = 'maps/%s.zip' % map
         self.map_scenario_path = None
         self.password = None
         self._players = []
