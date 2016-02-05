@@ -592,25 +592,33 @@ class Game(BaseGame):
         """
         assert self.state == GameState.LIVE or self.state == GameState.ENDED
         team_scores = {}
+        ffa_scores = []
         for player in self.players:
             team = self.get_player_option(player.id, 'Team')
             army = self.get_player_option(player.id, 'Army')
             if not team:
                 raise GameError("Missing team for player id: {}".format(player.id))
-            if team not in team_scores:
-                team_scores[team] = []
-            try:
-                team_scores[team] += [self.get_army_result(army)]
-            except KeyError:
-                team_scores[team] += [0]
-                self._logger.info("Missing game result for {army}: {player}".format(army=army,
-                                                                                    player=player))
+            if team != 1:
+                if team not in team_scores:
+                    team_scores[team] = 0
+                try:
+                    team_scores[team] += self.get_army_result(army)
+                except KeyError:
+                    team_scores[team] += 0
+                    self._logger.info("Missing game result for {army}: {player}".format(army=army,
+                                                                                        player=player))
+            elif team == 1:
+                ffa_scores.append((player, self.get_army_result(army)))
         ranks = [score for team, score in sorted(team_scores.items())]
         rating_groups = []
         for team in sorted(self.teams):
-            rating_groups += [{player: Rating(*getattr(player, '{}_rating'.format(rating)))
-                               for player in self.players if
-                               self.get_player_option(player.id, 'Team') == team}]
+            if team != 1:
+                rating_groups += [{player: Rating(*getattr(player, '{}_rating'.format(rating)))
+                                   for player in self.players if
+                                   self.get_player_option(player.id, 'Team') == team}]
+        for player, score in ffa_scores:
+            rating_groups += [{player: Rating(*getattr(player, '{}_rating'.format(rating)))}]
+            ranks.append(score)
         return trueskill.rate(rating_groups, ranks)
 
     async def update_ratings(self):

@@ -188,8 +188,8 @@ async def test_compute_rating_computes_global_ratings(game: Game, players):
     await game.launch()
     await game.add_result(players.hosting, 0, 'victory', 1)
     await game.add_result(players.joining, 1, 'defeat', 0)
-    game.set_player_option(players.hosting.id, 'Team', 1)
-    game.set_player_option(players.joining.id, 'Team', 2)
+    game.set_player_option(players.hosting.id, 'Team', 2)
+    game.set_player_option(players.joining.id, 'Team', 3)
     groups = game.compute_rating()
     assert players.hosting in groups[0]
     assert players.joining in groups[1]
@@ -206,7 +206,7 @@ async def test_compute_rating_computes_ladder_ratings(game: Game, players):
     await game.add_result(players.hosting, 0, 'victory', 1)
     await game.add_result(players.joining, 1, 'defeat', 0)
     game.set_player_option(players.hosting.id, 'Team', 1)
-    game.set_player_option(players.joining.id, 'Team', 2)
+    game.set_player_option(players.joining.id, 'Team', 1)
     groups = game.compute_rating(rating='ladder')
     assert players.hosting in groups[0]
     assert players.joining in groups[1]

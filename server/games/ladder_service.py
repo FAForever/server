@@ -62,8 +62,8 @@ class LadderService:
         game.set_player_option(player2.id, 'Army', 2)
 
         # Remembering that "Team 1" corresponds to "-": the non-team.
-        game.set_player_option(player1.id, 'Team', 2)
-        game.set_player_option(player2.id, 'Team', 3)
+        game.set_player_option(player1.id, 'Team', 1)
+        game.set_player_option(player2.id, 'Team', 1)
 
         mapname = map_path[5:-4]  # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
                                   # Really in the future, just send a better description
