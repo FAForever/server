@@ -688,11 +688,12 @@ class Game(BaseGame):
         """
         try:
             if self.map_scenario_path:
-                return str(self.map_file_path.split('/')[2]).lower()
-            elif self.map_file_path:
-                return self.map_file_path[5:-4].lower()
+                return str(self.map_scenario_path.split('/')[2]).lower()
         except IndexError:
-            return 'scmp_007'
+            if self.map_file_path:
+                return self.map_file_path[5:-4].lower()
+            else:
+                return 'scmp_007'
 
     def __eq__(self, other):
         if not isinstance(other, Game):
