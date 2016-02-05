@@ -551,7 +551,7 @@ class Game(BaseGame):
         return self.game_service.game_mode_versions[self.game_mode]
 
     async def mark_invalid(self, new_validity_state: ValidityState):
-        self._logger.info("marked as invalid because: {}".format(repr(new_validity_state)))
+        self._logger.info("Marked as invalid because: {}".format(repr(new_validity_state)))
         self.validity = new_validity_state
 
         # If we haven't started yet, the invalidity will be persisted to the database when we start.
