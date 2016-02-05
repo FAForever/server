@@ -897,7 +897,6 @@ Thanks,\n\
                     self.search.cancel()
                 assert self.player is not None
                 self.search = Search(self.player)
-                self.player.game_port = message['gameport']
                 self.player.faction = message['faction']
 
                 container.addPlayer(self.player)
