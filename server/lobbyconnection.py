@@ -1060,6 +1060,10 @@ Thanks,\n\
         self.send(data_dictionary)
 
     async def on_connection_lost(self):
+        async def nopdrain(message):
+            return
+        self.drain = nopdrain
+        self.send = lambda m: None
         if self.game_connection:
             await self.game_connection.on_connection_lost()
         if self.player:
