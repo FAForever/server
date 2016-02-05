@@ -1,7 +1,7 @@
 import asyncio
 
 import config
-from .decorators import with_logger
+from .decorators import with_logger, _logger
 
 
 @with_logger
@@ -23,7 +23,8 @@ class NatServerProtocol(asyncio.DatagramProtocol):
             msg = data[1:].decode()
             if data in self._futures:
                 # Strip the \x08 byte for NAT messages
-                self._futures[data].set_result((msg, addr))
+                if not self._futures[data].done():
+                    self._futures[data].set_result((msg, addr))
                 del self._futures[data]
             # Echo back the message
             self.transport.sendto("OK: {}".format(msg).encode(), addr)
@@ -41,12 +42,21 @@ class NatServerProtocol(asyncio.DatagramProtocol):
     def error_received(self, exc):
         self._logger.exception(exc)
 
+    def remove_future(self, msg):
+        if msg in self._futures:
+            del self._futures[msg]
+
+
 @with_logger
 class NatPacketServer:
-    def __init__(self, addr=('0.0.0.0', config.LOBBY_UDP_PORT), loop=None):
-        self.addr = addr
+    def __init__(self, addresses=None, loop=None):
+        if not addresses:
+            self.addresses = ('0.0.0.0', 6112)
+        else:
+            self.addresses = addresses if type(addresses) is list else [addresses]
+        self.ports = [int(address[1]) for address in self.addresses]
         self.loop = loop or asyncio.get_event_loop()
-        self.server, self.protocol = None, None
+        self.servers = {}
         self._waiters = {}
 
     async def __aenter__(self):
@@ -54,16 +64,28 @@ class NatPacketServer:
         return self
 
     async def listen(self):
-        self.server, self.protocol = await self.loop.create_datagram_endpoint(NatServerProtocol, self.addr)
+        for address in self.addresses:
+            try:
+                server, protocol = await self.loop.create_datagram_endpoint(NatServerProtocol, address)
+                self.servers[server] = protocol
+            except OSError:
+                _logger.warn('Could not open UDP socket {}:{}'.format(address[0], address[1]))
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        self.server.close()
+        for server in self.servers:
+            server.close()
 
     def await_packet(self, message: str):
-        fut = asyncio.Future()
-        self.protocol.add_future("\x08{}".format(message).encode(), fut)
-        return fut
+        future = asyncio.Future()
+        for server, protocol in self.servers.items():
+            protocol.add_future("\x08{}".format(message).encode(), future)
+        return future
 
     def send_natpacket_to(self, msg: str, addr):
-        self._logger.debug(">>{}/udp: {}".format(addr, msg))
-        self.protocol.transport.sendto(("\x08"+msg).encode(), addr)
+        for server, protocol in self.servers.items():
+            self._logger.debug(">>{}/udp: {}".format(addr, msg))
+            protocol.transport.sendto(("\x08"+msg).encode(), addr)
+
+    def remove_future(self, msg):
+        for server, proto in self.servers:
+            proto.remove_future(msg)

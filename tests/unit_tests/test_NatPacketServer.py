@@ -16,20 +16,19 @@ class TestClientProto(asyncio.DatagramProtocol):
         transport.sendto(self.message)
 
 async def test_receives_udp(loop: asyncio.BaseEventLoop):
-    addr = ('127.0.0.1', config.LOBBY_UDP_PORT)
+    addr = ('127.0.0.1', config.LOBBY_UDP_PORTS[-1])
     msg = 'test'
 
     async with NatPacketServer(addr) as server:
         recv_fut = server.await_packet(msg)
         await loop.create_datagram_endpoint(lambda: TestClientProto(("\x08"+msg).encode()),
                                             remote_addr=addr)
-        await recv_fut
-        received_msg, _ = recv_fut.result()
+        received_msg, _ = await recv_fut
         assert received_msg == msg
 
 async def test_sends_udp(loop: asyncio.BaseEventLoop):
-    rx_addr = ('127.0.0.1', config.LOBBY_UDP_PORT)
-    tx_addr = ('127.0.0.1', config.LOBBY_UDP_PORT+1)
+    rx_addr = ('127.0.0.1', config.LOBBY_UDP_PORTS[-1])
+    tx_addr = ('127.0.0.1', config.LOBBY_UDP_PORTS[-1]+1)
     msg = 'test'
 
     async with NatPacketServer(rx_addr) as server:

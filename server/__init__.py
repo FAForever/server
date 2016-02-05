@@ -34,7 +34,6 @@ __copyright__ = 'Copyright (c) 2011-2015 ' + __author__
 
 __all__ = [
     'run_lobby_server',
-    'run_nat_server',
     'games',
     'control',
     'abc',
@@ -104,15 +103,3 @@ def run_lobby_server(address: (str, int),
     loop.call_soon(ping_broadcast)
     loop.run_until_complete(ctx.listen(*address))
     return ctx
-
-
-def run_nat_server(addr: (str, int),
-                   player_service: PlayerService,
-                   loop):
-    """
-    Run the game server
-
-    :return (NatPacketServer, ServerContext): A pair of server objects
-    """
-    server = NatPacketServer(addr, loop)
-    return server.listen()

@@ -2,31 +2,13 @@ from unittest.mock import call
 import pytest
 import config
 
-from server import run_nat_server, VisibilityState
+from server import VisibilityState
 
 from tests.integration_tests.testclient import TestClient
 
 slow = pytest.mark.slow
 
 TEST_ADDRESS = ('127.0.0.1', None)
-
-@pytest.fixture
-def nat_server(mocker,
-               loop,
-               request,
-               player_service,
-               game_service,
-               mock_db_pool,
-               game_stats_service):
-    nat_server = run_nat_server(('0.0.0.0', config.LOBBY_UDP_PORT), player_service, loop)
-    server = loop.run_until_complete(nat_server)
-
-    def fin():
-        server.close()
-        loop.run_until_complete(server.wait_closed())
-
-    request.addfinalizer(fin)
-    return nat_server, server
 
 import asyncio
 import logging
