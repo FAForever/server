@@ -34,9 +34,6 @@ class LadderService:
                 progress = (500.0 - deviation) / 2.5
                 player.lobby_connection.sendJSON(dict(command="notice", style="info", text="The system is still learning you. <b><br><br>The learning phase is " + str(progress)+"% complete<b>"))
 
-    def getMatchQuality(self, player1: Player, player2: Player):
-        return trueskill.quality_1vs1(player1.ladder_rating, player2.ladder_rating)
-
     async def start_game(self, player1, player2):
         player1.state = PlayerState.HOSTING
         player2.state = PlayerState.JOINING
