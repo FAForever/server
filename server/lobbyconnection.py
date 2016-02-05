@@ -747,7 +747,6 @@ Thanks,\n\
                             "players": [player_info]
                         }
                     )
-                    yield from lobby.drain()
 
         friends = []
         foes = []
