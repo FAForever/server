@@ -6,7 +6,7 @@ import server.db as db
 from server import GameState, VisibilityState
 from server.decorators import with_logger
 
-from server.games import FeaturedMod, LadderService, LadderGame, CoopGame
+from server.games import FeaturedMod, LadderService, LadderGame, CoopGame, CustomGame
 from server.games.game import Game
 from server.players import Player
 
@@ -152,6 +152,8 @@ class GameService:
             game = LadderGame(**args)
         elif game_mode == 'coop':
             game = CoopGame(**args)
+        elif game_mode == 'faf' or game_mode == 'fafbeta':
+            game = CustomGame(**args)
         else:
             game = Game(**args)
         self.games[id] = game
