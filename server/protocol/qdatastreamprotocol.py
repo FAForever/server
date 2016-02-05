@@ -125,14 +125,13 @@ class QDataStreamProtocol(Protocol):
                     message['legacy'].append(part)
             return message
 
-    @asyncio.coroutine
-    def drain(self):
+    async def drain(self):
         """
         Await the write buffer to empty.
 
         See StreamWriter.drain()
         """
-        yield from self.writer.drain()
+        await self.writer.drain()
 
     def close(self):
         """

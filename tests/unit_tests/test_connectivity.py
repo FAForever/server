@@ -37,6 +37,7 @@ async def test_test_stun(loop, player, connectivity):
             if not future.done():
                 future.set_result((host, port))
     connectivity.send = send
+    connectivity.drain = CoroMock()
 
     connectivity_test = ConnectivityTest(connectivity, '', 0, player)
     connectivity_test._natserver = natserver

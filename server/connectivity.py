@@ -158,6 +158,9 @@ class Connectivity(Receiver):
         self._logger.debug(">>{}/udp: {}".format(address, message))
         self.send('SendNatPacket', ["{}:{}".format(*address), message])
 
+    async def drain(self):
+        await self._dispatcher.drain()
+
 
 @with_logger
 class ConnectivityTest:
@@ -234,6 +237,7 @@ class ConnectivityTest:
                 self._connectivity.send('SendNatPacket',
                                         ["{}:{}".format(config.LOBBY_IP, port),
                                          message])
+                await self._connectivity.drain()
         await asyncio.sleep(0.1)
         try:
             received, addr = await asyncio.wait_for(future, 2.5)

@@ -1050,6 +1050,9 @@ Thanks,\n\
         self._logger.debug(">>: {}".format(message))
         self.protocol.send_message(message)
 
+    async def drain(self):
+        await self.protocol.drain()
+
     def sendJSON(self, data_dictionary):
         """
         Deprecated alias for send
