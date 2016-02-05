@@ -89,6 +89,7 @@ class NatPacketServer:
         for server, protocol in self.servers.items():
             self._logger.debug(">>{}/udp: {}".format(addr, msg))
             protocol.transport.sendto(("\x08"+msg).encode(), addr)
+            return
 
     def remove_future(self, msg):
         for server, proto in self.servers.items():
