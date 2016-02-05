@@ -142,7 +142,19 @@ class QDataStreamProtocol(Protocol):
 
     def send_message(self, message: dict):
         server.stats.incr('server.sent_messages')
-        self.writer.write(self.pack_message(json.dumps(message)))
+        transport = self.writer._transport
+        if transport is not None:                           # pragma: no cover
+            # PR 291 added the is_closing method to transports shortly after
+            # PR 280 fixed the bug we're trying to work around in this block.
+            if not hasattr(transport, 'is_closing'):
+                # This emulates what is_closing would return if it existed.
+                try:
+                    is_closing = transport._closing
+                except AttributeError:
+                    is_closing = transport._closed
+                if is_closing:
+                    return
+            self.writer.write(self.pack_message(json.dumps(message)))
 
     def send_messages(self, messages):
         server.stats.incr('server.sent_messages')

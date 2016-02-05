@@ -1052,6 +1052,7 @@ Thanks,\n\
         self.protocol.send_message(message)
 
     async def drain(self):
+        await asyncio.sleep(0)
         await self.protocol.drain()
 
     def sendJSON(self, data_dictionary):
