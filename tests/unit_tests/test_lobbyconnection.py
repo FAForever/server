@@ -132,7 +132,7 @@ def test_abort(loop, mocker, lobbyconnection):
 
     lobbyconnection.abort()
 
-    proto.writer.write_eof.assert_any_call()
+    proto.writer.abort.assert_any_call()
 
 
 def test_send_game_list(mocker, lobbyconnection, game_stats_service):

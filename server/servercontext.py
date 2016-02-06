@@ -65,6 +65,7 @@ class ServerContext:
             while True:
                 message = await protocol.read_message()
                 await connection.on_message_received(message)
+                await asyncio.sleep(0)
                 await connection.drain()
         except ConnectionResetError:
             pass

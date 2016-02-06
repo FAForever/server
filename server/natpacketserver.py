@@ -42,9 +42,6 @@ class NatServerProtocol(asyncio.DatagramProtocol):
 
     def remove_future(self, msg):
         if msg in self._futures:
-            fut = self._futures[msg]
-            if not fut.done():
-                fut.cancel()
             del self._futures[msg]
 
 

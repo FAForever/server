@@ -82,12 +82,16 @@ class Connectivity(Receiver):
             self.relay_address = Address(*args[0])
 
     async def initiate_test(self, port: int):
-        self._test = ConnectivityTest(self, self.host, port, self.player)
-        result = await self._test.determine_connectivity()
-        self._result = result
-        self.send('ConnectivityState', [result.state.value,
-                                        "{}:{}".format(*result.addr)
-                                        if result.addr else ""])
+        try:
+            self._test = ConnectivityTest(self, self.host, port, self.player)
+            result = await self._test.determine_connectivity()
+            self._result = result
+        except (TimeoutError, CancelledError):
+            self._result = ConnectivityResult(addr=None, state=ConnectivityState.BLOCKED)
+        finally:
+            self.send('ConnectivityState', [self._result.state.value,
+                                            "{}:{}".format(*self._result.addr)
+                                            if self._result.addr else ""])
 
     def send(self, command_id: str, args: Optional[list]=None):
         self._dispatcher.send({
@@ -201,18 +205,14 @@ class ConnectivityTest:
 
         :return: Connectivity(addr, ConnectivityState)
         """
-        try:
-            public = await self.test_public()
-            if public:
-                return ConnectivityResult(addr=Address(*self.remote_addr), state=ConnectivityState.PUBLIC)
-            addr = await self.test_stun()
-            if addr:
-                return ConnectivityResult(addr=Address(*addr), state=ConnectivityState.STUN)
-            else:
-                return ConnectivityResult(addr=None, state=ConnectivityState.BLOCKED)
-        except (TimeoutError, CancelledError):
-            pass
-        return ConnectivityResult(addr=None, state=ConnectivityState.BLOCKED)
+        public = await self.test_public()
+        if public:
+            return ConnectivityResult(addr=Address(*self.remote_addr), state=ConnectivityState.PUBLIC)
+        addr = await self.test_stun()
+        if addr:
+            return ConnectivityResult(addr=Address(*addr), state=ConnectivityState.STUN)
+        else:
+            return ConnectivityResult(addr=None, state=ConnectivityState.BLOCKED)
 
     async def test_public(self):
         self._logger.debug("Testing PUBLIC")
@@ -237,7 +237,6 @@ class ConnectivityTest:
                 self._connectivity.send('SendNatPacket',
                                         ["{}:{}".format(config.LOBBY_IP, port),
                                          message])
-                await self._connectivity.drain()
         await asyncio.sleep(0.1)
         try:
             received, addr = await asyncio.wait_for(future, 2.5)
