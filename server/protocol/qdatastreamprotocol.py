@@ -22,6 +22,29 @@ class QDataStreamProtocol(Protocol):
         self.reader = reader
         self.writer = writer
 
+        @asyncio.coroutine
+        def new_drain():
+            """Flush the write buffer.
+            The intended use is to write
+              w.write(data)
+              yield from w.drain()
+            """
+            if writer._reader is not None:
+                exc = writer._reader.exception()
+                if exc is not None:
+                    raise exc
+            if writer._transport is not None:
+                if writer._transport.closed:
+                    # Yield to the event loop so connection_lost() may be
+                    # called.  Without this, _drain_helper() would return
+                    # immediately, and code that calls
+                    #     write(...); yield from drain()
+                    # in a loop would never call connection_lost(), so it
+                    # would not see an error when the socket is closed.
+                    yield
+            yield from writer._protocol._drain_helper()
+        self.writer.drain = new_drain
+
     @staticmethod
     def read_qstring(buffer, pos=0):
         """
@@ -142,19 +165,7 @@ class QDataStreamProtocol(Protocol):
         self.writer.close()
 
     def send_message(self, message: dict):
-        transport = self.writer._transport
-        if transport is not None:                           # pragma: no cover
-            # PR 291 added the is_closing method to transports shortly after
-            # PR 280 fixed the bug we're trying to work around in this block.
-            if not hasattr(transport, 'is_closing'):
-                # This emulates what is_closing would return if it existed.
-                try:
-                    is_closing = transport._closing
-                except AttributeError:
-                    is_closing = transport._closed
-                if is_closing:
-                    return
-            self.writer.write(self.pack_message(json.dumps(message)))
+        self.writer.write(self.pack_message(json.dumps(message)))
         server.stats.incr('server.sent_messages')
 
     def send_messages(self, messages):
