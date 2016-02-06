@@ -44,6 +44,6 @@ def init(loop, player_service, game_service):
     app.router.add_route('GET', '/players', ctrl_server.players)
     app.router.add_route('POST', '/players/{player_id}', ctrl_server.kick_player)
 
-    srv = yield from loop.create_server(app.make_handler(), '127.0.0.1', '4040')
+    srv = yield from loop.create_server(app.make_handler(), '127.0.0.1', 4040)
     logger.info("Control server listening on http://127.0.0.1:4040")
     return srv
