@@ -703,7 +703,6 @@ Thanks,\n\
 
         self.player_service[self.player.id] = self.player
         self._authenticated = True
-        self.sendJSON(dict(command="welcome", id=self.player.id, login=login))
 
         # Country
         # -------
@@ -725,6 +724,8 @@ Thanks,\n\
                 url, tooltip = avatar
                 self.player.avatar = {"url": url, "tooltip": tooltip}
 
+
+        self.sendJSON(dict(command="welcome", id=self.player.id, login=login))
 
         # Tell player about everybody online
         self.sendJSON(
