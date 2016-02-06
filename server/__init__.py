@@ -78,7 +78,8 @@ def run_lobby_server(address: (str, int),
             games.clear_dirty()
             player_service.clear_dirty()
 
-            ctx.broadcast_raw(encode_players(dirty_players), lambda lobby_conn: lobby_conn.authenticated)
+            if len(dirty_players) > 0:
+                ctx.broadcast_raw(encode_players(dirty_players), lambda lobby_conn: lobby_conn.authenticated)
 
             # TODO: This spams squillions of messages: we should implement per-connection message
             # aggregation at the next abstraction layer down :P
