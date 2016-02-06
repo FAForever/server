@@ -113,7 +113,7 @@ class LobbyConnection(Dispatcher):
         else:
             self._logger.warning("Aborting %s. %s" % (self.peer_address.host, logspam))
         self._authenticated = False
-        self.protocol.writer.abort()
+        self.protocol.writer.close()
 
     def ensure_authenticated(self, cmd):
         if not self._authenticated:
