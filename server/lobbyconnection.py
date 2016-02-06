@@ -216,6 +216,7 @@ class LobbyConnection(Dispatcher):
 
         return base64.urlsafe_b64encode(iv), base64.urlsafe_b64encode(ciphertext), verify_hex
 
+    @asyncio.coroutine
     def command_create_account(self, message):
         login = message['login']
         user_email = message['email']
@@ -242,19 +243,16 @@ class LobbyConnection(Dispatcher):
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
             yield from cursor.execute("SELECT id FROM `login` WHERE LOWER(`login`) = %s",
-                                      (login.lower()))
-            (user_id, ) = yield from cursor.fetchone()
-
-        if not user_id:
-            reply_no("Sorry, that username is not available.")
-            return
+                                      (login.lower(),))
+            if cursor.rowcount:
+                reply_no("Sorry, that username is not available.")
+                return
 
         if self.player_service.has_blacklisted_domain(user_email):
             # We don't like disposable emails.
             text = "Dear " + login + ",\n\n\
 Please use a non-disposable email address.\n\n"
             self.send_email(text, login, user_email, 'Forged Alliance Forever - Account validation')
-
             return
 
         # We want the user to validate their email address before we create their account.
