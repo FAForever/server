@@ -22,29 +22,6 @@ class QDataStreamProtocol(Protocol):
         self.reader = reader
         self.writer = writer
 
-        @asyncio.coroutine
-        def new_drain():
-            """Flush the write buffer.
-            The intended use is to write
-              w.write(data)
-              yield from w.drain()
-            """
-            if writer._reader is not None:
-                exc = writer._reader.exception()
-                if exc is not None:
-                    raise exc
-            if writer._transport is not None:
-                if writer._transport._closing:
-                    # Yield to the event loop so connection_lost() may be
-                    # called.  Without this, _drain_helper() would return
-                    # immediately, and code that calls
-                    #     write(...); yield from drain()
-                    # in a loop would never call connection_lost(), so it
-                    # would not see an error when the socket is closed.
-                    yield
-            yield from writer._protocol._drain_helper()
-        self.writer.drain = new_drain
-
     @staticmethod
     def read_qstring(buffer, pos=0):
         """
