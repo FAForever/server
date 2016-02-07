@@ -488,7 +488,7 @@ class Game(BaseGame):
 
             # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
             # so, and grab the map id at the same time.
-            await cursor.execute("SELECT table_map.id, table_map_unranked.id "
+            await cursor.execute("SELECT table_map.id as map_id, table_map_unranked.id as unranked "
                                  "FROM table_map LEFT JOIN table_map_unranked "
                                  "ON table_map.id = table_map_unranked.id "
                                  "WHERE table_map.filename = %s", (self.map_file_path,))
