@@ -433,13 +433,8 @@ class GameConnection(GpgNetServerProtocol, Receiver):
     async def on_connection_lost(self):
         try:
             await self.game.remove_game_connection(self)
-            if self.state == GameConnectionState.CONNECTED_TO_HOST \
-                    and self.game.state == GameState.LOBBY:
-                for peer in self.game.connections:
-                    peer.send_DisconnectFromPeer(self.player.id)
         except Exception as e:  # pragma: no cover
             self._logger.exception(e)
-            pass
         finally:
             self.abort()
 
