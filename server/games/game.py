@@ -468,14 +468,14 @@ class Game(BaseGame):
         self._players_with_unsent_army_stats = list(self._players)
         self.state = GameState.LIVE
         self._logger.info("Game launched")
-        await self.validate_game_settings()
         await self.on_game_launched()
+        await self.validate_game_settings()
 
     async def on_game_launched(self):
         for player in self.players:
             player.state = PlayerState.PLAYING
-        await self.update_ratings()
         await self.update_game_stats()
+        await self.update_ratings()
         await self.update_game_player_stats()
 
     async def update_game_stats(self):
