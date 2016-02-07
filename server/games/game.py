@@ -496,6 +496,9 @@ class Game(BaseGame):
             if result:
                 (self.map_id, blacklist_flag) = result
 
+                if blacklist_flag:
+                    await self.mark_invalid(ValidityState.BAD_MAP)
+
                 modId = self.game_service.featured_mods[self.game_mode].id
 
                 # Write out the game_stats record.
@@ -510,9 +513,6 @@ class Game(BaseGame):
                                       self.map_id,
                                       self.name,
                                       self.validity.value))
-
-                if blacklist_flag:
-                    await self.mark_invalid(ValidityState.BAD_MAP)
 
 
     async def update_game_player_stats(self):
@@ -557,7 +557,7 @@ class Game(BaseGame):
 
         # If we haven't started yet, the invalidity will be persisted to the database when we start.
         # Otherwise, we have to do a special update query to write this information out.
-        if self.state == GameState.LOBBY:
+        if self.state != GameState.LIVE:
             return
 
         # Currently, we can only end up here if a game desynced or was a custom game that terminated
