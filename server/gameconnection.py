@@ -164,7 +164,10 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         :return:
         """
         assert peer.player.state == PlayerState.HOSTING
-        own_addr, peer_addr = await self.EstablishConnection(peer)
+        result = await self.EstablishConnection(peer)
+        if not result:
+            self.abort()
+        own_addr, peer_addr = result
         self.send_JoinGame(peer_addr,
                            peer.player.login,
                            peer.player.id)
@@ -177,7 +180,10 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         Connect two peers
         :return: None
         """
-        own_addr, peer_addr = await self.EstablishConnection(peer)
+        result = await self.EstablishConnection(peer)
+        if not result:
+            self.abort()
+        own_addr, peer_addr = result
         self.send_ConnectToPeer(peer_addr,
                                 peer.player.login,
                                 peer.player.id)
@@ -408,6 +414,10 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         try:
             if self._state is GameConnectionState.ENDED:
                 return
+            if self.game.state == GameState.LOBBY:
+                for peer in self.game.connections:
+                    if peer != self:
+                        peer.send_DisconnectFromPeer(self.player.id)
             self._state = GameConnectionState.ENDED
             self.loop.create_task(self.game.remove_game_connection(self))
             self._mark_dirty()
