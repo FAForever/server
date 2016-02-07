@@ -76,7 +76,7 @@ class MatchmakerQueue:
         with server.stats.timer('matchmaker.search'):
             try:
                 self._logger.debug("Searching for matchup for {}".format(player))
-                for opponent, opponent_search in self.queue.items():
+                for opponent, opponent_search in self.queue.copy().items():
                     if opponent == player:
                         continue
 
