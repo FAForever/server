@@ -49,7 +49,7 @@ class MatchmakerQueue:
         :return:
         """
         if (s1.is_matched or s2.is_matched) or (s1.is_cancelled or s2.is_cancelled):
-            return
+            return False
         s1.match(s2)
         s2.match(s1)
         if s1.player in self.queue:
@@ -57,6 +57,7 @@ class MatchmakerQueue:
         if s2.player in self.queue:
             del self.queue[s2.player]
         asyncio.ensure_future(self.game_service.ladder_service.start_game(s1.player, s2.player))
+        return True
 
     def __len__(self):
         return self.queue.__len__()
@@ -84,15 +85,15 @@ class MatchmakerQueue:
                     self._logger.debug("Game quality between {} and {}: {} (threshold: {})"
                                         .format(player, opponent, quality, threshold))
                     if quality >= threshold:
-                        self.match(search, opponent_search)
-                        return
+                        if self.match(search, opponent_search):
+                            return
 
                 self.notify_potential_opponents(search, True)
 
                 self._logger.debug("Found nobody searching, pushing to queue: {}".format(search))
                 self.queue[player] = search
                 await search.await_match()
-                self._logger.debug("Search complete".format(search))
+                self._logger.debug("Search complete: {}".format(search))
                 self.notify_potential_opponents(search, False)
             except CancelledError:
                 pass

@@ -19,6 +19,14 @@ def matchmaker_players():
            Player('QAI',      id=4, ladder_rating=(2350, 125)), \
            Player('Rhiza',    id=5, ladder_rating=(1200, 175))
 
+@pytest.fixture
+def matchmaker_players_all_match():
+    return Player('Dostya',   id=1, ladder_rating=(1500, 50)), \
+           Player('Brackman', id=2, ladder_rating=(1500, 50)), \
+           Player('Zoidberg', id=3, ladder_rating=(1500, 50)), \
+           Player('QAI',      id=4, ladder_rating=(1500, 50)), \
+           Player('Rhiza',    id=5, ladder_rating=(1500, 50))
+
 def test_search_threshold(mocker, loop, matchmaker_players):
     s = Search(matchmaker_players[0])
     assert s.match_threshold <= 1
@@ -54,17 +62,12 @@ def test_queue_race(mocker, player_service, matchmaker_queue):
 
     player_service.players = {p1.id: p1, p2.id:p2, p3.id:p3}
 
-    s1, s2 = Search(p1), Search(p2)
-
-    matchmaker_queue.push(s1)
-    matchmaker_queue.push(s2)
-
     matchmaker_queue.game_service.ladder_service.start_game = CoroMock()
 
 
     try:
-        yield from asyncio.gather(matchmaker_queue.search(p1, search=s1),
-                                  matchmaker_queue.search(p2, search=s2),
+        yield from asyncio.gather(asyncio.wait_for(matchmaker_queue.search(p1), 0.1),
+                                  asyncio.wait_for(matchmaker_queue.search(p2), 0.1),
                                   asyncio.wait_for(matchmaker_queue.search(p3), 0.1))
     except (TimeoutError, CancelledError):
         pass
@@ -81,8 +84,27 @@ def test_queue_cancel(mocker, player_service, matchmaker_queue, matchmaker_playe
     s1.cancel()
     try:
         yield from asyncio.wait_for(matchmaker_queue.search(s2.player, search=s2), 0.01)
-    except CancelledError:
+    except (TimeoutError, CancelledError):
         pass
 
     assert not s1.is_matched
     assert not s2.is_matched
+
+async def test_queue_mid_cancel(mocker, player_service, matchmaker_queue, matchmaker_players_all_match):
+    # Turn list of players into map from ids to players.
+    player_service.players = dict(map(lambda x: (x.id, x), list(matchmaker_players_all_match)))
+
+    matchmaker_queue.game_service.ladder_service.start_game = CoroMock()
+
+    s1, s2, s3 = Search(matchmaker_players_all_match[1]), Search(matchmaker_players_all_match[2]), Search(matchmaker_players_all_match[3])
+    matchmaker_queue.push(s1)
+    matchmaker_queue.push(s2)
+    s1.cancel()
+    try:
+        await asyncio.wait_for(matchmaker_queue.search(s3.player, search=s3), 0.1)
+    except CancelledError:
+        pass
+
+    assert not s1.is_matched
+    assert s2.is_matched
+    assert s3.is_matched
