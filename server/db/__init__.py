@@ -35,8 +35,8 @@ def connect(loop,
                                            db=db,
                                            autocommit=True,
                                            loop=loop,
-                                           minsize=1,
-                                           maxsize=1,
+                                           minsize=minsize,
+                                           maxsize=maxsize,
                                            cursorclass=LoggingCursor)
     set_pool(pool)
     return pool
