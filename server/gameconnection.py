@@ -166,7 +166,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         assert peer.player.state == PlayerState.HOSTING
         result = await self.EstablishConnection(peer)
         if not result:
-            self.abort()
+            self.abort("Failed connecting to host {}".format(peer))
         own_addr, peer_addr = result
         self.send_JoinGame(peer_addr,
                            peer.player.login,
@@ -182,7 +182,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         """
         result = await self.EstablishConnection(peer)
         if not result:
-            self.abort()
+            self.abort("Failed connecting to {}".format(peer))
         own_addr, peer_addr = result
         self.send_ConnectToPeer(peer_addr,
                                 peer.player.login,
@@ -404,7 +404,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         if self.game:
             self.games.mark_dirty(self.game)
 
-    def abort(self):
+    def abort(self, logspam=''):
         """
         Abort the connection
 
@@ -421,7 +421,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
             self._state = GameConnectionState.ENDED
             self.loop.create_task(self.game.remove_game_connection(self))
             self._mark_dirty()
-            self.log.debug("{}.abort()".format(self))
+            self.log.debug("{}.abort({})".format(self, logspam))
             self.player.state = PlayerState.IDLE
             del self.player.game
             del self.player.game_connection
