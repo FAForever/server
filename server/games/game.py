@@ -496,23 +496,24 @@ class Game(BaseGame):
             if result:
                 (self.map_id, blacklist_flag) = result
 
+                modId = self.game_service.featured_mods[self.game_mode].id
+
+                # Write out the game_stats record.
+                # In some cases, games can be invalidated while running: we check for those cases when
+                # the game ends and update this record as appropriate.
+                await cursor.execute("INSERT INTO game_stats(id, gameType, gameMod, `host`, mapId, gameName, validity)"
+                                     "VALUES(%s, %s, %s, %s, %s, %s, %s)",
+                                     (self.id,
+                                      str(self.gameOptions.get('Victory').value),
+                                      modId,
+                                      self.host.id,
+                                      self.map_id,
+                                      self.name,
+                                      self.validity.value))
+
                 if blacklist_flag:
                     await self.mark_invalid(ValidityState.BAD_MAP)
 
-            modId = self.game_service.featured_mods[self.game_mode].id
-
-            # Write out the game_stats record.
-            # In some cases, games can be invalidated while running: we check for those cases when
-            # the game ends and update this record as appropriate.
-            await cursor.execute("INSERT INTO game_stats(id, gameType, gameMod, `host`, mapId, gameName, validity)"
-                                 "VALUES(%s, %s, %s, %s, %s, %s, %s)",
-                                 (self.id,
-                                  str(self.gameOptions.get('Victory').value),
-                                  modId,
-                                  self.host.id,
-                                  self.map_id,
-                                  self.name,
-                                  self.validity.value))
 
     async def update_game_player_stats(self):
         query_str = "INSERT INTO `game_player_stats` " \
