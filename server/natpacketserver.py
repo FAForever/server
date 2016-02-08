@@ -15,8 +15,8 @@ class NatServerProtocol(asyncio.DatagramProtocol):
         self.transport = transport
 
     def datagram_received(self, data, addr):
-        self._logger.debug("{}/udp<<: {}".format(addr, data))
         try:
+            self._logger.debug("{}/udp<<: {}".format(addr, data))
             msg = data[1:].decode()
             if data in self._futures:
                 # Strip the \x08 byte for NAT messages
