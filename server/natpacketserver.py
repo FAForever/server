@@ -1,4 +1,5 @@
 import asyncio
+import server
 from .decorators import with_logger, _logger
 
 @with_logger
@@ -9,6 +10,7 @@ class NatServerProtocol(asyncio.DatagramProtocol):
 
     def add_future(self, msg, fut):
         self._logger.debug("Added listener for {}".format(msg))
+        server.stats.gauge("NatPacketProtocol.futures", len(self._futures))
         self._futures[msg] = fut
 
     def connection_made(self, transport):
@@ -35,10 +37,10 @@ class NatServerProtocol(asyncio.DatagramProtocol):
     def connection_lost(self, exc):
         # Normally losing a connection isn't something we care about
         # but for UDP transports it means trouble
-        self._logger.exception(exc)
+        self._logger.exception("NatServerProtocol exc: {}".format(exc))
 
     def error_received(self, exc):
-        self._logger.exception(exc)
+        self._logger.exception("NatServerProtocol exc: {}".format(exc))
 
     def remove_future(self, msg):
         if msg in self._futures:
