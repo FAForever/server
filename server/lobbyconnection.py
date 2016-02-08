@@ -17,6 +17,8 @@ from typing import Mapping
 from typing import Optional
 
 import datetime
+
+import aiohttp
 import pymysql
 import rsa
 import time
@@ -252,7 +254,7 @@ class LobbyConnection(Dispatcher):
             # We don't like disposable emails.
             text = "Dear " + login + ",\n\n\
 Please use a non-disposable email address.\n\n"
-            self.send_email(text, login, user_email, 'Forged Alliance Forever - Account validation')
+            yield from self.send_email(text, login, user_email, 'Forged Alliance Forever - Account validation')
             return
 
         # We want the user to validate their email address before we create their account.
@@ -288,26 +290,37 @@ Please visit the following link to validate your FAF account:\n\
 Thanks,\n\
 -- The FA Forever team"
 
-        self.send_email(text, login, user_email, 'Forged Alliance Forever - Account validation')
+        yield from self.send_email(text, login, user_email, 'Forged Alliance Forever - Account validation')
 
         self.sendJSON(dict(command="notice", style="info",
                            text="A e-mail has been sent with the instructions to validate your account"))
         self._logger.debug("Sent mail")
         self.sendJSON(dict(command="registration_response", result="SUCCESS"))
 
-    def send_email(self, text, to_name, to_email, subject):
+    async def send_email(self, text, to_name, to_email, subject):
         msg = MIMEText(text)
 
         msg['Subject'] = subject
         msg['From'] = email.utils.formataddr(('Forged Alliance Forever', "admin@faforever.com"))
         msg['To'] = email.utils.formataddr((to_name, to_email))
 
-        self._logger.debug("sending mail to " + to_email)
-        s = smtplib.SMTP_SSL(config.SMTP_SERVER, config.SMTP_PORT, timeout=5)
-        s.login(config.SMTP_USERNAME, config.SMTP_PASSWORD)
-
-        s.sendmail("admin@faforever.com", [to_email], msg.as_string())
-        s.quit()
+        self._logger.debug("Sending mail to " + to_email)
+        url = config.MANDRILL_API_URL + "/messages/send-raw.json"
+        headers = {'content-type': 'application/json'}
+        resp = await aiohttp.post(url,
+                           data=json.dumps({
+                "key": config.MANDRILL_API_KEY,
+                "raw_message": msg.as_string(),
+                "from_email": 'admin@faforever.com',
+                "from_name": "Forged Alliance Forever",
+                "to": [
+                    to_email
+                ],
+                "async": False
+            }),
+            headers=headers)
+        resp_text = await resp.text()
+        self._logger.info("Mandrill response: {}".format(resp_text))
 
     @timed()
     def send_tutorial_section(self):

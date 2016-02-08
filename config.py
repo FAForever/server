@@ -39,3 +39,6 @@ SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.mandrillapp.com")
 SMTP_PORT = os.getenv("SMTP_PORT", 587)
 SMTP_USERNAME = os.getenv("SMTP_USERNAME", "admin@faforever.com")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+
+MANDRILL_API_KEY = os.getenv("MANDRILL_API_KEY", '')
+MANDRILL_API_URL = os.getenv("MANDRILL_API_URL", 'https://mandrillapp.com/api/1.0')
