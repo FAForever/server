@@ -1,6 +1,9 @@
 import ipaddress
 import asyncio
 import logging
+
+import time
+
 import config
 import server
 
@@ -215,7 +218,7 @@ class ConnectivityTest:
             return ConnectivityResult(addr=None, state=ConnectivityState.BLOCKED)
 
     async def test_public(self):
-        self._logger.debug("Testing PUBLIC")
+        self._logger.debug("{} Testing PUBLIC".format(self.identifier))
         message = "Are you public? {}".format(self.identifier)
         received_packet = self._connectivity.wait_for_natpacket(message)
         for i in range(0, 3):
@@ -228,9 +231,9 @@ class ConnectivityTest:
             return False
 
     async def test_stun(self):
-        self._logger.debug("Testing STUN")
+        self._logger.debug("{} Testing STUN".format(self.identifier))
         message = "Hello {}".format(self.identifier)
-
+        start_time = time.time()
         future = self._natserver.await_packet(message)
         for port in self._natserver.ports:
             for i in range(0, 3):
@@ -239,10 +242,13 @@ class ConnectivityTest:
                                          message])
         await asyncio.sleep(0.1)
         try:
-            received, addr = await asyncio.wait_for(future, 2.5)
+            received, addr = await asyncio.wait_for(future, 4.0)
             if received == message:
+                self._logger.debug("{} replied from {}".format(self.identifier, addr))
                 return addr
         except (CancelledError, TimeoutError):
+            delta = time.time() - start_time
+            self._logger.info("{} stun timeout in {}".format(self.identifier, delta))
             pass
         finally:
             self._natserver.remove_future(message)
