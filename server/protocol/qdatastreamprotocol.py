@@ -1,6 +1,8 @@
 import asyncio
+
 import json
 import struct
+import base64
 from asyncio import StreamReader, StreamWriter
 
 import server
@@ -37,8 +39,8 @@ class QDataStreamProtocol(Protocol):
         assert len(buffer[pos:pos + 4]) == 4
         (size, ) = struct.unpack('!I', buffer[pos:pos + 4])
         if len(buffer[pos + 4:]) < size:
-            raise ValueError("Malformed QString: Claims length {} but actually {}"
-                             .format(size, len(buffer[pos + 4:])))
+            raise ValueError("Malformed QString: Claims length {} but actually {}. Entire buffer: {}"
+                             .format(size, len(buffer[pos + 4:]), base64.b64encode(buffer)))
         return size + pos + 4, (buffer[pos + 4:pos + 4 + size]).decode('UTF-16BE')
 
     @staticmethod
