@@ -40,3 +40,27 @@ async def test_sends_udp(loop: asyncio.BaseEventLoop):
         await recv_fut
         received_msg, _ = recv_fut.result()
         assert received_msg == msg
+
+async def test_success_cleans_up(loop: asyncio.BaseEventLoop):
+    rx_addr = ('127.0.0.1', config.LOBBY_UDP_PORTS[-1])
+    tx_addr = ('127.0.0.1', config.LOBBY_UDP_PORTS[-1]+1)
+    msg = 'Hello 1'
+    async with NatPacketServer(rx_addr) as server:
+        recv_fut = server.await_packet(msg)
+
+        async with NatPacketServer(tx_addr) as sender:
+            sender.send_natpacket_to(msg, rx_addr)
+
+            await recv_fut
+
+            assert not server.is_waiting_for(msg)
+
+async def test_failure_cleans_up(loop: asyncio.BaseEventLoop):
+    rx_addr = ('127.0.0.1', config.LOBBY_UDP_PORTS[-1])
+    msg = 'Hello 1'
+    async with NatPacketServer(rx_addr) as server:
+        recv_fut = server.await_packet(msg)
+        recv_fut.cancel()
+        # Give the callback a chance to run
+        await asyncio.sleep(0)
+        assert not server.is_waiting_for(msg)
