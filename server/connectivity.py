@@ -243,7 +243,7 @@ class ConnectivityTest:
                                          message])
         await asyncio.sleep(0.1)
         try:
-            received, addr = await asyncio.wait_for(future, 4.0)
+            received, addr = await asyncio.wait_for(future, 20.0)
             if received == message:
                 delta = time.time() - start_time
                 self._logger.debug("{} replied from {} in {}".format(self.identifier, addr, delta))
