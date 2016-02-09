@@ -64,9 +64,11 @@ class ServerContext:
             self.connections[connection] = protocol
             while True:
                 message = await protocol.read_message()
-                await connection.on_message_received(message)
-                await asyncio.sleep(0)
-                await connection.drain()
+                with server.stats.timer('connection.on_message_received'):
+                    await connection.on_message_received(message)
+                with server.stats.timer('servercontext.drain'):
+                    await asyncio.sleep(0)
+                    await connection.drain()
         except ConnectionResetError:
             pass
         except ConnectionAbortedError:
