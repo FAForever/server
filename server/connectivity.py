@@ -92,6 +92,7 @@ class Connectivity(Receiver):
         except (TimeoutError, CancelledError):
             self._result = ConnectivityResult(addr=None, state=ConnectivityState.BLOCKED)
         finally:
+            self._logger.info("ConnectivityState for {} {}: {}".format(self.host, self.player, self._result.state.value))
             self.send('ConnectivityState', [self._result.state.value,
                                             "{}:{}".format(*self._result.addr)
                                             if self._result.addr else ""])
