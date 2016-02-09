@@ -244,7 +244,8 @@ class ConnectivityTest:
         try:
             received, addr = await asyncio.wait_for(future, 4.0)
             if received == message:
-                self._logger.debug("{} replied from {}".format(self.identifier, addr))
+                delta = time.time() - start_time
+                self._logger.debug("{} replied from {} in {}".format(self.identifier, addr, delta))
                 return addr
         except (CancelledError, TimeoutError):
             delta = time.time() - start_time
