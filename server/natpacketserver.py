@@ -1,4 +1,6 @@
 import asyncio
+from typing import Dict
+
 import server
 from .decorators import with_logger
 
@@ -50,7 +52,7 @@ class NatPacketServer:
         self.ports = [int(address[1]) for address in self.addresses]
         self.loop = loop or asyncio.get_event_loop()
         self.servers = {}
-        self._futures = {}
+        self._futures = {}  # type: Dict[bytes, asyncio.Future]
         NatPacketServer.instance = self
 
     async def __aenter__(self):
