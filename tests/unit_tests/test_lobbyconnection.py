@@ -144,7 +144,8 @@ def test_send_game_list(mocker, lobbyconnection, game_stats_service):
 
     lobbyconnection.send_game_list()
 
-    protocol.send_messages.assert_any_call([game1.to_dict(), game2.to_dict()])
+    protocol.send_message.assert_any_call({'command': 'game_info',
+                                           'games': [game1.to_dict(), game2.to_dict()]})
 
 def test_send_mod_list(mocker, lobbyconnection, mock_games):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')

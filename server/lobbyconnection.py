@@ -382,7 +382,10 @@ Thanks,\n\
 
     @timed()
     def send_game_list(self):
-        self.protocol.send_messages([game.to_dict() for game in self.game_service.all_games])
+        self.sendJSON({
+            'command': 'game_info',
+            'games': [game.to_dict() for game in self.game_service.all_games]
+        })
 
     @asyncio.coroutine
     def command_social_remove(self, message):
