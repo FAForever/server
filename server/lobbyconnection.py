@@ -46,9 +46,9 @@ import server.db as db
 from server.types import Address
 from .game_service import GameService
 from .player_service import PlayerService
-from passwords import PRIVATE_KEY, VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY
+from passwords import PRIVATE_KEY
 import config
-from config import Config
+from config import VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY
 from server.protocol import QDataStreamProtocol
 
 gi = pygeoip.GeoIP('GeoIP.dat', pygeoip.MEMORY_CACHE)
