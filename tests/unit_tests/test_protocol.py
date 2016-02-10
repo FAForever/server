@@ -3,6 +3,8 @@ from asyncio import StreamReader
 import asyncio
 from unittest import mock
 import pytest
+import struct
+
 from server.protocol import QDataStreamProtocol
 
 
@@ -49,4 +51,11 @@ def test_QDataStreamProtocol_recv_large_array(protocol, reader):
 
     assert message == {'some_header': True, 'legacy': [str(i) for i in range(1520)]}
 
+async def test_unpacks_evil_qstring(protocol, reader):
+    reader.feed_data(struct.pack('!I', 64))
+    reader.feed_data(b'\x00\x00\x004\x00{\x00"\x00c\x00o\x00m\x00m\x00a\x00n\x00d\x00"\x00:\x00 \x00"\x00a\x00s\x00k\x00_\x00s\x00e\x00s\x00s\x00i\x00o\x00n\x00"\x00}\xff\xff\xff\xff\xff\xff\xff\xff')
+    reader.feed_eof()
 
+    message = await protocol.read_message()
+
+    assert message == {'command': 'ask_session'}

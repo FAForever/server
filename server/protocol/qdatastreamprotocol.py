@@ -117,14 +117,18 @@ class QDataStreamProtocol(Protocol):
             }
         else:
             message = json.loads(action)
-            for part in self.read_block(block):
-                try:
-                    message_part = json.loads(part)
-                    message.update(message_part)
-                except (ValueError, TypeError):
-                    if 'legacy' not in message:
-                        message['legacy'] = []
-                    message['legacy'].append(part)
+            try:
+                for part in self.read_block(block):
+                    try:
+                        message_part = json.loads(part)
+                        if part != action:
+                            message.update(message_part)
+                    except (ValueError, TypeError):
+                        if 'legacy' not in message:
+                            message['legacy'] = []
+                        message['legacy'].append(part)
+            except (KeyError, ValueError):
+                pass
             return message
 
     async def drain(self):
