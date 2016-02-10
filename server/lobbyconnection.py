@@ -200,11 +200,8 @@ class LobbyConnection(Dispatcher):
         # Pad the plaintext to the next full block with commas, because I can't be arsed to
         # write an actually clever parser.
         bs = Blowfish.block_size
-        paddinglen = bs - divmod(len(plaintext), bs)[1]
-        padding = b',' * paddinglen
-
-        plaintext += padding
-
+        paddinglen = bs - (len(plaintext) % bs)
+        plaintext += b',' * paddinglen
 
         # Generate random IV of size one block.
         iv = rng.read(bs)
