@@ -323,11 +323,11 @@ class Game(BaseGame):
             rows = []
             for player, result in results.items():
                 self._logger.info("Result for player {}: {}".format(player, result))
-                rows.append((player.id, result, self.id))
+                rows.append((result, self.id, player.id))
 
             await cursor.executemany("UPDATE game_player_stats "
-                                     "SET `playerId`=%s, `score`=%s, `scoreTime`=NOW() "
-                                     "WHERE `gameId`=%s", rows)
+                                     "SET `score`=%s, `scoreTime`=NOW() "
+                                     "WHERE `gameId`=%s AND `playerId`=%s", rows)
 
     async def clear_data(self):
         async with db.db_pool.get() as conn:
@@ -513,7 +513,6 @@ class Game(BaseGame):
                                   self.map_id,
                                   self.name,
                                   self.validity.value))
-
 
     async def update_game_player_stats(self):
         query_str = "INSERT INTO `game_player_stats` " \
