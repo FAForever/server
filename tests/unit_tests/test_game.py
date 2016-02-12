@@ -311,6 +311,7 @@ async def test_persist_results(game):
     await game.load_results()
     assert game.get_army_result(1) == 5
 
+
 def test_equality(game):
     assert game == game
     assert game != Game(5, mock.Mock(), mock.Mock())
@@ -319,6 +320,7 @@ def test_equality(game):
 def test_hashing(game):
     # game.id == 42
     assert {game: 1, Game(42, mock.Mock(), mock.Mock()): 1} == {game: 1}
+
 
 async def test_report_army_stats_sends_stats_for_defeated_player(game: Game):
     game.id = 43
