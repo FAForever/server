@@ -888,7 +888,6 @@ Thanks,\n\
                                    text="You are banned from the matchmaker. Contact an admin to have the reason."))
                 return
 
-        container = self.game_service.ladder_service
         if mod == "ladder1v1":
             if state == "start":
                 if self.search:
@@ -897,7 +896,7 @@ Thanks,\n\
                 self.search = Search(self.player)
                 self.player.faction = message['faction']
 
-                container.addPlayer(self.player)
+                self.game_service.ladder_service.inform_player(self.player)
 
                 self._logger.info("{} is searching for ladder: {}".format(self.player, self.search))
                 asyncio.ensure_future(self.player_service.ladder_queue.search(self.player, search=self.search))

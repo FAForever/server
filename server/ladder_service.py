@@ -1,13 +1,8 @@
 import random
-
-
 import asyncio
-import trueskill
-import config
 
 from server.games.ladder_game import LadderGame
-from server.players import Player, PlayerState
-import server.db as db
+from server.players import PlayerState
 
 
 class LadderService:
@@ -15,16 +10,14 @@ class LadderService:
     Service responsible for managing the 1v1 ladder. Does matchmaking, updates statistics, and
     launches the games.
     """
-    listable = False
-
     def __init__(self, games_service, game_stats_service):
-        self.players = []
+        self._informed_players = []
         self.game_service = games_service
         self.game_stats_service = game_stats_service
 
-    def addPlayer(self, player):
-        if player not in self.players:
-            self.players.append(player)
+    def inform_player(self, player):
+        if player not in self._informed_players:
+            self._informed_players.append(player)
             player.state = PlayerState.SEARCHING_LADDER
             mean, deviation = player.ladder_rating
 

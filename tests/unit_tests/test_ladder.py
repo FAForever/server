@@ -22,3 +22,12 @@ async def test_start_game(ladder_service: LadderService, game_service: GameServi
 
     assert p1.lobby_connection.launch_game.called
     assert p2.lobby_connection.launch_game.called
+
+
+def test_inform_player(ladder_service: LadderService):
+    p1 = mock.create_autospec(Player('Dostya', id=1))
+    p1.ladder_rating = (1500, 500)
+
+    ladder_service.inform_player(p1)
+
+    assert p1.lobby_connection.sendJSON.called
