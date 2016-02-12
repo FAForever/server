@@ -5,7 +5,7 @@ import asyncio
 import trueskill
 import config
 
-from .ladder_game import LadderGame
+from server.games.ladder_game import LadderGame
 from server.players import Player, PlayerState
 import server.db as db
 

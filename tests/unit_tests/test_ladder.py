@@ -1,18 +1,24 @@
-from unittest.mock import patch, Mock
-import asyncio
+from unittest import mock
 
-from tests.unit_tests.ladder_fixtures import *
+import pytest
 
-def get_coro_mock(return_value):
-    @asyncio.coroutine
-    def coro_mock(*args, **kwargs):
-        return return_value
-    return Mock(wraps=coro_mock)
+from server import GameStatsService, GameService, LadderService
+from server.players import Player
+from tests.utils import CoroMock
 
-#@asyncio.coroutine
-#def test_start_game_uses_map_from_mappool(ladder_service: LadderService, ladder_setup, game_service, lobbythread):
-#    game_service.ladder_maps = ladder_setup['map_pool']
-#    lobbythread.sendJSON = Mock()
-#    yield from ladder_service.start_game(ladder_setup['player1'], ladder_setup['player2'])
-#    args, kwargs = lobbythread.sendJSON.call_args
-#    assert (args[0]['mapid'], '', args[0]['mapname']) in ladder_setup['map_pool']
+
+@pytest.fixture
+def ladder_service(game_service: GameService, game_stats_service: GameStatsService):
+    return LadderService(game_service, game_stats_service)
+
+
+async def test_start_game(ladder_service: LadderService, game_service: GameService):
+    p1 = mock.create_autospec(Player('Dostya', id=1))
+    p2 = mock.create_autospec(Player('Rhiza', id=2))
+    game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
+
+    with mock.patch('asyncio.sleep', CoroMock()):
+        await ladder_service.start_game(p1, p2)
+
+    assert p1.lobby_connection.launch_game.called
+    assert p2.lobby_connection.launch_game.called

@@ -5,10 +5,11 @@ import aiocron
 import server.db as db
 from server import GameState, VisibilityState
 from server.decorators import with_logger
-
-from server.games import FeaturedMod, LadderService, LadderGame, CoopGame, CustomGame
+from server.games import FeaturedMod, LadderGame, CoopGame, CustomGame
 from server.games.game import Game
 from server.players import Player
+
+from .ladder_service import LadderService
 
 @with_logger
 class GameService:

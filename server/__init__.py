@@ -23,6 +23,7 @@ from .protocol import Protocol, QDataStreamProtocol
 from .servercontext import ServerContext
 from .player_service import PlayerService
 from .game_service import GameService
+from .ladder_service import LadderService
 from .control import init as run_control_server
 
 __version__ = '0.1'
