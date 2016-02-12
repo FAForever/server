@@ -102,7 +102,7 @@ def run_lobby_server(address: (str, int),
         except Exception as e:
             logging.getLogger().exception(e)
         finally:
-            loop.call_later(5, report_dirties)
+            loop.call_later(1, report_dirties)
 
     def ping_broadcast():
         ctx.broadcast_raw(QDataStreamProtocol.pack_block(QDataStreamProtocol.pack_qstring('PING')))

@@ -93,13 +93,11 @@ def test_player_info_broadcast(loop, lobby_server):
     p2 = yield from connect_client(lobby_server)
 
     yield from perform_login(p1, ('Dostya', 'vodka'))
-    yield from p1.read_message()
     yield from perform_login(p2, ('Rhiza', 'puff_the_magic_dragon'))
-    yield from p2.read_message()
 
-    yield from read_until(p1,
+    yield from read_until(p2,
                           lambda m: 'player_info' in m.values()
-                                    and any(map(lambda d: ('login', 'Rhiza') in d.items(), m['players'])))
+                                    and any(map(lambda d: ('login', 'Dostya') in d.items(), m['players'])))
     p1.close()
     p2.close()
 
