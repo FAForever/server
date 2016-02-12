@@ -104,8 +104,10 @@ def run_lobby_server(address: (str, int),
         finally:
             loop.call_later(1, report_dirties)
 
+    ping_msg = QDataStreamProtocol.pack_block(QDataStreamProtocol.pack_qstring('PING'))
+
     def ping_broadcast():
-        ctx.broadcast_raw(QDataStreamProtocol.pack_block(QDataStreamProtocol.pack_qstring('PING')))
+        ctx.broadcast_raw(ping_msg)
         loop.call_later(45, ping_broadcast)
 
     def initialize_connection():
