@@ -58,8 +58,8 @@ class LadderService:
         game.set_player_option(player2.id, 'Faction', player2.faction)
         game.set_player_option(player1.id, 'Color', 1)
         game.set_player_option(player2.id, 'Color', 2)
-        game.set_player_option(player1.id, 'Army', 1)
-        game.set_player_option(player2.id, 'Army', 2)
+        game.set_player_option(player1.id, 'Army', 2)
+        game.set_player_option(player2.id, 'Army', 3)
 
         # Remembering that "Team 1" corresponds to "-": the non-team.
         game.set_player_option(player1.id, 'Team', 1)
