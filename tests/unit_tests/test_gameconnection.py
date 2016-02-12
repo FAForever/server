@@ -7,6 +7,7 @@ from server import GameConnection
 from server.connectivity import ConnectivityResult, ConnectivityState
 from server.games import Game
 from server.players import PlayerState
+from tests.utils import CoroMock
 
 LOCAL_PUBLIC = ConnectivityResult(addr='127.0.0.1:6112', state=ConnectivityState.PUBLIC)
 LOCAL_STUN = ConnectivityResult(addr='127.0.0.1:6112', state=ConnectivityState.STUN)
@@ -86,6 +87,7 @@ def test_handle_action_GameState_launching_calls_launch(game_connection, loop, p
     """
     game_connection.player = players.hosting
     game_connection.game = game
+    game.launch = CoroMock()
 
     result = asyncio.async(game_connection.handle_action('GameState', ['Launching']))
     loop.run_until_complete(result)
