@@ -21,6 +21,24 @@ def player():
 def connectivity():
     return mock.create_autospec(Connectivity)
 
+async def test_test_public(loop, player, connectivity):
+    natserver = mock.create_autospec(NatPacketServer(addresses=[
+        ('0.0.0.0', 6112)
+    ]))
+    natserver.ports = [6112]
+
+    fut = asyncio.Future()
+    fut.set_result(('127.0.0.1', 6112))
+    connectivity.wait_for_natpacket = lambda _: fut
+
+    connectivity_test = ConnectivityTest(connectivity, '127.0.0.1', 6112, player)
+    connectivity_test._natserver = natserver
+
+    await connectivity_test.test_public()
+
+    assert natserver.send_natpacket_to.called
+
+
 async def test_test_stun(loop, player, connectivity):
     natserver = mock.create_autospec(NatPacketServer(addresses=[
         ('0.0.0.0', 6112), ('0.0.0.0', 30351)
@@ -35,7 +53,7 @@ async def test_test_stun(loop, player, connectivity):
         host, port = addr.split(':')
         if int(port) in natserver.ports:
             if not future.done():
-                future.set_result((host, port))
+                future.set_result((msg, (host, int(port))))
     connectivity.send = send
     connectivity.drain = CoroMock()
 
@@ -44,6 +62,5 @@ async def test_test_stun(loop, player, connectivity):
 
     await connectivity_test.test_stun()
 
-    assert future.done()
-    assert future.result()
-    assert int(future.result()[1]) in natserver.ports
+    msg, (host, port) = future.result()
+    assert port in natserver.ports
