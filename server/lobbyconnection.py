@@ -947,6 +947,8 @@ Thanks,\n\
 
     def launch_game(self, game, port, is_host=False, use_map=None):
         # FIXME: Setting up a ridiculous amount of cyclic pointers here
+        if self.game_connection:
+            self.game_connection.abort("Player launched a new game")
         self.game_connection = GameConnection(self.loop,
                                               self,
                                               self.player_service,
