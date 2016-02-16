@@ -1,4 +1,3 @@
-from functools import partial
 from enum import IntEnum, unique
 import logging
 import time
