@@ -73,6 +73,8 @@ class ServerContext:
             pass
         except ConnectionAbortedError:
             pass
+        except TimeoutError:
+            pass
         except asyncio.IncompleteReadError as ex:
             if not stream_reader.at_eof():
                 self._logger.exception(ex)
