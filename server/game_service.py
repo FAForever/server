@@ -47,10 +47,9 @@ class GameService:
         loop.run_until_complete(loop.create_task(self.update_data()))
         self._update_cron = aiocron.crontab('0 * * * *', func=self.update_data)
 
-    @asyncio.coroutine
-    def initialise_game_counter(self):
-        with (yield from db.db_pool) as conn:
-            cursor = yield from conn.cursor()
+    async def initialise_game_counter(self):
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
 
             # InnoDB, unusually, doesn't allow insertion of values greater than the next expected
             # value into an auto_increment field. We'd like to do that, because we no longer insert
@@ -63,8 +62,8 @@ class GameService:
             # doing LAST_UPDATE_ID to get the id number, and then doing an UPDATE when the actual
             # data to go into the row becomes available: we now only do a single insert for each
             # game, and don't end up with 800,000 junk rows in the database.
-            yield from cursor.execute("SELECT MAX(id) FROM game_stats")
-            (self.game_id_counter, ) = yield from cursor.fetchone()
+            await cursor.execute("SELECT MAX(id) FROM game_stats")
+            (self.game_id_counter, ) = await cursor.fetchone()
 
     async def update_data(self):
         """
