@@ -62,10 +62,6 @@ class Player(BasePlayer):
         self._game = lambda: None
         self._game_connection = lambda: None
 
-    def getAddress(self):
-        return "%s:%s" % (str(self.ip), str(self.game_port))
-
-
     @property
     def lobby_connection(self) -> "LobbyConnection":
         """
