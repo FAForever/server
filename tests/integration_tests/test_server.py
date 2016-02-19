@@ -1,6 +1,4 @@
-from unittest.mock import call
 import pytest
-import config
 
 from server import VisibilityState
 
