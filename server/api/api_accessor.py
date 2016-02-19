@@ -2,7 +2,7 @@ import json
 from functools import partial
 import asyncio
 from httplib2 import Http
-from oauth2client.client import SignedJwtAssertionCredentials
+from oauth2client.service_account import ServiceAccountCredentials
 from passwords import API_TOKEN_URI, API_BASE_URL
 
 
@@ -26,8 +26,9 @@ class ApiAccessor:
         return result
 
     def http(self, sub=None):
-        credentials = SignedJwtAssertionCredentials('faf-server', self.private_key,
-                                                    'write_achievements write_events',
-                                                    sub=sub,
-                                                    token_uri=API_TOKEN_URI)
+        credentials = ServiceAccountCredentials.from_p12_keyfile(
+            'faf-server',
+            'faf-server.pem',
+            scopes='write_achievements write_events'
+        )
         return credentials.authorize(Http())
