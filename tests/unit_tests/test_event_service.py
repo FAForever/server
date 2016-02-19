@@ -7,7 +7,7 @@ import pytest
 from server.api.api_accessor import ApiAccessor
 from server.stats.achievement_service import AchievementService
 from server.stats.event_service import EventService
-from tests.utils import CoroMock
+from tests import CoroMock
 
 
 @pytest.fixture()

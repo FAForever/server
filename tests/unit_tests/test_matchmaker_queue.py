@@ -4,7 +4,7 @@ import asyncio
 import pytest
 from server.matchmaker import MatchmakerQueue, Search
 from server.players import Player
-from tests.utils import CoroMock
+from tests import CoroMock
 
 
 @pytest.fixture

@@ -4,13 +4,12 @@ import logging
 
 import time
 
-import config
 import server
+import server.config as config
 
 from typing import NamedTuple, Optional
 from concurrent.futures import CancelledError, TimeoutError
 from enum import Enum, unique
-from server.abc.dispatcher import Dispatcher, Receiver
 from server.players import Player
 from server.types import Address
 from .decorators import with_logger
@@ -40,7 +39,7 @@ ConnectivityResult = NamedTuple('ConnectivityResult', [('addr', Optional[Address
 
 
 @with_logger
-class Connectivity(Receiver):
+class Connectivity:
     """
     Processes Nat packets and determines connectivity state of peers.
 
@@ -48,15 +47,14 @@ class Connectivity(Receiver):
     then used while the game lobby is active to establish connections
     between players.
     """
-    def __init__(self, dispatcher: Dispatcher, host: str, player: Player):
+    def __init__(self, lobby_connection, host: str, player: Player):
         self.player = player
         self._result = None
         self._test = None
         self._nat_packets = {}
-        self._dispatcher = dispatcher
+        self._dispatcher = lobby_connection
         self.host = host
         self._relay_addr = None
-        dispatcher.subscribe_to('connectivity', self)
 
     @property
     def relay_address(self):

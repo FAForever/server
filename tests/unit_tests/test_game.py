@@ -11,7 +11,7 @@ from server import GameStatsService
 from server.games.game import Game, GameState, GameError, VisibilityState
 from server.gameconnection import GameConnection, GameConnectionState
 from server.players import Player
-from tests.utils import CoroMock
+from tests import CoroMock
 
 
 @pytest.fixture()

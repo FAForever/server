@@ -4,7 +4,7 @@ import pytest
 
 from server import GameStatsService, GameService, LadderService
 from server.players import Player
-from tests.utils import CoroMock
+from tests import CoroMock
 
 
 @pytest.fixture

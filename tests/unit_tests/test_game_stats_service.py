@@ -7,7 +7,7 @@ from server.players import Player
 from server.stats.achievement_service import *
 from server.stats.event_service import *
 from server.stats.game_stats_service import GameStatsService
-from tests.utils import CoroMock
+from tests import CoroMock
 
 DEFAULT_UNIT_STATS = {
     'air': {'built': 0, 'lost': 0, 'killed': 0},

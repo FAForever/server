@@ -3,7 +3,7 @@ from unittest import mock
 
 import pytest
 
-from server.games import LadderService
+from server import LadderService
 from server.players import Player
 
 

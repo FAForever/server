@@ -7,7 +7,7 @@ from server import GameConnection
 from server.connectivity import ConnectivityResult, ConnectivityState
 from server.games import Game
 from server.players import PlayerState
-from tests.utils import CoroMock
+from tests import CoroMock
 
 LOCAL_PUBLIC = ConnectivityResult(addr='127.0.0.1:6112', state=ConnectivityState.PUBLIC)
 LOCAL_STUN = ConnectivityResult(addr='127.0.0.1:6112', state=ConnectivityState.STUN)

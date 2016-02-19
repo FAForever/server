@@ -36,8 +36,7 @@ import pygeoip
 
 import server
 from server import GameConnection
-from server.abc.dispatcher import Dispatcher, Receiver
-from server.connectivity import Connectivity, ConnectivityTest, ConnectivityState
+from server.connectivity import Connectivity, ConnectivityState
 from server.matchmaker import Search
 from server.decorators import timed, with_logger
 from server.games.game import GameState, VisibilityState
@@ -47,8 +46,8 @@ from server.types import Address
 from .game_service import GameService
 from .player_service import PlayerService
 from passwords import PRIVATE_KEY
-import config
-from config import VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY
+from . import config
+from .config import VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY
 from server.protocol import QDataStreamProtocol
 
 gi = pygeoip.GeoIP('GeoIP.dat', pygeoip.MEMORY_CACHE)
@@ -76,7 +75,7 @@ class AuthenticationError(Exception):
 
 
 @with_logger
-class LobbyConnection(Dispatcher):
+class LobbyConnection:
     @timed()
     def __init__(self, loop, context=None, games: GameService=None, players: PlayerService=None, db=None):
         super(LobbyConnection, self).__init__()
@@ -93,7 +92,6 @@ class LobbyConnection(Dispatcher):
         self.connectivity = None  # type: Connectivity
         self.leagueAvatar = None
         self.peer_address = None  # type: Optional[Address]
-        self._subscribers = defaultdict(list)  # type: Mapping[str, List[Receiver]]
         self.session = int(random.randrange(0, 4294967295))
         self.protocol = None
         self._logger.debug("LobbyConnection initialized")
@@ -124,13 +122,6 @@ class LobbyConnection(Dispatcher):
                 return False
         return True
 
-    def subscribe_to(self, command_id: str, receiver: Receiver) -> None:
-        self._subscribers[command_id].append(receiver)
-
-    def unsubscribe_from(self, command_id: str, receiver: Receiver) -> None:
-        if receiver in self._subscribers.get(command_id, []):
-            self._subscribers[command_id].remove(receiver)
-
     async def on_message_received(self, message):
         """
         Dispatches incoming messages
@@ -140,15 +131,15 @@ class LobbyConnection(Dispatcher):
             if not self.ensure_authenticated(cmd):
                 return
             target = message.get('target')
-            if target in self._subscribers:
-                for sub in self._subscribers[target]:
-                    await sub.on_message_received(message)
-                return
             if target == 'game':
                 if not self.game_connection:
                     return
                 await self.game_connection.handle_action(cmd, message.get('args', []))
                 return
+            elif target == 'connectivity':
+                if not self.connectivity:
+                    return
+                await self.connectivity.on_message_received(message)
             handler = getattr(self, 'command_{}'.format(cmd))
             if asyncio.iscoroutinefunction(handler):
                 await handler(message)

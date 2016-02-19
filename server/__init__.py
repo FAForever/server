@@ -12,8 +12,8 @@ import logging
 import aiomeasures
 
 import server.db
-import config
 
+from . import config as config
 from .games.game import GameState, VisibilityState
 from .stats.game_stats_service import GameStatsService
 from .gameconnection import GameConnection

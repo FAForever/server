@@ -1,4 +1,5 @@
 import asyncio
+from unittest.mock import Mock
 
 import pytest
 from unittest import mock
@@ -10,6 +11,7 @@ from server.games import Game
 from server.lobbyconnection import LobbyConnection
 from server.player_service import PlayerService
 from server.players import Player
+from tests import CoroMock
 
 
 @pytest.fixture()
@@ -203,3 +205,17 @@ def test_command_admin_closeFA(mocker, lobbyconnection):
               "Please refer to our rules for the lobby/game here {rule_link}."
               .format(rule_link=config.RULE_LINK))
     ))
+
+
+async def test_game_subscription(lobbyconnection: LobbyConnection):
+    game = Mock()
+    game.handle_action = CoroMock()
+    lobbyconnection.game_connection = game
+    lobbyconnection.ensure_authenticated = lambda _: True
+
+    await lobbyconnection.on_message_received({'command': 'test',
+                                               'args': ['foo', 42],
+                                               'target': 'game'})
+
+    game.handle_action.assert_called_with('test', ['foo', 42])
+

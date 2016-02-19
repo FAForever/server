@@ -9,7 +9,7 @@ import pytest
 from server import NatPacketServer
 from server.connectivity import ConnectivityTest, Connectivity
 from server.players import Player
-from tests.utils import CoroMock
+from tests import CoroMock
 
 
 @pytest.fixture()

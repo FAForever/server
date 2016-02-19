@@ -1,11 +1,9 @@
 import asyncio
 from collections import defaultdict
-from concurrent.futures import CancelledError
 import time
 import logging
 import functools
 from server.abc.base_game import GameConnectionState
-from server.abc.dispatcher import Receiver
 from server.connectivity import Connectivity, ConnectivityState, ConnectivityResult
 from server.games.game import Game, GameState, Victory
 from server.decorators import with_logger, timed
@@ -22,7 +20,7 @@ class AuthenticationError(Exception):
 
 
 @with_logger
-class GameConnection(GpgNetServerProtocol, Receiver):
+class GameConnection(GpgNetServerProtocol):
     """
     Responsible for connections to the game, using the GPGNet protocol
     """
@@ -62,7 +60,6 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         self._transport = None
 
         self.connectivity = self.lobby_connection.connectivity  # type: Connectivity
-        self.lobby_connection.subscribe_to('game', self)
 
     @property
     def state(self):
@@ -428,7 +425,7 @@ class GameConnection(GpgNetServerProtocol, Receiver):
         except Exception as ex:  # pragma: no cover
             self.log.debug("Exception in abort(): {}".format(ex))
         finally:
-            self.lobby_connection.unsubscribe_from('game', self)
+            self.lobby_connection.game_connection = None
 
     async def on_connection_lost(self):
         try:

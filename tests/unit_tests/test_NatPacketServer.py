@@ -4,7 +4,7 @@ import logging
 
 from unittest import mock
 
-import config
+import server.config as config
 from server.natpacketserver import NatPacketServer
 
 
