@@ -55,7 +55,7 @@ class MatchmakerQueue:
         """
         return {
             'queue_name': self.queue_name,
-            'boundaries': [search.boundary_80 for search in self.queue]
+            'boundaries': [search.boundary_80 for player, search in self.queue.items()]
         }
 
     async def search(self, player, start_time=None, search=None):
