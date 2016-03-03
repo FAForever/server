@@ -22,8 +22,8 @@ from server.player_service import PlayerService
 from server.natpacketserver import NatPacketServer
 from server.stats.game_stats_service import GameStatsService, EventService, AchievementService
 from server.api.api_accessor import ApiAccessor
-import config
 import server
+import server.config as config
 
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
