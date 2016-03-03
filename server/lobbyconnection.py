@@ -140,6 +140,7 @@ class LobbyConnection:
                 if not self.connectivity:
                     return
                 await self.connectivity.on_message_received(message)
+                return
             handler = getattr(self, 'command_{}'.format(cmd))
             if asyncio.iscoroutinefunction(handler):
                 await handler(message)
