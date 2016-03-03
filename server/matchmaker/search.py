@@ -1,6 +1,8 @@
 import asyncio
 import time
 
+import math
+
 from server.decorators import with_logger
 from trueskill import quality_1vs1, Rating
 
@@ -47,10 +49,22 @@ class Search:
         """
         Returns 'boundary' mu values for achieving roughly 80% quality
 
-        These are simply the mean +/- 200, assuming sigma <= 100
+        These are the mean, rounded to nearest 10, +/- 200, assuming sigma <= 100
         """
         mu, _ = self.rating
-        return mu - 200, mu + 200
+        rounded_mu = int(math.ceil(mu/10)*10)
+        return rounded_mu - 200, rounded_mu + 200
+
+    @property
+    def boundary_75(self):
+        """
+        Returns 'boundary' mu values for achieving roughly 75% quality
+
+        These are the mean, rounded to nearest 10, +/- 100, assuming sigma <= 200
+        """
+        mu, _ = self.rating
+        rounded_mu = int(math.ceil(mu/10)*10)
+        return rounded_mu - 100, rounded_mu + 100
 
     @property
     def search_expansion(self):
