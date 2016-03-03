@@ -359,7 +359,8 @@ class Game(BaseGame):
             cursor = yield from conn.cursor()
 
             for player, new_rating in new_ratings.items():
-                self._logger.debug("New rating for {}: {}".format(player, new_rating))
+                self._logger.debug("New {} rating for {}: {}".format(rating, player, new_rating))
+                setattr(player, '{}_rating'.format(rating), new_rating)
                 yield from cursor.execute("UPDATE game_player_stats "
                                           "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
                                           "WHERE gameId = %s AND playerId = %s",
@@ -479,7 +480,6 @@ class Game(BaseGame):
         for player in self.players:
             player.state = PlayerState.PLAYING
         await self.update_game_stats()
-        await self.update_ratings()
         await self.update_game_player_stats()
 
     async def update_game_stats(self):
@@ -628,25 +628,6 @@ class Game(BaseGame):
         self._logger.debug("Rating groups: {}".format(rating_groups))
         self._logger.debug("Ranks: {}".format(ranks))
         return trueskill.rate(rating_groups, ranks)
-
-    async def update_ratings(self):
-        """ Update all scores from the DB before updating the results"""
-        self._logger.debug("Updating ratings")
-
-        player_ids = list(map(lambda p: p.id, self.players))
-
-        async with db.db_pool.get() as conn:
-            cursor = await conn.cursor()
-
-            await cursor.execute("SELECT `id`, `mean`, `deviation` "
-                                 "FROM `global_rating` "
-                                 "WHERE `id` IN %s", (player_ids,))
-
-            rows = await cursor.fetchall()
-            for row in rows:
-                (player_id, mean, deviation) = row
-
-                self.game_service.player_service[player_id].global_rating = (mean, deviation)
 
     async def report_army_stats(self, stats):
         self._army_stats = stats

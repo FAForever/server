@@ -162,14 +162,6 @@ async def test_game_launch_freezes_players(game: Game, players):
     assert game.players == {players.hosting, players.joining}
 
 
-async def test_update_ratings(game: Game, players, db_pool, player_service, game_service):
-    player_service.players[players.hosting.id] = players.hosting
-    game.state = GameState.LOBBY
-    add_connected_player(game, players.hosting)
-    await game.update_ratings()
-    assert players.hosting.global_rating == (2000, 125)
-
-
 def test_game_teams_represents_active_teams(game: Game, players):
     game.state = GameState.LOBBY
     add_connected_players(game, [players.hosting, players.joining])
