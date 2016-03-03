@@ -1,4 +1,5 @@
 import asyncio
+
 from collections import OrderedDict
 from concurrent.futures import CancelledError
 
@@ -16,21 +17,6 @@ class MatchmakerQueue:
         self.rating_prop = 'ladder_rating'
         self.queue = OrderedDict()
         self._logger.info("MatchmakerQueue initialized for {}".format(queue_name))
-
-    def notify_potential_opponents(self, search: Search, potential=True):
-        """
-        Notify opponents who might potentially match the given search object
-        :param search: search object to notify for
-        :param potential: Whether or not we've started or stopped searching
-        :return:
-        """
-        self._logger.info("Notifying potential opponents")
-        for opponent in self.player_service.players.values():
-            if opponent == search.player:
-                continue
-            quality = search.quality_with(opponent)
-            if quality >= search.match_threshold:
-                opponent.notify_potential_match(search.player, potential)
 
     def push(self, search: Search):
         """
@@ -56,11 +42,21 @@ class MatchmakerQueue:
             del self.queue[s1.player]
         if s2.player in self.queue:
             del self.queue[s2.player]
+        self.game_service.mark_dirty(self)
         asyncio.ensure_future(self.game_service.ladder_service.start_game(s1.player, s2.player))
         return True
 
     def __len__(self):
         return self.queue.__len__()
+
+    def to_dict(self):
+        """
+        Return a fuzzy representation of the searches currently in the queue
+        """
+        return {
+            'queue_name': self.queue_name,
+            'boundaries': [search.boundary_80 for search in self.queue]
+        }
 
     async def search(self, player, start_time=None, search=None):
         """
@@ -88,13 +84,11 @@ class MatchmakerQueue:
                         if self.match(search, opponent_search):
                             return
 
-                self.notify_potential_opponents(search, True)
-
                 self._logger.debug("Found nobody searching, pushing to queue: {}".format(search))
                 self.queue[player] = search
+                self.game_service.mark_dirty(self)
                 await search.await_match()
                 self._logger.debug("Search complete: {}".format(search))
-                self.notify_potential_opponents(search, False)
             except CancelledError:
                 pass
 

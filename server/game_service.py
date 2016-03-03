@@ -1,4 +1,5 @@
 import asyncio
+from typing import Union
 
 import aiocron
 
@@ -7,6 +8,7 @@ from server import GameState, VisibilityState
 from server.decorators import with_logger
 from server.games import FeaturedMod, LadderGame, CoopGame, CustomGame
 from server.games.game import Game
+from server.matchmaker import MatchmakerQueue
 from server.players import Player
 
 from .ladder_service import LadderService
@@ -18,6 +20,7 @@ class GameService:
     """
     def __init__(self, player_service, game_stats_service):
         self._dirty_games = set()
+        self._dirty_queues = set()
         self.player_service = player_service
         self.game_stats_service = game_stats_service
         self.game_id_counter = 0
@@ -115,11 +118,19 @@ class GameService:
     def dirty_games(self):
         return self._dirty_games
 
-    def mark_dirty(self, game):
-        self._dirty_games.add(game)
+    @property
+    def dirty_queues(self):
+        return self._dirty_queues
+
+    def mark_dirty(self, obj: Union[Game, MatchmakerQueue]):
+        if isinstance(obj, Game):
+            self._dirty_games.add(obj)
+        elif isinstance(obj, MatchmakerQueue):
+            self._dirty_queues.add(obj)
 
     def clear_dirty(self):
         self._dirty_games = set()
+        self._dirty_queues = set()
 
     # This is still used by ladderGamesContainer: refactoring to make this interaction less
     # ugly would be nice.

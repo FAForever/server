@@ -43,6 +43,16 @@ class Search:
         return getattr(self.player, self.rating_prop)
 
     @property
+    def boundary_80(self):
+        """
+        Returns 'boundary' mu values for achieving roughly 80% quality
+
+        These are simply the mean +/- 200, assuming sigma <= 100
+        """
+        mu, _ = self.rating
+        return mu - 200, mu + 200
+
+    @property
     def search_expansion(self):
         """
         Defines how much to expand the search range of game quality due to waiting time

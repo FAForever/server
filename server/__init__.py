@@ -72,13 +72,29 @@ def run_lobby_server(address: (str, int),
             ))
         )
 
+    def encode_queues(queues):
+        return QDataStreamProtocol.pack_block(
+            QDataStreamProtocol.pack_qstring(
+                json.dumps(
+                    {
+                        'command': 'matchmaker_info',
+                        'queues': [queue.to_dict() for queue in queues]
+                    }
+                )
+            )
+        )
+
     def report_dirties():
         try:
             dirty_games = games.dirty_games
-            dirty_players = player_service.dirty_players
             games.clear_dirty()
             player_service.clear_dirty()
 
+            dirty_queues = games.dirty_queues
+            if len(dirty_queues) > 0:
+                ctx.broadcast_raw(encode_queues(dirty_queues))
+
+            dirty_players = player_service.dirty_players
             if len(dirty_players) > 0:
                 ctx.broadcast_raw(encode_players(dirty_players), lambda lobby_conn: lobby_conn.authenticated)
 
