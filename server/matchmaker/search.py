@@ -39,6 +39,10 @@ class Search:
         }
 
     @property
+    def rating(self):
+        return getattr(self.player, self.rating_prop)
+
+    @property
     def search_expansion(self):
         """
         Defines how much to expand the search range of game quality due to waiting time
@@ -52,7 +56,7 @@ class Search:
 
         :return:
         """
-        _, deviation = getattr(self.player, self.rating_prop)
+        _, deviation = self.rating
 
         for d, q in self._deviation_quality.items():
             if deviation >= d:
@@ -63,7 +67,7 @@ class Search:
             raise TypeError("{} is not a valid player to match with".format(opponent))
         if not getattr(opponent, self.rating_prop):
             return 0
-        return quality_1vs1(Rating(*getattr(self.player, self.rating_prop)),
+        return quality_1vs1(Rating(*self.rating),
                             Rating(*getattr(opponent, self.rating_prop)))
 
     @property
