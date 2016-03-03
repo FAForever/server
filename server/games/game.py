@@ -599,9 +599,13 @@ class Game(BaseGame):
         assert self.state == GameState.LIVE or self.state == GameState.ENDED
         team_scores = {}
         ffa_scores = []
-        for player in sorted(self.players, key=lambda p: self.get_player_option(p.id, 'Army')):
+        for player in sorted(self.players,
+                             key=lambda p: self.get_player_option(p.id, 'Army') or -1):
             team = self.get_player_option(player.id, 'Team')
             army = self.get_player_option(player.id, 'Army')
+            if army < 0:
+                self._logger.info("Skipping {}".format(player))
+                continue
             if not team:
                 raise GameError("Missing team for player id: {}".format(player.id))
             if team != 1:
