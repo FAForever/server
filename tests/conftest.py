@@ -11,7 +11,7 @@ import asyncio
 import logging
 import subprocess
 import sys
-from passwords import DB_SERVER, DB_LOGIN, DB_PORT, DB_PASSWORD
+from server.config import DB_SERVER, DB_LOGIN, DB_PORT, DB_PASSWORD
 
 import pytest
 from unittest import mock

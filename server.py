@@ -15,7 +15,6 @@ from logging import handlers
 import signal
 import socket
 
-from passwords import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME
 from server.game_service import GameService
 from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
@@ -24,6 +23,7 @@ from server.stats.game_stats_service import GameStatsService, EventService, Achi
 from server.api.api_accessor import ApiAccessor
 import server
 import server.config as config
+from server.config import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME
 
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)

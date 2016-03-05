@@ -3,7 +3,7 @@ from functools import partial
 import asyncio
 from httplib2 import Http
 from oauth2client.service_account import ServiceAccountCredentials
-from passwords import API_TOKEN_URI, API_BASE_URL
+from server.config import API_TOKEN_URI, API_BASE_URL
 
 
 class ApiAccessor:

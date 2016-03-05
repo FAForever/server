@@ -3,7 +3,6 @@ typing
 aiohttp
 aiomysql
 aiomeasures
-configobj
 coveralls
 docopt
 pycrypto
