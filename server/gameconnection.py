@@ -113,8 +113,7 @@ class GameConnection(GpgNetServerProtocol):
             self.log.exception("Unknown PlayerState")
             self.abort()
 
-    @asyncio.coroutine
-    def _handle_lobby_state(self):
+    async def _handle_lobby_state(self):
         """
         The game has told us it is ready and listening on
         self.player.game_port for UDP.
@@ -128,13 +127,13 @@ class GameConnection(GpgNetServerProtocol):
             # If the player is joining, we connect him to host
             # followed by the rest of the players.
             elif player_state == PlayerState.JOINING:
-                yield from self.ConnectToHost(self.game.host.game_connection)
+                await self.ConnectToHost(self.game.host.game_connection)
                 self._state = GameConnectionState.CONNECTED_TO_HOST
                 self.game.add_game_connection(self)
                 for peer in self.game.connections:
                     if peer != self and peer.player != self.game.host:
                         self.log.debug("{} connecting to {}".format(self.player, peer))
-                        asyncio.async(self.ConnectToPeer(peer))
+                        asyncio.ensure_future(self.ConnectToPeer(peer))
         except Exception as e:
             self.log.exception(e)
 

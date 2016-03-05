@@ -1,6 +1,4 @@
 import asyncio
-import json
-
 from unittest import mock
 
 from server import GameConnection
@@ -13,12 +11,14 @@ LOCAL_PUBLIC = ConnectivityResult(addr='127.0.0.1:6112', state=ConnectivityState
 LOCAL_STUN = ConnectivityResult(addr='127.0.0.1:6112', state=ConnectivityState.STUN)
 LOCAL_PROXY = ConnectivityResult(addr=None, state=ConnectivityState.BLOCKED)
 
+
 def assert_message_sent(game_connection, command, args):
     game_connection.lobby_connection.send.assert_called_with({
         'command': command,
         'target': 'game',
         'args': args
     })
+
 
 def test_abort(game_connection, game, players):
     game_connection.player = players.hosting
@@ -28,93 +28,76 @@ def test_abort(game_connection, game, players):
 
     game.remove_game_connection.assert_called_with(game_connection)
 
-@asyncio.coroutine
-def test_handle_action_GameState_idle_adds_connection(game_connection, players, game):
+async def test_handle_action_GameState_idle_adds_connection(game_connection, players, game):
     players.joining.game = game
     game_connection.lobby_connection = mock.Mock()
     game_connection.player = players.hosting
     game_connection.game = game
 
-    yield from game_connection.handle_action('GameState', ['Idle'])
+    await game_connection.handle_action('GameState', ['Idle'])
 
     game.add_game_connection.assert_called_with(game_connection)
 
-@asyncio.coroutine
-def test_handle_action_GameState_idle_non_searching_player_aborts(game_connection, players):
+
+async def test_handle_action_GameState_idle_non_searching_player_aborts(game_connection: GameConnection, players):
     game_connection.player = players.hosting
     game_connection.lobby = mock.Mock()
     game_connection.abort = mock.Mock()
     players.hosting.state = PlayerState.IDLE
 
-    yield from game_connection.handle_action('GameState', ['Idle'])
+    await game_connection.handle_action('GameState', ['Idle'])
 
     game_connection.abort.assert_any_call()
 
 
-def test_handle_action_GameState_lobby_sends_HostGame(game_connection, loop, players, game):
-    """
-    :type game_connection: GameConnection
-    """
+async def test_handle_action_GameState_lobby_sends_HostGame(game_connection: GameConnection, loop, players, game):
     game_connection.player = players.hosting
     game.map_file_path = 'maps/some_map.zip'
     game.map_folder_name = 'some_map'
 
-    result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
-    loop.run_until_complete(result)
+    await game_connection.handle_action('GameState', ['Lobby'])
+    # Give the connection coro time to run
+    await asyncio.sleep(0.1)
 
     assert_message_sent(game_connection, 'HostGame', [game.map_folder_name])
 
 
-def test_handle_action_GameState_lobby_calls_ConnectToHost(game_connection, loop, players, game):
-    """
-    :type game_connection: GameConnection
-    """
+async def test_handle_action_GameState_lobby_calls_ConnectToHost(game_connection: GameConnection, players, game):
     game_connection.send_message = mock.MagicMock()
-    game_connection.ConnectToHost = mock.Mock()
+    game_connection.ConnectToHost = CoroMock()
     game_connection.player = players.joining
     players.joining.game = game
     game.host = players.hosting
     game.map_file_path = 'some_map'
 
-    result = asyncio.async(game_connection.handle_action('GameState', ['Lobby']))
-    loop.run_until_complete(result)
+    await game_connection.handle_action('GameState', ['Lobby'])
+    # Give the connection coro time to run
+    await asyncio.sleep(0.1)
 
     game_connection.ConnectToHost.assert_called_with(players.hosting.game_connection)
 
-def test_handle_action_GameState_launching_calls_launch(game_connection, loop, players, game):
-    """
-    :type game_connection: GameConnection
-    """
+
+async def test_handle_action_GameState_launching_calls_launch(game_connection: GameConnection, players, game):
     game_connection.player = players.hosting
     game_connection.game = game
     game.launch = CoroMock()
 
-    result = asyncio.async(game_connection.handle_action('GameState', ['Launching']))
-    loop.run_until_complete(result)
+    await game_connection.handle_action('GameState', ['Launching'])
 
     game.launch.assert_any_call()
 
 
-def test_handle_action_PlayerOption(game, loop, game_connection):
-    """
-    :type game Game
-    :type game_connection GameConnection
-    """
-    result = asyncio.async(game_connection.handle_action('PlayerOption', [1, 'Color', 2]))
-    loop.run_until_complete(result)
+async def test_handle_action_PlayerOption(game: Game, game_connection: GameConnection):
+    await game_connection.handle_action('PlayerOption', [1, 'Color', 2])
     game.set_player_option.assert_called_once_with(1, 'Color', 2)
 
 
-def test_handle_action_PlayerOption_malformed_no_raise(game_connection, loop):
-    """
-    :type game_connection GameConnection
-    """
-    result = game_connection.handle_action('PlayerOption', [1, 'Sheeo', 'Color', 2])
-    loop.run_until_complete(result)
+async def test_handle_action_PlayerOption_malformed_no_raise(game_connection: GameConnection):
+    await game_connection.handle_action('PlayerOption', [1, 'Sheeo', 'Color', 2])
     # Shouldn't raise an exception
 
 
-async def test_handle_action_GameMods(game, game_connection):
+async def test_handle_action_GameMods(game: Game, game_connection: GameConnection):
     await game_connection.handle_action('GameMods', ['uids', 'foo bar'])
     assert game.mods == {'bar': 'test-mod2', 'foo': 'test-mod'}
 
@@ -133,9 +116,10 @@ async def test_handle_action_GameMods_post_launch_updates_played_cache(game, gam
         assert (2,) == await cursor.fetchone()
 
 
-def test_handle_action_GameResult_calls_add_result(game, loop, game_connection):
-    result = asyncio.async(game_connection.handle_action('GameResult', [0, 'score -5']))
-    loop.run_until_complete(result)
+async def test_handle_action_GameResult_calls_add_result(game, game_connection):
+    game_connection.ConnectToHost = CoroMock()
+
+    await game_connection.handle_action('GameResult', [0, 'score -5'])
     game.add_result.assert_called_once_with(game_connection.player, 0, 'score', -5)
 
 async def test_json_stats(game_connection, game_stats_service, players, game):
