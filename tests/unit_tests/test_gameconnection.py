@@ -114,10 +114,9 @@ def test_handle_action_PlayerOption_malformed_no_raise(game_connection, loop):
     # Shouldn't raise an exception
 
 
-def test_handle_action_GameOption(game, loop, game_connection):
-    result = asyncio.async(game_connection.handle_action('PlayerOption', [1, 'Color', 2]))
-    loop.run_until_complete(result)
-    game.set_player_option.assert_called_once_with(1, 'Color', 2)
+async def test_handle_action_GameMods(game, game_connection):
+    await game_connection.handle_action('GameMods', ['uids', 'foo bar'])
+    assert game.mods == {'bar': 'test-mod2', 'foo': 'test-mod'}
 
 
 def test_handle_action_GameResult_calls_add_result(game, loop, game_connection):

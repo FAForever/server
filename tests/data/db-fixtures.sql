@@ -66,3 +66,11 @@ delete from friends_and_foes;
 insert into friends_and_foes (user_id, subject_id, `status`)
 values(42, 56, "FRIEND"),
       (42, 57, "FOE");
+
+-- sample mods
+delete from table_mod;
+insert into table_mod (uid, `name`,
+                       version, author, ui, description, filename, icon, likers)
+VALUES ('foo', 'test-mod', 1, 'baz', 0, NOW(), 'foobar.zip', 'foobar.png', ''),
+       ('bar', 'test-mod2', 1, 'baz', 0, NOW(), 'foobar2.zip', 'foobar2.png', '')
+;
