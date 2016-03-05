@@ -1,8 +1,8 @@
 """
 Forged Alliance Forever server project
 
-Copyright (c) 2014 Gael Honorez
-Copyright (c) 2015 Michael Søndergaard <sheeo@sheeo.dk>
+Copyright (c) 2012-2014 Gael Honorez
+Copyright (c) 2015-2016 Michael Søndergaard <sheeo@faforever.com>
 
 Distributed under GPLv3, see license.txt
 """
