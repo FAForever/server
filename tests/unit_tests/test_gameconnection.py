@@ -119,6 +119,20 @@ async def test_handle_action_GameMods(game, game_connection):
     assert game.mods == {'bar': 'test-mod2', 'foo': 'test-mod'}
 
 
+async def test_handle_action_GameMods_post_launch_updates_played_cache(game, game_connection):
+    game.launch = CoroMock()
+    game.remove_game_connection = CoroMock()
+
+    await game_connection.handle_action('GameMods', ['uids', 'foo bar EA040F8E-857A-4566-9879-0D37420A5B9D'])
+    await game_connection.handle_action('GameState', ['Launching'])
+
+    import server.db as db
+    async with db.db_pool.get() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("select `played` from table_mod where uid=%s", ('EA040F8E-857A-4566-9879-0D37420A5B9D', ))
+        assert (2,) == await cursor.fetchone()
+
+
 def test_handle_action_GameResult_calls_add_result(game, loop, game_connection):
     result = asyncio.async(game_connection.handle_action('GameResult', [0, 'score -5']))
     loop.run_until_complete(result)

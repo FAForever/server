@@ -70,7 +70,7 @@ values(42, 56, "FRIEND"),
 -- sample mods
 delete from table_mod;
 insert into table_mod (uid, `name`,
-                       version, author, ui, description, filename, icon, likers)
-VALUES ('foo', 'test-mod', 1, 'baz', 0, NOW(), 'foobar.zip', 'foobar.png', ''),
-       ('bar', 'test-mod2', 1, 'baz', 0, NOW(), 'foobar2.zip', 'foobar2.png', '')
-;
+                       version, author, ui, description, filename, icon, likers, played)
+VALUES ('foo', 'test-mod', 1, 'baz', 0, NOW(), 'foobar.zip', 'foobar.png', '', 0),
+       ('bar', 'test-mod2', 1, 'baz', 0, NOW(), 'foobar2.zip', 'foobar2.png', '', 0),
+       ('EA040F8E-857A-4566-9879-0D37420A5B9D', 'test-mod3', 1, 'baz', 0, NOW(), 'foobar3.zip', 'foobar3.png', '', 1);

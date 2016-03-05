@@ -392,8 +392,8 @@ class GameConnection(GpgNetServerProtocol):
                 if len(self.game.mods.keys()) > 0:
                     async with db.db_pool.get() as conn:
                         cursor = await conn.cursor()
-                        await cursor.execute("UPDATE `table_mod` SET `played`= `played`+1  WHERE uid in %s",
-                                             list(self.game.mods.keys()))
+                        uids = list(self.game.mods.keys())
+                        await cursor.execute("UPDATE `table_mod` SET `played`=`played`+1  WHERE uid in %s", (uids,))
         elif state == 'Ended':
             await self.on_connection_lost()
 
