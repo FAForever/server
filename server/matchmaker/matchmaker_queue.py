@@ -59,6 +59,9 @@ class MatchmakerQueue:
             'boundary_75s': [search.boundary_75 for player, search in self.queue.items()]
         }
 
+    def __repr__(self):
+        return repr(self.queue)
+
     async def search(self, player, start_time=None, search=None):
         """
         Search for a match.
@@ -92,4 +95,9 @@ class MatchmakerQueue:
                 self._logger.debug("Search complete: {}".format(search))
             except CancelledError:
                 pass
-
+            finally:
+                pass
+                # If the queue was cancelled, or some other error occured,
+                # make sure to clean up.
+                if player in self.queue:
+                    del self.queue[player]

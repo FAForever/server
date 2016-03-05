@@ -72,7 +72,7 @@ def test_queue_race(mocker, player_service, matchmaker_queue):
     except (TimeoutError, CancelledError):
         pass
 
-    assert len(matchmaker_queue) == 1
+    assert len(matchmaker_queue) == 0
 
 @asyncio.coroutine
 def test_queue_cancel(mocker, player_service, matchmaker_queue, matchmaker_players):
@@ -96,9 +96,11 @@ async def test_queue_mid_cancel(mocker, player_service, matchmaker_queue, matchm
 
     matchmaker_queue.game_service.ladder_service.start_game = CoroMock()
 
-    s1, s2, s3 = Search(matchmaker_players_all_match[1]), Search(matchmaker_players_all_match[2]), Search(matchmaker_players_all_match[3])
-    matchmaker_queue.push(s1)
-    matchmaker_queue.push(s2)
+    s1, s2, s3 = Search(matchmaker_players_all_match[1]),\
+                 Search(matchmaker_players_all_match[2]),\
+                 Search(matchmaker_players_all_match[3])
+    asyncio.ensure_future(matchmaker_queue.search(s1.player, search=s1))
+    asyncio.ensure_future(matchmaker_queue.search(s2.player, search=s2))
     s1.cancel()
     try:
         await asyncio.wait_for(matchmaker_queue.search(s3.player, search=s3), 0.1)
@@ -108,3 +110,5 @@ async def test_queue_mid_cancel(mocker, player_service, matchmaker_queue, matchm
     assert not s1.is_matched
     assert s2.is_matched
     assert s3.is_matched
+    assert len(matchmaker_queue) == 0
+
