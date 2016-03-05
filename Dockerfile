@@ -22,10 +22,7 @@ RUN python3.5 -m pip install --trusted-host content.dev.faforever.com -r /tmp/re
 
 ADD . /code/
 
-COPY passwords.example.py /code/passwords.py
-RUN mkdir /etc/faforever
 RUN mkdir /var/log/faforever
-COPY example.conf /etc/faforever/faforever.conf
 
 WORKDIR /code/
 
