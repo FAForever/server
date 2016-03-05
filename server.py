@@ -11,7 +11,6 @@ Options:
 import asyncio
 
 import logging
-from logging import handlers
 import signal
 import socket
 
@@ -39,8 +38,6 @@ if __name__ == '__main__':
         from docopt import docopt
         args = docopt(__doc__, version='FAF Server')
 
-        rootlogger = logging.getLogger("")
-        rootlogger.setLevel(config.LOG_LEVEL)
         logger.info("Using StatsD server: ".format(config.STATSD_SERVER))
 
         # Make sure we can shutdown gracefully
