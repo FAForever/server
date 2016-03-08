@@ -334,17 +334,15 @@ Thanks,\n\
 
         self.protocol.send_messages(reply)
 
-    @timed()
-    @asyncio.coroutine
-    def send_coop_maps(self):
-        with (yield from db.db_pool) as conn:
-            cursor = yield from conn.cursor()
+    async def send_coop_maps(self):
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
 
-            yield from cursor.execute("SELECT name, description, filename, type, id FROM `coop_map`")
+            await cursor.execute("SELECT name, description, filename, type, id FROM `coop_map`")
 
             maps = []
             for i in range(0, cursor.rowcount):
-                name, description, filename, type, id = yield from cursor.fetchone()
+                name, description, filename, type, id = await cursor.fetchone()
                 jsonToSend = {"command": "coop_info", "name": name, "description": description,
                               "filename": filename, "featured_mod": "coop"}
                 if type == 0:
