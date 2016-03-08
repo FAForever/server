@@ -408,10 +408,10 @@ Thanks,\n\
                                       (self.player.id, target_id, status))
 
     def kick(self, message=None):
+        self.sendJSON(dict(command="notice", style="kick"))
         if message:
             self.sendJSON(dict(command="notice", style="info",
                                                   text=message))
-        self.sendJSON(dict(command="notice", style="kick"))
         self.abort()
 
     def send_updated_achievements(self, updated_achievements):
