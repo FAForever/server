@@ -1058,5 +1058,7 @@ Thanks,\n\
         self.send = lambda m: None
         if self.game_connection:
             await self.game_connection.on_connection_lost()
+        if self.search and not self.search.done():
+            self.search.cancel()
         if self.player:
             self.player_service.remove_player(self.player)
