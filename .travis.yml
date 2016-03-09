@@ -14,6 +14,7 @@ before_install:
   - bash ./scripts/init_and_wait_for_db.sh
 
 install:
+  - cp faf-server.example.pem faf-server.pem
   - docker build -t faf-server .
 
 script:
