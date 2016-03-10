@@ -22,4 +22,4 @@ script:
   - pyflakes . || true
 
 after_success:
-  - docker run faf-server -e COVERALLS_REPO_TOKEN=Vl36DD3XeJI1KjzoyGgxpV3wsVohnJW22 coveralls
+  - docker run -e COVERALLS_REPO_TOKEN=Vl36DD3XeJI1KjzoyGgxpV3wsVohnJW22 faf-server coveralls
