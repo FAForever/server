@@ -18,8 +18,4 @@ install:
   - docker build -t faf-server .
 
 script:
-  - docker run --link faf-db:db -e FAF_DB_PASSWORD=banana faf-server py.test --cov-report term-missing --cov=server
-  - pyflakes . || true
-
-after_success:
-  - docker run -e COVERALLS_REPO_TOKEN=Vl36DD3XeJI1KjzoyGgxpV3wsVohnJW22 faf-server coveralls
+  - docker run --link faf-db:db -e FAF_DB_PASSWORD=banana -e COVERALLS_REPO_TOKEN=Vl36DD3XeJI1KjzoyGgxpV3wsVohnJW22 faf-server bash scripts/run_and_report_coverage.sh
