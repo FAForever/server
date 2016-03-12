@@ -969,10 +969,10 @@ Thanks,\n\
 
                 for i in range(0, cursor.rowcount):
                     uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = yield from cursor.fetchone()
-                    link = config.CONTENT_URL + "vault/" + filename
+                    link = config.CONTENT_URL + "/vault/" + filename
                     thumbstr = ""
                     if icon != "":
-                        thumbstr = config.CONTENT_URL + "vault/mods_thumbs/" + urllib.parse.quote(icon)
+                        thumbstr = config.CONTENT_URL + "/vault/mods_thumbs/" + urllib.parse.quote(icon)
 
                     out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
                                comments=[], description=description, played=played, likes=likes,
@@ -986,10 +986,10 @@ Thanks,\n\
                 yield from cursor.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likers FROM `table_mod` WHERE uid = %s LIMIT 1", (uid,))
 
                 uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = yield from cursor.fetchone()
-                link = config.CONTENT_URL + "vault/" + filename
+                link = config.CONTENT_URL + "/vault/" + filename
                 thumbstr = ""
                 if icon != "":
-                    thumbstr = config.CONTENT_URL + "vault/mods_thumbs/" + urllib.parse.quote(icon)
+                    thumbstr = config.CONTENT_URL + "/vault/mods_thumbs/" + urllib.parse.quote(icon)
 
                 out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
                            comments=[], description=description, played=played, likes=likes + 1,
