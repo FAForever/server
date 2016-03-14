@@ -268,7 +268,7 @@ Please use a non-disposable email address.\n\n"
 
         link = {'a': 'v', 'iv': iv, 'c': ciphertext, 'v': verification_hex}
 
-        passwordLink = config.APP_URL + "validateAccount.php?" + urllib.parse.urlencode(link)
+        passwordLink = urllib.parse.urljoin(config.APP_URL, "validateAccount.php?" + urllib.parse.urlencode(link))
 
         text = "Dear " + login + ",\n\n\
 Please visit the following link to validate your FAF account:\n\
@@ -969,10 +969,10 @@ Thanks,\n\
 
                 for i in range(0, cursor.rowcount):
                     uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = yield from cursor.fetchone()
-                    link = config.CONTENT_URL + "/vault/" + filename
+                    link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
                     thumbstr = ""
                     if icon != "":
-                        thumbstr = config.CONTENT_URL + "/vault/mods_thumbs/" + urllib.parse.quote(icon)
+                        thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
 
                     out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
                                comments=[], description=description, played=played, likes=likes,
@@ -986,10 +986,10 @@ Thanks,\n\
                 yield from cursor.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likers FROM `table_mod` WHERE uid = %s LIMIT 1", (uid,))
 
                 uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = yield from cursor.fetchone()
-                link = config.CONTENT_URL + "/vault/" + filename
+                link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
                 thumbstr = ""
                 if icon != "":
-                    thumbstr = config.CONTENT_URL + "/vault/mods_thumbs/" + urllib.parse.quote(icon)
+                    thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
 
                 out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
                            comments=[], description=description, played=played, likes=likes + 1,
