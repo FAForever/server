@@ -268,7 +268,7 @@ Please use a non-disposable email address.\n\n"
 
         link = {'a': 'v', 'iv': iv, 'c': ciphertext, 'v': verification_hex}
 
-        passwordLink = urllib.parse.urljoin(config.APP_URL, "validateAccount.php?" + urllib.parse.urlencode(link))
+        passwordLink = urllib.parse.urljoin(config.APP_URL, "faf/validateAccount.php?" + urllib.parse.urlencode(link))
 
         text = "Dear " + login + ",\n\n\
 Please visit the following link to validate your FAF account:\n\
