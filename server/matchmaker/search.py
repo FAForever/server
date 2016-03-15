@@ -98,6 +98,9 @@ class Search:
     def is_matched(self):
         return self._match.done() and not self._match.cancelled()
 
+    def done(self):
+        return self._match.done()
+
     @property
     def is_cancelled(self):
         return self._match.cancelled()
