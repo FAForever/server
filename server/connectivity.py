@@ -250,5 +250,3 @@ class ConnectivityTest:
             delta = time.time() - start_time
             self._logger.info("{} stun timeout in {}".format(self.identifier, delta))
             pass
-        finally:
-            self._natserver.remove_future(message)
