@@ -26,6 +26,7 @@ from server.config import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME
 
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
+    logging.getLogger("").setLevel(logging.DEBUG)
     try:
         def signal_handler(signal, frame):
             logger.info("Received signal, shutting down")
