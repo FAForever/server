@@ -1,9 +1,7 @@
 FROM python:3.5
 
 # Apt-install mysql client and cleanup temporary files afterwards
-RUN apt-get update
-RUN yes '' | apt-get install mysql-client git
-RUN apt-get clean
+RUN apt-get update && apt-get install -y mysql-client git vim && apt-get clean
 RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY requirements.txt /tmp/requirements.txt
@@ -14,9 +12,6 @@ ADD . /code/
 WORKDIR /code/
 
 RUN python3.5 -m pip install -e .
-
-# Shared volume for logs
-VOLUME ["/code/logs"]
 
 # Main entrypoint and the default command that will be run
 CMD ["./server.py"]
