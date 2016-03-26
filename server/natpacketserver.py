@@ -87,7 +87,7 @@ class NatPacketServer:
         self._logger.debug("Added listener for {}".format(msg))
         server.stats.gauge("NatPacketProtocol.futures", len(self._futures))
         self._futures[self.prefixed(msg)] = fut
-        fut.add_done_callback(lambda f: self._futures.__delitem__(self.prefixed(msg)))
+        fut.add_done_callback(lambda f: self._remove_future(msg))
 
     def await_packet(self, message: str) -> asyncio.Future:
         future = asyncio.Future()
@@ -100,7 +100,5 @@ class NatPacketServer:
             protocol.transport.sendto(self.prefixed(msg), addr)
             return
 
-    def remove_future(self, msg: str):
-        prefixed = self.prefixed(msg)
-        if prefixed in self._futures:
-            del self._futures[self.prefixed(msg)]
+    def _remove_future(self, msg: str):
+        del self._futures[self.prefixed(msg)]
