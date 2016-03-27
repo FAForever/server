@@ -37,6 +37,6 @@ def connect(loop,
                                            loop=loop,
                                            minsize=minsize,
                                            maxsize=maxsize,
-                                           cursorclass=LoggingCursor)
+                                           cursorclass=cursorclass)
     set_pool(pool)
     return pool
