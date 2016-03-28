@@ -171,7 +171,9 @@ class Game(BaseGame):
         if self.state == GameState.LOBBY:
             return frozenset(self._connections.keys())
         else:
-            return frozenset(self._players)
+            return frozenset({player for player in self._players
+                              if self.get_player_option(player.id, 'Army') is not None
+                              and self.get_player_option(player.id, 'Army') >= 0})
 
     @property
     def connections(self):

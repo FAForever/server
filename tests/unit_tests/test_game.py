@@ -332,3 +332,26 @@ async def test_report_army_stats_sends_stats_for_defeated_player(game: Game):
     await game.report_army_stats(stats)
 
     game._game_stats_service.process_game_stats.assert_called_once_with(players[1], game, stats)
+
+async def test_players_exclude_observers(game: Game):
+    game.id = 44
+    game.state = GameState.LOBBY
+    players = [
+        Player(id=1, login='Dostya', global_rating=(1500, 500)),
+        Player(id=2, login='Rhiza', global_rating=(1500, 500)),
+    ]
+    add_connected_players(game, players)
+
+    obs = Player(id=3, login='Zoidberg', global_rating=(1500, 500))
+
+    game.game_service.player_service[obs.id] = obs
+    gc = game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=obs)
+    game.set_player_option(obs.id, 'Army', -1)
+    game.set_player_option(obs.id, 'StartSpot', -1)
+    game.set_player_option(obs.id, 'Team', 0)
+    game.set_player_option(obs.id, 'Faction', 0)
+    game.set_player_option(obs.id, 'Color', 0)
+    game.add_game_connection(gc)
+    await game.launch()
+
+    assert game.players == frozenset(players)
