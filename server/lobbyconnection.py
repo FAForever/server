@@ -579,7 +579,7 @@ Thanks,\n\
 
         # VM users must use steam.
         if uid_hash == "VM":
-            self.sendJSON(dict(command="notice", style="error", text="You need to link your account to Steam in order to use FAF in a Virtual Machine. You can contact the admin in the forums."))
+            self.sendJSON(dict(command="notice", style="error", text="You need to link your account to Steam in order to use FAF in a Virtual Machine. You can contact an admin on the forums."))
             return False
 
         # check for other accounts using the same uniqueId as us.
