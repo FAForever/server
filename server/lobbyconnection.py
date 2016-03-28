@@ -490,10 +490,9 @@ Thanks,\n\
                     if player:
                         player.lobby_connection.sendJSON(dict(command="social", autojoin=[channel]))
 
-    @asyncio.coroutine
-    def check_user_login(self, cursor, login, password):
+    async def check_user_login(self, cursor, login, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.
-        yield from cursor.execute("SELECT login.id as id,"
+        await cursor.execute("SELECT login.id as id,"
                                   "login.login as username,"
                                   "login.password as password,"
                                   "login.steamid as steamid,"
@@ -501,12 +500,12 @@ Thanks,\n\
                                   "lobby_ban.expires_at as expires_at "
                                   "FROM login "
                                   "LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser "
-                                  "WHERE LOWER(login)=%s", login.lower())
+                                  "WHERE LOWER(login)=%s", (login.lower(), ))
 
         if cursor.rowcount != 1:
             raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
 
-        player_id, real_username, dbPassword, steamid, ban_reason, ban_expiry = yield from cursor.fetchone()
+        player_id, real_username, dbPassword, steamid, ban_reason, ban_expiry = await cursor.fetchone()
         if dbPassword != password:
             raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
 
@@ -519,7 +518,7 @@ Thanks,\n\
 
     def decodeUniqueId(self, serialized_uniqueid):
         try:
-            message = (base64.b64decode(serialized_uniqueid))
+            message = (base64.b64decode(serialized_uniqueid)).decode('utf-8')
 
             trailing = ord(message[0])
 
@@ -533,7 +532,7 @@ Thanks,\n\
 
             # What the hell is this?
             cipher = AES.new(AESkey, AES.MODE_CBC, iv)
-            DecodeAES = lambda c, e: c.decrypt(base64.b64decode(e))
+            DecodeAES = lambda c, e: c.decrypt(base64.b64decode(e)).decode('utf-8')
             decoded = DecodeAES(cipher, encoded)[:-trailing]
             regexp = re.compile(r'[0-9a-zA-Z\\]("")')
             decoded = regexp.sub('"', decoded)
@@ -649,21 +648,21 @@ Thanks,\n\
                 return False
         return True
 
-    @asyncio.coroutine
-    def command_hello(self, message):
+    async def command_hello(self, message):
         login = message['login'].strip()
         password = message['password']
 
         # Check their client is reporting the right version number.
-        with (yield from db.db_pool) as conn:
-            cursor = yield from conn.cursor()
-            player_id, login, steamid = yield from self.check_user_login(cursor, login, password)
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
+            player_id, login, steamid = await self.check_user_login(cursor, login, password)
             server.stats.incr('user.logins')
             server.stats.gauge('users.online', len(self.player_service))
 
             if not self.player_service.is_uniqueid_exempt(player_id):
                 # UniqueID check was rejected (too many accounts or tamper-evident madness)
-                if not self.validate_unique_id(cursor, player_id, steamid, message['unique_id']):
+                uniqueid_pass = await self.validate_unique_id(cursor, player_id, steamid, message['unique_id'])
+                if not uniqueid_pass:
                     return
 
             # Update the user's IRC registration (why the fuck is this here?!)
@@ -677,7 +676,7 @@ Thanks,\n\
             irc_pass = "md5:" + str(m.hexdigest())
 
             try:
-                yield from cursor.execute("UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s", (irc_pass, login))
+                await cursor.execute("UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s", (irc_pass, login))
             except (pymysql.OperationalError, pymysql.ProgrammingError):
                 self._logger.info("Failure updating NickServ password for {}".format(login))
 
@@ -695,7 +694,7 @@ Thanks,\n\
             old_conn = self.player_service[self.player.id].lobby_connection
             old_conn.send_warning("You have been signed out because you signed in elsewhere.", fatal=True)
 
-        yield from self.player_service.fetch_player_data(self.player)
+        await self.player_service.fetch_player_data(self.player)
 
         self.player_service[self.player.id] = self.player
         self._authenticated = True
@@ -709,17 +708,16 @@ Thanks,\n\
 
         ## AVATARS
         ## -------------------
-        with (yield from db.db_pool) as conn:
-            cursor = yield from conn.cursor()
-            yield from cursor.execute(
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
+            await cursor.execute(
                 "SELECT url, tooltip FROM `avatars` "
                 "LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` "
                 "WHERE `idUser` = %s AND `selected` = 1", (self.player.id, ))
-            avatar = yield from cursor.fetchone()
+            avatar = await cursor.fetchone()
             if avatar:
                 url, tooltip = avatar
                 self.player.avatar = {"url": url, "tooltip": tooltip}
-
 
         self.sendJSON(dict(command="welcome", id=self.player.id, login=login))
 
@@ -735,12 +733,12 @@ Thanks,\n\
 
         friends = []
         foes = []
-        with (yield from db.db_pool) as conn:
-            cursor = yield from conn.cursor()
-            yield from cursor.execute("SELECT `subject_id`, `status` "
-                                      "FROM friends_and_foes WHERE user_id = %s", (self.player.id,))
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT `subject_id`, `status` "
+                                 "FROM friends_and_foes WHERE user_id = %s", (self.player.id,))
 
-            for target_id, status in (yield from cursor.fetchall()):
+            for target_id, status in await cursor.fetchall():
                 if status == "FRIEND":
                     friends.append(target_id)
                 else:

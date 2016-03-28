@@ -22,7 +22,7 @@ def lobby_server(request, loop, db_pool, player_service, game_service):
                            player_service,
                            game_service,
                            loop)
-
+    player_service.is_uniqueid_exempt = lambda id: True
     def fin():
         ctx.close()
         loop.run_until_complete(ctx.wait_closed())
@@ -49,7 +49,8 @@ def perform_login(proto, credentials):
                         'user_agent': 'faf-client',
                         'login': login,
                         'password': pw,
-                        'unique_id': 'some_id'})
+                        'unique_id': 'some_id'
+                        })
     yield from proto.drain()
 
 @asyncio.coroutine
