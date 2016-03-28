@@ -51,8 +51,6 @@ from server.protocol import QDataStreamProtocol
 
 gi = pygeoip.GeoIP('GeoIP.dat', pygeoip.MEMORY_CACHE)
 
-MAX_ACCOUNTS_PER_MACHINE = 3
-
 
 class ClientError(Exception):
     """
@@ -572,7 +570,7 @@ Thanks,\n\
         except Exception as ex:
             self._logger.exception(ex)
 
-    def validate_unique_id(self, cursor, player_id, steamid, encoded_unique_id):
+    async def validate_unique_id(self, cursor, player_id, steamid, encoded_unique_id):
         # Accounts linked to steam are exempt from uniqueId checking.
         if steamid:
             return True
@@ -584,19 +582,18 @@ Thanks,\n\
             self.sendJSON(dict(command="notice", style="error", text="You need to link your account to Steam in order to use FAF in a Virtual Machine. You can contact the admin in the forums."))
             return False
 
-        # check for other accounts using the same uniqueId as us. We only permit 3 such accounts to
-        # exist.
-        yield from cursor.execute("SELECT user_id FROM unique_id_users WHERE uniqueid_hash = %s", uid_hash)
+        # check for other accounts using the same uniqueId as us.
+        await cursor.execute("SELECT user_id FROM unique_id_users WHERE uniqueid_hash = %s", (uid_hash, ))
 
-        rows = yield from cursor.fetchall()
+        rows = await cursor.fetchall()
         ids = rows.map(lambda x: x[0])
 
         # Is the user we're logging in with not currently associated with this uid?
         if player_id not in ids:
             # Do we have a spare slot into which we can allocate this new account?
-            if cursor.rowcount >= MAX_ACCOUNTS_PER_MACHINE:
-                yield from cursor.execute("SELECT login FROM login WHERE id IN(%s)" % ids.join(","))
-                rows = yield from cursor.fetchall()
+            if cursor.rowcount > 1:
+                await cursor.execute("SELECT login FROM login WHERE id IN(%s)" % ids.join(","))
+                rows = await cursor.fetchall()
 
                 names = rows.map(lambda x: x[0])
 
@@ -612,14 +609,14 @@ Thanks,\n\
             if cursor.rowcount == 0:
                 # Store its component parts in the table for doing that sort of thing. (just for
                 # human-reading, really)
-                yield from cursor.execute("INSERT INTO `uniqueid` (`hash`, `uuid`, `mem_SerialNumber`, `deviceID`, `manufacturer`, `name`, `processorId`, `SMBIOSBIOSVersion`, `serialNumber`, `volumeSerialNumber`)"
-                                          "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", uid_hash, *hardware_info)
+                await cursor.execute("INSERT INTO `uniqueid` (`hash`, `uuid`, `mem_SerialNumber`, `deviceID`, `manufacturer`, `name`, `processorId`, `SMBIOSBIOSVersion`, `serialNumber`, `volumeSerialNumber`)"
+                                          "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (uid_hash, *hardware_info))
 
             # Associate this account with this hardware hash.
-            yield from cursor.execute("INSERT INTO unique_id_users(user_id, uniqueid_hash) VALUES(%s, %s)", player_id, uid_hash)
+            await cursor.execute("INSERT INTO unique_id_users(user_id, uniqueid_hash) VALUES(%s, %s)", (player_id, uid_hash))
 
         # TODO: Mildly unpleasant
-        yield from cursor.execute("UPDATE login SET ip = %s WHERE id = %s", (self.peer_address.host, player_id))
+        await cursor.execute("UPDATE login SET ip = %s WHERE id = %s", (self.peer_address.host, player_id))
 
         return True
 
