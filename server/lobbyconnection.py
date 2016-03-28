@@ -547,17 +547,17 @@ Thanks,\n\
 
             machine = jstring["machine"]
 
-            UUID = str(machine.get('UUID', 0))
-            mem_SerialNumber = str(machine.get('mem_SerialNumber', 0))
-            DeviceID = str(machine.get('DeviceID', 0))
-            Manufacturer = str(machine.get('Manufacturer', 0))
-            Name = str(machine.get('Name', 0))
-            ProcessorId = str(machine.get('ProcessorId', 0))
-            SMBIOSBIOSVersion = str(machine.get('SMBIOSBIOSVersion', 0))
-            SerialNumber = str(machine.get('SerialNumber', 0))
-            VolumeSerialNumber = str(machine.get('VolumeSerialNumber', 0))
+            UUID = str(machine.get('UUID', 0)).encode()
+            mem_SerialNumber = str(machine.get('mem_SerialNumber', 0)).encode()
+            DeviceID = str(machine.get('DeviceID', 0)).encode()
+            Manufacturer = str(machine.get('Manufacturer', 0)).encode()
+            Name = str(machine.get('Name', 0)).encode()
+            ProcessorId = str(machine.get('ProcessorId', 0)).encode()
+            SMBIOSBIOSVersion = str(machine.get('SMBIOSBIOSVersion', 0)).encode()
+            SerialNumber = str(machine.get('SerialNumber', 0)).encode()
+            VolumeSerialNumber = str(machine.get('VolumeSerialNumber', 0)).encode()
 
-            for i in  machine.values() :
+            for i in machine.values() :
                 low = i.lower()
                 if "vmware" in low or "virtual" in low or "innotek" in low or "qemu" in low or "parallels" in low or "bochs" in low :
                     return "VM"
