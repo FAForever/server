@@ -588,7 +588,7 @@ Thanks,\n\
         if not rows:
             ids = []
         else:
-            ids = list(map(lambda x: str(x[0]), rows))
+            ids = list(map(lambda x: x[0], rows))
 
         # Is the user we're logging in with not currently associated with this uid?
         if player_id not in ids:
