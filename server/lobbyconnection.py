@@ -424,12 +424,12 @@ Thanks,\n\
                 player = self.player_service[message['user_id']]
                 if player:
                     self._logger.info('Administrative action: {} closed game for {}'.format(self.player, player))
+                    player.lobby_connection.sendJSON(dict(command="notice", style="kill"))
                     player.lobby_connection.sendJSON(dict(command="notice", style="info",
                                        text=("Your game was closed by an administrator ({admin_name}). "
                                              "Please refer to our rules for the lobby/game here {rule_link}."
                                        .format(admin_name=self.player.login,
                                                rule_link=config.RULE_LINK))))
-                    player.lobby_connection.sendJSON(dict(command="notice", style="kill"))
 
             elif action == "closelobby":
                 player = self.player_service[message['user_id']]
