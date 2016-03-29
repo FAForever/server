@@ -585,22 +585,19 @@ Thanks,\n\
         await cursor.execute("SELECT user_id FROM unique_id_users WHERE uniqueid_hash = %s", (uid_hash, ))
 
         rows = await cursor.fetchall()
-        ids = rows.map(lambda x: x[0])
+        if not rows:
+            ids = []
+        else:
+            ids = list(map(lambda x: str(x[0]), rows))
 
         # Is the user we're logging in with not currently associated with this uid?
         if player_id not in ids:
             # Do we have a spare slot into which we can allocate this new account?
-            if cursor.rowcount > 1:
-                await cursor.execute("SELECT login FROM login WHERE id IN(%s)" % ids.join(","))
-                rows = await cursor.fetchall()
-
-                names = rows.map(lambda x: x[0])
-
+            if cursor.rowcount >= 1:
                 self.sendJSON(dict(command="notice", style="error",
-                                   text="This computer is already associated with too many FAF accounts: %s.<br><br>You might want to try SteamLink: <a href='" +
-                                        config.APP_URL + "faf/steam.php'>" +
-                                        config.APP_URL + "faf/steam.php</a>" %
-                                        names.join(", ")))
+                                   text="This computer is already associated with too many FAF accounts.<br><br>You might want to try linking your account with Steam: <a href='" +
+                                        config.APP_URL + "/faf/steam.php'>" +
+                                        config.APP_URL + "/faf/steam.php</a>"))
 
                 return False
 
