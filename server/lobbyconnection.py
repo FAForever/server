@@ -584,32 +584,35 @@ Thanks,\n\
         # check for other accounts using the same uniqueId as us.
         await cursor.execute("SELECT user_id FROM unique_id_users WHERE uniqueid_hash = %s", (uid_hash, ))
 
-        rows = await cursor.fetchall()
-        if not rows:
-            ids = []
-        else:
-            ids = list(map(lambda x: x[0], rows))
+        users = []
+        for id, in await cursor.fetchall():
+            users.append(id)
 
         # Is the user we're logging in with not currently associated with this uid?
-        if player_id not in ids:
+        if player_id not in users:
             # Do we have a spare slot into which we can allocate this new account?
-            if cursor.rowcount >= 1:
-                self.sendJSON(dict(command="notice", style="error",
-                                   text="This computer is already associated with too many FAF accounts.<br><br>You might want to try linking your account with Steam: <a href='" +
-                                        config.APP_URL + "/faf/steam.php'>" +
-                                        config.APP_URL + "/faf/steam.php</a>"))
-
-                return False
+            if len(users) > 1:
+                #self.sendJSON(dict(command="notice", style="error",
+                #                   text="This computer is already associated with too many FAF accounts.<br><br>You might want to try linking your account with Steam: <a href='" +
+                #                        config.APP_URL + "/faf/steam.php'>" +
+                #                        config.APP_URL + "/faf/steam.php</a>"))
+                self._logger.warning("UID hit: {}: {}".format(player_id, uid_hash))
 
             # Is this a uuid we have never seen before?
-            if cursor.rowcount == 0:
+            if len(users) == 0:
                 # Store its component parts in the table for doing that sort of thing. (just for
                 # human-reading, really)
-                await cursor.execute("INSERT INTO `uniqueid` (`hash`, `uuid`, `mem_SerialNumber`, `deviceID`, `manufacturer`, `name`, `processorId`, `SMBIOSBIOSVersion`, `serialNumber`, `volumeSerialNumber`)"
-                                          "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (uid_hash, *hardware_info))
+                try:
+                    await cursor.execute("INSERT INTO `uniqueid` (`hash`, `uuid`, `mem_SerialNumber`, `deviceID`, `manufacturer`, `name`, `processorId`, `SMBIOSBIOSVersion`, `serialNumber`, `volumeSerialNumber`)"
+                                         "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (uid_hash, *hardware_info))
+                except Exception as e:
+                    self._logger.warning("UID dupe: {}: {}".format(player_id, uid_hash))
 
             # Associate this account with this hardware hash.
-            await cursor.execute("INSERT INTO unique_id_users(user_id, uniqueid_hash) VALUES(%s, %s)", (player_id, uid_hash))
+            try:
+                await cursor.execute("INSERT INTO unique_id_users(user_id, uniqueid_hash) VALUES(%s, %s)", (player_id, uid_hash))
+            except Exception as e:
+                self._logger.warning("UID association dupe: {}: {}".format(player_id, uid_hash))
 
         # TODO: Mildly unpleasant
         await cursor.execute("UPDATE login SET ip = %s WHERE id = %s", (self.peer_address.host, player_id))
