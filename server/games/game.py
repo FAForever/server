@@ -659,7 +659,7 @@ class Game(BaseGame):
             "sim_mods": self.mods,
             "mapname": self.map_folder_name,
             "map_file_path": self.map_file_path,
-            "host": self.host.login if self.host else '',
+            "host": self.host.id if self.host else -1,
             "num_players": len(self.players),
             "game_type": self.gameType,
             "max_players": self.max_players,
