@@ -558,6 +558,7 @@ Thanks,\n\
             VolumeSerialNumber = str(machine.get('VolumeSerialNumber', 0)).encode()
 
             for i in machine.values() :
+                if not hasattr(i, "lower"): continue
                 low = i.lower()
                 if "vmware" in low or "virtual" in low or "innotek" in low or "qemu" in low or "parallels" in low or "bochs" in low :
                     return "VM"
