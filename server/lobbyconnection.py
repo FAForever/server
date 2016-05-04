@@ -547,7 +547,7 @@ Thanks,\n\
                 UUID = data['machine']['uuid']
                 mem_SerialNumber = data['machine']['memory']['serial0']
                 DeviceID = data['machine']['disks']['controller_id']
-                Manufacturer = data['machine']['manufacturer']
+                Manufacturer = data['machine']['bios']['manufacturer']
                 Name = data['machine']['processor']['name']
                 ProcessorId = data['machine']['processor']['id']
                 SMBIOSBIOSVersion = data['machine']['bios']['smbbversion']
