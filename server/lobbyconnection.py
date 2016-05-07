@@ -579,10 +579,10 @@ Thanks,\n\
                 SerialNumber = str(machine.get('SerialNumber', 0)).encode() # BIOS serial number
                 VolumeSerialNumber = str(machine.get('VolumeSerialNumber', 0)).encode() # https://www.raymond.cc/blog/changing-or-spoofing-hard-disk-hardware-serial-number-and-volume-id/
 
-            for i in machine.values() :
-                low = i.lower()
-                if "vmware" in low or "virtual" in low or "innotek" in low or "qemu" in low or "parallels" in low or "bochs" in low :
-                    return "VM"
+                for i in machine.values() :
+                    low = i.lower()
+                    if "vmware" in low or "virtual" in low or "innotek" in low or "qemu" in low or "parallels" in low or "bochs" in low :
+                        return "VM"
 
             m = hashlib.md5()
             m.update(UUID + mem_SerialNumber + DeviceID + Manufacturer + Name + ProcessorId + SMBIOSBIOSVersion + SerialNumber + VolumeSerialNumber)
