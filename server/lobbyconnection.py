@@ -541,7 +541,7 @@ Thanks,\n\
             # there's a new JSON format, starting with '2' as magic byte
             if decoded.startswith('2'):
                 data = json.loads(decoded[1:])
-                if str(data["session"]) != str(session) :
+                if str(data['session']) != str(self.session) :
                     self.sendJSON(dict(command="notice", style="error", text="Your session is corrupted. Try relogging"))
                     return None
                 UUID = data['machine']['uuid']
