@@ -544,15 +544,15 @@ Thanks,\n\
                 if str(data['session']) != str(self.session) :
                     self.sendJSON(dict(command="notice", style="error", text="Your session is corrupted. Try relogging"))
                     return None
-                UUID = data['machine']['uuid']
-                mem_SerialNumber = data['machine']['memory']['serial0']
-                DeviceID = data['machine']['disks']['controller_id']
-                Manufacturer = data['machine']['bios']['manufacturer']
-                Name = data['machine']['processor']['name']
-                ProcessorId = data['machine']['processor']['id']
-                SMBIOSBIOSVersion = data['machine']['bios']['smbbversion']
-                SerialNumber = data['machine']['bios']['serial']
-                VolumeSerialNumber = data['machine']['disks']['vserial']
+                UUID = data['machine']['uuid'].encode()
+                mem_SerialNumber = data['machine']['memory']['serial0'].encode()
+                DeviceID = data['machine']['disks']['controller_id'].encode()
+                Manufacturer = data['machine']['bios']['manufacturer'].encode()
+                Name = data['machine']['processor']['name'].encode()
+                ProcessorId = data['machine']['processor']['id'].encode()
+                SMBIOSBIOSVersion = data['machine']['bios']['smbbversion'].encode()
+                SerialNumber = data['machine']['bios']['serial'].encode()
+                VolumeSerialNumber = data['machine']['disks']['vserial'].encode()
             else:
                 # the old JSON format contains unescaped backspaces in the device id
                 # of the IDE controller, which now needs to be corrected to get valid JSON
