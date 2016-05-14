@@ -14,7 +14,7 @@ WORKDIR /code/
 RUN python3.5 -m pip install -e .
 
 # Main entrypoint and the default command that will be run
-CMD ["./server.py"]
+CMD ["/usr/local/bin/python3.5", "server.py"]
 
 # Game server runs on 8000/tcp, lobby server runs on 8001/tcp, nat echo server runs on 30351/udp
 EXPOSE 8000 8001 30351
