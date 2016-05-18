@@ -8,8 +8,12 @@ from server.config import API_TOKEN_URI, API_BASE_URL
 
 class ApiAccessor:
     def __init__(self):
-        with open("faf-server.pem", "rb") as f:
-            self.private_key = f.read()
+        self._service_account_credentials = ServiceAccountCredentials.from_p12_keyfile(
+            'faf-server',
+            'faf-server.pem',
+            scopes='write_achievements write_events'
+        )
+        self._service_account_credentials.token_uri = API_TOKEN_URI
 
     async def api_get(self, path, player_id):
         loop = asyncio.get_event_loop()
@@ -26,9 +30,5 @@ class ApiAccessor:
         return result
 
     def http(self, sub=None):
-        credentials = ServiceAccountCredentials.from_p12_keyfile(
-            'faf-server',
-            'faf-server.pem',
-            scopes='write_achievements write_events'
-        )
+        credentials = self._service_account_credentials.create_delegated(sub)
         return credentials.authorize(Http())
