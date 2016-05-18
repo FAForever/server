@@ -337,7 +337,7 @@ class GameConnection(GpgNetServerProtocol):
             elif command == 'OperationComplete':
                 if int(args[0]) == 1:
                     secondary, delta = int(args[1]), str(args[2])
-                    with await db.db_pool.get() as conn:
+                    async with db.db_pool.get() as conn:
                         cursor = await conn.cursor()
                         # FIXME: Resolve used map earlier than this
                         await cursor.execute("SELECT id FROM coop_map WHERE filename LIKE '%/"
@@ -356,6 +356,25 @@ class GameConnection(GpgNetServerProtocol):
 
             elif command == 'EnforceRating':
                 self.game.enforce_rating = True
+
+
+            elif command == 'TeamkillReport':
+                # args[0] -> seconds of gametime when kill happened
+                # args[1] -> victim id
+                # args[2] -> victim nickname (for debug purpose only)
+                # args[3] -> teamkiller id
+                # args[3] -> teamkiller nickname (for debug purpose only)
+                gametime = int(args[0])
+                victim = int(args[1])
+                teamkiller = int(args[3])
+
+                async with db.db_pool.get() as conn:
+                    cursor = await conn.cursor()
+
+                    await cursor.execute("INSERT INTO `teamkills`"
+                                         "(`teamkiller`, `victim`, `game`, `gametime`) "
+                                         "VALUES (%s, %s, %s, %s);",
+                                         (teamkiller, victim, self.game.id, gametime))
 
 
         except AuthenticationError as e:
