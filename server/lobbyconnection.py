@@ -351,6 +351,8 @@ Thanks,\n\
                     jsonToSend["type"] = "Cybran Vanilla Campaign"
                 elif type == 3:
                     jsonToSend["type"] = "UEF Vanilla Campaign"
+                elif type == 4:
+                    jsonToSend["type"] = "Custom Missions"
                 else:
                     # Don't sent corrupt data to the client...
                     self._logger.error("Unknown coop type!")
