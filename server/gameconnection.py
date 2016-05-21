@@ -364,17 +364,15 @@ class GameConnection(GpgNetServerProtocol):
                 # args[2] -> victim nickname (for debug purpose only)
                 # args[3] -> teamkiller id
                 # args[3] -> teamkiller nickname (for debug purpose only)
-                gametime = int(args[0])
-                victim = int(args[1])
-                teamkiller = int(args[3])
+                gametime, victim_id, victim_name, teamkiller_id, teamkiller_name = args
 
                 async with db.db_pool.get() as conn:
                     cursor = await conn.cursor()
 
                     await cursor.execute("INSERT INTO `teamkills`"
-                                         "(`teamkiller`, `victim`, `game`, `gametime`) "
+                                         "(`teamkiller`, `victim`, `game_id`, `gametime`) "
                                          "VALUES (%s, %s, %s, %s);",
-                                         (teamkiller, victim, self.game.id, gametime))
+                                         (teamkiller_id, victim_id, self.game.id, gametime))
 
 
         except AuthenticationError as e:

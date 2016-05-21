@@ -139,6 +139,6 @@ async def test_handle_action_TeamkillReport(game, game_connection):
     import server.db as db
     async with db.db_pool.get() as conn:
         cursor = await conn.cursor()
-        await cursor.execute("select game from teamkills where victim=2 and teamkiller=3 and game=%s and gametime=200", (game.id))
+        await cursor.execute("select game_id from teamkills where victim=2 and teamkiller=3 and game_id=%s and gametime=200", (game.id))
 
         assert (game.id,) == await cursor.fetchone()
