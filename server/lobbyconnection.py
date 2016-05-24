@@ -546,15 +546,18 @@ Thanks,\n\
                 if str(data['session']) != str(self.session) :
                     self.sendJSON(dict(command="notice", style="error", text="Your session is corrupted. Try relogging"))
                     return None
-                UUID = data['machine']['uuid'].encode()
-                mem_SerialNumber = data['machine']['memory']['serial0'].encode()
-                DeviceID = data['machine']['disks']['controller_id'].encode()
-                Manufacturer = data['machine']['bios']['manufacturer'].encode()
-                Name = data['machine']['processor']['name'].encode()
-                ProcessorId = data['machine']['processor']['id'].encode()
-                SMBIOSBIOSVersion = data['machine']['bios']['smbbversion'].encode()
-                SerialNumber = data['machine']['bios']['serial'].encode()
-                VolumeSerialNumber = data['machine']['disks']['vserial'].encode()
+                # We're bound to generate to _old_ hashes from the new JSON structure,
+                # so we still use hashlib.md5().update() to generate the MD5 hash from concatenated bytearrays.
+                # Therefore all needed JSON elements are converted to strings and encoded to bytearrays.
+                UUID = str(data['machine']['uuid']).encode()
+                mem_SerialNumber = str(data['machine']['memory']['serial0']).encode()
+                DeviceID = str(data['machine']['disks']['controller_id']).encode()
+                Manufacturer = str(data['machine']['bios']['manufacturer']).encode()
+                Name = str(data['machine']['processor']['name']).encode()
+                ProcessorId = str(data['machine']['processor']['id']).encode()
+                SMBIOSBIOSVersion = str(data['machine']['bios']['smbbversion']).encode()
+                SerialNumber = str(data['machine']['bios']['serial']).encode()
+                VolumeSerialNumber = str(data['machine']['disks']['vserial']).encode()
             else:
                 # the old JSON format contains unescaped backspaces in the device id
                 # of the IDE controller, which now needs to be corrected to get valid JSON
