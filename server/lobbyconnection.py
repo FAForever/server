@@ -530,39 +530,61 @@ Thanks,\n\
             encoded = message[24:-40]
             key = (base64.b64decode(message[-40:]))
 
+            # The JSON string is AES encrypted
+            # first decrypt the AES key with our rsa private key
             AESkey = rsa.decrypt(key, PRIVATE_KEY)
 
-            # What the hell is this?
+            # now decrypt the message
             cipher = AES.new(AESkey, AES.MODE_CBC, iv)
             DecodeAES = lambda c, e: c.decrypt(base64.b64decode(e)).decode('utf-8')
             decoded = DecodeAES(cipher, encoded)[:-trailing]
-            regexp = re.compile(r'[0-9a-zA-Z\\]("")')
-            decoded = regexp.sub('"', decoded)
-            decoded = decoded.replace("\\", "\\\\")
-            regexp = re.compile('[^\x09\x0A\x0D\x20-\x7F]')
-            decoded = regexp.sub('', decoded)
-            jstring = json.loads(decoded)
 
-            if str(jstring["session"]) != str(self.session) :
-                self.sendJSON(dict(command="notice", style="error", text="Your session is corrupted. Try relogging"))
-                return None
+            # since the legacy uid.dll generated JSON is flawed,
+            # there's a new JSON format, starting with '2' as magic byte
+            if decoded.startswith('2'):
+                data = json.loads(decoded[1:])
+                if str(data['session']) != str(self.session) :
+                    self.sendJSON(dict(command="notice", style="error", text="Your session is corrupted. Try relogging"))
+                    return None
+                UUID = data['machine']['uuid'].encode()
+                mem_SerialNumber = data['machine']['memory']['serial0'].encode()
+                DeviceID = data['machine']['disks']['controller_id'].encode()
+                Manufacturer = data['machine']['bios']['manufacturer'].encode()
+                Name = data['machine']['processor']['name'].encode()
+                ProcessorId = data['machine']['processor']['id'].encode()
+                SMBIOSBIOSVersion = data['machine']['bios']['smbbversion'].encode()
+                SerialNumber = data['machine']['bios']['serial'].encode()
+                VolumeSerialNumber = data['machine']['disks']['vserial'].encode()
+            else:
+                # the old JSON format contains unescaped backspaces in the device id
+                # of the IDE controller, which now needs to be corrected to get valid JSON
+                regexp = re.compile(r'[0-9a-zA-Z\\]("")')
+                decoded = regexp.sub('"', decoded)
+                decoded = decoded.replace("\\", "\\\\")
+                regexp = re.compile('[^\x09\x0A\x0D\x20-\x7F]')
+                decoded = regexp.sub('', decoded)
+                jstring = json.loads(decoded)
 
-            machine = jstring["machine"]
+                if str(jstring["session"]) != str(self.session) :
+                    self.sendJSON(dict(command="notice", style="error", text="Your session is corrupted. Try relogging"))
+                    return None
 
-            UUID = str(machine.get('UUID', 0)).encode()
-            mem_SerialNumber = str(machine.get('mem_SerialNumber', 0)).encode()
-            DeviceID = str(machine.get('DeviceID', 0)).encode()
-            Manufacturer = str(machine.get('Manufacturer', 0)).encode()
-            Name = str(machine.get('Name', 0)).encode()
-            ProcessorId = str(machine.get('ProcessorId', 0)).encode()
-            SMBIOSBIOSVersion = str(machine.get('SMBIOSBIOSVersion', 0)).encode()
-            SerialNumber = str(machine.get('SerialNumber', 0)).encode()
-            VolumeSerialNumber = str(machine.get('VolumeSerialNumber', 0)).encode()
+                machine = jstring["machine"]
 
-            for i in machine.values() :
-                low = i.lower()
-                if "vmware" in low or "virtual" in low or "innotek" in low or "qemu" in low or "parallels" in low or "bochs" in low :
-                    return "VM"
+                UUID = str(machine.get('UUID', 0)).encode()
+                mem_SerialNumber = str(machine.get('mem_SerialNumber', 0)).encode()  # serial number of first memory module
+                DeviceID = str(machine.get('DeviceID', 0)).encode() # device id of the IDE controller
+                Manufacturer = str(machine.get('Manufacturer', 0)).encode() # BIOS manufacturer
+                Name = str(machine.get('Name', 0)).encode() # verbose processor name
+                ProcessorId = str(machine.get('ProcessorId', 0)).encode()
+                SMBIOSBIOSVersion = str(machine.get('SMBIOSBIOSVersion', 0)).encode()
+                SerialNumber = str(machine.get('SerialNumber', 0)).encode() # BIOS serial number
+                VolumeSerialNumber = str(machine.get('VolumeSerialNumber', 0)).encode() # https://www.raymond.cc/blog/changing-or-spoofing-hard-disk-hardware-serial-number-and-volume-id/
+
+                for i in machine.values() :
+                    low = i.lower()
+                    if "vmware" in low or "virtual" in low or "innotek" in low or "qemu" in low or "parallels" in low or "bochs" in low :
+                        return "VM"
 
             m = hashlib.md5()
             m.update(UUID + mem_SerialNumber + DeviceID + Manufacturer + Name + ProcessorId + SMBIOSBIOSVersion + SerialNumber + VolumeSerialNumber)
