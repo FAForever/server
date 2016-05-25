@@ -1,4 +1,5 @@
 import pytest
+import hashlib
 
 from server import VisibilityState
 
@@ -44,11 +45,12 @@ def get_session(proto):
 @asyncio.coroutine
 def perform_login(proto, credentials):
     login, pw = credentials
+    pw_hash = hashlib.sha256(pw.encode('utf-8'))
     proto.send_message({'command': 'hello',
                         'version': '1.0.0-dev',
                         'user_agent': 'faf-client',
                         'login': login,
-                        'password': pw,
+                        'password': pw_hash.hexdigest(),
                         'unique_id': 'some_id'
                         })
     yield from proto.drain()
