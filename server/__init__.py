@@ -26,8 +26,8 @@ from .game_service import GameService
 from .ladder_service import LadderService
 from .control import init as run_control_server
 
-__version__ = '0.1'
-__author__ = 'Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard'
+__version__ = '0.2'
+__author__ = 'Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard, Michel Jung'
 __contact__ = 'admin@faforever.com'
 __license__ = 'GPLv3'
 __copyright__ = 'Copyright (c) 2011-2015 ' + __author__
