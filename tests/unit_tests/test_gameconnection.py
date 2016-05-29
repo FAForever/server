@@ -126,3 +126,10 @@ async def test_json_stats(game_connection, game_stats_service, players, game):
     game_stats_service.process_game_stats = mock.Mock()
     await game_connection.handle_action('JsonStats', ['{"stats": {}}'])
     game.report_army_stats.assert_called_once_with('{"stats": {}}')
+
+
+async def test_handle_action_EnforceRating(game: Game, game_connection: GameConnection):
+    assert (False, game.enforce_rating)
+
+    await game_connection.handle_action('EnforceRating', [])
+    assert (True, game.enforce_rating)
