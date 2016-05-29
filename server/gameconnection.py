@@ -354,6 +354,9 @@ class GameConnection(GpgNetServerProtocol):
             elif command == 'JsonStats':
                 await self.game.report_army_stats(args[0])
 
+            elif command == 'EnforceRating':
+                self.game.enforce_rating = True
+
 
         except AuthenticationError as e:
             self.log.exception("Authentication error: {}".format(e))

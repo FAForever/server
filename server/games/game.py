@@ -125,6 +125,7 @@ class Game(BaseGame):
         self.game_mode = game_mode
         self.state = GameState.INITIALIZING
         self._connections = {}
+        self.enforce_rating = False
         self.gameOptions = {'FogOfWar': 'explored',
                             'GameSpeed': 'normal',
                             'Victory': Victory.from_gpgnet_string('demoralization'),
