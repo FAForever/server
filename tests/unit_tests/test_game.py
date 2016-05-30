@@ -91,6 +91,12 @@ async def test_game_end_when_no_more_connections(game: Game, mock_game_connectio
 
     game.on_game_end.assert_any_call()
 
+async def test_game_marked_dirty_when_timed_out(game: Game):
+    game.state = GameState.INITIALIZING
+    await game.timeout_game()
+    assert game.state == GameState.ENDED
+    assert game in game.game_service.dirty_games
+
 async def test_clear_slot(game: Game, mock_game_connection: GameConnection):
     game.state = GameState.LOBBY
     players = [
