@@ -370,7 +370,7 @@ Thanks,\n\
     def send_game_list(self):
         self.sendJSON({
             'command': 'game_info',
-            'games': [game.to_dict() for game in self.game_service.all_games]
+            'games': [game.to_dict() for game in self.game_service.open_games]
         })
 
     @asyncio.coroutine

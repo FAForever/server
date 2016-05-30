@@ -183,8 +183,20 @@ class GameService:
 
     @property
     def open_games(self):
+        """
+        Return all games that meet the client's definition of "not closed".
+        Server game states are mapped to client game states as follows:
+
+            GameState.LOBBY: 'open',
+            GameState.LIVE: 'playing',
+            GameState.ENDED: 'closed',
+            GameState.INITIALIZING: 'closed',
+
+        The client ignores everything "closed". This property fetches all such not-closed games.
+        :return:
+        """
         return [game for game in self.games.values()
-                if game.state == GameState.LOBBY]
+                if game.state == GameState.LOBBY or game.state == GameState.LIVE]
 
     @property
     def all_games(self):

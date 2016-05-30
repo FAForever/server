@@ -142,7 +142,8 @@ def test_send_game_list(mocker, lobbyconnection, game_stats_service):
     games = mocker.patch.object(lobbyconnection, 'game_service')  # type: GameService
     game1, game2 = mock.create_autospec(Game(42, mock.Mock(), game_stats_service)),\
                    mock.create_autospec(Game(22, mock.Mock(), game_stats_service))
-    games.all_games = [game1, game2]
+
+    games.open_games = [game1, game2]
 
     lobbyconnection.send_game_list()
 
