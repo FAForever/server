@@ -140,7 +140,7 @@ class Game(BaseGame):
 
     def timeout_game(self):
         if self.state == GameState.INITIALIZING:
-            self.state = GameState.ENDED
+            self.on_game_end()
 
     @property
     def armies(self):
