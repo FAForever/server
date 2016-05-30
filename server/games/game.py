@@ -136,11 +136,12 @@ class Game(BaseGame):
 
         self.mods = {}
         self._logger.info("{} created".format(self))
-        asyncio.get_event_loop().call_later(20, self.timeout_game)
+        asyncio.get_event_loop().create_task(self.timeout_game())
 
-    def timeout_game(self):
+    async def timeout_game(self):
+        await asyncio.sleep(20)
         if self.state == GameState.INITIALIZING:
-            self.on_game_end()
+            await self.on_game_end()
 
     @property
     def armies(self):
