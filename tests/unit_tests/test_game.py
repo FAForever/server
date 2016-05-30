@@ -10,6 +10,7 @@ from server.games.game import Game, GameState, GameError, VisibilityState
 from server.gameconnection import GameConnection, GameConnectionState
 from server.players import Player
 from tests import CoroMock
+from tests.unit_tests.conftest import mock_game_connection, add_connected_players, add_connected_player
 
 
 @pytest.fixture()
@@ -29,45 +30,11 @@ def test_instance_logging(game_stats_service):
     logger.info.assert_called_with("{} created".format(game))
 
 
-@pytest.fixture
-def game_connection(state=GameConnectionState.INITIALIZING, player=None):
-    gc = mock.create_autospec(spec=GameConnection)
-    gc.state = state
-    gc.player = player
-    return gc
-
-
-def add_connected_player(game: Game, player):
-    game.game_service.player_service[player.id] = player
-    gc = game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=player)
-    game.set_player_option(player.id, 'Army', 0)
-    game.set_player_option(player.id, 'StartSpot', 0)
-    game.set_player_option(player.id, 'Team', 0)
-    game.set_player_option(player.id, 'Faction', 0)
-    game.set_player_option(player.id, 'Color', 0)
-    game.add_game_connection(gc)
-    return gc
-
-
-def add_connected_players(game: Game, players):
-    """
-    Utility to add players with army and StartSpot indexed by a list
-    """
-    for army, player in enumerate(players):
-        add_connected_player(game, player)
-        game.set_player_option(player.id, 'Army', army)
-        game.set_player_option(player.id, 'StartSpot', army)
-        game.set_player_option(player.id, 'Team', army)
-        game.set_player_option(player.id, 'Faction', 0)
-        game.set_player_option(player.id, 'Color', 0)
-    game.host = players[0]
-
-
-def test_set_player_option(game, players, game_connection):
+def test_set_player_option(game, players, mock_game_connection):
     game.state = GameState.LOBBY
-    game_connection.player = players.hosting
-    game_connection.state = GameConnectionState.CONNECTED_TO_HOST
-    game.add_game_connection(game_connection)
+    mock_game_connection.player = players.hosting
+    mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
+    game.add_game_connection(mock_game_connection)
     assert game.players == {players.hosting}
     game.set_player_option(players.hosting.id, 'Team', 1)
     assert game.get_player_option(players.hosting.id, 'Team') == 1
@@ -76,54 +43,54 @@ def test_set_player_option(game, players, game_connection):
     game.get_player_option(players.hosting.id, 'StartSpot') == 1
 
 
-def test_add_game_connection(game: Game, players, game_connection):
+def test_add_game_connection(game: Game, players, mock_game_connection):
     game.state = GameState.LOBBY
-    game_connection.player = players.hosting
-    game_connection.state = GameConnectionState.CONNECTED_TO_HOST
-    game.add_game_connection(game_connection)
+    mock_game_connection.player = players.hosting
+    mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
+    game.add_game_connection(mock_game_connection)
     assert players.hosting in game.players
 
 
-def test_add_game_connection_throws_if_not_connected_to_host(game: Game, players, game_connection):
+def test_add_game_connection_throws_if_not_connected_to_host(game: Game, players, mock_game_connection):
     game.state = GameState.LOBBY
-    game_connection.player = players.hosting
-    game_connection.state = GameConnectionState.INITIALIZED
+    mock_game_connection.player = players.hosting
+    mock_game_connection.state = GameConnectionState.INITIALIZED
     with pytest.raises(GameError):
-        game.add_game_connection(game_connection)
+        game.add_game_connection(mock_game_connection)
 
     assert players.hosting not in game.players
 
 
-def test_add_game_connection_throws_if_not_lobby_state(game: Game, players, game_connection):
+def test_add_game_connection_throws_if_not_lobby_state(game: Game, players, mock_game_connection):
     game.state = GameState.INITIALIZING
-    game_connection.player = players.hosting
-    game_connection.state = GameConnectionState.CONNECTED_TO_HOST
+    mock_game_connection.player = players.hosting
+    mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
     with pytest.raises(GameError):
-        game.add_game_connection(game_connection)
+        game.add_game_connection(mock_game_connection)
 
     assert players.hosting not in game.players
 
 
-async def test_remove_game_connection(game: Game, players, game_connection):
+async def test_remove_game_connection(game: Game, players, mock_game_connection):
     game.state = GameState.LOBBY
-    game_connection.player = players.hosting
-    game_connection.state = GameConnectionState.CONNECTED_TO_HOST
-    game.add_game_connection(game_connection)
-    await game.remove_game_connection(game_connection)
+    mock_game_connection.player = players.hosting
+    mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
+    game.add_game_connection(mock_game_connection)
+    await game.remove_game_connection(mock_game_connection)
     assert players.hosting not in game.players
 
 
-async def test_game_end_when_no_more_connections(game: Game, game_connection):
+async def test_game_end_when_no_more_connections(game: Game, mock_game_connection):
     game.state = GameState.LOBBY
 
     game.on_game_end = CoroMock()
-    game_connection.state = GameConnectionState.CONNECTED_TO_HOST
-    game.add_game_connection(game_connection)
-    await game.remove_game_connection(game_connection)
+    mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
+    game.add_game_connection(mock_game_connection)
+    await game.remove_game_connection(mock_game_connection)
 
     game.on_game_end.assert_any_call()
 
-async def test_clear_slot(game: Game, game_connection: GameConnection):
+async def test_clear_slot(game: Game, mock_game_connection: GameConnection):
     game.state = GameState.LOBBY
     players = [
         Player(id=1, login='Dostya', global_rating=(1500, 500)),
@@ -337,7 +304,7 @@ async def test_players_exclude_observers(game: Game):
     obs = Player(id=3, login='Zoidberg', global_rating=(1500, 500))
 
     game.game_service.player_service[obs.id] = obs
-    gc = game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=obs)
+    gc = mock_game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=obs)
     game.set_player_option(obs.id, 'Army', -1)
     game.set_player_option(obs.id, 'StartSpot', -1)
     game.set_player_option(obs.id, 'Team', 0)

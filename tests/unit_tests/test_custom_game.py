@@ -4,41 +4,10 @@ import pytest
 import time
 
 from server.games.game import GameState, ValidityState
-from server.games.custom_game import CustomGame
-from server.gameconnection import GameConnection, GameConnectionState
+from server.games import CustomGame
 from server.players import Player
+from tests.unit_tests.conftest import add_connected_players
 
-
-@pytest.fixture()
-def game_connection(state=GameConnectionState.INITIALIZING, player=None):
-    gc = mock.create_autospec(spec=GameConnection)
-    gc.state = state
-    gc.player = player
-    return gc
-
-def add_connected_player(custom_game: CustomGame, player):
-    custom_game.game_service.player_service[player.id] = player
-    gc = game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=player)
-    custom_game.set_player_option(player.id, 'Army', 0)
-    custom_game.set_player_option(player.id, 'StartSpot', 0)
-    custom_game.set_player_option(player.id, 'Team', 0)
-    custom_game.set_player_option(player.id, 'Faction', 0)
-    custom_game.set_player_option(player.id, 'Color', 0)
-    custom_game.add_game_connection(gc)
-    return gc
-
-def add_connected_players(game: CustomGame, players):
-    """
-    Utility to add players with army and StartSpot indexed by a list
-    """
-    for army, player in enumerate(players):
-        add_connected_player(game, player)
-        game.set_player_option(player.id, 'Army', army)
-        game.set_player_option(player.id, 'StartSpot', army)
-        game.set_player_option(player.id, 'Team', army)
-        game.set_player_option(player.id, 'Faction', 0)
-        game.set_player_option(player.id, 'Color', 0)
-    game.host = players[0]
 
 async def test_rate_game_early_abort_no_enforce(game_service, game_stats_service):
     custom_game = CustomGame(50, game_service, game_stats_service)
