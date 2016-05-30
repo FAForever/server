@@ -1,23 +1,13 @@
-import logging
 from unittest import mock
-import asyncio
 
 import pytest
 import time
 
-from server import GameStatsService
 from server.games.game import GameState, ValidityState
 from server.games.custom_game import CustomGame
 from server.gameconnection import GameConnection, GameConnectionState
 from server.players import Player
-from tests import CoroMock
 
-
-@pytest.fixture()
-def game_stats_service():
-    service = mock.Mock(spec=GameStatsService)
-    service.process_game_stats = CoroMock()
-    return service
 
 @pytest.fixture()
 def game_connection(state=GameConnectionState.INITIALIZING, player=None):

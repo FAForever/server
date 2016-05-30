@@ -2,8 +2,9 @@ import asyncio
 from unittest import mock
 import pytest
 
-from server import LobbyConnection
-
+from server import GameStatsService, LobbyConnection
+from server.gameconnection import GameConnection, GameConnectionState
+from tests import CoroMock
 
 @pytest.fixture()
 def lobbythread():
@@ -29,6 +30,13 @@ def game_connection(request, game, loop, player_service, players, game_service, 
 
     request.addfinalizer(fin)
     return conn
+
+
+@pytest.fixture()
+def game_stats_service():
+    service = mock.Mock(spec=GameStatsService)
+    service.process_game_stats = CoroMock()
+    return service
 
 
 @pytest.fixture
