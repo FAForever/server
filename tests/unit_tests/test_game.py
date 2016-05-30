@@ -20,6 +20,7 @@ def game(game_service, game_stats_service):
 
 def test_initialization(game: Game):
     assert game.state == GameState.INITIALIZING
+    assert game.enforce_rating == False
 
 
 def test_instance_logging(game_stats_service):
