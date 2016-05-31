@@ -20,3 +20,4 @@ marisa-trie
 oauth2client
 git+https://github.com/FAForever/faftools.git@develop#egg=faftools
 pyopenssl
+mock
