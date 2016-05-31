@@ -30,6 +30,27 @@ def test_instance_logging(game_stats_service):
     logger.info.assert_called_with("{} created".format(game))
 
 
+async def test_validate_game_settings(game: Game):
+    settings = [
+        ['Victory', Victory.SANDBOX, Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION],
+        ['FogOfWar', 'none', 'explored', ValidityState.NO_FOG_OF_WAR],
+        ['CheatsEnabled', 'true', 'false', ValidityState.CHEATS_ENABLED],
+        ['PrebuiltUnits', 'On', 'Off', ValidityState.PREBUILT_ENABLED],
+        ['NoRushOption', 20, 'Off', ValidityState.NORUSH_ENABLED],
+        ['RestrictedCategories', 1, 0, ValidityState.BAD_UNIT_RESTRICTIONS]
+    ]
+
+    for data in settings:
+        game.gameOptions[data[0]] = data[1]
+        await game.validate_game_settings()
+        assert game.validity is data[3]
+        game.gameOptions[data[0]] = data[2]
+
+    game.validity = ValidityState.VALID
+    await game.validate_game_settings()
+    assert game.validity is ValidityState.VALID
+
+
 def test_set_player_option(game, players, mock_game_connection):
     game.state = GameState.LOBBY
     mock_game_connection.player = players.hosting
