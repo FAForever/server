@@ -128,10 +128,19 @@ def test_game_teams_represents_active_teams(game: Game, players):
     game.set_player_option(players.joining.id, 'Team', 2)
     assert game.teams == {1, 2}
 
-async def test_game_invalid_army_adds_result(game: Game, players):
+async def test_invalid_army_not_add_result(game: Game, players):
     await game.add_result(players.hosting, 99, "win", 10)
 
     assert 99 not in game._results
+
+async def test_initialized_game_not_allowed_to_end(game: Game):
+    await game.clear_data()
+    game.state = GameState.INITIALIZING
+
+    game.on_game_end()
+
+    assert game.state is GameState.INITIALIZING
+
 async def test_game_ends_in_mutually_agreed_draw(game: Game, players):
     await game.clear_data()
     game.state = GameState.LIVE
