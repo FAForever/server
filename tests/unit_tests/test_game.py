@@ -100,13 +100,17 @@ async def test_clear_slot(game: Game, mock_game_connection: GameConnection):
         Player(id=2, login='Rhiza', global_rating=(1500, 500))
     ]
     add_connected_players(game, players)
+    game.set_ai_option('rush', 'StartSpot', 3)
+
 
     game.clear_slot(0)
+    game.clear_slot(3)
 
     assert game.get_player_option(1, 'StartSpot') == -1
     assert game.get_player_option(1, 'Team') == -1
     assert game.get_player_option(1, 'Army') == -1
     assert game.get_player_option(2, 'StartSpot') == 1
+    assert 'rush' not in game.AIs
 
 async def test_game_launch_freezes_players(game: Game, players):
     await game.clear_data()
