@@ -43,6 +43,9 @@ def test_set_player_option(game, players, mock_game_connection):
     game.get_player_option(players.hosting.id, 'StartSpot') == 1
 
 
+def test_invalid_get_player_option_key(game: Game, players):
+    assert game.get_player_option(players.hosting.id, -1) is None
+
 def test_add_game_connection(game: Game, players, mock_game_connection):
     game.state = GameState.LOBBY
     mock_game_connection.player = players.hosting
