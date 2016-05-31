@@ -12,10 +12,14 @@ services:
 before_install:
   - sudo apt-get update
   - bash ./scripts/init_and_wait_for_db.sh
+  - sudo pip install coveralls
 
 install:
   - cp faf-server.example.pem faf-server.pem
   - docker build -t faf-server .
 
 script:
-  - docker run -it --link faf-db:db -e FAF_DB_PASSWORD=banana -e COVERALLS_REPO_TOKEN=Vl36DD3XeJI1KjzoyGgxpV3wsVohnJW22 faf-server bash scripts/run_and_report_coverage.sh
+  - docker run --name faf_server -it --link faf-db:db -e FAF_DB_PASSWORD=banana faf-server bash scripts/run_tests_with_coverage.sh
+  - docker cp faf_server:/code/.coverage .coverage
+  - coveralls
+  - docker rm faf_server
