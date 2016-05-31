@@ -1,5 +1,6 @@
 import logging
 from unittest import mock
+from mock import patch
 
 import pytest
 import time
@@ -91,6 +92,7 @@ async def test_game_end_when_no_more_connections(game: Game, mock_game_connectio
 
     game.on_game_end.assert_any_call()
 
+@patch('asyncio.sleep', return_value=None)
 async def test_game_marked_dirty_when_timed_out(game: Game):
     game.state = GameState.INITIALIZING
     await game.timeout_game()
