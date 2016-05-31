@@ -6,12 +6,11 @@ import time
 
 from trueskill import Rating
 
-from server.games.game import Game, GameState, GameError, VisibilityState
+from server.games.game import Game, GameState, GameError, Victory, VisibilityState, ValidityState
 from server.gameconnection import GameConnection, GameConnectionState
 from server.players import Player
 from tests import CoroMock
 from tests.unit_tests.conftest import mock_game_connection, add_connected_players, add_connected_player
-
 
 @pytest.fixture()
 def game(game_service, game_stats_service):
@@ -129,6 +128,28 @@ def test_game_teams_represents_active_teams(game: Game, players):
     game.set_player_option(players.joining.id, 'Team', 2)
     assert game.teams == {1, 2}
 
+async def test_game_ends_in_mutually_agreed_draw(game: Game, players):
+    await game.clear_data()
+    game.state = GameState.LIVE
+    game.launched_at = time.time()-60*60
+
+    await game.add_result(players.hosting, 0, 'mutual_draw', 0)
+    await game.add_result(players.joining, 1, 'mutual_draw', 0)
+    await game.on_game_end()
+
+    assert game.validity is ValidityState.MUTUAL_DRAW
+
+async def test_game_is_invalid_due_to_desyncs(game: Game, players):
+    await game.clear_data()
+    game.state = GameState.LOBBY
+    add_connected_players(game, [players.hosting, players.joining])
+    game.host = players.hosting
+
+    await game.launch()
+    game.desyncs = 30
+    await game.on_game_end()
+
+    assert game.validity is ValidityState.TOO_MANY_DESYNCS
 
 async def test_compute_rating_computes_global_ratings(game: Game, players):
     await game.clear_data()
@@ -315,3 +336,19 @@ async def test_players_exclude_observers(game: Game):
     await game.launch()
 
     assert game.players == frozenset(players)
+
+def test_victory_conditions():
+    conds = [("demoralization", Victory.DEMORALIZATION),
+             ("domination", Victory.DOMINATION),
+             ("eradication", Victory.ERADICATION),
+             ("sandbox", Victory.SANDBOX)]
+
+    assert (Victory.from_gpgnet_string(t[1]) == t[2] for t in conds)
+
+def test_visibility_states():
+    states = [("public", VisibilityState.PUBLIC),
+              ("friends", VisibilityState.FRIENDS)]
+
+    assert (VisibilityState.from_string(t[1]) == t[2] and
+            VisibilityState.to_string(t[2]) == t[1] for t in states)
+
