@@ -32,19 +32,20 @@ def test_instance_logging(game_stats_service):
 
 async def test_validate_game_settings(game: Game):
     settings = [
-        ['Victory', Victory.SANDBOX, Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION],
-        ['FogOfWar', 'none', 'explored', ValidityState.NO_FOG_OF_WAR],
-        ['CheatsEnabled', 'true', 'false', ValidityState.CHEATS_ENABLED],
-        ['PrebuiltUnits', 'On', 'Off', ValidityState.PREBUILT_ENABLED],
-        ['NoRushOption', 20, 'Off', ValidityState.NORUSH_ENABLED],
-        ['RestrictedCategories', 1, 0, ValidityState.BAD_UNIT_RESTRICTIONS]
+        ('Victory', Victory.SANDBOX, Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION),
+        ('FogOfWar', 'none', 'explored', ValidityState.NO_FOG_OF_WAR),
+        ('CheatsEnabled', 'true', 'false', ValidityState.CHEATS_ENABLED),
+        ('PrebuiltUnits', 'On', 'Off', ValidityState.PREBUILT_ENABLED),
+        ('NoRushOption', 20, 'Off', ValidityState.NORUSH_ENABLED),
+        ('RestrictedCategories', 1, 0, ValidityState.BAD_UNIT_RESTRICTIONS)
     ]
 
     for data in settings:
-        game.gameOptions[data[0]] = data[1]
+        key, value, default, expected = data
+        game.gameOptions[key] = value
         await game.validate_game_settings()
-        assert game.validity is data[3]
-        game.gameOptions[data[0]] = data[2]
+        assert game.validity is expected
+        game.gameOptions[key] = default
 
     game.validity = ValidityState.VALID
     await game.validate_game_settings()
@@ -392,4 +393,3 @@ def test_visibility_states():
 
     assert (VisibilityState.from_string(t[1]) == t[2] and
             VisibilityState.to_string(t[2]) == t[1] for t in states)
-
