@@ -21,5 +21,6 @@ install:
 script:
   - docker run --name faf_server -it --link faf-db:db -e FAF_DB_PASSWORD=banana faf-server bash scripts/run_tests_with_coverage.sh
   - docker cp faf_server:/code/.coverage .coverage
+  - sed -i.bak s#/code/#$(pwd)/#g .coverage
   - coveralls
   - docker rm faf_server
