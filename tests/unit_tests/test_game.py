@@ -7,12 +7,11 @@ import time
 
 from trueskill import Rating
 
-from server.games.game import Game, GameState, GameError, VisibilityState
+from server.games.game import Game, GameState, GameError, Victory, VisibilityState, ValidityState
 from server.gameconnection import GameConnection, GameConnectionState
 from server.players import Player
 from tests import CoroMock
 from tests.unit_tests.conftest import mock_game_connection, add_connected_players, add_connected_player
-
 
 @pytest.fixture()
 def game(game_service, game_stats_service):
@@ -32,6 +31,28 @@ def test_instance_logging(game_stats_service):
     logger.info.assert_called_with("{} created".format(game))
 
 
+async def test_validate_game_settings(game: Game):
+    settings = [
+        ('Victory', Victory.SANDBOX, Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION),
+        ('FogOfWar', 'none', 'explored', ValidityState.NO_FOG_OF_WAR),
+        ('CheatsEnabled', 'true', 'false', ValidityState.CHEATS_ENABLED),
+        ('PrebuiltUnits', 'On', 'Off', ValidityState.PREBUILT_ENABLED),
+        ('NoRushOption', 20, 'Off', ValidityState.NORUSH_ENABLED),
+        ('RestrictedCategories', 1, 0, ValidityState.BAD_UNIT_RESTRICTIONS)
+    ]
+
+    for data in settings:
+        key, value, default, expected = data
+        game.gameOptions[key] = value
+        await game.validate_game_settings()
+        assert game.validity is expected
+        game.gameOptions[key] = default
+
+    game.validity = ValidityState.VALID
+    await game.validate_game_settings()
+    assert game.validity is ValidityState.VALID
+
+
 def test_set_player_option(game, players, mock_game_connection):
     game.state = GameState.LOBBY
     mock_game_connection.player = players.hosting
@@ -44,6 +65,9 @@ def test_set_player_option(game, players, mock_game_connection):
     game.set_player_option(players.hosting.id, 'StartSpot', 1)
     game.get_player_option(players.hosting.id, 'StartSpot') == 1
 
+
+def test_invalid_get_player_option_key(game: Game, players):
+    assert game.get_player_option(players.hosting.id, -1) is None
 
 def test_add_game_connection(game: Game, players, mock_game_connection):
     game.state = GameState.LOBBY
@@ -106,13 +130,17 @@ async def test_clear_slot(game: Game, mock_game_connection: GameConnection):
         Player(id=2, login='Rhiza', global_rating=(1500, 500))
     ]
     add_connected_players(game, players)
+    game.set_ai_option('rush', 'StartSpot', 3)
+
 
     game.clear_slot(0)
+    game.clear_slot(3)
 
     assert game.get_player_option(1, 'StartSpot') == -1
     assert game.get_player_option(1, 'Team') == -1
     assert game.get_player_option(1, 'Army') == -1
     assert game.get_player_option(2, 'StartSpot') == 1
+    assert 'rush' not in game.AIs
 
 async def test_game_launch_freezes_players(game: Game, players):
     await game.clear_data()
@@ -137,6 +165,41 @@ def test_game_teams_represents_active_teams(game: Game, players):
     game.set_player_option(players.joining.id, 'Team', 2)
     assert game.teams == {1, 2}
 
+async def test_invalid_army_not_add_result(game: Game, players):
+    await game.add_result(players.hosting, 99, "win", 10)
+
+    assert 99 not in game._results
+
+async def test_initialized_game_not_allowed_to_end(game: Game):
+    await game.clear_data()
+    game.state = GameState.INITIALIZING
+
+    game.on_game_end()
+
+    assert game.state is GameState.INITIALIZING
+
+async def test_game_ends_in_mutually_agreed_draw(game: Game, players):
+    await game.clear_data()
+    game.state = GameState.LIVE
+    game.launched_at = time.time()-60*60
+
+    await game.add_result(players.hosting, 0, 'mutual_draw', 0)
+    await game.add_result(players.joining, 1, 'mutual_draw', 0)
+    await game.on_game_end()
+
+    assert game.validity is ValidityState.MUTUAL_DRAW
+
+async def test_game_is_invalid_due_to_desyncs(game: Game, players):
+    await game.clear_data()
+    game.state = GameState.LOBBY
+    add_connected_players(game, [players.hosting, players.joining])
+    game.host = players.hosting
+
+    await game.launch()
+    game.desyncs = 30
+    await game.on_game_end()
+
+    assert game.validity is ValidityState.TOO_MANY_DESYNCS
 
 async def test_compute_rating_computes_global_ratings(game: Game, players):
     await game.clear_data()
@@ -323,3 +386,20 @@ async def test_players_exclude_observers(game: Game):
     await game.launch()
 
     assert game.players == frozenset(players)
+
+def test_victory_conditions():
+    conds = [("demoralization", Victory.DEMORALIZATION),
+             ("domination", Victory.DOMINATION),
+             ("eradication", Victory.ERADICATION),
+             ("sandbox", Victory.SANDBOX)]
+
+    for string_value, enum_value in conds:
+        assert Victory.from_gpgnet_string(string_value) == enum_value
+
+def test_visibility_states():
+    states = [("public", VisibilityState.PUBLIC),
+              ("friends", VisibilityState.FRIENDS)]
+
+    for string_value, enum_value in states:
+        assert (VisibilityState.from_string(string_value) == enum_value and
+                VisibilityState.to_string(enum_value) == string_value)
