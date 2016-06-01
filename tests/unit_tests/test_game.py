@@ -385,11 +385,13 @@ def test_victory_conditions():
              ("eradication", Victory.ERADICATION),
              ("sandbox", Victory.SANDBOX)]
 
-    assert (Victory.from_gpgnet_string(t[1]) == t[2] for t in conds)
+    for string_value, enum_value in conds:
+        assert Victory.from_gpgnet_string(string_value) == enum_value
 
 def test_visibility_states():
     states = [("public", VisibilityState.PUBLIC),
               ("friends", VisibilityState.FRIENDS)]
 
-    assert (VisibilityState.from_string(t[1]) == t[2] and
-            VisibilityState.to_string(t[2]) == t[1] for t in states)
+    for string_value, enum_value in states:
+        assert (VisibilityState.from_string(string_value) == enum_value and
+                VisibilityState.to_string(enum_value) == string_value)
