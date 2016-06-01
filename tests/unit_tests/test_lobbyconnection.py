@@ -13,6 +13,7 @@ from server.player_service import PlayerService
 from server.players import Player
 from tests import CoroMock
 
+import server.db as db
 
 @pytest.fixture()
 def test_game_info():
@@ -207,7 +208,6 @@ def test_command_admin_closeFA(mocker, lobbyconnection):
               .format(rule_link=config.RULE_LINK))
     ))
 
-
 async def test_game_subscription(lobbyconnection: LobbyConnection):
     game = Mock()
     game.handle_action = CoroMock()
@@ -220,3 +220,31 @@ async def test_game_subscription(lobbyconnection: LobbyConnection):
 
     game.handle_action.assert_called_with('test', ['foo', 42])
 
+async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection, mock_player: Player):
+    protocol = mocker.patch.object(lobbyconnection, 'protocol')
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.id = 2  # Dostya test user
+
+    await lobbyconnection.command_avatar({
+        'action': 'list_avatar'
+    })
+
+    protocol.send_message.assert_any_call({
+        "command": "avatar",
+        "avatarlist": [{'url': 'http://content.faforever.com/faf/avatars/qai2.png', 'tooltip': 'QAI'}]
+    })
+
+async def test_command_avatar_select(mocker, lobbyconnection: LobbyConnection, mock_player: Player):
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.id = 2  # Dostya test user
+
+    await lobbyconnection.command_avatar({
+        'action': 'select',
+        'avatar': "http://content.faforever.com/faf/avatars/qai2.png"
+    })
+
+    async with db.db_pool.get() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("SELECT selected from avatars where idUser=2")
+        result = await cursor.fetchone()
+        assert result == (1,)

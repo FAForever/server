@@ -74,3 +74,9 @@ insert into table_mod (uid, `name`,
 VALUES ('foo', 'test-mod', 1, 'baz', 0, NOW(), 'foobar.zip', 'foobar.png', '', 0),
        ('bar', 'test-mod2', 1, 'baz', 0, NOW(), 'foobar2.zip', 'foobar2.png', '', 0),
        ('EA040F8E-857A-4566-9879-0D37420A5B9D', 'test-mod3', 1, 'baz', 0, NOW(), 'foobar3.zip', 'foobar3.png', '', 1);
+
+-- sample avatars
+delete from avatars;
+delete from avatars_list;
+insert into avatars_list (id, url, tooltip) values (1, "http://content.faforever.com/faf/avatars/qai2.png", "QAI");
+insert into avatars (idUser, idAvatar, selected) values (2, 1, 0);
