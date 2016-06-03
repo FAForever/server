@@ -85,12 +85,13 @@ def test_command_game_host_creates_game(lobbyconnection,
         'game_mode': test_game_info['mod'],
         'name': test_game_info['title'],
         'host': players.hosting,
-        'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
+        'visibility': VisibilityState.PUBLIC,
         'password': test_game_info['password'],
         'mapname': test_game_info['mapname'],
     }
     mock_games.create_game\
         .assert_called_with(**expected_call)
+
 
 def test_command_game_join_calls_join_game(mocker,
                                            lobbyconnection,
