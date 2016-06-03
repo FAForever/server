@@ -118,7 +118,6 @@ class Game(BaseGame):
         self.map_scenario_path = None
         self.password = None
         self._players = []
-        self.gameType = 0
         self.AIs = {}
         self.desyncs = 0
         self.validity = ValidityState.VALID
@@ -662,7 +661,6 @@ class Game(BaseGame):
             "map_file_path": self.map_file_path,
             "host": self.host.login if self.host else '',
             "num_players": len(self.players),
-            "game_type": self.gameType,
             "max_players": self.max_players,
             "launched_at": self.launched_at,
             "teams": {

@@ -169,7 +169,6 @@ class GameService:
             game = Game(**args)
         self.games[id] = game
 
-        self._logger.info("{} created".format(game))
         game.visibility = visibility
         game.password = password
 

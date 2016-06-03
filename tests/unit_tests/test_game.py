@@ -295,7 +295,6 @@ async def test_to_dict(game, create_player):
         "map_file_path": game.map_file_path,
         "host": game.host.login,
         "num_players": len(game.players),
-        "game_type": game.gameType,
         "max_players": game.max_players,
         "launched_at": game.launched_at,
         "teams": {
