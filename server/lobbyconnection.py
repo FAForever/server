@@ -943,7 +943,7 @@ Thanks,\n\
         password = message.get('password')
 
         game = self.game_service.create_game(**{
-            'visibility': VisibilityState.to_string(visibility),
+            'visibility': visibility,
             'game_mode': mod.lower(),
             'host': self.player,
             'name': title if title else self.player.login,
