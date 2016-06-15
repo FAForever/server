@@ -105,7 +105,9 @@ class PlayerService:
         return user_id in self.uniqueid_exempt
 
     def has_blacklisted_domain(self, email):
-        return len(self.blacklisted_email_domains.keys(email[::-1])) != 0
+        # A valid email only has one @ anyway.
+        domain = email.split("@")[1]
+        return len(self.blacklisted_email_domains.keys(domain[::-1])) != 0
 
     def get_player(self, player_id):
         if player_id in self.players:
