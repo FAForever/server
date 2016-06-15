@@ -306,7 +306,7 @@ Thanks,\n\
             }),
             headers=headers)
         resp_text = await resp.text()
-        self._logger.info("Mandrill response: {}".format(resp_text))
+        self._logger.debug("Mandrill response: {}".format(resp_text))
 
     @timed()
     def send_tutorial_section(self):
@@ -425,7 +425,7 @@ Thanks,\n\
             if action == "closeFA":
                 player = self.player_service[message['user_id']]
                 if player:
-                    self._logger.info('Administrative action: {} closed game for {}'.format(self.player, player))
+                    self._logger.warn('Administrative action: {} closed game for {}'.format(self.player, player))
                     player.lobby_connection.sendJSON(dict(command="notice", style="kill"))
                     player.lobby_connection.sendJSON(dict(command="notice", style="info",
                                        text=("Your game was closed by an administrator ({admin_name}). "
@@ -436,7 +436,7 @@ Thanks,\n\
             elif action == "closelobby":
                 player = self.player_service[message['user_id']]
                 if player:
-                    self._logger.info('Administrative action: {} closed client for {}'.format(self.player, player))
+                    self._logger.warn('Administrative action: {} closed client for {}'.format(self.player, player))
                     player.lobby_connection.kick(
                         message=("Your client was closed by an administrator ({admin_name}). "
                          "Please refer to our rules for the lobby/game here {rule_link}."
@@ -705,7 +705,7 @@ Thanks,\n\
             try:
                 await cursor.execute("UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s", (irc_pass, login))
             except (pymysql.OperationalError, pymysql.ProgrammingError):
-                self._logger.info("Failure updating NickServ password for {}".format(login))
+                self._logger.error("Failure updating NickServ password for {}".format(login))
 
         permission_group = self.player_service.get_permission_group(player_id)
         self.player = Player(login=str(login),

@@ -135,7 +135,7 @@ class Game(BaseGame):
                             'RestrictedCategories': 0}
 
         self.mods = {}
-        self._logger.info("{} created".format(self))
+        self._logger.debug("{} created".format(self))
         asyncio.get_event_loop().call_later(20, self.timeout_game)
 
     def timeout_game(self):
@@ -312,7 +312,7 @@ class Game(BaseGame):
         :return:
         """
 
-        self._logger.info("Saving game scores")
+        self._logger.debug("Saving game scores")
         results = {}
         for player in self.players:
             army = self.get_player_option(player.id, 'Army')
@@ -607,7 +607,7 @@ class Game(BaseGame):
             team = self.get_player_option(player.id, 'Team')
             army = self.get_player_option(player.id, 'Army')
             if army < 0:
-                self._logger.info("Skipping {}".format(player))
+                self._logger.debug("Skipping {}".format(player))
                 continue
             if not team:
                 raise GameError("Missing team for player id: {}".format(player.id))
@@ -618,7 +618,7 @@ class Game(BaseGame):
                     team_scores[team] += self.get_army_result(army)
                 except KeyError:
                     team_scores[team] += 0
-                    self._logger.info("Missing game result for {army}: {player}".format(army=army,
+                    self._logger.warn("Missing game result for {army}: {player}".format(army=army,
                                                                                         player=player))
             elif team == 1:
                 ffa_scores.append((player, self.get_army_result(army)))

@@ -35,7 +35,7 @@ class GameStatsService:
             self._logger.warn("Player {} reported foreign game stats".format(player.login))
             return
 
-        self._logger.info("Processing game stats for player: {}".format(player.login))
+        self._logger.debug("Processing game stats for player: {}".format(player.login))
 
         faction = stats['faction']
         # Stores achievements to batch update
