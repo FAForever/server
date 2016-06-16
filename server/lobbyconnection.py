@@ -746,16 +746,29 @@ Thanks,\n\
                 url, tooltip = avatar
                 self.player.avatar = {"url": url, "tooltip": tooltip}
 
-        self.sendJSON(dict(command="welcome", id=self.player.id, login=login))
+        # Send the player their own player info.
+        self.sendJSON({
+            "command": "welcome",
+            "me": self.player.to_dict(),
 
-        # Tell player about everybody online
+            # For backwards compatibility for old clients. For now.
+            "id": self.player.id,
+            "login": login
+        })
+
+        # Tell player about everybody online. This must happen after "welcome".
         self.sendJSON(
             {
                 "command": "player_info",
                 "players": [player.to_dict() for player in self.player_service]
             }
         )
-        # Tell everyone else online about us
+
+        # Tell everyone else online about us. This must happen after all the player_info messages.
+        # This ensures that no other client will perform an operation that interacts with the
+        # incoming user, allowing the client to make useful assumptions: it can be certain it has
+        # initialised its local player service before it is going to get messages that want to
+        # query it.
         self.player_service.mark_dirty(self.player)
 
         friends = []
