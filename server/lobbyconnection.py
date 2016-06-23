@@ -457,7 +457,7 @@ Thanks,\n\
 
             elif action == "remove_avatar":
                 idavatar = message["idavatar"]
-                iduser = message["iduser"]
+                iduser = message["user_id"]
                 with (yield from db.db_pool) as conn:
                     cursor = yield from conn.cursor()
                     yield from cursor.execute("DELETE FROM `avatars` "
@@ -465,7 +465,7 @@ Thanks,\n\
                                               "AND `idAvatar` = %s", (idavatar, iduser))
 
             elif action == "add_avatar":
-                who = message['user']
+                who = message['user_id']
                 avatar = message['avatar']
 
                 with (yield from db.db_pool) as conn:
