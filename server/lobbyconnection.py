@@ -796,40 +796,35 @@ Thanks,\n\
                 "session": self.session
             })
 
-    async def command_avatar(self, message):
-        action = message['action']
+    async def command_list_avatar(self, _):
+        avatarList = []
 
-        if action == "list_avatar":
-            avatarList = []
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
+            await cursor.execute(
+                "SELECT url, tooltip FROM `avatars` "
+                "LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = %s", (self.player.id,))
 
-            async with db.db_pool.get() as conn:
-                cursor = await conn.cursor()
+            avatars = await cursor.fetchall()
+            for url, tooltip in avatars:
+                avatar = {"url": url, "tooltip": tooltip}
+                avatarList.append(avatar)
+
+            if len(avatarList) > 0:
+                self.sendJSON({"command": "avatar", "avatarlist": avatarList})
+
+    async def command_select_avatar(self, message):
+        avatar = message['avatar']
+
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
+            await cursor.execute(
+                "UPDATE `avatars` SET `selected` = 0 WHERE `idUser` = %s", (self.player.id, ))
+            if avatar is not None:
                 await cursor.execute(
-                    "SELECT url, tooltip FROM `avatars` "
-                    "LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = %s", (self.player.id,))
-
-                avatars = await cursor.fetchall()
-                for url, tooltip in avatars:
-                    avatar = {"url": url, "tooltip": tooltip}
-                    avatarList.append(avatar)
-
-                if len(avatarList) > 0:
-                    self.sendJSON({"command": "avatar", "avatarlist": avatarList})
-
-        elif action == "select":
-            avatar = message['avatar']
-
-            async with db.db_pool.get() as conn:
-                cursor = await conn.cursor()
-                await cursor.execute(
-                    "UPDATE `avatars` SET `selected` = 0 WHERE `idUser` = %s", (self.player.id, ))
-                if avatar is not None:
-                    await cursor.execute(
-                        "UPDATE `avatars` SET `selected` = 1 WHERE `idAvatar` ="
-                        "(SELECT id FROM avatars_list WHERE avatars_list.url = %s) and "
-                        "`idUser` = %s", (avatar, self.player.id))
-        else:
-            raise KeyError('invalid action')
+                    "UPDATE `avatars` SET `selected` = 1 WHERE `idAvatar` ="
+                    "(SELECT id FROM avatars_list WHERE avatars_list.url = %s) and "
+                    "`idUser` = %s", (avatar, self.player.id))
 
     @property
     def able_to_launch_game(self):
