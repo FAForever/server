@@ -456,7 +456,7 @@ Thanks,\n\
                     self.sendJSON(data)
 
             elif action == "remove_avatar":
-                idavatar = message["idavatar"]
+                idavatar = message["avatar_id"]
                 iduser = message["user_id"]
                 with (yield from db.db_pool) as conn:
                     cursor = yield from conn.cursor()
@@ -466,7 +466,7 @@ Thanks,\n\
 
             elif action == "add_avatar":
                 who = message['user_id']
-                avatar = message['avatar']
+                avatar = message['avatar_id']
 
                 with (yield from db.db_pool) as conn:
                     cursor = yield from conn.cursor()
