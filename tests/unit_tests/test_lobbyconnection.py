@@ -178,15 +178,17 @@ async def test_register_disposable_email(mocker, lobbyconnection):
     lobbyconnection.generate_expiring_request.assert_not_called()
 
 
-async def test_register_non_disposable_email(mocker, lobbyconnection):
-    lobbyconnection.generate_expiring_request = mock.Mock()
+async def test_register_non_disposable_email(mocker, lobbyconnection: LobbyConnection):
+    lobbyconnection.generate_expiring_request = mock.Mock(return_value=('iv', 'ciphertext', 'verification_hex'))
+    lobbyconnection.player_service.has_blacklisted_domain.return_value = False
+
     await lobbyconnection.command_create_account({
         'login': 'Chris',
         'email': "chriskitching@linux.com",
         'password': "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
     })
 
-    lobbyconnection.generate_expiring_request.assert_any_call()
+    assert lobbyconnection.generate_expiring_request.mock_calls
 
 def test_send_mod_list(mocker, lobbyconnection, mock_games):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
