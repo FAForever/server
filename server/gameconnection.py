@@ -165,7 +165,11 @@ class GameConnection(GpgNetServerProtocol):
         if not result:
             self.abort("Failed connecting to host {}".format(peer))
 
-        await asyncio.wait_for(self.game.joinable, None)
+        try:
+            await asyncio.wait_for(self.game.joinable, 60.0)
+        except asyncio.TimeoutError:
+            self.abort("Host game was never joinable")
+            return
 
         own_addr, peer_addr = result
         self.send_JoinGame(peer_addr,
