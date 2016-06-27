@@ -82,6 +82,12 @@ def test_server_valid_login(loop, lobby_server):
     yield from perform_login(proto, ('Dostya', 'vodka'))
     msg = yield from proto.read_message()
     assert msg == {'command': 'welcome',
+                   'me': {'country': '',
+                          'global_rating': [1500.0, 75.0],
+                          'id': 2,
+                          'ladder_rating': [1500.0, 75.0],
+                          'login': 'Dostya',
+                          'number_of_games': 2},
                    'id': 2,
                    'login': 'Dostya'}
     lobby_server.close()
