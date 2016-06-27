@@ -107,6 +107,7 @@ class GameConnection(GpgNetServerProtocol):
             self._state = GameConnectionState.CONNECTED_TO_HOST
             self.game.add_game_connection(self)
             self.game.host = self.player
+            self.game.joinable.set_result(True)
         elif state == PlayerState.JOINING:
             pass
         else:
@@ -163,10 +164,14 @@ class GameConnection(GpgNetServerProtocol):
         result = await self.EstablishConnection(peer)
         if not result:
             self.abort("Failed connecting to host {}".format(peer))
+
+        await asyncio.wait_for(self.game.joinable, None)
+
         own_addr, peer_addr = result
         self.send_JoinGame(peer_addr,
                            peer.player.login,
                            peer.player.id)
+
         peer.send_ConnectToPeer(own_addr,
                                 self.player.login,
                                 self.player.id)
@@ -183,6 +188,7 @@ class GameConnection(GpgNetServerProtocol):
         self.send_ConnectToPeer(peer_addr,
                                 peer.player.login,
                                 peer.player.id)
+
         peer.send_ConnectToPeer(own_addr,
                                 self.player.login,
                                 self.player.id)
