@@ -758,6 +758,7 @@ Thanks,\n\
         self.sendJSON({
             "command": "welcome",
             "channels": channels,
+            "power": permission_group,
             "me": self.player.to_dict(),
 
             # For backwards compatibility for old clients. For now.
