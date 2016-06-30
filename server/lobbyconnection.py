@@ -746,9 +746,18 @@ Thanks,\n\
                 url, tooltip = avatar
                 self.player.avatar = {"url": url, "tooltip": tooltip}
 
+        # Determine the IRC channels the user should connect to.
+        channels = ["#aeolus"]
+        if self.player.mod:
+            channels.append("#moderators")
+
+        if self.player.clan is not None:
+            channels.append("#%s_clan" % self.player.clan)
+
         # Send the player their own player info.
         self.sendJSON({
             "command": "welcome",
+            "channels": channels,
             "me": self.player.to_dict(),
 
             # For backwards compatibility for old clients. For now.
@@ -790,13 +799,6 @@ Thanks,\n\
         self.send_mod_list()
         self.send_game_list()
         self.send_tutorial_section()
-
-        channels = []
-        if self.player.mod:
-            channels.append("#moderators")
-
-        if self.player.clan is not None:
-            channels.append("#%s_clan" % self.player.clan)
 
         jsonToSend = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
         self.sendJSON(jsonToSend)
