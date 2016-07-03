@@ -57,27 +57,27 @@ class GameStatsService:
         self._category_stats(unit_stats, survived, a_queue, e_queue)
         self._faction_played(faction, survived, a_queue, e_queue)
         self._killed_acus(unit_stats['cdr'].get('kills', 0), survived, a_queue)
-        self._built_mercies(self._count(unit_stats, lambda x: x.get('built', 0), Unit.MERCY), a_queue)
-        self._built_fire_beetles(self._count(unit_stats, lambda x: x.get('built', 0), Unit.FIRE_BEETLE), a_queue)
-        self._built_salvations(self._count(unit_stats, lambda x: x.get('built', 0), Unit.SALVATION), survived, a_queue)
-        self._built_yolona_oss(self._count(unit_stats, lambda x: x.get('built', 0), Unit.YOLONA_OSS), survived, a_queue)
-        self._built_paragons(self._count(unit_stats, lambda x: x.get('built', 0), Unit.PARAGON), survived, a_queue)
-        self._built_atlantis(self._count(unit_stats, lambda x: x.get('built', 0), Unit.ATLANTIS), a_queue)
-        self._built_tempests(self._count(unit_stats, lambda x: x.get('built', 0), Unit.TEMPEST), a_queue)
-        self._built_scathis(self._count(unit_stats, lambda x: x.get('built', 0), Unit.SCATHIS), survived, a_queue)
-        self._built_mavors(self._count(unit_stats, lambda x: x.get('built', 0), Unit.MAVOR), survived, a_queue)
-        self._built_czars(self._count(unit_stats, lambda x: x.get('built', 0), Unit.CZAR), a_queue)
-        self._built_ahwassas(self._count(unit_stats, lambda x: x.get('built', 0), Unit.AHWASSA), a_queue)
-        self._built_ythothas(self._count(unit_stats, lambda x: x.get('built', 0), Unit.YTHOTHA), a_queue)
-        self._built_fatboys(self._count(unit_stats, lambda x: x.get('built', 0), Unit.FATBOY), a_queue)
-        self._built_monkeylords(self._count(unit_stats, lambda x: x.get('built', 0), Unit.MONKEYLORD), a_queue)
-        self._built_galactic_colossus(self._count(unit_stats, lambda x: x.get('built', 0), Unit.GALACTIC_COLOSSUS), a_queue)
-        self._built_soul_rippers(self._count(unit_stats, lambda x: x.get('built', 0), Unit.SOUL_RIPPER), a_queue)
-        self._built_megaliths(self._count(unit_stats, lambda x: x.get('built', 0), Unit.MEGALITH), a_queue)
-        self._built_asfs(self._count(unit_stats, lambda x: x.get('built', 0), *ASFS), a_queue)
+        self._built_mercies(_count_built_units(unit_stats, Unit.MERCY), a_queue)
+        self._built_fire_beetles(_count_built_units(unit_stats, Unit.FIRE_BEETLE), a_queue)
+        self._built_salvations(_count_built_units(unit_stats, Unit.SALVATION), survived, a_queue)
+        self._built_yolona_oss(_count_built_units(unit_stats, Unit.YOLONA_OSS), survived, a_queue)
+        self._built_paragons(_count_built_units(unit_stats, Unit.PARAGON), survived, a_queue)
+        self._built_atlantis(_count_built_units(unit_stats, Unit.ATLANTIS), a_queue)
+        self._built_tempests(_count_built_units(unit_stats, Unit.TEMPEST), a_queue)
+        self._built_scathis(_count_built_units(unit_stats, Unit.SCATHIS), survived, a_queue)
+        self._built_mavors(_count_built_units(unit_stats, Unit.MAVOR), survived, a_queue)
+        self._built_czars(_count_built_units(unit_stats, Unit.CZAR), a_queue)
+        self._built_ahwassas(_count_built_units(unit_stats, Unit.AHWASSA), a_queue)
+        self._built_ythothas(_count_built_units(unit_stats, Unit.YTHOTHA), a_queue)
+        self._built_fatboys(_count_built_units(unit_stats, Unit.FATBOY), a_queue)
+        self._built_monkeylords(_count_built_units(unit_stats, Unit.MONKEYLORD), a_queue)
+        self._built_galactic_colossus(_count_built_units(unit_stats, Unit.GALACTIC_COLOSSUS), a_queue)
+        self._built_soul_rippers(_count_built_units(unit_stats, Unit.SOUL_RIPPER), a_queue)
+        self._built_megaliths(_count_built_units(unit_stats, Unit.MEGALITH), a_queue)
+        self._built_asfs(_count_built_units(unit_stats, *ASFS), a_queue)
         self._built_transports(unit_stats['transportation'].get('built', 0), a_queue)
         self._built_sacus(unit_stats['sacu'].get('built', 0), a_queue)
-        self._lowest_acu_health(self._count(unit_stats, lambda x: x.get('lowest_health', 0), *ACUS), survived, a_queue)
+        self._lowest_acu_health(_count(unit_stats, lambda x: x.get('lowest_health', 0), *ACUS), survived, a_queue)
 
         updated_achievements = await self._achievement_service.execute_batch_update(player.id, a_queue)
         await self._event_service.execute_batch_update(player.id, e_queue)
@@ -251,11 +251,15 @@ class GameStatsService:
     def _record_event(self, event_id, count, events_queue):
         self._event_service.record_event(event_id, count, events_queue)
 
-    @staticmethod
-    def _count(unit_stats, function, *units):
-        result = 0
-        for unit in units:
-            if unit.value in unit_stats:
-                result += function(unit_stats[unit.value])
 
-        return result
+def _count_built_units(unit_stats, *units):
+    return _count(unit_stats, lambda x: x.get('built', 0), *units)
+
+
+def _count(unit_stats, function, *units):
+    result = 0
+    for unit in units:
+        if unit.value in unit_stats:
+            result += function(unit_stats[unit.value])
+
+    return result
