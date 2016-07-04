@@ -42,7 +42,7 @@ class GameStatsService:
         a_queue = []
         # Stores events to batch update
         e_queue = []
-        survived = stats['units']['cdr'].get('lost', 0) == 0
+        survived = stats['units']['cdr'].get('lost', 0) < stats['units']['cdr'].get('built', 1)
         blueprint_stats = stats['blueprints']
         unit_stats = stats['units']
 
@@ -57,7 +57,7 @@ class GameStatsService:
 
         self._faction_played(faction, survived, a_queue, e_queue)
         self._category_stats(unit_stats, survived, a_queue, e_queue)
-        self._killed_acus(unit_stats['cdr'].get('kills', 0), survived, a_queue)
+        self._killed_acus(unit_stats, survived, a_queue)
         self._built_mercies(_count_built_units(blueprint_stats, Unit.MERCY), a_queue)
         self._built_fire_beetles(_count_built_units(blueprint_stats, Unit.FIRE_BEETLE), a_queue)
         self._built_salvations(_count_built_units(blueprint_stats, Unit.SALVATION), survived, a_queue)
@@ -165,11 +165,16 @@ class GameStatsService:
                 self._increment(ACH_YENZYNE, 1, achievements_queue)
                 self._increment(ACH_SUTHANUS, 1, achievements_queue)
 
-    def _killed_acus(self, count, survived, achievements_queue):
-        if count >= 3 and survived:
+    def _killed_acus(self, unit_stats, survived, achievements_queue):
+        acus_per_player = unit_stats['cdr'].get('built', 1)
+        killed_acus = unit_stats['cdr'].get('kills', 0)
+
+        # I'm aware that this is not perfectly correct, but it's edge case and tracking who got killed by whom would
+        # require game code changes
+        if killed_acus >= 3 * acus_per_player and survived:
             self._unlock(ACH_HATTRICK, achievements_queue)
 
-        self._increment(ACH_DONT_MESS_WITH_ME, count, achievements_queue)
+        self._increment(ACH_DONT_MESS_WITH_ME, int(killed_acus / acus_per_player), achievements_queue)
 
     def _built_mercies(self, count, achievements_queue):
         self._increment(ACH_NO_MERCY, count, achievements_queue)
