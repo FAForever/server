@@ -51,6 +51,68 @@
         }
       },
       "units": {
+        "sacu": {
+          "lost": 0,
+          "kills": 0,
+          "built": 110
+        },
+        "cdr": {
+          "lost": 0,
+          "kills": 3,
+          "built": 1
+        },
+        "tech1": {
+          "lost": 12,
+          "kills": 10,
+          "built": 16
+        },
+        "transportation": {
+          "lost": 19,
+          "kills": 29,
+          "built": 101
+        },
+        "engineer": {
+          "lost": 21,
+          "kills": 7,
+          "built": 22
+        },
+        "naval": {
+          "lost": 11,
+          "kills": 22,
+          "built": 33
+        },
+        "tech3": {
+          "lost": 14,
+          "kills": 0,
+          "built": 18
+        },
+        "experimental": {
+          "lost": 19,
+          "kills": 0,
+          "built": 20
+        },
+        "air": {
+          "lost": 2,
+          "kills": 0,
+          "built": 1
+        },
+        "land": {
+          "lost": 5,
+          "kills": 10,
+          "built": 4
+        },
+        "structures": {
+          "lost": 0,
+          "kills": 1,
+          "built": 18
+        },
+        "tech2": {
+          "lost": 13,
+          "kills": 0,
+          "built": 17
+        }
+      },
+      "blueprints": {
         "uel0303": {
           "built": 7
         },
@@ -62,11 +124,6 @@
           "lost": 0,
           "killed": 1
         },
-        "land": {
-          "lost": 5,
-          "kills": 10,
-          "built": 4
-        },
         "xsl0201": {
           "lost": 3,
           "built": 5,
@@ -74,11 +131,6 @@
         },
         "uac1101": {
           "built": 3
-        },
-        "air": {
-          "lost": 2,
-          "kills": 0,
-          "built": 1
         },
         "uab2101": {
           "built": 6
@@ -167,27 +219,7 @@
         "uab2104": {
           "built": 1
         },
-        "experimental": {
-          "lost": 19,
-          "kills": 0,
-          "built": 20
-        },
         "uel0202": {
-          "built": 18
-        },
-        "engineer": {
-          "lost": 21,
-          "kills": 7,
-          "built": 22
-        },
-        "naval": {
-          "lost": 11,
-          "kills": 22,
-          "built": 33
-        },
-        "tech3": {
-          "lost": 14,
-          "kills": 0,
           "built": 18
         },
         "xsb0101": {
@@ -198,11 +230,6 @@
         },
         "uac1501": {
           "built": 3
-        },
-        "structures": {
-          "lost": 0,
-          "kills": 1,
-          "built": 18
         },
         "xsl0101": {
           "lost": 1,
@@ -215,23 +242,8 @@
         "uab1101": {
           "built": 2
         },
-        "tech2": {
-          "lost": 13,
-          "kills": 0,
-          "built": 17
-        },
         "uea0203": {
           "built": 3
-        },
-        "tech1": {
-          "lost": 12,
-          "kills": 10,
-          "built": 16
-        },
-        "transportation": {
-          "lost": 19,
-          "kills": 29,
-          "built": 101
         },
         "uab5101": {
           "built": 151
@@ -252,11 +264,6 @@
           "lost": 0,
           "killed": 2
         },
-        "cdr": {
-          "lost": 0,
-          "kills": 3,
-          "built": 1
-        },
         "uac1301": {
           "built": 3
         },
@@ -266,11 +273,6 @@
         "xsb1103": {
           "lost": 1,
           "built": 12
-        },
-        "sacu": {
-          "lost": 0,
-          "kills": 0,
-          "built": 110
         },
         "uaa0303": {
           "lost": 0,
@@ -345,6 +347,63 @@
       },
       "name": "Oum-Uthinaa",
       "units": {
+        "land": {
+          "lost": 12,
+          "kills": 1,
+          "built": 18
+        },
+        "air": {
+          "lost": 0,
+          "kills": 0,
+          "built": 0
+        },
+        "naval": {
+          "lost": 0,
+          "kills": 0,
+          "built": 0
+        },
+        "experimental": {
+          "lost": 0,
+          "kills": 0,
+          "built": 0
+        },
+        "engineer": {
+          "lost": 8,
+          "kills": 1,
+          "built": 11
+        },
+        "tech1": {
+          "lost": 12,
+          "kills": 0,
+          "built": 45
+        },
+        "tech2": {
+          "lost": 0,
+          "kills": 0,
+          "built": 0
+        },
+        "tech3": {
+          "lost": 0,
+          "kills": 0,
+          "built": 0
+        },
+        "structures": {
+          "lost": 1,
+          "kills": 0,
+          "built": 29
+        },
+        "cdr": {
+          "lost": 1,
+          "kills": 0,
+          "built": 1
+        },
+        "sacu": {
+          "lost": 0,
+          "kills": 0,
+          "built": 0
+        }
+      },
+      "blueprints": {
         "uel0303": {
           "built": 7
         },
@@ -357,11 +416,6 @@
           "killed": 0,
           "lowest_health": 0
         },
-        "land": {
-          "lost": 12,
-          "kills": 1,
-          "built": 18
-        },
         "xsl0201": {
           "lost": 3,
           "built": 5,
@@ -370,39 +424,14 @@
         "uac1101": {
           "built": 3
         },
-        "air": {
-          "lost": 0,
-          "kills": 0,
-          "built": 0
-        },
         "uab2101": {
           "built": 6
         },
         "uab2104": {
           "built": 1
         },
-        "experimental": {
-          "lost": 0,
-          "kills": 0,
-          "built": 0
-        },
         "uel0202": {
           "built": 18
-        },
-        "engineer": {
-          "lost": 8,
-          "kills": 1,
-          "built": 11
-        },
-        "naval": {
-          "lost": 0,
-          "kills": 0,
-          "built": 0
-        },
-        "tech3": {
-          "lost": 0,
-          "kills": 0,
-          "built": 0
         },
         "xsb0101": {
           "built": 1
@@ -412,11 +441,6 @@
         },
         "uac1501": {
           "built": 3
-        },
-        "structures": {
-          "lost": 1,
-          "kills": 0,
-          "built": 29
         },
         "xsl0101": {
           "lost": 1,
@@ -429,18 +453,8 @@
         "uab1101": {
           "built": 2
         },
-        "tech2": {
-          "lost": 0,
-          "kills": 0,
-          "built": 0
-        },
         "uea0203": {
           "built": 3
-        },
-        "tech1": {
-          "lost": 12,
-          "kills": 0,
-          "built": 45
         },
         "uab5101": {
           "built": 151
@@ -449,11 +463,6 @@
           "lost": 7,
           "built": 10,
           "killed": 6
-        },
-        "cdr": {
-          "lost": 1,
-          "kills": 0,
-          "built": 1
         },
         "uac1301": {
           "built": 3
@@ -464,11 +473,6 @@
         "xsb1103": {
           "lost": 1,
           "built": 12
-        },
-        "sacu": {
-          "lost": 0,
-          "kills": 0,
-          "built": 0
         }
       }
     },
@@ -522,49 +526,20 @@
       },
       "name": "civilian",
       "units": {
-        "uel0303": {
-          "built": 7
-        },
-        "uac1401": {
-          "built": 2
-        },
-        "ual0001": {
-          "built": 1,
-          "lost": 1,
-          "killed": 1,
-          "lowest_health": 0
-        },
         "land": {
           "lost": 0,
           "kills": 1,
           "built": 0
-        },
-        "xsl0201": {
-          "lost": 3,
-          "built": 5,
-          "killed": 3
-        },
-        "uac1101": {
-          "built": 3
         },
         "air": {
           "lost": 0,
           "kills": 0,
           "built": 0
         },
-        "uab2101": {
-          "built": 6
-        },
-        "uab2104": {
-          "built": 1
-        },
         "experimental": {
           "lost": 0,
           "kills": 0,
           "built": 0
-        },
-        "uel0202": {
-          "built": 18
         },
         "engineer": {
           "lost": 0,
@@ -581,6 +556,62 @@
           "kills": 0,
           "built": 0
         },
+        "structures": {
+          "lost": 0,
+          "kills": 0,
+          "built": 4
+        },
+        "tech2": {
+          "lost": 0,
+          "kills": 0,
+          "built": 0
+        },
+        "tech1": {
+          "lost": 0,
+          "kills": 1,
+          "built": 4
+        },
+        "cdr": {
+          "lost": 0,
+          "kills": 0,
+          "built": 0
+        },
+        "sacu": {
+          "lost": 0,
+          "kills": 0,
+          "built": 0
+        }
+      },
+      "blueprints": {
+        "uel0303": {
+          "built": 7
+        },
+        "uac1401": {
+          "built": 2
+        },
+        "ual0001": {
+          "built": 1,
+          "lost": 1,
+          "killed": 1,
+          "lowest_health": 0
+        },
+        "xsl0201": {
+          "lost": 3,
+          "built": 5,
+          "killed": 3
+        },
+        "uac1101": {
+          "built": 3
+        },
+        "uab2101": {
+          "built": 6
+        },
+        "uab2104": {
+          "built": 1
+        },
+        "uel0202": {
+          "built": 18
+        },
         "xsb0101": {
           "built": 1
         },
@@ -589,11 +620,6 @@
         },
         "uac1501": {
           "built": 3
-        },
-        "structures": {
-          "lost": 0,
-          "kills": 0,
-          "built": 4
         },
         "xsl0101": {
           "lost": 1,
@@ -606,18 +632,8 @@
         "uab1101": {
           "built": 2
         },
-        "tech2": {
-          "lost": 0,
-          "kills": 0,
-          "built": 0
-        },
         "uea0203": {
           "built": 3
-        },
-        "tech1": {
-          "lost": 0,
-          "kills": 1,
-          "built": 4
         },
         "uab5101": {
           "built": 151
@@ -633,11 +649,6 @@
           "killed": 0,
           "lowest_health": 0
         },
-        "cdr": {
-          "lost": 0,
-          "kills": 0,
-          "built": 0
-        },
         "uac1301": {
           "built": 3
         },
@@ -647,11 +658,6 @@
         "xsb1103": {
           "lost": 1,
           "built": 12
-        },
-        "sacu": {
-          "lost": 0,
-          "kills": 0,
-          "built": 0
         }
       }
     },
@@ -705,49 +711,20 @@
       },
       "name": "civilian",
       "units": {
-        "uel0303": {
-          "built": 7
-        },
-        "uac1401": {
-          "built": 2
-        },
-        "ual0001": {
-          "built": 1,
-          "lost": 1,
-          "killed": 1,
-          "lowest_health": 0
-        },
         "land": {
           "lost": 0,
           "kills": 0,
           "built": 38
-        },
-        "xsl0201": {
-          "lost": 3,
-          "built": 5,
-          "killed": 3
-        },
-        "uac1101": {
-          "built": 3
         },
         "air": {
           "lost": 0,
           "kills": 0,
           "built": 3
         },
-        "uab2101": {
-          "built": 6
-        },
-        "uab2104": {
-          "built": 1
-        },
         "experimental": {
           "lost": 0,
           "kills": 0,
           "built": 0
-        },
-        "uel0202": {
-          "built": 18
         },
         "engineer": {
           "lost": 0,
@@ -764,6 +741,62 @@
           "kills": 0,
           "built": 7
         },
+        "structures": {
+          "lost": 0,
+          "kills": 0,
+          "built": 143
+        },
+        "tech2": {
+          "lost": 0,
+          "kills": 0,
+          "built": 21
+        },
+        "tech1": {
+          "lost": 0,
+          "kills": 0,
+          "built": 130
+        },
+        "cdr": {
+          "lost": 0,
+          "kills": 0,
+          "built": 0
+        },
+        "sacu": {
+          "lost": 0,
+          "kills": 0,
+          "built": 0
+        }
+      },
+      "blueprints": {
+        "uel0303": {
+          "built": 7
+        },
+        "uac1401": {
+          "built": 2
+        },
+        "ual0001": {
+          "built": 1,
+          "lost": 1,
+          "killed": 1,
+          "lowest_health": 0
+        },
+        "xsl0201": {
+          "lost": 3,
+          "built": 5,
+          "killed": 3
+        },
+        "uac1101": {
+          "built": 3
+        },
+        "uab2101": {
+          "built": 6
+        },
+        "uab2104": {
+          "built": 1
+        },
+        "uel0202": {
+          "built": 18
+        },
         "xsb0101": {
           "built": 1
         },
@@ -772,11 +805,6 @@
         },
         "uac1501": {
           "built": 3
-        },
-        "structures": {
-          "lost": 0,
-          "kills": 0,
-          "built": 143
         },
         "xsl0101": {
           "lost": 1,
@@ -789,18 +817,8 @@
         "uab1101": {
           "built": 2
         },
-        "tech2": {
-          "lost": 0,
-          "kills": 0,
-          "built": 21
-        },
         "uea0203": {
           "built": 3
-        },
-        "tech1": {
-          "lost": 0,
-          "kills": 0,
-          "built": 130
         },
         "uab5101": {
           "built": 151
@@ -816,11 +834,6 @@
           "killed": 1,
           "lowest_health": 0
         },
-        "cdr": {
-          "lost": 0,
-          "kills": 0,
-          "built": 0
-        },
         "uac1301": {
           "built": 3
         },
@@ -830,11 +843,6 @@
         "xsb1103": {
           "lost": 1,
           "built": 12
-        },
-        "sacu": {
-          "lost": 0,
-          "kills": 0,
-          "built": 0
         }
       }
     }

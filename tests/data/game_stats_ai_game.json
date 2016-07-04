@@ -1,8 +1,8 @@
 {
   "stats": [
     {
-      "type": "Human",
       "faction": 1,
+      "type": "Human",
       "name": "TestUser",
       "units": {
         "air": {"built": 0, "kills": 0, "lost": 0},
@@ -15,7 +15,9 @@
         "engineer": {"built": 0, "kills": 0, "lost": 0},
         "transportation": {"built": 0, "kills": 0, "lost": 0},
         "sacu": {"built": 0, "kills": 0, "lost": 0},
-        "cdr": {"built": 0, "kills": 1, "lost": 0},
+        "cdr": {"built": 0, "kills": 1, "lost": 0}
+      },
+      "blueprints": {
         "ual0001": {"built": 1, "kills": 1, "lost": 0}
       }
     },
