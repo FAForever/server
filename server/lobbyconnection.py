@@ -801,7 +801,7 @@ Thanks,\n\
         self.send_game_list()
         self.send_tutorial_section()
 
-        jsonToSend = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
+        jsonToSend = {"command": "social", "friends": friends, "foes": foes}
         self.sendJSON(jsonToSend)
 
     @timed
