@@ -216,16 +216,16 @@ class LobbyConnection:
         def reply_no(error_msg):
             self.sendJSON({
                 "command": "registration_response",
-                "result": "FAILURE",
-                "error": error_msg
+                "result": error_msg
             })
 
         if not email_pattern.match(user_email):
-            reply_no("Please use a valid email address.")
+            reply_no("INVALID_EMAIL")
             return
 
+        # Must be between 1 and 20 characters long and not contain a comma for some reason...
         if not username_pattern.match(login):
-            reply_no("Please don't use \",\" in your username.")
+            reply_no("INVALID_USERNAME")
             return
 
         with (yield from db.db_pool) as conn:
@@ -233,14 +233,11 @@ class LobbyConnection:
             yield from cursor.execute("SELECT id FROM `login` WHERE LOWER(`login`) = %s",
                                       (login.lower(),))
             if cursor.rowcount:
-                reply_no("Sorry, that username is not available.")
+                reply_no("USERNAME_TAKEN")
                 return
 
         if self.player_service.has_blacklisted_domain(user_email):
-            # We don't like disposable emails.
-            text = "Dear " + login + ",\n\n\
-Please use a non-disposable email address.\n\n"
-            yield from self.send_email(text, login, user_email, 'Forged Alliance Forever - Account validation')
+            reply_no("DISPOSABLE_EMAIL")
             return
 
         # We want the user to validate their email address before we create their account.

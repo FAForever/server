@@ -162,8 +162,7 @@ async def test_register_invalid_email(mocker, lobbyconnection):
 
     protocol.send_message.assert_any_call({
         'command': 'registration_response',
-        'result': "FAILURE",
-        'error': "Please use a valid email address." # TODO: Yay localisation :/
+        'result': "INVALID_EMAIL"
     })
 
 
