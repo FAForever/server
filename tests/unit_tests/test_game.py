@@ -253,10 +253,30 @@ async def test_compute_rating_balanced_teamgame(game: Game, create_player):
             assert new_rating != Rating(*player.global_rating)
 
 
-async def test_on_game_end_calls_rate_game(game):
+async def test_on_game_end_does_not_call_rate_game_for_single_player(game):
     game.rate_game = CoroMock()
     game.state = GameState.LIVE
     game.launched_at = time.time()
+
+    await game.on_game_end()
+    assert game.state == GameState.ENDED
+    game.rate_game.assert_not_called()
+
+
+async def test_on_game_end_calls_rate_game_with_two_players(game):
+    await game.clear_data()
+    game.rate_game = CoroMock()
+
+    game.state = GameState.LOBBY
+    players = [
+        Player(id=1, login='Dostya', global_rating=(1500, 500)),
+        Player(id=2, login='Rhiza', global_rating=(1500, 500))
+    ]
+    add_connected_players(game, players)
+    await game.launch()
+
+    assert len(game.players) == 2
+
     await game.on_game_end()
     assert game.state == GameState.ENDED
     game.rate_game.assert_any_call()
@@ -306,7 +326,23 @@ async def test_to_dict(game, create_player):
     }
     assert data == expected
 
-async def test_persist_results(game):
+async def test_persist_results_not_called_with_one_player(game):
+    await game.clear_data()
+    game.persist_results = CoroMock()
+
+    game.state = GameState.LOBBY
+    players = [
+        Player(id=1, login='Dostya', global_rating=(1500, 500))
+    ]
+    add_connected_players(game, players)
+    await game.launch()
+    assert len(game.players) == 1
+    await game.add_result(0, 1, 'VICTORY', 5)
+    await game.on_game_end()
+
+    game.persist_results.assert_not_called()
+
+async def test_persist_results_called_with_two_players(game):
     await game.clear_data()
 
     game.state = GameState.LOBBY
