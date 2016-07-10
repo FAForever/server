@@ -1,9 +1,13 @@
 import json
 from functools import partial
 import asyncio
+
+import pkg_resources
 from httplib2 import Http
 from oauth2client.service_account import ServiceAccountCredentials
 from server.config import API_TOKEN_URI, API_BASE_URL
+
+CACERTS_FILE = pkg_resources.resource_filename('static', 'cacerts.txt')
 
 
 class ApiAccessor:
@@ -25,10 +29,13 @@ class ApiAccessor:
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,
-            partial(self.http(player_id).request, API_BASE_URL + path, "POST", headers=headers, body=json.dumps(data)))
+            partial(self.http(player_id).request, API_BASE_URL + path, "POST", headers=headers, body=json.dumps(data))
+        )
 
         return result
 
     def http(self, sub=None):
         credentials = self._service_account_credentials.create_delegated(sub)
-        return credentials.authorize(Http())
+        # FIXME ca_certs=CACERTS_FILE should be used, but it didn't work for some reason.
+        # Since we'll access the API locally over HTTP in future anyway, I decided to just skip validation for now
+        return credentials.authorize(Http(disable_ssl_certificate_validation=True))

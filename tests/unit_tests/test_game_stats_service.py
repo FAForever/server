@@ -9,20 +9,6 @@ from server.stats.event_service import *
 from server.stats.game_stats_service import GameStatsService
 from tests import CoroMock
 
-DEFAULT_UNIT_STATS = {
-    'air': {'built': 0, 'lost': 0, 'killed': 0},
-    'land': {'built': 0, 'lost': 0, 'killed': 0},
-    'naval': {'built': 0, 'lost': 0, 'killed': 0},
-    'experimental': {'built': 0, 'lost': 0, 'killed': 0},
-    'transportation': {'built': 0, 'lost': 0, 'killed': 0},
-    'sacu': {'built': 0, 'lost': 0, 'killed': 0},
-    'cdr': {'built': 0, 'lost': 0, 'killed': 0},
-    'tech1': {'built': 0, 'lost': 0, 'killed': 0},
-    'tech2': {'built': 0, 'lost': 0, 'killed': 0},
-    'tech3': {'built': 0, 'lost': 0, 'killed': 0},
-    'engineer': {'built': 0, 'lost': 0, 'killed': 0}
-}
-
 
 @pytest.fixture()
 def event_service():
@@ -53,6 +39,23 @@ def player():
 @pytest.fixture()
 def game(game_stats_service):
     return Game(1, Mock(), game_stats_service)
+
+
+@pytest.fixture()
+def unit_stats():
+    return {
+        'air': {'built': 0, 'lost': 0, 'kills': 0},
+        'land': {'built': 0, 'lost': 0, 'kills': 0},
+        'naval': {'built': 0, 'lost': 0, 'kills': 0},
+        'experimental': {'built': 0, 'lost': 0, 'kills': 0},
+        'transportation': {'built': 0, 'lost': 0, 'kills': 0},
+        'sacu': {'built': 0, 'lost': 0, 'kills': 0},
+        'cdr': {'built': 1, 'lost': 0, 'kills': 0},
+        'tech1': {'built': 0, 'lost': 0, 'kills': 0},
+        'tech2': {'built': 0, 'lost': 0, 'kills': 0},
+        'tech3': {'built': 0, 'lost': 0, 'kills': 0},
+        'engineer': {'built': 0, 'lost': 0, 'kills': 0}
+    }
 
 
 async def test_process_game_stats(game_stats_service, event_service, achievement_service, player, game):
@@ -148,7 +151,7 @@ async def test_process_game_stats_ai_game(game_stats_service, player, game, achi
     assert len(event_service.mock_calls) == 0
 
 
-async def test_process_game_won_ladder1v1(game_stats_service, player, game, achievement_service, event_service):
+async def test_process_game_won_ladder1v1(game_stats_service, player, game, achievement_service):
     game.game_mode = 'ladder1v1'
 
     with open("tests/data/game_stats_simple_win.json", "r") as stats_file:
@@ -159,8 +162,7 @@ async def test_process_game_won_ladder1v1(game_stats_service, player, game, achi
     achievement_service.unlock.assert_any_call(ACH_FIRST_SUCCESS, [])
 
 
-def test_category_stats_won_more_air(game_stats_service, player, achievement_service):
-    unit_stats = DEFAULT_UNIT_STATS
+def test_category_stats_won_more_air(game_stats_service, player, achievement_service, unit_stats):
     unit_stats['air']['built'] = 3
     unit_stats['land']['built'] = 2
     unit_stats['naval']['built'] = 1
@@ -173,8 +175,7 @@ def test_category_stats_won_more_air(game_stats_service, player, achievement_ser
     assert len(achievement_service.mock_calls) == 3
 
 
-def test_category_stats_won_more_land(game_stats_service, player, achievement_service):
-    unit_stats = DEFAULT_UNIT_STATS
+def test_category_stats_won_more_land(game_stats_service, player, achievement_service, unit_stats):
     unit_stats['air']['built'] = 2
     unit_stats['land']['built'] = 3
     unit_stats['naval']['built'] = 1
@@ -187,8 +188,7 @@ def test_category_stats_won_more_land(game_stats_service, player, achievement_se
     assert len(achievement_service.mock_calls) == 3
 
 
-def test_category_stats_won_more_naval(game_stats_service, player, achievement_service):
-    unit_stats = DEFAULT_UNIT_STATS
+def test_category_stats_won_more_naval(game_stats_service, player, achievement_service, unit_stats):
     unit_stats['air']['built'] = 2
     unit_stats['land']['built'] = 1
     unit_stats['naval']['built'] = 3
@@ -201,8 +201,7 @@ def test_category_stats_won_more_naval(game_stats_service, player, achievement_s
     assert len(achievement_service.mock_calls) == 3
 
 
-def test_category_stats_won_more_naval_and_one_experimental(game_stats_service, player, achievement_service):
-    unit_stats = DEFAULT_UNIT_STATS
+def test_category_stats_won_more_naval_and_one_experimental(game_stats_service, player, achievement_service, unit_stats):
     unit_stats['air']['built'] = 2
     unit_stats['land']['built'] = 1
     unit_stats['naval']['built'] = 3
@@ -218,8 +217,7 @@ def test_category_stats_won_more_naval_and_one_experimental(game_stats_service, 
     assert len(achievement_service.mock_calls) == 4
 
 
-def test_category_stats_won_more_naval_and_three_experimentals(game_stats_service, player, achievement_service):
-    unit_stats = DEFAULT_UNIT_STATS
+def test_category_stats_won_more_naval_and_three_experimentals(game_stats_service, player, achievement_service, unit_stats):
     unit_stats['air']['built'] = 2
     unit_stats['land']['built'] = 1
     unit_stats['naval']['built'] = 3
@@ -315,16 +313,18 @@ def test_faction_played_seraphim_died(game_stats_service, player, achievement_se
     assert len(achievement_service.mock_calls) == 0
 
 
-def test_killed_acus_one_and_survived(game_stats_service, player, achievement_service, event_service):
-    game_stats_service._killed_acus(1, True, [])
+def test_killed_acus_one_and_survived(game_stats_service, achievement_service, event_service, unit_stats):
+    unit_stats['cdr']['kills'] = 1
+    game_stats_service._killed_acus(unit_stats, True, [])
 
     achievement_service.increment.assert_called_once_with(ACH_DONT_MESS_WITH_ME, 1, [])
     assert len(achievement_service.mock_calls) == 1
     assert len(event_service.mock_calls) == 0
 
 
-def test_killed_acus_three_and_survived(game_stats_service, player, achievement_service, event_service):
-    game_stats_service._killed_acus(3, True, [])
+def test_killed_acus_three_and_survived(game_stats_service, achievement_service, event_service, unit_stats):
+    unit_stats['cdr']['kills'] = 3
+    game_stats_service._killed_acus(unit_stats, True, [])
 
     achievement_service.increment.assert_called_once_with(ACH_DONT_MESS_WITH_ME, 3, [])
     achievement_service.unlock.assert_called_once_with(ACH_HATTRICK, [])
@@ -332,8 +332,10 @@ def test_killed_acus_three_and_survived(game_stats_service, player, achievement_
     assert len(event_service.mock_calls) == 0
 
 
-def test_killed_acus_one_and_died(game_stats_service, player, achievement_service, event_service):
-    game_stats_service._killed_acus(1, False, [])
+def test_killed_acus_one_and_died(game_stats_service, player, achievement_service, event_service, unit_stats):
+    unit_stats['cdr']['kills'] = 1
+    unit_stats['cdr']['lost'] = 1
+    game_stats_service._killed_acus(unit_stats, False, [])
 
     achievement_service.increment.assert_called_once_with(ACH_DONT_MESS_WITH_ME, 1, [])
     assert len(achievement_service.mock_calls) == 1

@@ -24,10 +24,10 @@ def test_initialization(game: Game):
 
 def test_instance_logging(game_stats_service):
     logger = logging.getLogger('{}.5'.format(Game.__qualname__))
-    logger.info = mock.Mock()
+    logger.debug = mock.Mock()
     mock_parent = mock.Mock()
     game = Game(5, mock_parent, game_stats_service)
-    logger.info.assert_called_with("{} created".format(game))
+    logger.debug.assert_called_with("{} created".format(game))
 
 
 async def test_validate_game_settings(game: Game):

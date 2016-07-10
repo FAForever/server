@@ -35,14 +35,15 @@ class GameStatsService:
             self._logger.warn("Player {} reported foreign game stats".format(player.login))
             return
 
-        self._logger.info("Processing game stats for player: {}".format(player.login))
+        self._logger.debug("Processing game stats for player: {}".format(player.login))
 
         faction = stats['faction']
         # Stores achievements to batch update
         a_queue = []
         # Stores events to batch update
         e_queue = []
-        survived = stats['units']['cdr']['lost'] == 0
+        survived = stats['units']['cdr'].get('lost', 0) < stats['units']['cdr'].get('built', 1)
+        blueprint_stats = stats['blueprints']
         unit_stats = stats['units']
 
         if survived and game.game_mode == 'ladder1v1':
@@ -54,30 +55,30 @@ class GameStatsService:
         self._increment(ACH_VETERAN, 1, a_queue)
         self._increment(ACH_ADDICT, 1, a_queue)
 
-        self._category_stats(unit_stats, survived, a_queue, e_queue)
         self._faction_played(faction, survived, a_queue, e_queue)
-        self._killed_acus(unit_stats['cdr']['kills'], survived, a_queue)
-        self._built_mercies(self._count(unit_stats, lambda x: x['built'], Unit.MERCY), a_queue)
-        self._built_fire_beetles(self._count(unit_stats, lambda x: x['built'], Unit.FIRE_BEETLE), a_queue)
-        self._built_salvations(self._count(unit_stats, lambda x: x['built'], Unit.SALVATION), survived, a_queue)
-        self._built_yolona_oss(self._count(unit_stats, lambda x: x['built'], Unit.YOLONA_OSS), survived, a_queue)
-        self._built_paragons(self._count(unit_stats, lambda x: x['built'], Unit.PARAGON), survived, a_queue)
-        self._built_atlantis(self._count(unit_stats, lambda x: x['built'], Unit.ATLANTIS), a_queue)
-        self._built_tempests(self._count(unit_stats, lambda x: x['built'], Unit.TEMPEST), a_queue)
-        self._built_scathis(self._count(unit_stats, lambda x: x['built'], Unit.SCATHIS), survived, a_queue)
-        self._built_mavors(self._count(unit_stats, lambda x: x['built'], Unit.MAVOR), survived, a_queue)
-        self._built_czars(self._count(unit_stats, lambda x: x['built'], Unit.CZAR), a_queue)
-        self._built_ahwassas(self._count(unit_stats, lambda x: x['built'], Unit.AHWASSA), a_queue)
-        self._built_ythothas(self._count(unit_stats, lambda x: x['built'], Unit.YTHOTHA), a_queue)
-        self._built_fatboys(self._count(unit_stats, lambda x: x['built'], Unit.FATBOY), a_queue)
-        self._built_monkeylords(self._count(unit_stats, lambda x: x['built'], Unit.MONKEYLORD), a_queue)
-        self._built_galactic_colossus(self._count(unit_stats, lambda x: x['built'], Unit.GALACTIC_COLOSSUS), a_queue)
-        self._built_soul_rippers(self._count(unit_stats, lambda x: x['built'], Unit.SOUL_RIPPER), a_queue)
-        self._built_megaliths(self._count(unit_stats, lambda x: x['built'], Unit.MEGALITH), a_queue)
-        self._built_asfs(self._count(unit_stats, lambda x: x['built'], *ASFS), a_queue)
-        self._built_transports(unit_stats['transportation']['built'], a_queue)
-        self._built_sacus(unit_stats['sacu']['built'], a_queue)
-        self._lowest_acu_health(self._count(unit_stats, lambda x: x.get('lowest_health', 0), *ACUS), survived, a_queue)
+        self._category_stats(unit_stats, survived, a_queue, e_queue)
+        self._killed_acus(unit_stats, survived, a_queue)
+        self._built_mercies(_count_built_units(blueprint_stats, Unit.MERCY), a_queue)
+        self._built_fire_beetles(_count_built_units(blueprint_stats, Unit.FIRE_BEETLE), a_queue)
+        self._built_salvations(_count_built_units(blueprint_stats, Unit.SALVATION), survived, a_queue)
+        self._built_yolona_oss(_count_built_units(blueprint_stats, Unit.YOLONA_OSS), survived, a_queue)
+        self._built_paragons(_count_built_units(blueprint_stats, Unit.PARAGON), survived, a_queue)
+        self._built_atlantis(_count_built_units(blueprint_stats, Unit.ATLANTIS), a_queue)
+        self._built_tempests(_count_built_units(blueprint_stats, Unit.TEMPEST), a_queue)
+        self._built_scathis(_count_built_units(blueprint_stats, Unit.SCATHIS), survived, a_queue)
+        self._built_mavors(_count_built_units(blueprint_stats, Unit.MAVOR), survived, a_queue)
+        self._built_czars(_count_built_units(blueprint_stats, Unit.CZAR), a_queue)
+        self._built_ahwassas(_count_built_units(blueprint_stats, Unit.AHWASSA), a_queue)
+        self._built_ythothas(_count_built_units(blueprint_stats, Unit.YTHOTHA), a_queue)
+        self._built_fatboys(_count_built_units(blueprint_stats, Unit.FATBOY), a_queue)
+        self._built_monkeylords(_count_built_units(blueprint_stats, Unit.MONKEYLORD), a_queue)
+        self._built_galactic_colossus(_count_built_units(blueprint_stats, Unit.GALACTIC_COLOSSUS), a_queue)
+        self._built_soul_rippers(_count_built_units(blueprint_stats, Unit.SOUL_RIPPER), a_queue)
+        self._built_megaliths(_count_built_units(blueprint_stats, Unit.MEGALITH), a_queue)
+        self._built_asfs(_count_built_units(blueprint_stats, *ASFS), a_queue)
+        self._built_transports(unit_stats['transportation'].get('built', 0), a_queue)
+        self._built_sacus(unit_stats['sacu'].get('built', 0), a_queue)
+        self._lowest_acu_health(_count(blueprint_stats, lambda x: x.get('lowest_health', 0), *ACUS), survived, a_queue)
 
         updated_achievements = await self._achievement_service.execute_batch_update(player.id, a_queue)
         await self._event_service.execute_batch_update(player.id, e_queue)
@@ -85,28 +86,28 @@ class GameStatsService:
         player.lobby_connection.send_updated_achievements(updated_achievements)
 
     def _category_stats(self, unit_stats, survived, achievements_queue, events_queue):
-        built_air = unit_stats['air']['built']
-        built_land = unit_stats['land']['built']
-        built_naval = unit_stats['naval']['built']
-        built_experimentals = unit_stats['experimental']['built']
+        built_air = unit_stats['air'].get('built', 0)
+        built_land = unit_stats['land'].get('built', 0)
+        built_naval = unit_stats['naval'].get('built', 0)
+        built_experimentals = unit_stats['experimental'].get('built', 0)
 
         self._record_event(EVENT_BUILT_AIR_UNITS, built_air, events_queue)
-        self._record_event(EVENT_LOST_AIR_UNITS, unit_stats['air']['lost'], events_queue)
+        self._record_event(EVENT_LOST_AIR_UNITS, unit_stats['air'].get('lost', 0), events_queue)
         self._record_event(EVENT_BUILT_LAND_UNITS, built_land, events_queue)
-        self._record_event(EVENT_LOST_LAND_UNITS, unit_stats['land']['lost'], events_queue)
+        self._record_event(EVENT_LOST_LAND_UNITS, unit_stats['land'].get('lost', 0), events_queue)
         self._record_event(EVENT_BUILT_NAVAL_UNITS, built_naval, events_queue)
-        self._record_event(EVENT_LOST_NAVAL_UNITS, unit_stats['naval']['lost'], events_queue)
-        self._record_event(EVENT_LOST_ACUS, unit_stats['cdr']['lost'], events_queue)
-        self._record_event(EVENT_BUILT_TECH_1_UNITS, unit_stats['tech1']['built'], events_queue)
-        self._record_event(EVENT_LOST_TECH_1_UNITS, unit_stats['tech1']['lost'], events_queue)
-        self._record_event(EVENT_BUILT_TECH_2_UNITS, unit_stats['tech2']['built'], events_queue)
-        self._record_event(EVENT_LOST_TECH_2_UNITS, unit_stats['tech2']['lost'], events_queue)
-        self._record_event(EVENT_BUILT_TECH_3_UNITS, unit_stats['tech3']['built'], events_queue)
-        self._record_event(EVENT_LOST_TECH_3_UNITS, unit_stats['tech3']['lost'], events_queue)
+        self._record_event(EVENT_LOST_NAVAL_UNITS, unit_stats['naval'].get('lost', 0), events_queue)
+        self._record_event(EVENT_LOST_ACUS, unit_stats['cdr'].get('lost', 0), events_queue)
+        self._record_event(EVENT_BUILT_TECH_1_UNITS, unit_stats['tech1'].get('built', 0), events_queue)
+        self._record_event(EVENT_LOST_TECH_1_UNITS, unit_stats['tech1'].get('lost', 0), events_queue)
+        self._record_event(EVENT_BUILT_TECH_2_UNITS, unit_stats['tech2'].get('built', 0), events_queue)
+        self._record_event(EVENT_LOST_TECH_2_UNITS, unit_stats['tech2'].get('lost', 0), events_queue)
+        self._record_event(EVENT_BUILT_TECH_3_UNITS, unit_stats['tech3'].get('built', 0), events_queue)
+        self._record_event(EVENT_LOST_TECH_3_UNITS, unit_stats['tech3'].get('lost', 0), events_queue)
         self._record_event(EVENT_BUILT_EXPERIMENTALS, built_experimentals, events_queue)
-        self._record_event(EVENT_LOST_EXPERIMENTALS, unit_stats['experimental']['lost'], events_queue)
-        self._record_event(EVENT_BUILT_ENGINEERS, unit_stats['engineer']['built'], events_queue)
-        self._record_event(EVENT_LOST_ENGINEERS, unit_stats['engineer']['lost'], events_queue)
+        self._record_event(EVENT_LOST_EXPERIMENTALS, unit_stats['experimental'].get('lost', 0), events_queue)
+        self._record_event(EVENT_BUILT_ENGINEERS, unit_stats['engineer'].get('built', 0), events_queue)
+        self._record_event(EVENT_LOST_ENGINEERS, unit_stats['engineer'].get('lost', 0), events_queue)
 
         if survived:
             if built_air > built_land and built_air > built_naval:
@@ -164,11 +165,16 @@ class GameStatsService:
                 self._increment(ACH_YENZYNE, 1, achievements_queue)
                 self._increment(ACH_SUTHANUS, 1, achievements_queue)
 
-    def _killed_acus(self, count, survived, achievements_queue):
-        if count >= 3 and survived:
+    def _killed_acus(self, unit_stats, survived, achievements_queue):
+        acus_per_player = unit_stats['cdr'].get('built', 1)
+        killed_acus = unit_stats['cdr'].get('kills', 0)
+
+        # I'm aware that this is not perfectly correct, but it's edge case and tracking who got killed by whom would
+        # require game code changes
+        if killed_acus >= 3 * acus_per_player and survived:
             self._unlock(ACH_HATTRICK, achievements_queue)
 
-        self._increment(ACH_DONT_MESS_WITH_ME, count, achievements_queue)
+        self._increment(ACH_DONT_MESS_WITH_ME, int(killed_acus / acus_per_player), achievements_queue)
 
     def _built_mercies(self, count, achievements_queue):
         self._increment(ACH_NO_MERCY, count, achievements_queue)
@@ -251,11 +257,15 @@ class GameStatsService:
     def _record_event(self, event_id, count, events_queue):
         self._event_service.record_event(event_id, count, events_queue)
 
-    @staticmethod
-    def _count(unit_stats, function, *units):
-        result = 0
-        for unit in units:
-            if unit.value in unit_stats:
-                result += function(unit_stats[unit.value])
 
-        return result
+def _count_built_units(stats, *units):
+    return _count(stats, lambda x: x.get('built', 0), *units)
+
+
+def _count(stats, function, *units):
+    result = 0
+    for unit in units:
+        if unit.value in stats:
+            result += function(stats[unit.value])
+
+    return result
