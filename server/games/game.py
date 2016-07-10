@@ -496,7 +496,7 @@ class Game(BaseGame):
             # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
             # so, and grab the map id at the same time.
             await cursor.execute("SELECT id, ranked FROM map_version "
-                                 "WHERE filename = %s", self.map_file_path)
+                                 "WHERE filename = %s", (self.map_file_path,))
             result = await cursor.fetchone()
             if result:
                 (self.map_id, ranked) = result
