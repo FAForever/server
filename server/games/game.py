@@ -134,7 +134,7 @@ class Game(BaseGame):
                             'RestrictedCategories': 0}
 
         self.mods = {}
-        self._logger.info("{} created".format(self))
+        self._logger.debug("{} created".format(self))
         asyncio.get_event_loop().create_task(self.timeout_game())
 
     async def timeout_game(self):
