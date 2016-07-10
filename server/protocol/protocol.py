@@ -11,7 +11,7 @@ class Protocol(metaclass=ABCMeta):
         :raises: IncompleteReadError
         :return dict: Parsed message
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def send_message(self, message: dict) -> None:
@@ -20,7 +20,7 @@ class Protocol(metaclass=ABCMeta):
 
         :param message: Message to send
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def send_messages(self, messages: List[dict]) -> None:
@@ -31,7 +31,7 @@ class Protocol(metaclass=ABCMeta):
 
         :param messages:
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def send_raw(self, data: bytes) -> None:
@@ -40,4 +40,4 @@ class Protocol(metaclass=ABCMeta):
 
         :param data: bytes to send
         """
-        pass
+        pass  # pragma: no cover

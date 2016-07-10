@@ -40,7 +40,7 @@ class GameConnection(GpgNetServerProtocol):
         """
         super().__init__()
         self.lobby_connection = lobby_connection
-        self._logger.info('GameConnection initializing')
+        self._logger.debug('GameConnection initializing')
         self._state = GameConnectionState.INITIALIZING
         self._waiters = defaultdict(list)
         self.loop = loop

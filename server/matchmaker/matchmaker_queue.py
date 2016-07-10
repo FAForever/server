@@ -16,7 +16,7 @@ class MatchmakerQueue:
         self.queue_name = queue_name
         self.rating_prop = 'ladder_rating'
         self.queue = OrderedDict()
-        self._logger.info("MatchmakerQueue initialized for {}".format(queue_name))
+        self._logger.debug("MatchmakerQueue initialized for {}".format(queue_name))
 
     def push(self, search: Search):
         """

@@ -31,24 +31,45 @@ delete from version_lobby;
 insert into version_lobby (id, `file`, version) values (1, 'some-installer.msi', '0.10.125');
 
 -- Sample maps
-delete from table_map;
-insert into table_map (id, filename, `mapuid`)
+delete from map;
+insert into map (id, display_name, map_type, battle_type, author)
 values
-(1, 'scmp_001/scmp_001.scenario_info.lua', 1),
-(2, 'scmp_002/scmp_002.scenario_info.lua', 2),
-(3, 'scmp_003/scmp_003.scenario_info.lua', 3),
-(4, 'scmp_004/scmp_004.scenario_info.lua', 4),
-(5, 'scmp_005/scmp_005.scenario_info.lua', 5),
-(6, 'scmp_006/scmp_006.scenario_info.lua', 6),
-(7, 'scmp_007/scmp_007.scenario_info.lua', 7),
-(8, 'scmp_008/scmp_008.scenario_info.lua', 8),
-(9, 'scmp_009/scmp_009.scenario_info.lua', 9),
-(10, 'scmp_010/scmp_010.scenario_info.lua', 11),
-(11, 'scmp_011/scmp_011.scenario_info.lua', 12),
-(12, 'scmp_012/scmp_012.scenario_info.lua', 13),
-(13, 'scmp_013/scmp_014.scenario_info.lua', 14),
-(14, 'scmp_014/scmp_014.scenario_info.lua', 15),
-(15, 'scmp_015/scmp_015.scenario_info.lua', 16);
+(1, 'SCMP_001', 'FFA', 'skirmish', 1),
+(2, 'SCMP_002', 'FFA', 'skirmish', 1),
+(3, 'SCMP_003', 'FFA', 'skirmish', 1),
+(4, 'SCMP_004', 'FFA', 'skirmish', 1),
+(5, 'SCMP_005', 'FFA', 'skirmish', 1),
+(6, 'SCMP_006', 'FFA', 'skirmish', 2),
+(7, 'SCMP_007', 'FFA', 'skirmish', 2),
+(8, 'SCMP_008', 'FFA', 'skirmish', 2),
+(9, 'SCMP_009', 'FFA', 'skirmish', 2),
+(10, 'SCMP_010', 'FFA', 'skirmish', 3),
+(11, 'SCMP_011', 'FFA', 'skirmish', 3),
+(12, 'SCMP_012', 'FFA', 'skirmish', 3),
+(13, 'SCMP_013', 'FFA', 'skirmish', 3),
+(14, 'SCMP_014', 'FFA', 'skirmish', 3),
+(15, 'SCMP_015', 'FFA', 'skirmish', 3);
+
+delete from map_version;
+insert into map_version (description, max_players, width, height, version, filename, hidden, map_id)
+values
+('SCMP 001', 8, 5, 5, 1, 'maps/scmp_001.v0001.zip', 0, 1),
+('SCMP 002', 8, 5, 5, 1, 'maps/scmp_002.v0001.zip', 0, 2),
+('SCMP 003', 8, 5, 5, 1, 'maps/scmp_003.v0001.zip', 0, 3),
+('SCMP 004', 8, 5, 5, 1, 'maps/scmp_004.v0001.zip', 0, 4),
+('SCMP 005', 8, 5, 5, 1, 'maps/scmp_005.v0001.zip', 0, 5),
+('SCMP 006', 8, 5, 5, 1, 'maps/scmp_006.v0001.zip', 0, 6),
+('SCMP 007', 8, 5, 5, 1, 'maps/scmp_007.v0001.zip', 0, 7),
+('SCMP 008', 8, 5, 5, 1, 'maps/scmp_008.v0001.zip', 0, 8),
+('SCMP 009', 8, 5, 5, 1, 'maps/scmp_009.v0001.zip', 0, 9),
+('SCMP 010', 8, 5, 5, 1, 'maps/scmp_010.v0001.zip', 0, 10),
+('SCMP 011', 8, 5, 5, 1, 'maps/scmp_011.v0001.zip', 0, 11),
+('SCMP 012', 8, 5, 5, 1, 'maps/scmp_012.v0001.zip', 0, 12),
+('SCMP 013', 8, 5, 5, 1, 'maps/scmp_013.v0001.zip', 0, 13),
+('SCMP 014', 8, 5, 5, 1, 'maps/scmp_014.v0001.zip', 0, 14),
+('SCMP 015', 8, 5, 5, 1, 'maps/scmp_015.v0001.zip', 0, 15),
+('SCMP 015', 8, 5, 5, 2, 'maps/scmp_015.v0002.zip', 0, 15),
+('SCMP 015', 8, 10, 10, 3, 'maps/scmp_015.v0003.zip', 0, 15);
 
 -- game_stats table
 delete from game_stats;
@@ -74,3 +95,9 @@ insert into table_mod (uid, `name`,
 VALUES ('foo', 'test-mod', 1, 'baz', 0, NOW(), 'foobar.zip', 'foobar.png', '', 0),
        ('bar', 'test-mod2', 1, 'baz', 0, NOW(), 'foobar2.zip', 'foobar2.png', '', 0),
        ('EA040F8E-857A-4566-9879-0D37420A5B9D', 'test-mod3', 1, 'baz', 0, NOW(), 'foobar3.zip', 'foobar3.png', '', 1);
+
+-- sample avatars
+delete from avatars;
+delete from avatars_list;
+insert into avatars_list (id, url, tooltip) values (1, "http://content.faforever.com/faf/avatars/qai2.png", "QAI");
+insert into avatars (idUser, idAvatar, selected) values (2, 1, 0);
