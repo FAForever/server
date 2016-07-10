@@ -262,6 +262,8 @@ async def test_on_game_end_does_not_call_rate_game_for_single_player(game):
     assert game.state == GameState.ENDED
     game.rate_game.assert_not_called()
 
+    assert game.validity is ValidityState.SINGLE_PLAYER
+
 
 async def test_on_game_end_calls_rate_game_with_two_players(game):
     await game.clear_data()
@@ -280,6 +282,8 @@ async def test_on_game_end_calls_rate_game_with_two_players(game):
     await game.on_game_end()
     assert game.state == GameState.ENDED
     game.rate_game.assert_any_call()
+
+    assert game.validity is ValidityState.VALID
 
 
 async def test_to_dict(game, create_player):

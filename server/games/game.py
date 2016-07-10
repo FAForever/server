@@ -270,6 +270,9 @@ class Game(BaseGame):
             elif self.state == GameState.LIVE:
                 self._logger.info("Game finished normally")
 
+                for player in self._players_with_unsent_army_stats:
+                    await self._process_army_stats_for_player(player)
+
                 if self.desyncs > 20:
                     await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
                     return
@@ -277,13 +280,14 @@ class Game(BaseGame):
                 if time.time() - self.launched_at > 4*60 and self.is_mutually_agreed_draw:
                     self._logger.info("Game is a mutual draw")
                     await self.mark_invalid(ValidityState.MUTUAL_DRAW)
+                    return
 
-                if len(self.players) > 1:
-                    await self.persist_results()
-                    await self.rate_game()
+                if len(self.players) < 2:
+                    await self.mark_invalid(ValidityState.SINGLE_PLAYER)
+                    return
 
-                for player in self._players_with_unsent_army_stats:
-                    await self._process_army_stats_for_player(player)
+                await self.persist_results()
+                await self.rate_game()
         except Exception as e:
             self._logger.exception("Error during game end: {}".format(e))
         finally:
