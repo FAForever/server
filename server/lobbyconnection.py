@@ -66,9 +66,17 @@ class ClientError(Exception):
 
 
 class AuthenticationError(Exception):
-    def __init__(self, message, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.message = message
+
+
+class BannedError(Exception):
+    """
+    Thrown when a user who is banned attempts to do something which causes us to notice.
+    """
+    def __init__(self, until, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.until = until
 
 
 @with_logger
@@ -143,11 +151,6 @@ class LobbyConnection:
                 await handler(message)
             else:
                 handler(message)
-        except AuthenticationError as ex:
-            self.protocol.send_message(
-                {'command': 'authentication_failed',
-                 'text': ex.message}
-            )
         except ClientError as ex:
             self.protocol.send_message(
                 {'command': 'notice',
@@ -156,9 +159,6 @@ class LobbyConnection:
             )
             if not ex.recoverable:
                 self.abort(ex.message)
-        except (KeyError, ValueError) as ex:
-            self._logger.exception(ex)
-            self.abort("Garbage command: {}".format(message))
         except Exception as ex:
             self.protocol.send_message({'command': 'invalid'})
             self._logger.exception(ex)
@@ -505,14 +505,14 @@ Thanks,\n\
                                   "WHERE LOWER(login)=%s", (login.lower(), ))
 
         if cursor.rowcount != 1:
-            raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
+            raise AuthenticationError
 
         player_id, real_username, dbPassword, steamid, ban_reason, ban_expiry = await cursor.fetchone()
         if dbPassword != password:
-            raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
+            raise AuthenticationError
 
         if ban_reason is not None and ban_expiry is not None and datetime.datetime.now() < ban_expiry:
-            raise ClientError("You are banned from FAF.\n Reason :\n {}".format(ban_reason))
+            raise BannedError(ban_expiry)
 
         self._logger.debug("Login from: {}, {}, {}".format(player_id, login, self.session))
 
@@ -682,7 +682,17 @@ Thanks,\n\
         # Check their client is reporting the right version number.
         async with db.db_pool.get() as conn:
             cursor = await conn.cursor()
-            player_id, login, steamid = await self.check_user_login(cursor, login, password)
+            try:
+                player_id, login, steamid = await self.check_user_login(cursor, login, password)
+            except AuthenticationError: # Username or password wrong.
+                self.protocol.send_message({'command': 'authentication_failed'})
+                self.abort("Authentication failure")
+                return
+            except BannedError as e: # Player is banned.
+                self.protocol.send_message({'command': 'banned', 'remaining': (e.until - datetime.datetime.now()).total_seconds()})
+                self.abort("Banned")
+                return
+
             server.stats.incr('user.logins')
             server.stats.gauge('users.online', len(self.player_service))
 

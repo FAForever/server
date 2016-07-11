@@ -71,8 +71,7 @@ async def test_server_invalid_login(loop, lobby_server):
     proto = await connect_client(lobby_server)
     await perform_login(proto, ('Cat', 'epic'))
     msg = await proto.read_message()
-    assert msg == {'command': 'authentication_failed',
-                   'text': 'Login not found or password incorrect. They are case sensitive.'}
+    assert msg == {'command': 'authentication_failed'}
     proto.close()
 
 @asyncio.coroutine

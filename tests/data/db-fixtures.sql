@@ -5,6 +5,11 @@ delete from login;
 insert into login (id, login, email, password) values (1, 'test', 'test@example.com', SHA2('test_password', 256));
 insert into login (id, login, email, password) values (2, 'Dostya', 'dostya@cybran.example.com', SHA2('vodka', 256));
 insert into login (id, login, email, password) values (3, 'Rhiza', 'rhiza@aeon.example.com', SHA2('puff_the_magic_dragon', 256));
+insert into login (id, login, email, password) values (4, 'banned', 'banned@example.com', SHA2('test_password', 256));
+
+-- Ban the test-banned user.
+delete from lobby_ban;
+insert into lobby_ban (idUser, reason, expires_at) values (4, "testing", NOW() + INTERVAL 100 YEAR);
 
 -- global rating
 delete from global_rating;
@@ -25,6 +30,7 @@ values
 -- UniqueID_exempt
 delete from uniqueid_exempt;
 insert into uniqueid_exempt (user_id, reason) values (1, 'Because test');
+insert into uniqueid_exempt (user_id, reason) values (4, 'Because test');
 
 -- Lobby version table
 delete from version_lobby;

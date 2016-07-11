@@ -287,3 +287,30 @@ async def test_command_avatar_select(mocker, lobbyconnection: LobbyConnection, m
         await cursor.execute("SELECT selected from avatars where idUser=2")
         result = await cursor.fetchone()
         assert result == (1,)
+
+async def test_invalid_password(mocker, lobbyconnection: LobbyConnection):
+    protocol = mocker.patch.object(lobbyconnection, 'protocol')
+
+    # The test account is uid-exempt in the test database.
+    await lobbyconnection.command_hello({
+        'login': 'test',
+        'password': "wrong"
+    })
+
+    protocol.send_message.assert_any_call({
+        "command": "authentication_failed"
+    })
+
+async def test_banned_user(mocker, lobbyconnection: LobbyConnection):
+    protocol = mocker.patch.object(lobbyconnection, 'protocol')
+
+    # The test account is uid-exempt in the test database.
+    await lobbyconnection.command_hello({
+        'login': 'banned',
+        'password': "10a6e6cc8311a3e2bcc09bf6c199adecd5dd59408c343e926b129c4914f3cb01"
+    })
+
+    # Check we got a banned error with a timestamp in the future.
+    msg = protocol.send_message.call_args[0][0]
+    assert(msg["command"] == "banned")
+    assert(msg["remaining"] > 0)
