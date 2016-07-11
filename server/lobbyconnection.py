@@ -511,7 +511,7 @@ Thanks,\n\
         if dbPassword != password:
             raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
 
-        if ban_reason is not None and ban_expiry is not None and datetime.datetime.now() < ban_expiry:
+        if ban_reason is not None and datetime.datetime.now() < ban_expiry:
             raise ClientError("You are banned from FAF.\n Reason :\n {}".format(ban_reason))
 
         self._logger.debug("Login from: {}, {}, {}".format(player_id, login, self.session))
