@@ -119,7 +119,6 @@ class Game(BaseGame):
         self.map_scenario_path = None
         self.password = None
         self._players = []
-        self.gameType = 0
         self.AIs = {}
         self.desyncs = 0
         self.validity = ValidityState.VALID
@@ -137,11 +136,12 @@ class Game(BaseGame):
 
         self.mods = {}
         self._logger.debug("{} created".format(self))
-        asyncio.get_event_loop().call_later(20, self.timeout_game)
+        asyncio.get_event_loop().create_task(self.timeout_game())
 
-    def timeout_game(self):
+    async def timeout_game(self):
+        await asyncio.sleep(20)
         if self.state == GameState.INITIALIZING:
-            self.state = GameState.ENDED
+            await self.on_game_end()
 
     @property
     def armies(self):
@@ -502,15 +502,13 @@ class Game(BaseGame):
 
             # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
             # so, and grab the map id at the same time.
-            await cursor.execute("SELECT table_map.id as map_id, table_map_unranked.id as unranked "
-                                 "FROM table_map LEFT JOIN table_map_unranked "
-                                 "ON table_map.id = table_map_unranked.id "
-                                 "WHERE table_map.filename = %s", (self.map_file_path,))
+            await cursor.execute("SELECT id, ranked FROM map_version "
+                                 "WHERE filename = %s", (self.map_file_path,))
             result = await cursor.fetchone()
             if result:
-                (self.map_id, blacklist_flag) = result
+                (self.map_id, ranked) = result
 
-                if blacklist_flag:
+                if not ranked:
                     await self.mark_invalid(ValidityState.BAD_MAP)
 
             modId = self.game_service.featured_mods[self.game_mode].id
@@ -669,7 +667,6 @@ class Game(BaseGame):
             "map_file_path": self.map_file_path,
             "host": self.host.login if self.host else '',
             "num_players": len(self.players),
-            "game_type": self.gameType,
             "max_players": self.max_players,
             "launched_at": self.launched_at,
             "teams": {
