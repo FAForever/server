@@ -306,7 +306,7 @@ Thanks,\n\
             }),
             headers=headers)
         resp_text = await resp.text()
-        self._logger.info("Mandrill response: {}".format(resp_text))
+        self._logger.debug("Mandrill response: {}".format(resp_text))
 
     @timed()
     def send_tutorial_section(self):
@@ -425,7 +425,7 @@ Thanks,\n\
             if action == "closeFA":
                 player = self.player_service[message['user_id']]
                 if player:
-                    self._logger.info('Administrative action: {} closed game for {}'.format(self.player, player))
+                    self._logger.warn('Administrative action: {} closed game for {}'.format(self.player, player))
                     player.lobby_connection.sendJSON(dict(command="notice", style="kill"))
                     player.lobby_connection.sendJSON(dict(command="notice", style="info",
                                        text=("Your game was closed by an administrator ({admin_name}). "
@@ -436,7 +436,7 @@ Thanks,\n\
             elif action == "closelobby":
                 player = self.player_service[message['user_id']]
                 if player:
-                    self._logger.info('Administrative action: {} closed client for {}'.format(self.player, player))
+                    self._logger.warn('Administrative action: {} closed client for {}'.format(self.player, player))
                     player.lobby_connection.kick(
                         message=("Your client was closed by an administrator ({admin_name}). "
                          "Please refer to our rules for the lobby/game here {rule_link}."
@@ -705,7 +705,7 @@ Thanks,\n\
             try:
                 await cursor.execute("UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s", (irc_pass, login))
             except (pymysql.OperationalError, pymysql.ProgrammingError):
-                self._logger.info("Failure updating NickServ password for {}".format(login))
+                self._logger.error("Failure updating NickServ password for {}".format(login))
 
         permission_group = self.player_service.get_permission_group(player_id)
         self.player = Player(login=str(login),
@@ -746,16 +746,29 @@ Thanks,\n\
                 url, tooltip = avatar
                 self.player.avatar = {"url": url, "tooltip": tooltip}
 
-        self.sendJSON(dict(command="welcome", id=self.player.id, login=login))
+        # Send the player their own player info.
+        self.sendJSON({
+            "command": "welcome",
+            "me": self.player.to_dict(),
 
-        # Tell player about everybody online
+            # For backwards compatibility for old clients. For now.
+            "id": self.player.id,
+            "login": login
+        })
+
+        # Tell player about everybody online. This must happen after "welcome".
         self.sendJSON(
             {
                 "command": "player_info",
                 "players": [player.to_dict() for player in self.player_service]
             }
         )
-        # Tell everyone else online about us
+
+        # Tell everyone else online about us. This must happen after all the player_info messages.
+        # This ensures that no other client will perform an operation that interacts with the
+        # incoming user, allowing the client to make useful assumptions: it can be certain it has
+        # initialised its local player service before it is going to get messages that want to
+        # query it.
         self.player_service.mark_dirty(self.player)
 
         friends = []
@@ -943,7 +956,7 @@ Thanks,\n\
         password = message.get('password')
 
         game = self.game_service.create_game(**{
-            'visibility': VisibilityState.to_string(visibility),
+            'visibility': visibility,
             'game_mode': mod.lower(),
             'host': self.player,
             'name': title if title else self.player.login,

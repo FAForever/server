@@ -1,5 +1,6 @@
 import logging
 from unittest import mock
+from mock import patch
 
 import pytest
 import time
@@ -24,10 +25,10 @@ def test_initialization(game: Game):
 
 def test_instance_logging(game_stats_service):
     logger = logging.getLogger('{}.5'.format(Game.__qualname__))
-    logger.info = mock.Mock()
+    logger.debug = mock.Mock()
     mock_parent = mock.Mock()
     game = Game(5, mock_parent, game_stats_service)
-    logger.info.assert_called_with("{} created".format(game))
+    logger.debug.assert_called_with("{} created".format(game))
 
 
 async def test_validate_game_settings(game: Game):
@@ -114,6 +115,13 @@ async def test_game_end_when_no_more_connections(game: Game, mock_game_connectio
     await game.remove_game_connection(mock_game_connection)
 
     game.on_game_end.assert_any_call()
+
+@patch('asyncio.sleep', return_value=None)
+async def test_game_marked_dirty_when_timed_out(game: Game):
+    game.state = GameState.INITIALIZING
+    await game.timeout_game()
+    assert game.state == GameState.ENDED
+    assert game in game.game_service.dirty_games
 
 async def test_clear_slot(game: Game, mock_game_connection: GameConnection):
     game.state = GameState.LOBBY
@@ -295,7 +303,6 @@ async def test_to_dict(game, create_player):
         "map_file_path": game.map_file_path,
         "host": game.host.login,
         "num_players": len(game.players),
-        "game_type": game.gameType,
         "max_players": game.max_players,
         "launched_at": game.launched_at,
         "teams": {

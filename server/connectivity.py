@@ -127,10 +127,10 @@ class Connectivity:
     async def wait_for_natpacket(self, message: str, sender: Address=None):
         fut = asyncio.Future()
         self._nat_packets[message] = fut
-        self._logger.info("Awaiting nat packet {} from {}".format(message, sender or 'anywhere'))
+        self._logger.debug("Awaiting nat packet {} from {}".format(message, sender or 'anywhere'))
         addr, msg = await fut
         if fut.done():
-            self._logger.info("Received {} from {}".format(msg, addr))
+            self._logger.debug("Received {} from {}".format(msg, addr))
             if (addr == sender or sender is None) and msg == message:
                 return addr, msg
         else:
@@ -224,7 +224,7 @@ class ConnectivityTest:
             await self.send_natpacket(self.remote_addr, message)
         try:
             result = await asyncio.wait_for(received_packet, 1)
-            self._logger.info("Result: {}".format(result))
+            self._logger.debug("Result: {}".format(result))
             return True
         except (CancelledError, TimeoutError):
             return False
