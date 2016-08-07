@@ -131,3 +131,14 @@ async def test_json_stats(game_connection, game_stats_service, players, game):
 async def test_handle_action_EnforceRating(game: Game, game_connection: GameConnection):
     await game_connection.handle_action('EnforceRating', [])
     assert game.enforce_rating == True
+
+async def test_handle_action_TeamkillReport(game, game_connection):
+    game.launch = CoroMock()
+    await game_connection.handle_action('TeamkillReport', ['200', '2', 'Dostya', '3', 'Rhiza'])
+
+    import server.db as db
+    async with db.db_pool.get() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("select game_id from teamkills where victim=2 and teamkiller=3 and game_id=%s and gametime=200", (game.id))
+
+        assert (game.id,) == await cursor.fetchone()
