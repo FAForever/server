@@ -11,7 +11,9 @@ LOBBY_NAT_ADDRESSES = list(map(lambda p: ('0.0.0.0', p), LOBBY_UDP_PORTS))
 
 logging.getLogger('aiomeasures').setLevel(logging.INFO)
 
-trueskill.setup(mu=1500, sigma=500, beta=250, tau=5, draw_probability=0.10)
+# Credit to Axle for parameter changes, see: http://forums.faforever.com/viewtopic.php?f=45&t=11698#p119599
+# Optimum values for ladder here, using them for global as well.
+trueskill.setup(mu=1500, sigma=500, beta=240, tau=10, draw_probability=0.10)
 
 STATSD_SERVER = os.getenv('STATSD_SERVER', '127.0.0.1:8125')
 
