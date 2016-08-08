@@ -223,7 +223,7 @@ class ConnectivityTest:
         for i in range(0, 3):
             await self.send_natpacket(self.remote_addr, message)
         try:
-            result = await asyncio.wait_for(received_packet, 1)
+            result = await asyncio.wait_for(received_packet, 10)
             self._logger.debug("Result: {}".format(result))
             return True
         except (CancelledError, TimeoutError):
@@ -241,7 +241,7 @@ class ConnectivityTest:
                                          message])
         await asyncio.sleep(0.1)
         try:
-            received, addr = await asyncio.wait_for(future, 20.0)
+            received, addr = await asyncio.wait_for(future, 60.0)
             if received == message:
                 delta = time.time() - start_time
                 self._logger.debug("{} replied from {} in {}".format(self.identifier, addr, delta))
