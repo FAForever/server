@@ -107,7 +107,7 @@ class PlayerService:
     def has_blacklisted_domain(self, email):
         # A valid email only has one @ anyway.
         domain = email.split("@")[1]
-        return len(self.blacklisted_email_domains.keys(domain[::-1])) != 0
+        return domain in self.blacklisted_email_domains
 
     def get_player(self, player_id):
         if player_id in self.players:
@@ -140,4 +140,4 @@ class PlayerService:
             rows = await cursor.fetchall()
             # Get list of reversed blacklisted domains (so we can (pre)suffix-match incoming emails
             # in sublinear time)
-            self.blacklisted_email_domains = marisa_trie.Trie(map(lambda x: x[0][::-1], rows))
+            self.blacklisted_email_domains = marisa_trie.Trie(map(lambda x: x[0], rows))

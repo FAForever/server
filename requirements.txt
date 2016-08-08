@@ -18,5 +18,7 @@ trueskill
 aiocron
 marisa-trie
 oauth2client
-git+https://github.com/FAForever/faftools.git@develop#egg=faftools
+git+https://github.com/FAForever/faftools.git@38fc8e10f3cbd50d3f6abe9168e9040c08ad26cf#egg=faftools
 pyopenssl
+mock
+lupa
