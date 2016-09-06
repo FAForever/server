@@ -433,7 +433,10 @@ class GameConnection(GpgNetServerProtocol):
             if self.game.state == GameState.LOBBY:
                 for peer in self.game.connections:
                     if peer != self:
-                        peer.send_DisconnectFromPeer(self.player.id)
+                        try:
+                            peer.send_DisconnectFromPeer(self.player.id)
+                        except:
+                            pass
             self._state = GameConnectionState.ENDED
             self.loop.create_task(self.game.remove_game_connection(self))
             self._mark_dirty()
