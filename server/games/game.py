@@ -429,6 +429,7 @@ class Game(BaseGame):
                 yield from cursor.execute("UPDATE {}_rating "
                                           "SET mean = %s, is_active=1, deviation = %s, numGames = %s "
                                           "WHERE id = %s".format(rating), (new_rating.mu, new_rating.sigma, player.numGames, player.id))
+                self.game_service.player_service.mark_dirty(player)
 
     def set_player_option(self, id, key, value):
         """
