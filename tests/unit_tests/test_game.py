@@ -28,7 +28,7 @@ def test_instance_logging(game_stats_service):
     logger.debug = mock.Mock()
     mock_parent = mock.Mock()
     game = Game(5, mock_parent, game_stats_service)
-    logger.debug.assert_called_with("{} created".format(game))
+    logger.debug.assert_called_with("%s created", game)
 
 
 async def test_validate_game_settings(game: Game):

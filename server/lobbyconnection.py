@@ -306,7 +306,7 @@ Thanks,\n\
             }),
             headers=headers)
         resp_text = await resp.text()
-        self._logger.debug("Mandrill response: {}".format(resp_text))
+        self._logger.debug("Mandrill response: %s", resp_text)
 
     @timed()
     def send_tutorial_section(self):
@@ -425,7 +425,7 @@ Thanks,\n\
             if action == "closeFA":
                 player = self.player_service[message['user_id']]
                 if player:
-                    self._logger.warn('Administrative action: {} closed game for {}'.format(self.player, player))
+                    self._logger.warn('Administrative action: %s closed game for %s', self.player, player)
                     player.lobby_connection.sendJSON(dict(command="notice", style="kill"))
                     player.lobby_connection.sendJSON(dict(command="notice", style="info",
                                        text=("Your game was closed by an administrator ({admin_name}). "
@@ -436,7 +436,7 @@ Thanks,\n\
             elif action == "closelobby":
                 player = self.player_service[message['user_id']]
                 if player:
-                    self._logger.warn('Administrative action: {} closed client for {}'.format(self.player, player))
+                    self._logger.warn('Administrative action: %s closed client for %s', self.player, player)
                     player.lobby_connection.kick(
                         message=("Your client was closed by an administrator ({admin_name}). "
                          "Please refer to our rules for the lobby/game here {rule_link}."
@@ -514,7 +514,7 @@ Thanks,\n\
         if ban_reason is not None and datetime.datetime.now() < ban_expiry:
             raise ClientError("You are banned from FAF.\n Reason :\n {}".format(ban_reason))
 
-        self._logger.debug("Login from: {}, {}, {}".format(player_id, login, self.session))
+        self._logger.debug("Login from: %s, %s, %s", player_id, login, self.session)
 
         return player_id, real_username, steamid
 
@@ -623,7 +623,7 @@ Thanks,\n\
                 #                   text="This computer is already associated with too many FAF accounts.<br><br>You might want to try linking your account with Steam: <a href='" +
                 #                        config.APP_URL + "/faf/steam.php'>" +
                 #                        config.APP_URL + "/faf/steam.php</a>"))
-                self._logger.warning("UID hit: {}: {}".format(player_id, uid_hash))
+                self._logger.warning("UID hit: %d: %s", player_id, uid_hash)
 
             # Is this a uuid we have never seen before?
             if len(users) == 0:
@@ -633,13 +633,13 @@ Thanks,\n\
                     await cursor.execute("INSERT INTO `uniqueid` (`hash`, `uuid`, `mem_SerialNumber`, `deviceID`, `manufacturer`, `name`, `processorId`, `SMBIOSBIOSVersion`, `serialNumber`, `volumeSerialNumber`)"
                                          "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (uid_hash, *hardware_info))
                 except Exception as e:
-                    self._logger.warning("UID dupe: {}: {}".format(player_id, uid_hash))
+                    self._logger.warning("UID dupe: %d: %s", player_id, uid_hash)
 
             # Associate this account with this hardware hash.
             try:
                 await cursor.execute("INSERT INTO unique_id_users(user_id, uniqueid_hash) VALUES(%s, %s)", (player_id, uid_hash))
             except Exception as e:
-                self._logger.warning("UID association dupe: {}: {}".format(player_id, uid_hash))
+                self._logger.warning("UID association dupe: %d: %s", player_id, uid_hash)
 
         # TODO: Mildly unpleasant
         await cursor.execute("UPDATE login SET ip = %s WHERE id = %s", (self.peer_address.host, player_id))
@@ -705,7 +705,7 @@ Thanks,\n\
             try:
                 await cursor.execute("UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s", (irc_pass, login))
             except (pymysql.OperationalError, pymysql.ProgrammingError):
-                self._logger.error("Failure updating NickServ password for {}".format(login))
+                self._logger.error("Failure updating NickServ password for %s", login)
 
         permission_group = self.player_service.get_permission_group(player_id)
         self.player = Player(login=str(login),
@@ -864,11 +864,11 @@ Thanks,\n\
         port = message['gameport']
         password = message.get('password', None)
 
-        self._logger.debug("joining: {}:{} with pw: {}".format(uuid, port, password))
+        self._logger.debug("joining: %d:%d with pw: %s", uuid, port, password)
         try:
             game = self.game_service[uuid]
             if not game or game.state != GameState.LOBBY:
-                self._logger.debug("Game not in lobby state: {}".format(game))
+                self._logger.debug("Game not in lobby state: %s", game)
                 self.sendJSON(dict(command="notice", style="info", text="The game you are trying to join is not ready."))
                 return
 
@@ -892,7 +892,7 @@ Thanks,\n\
 
         if state == "stop":
             if self.search:
-                self._logger.info("{} stopped searching for ladder: {}".format(self.player, self.search))
+                self._logger.info("%s stopped searching for ladder: %s", self.player, self.search)
                 self.search.cancel()
             return
 
@@ -920,7 +920,7 @@ Thanks,\n\
 
                 self.game_service.ladder_service.inform_player(self.player)
 
-                self._logger.info("{} is searching for ladder: {}".format(self.player, self.search))
+                self._logger.info("%s is searching for ladder: %s", self.player, self.search)
                 asyncio.ensure_future(self.player_service.ladder_queue.search(self.player, search=self.search))
 
     def command_coop_list(self, message):
@@ -1070,7 +1070,7 @@ Thanks,\n\
         :param message:
         :return:
         """
-        self._logger.debug(">>: {}".format(message))
+        self._logger.debug(">>: %s", message)
         self.protocol.send_message(message)
 
     async def drain(self):

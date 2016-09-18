@@ -18,7 +18,7 @@ class GameStatsService:
 
         for army_stats in json.loads(stats_json)['stats']:
             if army_stats['type'] == 'AI' and army_stats['name'] != 'civilian':
-                self._logger.debug("Ignoring AI game reported by {}".format(player.login))
+                self._logger.debug("Ignoring AI game reported by %s", player.login)
                 return
 
             if army_stats['type'] == 'Human':
@@ -28,14 +28,14 @@ class GameStatsService:
                 stats = army_stats
 
         if number_of_humans < 2:
-            self._logger.debug("Ignoring single player game reported by {}".format(player.login))
+            self._logger.debug("Ignoring single player game reported by %s", player.login)
             return
 
         if stats is None:
-            self._logger.warn("Player {} reported foreign game stats".format(player.login))
+            self._logger.warn("Player %s reported foreign game stats", player.login)
             return
 
-        self._logger.debug("Processing game stats for player: {}".format(player.login))
+        self._logger.debug("Processing game stats for player: %s", player.login)
 
         faction = stats['faction']
         # Stores achievements to batch update

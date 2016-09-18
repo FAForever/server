@@ -58,7 +58,7 @@ class EventService:
                 "count": long
             }]
         """
-        self._logger.debug("Recording {} events".format(len(queue)))
+        self._logger.debug("Recording %d events", len(queue))
         data = dict(updates=queue)
         response, content = await self.api_accessor.api_post("/events/recordMultiple", player_id, data=data)
 
