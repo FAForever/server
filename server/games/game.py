@@ -75,6 +75,7 @@ class ValidityState(IntEnum):
     BAD_MOD = 10
     COOP_NOT_RANKED = 11
     MUTUAL_DRAW = 12
+    SINGLE_PLAYER = 13
 
 
 class GameError(Exception):
@@ -269,18 +270,24 @@ class Game(BaseGame):
             elif self.state == GameState.LIVE:
                 self._logger.info("Game finished normally")
 
+                for player in self._players_with_unsent_army_stats:
+                    await self._process_army_stats_for_player(player)
+
                 if self.desyncs > 20:
                     await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
+                    return
 
                 if time.time() - self.launched_at > 4*60 and self.is_mutually_agreed_draw:
                     self._logger.info("Game is a mutual draw")
                     await self.mark_invalid(ValidityState.MUTUAL_DRAW)
+                    return
+
+                if len(self.players) < 2:
+                    await self.mark_invalid(ValidityState.SINGLE_PLAYER)
+                    return
 
                 await self.persist_results()
                 await self.rate_game()
-
-                for player in self._players_with_unsent_army_stats:
-                    await self._process_army_stats_for_player(player)
         except Exception as e:
             self._logger.exception("Error during game end: {}".format(e))
         finally:
