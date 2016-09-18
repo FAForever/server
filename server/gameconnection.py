@@ -437,8 +437,8 @@ class GameConnection(GpgNetServerProtocol):
                     if peer != self:
                         try:
                             peer.send_DisconnectFromPeer(self.player.id)
-                        except:
-                            pass
+                        except Exception as ex: # pragma no cover
+                            self.log.exception("peer_sendDisconnectFromPeer failed for player %i", self.player.id)
             self._state = GameConnectionState.ENDED
             self.loop.create_task(self.game.remove_game_connection(self))
             self._mark_dirty()
