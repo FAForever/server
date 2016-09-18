@@ -90,7 +90,7 @@ class Connectivity:
         except (TimeoutError, CancelledError):
             self._result = ConnectivityResult(addr=None, state=ConnectivityState.BLOCKED)
         finally:
-            self._logger.info("ConnectivityState for {} {}: {}".format(self.host, self.player, self._result.state.value))
+            self._logger.info("ConnectivityState for %s %s: %s", self.host, self.player, self._result.state.value)
             self.send('ConnectivityState', [self._result.state.value,
                                             "{}:{}".format(*self._result.addr)
                                             if self._result.addr else ""])
@@ -111,9 +111,9 @@ class Connectivity:
         assert peer.connectivity.result
         nat_message = "Hello from {}".format(self.player.id)
         addr = peer.connectivity.result.addr if not use_address else use_address
-        self._logger.debug("{} probing {} at {} with msg: {}".format(self, peer, addr, nat_message))
+        self._logger.debug("%s probing %s at %s with msg: %s", self, peer, addr, nat_message)
         for _ in range(3):
-            self._logger.debug("{} sending NAT packet to {}".format(self, addr))
+            self._logger.debug("%s sending NAT packet to %s", self, addr)
             ip, port = addr
             self.send('SendNatPacket', ["{}:{}".format(ip, int(port)),
                                         nat_message])
@@ -127,10 +127,10 @@ class Connectivity:
     async def wait_for_natpacket(self, message: str, sender: Address=None):
         fut = asyncio.Future()
         self._nat_packets[message] = fut
-        self._logger.debug("Awaiting nat packet {} from {}".format(message, sender or 'anywhere'))
+        self._logger.debug("Awaiting nat packet %s from %s", message, sender or 'anywhere')
         addr, msg = await fut
         if fut.done():
-            self._logger.debug("Received {} from {}".format(msg, addr))
+            self._logger.debug("Received %s from %s", msg, addr)
             if (addr == sender or sender is None) and msg == message:
                 return addr, msg
         else:
@@ -154,14 +154,14 @@ class Connectivity:
         return addr
 
     def process_nat_packet(self, address: Address, message: str):
-        self._logger.debug("<<{}: {}".format(address, message))
+        self._logger.debug("<<%s: %s", address, message)
         if message in self._nat_packets and isinstance(self._nat_packets[message], asyncio.Future):
             if not self._nat_packets[message].done():
                 self._nat_packets[message].set_result((address, message))
                 del self._nat_packets[message]
 
     def send_nat_packet(self, address: Address, message: str):
-        self._logger.debug(">>{}/udp: {}".format(address, message))
+        self._logger.debug(">>%s/udp: %s", address, message)
         self.send('SendNatPacket', ["{}:{}".format(*address), message])
 
     async def drain(self):
@@ -217,20 +217,20 @@ class ConnectivityTest:
             return ConnectivityResult(addr=None, state=ConnectivityState.BLOCKED)
 
     async def test_public(self):
-        self._logger.debug("{} Testing PUBLIC".format(self.identifier))
+        self._logger.debug("%s Testing PUBLIC", self.identifier)
         message = "Are you public? {}".format(self.identifier)
         received_packet = self._connectivity.wait_for_natpacket(message)
         for i in range(0, 3):
             await self.send_natpacket(self.remote_addr, message)
         try:
             result = await asyncio.wait_for(received_packet, 10)
-            self._logger.debug("Result: {}".format(result))
+            self._logger.debug("Result: %s", result)
             return True
         except (CancelledError, TimeoutError):
             return False
 
     async def test_stun(self):
-        self._logger.debug("{} Testing STUN".format(self.identifier))
+        self._logger.debug("%s Testing STUN", self.identifier)
         message = "Hello {}".format(self.identifier)
         start_time = time.time()
         future = self._natserver.await_packet(message)
@@ -244,9 +244,9 @@ class ConnectivityTest:
             received, addr = await asyncio.wait_for(future, 60.0)
             if received == message:
                 delta = time.time() - start_time
-                self._logger.debug("{} replied from {} in {}".format(self.identifier, addr, delta))
+                self._logger.debug("%s replied from %s in %s", self.identifier, addr, delta)
                 return addr
         except (CancelledError, TimeoutError):
             delta = time.time() - start_time
-            self._logger.info("{} stun timeout in {}".format(self.identifier, delta))
+            self._logger.info("%s stun timeout in %s", self.identifier, delta)
             pass

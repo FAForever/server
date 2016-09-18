@@ -16,7 +16,7 @@ class NatServerProtocol(asyncio.DatagramProtocol):
 
     def datagram_received(self, data, addr):
         try:
-            self._logger.debug("{}: {}/udp<<: {}".format(self._address, addr, data))
+            self._logger.debug("%s: %s/udp<<: %s", self._address, addr, data)
             msg = data[1:].decode()
             if data in self._futures:
                 # Strip the \x08 byte for NAT messages
@@ -34,10 +34,10 @@ class NatServerProtocol(asyncio.DatagramProtocol):
     def connection_lost(self, exc):
         # Normally losing a connection isn't something we care about
         # but for UDP transports it means trouble
-        self._logger.exception("NatServerProtocol({}) exc: {}".format(self._address, exc))
+        self._logger.exception("NatServerProtocol(%s) exc: %s", self._address, exc)
 
     def error_received(self, exc):
-        self._logger.exception("NatServerProtocol({}) exc: {}".format(self._address, exc))
+        self._logger.exception("NatServerProtocol(%s) exc: %s", self._address, exc)
 
 
 @with_logger
@@ -65,7 +65,7 @@ class NatPacketServer:
                 server, protocol = await self.loop.create_datagram_endpoint(lambda: NatServerProtocol(address, self._futures), address)
                 self.servers[server] = protocol
             except OSError:
-                self._logger.warn('Could not open UDP socket {}:{}'.format(address[0], address[1]))
+                self._logger.warn('Could not open UDP socket %s:%s', address[0], address[1])
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         for server in self.servers:
@@ -84,7 +84,7 @@ class NatPacketServer:
         return self.prefixed(msg) in self._futures
 
     def _add_future(self, msg: str, fut) -> None:
-        self._logger.debug("Added listener for {}".format(msg))
+        self._logger.debug("Added listener for %s", msg)
         server.stats.gauge("NatPacketProtocol.futures", len(self._futures))
         self._futures[self.prefixed(msg)] = fut
         fut.add_done_callback(lambda f: self._remove_future(msg))
@@ -96,7 +96,7 @@ class NatPacketServer:
 
     def send_natpacket_to(self, msg: str, addr):
         for server, protocol in self.servers.items():
-            self._logger.debug(">>{}/udp: {}".format(addr, msg))
+            self._logger.debug(">>%s/udp: %s", addr, msg)
             protocol.transport.sendto(self.prefixed(msg), addr)
             return
 

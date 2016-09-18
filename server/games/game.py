@@ -135,7 +135,7 @@ class Game(BaseGame):
                             'RestrictedCategories': 0}
 
         self.mods = {}
-        self._logger.debug("{} created".format(self))
+        self._logger.debug("%s created", self)
         asyncio.get_event_loop().create_task(self.timeout_game())
 
     async def timeout_game(self):
@@ -197,13 +197,12 @@ class Game(BaseGame):
         """
         if army not in self.armies:
             self._logger.debug(
-                "Ignoring results for unknown army {}: {} {} reported by: {}".format(army, result_type, score,
-                                                                                     reporter))
+                "Ignoring results for unknown army %s: %s %s reported by: %s", army, result_type, score, reporter)
             return
 
         if army not in self._results:
             self._results[army] = []
-        self._logger.info("{} reported result for army {}: {} {}".format(reporter, army, result_type, score))
+        self._logger.info("%s reported result for army %s: %s %s", reporter, army, result_type, score)
         self._results[army].append((reporter, result_type.lower(), score))
 
         await self._process_pending_army_stats()
@@ -236,7 +235,7 @@ class Game(BaseGame):
             raise GameError("Invalid GameConnectionState: {}".format(game_connection.state))
         if self.state != GameState.LOBBY:
             raise GameError("Invalid GameState: {state}".format(state=self.state))
-        self._logger.info("Added game connection {}".format(game_connection))
+        self._logger.info("Added game connection %s", game_connection)
         self._connections[game_connection.player] = game_connection
 
     async def remove_game_connection(self, game_connection):
@@ -254,7 +253,7 @@ class Game(BaseGame):
         if game_connection.player:
             del game_connection.player.game
 
-        self._logger.info("Removed game connection {}".format(game_connection))
+        self._logger.info("Removed game connection %s", game_connection)
 
         if len(self._connections) == 0 or (self.host == game_connection.player and self.state != GameState.LIVE):
             await self.on_game_end()
@@ -289,7 +288,7 @@ class Game(BaseGame):
                 await self.persist_results()
                 await self.rate_game()
         except Exception as e:
-            self._logger.exception("Error during game end: {}".format(e))
+            self._logger.exception("Error during game end: %s", e)
         finally:
             self.state = GameState.ENDED
             self.game_service.mark_dirty(self)
@@ -326,7 +325,7 @@ class Game(BaseGame):
             try:
                 result = self.get_army_result(army)
                 results[player] = result
-                self._logger.info('Result for army {}, player: {}: {}'.format(army, player, result))
+                self._logger.info('Result for army %s, player: %s: %s', army, player, result)
             except KeyError:
                 # Default to -1 if there is no result
                 results[player] = -1
@@ -336,7 +335,7 @@ class Game(BaseGame):
 
             rows = []
             for player, result in results.items():
-                self._logger.info("Result for player {}: {}".format(player, result))
+                self._logger.info("Result for player %s: %S", player, result)
                 rows.append((result, self.id, player.id))
 
             await cursor.executemany("UPDATE game_player_stats "
@@ -369,7 +368,7 @@ class Game(BaseGame):
             cursor = yield from conn.cursor()
 
             for player, new_rating in new_ratings.items():
-                self._logger.debug("New {} rating for {}: {}".format(rating, player, new_rating))
+                self._logger.debug("New %s rating for %s: %s", rating, player, new_rating)
                 setattr(player, '{}_rating'.format(rating), new_rating)
                 yield from cursor.execute("UPDATE game_player_stats "
                                           "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
@@ -563,7 +562,7 @@ class Game(BaseGame):
         return self.game_service.game_mode_versions[self.game_mode]
 
     async def mark_invalid(self, new_validity_state: ValidityState):
-        self._logger.info("Marked as invalid because: {}".format(repr(new_validity_state)))
+        self._logger.debug("Marked as invalid because: %s", repr(new_validity_state))
         self.validity = new_validity_state
 
         # If we haven't started yet, the invalidity will be persisted to the database when we start.
@@ -612,7 +611,7 @@ class Game(BaseGame):
             team = self.get_player_option(player.id, 'Team')
             army = self.get_player_option(player.id, 'Army')
             if army < 0:
-                self._logger.debug("Skipping {}".format(player))
+                self._logger.debug("Skipping %s", player)
                 continue
             if not team:
                 raise GameError("Missing team for player id: {}".format(player.id))
@@ -623,8 +622,7 @@ class Game(BaseGame):
                     team_scores[team] += self.get_army_result(army)
                 except KeyError:
                     team_scores[team] += 0
-                    self._logger.warn("Missing game result for {army}: {player}".format(army=army,
-                                                                                        player=player))
+                    self._logger.warn("Missing game result for %s: %s", army, player)
             elif team == 1:
                 ffa_scores.append((player, self.get_army_result(army)))
         ranks = [-score for team, score in sorted(team_scores.items(), key=lambda t: t[0])]
@@ -637,8 +635,8 @@ class Game(BaseGame):
         for player, score in sorted(ffa_scores, key=lambda x: self.get_player_option(x[0].id, 'Army')):
             rating_groups += [{player: Rating(*getattr(player, '{}_rating'.format(rating)))}]
             ranks.append(-score)
-        self._logger.debug("Rating groups: {}".format(rating_groups))
-        self._logger.debug("Ranks: {}".format(ranks))
+        self._logger.debug("Rating groups: %s", rating_groups)
+        self._logger.debug("Ranks: %s", ranks)
         return trueskill.rate(rating_groups, ranks)
 
     async def report_army_stats(self, stats):
