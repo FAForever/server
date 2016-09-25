@@ -78,6 +78,30 @@ async def test_ffa_not_rated(game_service, game_stats_service):
     await game.on_game_end()
     assert game.validity == ValidityState.FFA_NOT_RANKED
 
+async def test_uneven_teams_not_rated(game_service, game_stats_service):
+    game = Game(7, game_service, game_stats_service)
+    game.state = GameState.LOBBY
+    players = [
+        Player(id=1, login='Dostya', global_rating=(1500, 500)),
+        Player(id=2, login='Rhiza', global_rating=(1500, 500)),
+        Player(id=3, login='QAI', global_rating=(1500, 500)),
+        Player(id=4, login='John', global_rating=(1500, 500)),
+        Player(id=5, login='Doe', global_rating=(1500, 500)),
+    ]
+    add_connected_players(game, players)
+    game.set_player_option(1, 'Team', 2)
+    game.set_player_option(2, 'Team', 2)
+    game.set_player_option(3, 'Team', 2)
+    game.set_player_option(4, 'Team', 3)
+    game.set_player_option(5, 'Team', 3)
+
+    await game.launch()
+    await game.add_result(0, 1, 'VICTORY', 5)
+
+    game.launched_at = time.time() - 60*20 # seconds
+
+    await game.on_game_end()
+    assert game.validity == ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
 def test_set_player_option(game, players, mock_game_connection):
     game.state = GameState.LOBBY
