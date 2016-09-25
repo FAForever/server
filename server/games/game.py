@@ -2,6 +2,7 @@ from enum import IntEnum, unique
 import logging
 import time
 import functools
+from collections import defaultdict
 import asyncio
 from typing import Union
 import trueskill
@@ -76,6 +77,7 @@ class ValidityState(IntEnum):
     COOP_NOT_RANKED = 11
     MUTUAL_DRAW = 12
     SINGLE_PLAYER = 13
+    FFA_NOT_RANKED = 14
 
 
 class GameError(Exception):
@@ -185,6 +187,21 @@ class Game(BaseGame):
     def teams(self):
         return frozenset({self.get_player_option(player.id, 'Team')
                           for player in self.players})
+
+    def is_ffa(self):
+        if len(self.players) < 3:
+            return False
+
+        teams = set()
+        for player in self.players:
+            team = self.get_player_option(player.id, 'Team')
+            if team != 1:
+                if team in teams:
+                    return False
+                teams.add(team)
+
+        return True
+
 
     async def add_result(self, reporter: Union[Player, int], army: int, result_type: str, score: int):
         """
@@ -455,6 +472,8 @@ class Game(BaseGame):
         if self.gameOptions['Victory'] != Victory.DEMORALIZATION and self.game_mode != 'coop':
             await self.mark_invalid(ValidityState.WRONG_VICTORY_CONDITION)
 
+        if self.is_ffa():
+            await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
         elif self.gameOptions["FogOfWar"] != "explored":
             await self.mark_invalid(ValidityState.NO_FOG_OF_WAR)
 
