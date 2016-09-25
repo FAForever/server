@@ -17,6 +17,8 @@ async def test_rate_game_early_abort_no_enforce(game_service, game_stats_service
         Player(id=2, login='Rhiza', global_rating=(1500, 500)),
     ]
     add_connected_players(custom_game, players)
+    custom_game.set_player_option(1, 'Team', 2)
+    custom_game.set_player_option(2, 'Team', 3)
     await custom_game.launch()
     await custom_game.add_result(0, 1, 'VICTORY', 5)
 
@@ -33,6 +35,8 @@ async def test_rate_game_early_abort_with_enforce(game_service, game_stats_servi
         Player(id=2, login='Rhiza', global_rating=(1500, 500)),
     ]
     add_connected_players(custom_game, players)
+    custom_game.set_player_option(1, 'Team', 2)
+    custom_game.set_player_option(2, 'Team', 3)
     await custom_game.launch()
     custom_game.enforce_rating = True
     await custom_game.add_result(0, 1, 'VICTORY', 5)
@@ -51,6 +55,8 @@ async def test_rate_game_late_abort_no_enforce(game_service, game_stats_service)
         Player(id=2, login='Rhiza', global_rating=(1500, 500)),
     ]
     add_connected_players(custom_game, players)
+    custom_game.set_player_option(1, 'Team', 2)
+    custom_game.set_player_option(2, 'Team', 3)
     await custom_game.launch()
     await custom_game.add_result(0, 1, 'VICTORY', 5)
 
