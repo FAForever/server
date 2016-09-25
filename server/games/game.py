@@ -78,6 +78,7 @@ class ValidityState(IntEnum):
     MUTUAL_DRAW = 12
     SINGLE_PLAYER = 13
     FFA_NOT_RANKED = 14
+    UNEVEN_TEAMS_NOT_RANKED = 15
 
 
 class GameError(Exception):
@@ -187,6 +188,30 @@ class Game(BaseGame):
     def teams(self):
         return frozenset({self.get_player_option(player.id, 'Team')
                           for player in self.players})
+
+    def team_count(self):
+        teams = defaultdict(int)
+        for player in self.players:
+            teams[self.get_player_option(player.id, 'Team')] += 1
+
+        return teams
+
+    def even_teams(self):
+        teams = self.team_count()
+        if 1 in teams: # someone is without team, all teams need to be 1 player
+            c = 1
+            teams.pop(1)
+        else: # all same as count of first team
+            try:
+                c = list(teams.values())[0]
+            except IndexError:
+                return True # no teams defined, consider this even
+
+        for k, v in teams.items():
+            if v != c:
+                return False
+
+        return True
 
     def is_ffa(self):
         if len(self.players) < 3:
@@ -474,6 +499,8 @@ class Game(BaseGame):
 
         if self.is_ffa():
             await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
+        elif not self.even_teams():
+            await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
         elif self.gameOptions["FogOfWar"] != "explored":
             await self.mark_invalid(ValidityState.NO_FOG_OF_WAR)
 
