@@ -162,7 +162,7 @@ class GameConnection(GpgNetServerProtocol):
         assert peer.player.state == PlayerState.HOSTING
         result = await self.EstablishConnection(peer)
         if not result:
-            self.abort("Failed connecting to host %s", peer)
+            self.abort("Failed connecting to host {}".format(peer))
         own_addr, peer_addr = result
         self.send_JoinGame(peer_addr,
                            peer.player.login,
@@ -178,7 +178,7 @@ class GameConnection(GpgNetServerProtocol):
         """
         result = await self.EstablishConnection(peer)
         if not result:
-            self.abort("Failed connecting to %s", peer)
+            self.abort("Failed connecting to {}".format(peer))
         own_addr, peer_addr = result
         self.send_ConnectToPeer(peer_addr,
                                 peer.player.login,

@@ -335,7 +335,7 @@ class Game(BaseGame):
 
             rows = []
             for player, result in results.items():
-                self._logger.info("Result for player %s: %S", player, result)
+                self._logger.info("Result for player %s: %s", player, result)
                 rows.append((result, self.id, player.id))
 
             await cursor.executemany("UPDATE game_player_stats "
