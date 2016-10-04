@@ -4,6 +4,32 @@
       "faction": 1,
       "type": "Human",
       "name": "TestUser",
+      "general": {
+        "score": 5370,
+        "currentcap": {
+          "count": 1000
+        },
+        "kills": {
+          "mass": 18483.279296875,
+          "count": 11,
+          "energy": 5002463
+        },
+        "built": {
+          "mass": 532,
+          "count": 19,
+          "energy": 4160
+        },
+        "lost": {
+          "mass": 18000,
+          "count": 1,
+          "energy": 5000000
+        },
+        "energy": 10129.700195313,
+        "currentunits": {
+          "count": 1.8000001907349
+        },
+        "mass": 1004.1658935547
+      },
       "units": {
         "air": {"built": 0, "kills": 0, "lost": 0},
         "land": {"built": 0, "kills": 0, "lost": 0},
@@ -25,6 +51,32 @@
       "faction": 1,
       "type": "civilian",
       "name": "Kraken",
+      "general": {
+        "score": 10,
+        "currentcap": {
+          "count": 1000
+        },
+        "kills": {
+          "mass": 1,
+          "count": 11,
+          "energy": 500
+        },
+        "built": {
+          "mass": 5,
+          "count": 1,
+          "energy": 41
+        },
+        "lost": {
+          "mass": 180,
+          "count": 1,
+          "energy": 50000
+        },
+        "energy": 101,
+        "currentunits": {
+          "count": 1
+        },
+        "mass": 100
+      },
       "units": {
         "air": {"built": 0, "kills": 0, "lost": 0},
         "land": {"built": 0, "kills": 0, "lost": 0},

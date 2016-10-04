@@ -418,3 +418,17 @@ def test_lowest_acu_health_500_survived(game_stats_service, player, achievement_
     game_stats_service._lowest_acu_health(500, True, [])
     assert len(achievement_service.mock_calls) == 0
     assert len(event_service.mock_calls) == 0
+
+
+def test_top_score_7_players(game_stats_service, achievement_service):
+    game_stats_service._highscore(True, 7, [])
+
+    assert len(achievement_service.mock_calls) == 0
+
+
+def test_top_score_8_players(game_stats_service, achievement_service):
+    game_stats_service._highscore(True, 8, [])
+
+    achievement_service.unlock.assert_any_call(ACH_TOP_SCORE, [])
+    achievement_service.increment.assert_any_call(ACH_UNBEATABLE, 1, [])
+    assert len(achievement_service.mock_calls) == 2
