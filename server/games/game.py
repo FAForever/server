@@ -189,14 +189,23 @@ class Game(BaseGame):
         return frozenset({self.get_player_option(player.id, 'Team')
                           for player in self.players})
 
-    def team_count(self):
-        teams = defaultdict(int)
+    @property
+    def is_ffa(self):
+        if len(self.players) < 3:
+            return False
+
+        teams = set()
         for player in self.players:
-            teams[self.get_player_option(player.id, 'Team')] += 1
+            team = self.get_player_option(player.id, 'Team')
+            if team != 1:
+                if team in teams:
+                    return False
+                teams.add(team)
 
-        return teams
+        return True
 
-    def even_teams(self):
+    @property
+    def is_even(self):
         teams = self.team_count()
         if 1 in teams: # someone is without team, all teams need to be 1 player
             c = 1
@@ -213,20 +222,12 @@ class Game(BaseGame):
 
         return True
 
-    def is_ffa(self):
-        if len(self.players) < 3:
-            return False
-
-        teams = set()
+    def team_count(self):
+        teams = defaultdict(int)
         for player in self.players:
-            team = self.get_player_option(player.id, 'Team')
-            if team != 1:
-                if team in teams:
-                    return False
-                teams.add(team)
+            teams[self.get_player_option(player.id, 'Team')] += 1
 
-        return True
-
+        return teams
 
     async def add_result(self, reporter: Union[Player, int], army: int, result_type: str, score: int):
         """
@@ -497,9 +498,9 @@ class Game(BaseGame):
         if self.gameOptions['Victory'] != Victory.DEMORALIZATION and self.game_mode != 'coop':
             await self.mark_invalid(ValidityState.WRONG_VICTORY_CONDITION)
 
-        if self.is_ffa():
+        if self.is_ffa:
             await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
-        elif not self.even_teams():
+        elif not self.is_even:
             await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
         elif self.gameOptions["FogOfWar"] != "explored":
             await self.mark_invalid(ValidityState.NO_FOG_OF_WAR)
