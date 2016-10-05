@@ -9,8 +9,14 @@ from server.players import Player
 from tests.unit_tests.conftest import add_connected_players
 
 
-async def test_rate_game_early_abort_no_enforce(game_service, game_stats_service):
-    custom_game = CustomGame(50, game_service, game_stats_service)
+@pytest.yield_fixture
+def custom_game(loop, game_service, game_stats_service):
+    game = CustomGame(42, game_service, game_stats_service)
+    yield game
+    loop.run_until_complete(game.clear_data())
+
+
+async def test_rate_game_early_abort_no_enforce(game_service, game_stats_service, custom_game):
     custom_game.state = GameState.LOBBY
     players = [
         Player(id=1, login='Dostya', global_rating=(1500, 500)),
@@ -27,8 +33,7 @@ async def test_rate_game_early_abort_no_enforce(game_service, game_stats_service
     await custom_game.on_game_end()
     assert custom_game.validity == ValidityState.TOO_SHORT
 
-async def test_rate_game_early_abort_with_enforce(game_service, game_stats_service):
-    custom_game = CustomGame(51, game_service, game_stats_service)
+async def test_rate_game_early_abort_with_enforce(game_service, game_stats_service, custom_game):
     custom_game.state = GameState.LOBBY
     players = [
         Player(id=1, login='Dostya', global_rating=(1500, 500)),
@@ -47,8 +52,7 @@ async def test_rate_game_early_abort_with_enforce(game_service, game_stats_servi
     assert custom_game.validity == ValidityState.VALID
 
 
-async def test_rate_game_late_abort_no_enforce(game_service, game_stats_service):
-    custom_game = CustomGame(45, game_service, game_stats_service)
+async def test_rate_game_late_abort_no_enforce(game_service, game_stats_service, custom_game):
     custom_game.state = GameState.LOBBY
     players = [
         Player(id=1, login='Dostya', global_rating=(1500, 500)),

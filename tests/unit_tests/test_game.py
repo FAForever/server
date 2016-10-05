@@ -13,9 +13,24 @@ from server.players import Player
 from tests import CoroMock
 from tests.unit_tests.conftest import mock_game_connection, add_connected_players, add_connected_player
 
+@pytest.yield_fixture
+def game(loop, game_service, game_stats_service):
+    game = Game(42, game_service, game_stats_service)
+    yield game
+    loop.run_until_complete(game.clear_data())
+
 @pytest.fixture()
-def game(game_service, game_stats_service):
-    return Game(42, game_service, game_stats_service)
+def game_5p(game):
+    game.state = GameState.LOBBY
+    players = [
+        Player(id=1, login='Dostya', global_rating=(1500, 500)),
+        Player(id=2, login='Rhiza', global_rating=(1500, 500)),
+        Player(id=3, login='QAI', global_rating=(1500, 500)),
+        Player(id=4, login='John', global_rating=(1500, 500)),
+        Player(id=5, login='Doe', global_rating=(1500, 500)),
+    ]
+    add_connected_players(game, players)
+    return game
 
 
 def test_initialization(game: Game):
@@ -52,23 +67,13 @@ async def test_validate_game_settings(game: Game):
     await game.validate_game_settings()
     assert game.validity is ValidityState.VALID
 
-async def test_ffa_not_rated(game_service, game_stats_service):
-    game = Game(6, game_service, game_stats_service)
-    game.state = GameState.LOBBY
-    players = [
-        Player(id=1, login='Dostya', global_rating=(1500, 500)),
-        Player(id=2, login='Rhiza', global_rating=(1500, 500)),
-        Player(id=3, login='QAI', global_rating=(1500, 500)),
-        Player(id=4, login='John', global_rating=(1500, 500)),
-        Player(id=5, login='Doe', global_rating=(1500, 500)),
-    ]
-    add_connected_players(game, players)
+async def test_ffa_not_rated(game_service, game_stats_service, game_5p):
+    game = game_5p
     game.set_player_option(1, 'Team', 1)
     game.set_player_option(2, 'Team', 1)
     game.set_player_option(3, 'Team', 1)
     game.set_player_option(4, 'Team', 1)
     game.set_player_option(5, 'Team', 1)
-
 
     await game.launch()
     await game.add_result(0, 1, 'VICTORY', 5)
@@ -78,17 +83,8 @@ async def test_ffa_not_rated(game_service, game_stats_service):
     await game.on_game_end()
     assert game.validity == ValidityState.FFA_NOT_RANKED
 
-async def test_uneven_teams_not_rated(game_service, game_stats_service):
-    game = Game(7, game_service, game_stats_service)
-    game.state = GameState.LOBBY
-    players = [
-        Player(id=1, login='Dostya', global_rating=(1500, 500)),
-        Player(id=2, login='Rhiza', global_rating=(1500, 500)),
-        Player(id=3, login='QAI', global_rating=(1500, 500)),
-        Player(id=4, login='John', global_rating=(1500, 500)),
-        Player(id=5, login='Doe', global_rating=(1500, 500)),
-    ]
-    add_connected_players(game, players)
+async def test_uneven_teams_not_rated(game_service, game_stats_service, game_5p):
+    game = game_5p
     game.set_player_option(1, 'Team', 2)
     game.set_player_option(2, 'Team', 2)
     game.set_player_option(3, 'Team', 2)
@@ -430,12 +426,10 @@ def test_equality(game):
 
 
 def test_hashing(game):
-    # game.id == 42
-    assert {game: 1, Game(42, mock.Mock(), mock.Mock()): 1} == {game: 1}
+    assert {game: 1, Game(game.id, mock.Mock(), mock.Mock()): 1} == {game: 1}
 
 
 async def test_report_army_stats_sends_stats_for_defeated_player(game: Game):
-    game.id = 43
     game.state = GameState.LOBBY
     players = [
         Player(id=1, login='Dostya', global_rating=(1500, 500)),
@@ -454,7 +448,6 @@ async def test_report_army_stats_sends_stats_for_defeated_player(game: Game):
     game._game_stats_service.process_game_stats.assert_called_once_with(players[1], game, stats)
 
 async def test_players_exclude_observers(game: Game):
-    game.id = 44
     game.state = GameState.LOBBY
     players = [
         Player(id=1, login='Dostya', global_rating=(1500, 500)),

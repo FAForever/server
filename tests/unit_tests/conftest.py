@@ -12,7 +12,6 @@ def lobbythread():
         sendJSON=lambda obj: None
     )
 
-
 @pytest.fixture
 def game_connection(request, game, loop, player_service, players, game_service, transport):
     from server import GameConnection, LobbyConnection
