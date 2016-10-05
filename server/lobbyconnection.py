@@ -1040,12 +1040,17 @@ Thanks,\n\
 
                 # TODO: Avoid sending all the mod info in the world just because we liked it?
                 if canLike:
-                    yield from cursor.execute("UPDATE `table_mod` SET likes=likes+1, likers=%s WHERE uid = %s", json.dumps(likers), uid)
+                    yield from cursor.execute("UPDATE mod_stats s "
+                                              "JOIN mod_version v ON v.mod_id = s.mod_id "
+                                              "SET s.likes = s.likes + 1, likers=%s WHERE v.uid = %s",
+                                              json.dumps(likers), uid)
                     self.sendJSON(out)
 
             elif type == "download":
                 uid = message["uid"]
-                yield from cursor.execute("UPDATE `table_mod` SET downloads=downloads+1 WHERE uid = %s", uid)
+                yield from cursor.execute("UPDATE mod_stats s "
+                                          "JOIN mod_version v ON v.mod_id = s.mod_id "
+                                          "SET downloads=downloads+1 WHERE v.uid = %s", uid)
             else:
                 raise ValueError('invalid type argument')
 
