@@ -11,7 +11,7 @@ services:
 
 before_install:
   - sudo apt-get update
-  - bash ./scripts/init_and_wait_for_db.sh
+  - pushd db && ./setup_db.sh && popd
   - python -m pip install coveralls
 
 install:

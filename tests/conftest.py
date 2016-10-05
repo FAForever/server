@@ -121,31 +121,11 @@ def db_pool(request, loop):
                                                db=db))
     pool = loop.run_until_complete(pool_fut)
 
-    @asyncio.coroutine
-    def setup():
-        cmd = 'SET default_storage_engine=MEMORY; drop database if exists {}; create database {}; use {}; source {};'.format(db, db, db, 'db/db-structure.sql')
-        try:
-            subprocess.check_output(['mysql',
-                                     '-h{}'.format(host),
-                                     '-u{}'.format(user),
-                                     '-p{}'.format(pw) if pw else '', '-e {}'.format(cmd)],
-                                    stderr=subprocess.STDOUT)
-            subprocess.check_call(['mysql',
-                                   '-h{}'.format(host),
-                                   '-u{}'.format(user),
-                                   '-p{}'.format(pw) if pw else '',
-                                   '-e use {}; source {};'.format(db, 'tests/data/db-fixtures.sql')],
-                                  stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
-            raise Exception('SQL error: {} (cmd: {})'.format(e.output, e.cmd), e)
-
 
     def fin():
         pool.close()
         loop.run_until_complete(pool.wait_closed())
     request.addfinalizer(fin)
-
-    loop.run_until_complete(setup())
 
     return pool
 
