@@ -375,11 +375,12 @@ class Game(BaseGame):
                                           "WHERE gameId = %s AND playerId = %s",
                                           (new_rating.mu, new_rating.sigma, self.id, player.id))
                 if rating == 'ladder':
-                    rating = 'ladder1v1' # FIXME: Be consistent about the naming of this
+                    rating = 'ladder1v1'  # FIXME: Be consistent about the naming of this
 
+                player.numGames += 1
                 yield from cursor.execute("UPDATE {}_rating "
-                                          "SET mean = %s, is_active=1, deviation = %s, numGames = (numGames + 1) "
-                                          "WHERE id = %s".format(rating), (new_rating.mu, new_rating.sigma, player.id))
+                                          "SET mean = %s, is_active=1, deviation = %s, numGames = %s "
+                                          "WHERE id = %s".format(rating), (new_rating.mu, new_rating.sigma, player.numGames, player.id))
 
     def set_player_option(self, id, key, value):
         """
