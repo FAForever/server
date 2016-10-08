@@ -79,6 +79,7 @@ class ValidityState(IntEnum):
     SINGLE_PLAYER = 13
     FFA_NOT_RANKED = 14
     UNEVEN_TEAMS_NOT_RANKED = 15
+    UNKNOWN_RESULT = 16
 
 
 class GameError(Exception):
@@ -326,6 +327,10 @@ class Game(BaseGame):
 
                 if len(self.players) < 2:
                     await self.mark_invalid(ValidityState.SINGLE_PLAYER)
+                    return
+
+                if len(self._results) == 0:
+                    await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
                     return
 
                 await self.persist_results()
