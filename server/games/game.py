@@ -2,6 +2,7 @@ from enum import IntEnum, unique
 import logging
 import time
 import functools
+from collections import defaultdict
 import asyncio
 from typing import Union
 import trueskill
@@ -76,6 +77,9 @@ class ValidityState(IntEnum):
     COOP_NOT_RANKED = 11
     MUTUAL_DRAW = 12
     SINGLE_PLAYER = 13
+    FFA_NOT_RANKED = 14
+    UNEVEN_TEAMS_NOT_RANKED = 15
+    UNKNOWN_RESULT = 16
 
 
 class GameError(Exception):
@@ -186,6 +190,46 @@ class Game(BaseGame):
         return frozenset({self.get_player_option(player.id, 'Team')
                           for player in self.players})
 
+    @property
+    def is_ffa(self):
+        if len(self.players) < 3:
+            return False
+
+        teams = set()
+        for player in self.players:
+            team = self.get_player_option(player.id, 'Team')
+            if team != 1:
+                if team in teams:
+                    return False
+                teams.add(team)
+
+        return True
+
+    @property
+    def is_even(self):
+        teams = self.team_count()
+        if 1 in teams: # someone is without team, all teams need to be 1 player
+            c = 1
+            teams.pop(1)
+        else: # all same as count of first team
+            try:
+                c = list(teams.values())[0]
+            except IndexError:
+                return True # no teams defined, consider this even
+
+        for k, v in teams.items():
+            if v != c:
+                return False
+
+        return True
+
+    def team_count(self):
+        teams = defaultdict(int)
+        for player in self.players:
+            teams[self.get_player_option(player.id, 'Team')] += 1
+
+        return teams
+
     async def add_result(self, reporter: Union[Player, int], army: int, result_type: str, score: int):
         """
         As computed by the game.
@@ -283,6 +327,10 @@ class Game(BaseGame):
 
                 if len(self.players) < 2:
                     await self.mark_invalid(ValidityState.SINGLE_PLAYER)
+                    return
+
+                if len(self._results) == 0:
+                    await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
                     return
 
                 await self.persist_results()
@@ -455,6 +503,10 @@ class Game(BaseGame):
         if self.gameOptions['Victory'] != Victory.DEMORALIZATION and self.game_mode != 'coop':
             await self.mark_invalid(ValidityState.WRONG_VICTORY_CONDITION)
 
+        if self.is_ffa:
+            await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
+        elif not self.is_even:
+            await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
         elif self.gameOptions["FogOfWar"] != "explored":
             await self.mark_invalid(ValidityState.NO_FOG_OF_WAR)
 
