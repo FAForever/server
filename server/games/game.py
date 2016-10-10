@@ -154,6 +154,9 @@ class Game(BaseGame):
 
     @property
     def is_mutually_agreed_draw(self):
+        # Don't count non-reported games as mutual draws
+        if not len(self._results):
+            return False
         for army in self.armies:
             if army in self._results:
                 for result in self._results[army]:
