@@ -46,25 +46,6 @@ class PlayerService:
         self._dirty_players = set()
 
     @asyncio.coroutine
-    def update_rating(self, player, rating='global'):
-        """
-        Update the given rating for the given player
-
-        :param Player player: the player to update
-        :param rating: 'global' or 'ladder1v1'
-        :param new_rating: New rating, if None, fetches the rating from the database
-        """
-        with (yield from self.db_pool) as conn:
-            cursor = yield from conn.cursor()
-            if rating == 'global':
-                mean, deviation = player.global_rating
-            else:
-                mean, deviation = player.ladder_rating
-            yield from cursor.execute('UPDATE `{}_rating` '
-                                      'SET mean=%s, deviation=%s '
-                                      'WHERE id=%s', (mean, deviation, player.id))
-
-    @asyncio.coroutine
     def fetch_player_data(self, player):
         with (yield from self.db_pool) as conn:
             cur = yield from conn.cursor()

@@ -98,8 +98,8 @@ async def test_handle_action_PlayerOption_malformed_no_raise(game_connection: Ga
 
 
 async def test_handle_action_GameMods(game: Game, game_connection: GameConnection):
-    await game_connection.handle_action('GameMods', ['uids', 'foo bar'])
-    assert game.mods == {'bar': 'test-mod2', 'foo': 'test-mod'}
+    await game_connection.handle_action('GameMods', ['uids', 'foo baz'])
+    assert game.mods == {'baz': 'test-mod2', 'foo': 'test-mod'}
 
 
 async def test_handle_action_GameMods_post_launch_updates_played_cache(game, game_connection):

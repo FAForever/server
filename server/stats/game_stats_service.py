@@ -15,27 +15,33 @@ class GameStatsService:
     async def process_game_stats(self, player: Player, game: Game, stats_json):
         stats = None
         number_of_humans = 0
+        highest_score = 0
+        highest_scorer = None
 
         for army_stats in json.loads(stats_json)['stats']:
             if army_stats['type'] == 'AI' and army_stats['name'] != 'civilian':
-                self._logger.debug("Ignoring AI game reported by {}".format(player.login))
+                self._logger.debug("Ignoring AI game reported by %s", player.login)
                 return
 
             if army_stats['type'] == 'Human':
                 number_of_humans += 1
 
+                if highest_score < army_stats['general']['score']:
+                    highest_score = army_stats['general']['score']
+                    highest_scorer = army_stats['name']
+
             if army_stats['name'] == player.login:
                 stats = army_stats
 
         if number_of_humans < 2:
-            self._logger.debug("Ignoring single player game reported by {}".format(player.login))
+            self._logger.debug("Ignoring single player game reported by %s", player.login)
             return
 
         if stats is None:
-            self._logger.warn("Player {} reported foreign game stats".format(player.login))
+            self._logger.warn("Player %s reported stats of a game he was not part of", player.login)
             return
 
-        self._logger.debug("Processing game stats for player: {}".format(player.login))
+        self._logger.debug("Processing game stats for player: %s", player.login)
 
         faction = stats['faction']
         # Stores achievements to batch update
@@ -45,6 +51,7 @@ class GameStatsService:
         survived = stats['units']['cdr'].get('lost', 0) < stats['units']['cdr'].get('built', 1)
         blueprint_stats = stats['blueprints']
         unit_stats = stats['units']
+        scored_highest = highest_scorer == player.login
 
         if survived and game.game_mode == 'ladder1v1':
             self._unlock(ACH_FIRST_SUCCESS, a_queue)
@@ -79,6 +86,7 @@ class GameStatsService:
         self._built_transports(unit_stats['transportation'].get('built', 0), a_queue)
         self._built_sacus(unit_stats['sacu'].get('built', 0), a_queue)
         self._lowest_acu_health(_count(blueprint_stats, lambda x: x.get('lowest_health', 0), *ACUS), survived, a_queue)
+        self._highscore(scored_highest, number_of_humans, a_queue)
 
         updated_achievements = await self._achievement_service.execute_batch_update(player.id, a_queue)
         await self._event_service.execute_batch_update(player.id, e_queue)
@@ -244,6 +252,11 @@ class GameStatsService:
     def _lowest_acu_health(self, health, survived, achievements_queue):
         if 0 < health < 500 and survived:
             self._unlock(ACH_THAT_WAS_CLOSE, achievements_queue)
+
+    def _highscore(self, scored_highest, number_of_humans, achievements_queue):
+        if scored_highest and number_of_humans >= 8:
+            self._unlock(ACH_TOP_SCORE, achievements_queue)
+            self._increment(ACH_UNBEATABLE, 1, achievements_queue)
 
     def _unlock(self, achievement_id, achievements_queue):
         self._achievement_service.unlock(achievement_id, achievements_queue)

@@ -92,7 +92,7 @@ class AchievementService:
                 "newly_unlocked": boolean
             }]
         """
-        self._logger.debug("Updating {} achievements".format(len(queue)))
+        self._logger.debug("Updating %d achievements", len(queue))
         data = dict(updates=queue)
         response, content = await self.api_accessor.api_post("/achievements/updateMultiple", player_id, data=data)
 

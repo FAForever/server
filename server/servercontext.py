@@ -20,7 +20,7 @@ class ServerContext:
         self._connection_factory = connection_factory
         self.connections = {}
         self._transport = None
-        self._logger.debug("{} initialized with loop: {}".format(self, loop))
+        self._logger.debug("%s initialized with loop: %s", self, loop)
         self.addr = None
 
     def __repr__(self):
@@ -28,7 +28,7 @@ class ServerContext:
 
     async def listen(self, host, port):
         self.addr = (host, port)
-        self._logger.debug("ServerContext.listen({},{})".format(host, port))
+        self._logger.debug("ServerContext.listen(%s,%d)", host, port)
         self._server = await asyncio.start_server(self.client_connected,
                                             host=host,
                                             port=port,
@@ -44,7 +44,7 @@ class ServerContext:
 
     def close(self):
         self._server.close()
-        self._logger.debug("{} Closed".format(self))
+        self._logger.debug("%s Closed", self)
 
     def __contains__(self, connection):
         return connection in self.connections.keys()
@@ -56,7 +56,7 @@ class ServerContext:
                 proto.send_raw(message)
 
     async def client_connected(self, stream_reader, stream_writer):
-        self._logger.debug("{}: Client connected".format(self))
+        self._logger.debug("%s: Client connected", self)
         protocol = QDataStreamProtocol(stream_reader, stream_writer)
         connection = self._connection_factory()
         try:

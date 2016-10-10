@@ -122,7 +122,7 @@ class Search:
         :param opponent:
         :return:
         """
-        self._logger.info("Matched {} with {}".format(self.player, other.player))
+        self._logger.info("Matched %s with %s", self.player, other.player)
         self._match.set_result(other)
 
     async def await_match(self):

@@ -39,7 +39,7 @@ try:
 except:
     PRIVATE_KEY = None
 
-DB_SERVER = os.getenv("DB_PORT_3306_TCP_ADDR", "localhost")
+DB_SERVER = os.getenv("DB_PORT_3306_TCP_ADDR", "127.0.0.1")
 DB_PORT = int(os.getenv("DB_PORT_3306_TCP_PORT", "3306"))
 DB_LOGIN = os.getenv("FAF_DB_LOGIN", "root")
 DB_PASSWORD = os.getenv("FAF_DB_PASSWORD", "banana")

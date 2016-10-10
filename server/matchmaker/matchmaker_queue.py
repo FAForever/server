@@ -16,7 +16,7 @@ class MatchmakerQueue:
         self.queue_name = queue_name
         self.rating_prop = 'ladder_rating'
         self.queue = OrderedDict()
-        self._logger.debug("MatchmakerQueue initialized for {}".format(queue_name))
+        self._logger.debug("MatchmakerQueue initialized for %s", queue_name)
 
     def push(self, search: Search):
         """
@@ -75,28 +75,26 @@ class MatchmakerQueue:
         search = search or Search(player, start_time)
         with server.stats.timer('matchmaker.search'):
             try:
-                self._logger.debug("Searching for matchup for {}".format(player))
+                self._logger.debug("Searching for matchup for %s", player)
                 for opponent, opponent_search in self.queue.copy().items():
                     if opponent == player:
                         continue
 
                     quality = search.quality_with(opponent)
                     threshold = search.match_threshold
-                    self._logger.debug("Game quality between {} and {}: {} (threshold: {})"
-                                        .format(player, opponent, quality, threshold))
+                    self._logger.debug("Game quality between %s and %s: %f (threshold: %f)", player, opponent, quality, threshold)
                     if quality >= threshold:
                         if self.match(search, opponent_search):
                             return
 
-                self._logger.debug("Found nobody searching, pushing to queue: {}".format(search))
+                self._logger.debug("Found nobody searching, pushing to queue: %s", search)
                 self.queue[player] = search
                 self.game_service.mark_dirty(self)
                 await search.await_match()
-                self._logger.debug("Search complete: {}".format(search))
+                self._logger.debug("Search complete: %s", search)
             except CancelledError:
                 pass
             finally:
-                pass
                 # If the queue was cancelled, or some other error occured,
                 # make sure to clean up.
                 self.game_service.mark_dirty(self)
