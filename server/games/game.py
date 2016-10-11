@@ -318,7 +318,11 @@ class Game(BaseGame):
                 self._logger.info("Game finished normally")
 
                 for player in self._players_with_unsent_army_stats:
-                    await self._process_army_stats_for_player(player)
+                    try:
+                        await self._process_army_stats_for_player(player)
+                    except:
+                        self._logger.exception("Error when processing army_stats for %s", player)
+                        continue
 
                 if self.desyncs > 20:
                     await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
