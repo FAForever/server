@@ -142,8 +142,11 @@ class Game(BaseGame):
         self._logger.debug("%s created", self)
         asyncio.get_event_loop().create_task(self.timeout_game())
 
+    async def sleep(self, n):
+        return await asyncio.sleep(n)
+
     async def timeout_game(self):
-        await asyncio.sleep(20)
+        self.sleep(20)
         if self.state == GameState.INITIALIZING:
             await self.on_game_end()
 
