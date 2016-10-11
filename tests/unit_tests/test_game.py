@@ -8,10 +8,11 @@ import time
 from trueskill import Rating
 
 from server.games.game import Game, GameState, GameError, Victory, VisibilityState, ValidityState
+from server.games import LadderGame
 from server.gameconnection import GameConnection, GameConnectionState
 from server.players import Player
 from tests import CoroMock
-from tests.unit_tests.conftest import mock_game_connection, add_connected_players, add_connected_player
+from tests.unit_tests.conftest import mock_game_connection, add_players, add_connected_players, add_connected_player
 
 @pytest.yield_fixture
 def game(loop, game_service, game_stats_service):
@@ -22,14 +23,7 @@ def game(loop, game_service, game_stats_service):
 @pytest.fixture()
 def game_5p(game):
     game.state = GameState.LOBBY
-    players = [
-        Player(id=1, login='Dostya', global_rating=(1500, 500)),
-        Player(id=2, login='Rhiza', global_rating=(1500, 500)),
-        Player(id=3, login='QAI', global_rating=(1500, 500)),
-        Player(id=4, login='John', global_rating=(1500, 500)),
-        Player(id=5, login='Doe', global_rating=(1500, 500)),
-    ]
-    add_connected_players(game, players)
+    add_players(game, 5)
     return game
 
 
@@ -334,13 +328,9 @@ async def test_on_game_end_does_not_call_rate_game_for_single_player(game):
 async def test_on_game_end_calls_rate_game_with_two_players(game):
     await game.clear_data()
     game.rate_game = CoroMock()
-
     game.state = GameState.LOBBY
-    players = [
-        Player(id=1, login='Dostya', global_rating=(1500, 500)),
-        Player(id=2, login='Rhiza', global_rating=(1500, 500))
-    ]
-    add_connected_players(game, players)
+    add_players(game, 2)
+
     await game.launch()
 
     assert len(game.players) == 2
@@ -416,7 +406,6 @@ async def test_persist_results_not_called_with_one_player(game):
 async def test_persist_results_not_called_with_no_results(game_5p):
     game = game_5p
     game.persist_results = CoroMock()
-    await game.clear_data()
     game.state = GameState.LOBBY
     game.launched_at = time.time() - 60*20
 
@@ -430,14 +419,9 @@ async def test_persist_results_not_called_with_no_results(game_5p):
 
 
 async def test_persist_results_called_with_two_players(game):
-    await game.clear_data()
-
+    game.clear_data()
     game.state = GameState.LOBBY
-    players = [
-        Player(id=1, login='Dostya', global_rating=(1500, 500)),
-        Player(id=2, login='Rhiza', global_rating=(1500, 500))
-    ]
-    add_connected_players(game, players)
+    add_players(game, 2)
     await game.launch()
     assert len(game.players) == 2
     await game.add_result(0, 1, 'VICTORY', 5)
@@ -461,11 +445,7 @@ def test_hashing(game):
 
 async def test_report_army_stats_sends_stats_for_defeated_player(game: Game):
     game.state = GameState.LOBBY
-    players = [
-        Player(id=1, login='Dostya', global_rating=(1500, 500)),
-        Player(id=2, login='Rhiza', global_rating=(1500, 500))
-    ]
-    add_connected_players(game, players)
+    players = add_players(game, 2)
 
     await game.launch()
     await game.add_result(0, 1, 'defeat', -1)
@@ -479,11 +459,7 @@ async def test_report_army_stats_sends_stats_for_defeated_player(game: Game):
 
 async def test_players_exclude_observers(game: Game):
     game.state = GameState.LOBBY
-    players = [
-        Player(id=1, login='Dostya', global_rating=(1500, 500)),
-        Player(id=2, login='Rhiza', global_rating=(1500, 500)),
-    ]
-    add_connected_players(game, players)
+    players = add_players(game, 2)
 
     obs = Player(id=3, login='Zoidberg', global_rating=(1500, 500))
 
