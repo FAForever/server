@@ -160,10 +160,11 @@ class Game(BaseGame):
         for army in self.armies:
             if army in self._results:
                 for result in self._results[army]:
-                    if result[2] != 'mutual_draw':
+                    if result[1] != 'mutual_draw':
                         return False
             else:
                 return False
+
         return True
 
     @property
