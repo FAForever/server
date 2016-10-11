@@ -8,7 +8,7 @@ import time
 from trueskill import Rating
 
 from server.games.game import Game, GameState, GameError, Victory, VisibilityState, ValidityState
-from server.games import LadderGame
+from server.games import CustomGame
 from server.gameconnection import GameConnection, GameConnectionState
 from server.players import Player
 from tests import CoroMock
@@ -17,6 +17,12 @@ from tests.unit_tests.conftest import mock_game_connection, add_players, add_con
 @pytest.yield_fixture
 def game(loop, game_service, game_stats_service):
     game = Game(42, game_service, game_stats_service)
+    yield game
+    loop.run_until_complete(game.clear_data())
+
+@pytest.yield_fixture
+def custom_game(loop, game_service, game_stats_service):
+    game = CustomGame(42, game_service, game_stats_service)
     yield game
     loop.run_until_complete(game.clear_data())
 
@@ -432,6 +438,7 @@ async def test_persist_results_called_with_two_players(game):
 
     await game.load_results()
     assert game.get_army_result(1) == 5
+
 
 
 def test_equality(game):

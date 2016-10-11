@@ -6,7 +6,7 @@ import time
 from server.games.game import GameState, ValidityState
 from server.games import CustomGame
 from server.players import Player
-from tests.unit_tests.conftest import add_connected_players
+from tests.unit_tests.conftest import add_connected_players, add_players
 
 
 @pytest.yield_fixture
@@ -68,3 +68,21 @@ async def test_rate_game_late_abort_no_enforce(game_service, game_stats_service,
 
     await custom_game.on_game_end()
     assert custom_game.validity == ValidityState.VALID
+
+
+async def test_global_rating_higher_after_custom_game_win(custom_game: CustomGame):
+    game = custom_game
+    game.state = GameState.LOBBY
+    players = add_players(game, 2)
+    game.set_player_option(players[0].id, 'Team', 1)
+    game.set_player_option(players[1].id, 'Team', 2)
+    old_mean = players[0].global_rating[0]
+
+    await game.launch()
+    game.launched_at = time.time() - 60*20 # seconds
+    await game.add_result(0, 0, 'victory', 5)
+    await game.add_result(0, 1, 'defeat', -5)
+    await game.on_game_end()
+
+    assert game.validity is ValidityState.VALID
+    assert players[0].global_rating[0] > old_mean
