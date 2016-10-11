@@ -225,20 +225,10 @@ async def test_initialized_game_not_allowed_to_end(game: Game):
     assert game.state is GameState.INITIALIZING
 
 async def test_game_ends_in_mutually_agreed_draw(game: Game):
-    await game.clear_data()
     game.state = GameState.LOBBY
-    players = [
-        Player(id=1, login='Dostya', global_rating=(1500, 500)),
-        Player(id=2, login='Rhiza', global_rating=(1500, 500))
-    ]
-    add_connected_players(game, players)
+    players = add_players(game, 2)
+
     await game.launch()
-
-    for player in players:
-        game.set_player_option(player.id, 'Team', 1)
-        game.set_player_option(player.id, 'Army', player.id - 1)
-
-    game.state = GameState.LIVE
     game.launched_at = time.time()-60*60
 
     await game.add_result(players[0], 0, 'mutual_draw', 0)
@@ -246,6 +236,20 @@ async def test_game_ends_in_mutually_agreed_draw(game: Game):
     await game.on_game_end()
 
     assert game.validity is ValidityState.MUTUAL_DRAW
+
+async def test_game_not_ends_in_unilatery_agreed_draw(game: Game, players):
+    game.state = GameState.LOBBY
+    add_players(game, 2)
+
+    await game.launch()
+    game.launched_at = time.time()-60*60
+
+    await game.add_result(players.hosting, 0, 'mutual_draw', 0)
+    await game.add_result(players.joining, 1, 'victory', 10)
+    await game.on_game_end()
+
+    assert game.validity is not ValidityState.MUTUAL_DRAW
+
 
 async def test_game_is_invalid_due_to_desyncs(game: Game, players):
     await game.clear_data()
