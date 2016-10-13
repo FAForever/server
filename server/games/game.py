@@ -160,7 +160,7 @@ class Game(BaseGame):
         for army in self.armies:
             if army in self._results:
                 for result in self._results[army]:
-                    if result[2] != 'mutual_draw':
+                    if result[1] != 'mutual_draw':
                         return False
             else:
                 return False
@@ -369,7 +369,7 @@ class Game(BaseGame):
         :return:
         """
 
-        self._logger.debug("Saving game scores")
+        self._logger.debug("Saving scores from game %s", self.id)
         results = {}
         for player in self.players:
             army = self.get_player_option(player.id, 'Army')
@@ -427,11 +427,12 @@ class Game(BaseGame):
                                           (new_rating.mu, new_rating.sigma, self.id, player.id))
                 if rating == 'ladder':
                     rating = 'ladder1v1'  # FIXME: Be consistent about the naming of this
+                else:
+                    player.numGames += 1
 
-                player.numGames += 1
                 yield from cursor.execute("UPDATE {}_rating "
-                                          "SET mean = %s, is_active=1, deviation = %s, numGames = %s "
-                                          "WHERE id = %s".format(rating), (new_rating.mu, new_rating.sigma, player.numGames, player.id))
+                                          "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1 "
+                                          "WHERE id = %s".format(rating), (new_rating.mu, new_rating.sigma, player.id))
                 self.game_service.player_service.mark_dirty(player)
 
     def set_player_option(self, id, key, value):
