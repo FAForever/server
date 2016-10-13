@@ -214,16 +214,18 @@ class Game(BaseGame):
     @property
     def is_even(self):
         teams = self.team_count()
-        if 1 in teams: # someone is without team, all teams need to be 1 player
+        if 1 in teams: # someone is in ffa team, all teams need to have 1 player
             c = 1
             teams.pop(1)
-        else: # all same as count of first team
-            try:
-                c = list(teams.values())[0]
-            except IndexError:
-                return True # no teams defined, consider this even
+        else:
+            n = len(teams)
+            if n <= 1: # 0 teams are considered even, single team not
+                return n == 0
 
-        for k, v in teams.items():
+            # all teams needs to have same count as the first
+            c = list(teams.values())[0]
+
+        for _, v in teams.items():
             if v != c:
                 return False
 

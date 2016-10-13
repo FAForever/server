@@ -99,6 +99,19 @@ async def test_uneven_teams_not_rated(game_service, game_stats_service, game_5p)
     await game.on_game_end()
     assert game.validity == ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
+async def test_single_team_not_rated(game):
+    n_players = 4
+    game.state = GameState.LOBBY
+    add_players(game, n_players, team=2)
+
+    await game.launch()
+    game.launched_at = time.time()-60*20
+    for i in range(n_players):
+        await game.add_result(0, i+1, 'victory', 5)
+    await game.on_game_end()
+
+    assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
+
 def test_set_player_option(game, players, mock_game_connection):
     game.state = GameState.LOBBY
     mock_game_connection.player = players.hosting
