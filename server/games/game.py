@@ -266,11 +266,15 @@ class Game(BaseGame):
                     break
 
     async def _process_army_stats_for_player(self, player):
-        if self._army_stats is None or self.gameOptions["CheatsEnabled"] != "false":
-            return
+        try:
+            if self._army_stats is None or self.gameOptions["CheatsEnabled"] != "false":
+                return
 
-        self._players_with_unsent_army_stats.remove(player)
-        await self._game_stats_service.process_game_stats(player, self, self._army_stats)
+            self._players_with_unsent_army_stats.remove(player)
+            await self._game_stats_service.process_game_stats(player, self, self._army_stats)
+        except Exception as e:
+            # Never let an error in processing army stats cascade
+            self._logger.exception("Army stats could not be processed from player %s in game %s", player, self)
 
     def add_game_connection(self, game_connection):
         """
