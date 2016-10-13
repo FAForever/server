@@ -94,7 +94,7 @@ def add_connected_players(game: BaseGame, players):
         game.set_player_option(player.id, 'Color', 0)
     game.host = players[0]
 
-def add_players(gameobj: BaseGame, n: int):
+def add_players(gameobj: BaseGame, n: int, team: int=None):
     game = gameobj
     current = len(game.players)
     players = []
@@ -102,4 +102,9 @@ def add_players(gameobj: BaseGame, n: int):
         players.append(Player(id=i+1, login='Player '+str(i+1), global_rating=(1500, 500)))
 
     add_connected_players(game, players)
+
+    if team is not None:
+        for p in players:
+            game.set_player_option(p.id, 'Team', team)
+
     return players
