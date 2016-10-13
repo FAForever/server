@@ -26,13 +26,6 @@ def custom_game(loop, game_service, game_stats_service):
     yield game
     loop.run_until_complete(game.clear_data())
 
-@pytest.fixture()
-def game_5p(game):
-    game.state = GameState.LOBBY
-    add_players(game, 5)
-    return game
-
-
 def test_initialization(game: Game):
     assert game.state == GameState.INITIALIZING
     assert game.enforce_rating == False
@@ -67,13 +60,9 @@ async def test_validate_game_settings(game: Game):
     await game.validate_game_settings()
     assert game.validity is ValidityState.VALID
 
-async def test_ffa_not_rated(game_service, game_stats_service, game_5p):
-    game = game_5p
-    game.set_player_option(1, 'Team', 1)
-    game.set_player_option(2, 'Team', 1)
-    game.set_player_option(3, 'Team', 1)
-    game.set_player_option(4, 'Team', 1)
-    game.set_player_option(5, 'Team', 1)
+async def test_ffa_not_rated(game):
+    game.state = GameState.LOBBY
+    add_players(game, 5, team=1)
 
     await game.launch()
     await game.add_result(0, 1, 'VICTORY', 5)
@@ -83,13 +72,10 @@ async def test_ffa_not_rated(game_service, game_stats_service, game_5p):
     await game.on_game_end()
     assert game.validity == ValidityState.FFA_NOT_RANKED
 
-async def test_uneven_teams_not_rated(game_service, game_stats_service, game_5p):
-    game = game_5p
-    game.set_player_option(1, 'Team', 2)
-    game.set_player_option(2, 'Team', 2)
-    game.set_player_option(3, 'Team', 2)
-    game.set_player_option(4, 'Team', 3)
-    game.set_player_option(5, 'Team', 3)
+async def test_uneven_teams_not_rated(game):
+    game.state = GameState.LOBBY
+    add_players(game, 2, team=2)
+    add_players(game, 3, team=3)
 
     await game.launch()
     await game.add_result(0, 1, 'VICTORY', 5)
@@ -426,10 +412,10 @@ async def test_persist_results_not_called_with_one_player(game):
 
     game.persist_results.assert_not_called()
 
-async def test_persist_results_not_called_with_no_results(game_5p):
-    game = game_5p
-    game.persist_results = CoroMock()
+async def test_persist_results_not_called_with_no_results(game):
     game.state = GameState.LOBBY
+    add_players(game, 5)
+    game.persist_results = CoroMock()
     game.launched_at = time.time() - 60*20
 
     await game.launch()
