@@ -662,6 +662,9 @@ class Game(BaseGame):
             score = max(score, result[2])
         return score
 
+    def get_army_result(self, player):
+        return self._results.get(self.get_player_option(player.id, 'Army'))
+
     def compute_rating(self, rating='global'):
         """
         Compute new ratings
