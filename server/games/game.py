@@ -146,7 +146,7 @@ class Game(BaseGame):
         return await asyncio.sleep(n)
 
     async def timeout_game(self):
-        self.sleep(20)
+        await self.sleep(20)
         if self.state == GameState.INITIALIZING:
             await self.on_game_end()
 
