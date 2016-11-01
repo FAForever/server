@@ -114,8 +114,7 @@ class GameConnection(GpgNetServerProtocol):
 
     async def _handle_lobby_state(self):
         """
-        The game has told us it is ready and listening on
-        self.player.game_port for UDP.
+        The game has told us it is ready for connections
         """
         try:
             player_state = self.player.state
@@ -160,15 +159,9 @@ class GameConnection(GpgNetServerProtocol):
         :return:
         """
         assert peer.player.state == PlayerState.HOSTING
-        result = await self.EstablishConnection(peer)
-        if not result:
-            self.abort("Failed connecting to host {}".format(peer))
-        own_addr, peer_addr = result
-        self.send_JoinGame(peer_addr,
-                           peer.player.login,
+        self.send_JoinGame(peer.player.login,
                            peer.player.id)
-        peer.send_ConnectToPeer(own_addr,
-                                self.player.login,
+        peer.send_ConnectToPeer(self.player.login,
                                 self.player.id)
 
     async def ConnectToPeer(self, peer):
@@ -176,15 +169,9 @@ class GameConnection(GpgNetServerProtocol):
         Connect two peers
         :return: None
         """
-        result = await self.EstablishConnection(peer)
-        if not result:
-            self.abort("Failed connecting to {}".format(peer))
-        own_addr, peer_addr = result
-        self.send_ConnectToPeer(peer_addr,
-                                peer.player.login,
+        self.send_ConnectToPeer(peer.player.login,
                                 peer.player.id)
-        peer.send_ConnectToPeer(own_addr,
-                                self.player.login,
+        peer.send_ConnectToPeer(self.player.login,
                                 self.player.id)
 
     async def handle_action(self, command, args):
@@ -356,8 +343,6 @@ class GameConnection(GpgNetServerProtocol):
 
         elif state == 'Lobby':
             # The game is initialized and awaiting commands
-            # At this point, it is listening locally on the
-            # port we told it to (self.player.game_port)
             #
             # We do not yield from the task, since we
             # need to keep processing other commands while it runs
@@ -417,9 +402,6 @@ class GameConnection(GpgNetServerProtocol):
             self._logger.exception(e)
         finally:
             self.abort()
-
-    def address_and_port(self):
-        return "{}:{}".format(self.player.ip, self.player.game_port)
 
     def __str__(self):
         return "GameConnection(Player({}),Game({}))".format(self.player, self.game)

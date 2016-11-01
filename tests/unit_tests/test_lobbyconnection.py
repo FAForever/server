@@ -19,7 +19,6 @@ import server.db as db
 def test_game_info():
     return {
         'title': 'Test game',
-        'gameport': '8000',
         'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
         'mod': 'faf',
         'mapname': 'scmp_007',
@@ -33,7 +32,6 @@ def test_game_info():
 def test_game_info_invalid():
     return {
         'title': 'Title with non ASCI char \xc3',
-        'gameport': '8000',
         'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
         'mod': 'faf',
         'mapname': 'scmp_007',
