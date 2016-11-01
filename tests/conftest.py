@@ -156,11 +156,9 @@ def create_player():
         p.global_rating = global_rating
         p.ladder_rating = ladder_rating
         p.ip = ip
-        p.game_port = port
         p.state = state
         p.id = id
         p.login = login
-        p.address_and_port = "{}:{}".format(ip, port)
         return p
     return make
 

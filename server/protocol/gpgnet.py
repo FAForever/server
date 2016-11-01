@@ -20,23 +20,21 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
         """
         self.send_gpgnet_message('CreateLobby', [int(init_mode.value), port, login, uid, natTraversalProvider])
 
-    def send_ConnectToPeer(self, address_and_port: str, player_name: str, player_uid: int):
+    def send_ConnectToPeer(self, player_name: str, player_uid: int):
         """
         Tells a client that has a listening LobbyComm instance to connect to the given peer
-        :param address_and_port: String of the form "adress:port"
         :param player_name: Remote player name
         :param player_uid: Remote player identifier
         """
-        self.send_gpgnet_message('ConnectToPeer', [address_and_port, player_name, player_uid])
+        self.send_gpgnet_message('ConnectToPeer', [player_name, player_uid])
 
-    def send_JoinGame(self, address_and_port: str, remote_player_name: str, remote_player_uid: int):
+    def send_JoinGame(self, remote_player_name: str, remote_player_uid: int):
         """
-        Tells the game to join the given peer by address_and_port
-        :param address_and_port:
+        Tells the game to join the given peer by ID
         :param remote_player_name:
         :param remote_player_uid:
         """
-        self.send_gpgnet_message('JoinGame', [address_and_port, remote_player_name, remote_player_uid])
+        self.send_gpgnet_message('JoinGame', [remote_player_name, remote_player_uid])
 
     def send_HostGame(self, map):
         """

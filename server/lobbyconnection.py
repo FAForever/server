@@ -3,17 +3,10 @@ import asyncio
 import hashlib
 import cgi
 import base64
-import ipaddress
 import json
 import urllib.parse
-import zipfile
-import os
-import shutil
 import random
 import re
-from collections import defaultdict
-from typing import List
-from typing import Mapping
 from typing import Optional
 
 import datetime
@@ -22,7 +15,6 @@ import aiohttp
 import pymysql
 import rsa
 import time
-import smtplib
 import string
 import email
 from email.mime.text import MIMEText
@@ -705,7 +697,6 @@ Thanks,\n\
         self.player = Player(login=str(login),
                              session=self.session,
                              ip=self.peer_address.host,
-                             port=None,
                              id=player_id,
                              permissionGroup=permission_group,
                              lobby_connection=self)
@@ -845,10 +836,9 @@ Thanks,\n\
         assert isinstance(self.player, Player)
 
         uuid = message['uid']
-        port = message['gameport']
         password = message.get('password', None)
 
-        self._logger.debug("joining: %d:%d with pw: %s", uuid, port, password)
+        self._logger.debug("joining: %d with pw: %s", uuid, password)
         try:
             game = self.game_service[uuid]
             if not game or game.state != GameState.LOBBY:
@@ -860,7 +850,7 @@ Thanks,\n\
                 self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
                 return
 
-            self.launch_game(game, port, False)
+            self.launch_game(game, False)
         except KeyError:
             self.sendJSON(dict(command="notice", style="info", text="The host has left the game"))
 
@@ -868,7 +858,6 @@ Thanks,\n\
     @asyncio.coroutine
     def command_game_matchmaking(self, message):
         mod = message.get('mod', 'ladder1v1')
-        port = message.get('gameport', None)
         state = message['state']
 
         if state == "stop":
@@ -876,9 +865,6 @@ Thanks,\n\
                 self._logger.info("%s stopped searching for ladder: %s", self.player, self.search)
                 self.search.cancel()
             return
-
-        if port:
-            self.player.game_port = port
 
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
@@ -910,7 +896,6 @@ Thanks,\n\
         assert isinstance(self.player, Player)
 
         title = cgi.escape(message.get('title', ''))
-        port = message.get('gameport')
         visibility = VisibilityState.from_string(message.get('visibility'))
         if not isinstance(visibility, VisibilityState):
             # Protocol violation.
@@ -935,10 +920,10 @@ Thanks,\n\
             'mapname': mapname,
             'password': password
         })
-        self.launch_game(game, port, True)
+        self.launch_game(game, True)
         server.stats.incr('game.hosted')
 
-    def launch_game(self, game, port, is_host=False, use_map=None):
+    def launch_game(self, game, is_host=False, use_map=None):
         # FIXME: Setting up a ridiculous amount of cyclic pointers here
         if self.game_connection:
             self.game_connection.abort("Player launched a new game")
@@ -954,7 +939,6 @@ Thanks,\n\
 
         self.player.state = PlayerState.HOSTING if is_host else PlayerState.JOINING
         self.player.game = game
-        self.player.game_port = port
         cmd = {"command": "game_launch",
                        "mod": game.game_mode,
                        "uid": game.id,
