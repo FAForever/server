@@ -296,6 +296,22 @@ class GameConnection(GpgNetServerProtocol):
                                          "VALUES (%s, %s, %s, %s);",
                                          (teamkiller_id, victim_id, self.game.id, gametime))
 
+            elif command == 'SdpRecord':
+                receiver_id = int(args[0])
+                sdp_record = args[1]
+
+                peer = self.player_service.get_player(receiver_id)
+                if not peer:
+                    self._logger.info("Ignoring SDP record for unknown player: %s", receiver_id)
+                    return
+
+                game_connection = peer.game_connection
+                if not game_connection:
+                    self._logger.info("Ignoring SDP for player without game connection: %s", receiver_id)
+                    return
+
+                game_connection.send_message(dict(command="SdpRecord", args=[int(self.player.id), sdp_record]))
+
         except AuthenticationError as e:
             self.log.exception("Authentication error: %s", e)
             self.abort()
