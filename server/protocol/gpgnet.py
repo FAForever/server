@@ -20,13 +20,13 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
         """
         self.send_gpgnet_message('CreateLobby', [int(init_mode.value), port, login, uid, natTraversalProvider])
 
-    def send_ConnectToPeer(self, player_name: str, player_uid: int):
+    def send_ConnectToPeer(self, player_name: str, player_uid: int, offer: bool):
         """
         Tells a client that has a listening LobbyComm instance to connect to the given peer
         :param player_name: Remote player name
         :param player_uid: Remote player identifier
         """
-        self.send_gpgnet_message('ConnectToPeer', [player_name, player_uid])
+        self.send_gpgnet_message('ConnectToPeer', [player_name, player_uid, offer])
 
     def send_JoinGame(self, remote_player_name: str, remote_player_uid: int):
         """
