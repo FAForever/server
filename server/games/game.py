@@ -379,24 +379,24 @@ class Game(BaseGame):
         """
 
         self._logger.debug("Saving scores from game %s", self.id)
-        results = {}
+        scores = {}
         for player in self.players:
             army = self.get_player_option(player.id, 'Army')
             try:
-                result = self.get_army_result(army)
-                results[player] = result
-                self._logger.info('Result for army %s, player: %s: %s', army, player, result)
+                score = self.get_army_score(army)
+                scores[player] = score
+                self._logger.info('Result for army %s, player: %s: %s', army, player, score)
             except KeyError:
                 # Default to -1 if there is no result
-                results[player] = -1
+                scores[player] = -1
 
         async with db.db_pool.get() as conn:
             cursor = await conn.cursor()
 
             rows = []
-            for player, result in results.items():
-                self._logger.info("Result for player %s: %s", player, result)
-                rows.append((result, self.id, player.id))
+            for player, score in scores.items():
+                self._logger.info("Score for player %s: %s", player, score)
+                rows.append((score, self.id, player.id))
 
             await cursor.executemany("UPDATE game_player_stats "
                                      "SET `score`=%s, `scoreTime`=NOW() "
@@ -646,7 +646,7 @@ class Game(BaseGame):
                                  "SET validity = %s "
                                  "WHERE id = %s", (new_validity_state.value, self.id))
 
-    def get_army_result(self, army):
+    def get_army_score(self, army):
         """
         Since we log multiple results from multiple sources, we have to pick one.
 
@@ -661,6 +661,9 @@ class Game(BaseGame):
         for result in self._results[army]:
             score = max(score, result[2])
         return score
+
+    def get_army_result(self, player):
+        return self._results.get(self.get_player_option(player.id, 'Army'))
 
     def compute_rating(self, rating='global'):
         """
@@ -686,12 +689,12 @@ class Game(BaseGame):
                 if team not in team_scores:
                     team_scores[team] = 0
                 try:
-                    team_scores[team] += self.get_army_result(army)
+                    team_scores[team] += self.get_army_score(army)
                 except KeyError:
                     team_scores[team] += 0
                     self._logger.warn("Missing game result for %s: %s", army, player)
             elif team == 1:
-                ffa_scores.append((player, self.get_army_result(army)))
+                ffa_scores.append((player, self.get_army_score(army)))
         ranks = [-score for team, score in sorted(team_scores.items(), key=lambda t: t[0])]
         rating_groups = []
         for team in sorted(self.teams):
