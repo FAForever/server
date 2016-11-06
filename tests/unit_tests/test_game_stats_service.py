@@ -436,7 +436,7 @@ def test_top_score_8_players(game_stats_service, achievement_service):
     achievement_service.increment.assert_any_call(ACH_UNBEATABLE, 1, [])
     assert len(achievement_service.mock_calls) == 2
 
-async def test_process_game_stats_abort_processing_if_no_army_result(game_stats_service, game, player):
+async def test_process_game_stats_abort_processing_if_no_army_result(game_stats_service, game, player, achievement_service, event_service):
     with open("tests/data/game_stats_full_example.json", "r") as stats_file:
         stats = stats_file.read()
 
