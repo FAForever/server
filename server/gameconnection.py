@@ -27,7 +27,10 @@ class GameConnection(GpgNetServerProtocol):
     def __init__(self, loop: asyncio.BaseEventLoop,
                  lobby_connection: "LobbyConnection",
                  player_service: "PlayerService",
-                 games: GameService):
+                 game_service: GameService,
+                 player: Player,
+                 game: Game,
+                 state: GameConnectionState=GameConnectionState.INITIALIZING):
         """
         Construct a new GameConnection
 
@@ -40,17 +43,17 @@ class GameConnection(GpgNetServerProtocol):
         super().__init__()
         self.lobby_connection = lobby_connection
         self._logger.debug('GameConnection initializing')
-        self._state = GameConnectionState.INITIALIZING
+        self._state = state
         self._waiters = defaultdict(list)
         self.loop = loop
         self.player_service = player_service
-        self.games = games
+        self.game_service = game_service
 
         self.log = logging.getLogger(__name__)
         self.initTime = time.time()
         self.proxies = {}
-        self._player = None
-        self._game = None
+        self._player = player
+        self._game = game
 
         self.last_pong = time.time()
 
@@ -383,7 +386,7 @@ class GameConnection(GpgNetServerProtocol):
 
     def _mark_dirty(self):
         if self.game:
-            self.games.mark_dirty(self.game)
+            self.game_service.mark_dirty(self.game)
 
     def abort(self, logspam=''):
         """

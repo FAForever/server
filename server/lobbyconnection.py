@@ -808,16 +808,15 @@ class LobbyConnection:
         server.stats.incr('game.hosted')
 
     def launch_game(self, game, is_host=False, use_map=None):
-        # FIXME: Setting up a ridiculous amount of cyclic pointers here
         if self.game_connection:
             self.game_connection.abort("Player launched a new game")
         self.game_connection = GameConnection(self.loop,
-                                              self,
-                                              self.player_service,
-                                              self.game_service)
-        self.game_connection.player = self.player
+                                                     self.player_service,
+                                                     self.game_service,
+                                                     self.player,
+                                                     game)
         self.player.game_connection = self.game_connection
-        self.game_connection.game = game
+
         if is_host:
             game.host = self.player
 

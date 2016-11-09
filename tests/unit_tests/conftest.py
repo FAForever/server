@@ -5,7 +5,7 @@ from server import GameStatsService, LobbyConnection
 from server.abc.base_game import BaseGame
 from server.games import Game
 from server.gameconnection import GameConnection, GameConnectionState
-from server.players import Player
+from server.players import Player, PlayerState
 from tests import CoroMock
 
 @pytest.fixture()
@@ -14,16 +14,17 @@ def lobbythread():
         sendJSON=lambda obj: None
     )
 
+
 @pytest.fixture
 def game_connection(request, game, loop, player_service, players, game_service, transport):
     from server import GameConnection, LobbyConnection
     conn = GameConnection(loop=loop,
                           lobby_connection=mock.create_autospec(LobbyConnection(loop)),
                           player_service=player_service,
-                          games=game_service)
+                          game_service=game_service,
+                          player=players.hosting,
+                          game=game)
     conn._transport = transport
-    conn.player = players.hosting
-    conn.game = game
     conn.lobby = mock.Mock(spec=LobbyConnection)
     conn.finished_sim = False
 
@@ -60,9 +61,9 @@ def connections(loop, player_service, game_service, transport, game):
         conn = GameConnection(loop=loop,
                               lobby_connection=lc,
                               player_service=player_service,
-                              games=game_service)
-        conn.player = player
-        conn.game = game
+                              game_service=game_service,
+                              player=player,
+                              game=game)
         conn._transport = transport
         return conn
 
@@ -79,10 +80,9 @@ def add_connected_player(game: Game, player):
     game.set_player_option(player.id, 'Faction', 0)
     game.set_player_option(player.id, 'Color', 0)
     game.add_game_connection(gc)
-    return gc
 
 
-def add_connected_players(game: BaseGame, players):
+def add_connected_players(game: Game, players):
     """
     Utility to add players with army and StartSpot indexed by a list
     """
@@ -95,12 +95,13 @@ def add_connected_players(game: BaseGame, players):
         game.set_player_option(player.id, 'Color', 0)
     game.host = players[0]
 
-def add_players(gameobj: BaseGame, n: int, team: int=None):
+
+def add_players(gameobj: Game, n: int, team: int=None):
     game = gameobj
     current = len(game.players)
     players = []
     for i in range(current, current+n):
-        players.append(Player(id=i+1, login='Player '+str(i+1), global_rating=(1500, 500)))
+        players.append(Player(id=i+1, login='Player '+str(i+1), global_rating=(1500, 500), state=PlayerState.JOINING))
 
     add_connected_players(game, players)
 
