@@ -289,7 +289,7 @@ class Game(BaseGame):
         """
         if game_connection.state != GameConnectionState.CONNECTED_TO_HOST:
             raise GameError("Invalid GameConnectionState: {}".format(game_connection.state))
-        if self.state != GameState.LOBBY:
+        if self.state != GameState.LOBBY and self.state != GameState.LIVE:
             raise GameError("Invalid GameState: {state}".format(state=self.state))
         self._logger.info("Added game connection %s", game_connection)
         self._connections[game_connection.player] = game_connection

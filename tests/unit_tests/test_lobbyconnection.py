@@ -1,18 +1,21 @@
 import asyncio
+import hashlib
 from unittest.mock import Mock
 
 import pytest
 from unittest import mock
-from server import ServerContext, GameState, VisibilityState, GameStatsService
+from server import ServerContext, GameState, VisibilityState
 from server.protocol import QDataStreamProtocol
 from server.game_service import GameService
 from server.games import Game
 from server.lobbyconnection import LobbyConnection
 from server.player_service import PlayerService
-from server.players import Player
+from server.players import Player, PlayerState
+from server.types import Address
 from tests import CoroMock
 
 import server.db as db
+
 
 @pytest.fixture()
 def test_game_info():
@@ -66,6 +69,9 @@ def lobbyconnection(loop, mock_context, mock_protocol, mock_games, mock_players,
                          players=mock_players)
     lc.player = mock_player
     lc.protocol = mock_protocol
+    lc.player_service.get_permission_group.return_value = 0
+    lc.player_service.fetch_player_data = CoroMock()
+    lc.peer_address = Address('127.0.0.1', 1234)
     return lc
 
 
@@ -283,3 +289,67 @@ async def test_command_avatar_select(mocker, lobbyconnection: LobbyConnection, m
         await cursor.execute("SELECT selected from avatars where idUser=2")
         result = await cursor.fetchone()
         assert result == (1,)
+
+
+async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnection: LobbyConnection, mocker, mock_player):
+    protocol = mocker.patch.object(lobbyconnection, 'protocol')
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.game_connection = None
+    lobbyconnection.player.state = PlayerState.IDLE
+    lobbyconnection.command_restore_game_session({'game_id': 123})
+
+    assert not lobbyconnection.player.game_connection
+    assert lobbyconnection.player.state == PlayerState.IDLE
+
+    protocol.send_message.assert_any_call({
+        "command": "notice",
+        "style": "info",
+        "text": "The game you were connected to does no longer exist"
+    })
+
+
+@pytest.mark.parametrize("game_state", [GameState.INITIALIZING, GameState.ENDED])
+async def test_game_connection_not_restored_if_game_state_prohibits(lobbyconnection: LobbyConnection, game_service: GameService,
+                                                                    game_stats_service, game_state, mock_player, mocker):
+    protocol = mocker.patch.object(lobbyconnection, 'protocol')
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.game_connection = None
+    lobbyconnection.player.state = PlayerState.IDLE
+    lobbyconnection.game_service = game_service
+    game = mock.create_autospec(Game(42, game_service, game_stats_service))
+    game.state = game_state
+    game.password = None
+    game.game_mode = 'faf'
+    game.id = 42
+    game_service.games[42] = game
+
+    lobbyconnection.command_restore_game_session({'game_id': 42})
+
+    assert not lobbyconnection.game_connection
+    assert lobbyconnection.player.state == PlayerState.IDLE
+
+    protocol.send_message.assert_any_call({
+        "command": "notice",
+        "style": "info",
+        "text": "The game you were connected to is no longer available"
+    })
+
+
+@pytest.mark.parametrize("game_state", [GameState.LIVE, GameState.LOBBY])
+async def test_game_connection_restored_if_game_exists(lobbyconnection: LobbyConnection, game_service: GameService,
+                                                       game_stats_service, game_state, mock_player):
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.game_connection = None
+    lobbyconnection.player.state = PlayerState.IDLE
+    lobbyconnection.game_service = game_service
+    game = mock.create_autospec(Game(42, game_service, game_stats_service))
+    game.state = game_state
+    game.password = None
+    game.game_mode = 'faf'
+    game.id = 42
+    game_service.games[42] = game
+    
+    lobbyconnection.command_restore_game_session({'game_id': 42})
+
+    assert lobbyconnection.game_connection
+    assert lobbyconnection.player.state == PlayerState.PLAYING
