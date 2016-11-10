@@ -31,6 +31,8 @@ import geoip2.database
 
 import server
 from server import GameConnection
+from server.abc.base_game import GameConnectionState
+from server.games import Game
 from server.matchmaker import Search
 from server.decorators import timed, with_logger
 from server.games.game import GameState, VisibilityState
@@ -669,6 +671,28 @@ class LobbyConnection:
         self.send_game_list()
         self.send_tutorial_section()
 
+    def command_restore_game_session(self, message):
+        game_id = message.get('game_id')
+
+        # Restore the player's game connection, if the game still exists and is live
+        if not game_id or game_id not in self.game_service:
+            self.send_warning("The game you were connected to does no longer exist")
+            return
+
+        game = self.game_service[game_id]  # type: Game
+        if game.state != GameState.LOBBY and game.state != GameState.LIVE:
+            self.send_warning("The game you were connected to is no longer available")
+            return
+
+        self._logger.debug("Restoring game session of player %s to game %s", self.player, game)
+        self.game_connection = GameConnection(self.loop, self, self.player_service, self.game_service, self.player,
+                                              game, GameConnectionState.CONNECTED_TO_HOST)
+        self.player.game_connection = self.game_connection
+        game.add_game_connection(self.game_connection)
+        self.player.state = PlayerState.PLAYING
+        if not hasattr(self.player, "game"):
+            self.player.game = game
+
     @timed
     def command_ask_session(self, message):
         if self.check_version(message):
@@ -810,11 +834,7 @@ class LobbyConnection:
     def launch_game(self, game, is_host=False, use_map=None):
         if self.game_connection:
             self.game_connection.abort("Player launched a new game")
-        self.game_connection = GameConnection(self.loop,
-                                                     self.player_service,
-                                                     self.game_service,
-                                                     self.player,
-                                                     game)
+        self.game_connection = GameConnection(self.loop,self, self.player_service, self.game_service, self.player, game)
         self.player.game_connection = self.game_connection
 
         if is_host:
