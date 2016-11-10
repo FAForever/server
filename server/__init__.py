@@ -17,7 +17,6 @@ from . import config as config
 from .games.game import GameState, VisibilityState
 from .stats.game_stats_service import GameStatsService
 from .gameconnection import GameConnection
-from .natpacketserver import NatPacketServer
 from .lobbyconnection import LobbyConnection
 from .protocol import Protocol, QDataStreamProtocol
 from .servercontext import ServerContext

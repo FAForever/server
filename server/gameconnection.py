@@ -4,7 +4,6 @@ import time
 import logging
 import functools
 from server.abc.base_game import GameConnectionState
-from server.connectivity import Connectivity, ConnectivityState, ConnectivityResult
 from server.games.game import Game, GameState, Victory
 from server.decorators import with_logger, timed
 from server.game_service import GameService
@@ -58,8 +57,6 @@ class GameConnection(GpgNetServerProtocol):
         self.ip, self.port = None, None
         self.lobby = None
         self._transport = None
-
-        self.connectivity = self.lobby_connection.connectivity  # type: Connectivity
 
     @property
     def state(self):
@@ -117,8 +114,6 @@ class GameConnection(GpgNetServerProtocol):
         """
         The game has told us it is ready and listening on
         self.player.game_port for UDP.
-        We determine the connectivity of the peer and respond
-        appropriately
         """
         try:
             player_state = self.player.state
@@ -186,65 +181,6 @@ class GameConnection(GpgNetServerProtocol):
         peer.send_ConnectToPeer(own_addr,
                                 self.player.login,
                                 self.player.id)
-
-    async def EstablishConnection(self, peer_connection: "GameConnection"):
-        """
-        Attempt to establish a full duplex UDP connection
-        between self and peer.
-
-        :param peer_connection: Client to connect to
-        :return: (own_addr, remote_addr)
-        """
-        own = self.connectivity.result  # type: ConnectivityResult
-        peer = peer_connection.connectivity.result  # type: ConnectivityResult
-        if peer.state == ConnectivityState.PUBLIC \
-                and own.state == ConnectivityState.PUBLIC:
-            self._logger.debug("Connecting %s to host %s directly", self, peer_connection)
-            return own.addr, peer.addr
-        elif peer.state == ConnectivityState.STUN or own.state == ConnectivityState.STUN:
-            self._logger.debug("Connecting %s to host %s using STUN", self, peer_connection)
-            (own_addr, peer_addr) = await self.STUN(peer_connection)
-            if peer_addr is None or own_addr is None:
-                self._logger.debug("STUN between %s %s failed", self, peer_connection)
-                self._logger.debug("Resolved addresses: %s, %s", peer_addr, own_addr)
-                if self.player.id < peer_connection.player.id and own.state == ConnectivityState.STUN:
-                    return await self.TURN(peer_connection)
-                elif peer.state == ConnectivityState.STUN:
-                    return tuple(reversed(await peer_connection.TURN(self)))
-            else:
-                return own_addr, peer_addr
-        self._logger.error("Connection blocked")
-
-    async def TURN(self, peer: 'GameConnection'):
-        addr = await self.connectivity.create_binding(peer.connectivity)
-        return self.lobby_connection.connectivity.relay_address, addr
-
-    async def STUN(self, peer):
-        """
-        Perform a STUN sequence between self and peer
-
-        :param peer:
-        :return: (own_addr, remote_addr) | None
-        """
-        own_addr = asyncio.ensure_future(self.connectivity.ProbePeerNAT(peer))
-        remote_addr = asyncio.ensure_future(peer.connectivity.ProbePeerNAT(self))
-        (done, pending) = await asyncio.wait([own_addr, remote_addr], return_when=asyncio.FIRST_COMPLETED)
-        if own_addr.done() and remote_addr.done() and not own_addr.cancelled() and not remote_addr.cancelled():
-            # Both peers got it the first time
-            return own_addr.result(), remote_addr.result()
-        if own_addr.done() and not own_addr.cancelled():
-            # Remote received our packet, we didn't receive theirs
-            # Instruct remote to try our new address
-            own_addr = own_addr.result()
-            remote_addr = await peer.connectivity.ProbePeerNAT(self, use_address=own_addr)
-        elif remote_addr.done() and not remote_addr.cancelled():
-            # Opposite of the above
-            remote_addr = remote_addr.result()
-            own_addr = await self.connectivity.ProbePeerNAT(peer, use_address=remote_addr)
-        for p in pending:
-            if not p.done():
-                p.cancel()
-        return own_addr, remote_addr
 
     async def handle_action(self, command, args):
         """
@@ -357,7 +293,6 @@ class GameConnection(GpgNetServerProtocol):
             elif command == 'EnforceRating':
                 self.game.enforce_rating = True
 
-
             elif command == 'TeamkillReport':
                 # args[0] -> seconds of gametime when kill happened
                 # args[1] -> victim id
@@ -373,7 +308,6 @@ class GameConnection(GpgNetServerProtocol):
                                          "(`teamkiller`, `victim`, `game_id`, `gametime`) "
                                          "VALUES (%s, %s, %s, %s);",
                                          (teamkiller_id, victim_id, self.game.id, gametime))
-
 
         except AuthenticationError as e:
             self.log.exception("Authentication error: %s", e)
@@ -397,8 +331,6 @@ class GameConnection(GpgNetServerProtocol):
             # The game is initialized and awaiting commands
             # At this point, it is listening locally on the
             # port we told it to (self.player.game_port)
-            # We schedule an async task to determine their connectivity
-            # and respond appropriately
             #
             # We do not yield from the task, since we
             # need to keep processing other commands while it runs

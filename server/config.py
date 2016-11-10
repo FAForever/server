@@ -6,8 +6,6 @@ import trueskill
 import os
 
 LOBBY_IP = os.getenv('LOBBY_IP', '37.58.123.3')
-LOBBY_UDP_PORTS = [int(port) for port in os.getenv('LOBBY_UDP_PORTS', '7,53,67,80,123,194,547,3478,3535,6112,30351').split(',')]
-LOBBY_NAT_ADDRESSES = list(map(lambda p: ('0.0.0.0', p), LOBBY_UDP_PORTS))
 
 logging.getLogger('aiomeasures').setLevel(logging.INFO)
 
