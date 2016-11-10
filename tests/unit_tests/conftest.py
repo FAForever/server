@@ -54,7 +54,7 @@ def game_stats_service():
 def connections(loop, player_service, game_service, transport, game):
     from server import GameConnection
 
-    def make_connection(player, connectivity):
+    def make_connection(player):
         lc = LobbyConnection(loop)
         lc.protocol = mock.Mock()
         conn = GameConnection(loop=loop,
@@ -64,7 +64,6 @@ def connections(loop, player_service, game_service, transport, game):
         conn.player = player
         conn.game = game
         conn._transport = transport
-        conn._connectivity_state.set_result(connectivity)
         return conn
 
     return mock.Mock(

@@ -39,7 +39,6 @@ import geoip2.database
 
 import server
 from server import GameConnection
-from server.connectivity import Connectivity, ConnectivityState
 from server.matchmaker import Search
 from server.decorators import timed, with_logger
 from server.games.game import GameState, VisibilityState
@@ -89,7 +88,6 @@ class LobbyConnection:
         self._authenticated = False
         self.player = None  # type: Player
         self.game_connection = None  # type: GameConnection
-        self.connectivity = None  # type: Connectivity
         self.leagueAvatar = None
         self.peer_address = None  # type: Optional[Address]
         self.session = int(random.randrange(0, 4294967295))
@@ -139,11 +137,7 @@ class LobbyConnection:
                     return
                 await self.game_connection.handle_action(cmd, message.get('args', []))
                 return
-            elif target == 'connectivity':
-                if not self.connectivity:
-                    return
-                await self.connectivity.on_message_received(message)
-                return
+
             handler = getattr(self, 'command_{}'.format(cmd))
             if asyncio.iscoroutinefunction(handler):
                 await handler(message)
@@ -599,7 +593,6 @@ class LobbyConnection:
                              id=player_id,
                              permissionGroup=permission_group,
                              lobby_connection=self)
-        self.connectivity = Connectivity(self, self.peer_address.host, self.player)
 
         if self.player.id in self.player_service and self.player_service[self.player.id].lobby_connection:
             old_conn = self.player_service[self.player.id].lobby_connection
@@ -728,21 +721,12 @@ class LobbyConnection:
         else:
             raise KeyError('invalid action')
 
-    @property
-    def able_to_launch_game(self):
-        return self.connectivity.result
-
     @timed
     def command_game_join(self, message):
         """
         We are going to join a game.
         """
         assert isinstance(self.player, Player)
-        if not self.able_to_launch_game:
-            raise ClientError("You are already in a game or haven't run the connectivity test yet")
-
-        if self.connectivity.result.state == ConnectivityState.STUN:
-            self.connectivity.relay_address = Address(*message['relay_address'])
 
         uuid = message['uid']
         port = message['gameport']
@@ -771,17 +755,11 @@ class LobbyConnection:
         port = message.get('gameport', None)
         state = message['state']
 
-        if not self.able_to_launch_game:
-            raise ClientError("You are already in a game or are otherwise having connection problems. Please report this issue using HELP -> Tech support.")
-
         if state == "stop":
             if self.search:
                 self._logger.info("%s stopped searching for ladder: %s", self.player, self.search)
                 self.search.cancel()
             return
-
-        if self.connectivity.result.state == ConnectivityState.STUN:
-            self.connectivity.relay_address = Address(*message['relay_address'])
 
         if port:
             self.player.game_port = port
@@ -813,12 +791,6 @@ class LobbyConnection:
 
     @timed()
     def command_game_host(self, message):
-        if not self.able_to_launch_game:
-            raise ClientError("You are already in a game or haven't run the connectivity test yet")
-
-        if self.connectivity.result.state == ConnectivityState.STUN:
-            self.connectivity.relay_address = Address(*message['relay_address'])
-
         assert isinstance(self.player, Player)
 
         title = cgi.escape(message.get('title', ''))

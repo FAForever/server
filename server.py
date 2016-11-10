@@ -11,14 +11,12 @@ Options:
 import asyncio
 
 import logging
-from logging import handlers
 import signal
 import socket
 
 from server.game_service import GameService
 from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
-from server.natpacketserver import NatPacketServer
 from server.stats.game_stats_service import GameStatsService, EventService, AchievementService
 from server.api.api_accessor import ApiAccessor
 import server
@@ -65,10 +63,6 @@ if __name__ == '__main__':
         event_service = EventService(api_accessor)
         achievement_service = AchievementService(api_accessor)
         game_stats_service = GameStatsService(event_service, achievement_service)
-
-        natpacket_server = NatPacketServer(addresses=config.LOBBY_NAT_ADDRESSES, loop=loop)
-        loop.run_until_complete(natpacket_server.listen())
-        server.NatPacketServer.instance = natpacket_server
 
         games = GameService(players_online, game_stats_service)
         matchmaker_queue = MatchmakerQueue('ladder1v1', players_online, games)
