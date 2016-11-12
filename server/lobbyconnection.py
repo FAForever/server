@@ -641,9 +641,6 @@ Thanks,\n\
             except Exception as e:
                 self._logger.warning("UID association dupe: %d: %s", player_id, uid_hash)
 
-        # TODO: Mildly unpleasant
-        await cursor.execute("UPDATE login SET ip = %s WHERE id = %s", (self.peer_address.host, player_id))
-
         return True
 
     def check_version(self, message):
@@ -679,12 +676,17 @@ Thanks,\n\
         login = message['login'].strip()
         password = message['password']
 
-        # Check their client is reporting the right version number.
         async with db.db_pool.get() as conn:
             cursor = await conn.cursor()
             player_id, login, steamid = await self.check_user_login(cursor, login, password)
             server.stats.incr('user.logins')
             server.stats.gauge('users.online', len(self.player_service))
+
+            await cursor.execute("UPDATE login SET ip = %(ip)s, user_agent = %(user_agent)s WHERE id = %(player_id)s", {
+                                     "ip": self.peer_address.host,
+                                     "user_agent": message.get('user_agent'),
+                                     "player_id": player_id
+                                 })
 
             if not self.player_service.is_uniqueid_exempt(player_id):
                 # UniqueID check was rejected (too many accounts or tamper-evident madness)
