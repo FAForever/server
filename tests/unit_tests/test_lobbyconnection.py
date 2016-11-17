@@ -303,3 +303,35 @@ async def test_command_avatar_select(mocker, lobbyconnection: LobbyConnection, m
         await cursor.execute("SELECT selected from avatars where idUser=2")
         result = await cursor.fetchone()
         assert result == (1,)
+
+
+@pytest.mark.parametrize("test_data", [
+    # ID, SteamId, UID, Expected result
+    (1, None, "some_id", False),
+    (2, None, "another_id", True),
+    (3, None, "some_id", False),
+    (3, 123, "some_id", True),
+    (4, None, "totally_new_id", True)
+])
+async def test_uid(lobbyconnection: LobbyConnection, test_data, mocker):
+    protocol = mocker.patch.object(lobbyconnection, 'protocol')
+
+    player_id = test_data[0]
+    steam_id = test_data[1]
+    unique_id_hash = test_data[2]
+    expected_result = test_data[3]
+
+    lobbyconnection.decodeUniqueId = mock.Mock(return_value=(unique_id_hash, ()))
+
+    async with db.db_pool.get() as conn:
+        cursor = await conn.cursor()
+        unique_id_ok = await lobbyconnection.validate_unique_id(cursor, player_id, steam_id, "")
+        await cursor.execute("SELECT count(*) FROM unique_id_users WHERE user_id = %s and uniqueid_hash = %s",
+                             (player_id, unique_id_hash))
+        result = await cursor.fetchone()
+
+    assert result[0] == 1
+    assert unique_id_ok == expected_result
+
+    if not expected_result:
+        protocol.writer.close.assert_called_once_with()
