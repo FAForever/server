@@ -15,6 +15,7 @@ from tests import CoroMock
 
 import server.db as db
 
+
 @pytest.fixture()
 def test_game_info():
     return {
@@ -27,6 +28,7 @@ def test_game_info():
         'lobby_rating': 1,
         'options': []
     }
+
 
 @pytest.fixture()
 def test_game_info_invalid():
@@ -41,25 +43,31 @@ def test_game_info_invalid():
         'options': []
     }
 
+
 @pytest.fixture
 def mock_player():
     return mock.create_autospec(Player(login='Dummy', id=42))
+
 
 @pytest.fixture
 def mock_context(loop):
     return mock.create_autospec(ServerContext(lambda: None, loop))
 
+
 @pytest.fixture
 def mock_players(mock_db_pool):
     return mock.create_autospec(PlayerService(mock_db_pool))
+
 
 @pytest.fixture
 def mock_games(mock_players, game_stats_service):
     return mock.create_autospec(GameService(mock_players, game_stats_service))
 
+
 @pytest.fixture
 def mock_protocol():
     return mock.create_autospec(QDataStreamProtocol(mock.Mock(), mock.Mock()))
+
 
 @pytest.fixture
 def lobbyconnection(loop, mock_context, mock_protocol, mock_games, mock_players, mock_player):
@@ -89,7 +97,7 @@ def test_command_game_host_creates_game(lobbyconnection,
         'password': test_game_info['password'],
         'mapname': test_game_info['mapname'],
     }
-    mock_games.create_game\
+    mock_games.create_game \
         .assert_called_with(**expected_call)
 
 
@@ -128,7 +136,8 @@ def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
     mock_games.create_game = mock.Mock()
     lobbyconnection.command_game_host(test_game_info_invalid)
     assert mock_games.create_game.mock_calls == []
-    lobbyconnection.sendJSON.assert_called_once_with(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
+    lobbyconnection.sendJSON.assert_called_once_with(
+        dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
 
 
 def test_abort(loop, mocker, lobbyconnection):
@@ -142,7 +151,7 @@ def test_abort(loop, mocker, lobbyconnection):
 def test_send_game_list(mocker, lobbyconnection, game_stats_service):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
     games = mocker.patch.object(lobbyconnection, 'game_service')  # type: GameService
-    game1, game2 = mock.create_autospec(Game(42, mock.Mock(), game_stats_service)),\
+    game1, game2 = mock.create_autospec(Game(42, mock.Mock(), game_stats_service)), \
                    mock.create_autospec(Game(22, mock.Mock(), game_stats_service))
 
     games.open_games = [game1, game2]
@@ -151,6 +160,7 @@ def test_send_game_list(mocker, lobbyconnection, game_stats_service):
 
     protocol.send_message.assert_any_call({'command': 'game_info',
                                            'games': [game1.to_dict(), game2.to_dict()]})
+
 
 async def test_register_invalid_email(mocker, lobbyconnection):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
@@ -163,7 +173,7 @@ async def test_register_invalid_email(mocker, lobbyconnection):
     protocol.send_message.assert_any_call({
         'command': 'registration_response',
         'result': "FAILURE",
-        'error': "Please use a valid email address." # TODO: Yay localisation :/
+        'error': "Please use a valid email address."  # TODO: Yay localisation :/
     })
 
 
@@ -190,12 +200,14 @@ async def test_register_non_disposable_email(mocker, lobbyconnection: LobbyConne
 
     assert lobbyconnection.generate_expiring_request.mock_calls
 
+
 def test_send_mod_list(mocker, lobbyconnection, mock_games):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
 
     lobbyconnection.send_mod_list()
 
     protocol.send_messages.assert_called_with(mock_games.all_game_modes())
+
 
 @asyncio.coroutine
 def test_command_admin_closelobby(mocker, lobbyconnection):
@@ -217,9 +229,10 @@ def test_command_admin_closelobby(mocker, lobbyconnection):
 
     tuna.lobby_connection.kick.assert_any_call(
         message=("Your client was closed by an administrator (Sheeo). "
-              "Please refer to our rules for the lobby/game here {rule_link}."
-              .format(rule_link=config.RULE_LINK))
+                 "Please refer to our rules for the lobby/game here {rule_link}."
+                 .format(rule_link=config.RULE_LINK))
     )
+
 
 @asyncio.coroutine
 def test_command_admin_closeFA(mocker, lobbyconnection):
@@ -247,6 +260,7 @@ def test_command_admin_closeFA(mocker, lobbyconnection):
               .format(rule_link=config.RULE_LINK))
     ))
 
+
 async def test_game_subscription(lobbyconnection: LobbyConnection):
     game = Mock()
     game.handle_action = CoroMock()
@@ -258,6 +272,7 @@ async def test_game_subscription(lobbyconnection: LobbyConnection):
                                                'target': 'game'})
 
     game.handle_action.assert_called_with('test', ['foo', 42])
+
 
 async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection, mock_player: Player):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
@@ -272,6 +287,7 @@ async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection, moc
         "command": "avatar",
         "avatarlist": [{'url': 'http://content.faforever.com/faf/avatars/qai2.png', 'tooltip': 'QAI'}]
     })
+
 
 async def test_command_avatar_select(mocker, lobbyconnection: LobbyConnection, mock_player: Player):
     lobbyconnection.player = mock_player
