@@ -1004,16 +1004,21 @@ Thanks,\n\
 
                 for i in range(0, cursor.rowcount):
                     uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = yield from cursor.fetchone()
-                    link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
-                    thumbstr = ""
-                    if icon != "":
-                        thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
+                    try:
+                        link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
+                        thumbstr = ""
+                        if icon != "":
+                            thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
 
-                    out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
-                               comments=[], description=description, played=played, likes=likes,
-                               downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
-                               ui=ui)
-                    self.sendJSON(out)
+                        out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
+                                   comments=[], description=description, played=played, likes=likes,
+                                   downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
+                                   ui=ui)
+                        self.sendJSON(out)
+                    except:
+                        self._logger.error("Error handling table_mod row (uid: {})".format(uid), exc_info=True)
+                        pass
+
 
             elif type == "like":
                 canLike = True
