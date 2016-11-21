@@ -656,7 +656,7 @@ Thanks,\n\
         version = message.get('version')
 
         # Check their client is reporting the right version number.
-        if message.get('user_agent', None) != 'downlords-faf-client':
+        if 'downlords-faf-client' not in message.get('user_agent'):
             try:
                 if "-" in version:
                     version = version.split('-')[0]
