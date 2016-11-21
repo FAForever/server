@@ -604,45 +604,40 @@ Thanks,\n\
         uid_hash, hardware_info = self.decodeUniqueId(encoded_unique_id)
 
         # VM users must use steam.
-        if uid_hash == "VM":
-            self.sendJSON(dict(command="notice", style="error", text="You need to link your account to Steam in order to use FAF in a Virtual Machine. You can contact an admin on the forums."))
+        # TODO (downlord) I added the check for "V" because we have 63 entries in the database, no idea why
+        if uid_hash == "VM" or uid_hash == "V":
+            self.sendJSON(dict(command="notice", style="error",
+                               text="You need to link your account to Steam in order to use FAF in a Virtual Machine. "
+                                    "You can contact an admin on the forums."))
             return False
 
-        # check for other accounts using the same uniqueId as us.
         await cursor.execute("SELECT user_id FROM unique_id_users WHERE uniqueid_hash = %s", (uid_hash, ))
+        result = await cursor.fetchall()
+        count = len(result)
 
-        users = []
-        for id, in await cursor.fetchall():
-            users.append(id)
+        if count > 1:
+            self._logger.warning("UID hit: %d: %s", player_id, uid_hash)
+            self.send_warning("Your computer is associated with too many FAF accounts.<br><br>In order to continue "
+                              "using them, you have to link them to Steam: <a href='" +
+                              config.APP_URL + "/faf/steam.php'>" +
+                              config.APP_URL + "/faf/steam.php</a>", fatal=True)
+            return False
 
-        # Is the user we're logging in with not currently associated with this uid?
-        if player_id not in users:
-            # Do we have a spare slot into which we can allocate this new account?
-            if len(users) > 1:
-                #self.sendJSON(dict(command="notice", style="error",
-                #                   text="This computer is already associated with too many FAF accounts.<br><br>You might want to try linking your account with Steam: <a href='" +
-                #                        config.APP_URL + "/faf/steam.php'>" +
-                #                        config.APP_URL + "/faf/steam.php</a>"))
-                self._logger.warning("UID hit: %d: %s", player_id, uid_hash)
+        if count == 1 and player_id != result[0][0]:
+            self._logger.warning("UID hit: %d: %s", player_id, uid_hash)
+            self.send_warning("Your computer is already associated with another FAF account.<br><br>In order to "
+                              "log in with a new account, you have to link it to Steam: <a href='" +
+                              config.APP_URL + "/faf/steam.php'>" +
+                              config.APP_URL + "/faf/steam.php</a>", fatal=True)
+            return False
 
-            # Is this a uuid we have never seen before?
-            if len(users) == 0:
-                # Store its component parts in the table for doing that sort of thing. (just for
-                # human-reading, really)
-                try:
-                    await cursor.execute("INSERT INTO `uniqueid` (`hash`, `uuid`, `mem_SerialNumber`, `deviceID`, `manufacturer`, `name`, `processorId`, `SMBIOSBIOSVersion`, `serialNumber`, `volumeSerialNumber`)"
-                                         "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (uid_hash, *hardware_info))
-                except Exception as e:
-                    self._logger.warning("UID dupe: %d: %s", player_id, uid_hash)
-
-            # Associate this account with this hardware hash.
+        if count == 0:
             try:
                 await cursor.execute("INSERT INTO unique_id_users(user_id, uniqueid_hash) VALUES(%s, %s)", (player_id, uid_hash))
+                await cursor.execute("INSERT INTO `uniqueid` (`hash`, `uuid`, `mem_SerialNumber`, `deviceID`, `manufacturer`, `name`, `processorId`, `SMBIOSBIOSVersion`, `serialNumber`, `volumeSerialNumber`)"
+                                     "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (uid_hash, *hardware_info))
             except Exception as e:
                 self._logger.warning("UID association dupe: %d: %s", player_id, uid_hash)
-
-        # TODO: Mildly unpleasant
-        await cursor.execute("UPDATE login SET ip = %s WHERE id = %s", (self.peer_address.host, player_id))
 
         return True
 
@@ -679,12 +674,17 @@ Thanks,\n\
         login = message['login'].strip()
         password = message['password']
 
-        # Check their client is reporting the right version number.
         async with db.db_pool.get() as conn:
             cursor = await conn.cursor()
             player_id, login, steamid = await self.check_user_login(cursor, login, password)
             server.stats.incr('user.logins')
             server.stats.gauge('users.online', len(self.player_service))
+
+            await cursor.execute("UPDATE login SET ip = %(ip)s, user_agent = %(user_agent)s WHERE id = %(player_id)s", {
+                                     "ip": self.peer_address.host,
+                                     "user_agent": message.get('user_agent'),
+                                     "player_id": player_id
+                                 })
 
             if not self.player_service.is_uniqueid_exempt(player_id):
                 # UniqueID check was rejected (too many accounts or tamper-evident madness)
@@ -1002,16 +1002,21 @@ Thanks,\n\
 
                 for i in range(0, cursor.rowcount):
                     uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = yield from cursor.fetchone()
-                    link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
-                    thumbstr = ""
-                    if icon != "":
-                        thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
+                    try:
+                        link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
+                        thumbstr = ""
+                        if icon != "":
+                            thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
 
-                    out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
-                               comments=[], description=description, played=played, likes=likes,
-                               downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
-                               ui=ui)
-                    self.sendJSON(out)
+                        out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
+                                   comments=[], description=description, played=played, likes=likes,
+                                   downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
+                                   ui=ui)
+                        self.sendJSON(out)
+                    except:
+                        self._logger.error("Error handling table_mod row (uid: {})".format(uid), exc_info=True)
+                        pass
+
 
             elif type == "like":
                 canLike = True

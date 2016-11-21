@@ -8,10 +8,11 @@ import time
 from trueskill import Rating
 
 from server.games.game import Game, GameState, GameError, Victory, VisibilityState, ValidityState
+from server.games import CustomGame
 from server.gameconnection import GameConnection, GameConnectionState
 from server.players import Player
 from tests import CoroMock
-from tests.unit_tests.conftest import mock_game_connection, add_connected_players, add_connected_player
+from tests.unit_tests.conftest import mock_game_connection, add_players, add_connected_players, add_connected_player
 
 @pytest.yield_fixture
 def game(loop, game_service, game_stats_service):
@@ -19,19 +20,11 @@ def game(loop, game_service, game_stats_service):
     yield game
     loop.run_until_complete(game.clear_data())
 
-@pytest.fixture()
-def game_5p(game):
-    game.state = GameState.LOBBY
-    players = [
-        Player(id=1, login='Dostya', global_rating=(1500, 500)),
-        Player(id=2, login='Rhiza', global_rating=(1500, 500)),
-        Player(id=3, login='QAI', global_rating=(1500, 500)),
-        Player(id=4, login='John', global_rating=(1500, 500)),
-        Player(id=5, login='Doe', global_rating=(1500, 500)),
-    ]
-    add_connected_players(game, players)
-    return game
-
+@pytest.yield_fixture
+def custom_game(loop, game_service, game_stats_service):
+    game = CustomGame(42, game_service, game_stats_service)
+    yield game
+    loop.run_until_complete(game.clear_data())
 
 def test_initialization(game: Game):
     assert game.state == GameState.INITIALIZING
@@ -67,13 +60,9 @@ async def test_validate_game_settings(game: Game):
     await game.validate_game_settings()
     assert game.validity is ValidityState.VALID
 
-async def test_ffa_not_rated(game_service, game_stats_service, game_5p):
-    game = game_5p
-    game.set_player_option(1, 'Team', 1)
-    game.set_player_option(2, 'Team', 1)
-    game.set_player_option(3, 'Team', 1)
-    game.set_player_option(4, 'Team', 1)
-    game.set_player_option(5, 'Team', 1)
+async def test_ffa_not_rated(game):
+    game.state = GameState.LOBBY
+    add_players(game, 5, team=1)
 
     await game.launch()
     await game.add_result(0, 1, 'VICTORY', 5)
@@ -83,13 +72,10 @@ async def test_ffa_not_rated(game_service, game_stats_service, game_5p):
     await game.on_game_end()
     assert game.validity == ValidityState.FFA_NOT_RANKED
 
-async def test_uneven_teams_not_rated(game_service, game_stats_service, game_5p):
-    game = game_5p
-    game.set_player_option(1, 'Team', 2)
-    game.set_player_option(2, 'Team', 2)
-    game.set_player_option(3, 'Team', 2)
-    game.set_player_option(4, 'Team', 3)
-    game.set_player_option(5, 'Team', 3)
+async def test_uneven_teams_not_rated(game):
+    game.state = GameState.LOBBY
+    add_players(game, 2, team=2)
+    add_players(game, 3, team=3)
 
     await game.launch()
     await game.add_result(0, 1, 'VICTORY', 5)
@@ -98,6 +84,19 @@ async def test_uneven_teams_not_rated(game_service, game_stats_service, game_5p)
 
     await game.on_game_end()
     assert game.validity == ValidityState.UNEVEN_TEAMS_NOT_RANKED
+
+async def test_single_team_not_rated(game):
+    n_players = 4
+    game.state = GameState.LOBBY
+    add_players(game, n_players, team=2)
+
+    await game.launch()
+    game.launched_at = time.time()-60*20
+    for i in range(n_players):
+        await game.add_result(0, i+1, 'victory', 5)
+    await game.on_game_end()
+
+    assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
 def test_set_player_option(game, players, mock_game_connection):
     game.state = GameState.LOBBY
@@ -162,9 +161,9 @@ async def test_game_end_when_no_more_connections(game: Game, mock_game_connectio
 
     game.on_game_end.assert_any_call()
 
-@patch('asyncio.sleep', return_value=None)
 async def test_game_marked_dirty_when_timed_out(game: Game):
     game.state = GameState.INITIALIZING
+    game.sleep = CoroMock()
     await game.timeout_game()
     assert game.state == GameState.ENDED
     assert game in game.game_service.dirty_games
@@ -225,20 +224,10 @@ async def test_initialized_game_not_allowed_to_end(game: Game):
     assert game.state is GameState.INITIALIZING
 
 async def test_game_ends_in_mutually_agreed_draw(game: Game):
-    await game.clear_data()
     game.state = GameState.LOBBY
-    players = [
-        Player(id=1, login='Dostya', global_rating=(1500, 500)),
-        Player(id=2, login='Rhiza', global_rating=(1500, 500))
-    ]
-    add_connected_players(game, players)
+    players = add_players(game, 2)
+
     await game.launch()
-
-    for player in players:
-        game.set_player_option(player.id, 'Team', 1)
-        game.set_player_option(player.id, 'Army', player.id - 1)
-
-    game.state = GameState.LIVE
     game.launched_at = time.time()-60*60
 
     await game.add_result(players[0], 0, 'mutual_draw', 0)
@@ -246,6 +235,20 @@ async def test_game_ends_in_mutually_agreed_draw(game: Game):
     await game.on_game_end()
 
     assert game.validity is ValidityState.MUTUAL_DRAW
+
+async def test_game_not_ends_in_unilatery_agreed_draw(game: Game, players):
+    game.state = GameState.LOBBY
+    add_players(game, 2)
+
+    await game.launch()
+    game.launched_at = time.time()-60*60
+
+    await game.add_result(players.hosting, 0, 'mutual_draw', 0)
+    await game.add_result(players.joining, 1, 'victory', 10)
+    await game.on_game_end()
+
+    assert game.validity is not ValidityState.MUTUAL_DRAW
+
 
 async def test_game_is_invalid_due_to_desyncs(game: Game, players):
     await game.clear_data()
@@ -334,13 +337,9 @@ async def test_on_game_end_does_not_call_rate_game_for_single_player(game):
 async def test_on_game_end_calls_rate_game_with_two_players(game):
     await game.clear_data()
     game.rate_game = CoroMock()
-
     game.state = GameState.LOBBY
-    players = [
-        Player(id=1, login='Dostya', global_rating=(1500, 500)),
-        Player(id=2, login='Rhiza', global_rating=(1500, 500))
-    ]
-    add_connected_players(game, players)
+    add_players(game, 2)
+
     await game.launch()
 
     assert len(game.players) == 2
@@ -413,11 +412,10 @@ async def test_persist_results_not_called_with_one_player(game):
 
     game.persist_results.assert_not_called()
 
-async def test_persist_results_not_called_with_no_results(game_5p):
-    game = game_5p
-    game.persist_results = CoroMock()
-    await game.clear_data()
+async def test_persist_results_not_called_with_no_results(game):
     game.state = GameState.LOBBY
+    add_players(game, 5)
+    game.persist_results = CoroMock()
     game.launched_at = time.time() - 60*20
 
     await game.launch()
@@ -430,24 +428,20 @@ async def test_persist_results_not_called_with_no_results(game_5p):
 
 
 async def test_persist_results_called_with_two_players(game):
-    await game.clear_data()
-
+    game.clear_data()
     game.state = GameState.LOBBY
-    players = [
-        Player(id=1, login='Dostya', global_rating=(1500, 500)),
-        Player(id=2, login='Rhiza', global_rating=(1500, 500))
-    ]
-    add_connected_players(game, players)
+    add_players(game, 2)
     await game.launch()
     assert len(game.players) == 2
     await game.add_result(0, 1, 'VICTORY', 5)
     await game.on_game_end()
 
-    assert game.get_army_result(1) == 5
+    assert game.get_army_score(1) == 5
     assert len(game.players) == 2
 
     await game.load_results()
-    assert game.get_army_result(1) == 5
+    assert game.get_army_score(1) == 5
+
 
 
 def test_equality(game):
@@ -461,11 +455,7 @@ def test_hashing(game):
 
 async def test_report_army_stats_sends_stats_for_defeated_player(game: Game):
     game.state = GameState.LOBBY
-    players = [
-        Player(id=1, login='Dostya', global_rating=(1500, 500)),
-        Player(id=2, login='Rhiza', global_rating=(1500, 500))
-    ]
-    add_connected_players(game, players)
+    players = add_players(game, 2)
 
     await game.launch()
     await game.add_result(0, 1, 'defeat', -1)
@@ -477,13 +467,30 @@ async def test_report_army_stats_sends_stats_for_defeated_player(game: Game):
 
     game._game_stats_service.process_game_stats.assert_called_once_with(players[1], game, stats)
 
+async def test_partial_stats_not_affecting_rating_persistence(custom_game, event_service, achievement_service):
+    from server.stats.game_stats_service import GameStatsService
+    game = custom_game
+    game._game_stats_service = GameStatsService(event_service, achievement_service)
+    game.state = GameState.LOBBY
+    players = add_players(game, 2)
+    game.set_player_option(players[0].id, 'Team', 2)
+    game.set_player_option(players[1].id, 'Team', 3)
+    old_mean = players[0].global_rating[0]
+
+    await game.launch()
+    game.launched_at = time.time()-60*60
+    await game.add_result(0, 0, 'victory', 10)
+    await game.add_result(0, 1, 'defeat', -10)
+    await game.report_army_stats({'stats': {'Player 1': {}}})
+    await game.on_game_end()
+
+    assert game.validity is ValidityState.VALID
+    assert players[0].global_rating[0] > old_mean
+
+
 async def test_players_exclude_observers(game: Game):
     game.state = GameState.LOBBY
-    players = [
-        Player(id=1, login='Dostya', global_rating=(1500, 500)),
-        Player(id=2, login='Rhiza', global_rating=(1500, 500)),
-    ]
-    add_connected_players(game, players)
+    players = add_players(game, 2)
 
     obs = Player(id=3, login='Zoidberg', global_rating=(1500, 500))
 
