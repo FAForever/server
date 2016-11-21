@@ -335,3 +335,21 @@ async def test_uid(lobbyconnection: LobbyConnection, test_data, mocker):
 
     if not expected_result:
         protocol.writer.close.assert_called_once_with()
+
+async def test_broadcast(lobbyconnection: LobbyConnection, mocker):
+    mocker.patch.object(lobbyconnection, 'protocol')
+    player = mocker.patch.object(lobbyconnection, 'player')
+    player.login = 'Sheeo'
+    player.admin = True
+    tuna = mock.Mock()
+    tuna.id = 55
+    lobbyconnection.player_service = [player, tuna]
+
+    await lobbyconnection.command_admin({
+        'command': 'admin',
+        'action': 'broadcast',
+        'message': "This is a test message"
+    })
+
+    player.lobby_connection.send_warning.assert_called_with("This is a test message")
+    tuna.lobby_connection.send_warning.assert_called_with("This is a test message")

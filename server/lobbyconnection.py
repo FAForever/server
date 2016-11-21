@@ -482,6 +482,15 @@ Thanks,\n\
                             "(SELECT id FROM avatars_list WHERE avatars_list.url = %s)) "
                             "ON DUPLICATE KEY UPDATE `idAvatar` = (SELECT id FROM avatars_list WHERE avatars_list.url = %s)",
                             (who, avatar, avatar))
+
+            elif action == "broadcast":
+                for player in self.player_service:
+                    try:
+                        if player.lobby_connection:
+                            player.lobby_connection.send_warning(message.get('message'))
+                    except Exception as ex:
+                        self._logger.debug("Could not send broadcast message to %s: %s".format(player, ex))
+
         elif self.player.mod:
             if action == "join_channel":
                 user_ids = message['user_ids']
@@ -620,7 +629,7 @@ Thanks,\n\
             self.send_warning("Your computer is associated with too many FAF accounts.<br><br>In order to continue "
                               "using them, you have to link them to Steam: <a href='" +
                               config.APP_URL + "/faf/steam.php'>" +
-                              config.APP_URL + "/faf/steam.php</a>", fatal=True)
+                              config.APP_URL + "/faf/steam.php</a><br>. For further assistance, please ", fatal=True)
             return False
 
         if count == 1 and player_id != result[0][0]:
