@@ -272,13 +272,15 @@ class GameConnection(GpgNetServerProtocol):
 
                 if option_key == "Slots":
                     self.game.max_players = option_value
-
-                if option_key == 'ScenarioFile':
+                elif option_key == 'ScenarioFile':
                     raw = "%r" % option_value
                     self.game.map_scenario_path = raw.replace('\\', '/').\
                                                   replace('//', '/').\
                                                   replace("'", '')
                     self.game.map_file_path = 'maps/{}.zip'.format(self.game.map_scenario_path.split('/')[2])
+                elif option_key == 'Title':
+                    self.game.name = option_value
+
                 self._mark_dirty()
 
             elif command == 'GameMods':
