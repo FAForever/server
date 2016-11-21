@@ -2,8 +2,10 @@ from unittest import mock
 import pytest
 
 from server import GameStatsService, LobbyConnection
+from server.abc.base_game import BaseGame
 from server.games import Game
 from server.gameconnection import GameConnection, GameConnectionState
+from server.players import Player
 from tests import CoroMock
 
 @pytest.fixture()
@@ -79,7 +81,7 @@ def add_connected_player(game: Game, player):
     return gc
 
 
-def add_connected_players(game: Game, players):
+def add_connected_players(game: BaseGame, players):
     """
     Utility to add players with army and StartSpot indexed by a list
     """
@@ -92,3 +94,17 @@ def add_connected_players(game: Game, players):
         game.set_player_option(player.id, 'Color', 0)
     game.host = players[0]
 
+def add_players(gameobj: BaseGame, n: int, team: int=None):
+    game = gameobj
+    current = len(game.players)
+    players = []
+    for i in range(current, current+n):
+        players.append(Player(id=i+1, login='Player '+str(i+1), global_rating=(1500, 500)))
+
+    add_connected_players(game, players)
+
+    if team is not None:
+        for p in players:
+            game.set_player_option(p.id, 'Team', team)
+
+    return players

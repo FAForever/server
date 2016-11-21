@@ -142,8 +142,11 @@ class Game(BaseGame):
         self._logger.debug("%s created", self)
         asyncio.get_event_loop().create_task(self.timeout_game())
 
+    async def sleep(self, n):
+        return await asyncio.sleep(n)
+
     async def timeout_game(self):
-        await asyncio.sleep(20)
+        await self.sleep(20)
         if self.state == GameState.INITIALIZING:
             await self.on_game_end()
 
@@ -211,16 +214,18 @@ class Game(BaseGame):
     @property
     def is_even(self):
         teams = self.team_count()
-        if 1 in teams: # someone is without team, all teams need to be 1 player
+        if 1 in teams: # someone is in ffa team, all teams need to have 1 player
             c = 1
             teams.pop(1)
-        else: # all same as count of first team
-            try:
-                c = list(teams.values())[0]
-            except IndexError:
-                return True # no teams defined, consider this even
+        else:
+            n = len(teams)
+            if n <= 1: # 0 teams are considered even, single team not
+                return n == 0
 
-        for k, v in teams.items():
+            # all teams needs to have same count as the first
+            c = list(teams.values())[0]
+
+        for _, v in teams.items():
             if v != c:
                 return False
 
@@ -266,11 +271,15 @@ class Game(BaseGame):
                     break
 
     async def _process_army_stats_for_player(self, player):
-        if self._army_stats is None or self.gameOptions["CheatsEnabled"] != "false":
-            return
+        try:
+            if self._army_stats is None or self.gameOptions["CheatsEnabled"] != "false":
+                return
 
-        self._players_with_unsent_army_stats.remove(player)
-        await self._game_stats_service.process_game_stats(player, self, self._army_stats)
+            self._players_with_unsent_army_stats.remove(player)
+            await self._game_stats_service.process_game_stats(player, self, self._army_stats)
+        except Exception as e:
+            # Never let an error in processing army stats cascade
+            self._logger.exception("Army stats could not be processed from player %s in game %s", player, self)
 
     def add_game_connection(self, game_connection):
         """
@@ -370,24 +379,24 @@ class Game(BaseGame):
         """
 
         self._logger.debug("Saving scores from game %s", self.id)
-        results = {}
+        scores = {}
         for player in self.players:
             army = self.get_player_option(player.id, 'Army')
             try:
-                result = self.get_army_result(army)
-                results[player] = result
-                self._logger.info('Result for army %s, player: %s: %s', army, player, result)
+                score = self.get_army_score(army)
+                scores[player] = score
+                self._logger.info('Result for army %s, player: %s: %s', army, player, score)
             except KeyError:
                 # Default to -1 if there is no result
-                results[player] = -1
+                scores[player] = -1
 
         async with db.db_pool.get() as conn:
             cursor = await conn.cursor()
 
             rows = []
-            for player, result in results.items():
-                self._logger.info("Result for player %s: %s", player, result)
-                rows.append((result, self.id, player.id))
+            for player, score in scores.items():
+                self._logger.info("Score for player %s: %s", player, score)
+                rows.append((score, self.id, player.id))
 
             await cursor.executemany("UPDATE game_player_stats "
                                      "SET `score`=%s, `scoreTime`=NOW() "
@@ -637,7 +646,7 @@ class Game(BaseGame):
                                  "SET validity = %s "
                                  "WHERE id = %s", (new_validity_state.value, self.id))
 
-    def get_army_result(self, army):
+    def get_army_score(self, army):
         """
         Since we log multiple results from multiple sources, we have to pick one.
 
@@ -652,6 +661,9 @@ class Game(BaseGame):
         for result in self._results[army]:
             score = max(score, result[2])
         return score
+
+    def get_army_result(self, player):
+        return self._results.get(self.get_player_option(player.id, 'Army'))
 
     def compute_rating(self, rating='global'):
         """
@@ -677,12 +689,12 @@ class Game(BaseGame):
                 if team not in team_scores:
                     team_scores[team] = 0
                 try:
-                    team_scores[team] += self.get_army_result(army)
+                    team_scores[team] += self.get_army_score(army)
                 except KeyError:
                     team_scores[team] += 0
                     self._logger.warn("Missing game result for %s: %s", army, player)
             elif team == 1:
-                ffa_scores.append((player, self.get_army_result(army)))
+                ffa_scores.append((player, self.get_army_score(army)))
         ranks = [-score for team, score in sorted(team_scores.items(), key=lambda t: t[0])]
         rating_groups = []
         for team in sorted(self.teams):

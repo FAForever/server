@@ -22,7 +22,7 @@ class LadderGame(Game):
             await self.persist_rating_change_stats(new_ratings, rating='ladder')
 
     def is_winner(self, player: Player):
-        return self.get_army_result(self.get_player_option(player.id, 'Army')) > 0
+        return self.get_army_score(self.get_player_option(player.id, 'Army')) > 0
 
     async def on_game_end(self):
         await super().on_game_end()
@@ -37,7 +37,7 @@ class LadderGame(Game):
                     return True
         return False
 
-    def get_army_result(self, army):
+    def get_army_score(self, army):
         """
         The head-to-head matchup ranking uses only win/loss as a factor
         :param army:

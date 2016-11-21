@@ -16,5 +16,5 @@ async def test_results_ranked_by_victory(laddergame, players):
     await laddergame.add_result(players.hosting, 0, 'victory', 1)
     await laddergame.add_result(players.joining, 1, 'defeat', 0)
 
-    assert laddergame.get_army_result(0) == 1
-    assert laddergame.get_army_result(1) == 0
+    assert laddergame.get_army_score(0) == 1
+    assert laddergame.get_army_score(1) == 0
