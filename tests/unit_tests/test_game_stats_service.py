@@ -37,8 +37,11 @@ def player():
 
 
 @pytest.fixture()
-def game(game_stats_service):
-    return Game(1, Mock(), game_stats_service)
+def game(game_stats_service, player):
+    game = Game(1, Mock(), game_stats_service)
+    game._player_options[player.id] = {'Army': 1}
+    game._results = {1: ['', 'victory', '']}
+    return game
 
 
 @pytest.fixture()
@@ -432,3 +435,13 @@ def test_top_score_8_players(game_stats_service, achievement_service):
     achievement_service.unlock.assert_any_call(ACH_TOP_SCORE, [])
     achievement_service.increment.assert_any_call(ACH_UNBEATABLE, 1, [])
     assert len(achievement_service.mock_calls) == 2
+
+async def test_process_game_stats_abort_processing_if_no_army_result(game_stats_service, game, player, achievement_service, event_service):
+    with open("tests/data/game_stats_full_example.json", "r") as stats_file:
+        stats = stats_file.read()
+
+    game._results = {}
+
+    await game_stats_service.process_game_stats(player, game, stats)
+    assert len(achievement_service.mock_calls) == 0
+    assert len(event_service.mock_calls) == 0

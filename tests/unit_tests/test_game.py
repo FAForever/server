@@ -436,11 +436,11 @@ async def test_persist_results_called_with_two_players(game):
     await game.add_result(0, 1, 'VICTORY', 5)
     await game.on_game_end()
 
-    assert game.get_army_result(1) == 5
+    assert game.get_army_score(1) == 5
     assert len(game.players) == 2
 
     await game.load_results()
-    assert game.get_army_result(1) == 5
+    assert game.get_army_score(1) == 5
 
 
 
