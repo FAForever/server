@@ -629,7 +629,8 @@ Thanks,\n\
             self.send_warning("Your computer is associated with too many FAF accounts.<br><br>In order to continue "
                               "using them, you have to link them to Steam: <a href='" +
                               config.APP_URL + "/faf/steam.php'>" +
-                              config.APP_URL + "/faf/steam.php</a><br>. For further assistance, please ", fatal=True)
+                              config.APP_URL + "/faf/steam.php</a>.<br>If you need an exception, please contact an "
+                                               "admin on the forums", fatal=True)
             return False
 
         if count == 1 and player_id != result[0][0]:
@@ -637,7 +638,8 @@ Thanks,\n\
             self.send_warning("Your computer is already associated with another FAF account.<br><br>In order to "
                               "log in with a new account, you have to link it to Steam: <a href='" +
                               config.APP_URL + "/faf/steam.php'>" +
-                              config.APP_URL + "/faf/steam.php</a>", fatal=True)
+                              config.APP_URL + "/faf/steam.php</a>.<br>If you need an exception, please contact an "
+                                               "admin on the forums", fatal=True)
             return False
 
         if count == 0:
