@@ -29,6 +29,7 @@ def test_game_info():
         'options': []
     }
 
+
 @pytest.fixture()
 def test_game_info_invalid():
     return {
@@ -41,25 +42,31 @@ def test_game_info_invalid():
         'options': []
     }
 
+
 @pytest.fixture
 def mock_player():
     return mock.create_autospec(Player(login='Dummy', id=42))
+
 
 @pytest.fixture
 def mock_context(loop):
     return mock.create_autospec(ServerContext(lambda: None, loop))
 
+
 @pytest.fixture
 def mock_players(mock_db_pool):
     return mock.create_autospec(PlayerService(mock_db_pool))
+
 
 @pytest.fixture
 def mock_games(mock_players, game_stats_service):
     return mock.create_autospec(GameService(mock_players, game_stats_service))
 
+
 @pytest.fixture
 def mock_protocol():
     return mock.create_autospec(QDataStreamProtocol(mock.Mock(), mock.Mock()))
+
 
 @pytest.fixture
 def lobbyconnection(loop, mock_context, mock_protocol, mock_games, mock_players, mock_player):
@@ -91,7 +98,7 @@ def test_command_game_host_creates_game(lobbyconnection,
         'password': test_game_info['password'],
         'mapname': test_game_info['mapname'],
     }
-    mock_games.create_game\
+    mock_games.create_game \
         .assert_called_with(**expected_call)
 
 
@@ -130,7 +137,8 @@ def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
     mock_games.create_game = mock.Mock()
     lobbyconnection.command_game_host(test_game_info_invalid)
     assert mock_games.create_game.mock_calls == []
-    lobbyconnection.sendJSON.assert_called_once_with(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
+    lobbyconnection.sendJSON.assert_called_once_with(
+        dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
 
 
 def test_abort(loop, mocker, lobbyconnection):
@@ -144,7 +152,7 @@ def test_abort(loop, mocker, lobbyconnection):
 def test_send_game_list(mocker, lobbyconnection, game_stats_service):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
     games = mocker.patch.object(lobbyconnection, 'game_service')  # type: GameService
-    game1, game2 = mock.create_autospec(Game(42, mock.Mock(), game_stats_service)),\
+    game1, game2 = mock.create_autospec(Game(42, mock.Mock(), game_stats_service)), \
                    mock.create_autospec(Game(22, mock.Mock(), game_stats_service))
 
     games.open_games = [game1, game2]
@@ -153,6 +161,7 @@ def test_send_game_list(mocker, lobbyconnection, game_stats_service):
 
     protocol.send_message.assert_any_call({'command': 'game_info',
                                            'games': [game1.to_dict(), game2.to_dict()]})
+
 
 async def test_register_invalid_email(mocker, lobbyconnection):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
@@ -165,7 +174,7 @@ async def test_register_invalid_email(mocker, lobbyconnection):
     protocol.send_message.assert_any_call({
         'command': 'registration_response',
         'result': "FAILURE",
-        'error': "Please use a valid email address." # TODO: Yay localisation :/
+        'error': "Please use a valid email address."  # TODO: Yay localisation :/
     })
 
 
@@ -192,12 +201,14 @@ async def test_register_non_disposable_email(mocker, lobbyconnection: LobbyConne
 
     assert lobbyconnection.generate_expiring_request.mock_calls
 
+
 def test_send_mod_list(mocker, lobbyconnection, mock_games):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
 
     lobbyconnection.send_mod_list()
 
     protocol.send_messages.assert_called_with(mock_games.all_game_modes())
+
 
 @asyncio.coroutine
 def test_command_admin_closelobby(mocker, lobbyconnection):
@@ -219,9 +230,10 @@ def test_command_admin_closelobby(mocker, lobbyconnection):
 
     tuna.lobby_connection.kick.assert_any_call(
         message=("Your client was closed by an administrator (Sheeo). "
-              "Please refer to our rules for the lobby/game here {rule_link}."
-              .format(rule_link=config.RULE_LINK))
+                 "Please refer to our rules for the lobby/game here {rule_link}."
+                 .format(rule_link=config.RULE_LINK))
     )
+
 
 @asyncio.coroutine
 def test_command_admin_closeFA(mocker, lobbyconnection):
@@ -249,6 +261,7 @@ def test_command_admin_closeFA(mocker, lobbyconnection):
               .format(rule_link=config.RULE_LINK))
     ))
 
+
 async def test_game_subscription(lobbyconnection: LobbyConnection):
     game = Mock()
     game.handle_action = CoroMock()
@@ -260,6 +273,7 @@ async def test_game_subscription(lobbyconnection: LobbyConnection):
                                                'target': 'game'})
 
     game.handle_action.assert_called_with('test', ['foo', 42])
+
 
 async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection, mock_player: Player):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
@@ -275,6 +289,7 @@ async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection, moc
         "avatarlist": [{'url': 'http://content.faforever.com/faf/avatars/qai2.png', 'tooltip': 'QAI'}]
     })
 
+
 async def test_command_avatar_select(mocker, lobbyconnection: LobbyConnection, mock_player: Player):
     lobbyconnection.player = mock_player
     lobbyconnection.player.id = 2  # Dostya test user
@@ -289,6 +304,56 @@ async def test_command_avatar_select(mocker, lobbyconnection: LobbyConnection, m
         await cursor.execute("SELECT selected from avatars where idUser=2")
         result = await cursor.fetchone()
         assert result == (1,)
+
+
+@pytest.mark.parametrize("test_data", [
+    # ID, SteamId, UID, Expected result
+    (1, None, "some_id", False),
+    (2, None, "another_id", True),
+    (3, None, "some_id", False),
+    (3, 123, "some_id", True),
+    (4, None, "totally_new_id", True)
+])
+async def test_uid(lobbyconnection: LobbyConnection, test_data, mocker):
+    protocol = mocker.patch.object(lobbyconnection, 'protocol')
+
+    player_id = test_data[0]
+    steam_id = test_data[1]
+    unique_id_hash = test_data[2]
+    expected_result = test_data[3]
+
+    lobbyconnection.decodeUniqueId = mock.Mock(return_value=(unique_id_hash, ()))
+
+    async with db.db_pool.get() as conn:
+        cursor = await conn.cursor()
+        unique_id_ok = await lobbyconnection.validate_unique_id(cursor, player_id, steam_id, "")
+        await cursor.execute("SELECT count(*) FROM unique_id_users WHERE user_id = %s and uniqueid_hash = %s",
+                             (player_id, unique_id_hash))
+        result = await cursor.fetchone()
+
+    assert result[0] == 1
+    assert unique_id_ok == expected_result
+
+    if not expected_result:
+        protocol.writer.close.assert_called_once_with()
+
+async def test_broadcast(lobbyconnection: LobbyConnection, mocker):
+    mocker.patch.object(lobbyconnection, 'protocol')
+    player = mocker.patch.object(lobbyconnection, 'player')
+    player.login = 'Sheeo'
+    player.admin = True
+    tuna = mock.Mock()
+    tuna.id = 55
+    lobbyconnection.player_service = [player, tuna]
+
+    await lobbyconnection.command_admin({
+        'command': 'admin',
+        'action': 'broadcast',
+        'message': "This is a test message"
+    })
+
+    player.lobby_connection.send_warning.assert_called_with("This is a test message")
+    tuna.lobby_connection.send_warning.assert_called_with("This is a test message")
 
 
 async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnection: LobbyConnection, mocker, mock_player):
@@ -348,7 +413,7 @@ async def test_game_connection_restored_if_game_exists(lobbyconnection: LobbyCon
     game.game_mode = 'faf'
     game.id = 42
     game_service.games[42] = game
-    
+
     lobbyconnection.command_restore_game_session({'game_id': 42})
 
     assert lobbyconnection.game_connection

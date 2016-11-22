@@ -117,6 +117,10 @@ async def test_handle_action_GameResult_calls_add_result(game, game_connection):
     await game_connection.handle_action('GameResult', [0, 'score -5'])
     game.add_result.assert_called_once_with(game_connection.player, 0, 'score', -5)
 
+async def test_handle_action_GameOption_change_name(game, game_connection):
+    await game_connection.handle_action('GameOption', ['Title', 'All welcome'])
+    assert game.name == 'All welcome'
+
 async def test_json_stats(game_connection, game_stats_service, players, game):
     game_stats_service.process_game_stats = mock.Mock()
     await game_connection.handle_action('JsonStats', ['{"stats": {}}'])
