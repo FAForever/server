@@ -93,6 +93,7 @@ class LobbyConnection:
         self.protocol = None
         self._logger.debug("LobbyConnection initialized")
         self.search = None
+        self.user_agent = None
 
     @property
     def authenticated(self):
@@ -657,8 +658,9 @@ Thanks,\n\
         update_msg = dict(command="update",
                           update=updateFile,
                           new_version=versionDB)
+        self.user_agent = message.get('user_agent')
 
-        if 'version' not in message or 'user_agent' not in message:
+        if 'version' not in message or not self.user_agent:
             update_msg['command'] = 'welcome'
             # For compatibility with 0.10.x updating mechanism
             self.sendJSON(update_msg)
@@ -667,7 +669,7 @@ Thanks,\n\
         version = message.get('version')
 
         # Check their client is reporting the right version number.
-        if 'downlords-faf-client' not in message.get('user_agent'):
+        if 'downlords-faf-client' not in self.user_agent:
             try:
                 if "-" in version:
                     version = version.split('-')[0]
@@ -693,7 +695,7 @@ Thanks,\n\
 
             await cursor.execute("UPDATE login SET ip = %(ip)s, user_agent = %(user_agent)s WHERE id = %(player_id)s", {
                                      "ip": self.peer_address.host,
-                                     "user_agent": message.get('user_agent'),
+                                     "user_agent": self.user_agent,
                                      "player_id": player_id
                                  })
 

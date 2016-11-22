@@ -1,4 +1,5 @@
 import asyncio
+from collections import defaultdict
 
 import server
 from server.decorators import with_logger
@@ -19,6 +20,7 @@ class ServerContext:
         self._server = None
         self._connection_factory = connection_factory
         self.connections = {}
+        self.connection_by_client = defaultdict(dict)
         self._transport = None
         self._logger.debug("%s initialized with loop: %s", self, loop)
         self.addr = None
@@ -55,6 +57,11 @@ class ServerContext:
             if validate_fn(conn):
                 proto.send_raw(message)
 
+    def add_connection_by_client(self, connection, protocol):
+        collection = self.connection_by_client[connection.user_agent]  # We record even no user agents
+        if connection not in collection:
+            collection[connection] = protocol
+
     async def client_connected(self, stream_reader, stream_writer):
         self._logger.debug("%s: Client connected", self)
         protocol = QDataStreamProtocol(stream_reader, stream_writer)
@@ -66,6 +73,7 @@ class ServerContext:
                 message = await protocol.read_message()
                 with server.stats.timer('connection.on_message_received'):
                     await connection.on_message_received(message)
+                    self.add_connection_by_client(connection, protocol)
                 with server.stats.timer('servercontext.drain'):
                     await asyncio.sleep(0)
                     await connection.drain()
@@ -82,5 +90,6 @@ class ServerContext:
             self._logger.exception(ex)
         finally:
             del self.connections[connection]
+            del self.connection_by_client[connection.user_agent][connection]
             protocol.writer.close()
             await connection.on_connection_lost()
