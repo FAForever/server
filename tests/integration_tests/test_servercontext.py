@@ -10,7 +10,7 @@ from server.protocol import QDataStreamProtocol
 def mock_server(loop):
     class MockServer:
         def __init__(self):
-            self.protocol, self.peername = None, None
+            self.protocol, self.peername, self.user_agent = None, None, None
 
         @asyncio.coroutine
         def on_connection_made(self, protocol, peername):
