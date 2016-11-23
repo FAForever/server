@@ -20,7 +20,7 @@ class ServerContext:
         self._server = None
         self._connection_factory = connection_factory
         self.connections = {}
-        self.connection_by_client = defaultdict(dict)
+        self.connection_by_user_agent = defaultdict(dict)
         self._transport = None
         self._logger.debug("%s initialized with loop: %s", self, loop)
         self.addr = None
@@ -57,10 +57,19 @@ class ServerContext:
             if validate_fn(conn):
                 proto.send_raw(message)
 
-    def add_connection_by_client(self, connection, protocol):
-        collection = self.connection_by_client[connection.user_agent]  # We record even no user agents
-        if connection not in collection:
-            collection[connection] = protocol
+    def assign_connection_by_user_agent(self, connection, protocol):
+        if connection.user_agent:
+            collection = self.connection_by_user_agent[connection.user_agent]
+            if connection not in collection:
+                del self.connection_by_user_agent[None][connection]
+                collection[connection] = protocol
+
+    def remove_connection_by_user_agent(self, connection):
+        if connection.user_agent in self.connection_by_user_agent:
+            collection = self.connection_by_user_agent[connection.user_agent]
+        else:
+            collection = self.connection_by_user_agent[None]
+        collection.pop(connection)
 
     async def client_connected(self, stream_reader, stream_writer):
         self._logger.debug("%s: Client connected", self)
@@ -69,11 +78,12 @@ class ServerContext:
         try:
             await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info('peername')))
             self.connections[connection] = protocol
+            self.connection_by_user_agent[None][connection] = protocol  # We still want to probably track no user_agent
             while True:
                 message = await protocol.read_message()
                 with server.stats.timer('connection.on_message_received'):
                     await connection.on_message_received(message)
-                    self.add_connection_by_client(connection, protocol)
+                    self.assign_connection_by_user_agent(connection, protocol)
                 with server.stats.timer('servercontext.drain'):
                     await asyncio.sleep(0)
                     await connection.drain()
@@ -90,6 +100,6 @@ class ServerContext:
             self._logger.exception(ex)
         finally:
             del self.connections[connection]
-            del self.connection_by_client[connection.user_agent][connection]
+            self.remove_connection_by_user_agent(connection)
             protocol.writer.close()
             await connection.on_connection_lost()
