@@ -3,10 +3,12 @@ import asyncio
 import aiocron
 import marisa_trie
 import pymysql
-from server.matchmaker import MatchmakerQueue
+
+from server.decorators import with_logger
 from server.players import Player
 
 
+@with_logger
 class PlayerService:
     def __init__(self, db_pool: aiomysql.Pool):
         self.players = dict()
@@ -122,3 +124,13 @@ class PlayerService:
             # Get list of reversed blacklisted domains (so we can (pre)suffix-match incoming emails
             # in sublinear time)
             self.blacklisted_email_domains = marisa_trie.Trie(map(lambda x: x[0], rows))
+
+    def broadcast_shutdown(self):
+        for player in self:
+            try:
+                if player.lobby_connection:
+                    player.lobby_connection.send_warning("""
+                    The server has been shut down for maintenance, but should be back online soon. If you experience any
+                    problems, please restart your client.<br><br>We apologize for this interruption.""")
+            except Exception as ex:
+                self._logger.debug("Could not send shutdown message to %s: %s".format(player, ex))
