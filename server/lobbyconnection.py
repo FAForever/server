@@ -661,8 +661,8 @@ Thanks,\n\
 
         self.user_agent = message.get('user_agent')
         version = message.get('version')
-        server.stats.decr('user.agents.None')
-        server.stats.incr('user.agents.{}'.format(self.user_agent), tags={'version': version})
+        server.stats.gauge('user.agents.None', -1, delta=True)
+        server.stats.gauge('user.agents.{}'.format(self.user_agent), 1, delta=True)
 
         if not version or not self.user_agent:
             update_msg['command'] = 'welcome'
