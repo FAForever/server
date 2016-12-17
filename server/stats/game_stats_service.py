@@ -53,7 +53,7 @@ class GameStatsService:
         a_queue = []
         # Stores events to batch update
         e_queue = []
-        survived = army_result[1] == 'victory'
+        survived = army_result == 'victory'
         blueprint_stats = stats['blueprints']
         unit_stats = stats['units']
         scored_highest = highest_scorer == player.login

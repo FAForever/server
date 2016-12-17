@@ -661,7 +661,16 @@ class Game(BaseGame):
         return score
 
     def get_army_result(self, player):
-        return self._results.get(self.get_player_option(player.id, 'Army'))
+        results = self._results.get(self.get_player_option(player.id, 'Army'))
+        if not results:
+            return None
+
+        counts = defaultdict(int)
+        for result in results:
+            if result[1] in ['victory', 'defeat', 'draw', 'mutual_draw']:
+                counts[result[1]] += 1
+
+        return max(counts.items(), key=lambda x: x[1])[0]
 
     def compute_rating(self, rating='global'):
         """
