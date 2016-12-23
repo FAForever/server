@@ -73,6 +73,9 @@ class AuthenticationError(Exception):
 
 @with_logger
 class LobbyConnection:
+    STATSD_USERAGENT = 'user.agents.{}'
+    STATSD_VERSION = 'user.agentversions.{}.{}'
+
     @timed()
     def __init__(self, loop, context=None, games: GameService=None, players: PlayerService=None, db=None):
         super(LobbyConnection, self).__init__()
@@ -94,6 +97,7 @@ class LobbyConnection:
         self._logger.debug("LobbyConnection initialized")
         self.search = None
         self.user_agent = None
+        self.version = None
 
     @property
     def authenticated(self):
@@ -653,18 +657,30 @@ Thanks,\n\
 
         return True
 
+    def clean_version(self):
+        if self.version is not None:
+            return self.version.split('-')[0].split('+')[0]
+        else:
+            return None
+
+    def statsd_gauge(self, delta):
+        vgauge = self.STATSD_VERSION.format(self.user_agent, self.version.replace('.','_'))
+        server.stats.gauge(vgauge, delta, delta=True)
+        server.stats.gauge(self.STATSD_USERAGENT.format(self.user_agent), delta, delta=True)
+
     def check_version(self, message):
         versionDB, updateFile = self.player_service.client_version_info
         update_msg = dict(command="update",
                           update=updateFile,
                           new_version=versionDB)
 
-        self.user_agent = message.get('user_agent')
-        version = message.get('version')
-        server.stats.gauge('user.agents.None', -1, delta=True)
-        server.stats.gauge('user.agents.{}'.format(self.user_agent), 1, delta=True)
 
-        if not version or not self.user_agent:
+        self.user_agent = message.get('user_agent')
+        self.version = message.get('version')
+        clean_version = self.clean_version()
+        self.statsd_gauge(1)
+
+        if not self.version or not self.user_agent:
             update_msg['command'] = 'welcome'
             # For compatibility with 0.10.x updating mechanism
             self.sendJSON(update_msg)
@@ -673,11 +689,7 @@ Thanks,\n\
         # Check their client is reporting the right version number.
         if 'downlords-faf-client' not in self.user_agent:
             try:
-                if "-" in version:
-                    version = version.split('-')[0]
-                if "+" in version:
-                    version = version.split('+')[0]
-                if semver.compare(versionDB, version) > 0:
+                if semver.compare(versionDB, clean_version) > 0:
                     self.sendJSON(update_msg)
                     return False
             except ValueError:
@@ -697,7 +709,7 @@ Thanks,\n\
 
             await cursor.execute("UPDATE login SET ip = %(ip)s, user_agent = %(user_agent)s WHERE id = %(player_id)s", {
                                      "ip": self.peer_address.host,
-                                     "user_agent": self.user_agent,
+                                     "user_agent": "{}:{}".format(self.user_agent, self.version),
                                      "player_id": player_id
                                  })
 

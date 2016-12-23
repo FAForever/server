@@ -62,7 +62,7 @@ class ServerContext:
         try:
             await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info('peername')))
             self.connections[connection] = protocol
-            server.stats.gauge('user.agents.None', 1, delta=True)
+            server.stats.gauge('connections', 1, delta=True)
             while True:
                 message = await protocol.read_message()
                 with server.stats.timer('connection.on_message_received'):
@@ -83,6 +83,8 @@ class ServerContext:
             self._logger.exception(ex)
         finally:
             del self.connections[connection]
-            server.stats.gauge('user.agents.{}'.format(connection.user_agent), -1, delta=True)
+            server.stats.gauge('connections', -1, delta=True)
+            if connection.version is not None:
+                connection.statsd_gauge(-1)
             protocol.writer.close()
             await connection.on_connection_lost()
