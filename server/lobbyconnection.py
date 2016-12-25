@@ -687,7 +687,10 @@ Thanks,\n\
                     clean_version = clean_version.split('+')[0]
                 if semver.compare(versionDB, clean_version) > 0:
                     self.sendJSON(update_msg)
-                    return False
+                    if 'pre' in versionDB:
+                        return True
+                    else:
+                        return False
             except ValueError:
                 self.sendJSON(update_msg)
                 return False
