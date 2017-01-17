@@ -10,6 +10,7 @@ services:
   - docker
 
 before_install:
+  - sudo /etc/init.d/mysql stop
   - sudo apt-get update
   - pushd db && ./setup_db.sh && popd
   - python -m pip install coveralls
