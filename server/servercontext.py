@@ -19,6 +19,7 @@ class ServerContext:
         self._server = None
         self._connection_factory = connection_factory
         self.connections = {}
+        self.useragents = {}
         self._transport = None
         self._logger.debug("%s initialized with loop: %s", self, loop)
         self.addr = None
@@ -62,7 +63,7 @@ class ServerContext:
         try:
             await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info('peername')))
             self.connections[connection] = protocol
-            server.stats.gauge('connections', 1, delta=True)
+            server.stats.gauge('connections', len(self.connections))
             while True:
                 message = await protocol.read_message()
                 with server.stats.timer('connection.on_message_received'):
@@ -83,8 +84,8 @@ class ServerContext:
             self._logger.exception(ex)
         finally:
             del self.connections[connection]
-            server.stats.gauge('connections', -1, delta=True)
+            server.stats.gauge('connections', len(self.connections))
             if connection.version is not None:
-                connection.statsd_gauge(-1)
+                connection.update_stats(-1)
             protocol.writer.close()
             await connection.on_connection_lost()

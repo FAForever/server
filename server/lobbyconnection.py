@@ -663,10 +663,13 @@ Thanks,\n\
         else:
             return None
 
-    def statsd_gauge(self, delta):
-        vgauge = self.STATSD_VERSION.format(self.user_agent, self.version.replace('.','_'))
-        server.stats.gauge(vgauge, delta, delta=True)
-        server.stats.gauge(self.STATSD_USERAGENT.format(self.user_agent), delta, delta=True)
+    def update_stats(self, delta):
+        agauge = self.STATSD_USERAGENT.format(self.user_agent)
+        vgauge = self.STATSD_VERSION.format(self.user_agent, self.version.split(' ')[0].replace('.','_'))
+        self.context.useragents[agauge] = self.context.useragents.get(agauge, 0) + delta
+        self.context.useragents[vgauge] = self.context.useragents.get(vgauge, 0) + delta
+        server.stats.gauge(agauge, self.context.useragents[agauge])
+        server.stats.gauge(vgauge, self.context.useragents[vgauge])
 
     def check_version(self, message):
         versionDB, updateFile = self.player_service.client_version_info
@@ -678,7 +681,7 @@ Thanks,\n\
         self.user_agent = message.get('user_agent')
         self.version = message.get('version')
         clean_version = self.clean_version()
-        self.statsd_gauge(1)
+        self.update_stats(1)
 
         if not self.version or not self.user_agent:
             update_msg['command'] = 'welcome'
