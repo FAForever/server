@@ -16,9 +16,9 @@ class Search:
     """
 
     # Constants for adjusting matchmaker rating for noobs playing ladder
-    NOOBFIX_BASERATING = 500 # The base rating for a noob with 0 games
-    NOOBFIX_MAXGAMES = 20 # The number of games until rating should be applied fully
-    NOOBFIX_BLODIRSCONST = 1.9 # Interpolation constant
+    NOOBFIX_BASERATING = 500    # The base rating for a noob with 0 games
+    NOOBFIX_STRETCH = 5         # Stretching factor to adjust curvature of the exponential
+    NOOBFIX_MAXGAMES = 30       # The number of games until rating should be applied fully
 
     def __init__(self, player, start_time=None, rating_prop='ladder_rating'):
         """
@@ -49,13 +49,30 @@ class Search:
         self._adjusted_rating = self._adjust_rating()
 
     def _adjust_rating(self):
+        """
+            Implements a down-shifted rating for new players.
+
+            This is supposed to avoid new players getting matched with
+            players who are too strong in their first games.
+
+            Based on this formula: http://www.wolframalpha.com/input/?i=plot+(S+%2B+(R-S)*min(1,(e%5E(k*x%2FG)+-+1)+%2F+(e%5Ek+-+1)))+for+S%3D500+R%3D1500+G%3D30+k+%3D+5+from+x+%3D+0+to+50
+
+        """
         if self.rating_prop=='ladder_rating':
             numgames = self.player.numGames
             if numgames <= self.NOOBFIX_MAXGAMES:
                 mean, dev = self.player.ladder_rating
-                blodirs_func = 1 - (self.NOOBFIX_BLODIRSCONST / (numgames + sef.NOOBFIX_BLODIRSCONST))
-                adjusted_mean = (1 - blodirs_func) * self.NOOBFIX_BASERATING + blodirs_func * mean
-                self._logger.info('Adjusted mean rating for {player} with {numgames} games from {mean} to {adjusted_meand}'.format(
+                S = self.NOOBFIX_BASERATING
+                G = self.NOOBFIX_MAXGAMES
+                K = self.NOOBFIX_STRETCH
+                R = mean
+
+                X = numgames
+                adjusted_mean = S + (R-S) * min(
+                    1,
+                    (math.e**(K*X/G) - 1) / (math.e**K - 1)
+                )
+                self._logger.info('Adjusted mean rating for {player} with {numgames} games from {mean} to {adjusted_mean}'.format(
                     player=self.player,
                     numgames=numgames,
                     mean=mean,
