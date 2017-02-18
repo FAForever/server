@@ -17,8 +17,8 @@ class Search:
 
     # Constants for adjusting matchmaker rating for noobs playing ladder
     NOOBFIX_BASERATING = 500    # The base rating for a noob with 0 games
-    NOOBFIX_STRETCH = 5         # Stretching factor to adjust curvature of the exponential
-    NOOBFIX_MAXGAMES = 30       # The number of games until rating should be applied fully
+    NOOBFIX_STRETCH = 3         # Stretching factor to adjust curvature of the exponential
+    NOOBFIX_MAXGAMES = 15       # The number of games until rating should be applied fully
 
     def __init__(self, player, start_time=None, rating_prop='ladder_rating'):
         """
@@ -60,7 +60,7 @@ class Search:
         """
         if self.rating_prop=='ladder_rating':
             numgames = self.player.numGames
-            if numgames <= self.NOOBFIX_MAXGAMES:
+            if numgames < self.NOOBFIX_MAXGAMES:
                 mean, dev = self.player.ladder_rating
                 S = self.NOOBFIX_BASERATING
                 G = self.NOOBFIX_MAXGAMES
