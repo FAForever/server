@@ -92,6 +92,10 @@ Can be combined !, e.g. `{command: social, teaminvite: <...>, friends: <..>}`
 * `{command: avatar, action: list_avatar}`: Send a list of available avatars
 * `{command: avatar, action: select, avatar: <avatar_url>}`: Select a valid avatar for the player
 
+##### Twilio NTS
+
+* `{command: nts_token}`: Send a twilio nts token - Returns: `{command: nts_token, iceServers: <ice servers>, dateCreated: <date token was created>}`
+
 ##### Misc
 
 * [deprecated] `{command: ask_session}`: response with an welcome command and an valid session (can be delayed)

@@ -41,6 +41,7 @@ from server.matchmaker import Search
 from server.decorators import timed, with_logger
 from server.games.game import GameState, VisibilityState
 from server.players import Player, PlayerState
+from server.twilio.nts import TwilioNTS
 import server.db as db
 from server.types import Address
 from .game_service import GameService
@@ -74,12 +75,19 @@ class AuthenticationError(Exception):
 @with_logger
 class LobbyConnection:
     @timed()
-    def __init__(self, loop, context=None, games: GameService=None, players: PlayerService=None, db=None):
+    def __init__(self,
+                 loop,
+                 context=None,
+                 games: GameService=None,
+                 players: PlayerService=None,
+                 nts_client: TwilioNTS=None,
+                 db=None):
         super(LobbyConnection, self).__init__()
         self.loop = loop
         self.db = db
         self.game_service = games
         self.player_service = players  # type: PlayerService
+        self.nts_client = nts_client
         self.context = context
         self.ladderPotentialPlayers = []
         self.warned = False
@@ -1073,6 +1081,17 @@ Thanks,\n\
                                           "SET downloads=downloads+1 WHERE v.uid = %s", uid)
             else:
                 raise ValueError('invalid type argument')
+
+    def command_nts(self, message):
+        out = dict(command="command_nts")
+
+        token = self.nts_client.get_token()
+
+        out['IceServers'] = token['IceServers']
+        out['DateCreated'] = token['DateCreated']
+
+        self.sendJSON(out)
+
 
     def send_warning(self, message: str, fatal: bool=False):
         """

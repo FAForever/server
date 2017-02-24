@@ -22,3 +22,4 @@ git+https://github.com/FAForever/faftools.git@38fc8e10f3cbd50d3f6abe9168e9040c08
 pyopenssl
 mock
 lupa
+twilio
