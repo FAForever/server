@@ -57,3 +57,10 @@ FORCE_STEAM_LINK = os.getenv('FORCE_STEAM_LINK', 'false').lower() == 'true'
 
 NEWBIE_BASE_MEAN = int(os.getenv('NEWBIE_BASE_MEAN', 500))
 NEWBIE_MIN_GAMES = int(os.getenv('NEWBIE_MIN_GAMES', 10))
+
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
+TWILIO_TOKEN = os.getenv("TWILIO_TOKEN", "")
+TWILIO_TTL = os.getenv("TWILIO_TTL", 86400)
+
+COTURN_HOSTS = os.getenv('COTURN_HOSTS', "").split(',')
+COTURN_KEYS = os.getenv('COTURN_KEYS', "").split(',')

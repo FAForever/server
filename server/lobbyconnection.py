@@ -37,6 +37,8 @@ from server.matchmaker import Search
 from server.decorators import timed, with_logger
 from server.games.game import GameState, VisibilityState
 from server.players import Player, PlayerState
+from server.ice_servers.nts import TwilioNTS
+from server.ice_servers.coturn import CoturnHMAC
 import server.db as db
 from server.types import Address
 from .game_service import GameService
@@ -70,12 +72,20 @@ class AuthenticationError(Exception):
 @with_logger
 class LobbyConnection:
     @timed()
-    def __init__(self, loop, context=None, games: GameService=None, players: PlayerService=None, db=None):
+    def __init__(self,
+                 loop,
+                 context=None,
+                 games: GameService=None,
+                 players: PlayerService=None,
+                 nts_client: TwilioNTS=None,
+                 db=None):
         super(LobbyConnection, self).__init__()
         self.loop = loop
         self.db = db
         self.game_service = games
         self.player_service = players  # type: PlayerService
+        self.nts_client = nts_client
+        self.coturn_generator = CoturnHMAC()
         self.context = context
         self.ladderPotentialPlayers = []
         self.warned = False
@@ -917,6 +927,22 @@ class LobbyConnection:
                                           "SET downloads=downloads+1 WHERE v.uid = %s", uid)
             else:
                 raise ValueError('invalid type argument')
+
+    @asyncio.coroutine
+    async def command_ice_servers(self, message):
+        if self.player:
+
+            ttl = 24*3600
+            ice_servers = self.coturn_generator.fetch_token(self.player.id, ttl)
+            if self.nts_client:
+                twilio_token = await self.nts_client.fetch_token()
+                ice_servers = ice_servers + twilio_token['ice_servers']
+
+            out = dict(command='ice_servers',
+                       ice_servers=ice_servers,
+                       ttl=ttl)
+            self.sendJSON(out)
+
 
     def send_warning(self, message: str, fatal: bool=False):
         """
