@@ -6,7 +6,7 @@ import asyncio
 import twilio
 from twilio.rest import TwilioRestClient
 
-from server.config import TWILIO_SID, TWILIO_KEY
+from server.config import TWILIO_SID, TWILIO_KEY, TWILIO_TTL
 
 class TwilioNTS:
     """
@@ -27,21 +27,16 @@ class TwilioNTS:
         self.twilio_sid = sid or TWILIO_SID
         self.twilio_key = key or TWILIO_KEY
         self.client = TwilioRestClient(ACCOUNT_SID, AUTH_TOKEN)
-        self.token = None
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(loop.create_task(self._fetch_token))
-        self._update_cron = aiocron.crontab('0 * * * *', func=self.f_etch_token)
 
-    def _fetch_token(self):
+    def fetch_token(self, ttl=None):
         """
-        Fetches token from Twilio and saves it
-        """
-        loop = asyncio.get_event_loop()
-        token = await loop.run_in_executor(None, client.tokens.create())
-        self.token = token
+        Fetches token from Twilio
 
-    def get_token(self):
+        :param ttl - ttl in seconds or None for default of 24h
         """
-        Gets the current token
-        """
-        return self.token
+        ttl = ttl or TWILIO_TTL
+        if ttl is not None:
+            ttl = int(ttl)
+        loop = asyncio.get_event_loop()
+        token = await loop.run_in_executor(None, client.tokens.create(ttl))
+        return token
