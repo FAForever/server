@@ -1082,13 +1082,14 @@ Thanks,\n\
             else:
                 raise ValueError('invalid type argument')
 
-    def command_nts(self, message):
-        out = dict(command="command_nts")
+    def command_ice_servers(self, message):
+        out = dict(command='ice_servers')
 
         token = self.nts_client.fetch_token()
 
-        out['IceServers'] = token['IceServers']
-        out['DateCreated'] = token['DateCreated']
+        # Filter token to only attributes client needs
+        keys = ['ice_servers', 'date_created', 'ttl']
+        out.update({ key: token[key] for key in keys })
 
         self.sendJSON(out)
 

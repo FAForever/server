@@ -94,7 +94,7 @@ Can be combined !, e.g. `{command: social, teaminvite: <...>, friends: <..>}`
 
 ##### Twilio NTS
 
-* `{command: nts_token}`: Send a twilio nts token - Returns: `{command: nts_token, iceServers: <ice servers>, dateCreated: <date token was created>}`
+* `{command: ice_servers}`: Send ICE TURN/STUN servers - Returns: `{command: ice_servers, : <ice servers>, date_created: <date token was created in rfc 2822 format>, ttl: <ttl in seconds>}`
 
 ##### Misc
 
