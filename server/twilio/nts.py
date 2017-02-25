@@ -4,7 +4,6 @@ Twilio API NTS token
 
 import asyncio
 from functools import partial
-import twilio
 from twilio.rest import TwilioRestClient
 
 from server.config import TWILIO_SID, TWILIO_KEY, TWILIO_TTL
@@ -27,7 +26,7 @@ class TwilioNTS:
         """
         self.twilio_sid = sid or TWILIO_SID
         self.twilio_key = key or TWILIO_KEY
-        self.client = TwilioRestClient(ACCOUNT_SID, AUTH_TOKEN)
+        self.client = TwilioRestClient(self.twilio_sid, self.twilio_key)
 
     async def fetch_token(self, ttl=None):
         """
@@ -39,5 +38,5 @@ class TwilioNTS:
         if ttl is not None:
             ttl = int(ttl)
         loop = asyncio.get_event_loop()
-        token = await loop.run_in_executor(None, partial(client.tokens.create, ttl))
+        token = await loop.run_in_executor(None, partial(self.client.tokens.create, ttl))
         return token

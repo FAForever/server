@@ -1082,15 +1082,15 @@ Thanks,\n\
             else:
                 raise ValueError('invalid type argument')
 
-    def command_ice_servers(self, message):
-        out = dict(command='ice_servers')
+    @asyncio.coroutine
+    async def command_ice_servers(self, message):
 
-        token = self.nts_client.fetch_token()
+        token = await self.nts_client.fetch_token()
 
-        # Filter token to only attributes client needs
-        keys = ['ice_servers', 'date_created', 'ttl']
-        out.update({ key: token[key] for key in keys })
-
+        out = dict(command='ice_servers',
+                   ice_servers=token.ice_servers,
+                   date_created=token.date_created,
+                   ttl=token.ttl)
         self.sendJSON(out)
 
 
