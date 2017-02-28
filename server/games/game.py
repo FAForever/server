@@ -118,7 +118,7 @@ class Game(BaseGame):
         self.max_players = 12
         self.host = host
         self.name = name
-        self.map_id = 0
+        self.map_id = None
         self.map_file_path = 'maps/%s.zip' % map
         self.map_scenario_path = None
         self.password = None
@@ -569,7 +569,7 @@ class Game(BaseGame):
             # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
             # so, and grab the map id at the same time.
             await cursor.execute("SELECT id, ranked FROM map_version "
-                                 "WHERE filename = %s", (self.map_file_path,))
+                                 "WHERE lower(filename) = lower(%s)", (self.map_file_path,))
             result = await cursor.fetchone()
             if result:
                 (self.map_id, ranked) = result
