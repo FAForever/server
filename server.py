@@ -21,7 +21,7 @@ from server.player_service import PlayerService
 from server.natpacketserver import NatPacketServer
 from server.stats.game_stats_service import GameStatsService, EventService, AchievementService
 from server.api.api_accessor import ApiAccessor
-from server.twilio.nts import TwilioNTS
+from server.ice_servers.nts import TwilioNTS
 import server
 import server.config as config
 from server.config import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME

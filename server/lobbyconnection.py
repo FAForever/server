@@ -41,7 +41,8 @@ from server.matchmaker import Search
 from server.decorators import timed, with_logger
 from server.games.game import GameState, VisibilityState
 from server.players import Player, PlayerState
-from server.twilio.nts import TwilioNTS
+from server.ice_servers.nts import TwilioNTS
+from server.ice_servers.coturn import CoturnHMAC
 import server.db as db
 from server.types import Address
 from .game_service import GameService
@@ -88,6 +89,7 @@ class LobbyConnection:
         self.game_service = games
         self.player_service = players  # type: PlayerService
         self.nts_client = nts_client
+        self.coturn_generator = CoturnHMAC()
         self.context = context
         self.ladderPotentialPlayers = []
         self.warned = False
@@ -1084,12 +1086,16 @@ Thanks,\n\
 
     @asyncio.coroutine
     async def command_ice_servers(self, message):
+        if self.player:
 
-        token = await self.nts_client.fetch_token()
+            twilio_token = await self.nts_client.fetch_token()
+            coturns = self.coturn_generator.fetch_token(self.player.id, twilio_token['ttl'])
 
-        out = dict(command='ice_servers',
-                   **token)
-        self.sendJSON(out)
+            twilio_token['ice_servers'] = coturns + twilio_token['ice_servers']
+
+            out = dict(command='ice_servers',
+                       **twilio_token)
+            self.sendJSON(out)
 
 
     def send_warning(self, message: str, fatal: bool=False):

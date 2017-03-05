@@ -56,3 +56,6 @@ API_BASE_URL = os.getenv("API_BASE_URL", "https://api.dev.faforever.com/jwt")
 TWILIO_SID = os.getenv("TWILIO_SID", "")
 TWILIO_KEY = os.getenv("TWILIO_KEY", "")
 TWILIO_TTL = os.getenv("TWILIO_TTL", None)
+
+COTURN_URLS = os.getenv('COTURN_URLS', "").split(',')
+COTURN_KEYS = os.getenv('COTURN_KEYS', "").split(',')
