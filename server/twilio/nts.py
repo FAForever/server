@@ -39,4 +39,6 @@ class TwilioNTS:
             ttl = int(ttl)
         loop = asyncio.get_event_loop()
         token = await loop.run_in_executor(None, partial(self.client.tokens.create, ttl))
-        return token
+        return dict(ice_servers=token.ice_servers,
+                    date_created=token.date_created.isoformat(),
+                    ttl=token.ttl)

@@ -1088,9 +1088,7 @@ Thanks,\n\
         token = await self.nts_client.fetch_token()
 
         out = dict(command='ice_servers',
-                   ice_servers=token.ice_servers,
-                   date_created=token.date_created,
-                   ttl=token.ttl)
+                   **token)
         self.sendJSON(out)
 
 
