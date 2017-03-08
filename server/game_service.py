@@ -163,7 +163,7 @@ class GameService:
             game = LadderGame(**args)
         elif game_mode == 'coop':
             game = CoopGame(**args)
-        elif game_mode == 'faf' or game_mode == 'fafbeta':
+        elif game_mode == 'faf' or game_mode == 'fafbeta' or game_mode == 'equilibrium':
             game = CustomGame(**args)
         else:
             game = Game(**args)
