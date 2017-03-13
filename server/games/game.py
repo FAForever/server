@@ -146,7 +146,9 @@ class Game(BaseGame):
         return await asyncio.sleep(n)
 
     async def timeout_game(self):
-        await self.sleep(20)
+        # coop takes longer to set up
+        tm = 30 if self.game_mode != 'coop' else 60
+        await self.sleep(tm)
         if self.state == GameState.INITIALIZING:
             await self.on_game_end()
 
