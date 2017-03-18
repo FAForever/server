@@ -48,7 +48,7 @@ class GameService:
         loop = asyncio.get_event_loop()
         loop.run_until_complete(asyncio.async(self.initialise_game_counter()))
         loop.run_until_complete(loop.create_task(self.update_data()))
-        self._update_cron = aiocron.crontab('0 * * * *', func=self.update_data)
+        self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
 
     async def initialise_game_counter(self):
         async with db.db_pool.get() as conn:

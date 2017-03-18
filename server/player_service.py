@@ -23,7 +23,7 @@ class PlayerService:
 
         self.ladder_queue = None
         asyncio.get_event_loop().run_until_complete(asyncio.async(self.update_data()))
-        self._update_cron = aiocron.crontab('0 * * * *', func=self.update_data)
+        self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
 
     def __len__(self):
         return len(self.players)
