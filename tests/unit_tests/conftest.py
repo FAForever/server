@@ -25,6 +25,7 @@ def game_connection(request, game, loop, player_service, players, game_service, 
     conn.player = players.hosting
     conn.game = game
     conn.lobby = mock.Mock(spec=LobbyConnection)
+    conn.finished_sim = False
 
     def fin():
         conn.abort()
@@ -38,6 +39,7 @@ def mock_game_connection(state=GameConnectionState.INITIALIZING, player=None):
     gc = mock.create_autospec(spec=GameConnection)
     gc.state = state
     gc.player = player
+    gc.finished_sim = False
     return gc
 
 

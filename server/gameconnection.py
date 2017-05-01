@@ -61,6 +61,8 @@ class GameConnection(GpgNetServerProtocol):
 
         self.connectivity = self.lobby_connection.connectivity  # type: Connectivity
 
+        self.finished_sim = False
+
     @property
     def state(self):
         """
@@ -334,6 +336,14 @@ class GameConnection(GpgNetServerProtocol):
                                    ['score', 'defeat', 'victory', 'draw'])):
                         raise ValueError()  # pragma: no cover
                     result = result.split(' ')
+
+                    # This is the most common way for the player's sim to end
+                    # We should add a reliable message to lua in the future
+                    if result[0] in ['victory', 'draw'] and not self.finished_sim:
+                        self.finished_sim = True
+                        await self.game.check_sim_end()
+
+
                     await self.game.add_result(self.player, army, result[0], int(result[1]))
                 except (KeyError, ValueError):  # pragma: no cover
                     self.log.warn("Invalid result for %s reported: %s", army, result)
