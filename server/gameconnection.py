@@ -128,6 +128,9 @@ class GameConnection(GpgNetServerProtocol):
             # followed by the rest of the players.
             elif player_state == PlayerState.JOINING:
                 await self.ConnectToHost(self.game.host.game_connection)
+                if self._state is GameConnectionState.ENDED: # We aborted while trying to connect
+                    return
+
                 self._state = GameConnectionState.CONNECTED_TO_HOST
                 self.game.add_game_connection(self)
                 for peer in self.game.connections:
