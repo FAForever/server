@@ -28,6 +28,7 @@ from server.config import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME
 if __name__ == '__main__':
     logger = logging.getLogger()
     stderr_handler = logging.StreamHandler()
+    stderr_handler.setFormatter(logging.Formatter('%(levelname)-8s %(name)-30s %(message)s'))
     logger.addHandler(stderr_handler)
     logger.setLevel(logging.DEBUG)
 
