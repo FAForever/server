@@ -110,8 +110,8 @@ def run_lobby_server(address: (str, int),
                 # These games shouldn't be broadcast, but instead privately sent to those who are
                 # allowed to see them.
                 if game.visibility == VisibilityState.FRIENDS:
-                    # To see this game, you must have an authenticated connection and be a friend of the host.
-                    validation_func = lambda lobby_conn: lobby_conn.player.id in game.host.friends
+                    # To see this game, you must have an authenticated connection and be a friend of the host, or the host.
+                    validation_func = lambda lobby_conn: lobby_conn.player.id in game.host.friends or lobby_conn.player == game.host
                 else:
                     validation_func = lambda lobby_conn: lobby_conn.player.id not in game.host.foes
 
