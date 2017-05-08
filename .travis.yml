@@ -12,7 +12,12 @@ services:
 before_install:
   - sudo /etc/init.d/mysql stop
   - sudo apt-get update
-  - pushd db && ./setup_db.sh && popd
+  - pushd db
+  - docker build -t faf-db .
+  - docker run -d --name faf-db -e MYSQL_ROOT_PASSWORD=banana -p 3306:3306 faf-db
+  - until docker exec -i faf-db ./healthcheck.sh 2>/dev/null; do sleep 1; done
+  - docker exec -i faf-db mysql -uroot -pbanana faf < test-data.sql
+  - popd
   - python -m pip install coveralls
 
 install:
@@ -20,9 +25,7 @@ install:
   - docker build -t faf-server .
 
 script:
-  - docker run --name faf_server -it --link faf-db:db -e FAF_DB_PASSWORD=banana faf-server bash scripts/run_tests_with_coverage.sh
-  - docker cp faf_server:/code/.coverage .coverage
+  - docker run --name faf-server --link faf-db:db -e FAF_DB_PASSWORD=banana -e FAF_DB_NAME=faf faf-server bash scripts/run_tests_with_coverage.sh
+  - docker cp faf-server:/code/.coverage .coverage
   - sed -i.bak s#/code/#$(pwd)/#g .coverage
-  - cat .coverage
   - coveralls
-  - docker rm faf_server
