@@ -146,3 +146,17 @@ async def test_handle_action_TeamkillReport(game, game_connection):
         await cursor.execute("select game_id from teamkills where victim=2 and teamkiller=3 and game_id=%s and gametime=200", (game.id))
 
         assert (game.id,) == await cursor.fetchone()
+
+async def test_handle_action_GameResult_victory_ends_sim(game, game_connection):
+    game_connection.ConnectToHost = CoroMock()
+    await game_connection.handle_action('GameResult', [0, 'victory'])
+
+    assert game_connection.finished_sim
+    assert game.check_sim_end.called
+
+async def test_handle_action_GameResult_draw_ends_sim(game, game_connection):
+    game_connection.ConnectToHost = CoroMock()
+    await game_connection.handle_action('GameResult', [0, 'draw'])
+
+    assert game_connection.finished_sim
+    assert game.check_sim_end.called

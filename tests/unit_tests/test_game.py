@@ -161,6 +161,35 @@ async def test_game_end_when_no_more_connections(game: Game, mock_game_connectio
 
     game.on_game_end.assert_any_call()
 
+@patch('server.games.game.db.db_pool')  # FIXME
+async def test_game_sim_ends_when_no_more_connections(game: Game, players):
+    await game.clear_data()
+    game.state = GameState.LOBBY
+    host_conn = add_connected_player(game, players.hosting)
+    join_conn = add_connected_player(game, players.joining)
+    game.host = players.hosting
+
+    await game.launch()
+
+    await game.remove_game_connection(host_conn)
+    await game.remove_game_connection(join_conn)
+    assert game.ended
+
+@patch('server.games.game.db.db_pool')  # FIXME
+async def test_game_sim_ends_when_connections_ended_sim(game: Game, players):
+    await game.clear_data()
+    game.state = GameState.LOBBY
+    host_conn = add_connected_player(game, players.hosting)
+    join_conn = add_connected_player(game, players.joining)
+    game.host = players.hosting
+
+    await game.launch()
+
+    host_conn.finished_sim = True
+    join_conn.finished_sim = True
+    await game.check_sim_end()
+    assert game.ended
+
 async def test_game_marked_dirty_when_timed_out(game: Game):
     game.state = GameState.INITIALIZING
     game.sleep = CoroMock()

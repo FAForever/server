@@ -112,6 +112,7 @@ class Game(BaseGame):
         self.game_service = game_service
         self._player_options = {}
         self.launched_at = None
+        self.ended = False
         self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, id))
         self.id = id
         self.visibility = VisibilityState.PUBLIC
@@ -310,6 +311,7 @@ class Game(BaseGame):
         del self._connections[game_connection.player]
         if game_connection.player:
             del game_connection.player.game
+        await self.check_sim_end()
 
         self._logger.info("Removed game connection %s", game_connection)
 
@@ -317,6 +319,20 @@ class Game(BaseGame):
             await self.on_game_end()
         else:
             await self._process_pending_army_stats()
+
+    async def check_sim_end(self):
+        if self.ended:
+            return
+        if self.state != GameState.LIVE:
+            return
+        if len([conn for conn in self._connections.values() if not conn.finished_sim]) > 0:
+            return
+        self.ended = True
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("UPDATE game_stats "
+                                 "SET endTime = NOW() "
+                                 "WHERE id = %s", (self.id,))
 
     async def on_game_end(self):
         try:
