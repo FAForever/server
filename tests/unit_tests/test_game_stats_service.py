@@ -1,13 +1,15 @@
 from unittest.mock import Mock, MagicMock
 import pytest
 from faf.factions import Faction
-from server.games import Game
+from server.games.game import Game, GameState
 from server.lobbyconnection import LobbyConnection
 from server.players import Player
 from server.stats.achievement_service import *
 from server.stats.event_service import *
-from server.stats.game_stats_service import GameStatsService
+from server.stats.game_stats_service import *
 from tests import CoroMock
+from tests.unit_tests.conftest import add_connected_player
+from tests.unit_tests.game_fixtures import game as base_game
 
 
 @pytest.fixture()
@@ -37,11 +39,14 @@ def player():
 
 
 @pytest.fixture()
-def game(game_stats_service, player):
-    game = Game(1, Mock(), game_stats_service)
-    game._player_options[player.id] = {'Army': 1}
-    game._results = {1: ['', 'victory', '']}
-    return game
+def game(loop, base_game, player):
+    base_game.state = GameState.LOBBY
+    add_connected_player(base_game, player)
+    base_game.set_player_option(player.id, 'Army', 1)
+    base_game.host = player
+    loop.run_until_complete(base_game.launch())
+    loop.run_until_complete(base_game.add_result(player, 1, 'victory', 10))
+    return base_game
 
 
 @pytest.fixture()

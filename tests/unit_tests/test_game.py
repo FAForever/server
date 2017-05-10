@@ -1,35 +1,21 @@
 import logging
 from unittest import mock
-from mock import patch
+import time
 
 import pytest
-import time
 
 from trueskill import Rating
 
 from server.games.game import Game, GameState, GameError, Victory, VisibilityState, ValidityState
-from server.games import CustomGame
 from server.gameconnection import GameConnection, GameConnectionState
 from server.players import Player
 from tests import CoroMock
 from tests.unit_tests.conftest import mock_game_connection, add_players, add_connected_players, add_connected_player
-
-@pytest.yield_fixture
-def game(loop, game_service, game_stats_service):
-    game = Game(42, game_service, game_stats_service)
-    yield game
-    loop.run_until_complete(game.clear_data())
-
-@pytest.yield_fixture
-def custom_game(loop, game_service, game_stats_service):
-    game = CustomGame(42, game_service, game_stats_service)
-    yield game
-    loop.run_until_complete(game.clear_data())
+from .game_fixtures import game
 
 def test_initialization(game: Game):
     assert game.state == GameState.INITIALIZING
-    assert game.enforce_rating == False
-
+    assert not game.enforce_rating
 
 def test_instance_logging(game_stats_service):
     logger = logging.getLogger('{}.5'.format(Game.__qualname__))
