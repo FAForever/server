@@ -67,7 +67,7 @@ class PlayerService:
             try:
                 yield from cur.execute(
                     "SELECT `clan_tag` "
-                    "FROM `fafclans`.`clan_tags` "
+                    "FROM `clan_tags` "
                     "LEFT JOIN `fafclans`.players_list "
                     "ON `fafclans`.players_list.player_id = `fafclans`.`clan_tags`.player_id "
                     "WHERE `faf_id` = %s", player.id)
