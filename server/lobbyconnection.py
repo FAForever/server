@@ -645,11 +645,11 @@ Thanks,\n\
 
         if count == 0:
             try:
-                await cursor.execute("INSERT INTO unique_id_users(user_id, uniqueid_hash) VALUES(%s, %s)", (player_id, uid_hash))
                 await cursor.execute("INSERT INTO `uniqueid` (`hash`, `uuid`, `mem_SerialNumber`, `deviceID`, `manufacturer`, `name`, `processorId`, `SMBIOSBIOSVersion`, `serialNumber`, `volumeSerialNumber`)"
                                      "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (uid_hash, *hardware_info))
             except Exception as e:
-                self._logger.warning("UID association dupe: %d: %s", player_id, uid_hash)
+                self._logger.warning("UID association dupe: %d: %s", player_id, uid_hash) 
+            await cursor.execute("INSERT INTO `unique_id_users`(`user_id`, `uniqueid_hash`) VALUES(%s, %s)", (player_id, uid_hash))
 
         return True
 
