@@ -46,7 +46,7 @@ from server.types import Address
 from .game_service import GameService
 from .player_service import PlayerService
 from . import config
-from .config import VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY, PRIVATE_KEY
+from .config import VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY, PRIVATE_KEYS
 from server.protocol import QDataStreamProtocol
 
 gi = pygeoip.GeoIP('GeoIP.dat', pygeoip.MEMORY_CACHE)
@@ -542,7 +542,19 @@ Thanks,\n\
 
             # The JSON string is AES encrypted
             # first decrypt the AES key with our rsa private key
-            AESkey = rsa.decrypt(key, PRIVATE_KEY)
+            # Do this in a loop
+            AESkey = None
+            for PRIVATE_KEY in PRIVATE_KEYS:
+                try:
+                    AESkey = rsa.decrypt(key, PRIVATE_KEY)
+                    if AESkey is not None:
+                        break
+                except:
+                    pass
+
+            if AESkey is None:
+                self.sendJSON(dict(command="notice", style="error", text="Your session is corrupted. Try relogging"))
+                return None
 
             # now decrypt the message
             cipher = AES.new(AESkey, AES.MODE_CBC, iv)

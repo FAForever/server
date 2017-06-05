@@ -34,10 +34,13 @@ MANDRILL_API_URL = os.getenv("MANDRILL_API_URL", 'https://mandrillapp.com/api/1.
 VERIFICATION_HASH_SECRET = os.getenv("VERIFICATION_HASH_SECRET", "")
 VERIFICATION_SECRET_KEY = os.getenv("VERIFICATION_SECRET_KEY", "")
 
-try:
-    PRIVATE_KEY = rsa.PrivateKey.load_pkcs1(base64.b64decode(os.getenv("FAF_PRIVATE_KEY")), format='DER')
-except:
-    PRIVATE_KEY = None
+PRIVATE_KEYS = []
+PRIVATE_KEY_BLOBS = os.getenv("FAF_PRIVATE_KEY", '').split(';')
+for KEYBLOB in PRIVATE_KEY_BLOBS:
+    try:
+        PRIVATE_KEYS.append(rsa.PrivateKey.load_pkcs1(base64.b64decode(KEYBLOB), format='DER'))
+    except:
+        pass
 
 DB_SERVER = os.getenv("DB_PORT_3306_TCP_ADDR", "127.0.0.1")
 DB_PORT = int(os.getenv("DB_PORT_3306_TCP_PORT", "3306"))
