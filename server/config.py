@@ -4,6 +4,7 @@ import logging
 import rsa
 import trueskill
 import os
+import sys
 
 LOBBY_IP = os.getenv('LOBBY_IP', '37.58.123.3')
 LOBBY_UDP_PORTS = [int(port) for port in os.getenv('LOBBY_UDP_PORTS', '7,53,67,80,123,194,547,3478,3535,6112,30351').split(',')]
@@ -36,11 +37,13 @@ VERIFICATION_SECRET_KEY = os.getenv("VERIFICATION_SECRET_KEY", "")
 
 PRIVATE_KEYS = []
 PRIVATE_KEY_BLOBS = os.getenv("FAF_PRIVATE_KEY", '').split(';')
+print('CONFIG: {} private key blobs found in env'.format(len(PRIVATE_KEY_BLOBS)), file=sys.stderr)
 for KEYBLOB in PRIVATE_KEY_BLOBS:
     try:
         PRIVATE_KEYS.append(rsa.PrivateKey.load_pkcs1(base64.b64decode(KEYBLOB), format='DER'))
     except:
         pass
+print('CONFIG: {} private keys loaded'.format(len(PRIVATE_KEYS)), file=sys.stderr)
 
 DB_SERVER = os.getenv("DB_PORT_3306_TCP_ADDR", "127.0.0.1")
 DB_PORT = int(os.getenv("DB_PORT_3306_TCP_PORT", "3306"))
