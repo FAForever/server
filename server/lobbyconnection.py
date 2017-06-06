@@ -604,14 +604,20 @@ Thanks,\n\
 
             return m.hexdigest(), (UUID, mem_SerialNumber, DeviceID, Manufacturer, Name, ProcessorId, SMBIOSBIOSVersion, SerialNumber, VolumeSerialNumber)
         except Exception as ex:
-            self._logger.exception(ex)
+            # Any exception from above is caused by malformed uid
+            return None
 
     async def validate_unique_id(self, cursor, player_id, steamid, encoded_unique_id):
         # Accounts linked to steam are exempt from uniqueId checking.
         if steamid:
             return True
 
-        uid_hash, hardware_info = self.decodeUniqueId(encoded_unique_id)
+        uid_data = self.decodeUniqueId(encoded_unique_id)
+        if uid_data is None:
+            self._logger.info("User " + str(player_id) +
+                              " sent malformed uid " + encoded_unique_id)
+            return False
+        uid_hash, hardware_info = uid_data
 
         # VM users must use steam.
         # TODO (downlord) I added the check for "V" because we have 63 entries in the database, no idea why
