@@ -512,12 +512,14 @@ Thanks,\n\
                                   "lobby_ban.expires_at as expires_at "
                                   "FROM login "
                                   "LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser "
-                                  "WHERE LOWER(login)=%s", (login.lower(), ))
+                                  "WHERE LOWER(login)=%s "
+                                  "ORDER BY expires_at DESC", (login.lower(), ))
 
-        if cursor.rowcount != 1:
+        if cursor.rowcount < 1:
             raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
 
         player_id, real_username, dbPassword, steamid, ban_reason, ban_expiry = await cursor.fetchone()
+
         if dbPassword != password:
             raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
 
