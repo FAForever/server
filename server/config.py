@@ -47,6 +47,7 @@ for KEYBLOB in PRIVATE_KEY_BLOBS:
         _aes_key_base64_size = _aes_key_base64_size + 3 - ((_aes_key_base64_size + 3)%4) # round to multiple of 4
         PRIVATE_KEYS.append(PRIVATE_KEY)
         AES_KEY_BASE64_SIZES.append(_aes_key_base64_size)
+        print('CONFIG: Loaded {}bit rsa key, aes key size {}'.format(PRIVATE_KEY.n.bit_length(), _aes_key_base64_size), file=sys.stderr)
     except:
         print(traceback.format_exc(), file=sys.stderr)
 print('CONFIG: {} private keys loaded'.format(len(PRIVATE_KEYS)), file=sys.stderr)
