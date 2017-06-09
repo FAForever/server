@@ -43,11 +43,12 @@ print('CONFIG: {} private key blobs found in env'.format(len(PRIVATE_KEY_BLOBS))
 for KEYBLOB in PRIVATE_KEY_BLOBS:
     try:
         PRIVATE_KEY = rsa.PrivateKey.load_pkcs1(base64.b64decode(KEYBLOB), format='DER')
-        _aes_key_base64_size = 4*PRIVATE_KEY.n.bit_length()/24
-        _aes_key_base64_size = _aes_key_base64_size + 3 - ((_aes_key_base64_size + 3)%4) # round to multiple of 4
+        keybits = PRIVATE_KEY.n.bit_length() + 7 - ((PRIVATE_KEY.n.bit_length() + 7)%8) # round up to multiple of 8 (byte)
+        _aes_key_base64_size = 4*keybits/24
+        _aes_key_base64_size = int(_aes_key_base64_size + 3 - ((_aes_key_base64_size + 3)%4)) # round to multiple of 4
         PRIVATE_KEYS.append(PRIVATE_KEY)
         AES_KEY_BASE64_SIZES.append(_aes_key_base64_size)
-        print('CONFIG: Loaded {}bit rsa key, aes key size {}'.format(PRIVATE_KEY.n.bit_length(), _aes_key_base64_size), file=sys.stderr)
+        print('CONFIG: Loaded {}bit rsa key, aes key size {}'.format(keybits, _aes_key_base64_size), file=sys.stderr)
     except:
         print(traceback.format_exc(), file=sys.stderr)
 print('CONFIG: {} private keys loaded'.format(len(PRIVATE_KEYS)), file=sys.stderr)
