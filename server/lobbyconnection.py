@@ -110,6 +110,8 @@ class LobbyConnection:
             self._logger.warning("Client %s dropped. %s" % (self.player.login, logspam))
         else:
             self._logger.warning("Aborting %s. %s" % (self.peer_address.host, logspam))
+        if self.game_connection:
+            self.game_connection.abort()
         self._authenticated = False
         self.protocol.writer.close()
 
@@ -522,7 +524,8 @@ Thanks,\n\
             raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
 
         if ban_reason is not None and datetime.datetime.now() < ban_expiry:
-            raise ClientError("You are banned from FAF.\n Reason :\n {}".format(ban_reason))
+            self._logger.debug('Rejected login from banned user: %s, %s, %s', player_id, login, self.session)
+            raise ClientError("You are banned from FAF.\n Reason :\n {}".format(ban_reason), recoverable=False)
 
         self._logger.debug("Login from: %s, %s, %s", player_id, login, self.session)
 
