@@ -32,7 +32,7 @@ class PlayerService:
         return self.players.values().__iter__()
 
     def __getitem__(self, item) -> Player:
-        return self.players[item]
+        return self.players.get(item)
 
     def __setitem__(self, key, value):
         self.players[key] = value
