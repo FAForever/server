@@ -66,3 +66,5 @@ API_CLIENT_ID = os.getenv("API_CLIENT_ID", "6ccaf75b-a1f3-48be-bac3-4e9ffba81eb7
 API_CLIENT_SECRET = os.getenv("API_CLIENT_SECRET", "banana")
 API_TOKEN_URI = os.getenv("API_TOKEN_URI", "https://api.dev.faforever.com/jwt/auth")
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.dev.faforever.com/jwt")
+
+LADDER_SEASON = os.getenv("LADDER_SEASON", 6)
