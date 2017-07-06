@@ -1,8 +1,11 @@
+import asyncio
 from faf.factions import Faction
 from server.games import Game
 from server.players import Player
 from server.stats.achievement_service import *
+from server.stats.division_service import DivisionService
 from server.stats.event_service import *
+from server.stats.sql_division_persistor import SqlDivisionPersistor
 from server.stats.unit import *
 
 
@@ -11,6 +14,12 @@ class GameStatsService:
     def __init__(self, event_service: EventService, achievement_service: AchievementService):
         self._event_service = event_service
         self._achievement_service = achievement_service
+        self._division_service = DivisionService(SqlDivisionPersistor())
+
+    async def process_ladder_scores(self, player_one: Player, player_two: Player, winner: int):
+        asyncio.get_event_loop().run_in_executor(None,
+            self._division_service.post_result(player_one.id, player_two.id, winner)
+        )
 
     async def process_game_stats(self, player: Player, game: Game, stats_json):
         stats = None

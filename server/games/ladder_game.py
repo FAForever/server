@@ -19,7 +19,23 @@ class LadderGame(Game):
     async def rate_game(self):
         if self.validity == ValidityState.VALID:
             new_ratings = self.compute_rating(rating='ladder')
+
             await self.persist_rating_change_stats(new_ratings, rating='ladder')
+            await self._update_division_scores()
+
+    async def _update_division_scores(self):
+        for player in self.players:
+            army = self.get_player_option(player.id, 'Army')
+            try:
+                if self.get_army_score(army) == 1:
+                    winner = player
+                if self.get_army_score(army) == 0:
+                    loser = player
+            except KeyError:
+                return
+
+        if winner is not None:
+            self.game_service.game_stats_service.process_ladder_scores(winner, loser, 1)
 
     def is_winner(self, player: Player):
         return self.get_army_score(self.get_player_option(player.id, 'Army')) > 0
