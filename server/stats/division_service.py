@@ -30,26 +30,41 @@ class PlayerDivisionInfo:
         return "PlayerDivisionInfo(user_id=%s, league=%s, score=%s)" % (self.user_id, self.league, self.score)
 
 
-class DivisionPersistor(ABCMeta):
+class DivisionAccessor(metaclass=ABCMeta):
     """
     Interface for the persistance layer
     """
 
     @abstractmethod
-    def add_player(self, player: 'PlayerDivisionInfo') -> None:
+    async def get_divisions(self) -> List['Division']:
+        """
+        :return list of divisions
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    async def get_player_infos(self, season: int) -> List['PlayerDivisionInfo']:
+        """
+        :param season: requested season for all player infos
+        :return list of player infos for given season
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    async def add_player(self, season: int, player: 'PlayerDivisionInfo') -> None:
         """
         Add a new player to the persistance layer
         :param player: new player with zero score and initial league
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
-    def update_player(self, player: 'PlayerDivisionInfo') -> None:
+    async def update_player(self, season: int, player: 'PlayerDivisionInfo') -> None:
         """
         Update a player after a game (league, score, games)
         :param player: updated player
         """
-        pass
+        pass  # pragma: no cover
 
 
 class DivisionService:
@@ -57,52 +72,75 @@ class DivisionService:
     Division service calculates changes to the ladder leagues & divisions after each game
     """
 
-    def __init__(self, divisions: List['Division'], player_division_infos: List['PlayerDivisionInfo'],
-                 persistor: 'DivisionPersistor'):
-        self.divisions = divisions
-        self.players = dict()  # type: Dict[int, 'PlayerDivisionInfo']
-        self.persistor = persistor
+    def __init__(self, accessor: 'DivisionAccessor', season: int):
+        self._divisions = None
+        self._players = None
+        self.season = season
+        self.accessor = accessor
 
-        for info in player_division_infos:
-            self.players[info.user_id] = info
+    async def get_divisions(self):
+        if self._divisions is None:
+            self._divisions = await self.accessor.get_divisions()
 
-    def add_player(self, player_id: int) -> None:
+        return self._divisions
+
+    async def _ensure_players(self):
+        if self._players is None:
+            players_infos = await self.accessor.get_player_infos(self.season)
+            self._players = dict()
+
+            for info in players_infos:
+                self._players[info.user_id] = info
+
+    async def _get_players(self) -> Dict[int, 'PlayerDivisionInfo']:
+        await self._ensure_players()
+
+        return self._players
+
+    async def get_player(self, user_id: int):
+        return (await self._get_players())[user_id]
+
+    async def add_player(self, player_id: int) -> None:
+        await self._ensure_players()
+
         logger.info("Added new player %s to divisions", player_id)
-        self.players[player_id] = PlayerDivisionInfo(player_id, 1, 0.0)
-        self.persistor.add_player(self.players[player_id])
+        self._players[player_id] = PlayerDivisionInfo(player_id, 1, 0.0)
+        await self.accessor.add_player(self.season, self._players[player_id])
 
-    def update_player_stats(self, player: PlayerDivisionInfo, new_score: float) -> None:
+    async def update_player_stats(self, player: PlayerDivisionInfo, new_score: float) -> None:
         logger.debug("Update score for %s to %s", player)
         player.score = new_score
-        self.persistor.update_player(player)
+        await self.accessor.update_player(self.season, player)
 
-    def promote_player(self, player):
+    async def promote_player(self, player):
         logger.info("%s got promoted to league %s", player, player.league + 1)
         player.score = 0.0
         player.league += 1
-        self.persistor.update_player(player)
+        await self.accessor.update_player(self.season, player)
 
-    def post_result(self, player_one: int, player_two: int, winning_slot: int) -> None:
+    async def post_result(self, player_one: int, player_two: int, winning_slot: int) -> None:
         """
         Post a ladder game result to the division system
         :param player_one: FAF User ID of 1st player
         :param player_two: FAF User ID of 2nd player
         :param winning_slot: 0 for draw, 1 for 1st player, 2 for 2nd player
         """
-        if player_one not in self.players:
-            self.add_player(player_one)
+        players = await self._get_players()
 
-        if player_two not in self.players:
-            self.add_player(player_two)
+        if player_one not in players:
+            await self.add_player(self.season, player_one)
+
+        if player_two not in players:
+            await self.add_player(self.season, player_two)
 
         if winning_slot == 0:
             logger.info("Game ended in a draw - no changes in score")
-            self.update_player_stats(self.players[player_one], self.players[player_one].score)
-            self.update_player_stats(self.players[player_two], self.players[player_two].score)
+            await self.update_player_stats(self._players[player_one], players[player_one].score)
+            await self.update_player_stats(self._players[player_two], players[player_two].score)
             return
 
-        winner = self.players[player_one] if winning_slot == 1 else self.players[player_two]
-        loser = self.players[player_two] if winning_slot == 1 else self.players[player_one]
+        winner = players[player_one] if winning_slot == 1 else players[player_two]
+        loser = players[player_two] if winning_slot == 1 else players[player_one]
 
         if winner.is_in_inferior_league(loser):
             gain = 1.5
@@ -116,22 +154,22 @@ class DivisionService:
 
         logger.info("%s won against %s - gain: %s - loss: %s", winner, loser, gain, loss)
 
-        if winner.score + gain > self.max_league_threshold(winner.league):
-            self.promote_player(winner)
+        if winner.score + gain > await self.max_league_threshold(winner.league):
+            await self.promote_player(winner)
         else:
-            self.update_player_stats(winner, winner.score + gain)
+            await self.update_player_stats(winner, winner.score + gain)
 
-        self.update_player_stats(loser, max(0.0, loser.score - loss))
+        await self.update_player_stats(loser, max(0.0, loser.score - loss))
 
-    def get_player_division(self, player_id: int) -> 'Division':
-        player = self.players[player_id]
-        return self.get_division(player.league, player.score)
+    async def get_player_division(self, user_id: int) -> 'Division':
+        player = await self.get_player(user_id)
+        return await self.get_division(player.league, player.score)
 
-    def max_league_threshold(self, league: int) -> float:
-        return max([x.threshold for x in self.divisions if x.league == league])
+    async def max_league_threshold(self, league: int) -> float:
+        return max([x.threshold for x in await self.get_divisions() if x.league == league])
 
-    def get_division(self, league: int, score: float) -> Division:
-        divisions_of_league = [x for x in self.divisions if x.league == league]
+    async def get_division(self, league: int, score: float) -> Division:
+        divisions_of_league = [x for x in await self.get_divisions() if x.league == league]
 
         for division in sorted(divisions_of_league, key=lambda d: d.threshold):
             if division.threshold > score:

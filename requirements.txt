@@ -11,6 +11,7 @@ pygeoip
 pytest==2.8.2
 pytest-mock
 pytest-cov
+pytest-asyncio
 pyflakes
 msgpack-python
 rsa
