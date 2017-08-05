@@ -78,7 +78,7 @@ class DivisionService:
         self.season = season
         self.accessor = accessor
 
-    async def get_divisions(self):
+    async def get_divisions(self) -> List['Division']:
         if self._divisions is None:
             self._divisions = await self.accessor.get_divisions()
 
@@ -128,10 +128,10 @@ class DivisionService:
         players = await self._get_players()
 
         if player_one not in players:
-            await self.add_player(self.season, player_one)
+            await self.add_player(player_one)
 
         if player_two not in players:
-            await self.add_player(self.season, player_two)
+            await self.add_player(player_two)
 
         if winning_slot == 0:
             logger.info("Game ended in a draw - no changes in score")

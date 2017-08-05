@@ -30,10 +30,10 @@ class MockDivisionAccessor(DivisionAccessor):
     async def get_divisions(self) -> List['Division']:
         return self._divisions
 
-    async def update_player(self, player: 'PlayerDivisionInfo') -> None:
+    async def update_player(self, season: int, player: 'PlayerDivisionInfo') -> None:
         pass
 
-    async def add_player(self, player: 'PlayerDivisionInfo') -> None:
+    async def add_player(self, season: int, player: 'PlayerDivisionInfo') -> None:
         pass
 
 
@@ -47,9 +47,6 @@ def sample_players() -> List[PlayerDivisionInfo]:
 
 @pytest.fixture()
 def division_service() -> DivisionService:
-    accessor = Mock()
-    accessor.get_divisions = CoroMock()
-
     return DivisionService(MockDivisionAccessor(), 1)
 
 async def async_assert_player_division(division_service: DivisionService, player_id: int, division_id: int):
@@ -70,8 +67,8 @@ async def test_match_in_same_division(division_service):
     await division_service.post_result(1, 2, 1)
 
     division_service.accessor.add_player.assert_not_called()
-    division_service.accessor.update_player.assert_any_call(division_service._players[1])
-    division_service.accessor.update_player.assert_any_call(division_service._players[2])
+    division_service.accessor.update_player.assert_any_call(1, division_service._players[1])
+    division_service.accessor.update_player.assert_any_call(1, division_service._players[2])
 
     assert division_service._players[1].league == 1
     assert division_service._players[1].score == 10.5
@@ -95,8 +92,8 @@ async def test_match_in_same_division_inverted(division_service):
     await division_service.post_result(2, 1, 2)
 
     division_service.accessor.add_player.assert_not_called()
-    division_service.accessor.update_player.assert_any_call(division_service._players[1])
-    division_service.accessor.update_player.assert_any_call(division_service._players[2])
+    division_service.accessor.update_player.assert_any_call(1, division_service._players[1])
+    division_service.accessor.update_player.assert_any_call(1, division_service._players[2])
 
     assert division_service._players[1].league == 1
     assert division_service._players[1].score == 10.5
@@ -120,8 +117,8 @@ async def test_match_winner_ascends_league(division_service):
     await division_service.post_result(2, 1, 1)
 
     division_service.accessor.add_player.assert_not_called()
-    division_service.accessor.update_player.assert_any_call(division_service._players[1])
-    division_service.accessor.update_player.assert_any_call(division_service._players[2])
+    division_service.accessor.update_player.assert_any_call(1, division_service._players[1])
+    division_service.accessor.update_player.assert_any_call(1, division_service._players[2])
 
     assert division_service._players[1].league == 1
     assert division_service._players[1].score == 9.0
@@ -143,8 +140,8 @@ async def test_do_not_fall_below_0(division_service):
     await division_service.post_result(1, 3, 1)
 
     division_service.accessor.add_player.assert_not_called()
-    division_service.accessor.update_player.assert_any_call(division_service._players[1])
-    division_service.accessor.update_player.assert_any_call(division_service._players[3])
+    division_service.accessor.update_player.assert_any_call(1, division_service._players[1])
+    division_service.accessor.update_player.assert_any_call(1, division_service._players[3])
 
     assert division_service._players[1].league == 1
     assert division_service._players[1].score == 11.0
@@ -166,8 +163,8 @@ async def test_gain_loss_winner_inferior(division_service):
     await division_service.post_result(1, 3, 1)
 
     division_service.accessor.add_player.assert_not_called()
-    division_service.accessor.update_player.assert_any_call(division_service._players[1])
-    division_service.accessor.update_player.assert_any_call(division_service._players[3])
+    division_service.accessor.update_player.assert_any_call(1, division_service._players[1])
+    division_service.accessor.update_player.assert_any_call(1, division_service._players[3])
 
     assert division_service._players[1].league == 1
     assert division_service._players[1].score == 11.0
@@ -189,8 +186,8 @@ async def test_gain_loss_winner_superior(division_service):
     await division_service.post_result(1, 3, 2)
 
     division_service.accessor.add_player.assert_not_called()
-    division_service.accessor.update_player.assert_any_call(division_service._players[1])
-    division_service.accessor.update_player.assert_any_call(division_service._players[3])
+    division_service.accessor.update_player.assert_any_call(1, division_service._players[1])
+    division_service.accessor.update_player.assert_any_call(1, division_service._players[3])
 
     assert division_service._players[1].league == 1
     assert division_service._players[1].score == 9.0
@@ -230,8 +227,8 @@ async def test_draw(division_service):
     await division_service.post_result(1, 2, 0)
 
     division_service.accessor.add_player.assert_not_called()
-    division_service.accessor.update_player.assert_any_call(division_service._players[1])
-    division_service.accessor.update_player.assert_any_call(division_service._players[2])
+    division_service.accessor.update_player.assert_any_call(1, division_service._players[1])
+    division_service.accessor.update_player.assert_any_call(1, division_service._players[2])
 
     assert division_service._players[1].league == 1
     assert division_service._players[1].score == 9.5
