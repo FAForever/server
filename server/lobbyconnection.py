@@ -338,13 +338,35 @@ class LobbyConnection:
 
             elif action == "closelobby":
                 player = self.player_service[message['user_id']]
+                ban_fail = None
                 if player:
-                    self._logger.warn('Administrative action: %s closed client for %s', self.player, player)
+                    if 'ban' in message:
+                        reason = message['ban'].get('reason', 'Unspecified')
+                        duration = int(message['ban'].get('duration', 1))
+                        period = message['ban'].get('period', 'DAY')
+                        self._logger.warn('Administrative action: %s closed client for %s with %s ban (Reason: %s)', self.player, player, duration, reason)
+                        with (yield from db.db_pool) as conn:
+                            try:
+                                cursor = yield from conn.cursor()
+
+                                yield from cursor.execute("SELECT reason from lobby_ban WHERE idUser=%s AND expires_at > NOW()", (message['user_id']))
+
+                                if cursor.rowcount > 0:
+                                    ban_fail = yield from cursor.fetchone()
+                                else:
+                                    # XXX Interpolating the period into this is terrible and insecure - but the data comes from trusted users (admins) only
+                                    yield from cursor.execute("INSERT INTO ban (player_id, author_id, reason, expires_at, level) VALUES (%s, %s, %s, DATE_ADD(NOW(), INTERVAL %s {}), 'GLOBAL')".format(period), (player.id, self.player.id, reason, duration))
+                            except pymysql.MySQLError as e:
+                                raise ClientError('Your ban attempt upset the database: {}'.format(e))
+                    else:
+                        self._logger.warn('Administrative action: %s closed client for %s', self.player, player)
                     player.lobby_connection.kick(
-                        message=("Your client was closed by an administrator ({admin_name}). "
+                        message=("You were kicked from FAF by an administrator ({admin_name}). "
                          "Please refer to our rules for the lobby/game here {rule_link}."
                           .format(admin_name=self.player.login,
                                   rule_link=config.RULE_LINK)))
+                    if ban_fail:
+                        raise ClientError("Kicked the player, but he was already banned!")
 
             elif action == "requestavatars":
                 with (yield from db.db_pool) as conn:
