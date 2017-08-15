@@ -561,55 +561,27 @@ Thanks,\n\
             DecodeAES = lambda c, e: c.decrypt(base64.b64decode(e)).decode('utf-8')
             decoded = DecodeAES(cipher, encoded)[:-trailing]
 
-            # since the legacy uid.dll generated JSON is flawed,
-            # there's a new JSON format, starting with '2' as magic byte
-            if decoded.startswith('2'):
-                data = json.loads(decoded[1:])
-                if str(data['session']) != str(self.session) :
-                    self.sendJSON(dict(command="notice", style="error", text="Your session is corrupted. Try relogging"))
-                    return None
-                # We're bound to generate to _old_ hashes from the new JSON structure,
-                # so we still use hashlib.md5().update() to generate the MD5 hash from concatenated bytearrays.
-                # Therefore all needed JSON elements are converted to strings and encoded to bytearrays.
-                UUID = str(data['machine']['uuid']).encode()
-                mem_SerialNumber = str(data['machine']['memory']['serial0']).encode()
-                DeviceID = str(data['machine']['disks']['controller_id']).encode()
-                Manufacturer = str(data['machine']['bios']['manufacturer']).encode()
-                Name = str(data['machine']['processor']['name']).encode()
-                ProcessorId = str(data['machine']['processor']['id']).encode()
-                SMBIOSBIOSVersion = str(data['machine']['bios']['smbbversion']).encode()
-                SerialNumber = str(data['machine']['bios']['serial']).encode()
-                VolumeSerialNumber = str(data['machine']['disks']['vserial']).encode()
-            else:
-                # the old JSON format contains unescaped backspaces in the device id
-                # of the IDE controller, which now needs to be corrected to get valid JSON
-                regexp = re.compile(r'[0-9a-zA-Z\\]("")')
-                decoded = regexp.sub('"', decoded)
-                decoded = decoded.replace("\\", "\\\\")
-                regexp = re.compile('[^\x09\x0A\x0D\x20-\x7F]')
-                decoded = regexp.sub('', decoded)
-                jstring = json.loads(decoded)
+            # Current JSON format starts with '2' as magic byte
+            # Treat legacy formats as invalid
+            if not decoded.startswith('2'):
+                return None
 
-                if str(jstring["session"]) != str(self.session) :
-                    self.sendJSON(dict(command="notice", style="error", text="Your session is corrupted. Try relogging"))
-                    return None
-
-                machine = jstring["machine"]
-
-                UUID = str(machine.get('UUID', 0)).encode()
-                mem_SerialNumber = str(machine.get('mem_SerialNumber', 0)).encode()  # serial number of first memory module
-                DeviceID = str(machine.get('DeviceID', 0)).encode() # device id of the IDE controller
-                Manufacturer = str(machine.get('Manufacturer', 0)).encode() # BIOS manufacturer
-                Name = str(machine.get('Name', 0)).encode() # verbose processor name
-                ProcessorId = str(machine.get('ProcessorId', 0)).encode()
-                SMBIOSBIOSVersion = str(machine.get('SMBIOSBIOSVersion', 0)).encode()
-                SerialNumber = str(machine.get('SerialNumber', 0)).encode() # BIOS serial number
-                VolumeSerialNumber = str(machine.get('VolumeSerialNumber', 0)).encode() # https://www.raymond.cc/blog/changing-or-spoofing-hard-disk-hardware-serial-number-and-volume-id/
-
-                for i in machine.values() :
-                    low = i.lower()
-                    if "vmware" in low or "virtual" in low or "innotek" in low or "qemu" in low or "parallels" in low or "bochs" in low :
-                        return "VM"
+            data = json.loads(decoded[1:])
+            if str(data['session']) != str(self.session):
+                self.sendJSON(dict(command="notice", style="error", text="Your session is corrupted. Try relogging"))
+                return None
+            # We're bound to generate to _old_ hashes from the new JSON structure,
+            # so we still use hashlib.md5().update() to generate the MD5 hash from concatenated bytearrays.
+            # Therefore all needed JSON elements are converted to strings and encoded to bytearrays.
+            UUID = str(data['machine']['uuid']).encode()
+            mem_SerialNumber = str(data['machine']['memory']['serial0']).encode()
+            DeviceID = str(data['machine']['disks']['controller_id']).encode()
+            Manufacturer = str(data['machine']['bios']['manufacturer']).encode()
+            Name = str(data['machine']['processor']['name']).encode()
+            ProcessorId = str(data['machine']['processor']['id']).encode()
+            SMBIOSBIOSVersion = str(data['machine']['bios']['smbbversion']).encode()
+            SerialNumber = str(data['machine']['bios']['serial']).encode()
+            VolumeSerialNumber = str(data['machine']['disks']['vserial']).encode()
 
             m = hashlib.md5()
             m.update(UUID + mem_SerialNumber + DeviceID + Manufacturer + Name + ProcessorId + SMBIOSBIOSVersion + SerialNumber + VolumeSerialNumber)
