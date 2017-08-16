@@ -363,9 +363,9 @@ class GameConnection(GpgNetServerProtocol):
                             return
 
                         await cursor.execute("INSERT INTO `coop_leaderboard`"
-                                             "(`mission`, `gameuid`, `secondary`, `time`) "
-                                             "VALUES (%s, %s, %s, %s);",
-                                             (mission, self.game.id, secondary, delta))
+                                             "(`mission`, `gameuid`, `secondary`, `time`, `player_count`) "
+                                             "VALUES (%s, %s, %s, %s, %s);",
+                                             (mission, self.game.id, secondary, delta, len(self.game.players)))
             elif command == 'JsonStats':
                 await self.game.report_army_stats(args[0])
 
