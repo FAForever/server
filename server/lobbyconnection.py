@@ -713,10 +713,6 @@ class LobbyConnection:
         self.player.friends = set(friends)
         self.player.foes = set(foes)
 
-        self.send_mod_list()
-        self.send_game_list()
-        self.send_tutorial_section()
-
         channels = []
         if self.player.mod:
             channels.append("#moderators")
@@ -726,6 +722,10 @@ class LobbyConnection:
 
         jsonToSend = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
         self.sendJSON(jsonToSend)
+
+        self.send_mod_list()
+        self.send_game_list()
+        self.send_tutorial_section()
 
     @timed
     def command_ask_session(self, message):
