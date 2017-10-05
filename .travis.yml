@@ -12,12 +12,12 @@ services:
 before_install:
   - sudo /etc/init.d/mysql stop
   - sudo apt-get update
-  - pushd db
-  - docker build -t faf-db .
-  - docker run -d --name faf-db -e MYSQL_ROOT_PASSWORD=banana -p 3306:3306 faf-db
-  - until docker exec -i faf-db ./healthcheck.sh 2>/dev/null; do sleep 1; done
-  - docker exec -i faf-db mysql -uroot -pbanana faf < test-data.sql
-  - popd
+  - docker pull faforever/faf-db
+  - echo -e 'travis_fold:start:db_start'
+  - docker run -d --name faf-db -e MYSQL_ROOT_PASSWORD=banana -p 3306:3306 faforever/faf-db
+  - until docker exec -i faf-db ./healthcheck.sh 2>/dev/null; do sleep 5; docker logs --tail 5 faf-db; done
+  - docker exec -i faf-db mysql -uroot -pbanana faf -e 'source /test-data.sql'
+  - echo -e 'travis_fold:end:db_start'
   - python -m pip install coveralls
 
 install:
