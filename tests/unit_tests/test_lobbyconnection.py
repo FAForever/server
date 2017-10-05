@@ -282,7 +282,7 @@ async def test_uid(lobbyconnection: LobbyConnection, test_data, mocker):
     unique_id_hash = test_data[2]
     expected_result = test_data[3]
 
-    lobbyconnection.decodeUniqueId = mock.Mock(return_value=(unique_id_hash, ()))
+    lobbyconnection.decodeUniqueId = mock.Mock(return_value=(unique_id_hash, ('-', '-', '-', '-', '-', '-', '-', '-', '-')))
 
     async with db.db_pool.get() as conn:
         cursor = await conn.cursor()
