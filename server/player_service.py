@@ -66,11 +66,12 @@ class PlayerService:
             ## Clan informations
             try:
                 yield from cur.execute(
-                    "SELECT `clan_tag` "
-                    "FROM `fafclans`.`clan_tags` "
-                    "LEFT JOIN `fafclans`.players_list "
-                    "ON `fafclans`.players_list.player_id = `fafclans`.`clan_tags`.player_id "
-                    "WHERE `faf_id` = %s", player.id)
+                    "SELECT tag "
+                    "FROM login "
+                    "JOIN clan_membership "
+                    "ON login.id = clan_membership.player_id "
+                    "JOIN clan ON clan_membership.clan_id = clan.id "
+                    "where player_id =  %s", player.id)
                 result = yield from cur.fetchone()
                 if result:
                     (player.clan, ) = result
