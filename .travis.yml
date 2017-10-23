@@ -29,3 +29,9 @@ script:
   - docker cp faf-server:/code/.coverage .coverage
   - sed -i.bak s#/code/#$(pwd)/#g .coverage
   - coveralls
+
+after_success:
+  - if [ -n "${TRAVIS_TAG}" ]; then
+      docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}";
+      docker push faforever/faf-python-server;
+    fi
