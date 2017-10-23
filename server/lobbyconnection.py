@@ -387,7 +387,7 @@ class LobbyConnection:
                     cursor = yield from conn.cursor()
                     yield from cursor.execute("DELETE FROM `avatars` "
                                               "WHERE `idUser` = %s "
-                                              "AND `idAvatar` = %s", (idavatar, iduser))
+                                              "AND `idAvatar` = %s", (iduser, idavatar))
 
             elif action == "add_avatar":
                 who = message['user']
