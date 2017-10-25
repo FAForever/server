@@ -540,8 +540,8 @@ class LobbyConnection:
             self._logger.warning("UID hit: %d: %s", player_id, uid_hash)
             self.send_warning("Your computer is associated with too many FAF accounts.<br><br>In order to continue "
                               "using them, you have to link them to Steam: <a href='" +
-                              config.APP_URL + "/faf/steam.php'>" +
-                              config.APP_URL + "/faf/steam.php</a>.<br>If you need an exception, please contact an "
+                              config.WWW_URL + "/account/link'>" +
+                              config.WWW_URL + "/account/link</a>.<br>If you need an exception, please contact an "
                                                "admin on the forums", fatal=True)
             return False
 
@@ -549,8 +549,8 @@ class LobbyConnection:
             self._logger.warning("UID hit: %d: %s", player_id, uid_hash)
             self.send_warning("Your computer is already associated with another FAF account.<br><br>In order to "
                               "log in with a new account, you have to link it to Steam: <a href='" +
-                              config.APP_URL + "/faf/steam.php'>" +
-                              config.APP_URL + "/faf/steam.php</a>.<br>If you need an exception, please contact an "
+                              config.WWW_URL + "/account/link'>" +
+                              config.WWW_URL + "/account/link</a>.<br>If you need an exception, please contact an "
                                                "admin on the forums", fatal=True)
             return False
 
@@ -559,7 +559,7 @@ class LobbyConnection:
                 await cursor.execute("INSERT INTO `uniqueid` (`hash`, `uuid`, `mem_SerialNumber`, `deviceID`, `manufacturer`, `name`, `processorId`, `SMBIOSBIOSVersion`, `serialNumber`, `volumeSerialNumber`)"
                                      "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (uid_hash, *hardware_info))
             except Exception as e:
-                self._logger.warning("UID association dupe: %d: %s", player_id, uid_hash) 
+                self._logger.warning("UID association dupe: %d: %s", player_id, uid_hash)
             await cursor.execute("INSERT INTO `unique_id_users`(`user_id`, `uniqueid_hash`) VALUES(%s, %s)", (player_id, uid_hash))
 
         return True

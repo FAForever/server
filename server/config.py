@@ -21,7 +21,7 @@ STATSD_SERVER = os.getenv('STATSD_SERVER', '127.0.0.1:8125')
 
 RULE_LINK = 'http://forums.faforever.com/forums/viewtopic.php?f=2&t=581#p5710'
 WIKI_LINK = 'http://wiki.faforever.com'
-APP_URL = 'http://app.faforever.com'
+WWW_URL = 'https://www.faforever.com'
 CONTENT_URL = 'http://content.faforever.com'
 CONTENT_PATH = '/content/'  # Must have trailing slash
 
