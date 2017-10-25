@@ -521,8 +521,8 @@ class LobbyConnection:
             self._logger.warning("UID hit: %d: %s", player_id, uid_hash)
             self.send_warning("Your computer is already associated with another FAF account.<br><br>In order to "
                               "log in with a new account, you have to link it to Steam: <a href='" +
-                              config.APP_URL + "/faf/steam.php'>" +
-                              config.APP_URL + "/faf/steam.php</a>.<br>If you need an exception, please contact an "
+                              config.WWW_URL + "/account/link'>" +
+                              config.WWW_URL + "/account/link</a>.<br>If you need an exception, please contact an "
                                                "admin on the forums", fatal=True)
             return False
 
