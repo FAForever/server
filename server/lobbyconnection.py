@@ -432,6 +432,7 @@ class LobbyConnection:
                                   "login.login as username,"
                                   "login.password as password,"
                                   "login.steamid as steamid,"
+                                  "login.create_time as create_time,"
                                   "lobby_ban.reason as reason,"
                                   "lobby_ban.expires_at as expires_at "
                                   "FROM login "
@@ -442,14 +443,27 @@ class LobbyConnection:
         if cursor.rowcount < 1:
             raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
 
-        player_id, real_username, dbPassword, steamid, ban_reason, ban_expiry = await cursor.fetchone()
+        player_id, real_username, dbPassword, steamid, create_time, ban_reason, ban_expiry = await cursor.fetchone()
 
         if dbPassword != password:
             raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
 
-        if ban_reason is not None and datetime.datetime.now() < ban_expiry:
+        now = datetime.datetime.now()
+
+        if ban_reason is not None and now < ban_expiry:
             self._logger.debug('Rejected login from banned user: %s, %s, %s', player_id, login, self.session)
             raise ClientError("You are banned from FAF.\n Reason :\n {}".format(ban_reason), recoverable=False)
+
+        # New accounts can only play after 24 hours
+        # if they do not link Steam
+        can_play_after = create_time + datetime.timedelta(days=1)
+
+        if not steamid and now < can_play_after :
+            self._logger.debug('Rejected login from new user: %s, %s, %s', player_id, login, self.session)
+            raise ClientError(
+                "Your account is too new. Please link your account to Steam "
+                "so you can play immediately or wait until {}".format(can_play_after),
+                recoverable=False)
 
         self._logger.debug("Login from: %s, %s, %s", player_id, login, self.session)
 
