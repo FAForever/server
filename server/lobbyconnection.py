@@ -462,7 +462,9 @@ class LobbyConnection:
             self._logger.debug('Rejected login from new user: %s, %s, %s', player_id, login, self.session)
             raise ClientError(
                 "Your account is too new. Please link your account to Steam "
-                "so you can play immediately or wait until {}".format(can_play_after),
+                "so you can play immediately or wait until {}. "
+                "We apologize for this inconvenience, please read the November 16th, 2017 news to understand why "
+                "we introduced this limitation".format(can_play_after),
                 recoverable=False)
 
         self._logger.debug("Login from: %s, %s, %s", player_id, login, self.session)
@@ -573,8 +575,7 @@ class LobbyConnection:
                 await cursor.execute("INSERT INTO `uniqueid` (`hash`, `uuid`, `mem_SerialNumber`, `deviceID`, `manufacturer`, `name`, `processorId`, `SMBIOSBIOSVersion`, `serialNumber`, `volumeSerialNumber`)"
                                      "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (uid_hash, *hardware_info))
             except Exception as e:
-                self._logger.warning("UID association dupe: %d: %s", player_id, uid_hash)
-                self._logger.exception(e)
+                self._logger.warning("UID association dupe: %d: %s", player_id, uid_hash) 
             await cursor.execute("INSERT INTO `unique_id_users`(`user_id`, `uniqueid_hash`) VALUES(%s, %s)", (player_id, uid_hash))
 
         return True
