@@ -17,6 +17,7 @@ before_install:
   - docker run -d --name faf-db -e MYSQL_ROOT_PASSWORD=banana -p 3306:3306 faf-db
   - until docker exec -i faf-db ./healthcheck.sh 2>/dev/null; do sleep 1; done
   - docker exec -i faf-db mysql -uroot -pbanana faf < test-data.sql
+  - docker exec -i faf-db mysql -uroot -pbanana faf -e "select * from login;"
   - popd
   - python -m pip install coveralls
 

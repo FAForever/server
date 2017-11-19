@@ -88,17 +88,18 @@ async def test_server_invalid_login(loop, lobby_server):
 @slow
 def test_server_valid_login(loop, lobby_server):
     proto = yield from connect_client(lobby_server)
-    yield from perform_login(proto, ('Dostya', 'vodka'))
+    yield from perform_login(proto, ('test', 'test_password'))
     msg = yield from proto.read_message()
     assert msg == {'command': 'welcome',
-                   'me': {'country': '',
-                          'global_rating': [1500.0, 75.0],
-                          'id': 2,
-                          'ladder_rating': [1500.0, 75.0],
-                          'login': 'Dostya',
-                          'number_of_games': 2},
-                   'id': 2,
-                   'login': 'Dostya'}
+                   'me': {'clan': '678',
+                          'country': '',
+                          'global_rating': [2000.0, 125.0],
+                          'id': 1,
+                          'ladder_rating': [2000.0, 125.0],
+                          'login': 'test',
+                          'number_of_games': 5},
+                   'id': 1,
+                   'login': 'test'}
     lobby_server.close()
     proto.close()
     yield from lobby_server.wait_closed()
@@ -109,12 +110,12 @@ def test_player_info_broadcast(loop, lobby_server):
     p1 = yield from connect_client(lobby_server)
     p2 = yield from connect_client(lobby_server)
 
-    yield from perform_login(p1, ('Dostya', 'vodka'))
+    yield from perform_login(p1, ('test', 'test_password'))
     yield from perform_login(p2, ('Rhiza', 'puff_the_magic_dragon'))
 
     yield from read_until(p2,
                           lambda m: 'player_info' in m.values()
-                                    and any(map(lambda d: ('login', 'Dostya') in d.items(), m['players'])))
+                                    and any(map(lambda d: ('login', 'test') in d.items(), m['players'])))
     p1.close()
     p2.close()
 
@@ -130,7 +131,7 @@ async def connect_and_sign_in(credentials, lobby_server):
 
 @slow
 async def test_public_host(loop, lobby_server, player_service):
-    player_id, session, proto = await connect_and_sign_in(('Dostya', 'vodka'),
+    player_id, session, proto = await connect_and_sign_in(('test', 'test_password'),
                                                           lobby_server)
 
     proto.send_message(dict(command='game_host',
