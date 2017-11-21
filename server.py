@@ -21,6 +21,7 @@ from server.player_service import PlayerService
 from server.natpacketserver import NatPacketServer
 from server.stats.game_stats_service import GameStatsService, EventService, AchievementService
 from server.api.api_accessor import ApiAccessor
+from server.ice_servers.nts import TwilioNTS
 import server
 import server.config as config
 from server.config import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME
@@ -73,11 +74,14 @@ if __name__ == '__main__':
         matchmaker_queue = MatchmakerQueue('ladder1v1', players_online, games)
         players_online.ladder_queue = matchmaker_queue
 
+        twilio_nts = TwilioNTS()
+
         ctrl_server = loop.run_until_complete(server.run_control_server(loop, players_online, games))
 
         lobby_server = server.run_lobby_server(('', 8001),
                                     players_online,
                                     games,
+                                    twilio_nts,
                                     loop)
 
         for sock in lobby_server.sockets:

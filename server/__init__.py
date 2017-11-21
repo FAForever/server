@@ -24,6 +24,7 @@ from .servercontext import ServerContext
 from .player_service import PlayerService
 from .game_service import GameService
 from .ladder_service import LadderService
+from .ice_servers.nts import TwilioNTS
 from .control import init as run_control_server
 
 __version__ = '0.9.7'
@@ -46,6 +47,7 @@ stats = aiomeasures.StatsD(config.STATSD_SERVER)
 def run_lobby_server(address: (str, int),
                      player_service: PlayerService,
                      games: GameService,
+                     nts_client: TwilioNTS,
                      loop):
     """
     Run the lobby server
@@ -131,6 +133,7 @@ def run_lobby_server(address: (str, int),
         return LobbyConnection(context=ctx,
                                games=games,
                                players=player_service,
+                               nts_client=nts_client,
                                loop=loop)
     ctx = ServerContext(initialize_connection, name="LobbyServer", loop=loop)
     loop.call_later(5, report_dirties)
