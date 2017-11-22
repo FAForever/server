@@ -6,12 +6,14 @@ import base64
 import ipaddress
 import json
 import urllib.parse
+import urllib.request
 import zipfile
 import os
 import shutil
 import random
 import re
 from collections import defaultdict
+from contextlib import closing
 from typing import List
 from typing import Mapping
 from typing import Optional
@@ -46,7 +48,7 @@ from server.types import Address
 from .game_service import GameService
 from .player_service import PlayerService
 from . import config
-from .config import VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY, PRIVATE_KEYS, AES_KEY_BASE64_SIZES
+from .config import VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY, FAF_POLICY_SERVER_BASE_URL
 from server.protocol import QDataStreamProtocol
 
 gi = pygeoip.GeoIP('GeoIP.dat', pygeoip.MEMORY_CACHE)
@@ -471,114 +473,6 @@ class LobbyConnection:
 
         return player_id, real_username, steamid
 
-    def decodeUniqueId(self, serialized_uniqueid):
-        try:
-            message = (base64.b64decode(serialized_uniqueid)).decode('utf-8')
-
-            trailing = ord(message[0])
-
-            message = message[1:]
-
-            iv = (base64.b64decode(message[:24]))
-
-            # The JSON string is AES encrypted
-            # first decrypt the AES key with our rsa private key
-            # Do this in a loop
-            AESkey = None
-            for i, PRIVATE_KEY in enumerate(PRIVATE_KEYS):
-                try:
-                    encoded = message[24:-AES_KEY_BASE64_SIZES[i]]
-                    key = (base64.b64decode(message[-AES_KEY_BASE64_SIZES[i]:]))
-                    AESkey = rsa.decrypt(key, PRIVATE_KEY)
-                    if AESkey is not None:
-                        break
-                except:
-                    pass
-
-            if AESkey is None:
-                self.sendJSON(dict(command="notice", style="error", text="Your session is corrupted. Try relogging"))
-                return None
-
-            # now decrypt the message
-            cipher = AES.new(AESkey, AES.MODE_CBC, iv)
-            DecodeAES = lambda c, e: c.decrypt(base64.b64decode(e)).decode('utf-8')
-            decoded = DecodeAES(cipher, encoded)[:-trailing]
-
-            # Current JSON format starts with '2' as magic byte
-            # Treat legacy formats as invalid
-            if not decoded.startswith('2'):
-                return None
-
-            data = json.loads(decoded[1:])
-            if str(data['session']) != str(self.session):
-                self.sendJSON(dict(command="notice", style="error", text="Your session is corrupted. Try relogging"))
-                return None
-            # We're bound to generate to _old_ hashes from the new JSON structure,
-            # so we still use hashlib.md5().update() to generate the MD5 hash from concatenated bytearrays.
-            # Therefore all needed JSON elements are converted to strings and encoded to bytearrays.
-            UUID = str(data['machine']['uuid']).encode()
-            mem_SerialNumber = str(data['machine']['memory']['serial0']).encode()
-            DeviceID = str(data['machine']['disks']['controller_id']).encode()
-            Manufacturer = str(data['machine']['bios']['manufacturer']).encode()
-            Name = str(data['machine']['processor']['name']).encode()
-            ProcessorId = str(data['machine']['processor']['id']).encode()
-            SMBIOSBIOSVersion = str(data['machine']['bios']['smbbversion']).encode()
-            SerialNumber = str(data['machine']['bios']['serial']).encode()
-            VolumeSerialNumber = str(data['machine']['disks']['vserial']).encode()
-
-            m = hashlib.md5()
-            m.update(UUID + mem_SerialNumber + DeviceID + Manufacturer + Name + ProcessorId + SMBIOSBIOSVersion + SerialNumber + VolumeSerialNumber)
-
-            return m.hexdigest(), (UUID, mem_SerialNumber, DeviceID, Manufacturer, Name, ProcessorId, SMBIOSBIOSVersion, SerialNumber, VolumeSerialNumber)
-        except Exception as ex:
-            self._logger.exception(ex)
-
-    async def validate_unique_id(self, cursor, player_id, steamid, encoded_unique_id):
-        # Accounts linked to steam are exempt from uniqueId checking.
-        if steamid:
-            return True
-
-        uid_hash, hardware_info = self.decodeUniqueId(encoded_unique_id)
-
-        # VM users must use steam.
-        # TODO (downlord) I added the check for "V" because we have 63 entries in the database, no idea why
-        if uid_hash == "VM" or uid_hash == "V":
-            self.sendJSON(dict(command="notice", style="error",
-                               text="You need to link your account to Steam in order to use FAF in a Virtual Machine. "
-                                    "You can contact an admin on the forums."))
-            return False
-
-        await cursor.execute("SELECT user_id FROM unique_id_users WHERE uniqueid_hash = %s", (uid_hash, ))
-        result = await cursor.fetchall()
-        count = len(result)
-
-        if count > 1:
-            self._logger.warning("UID hit: %d: %s", player_id, uid_hash)
-            self.send_warning("Your computer is associated with too many FAF accounts.<br><br>In order to continue "
-                              "using them, you have to link them to Steam: <a href='" +
-                              config.APP_URL + "/faf/steam.php'>" +
-                              config.APP_URL + "/faf/steam.php</a>.<br>If you need an exception, please contact an "
-                                               "admin on the forums", fatal=True)
-            return False
-
-        if count == 1 and player_id != result[0][0]:
-            self._logger.warning("UID hit: %d: %s", player_id, uid_hash)
-            self.send_warning("Your computer is already associated with another FAF account.<br><br>In order to "
-                              "log in with a new account, you have to link it to Steam: <a href='" +
-                              config.APP_URL + "/faf/steam.php'>" +
-                              config.APP_URL + "/faf/steam.php</a>.<br>If you need an exception, please contact an "
-                                               "admin on the forums", fatal=True)
-            return False
-
-        if count == 0:
-            try:
-                await cursor.execute("INSERT INTO `uniqueid` (`hash`, `uuid`, `mem_SerialNumber`, `deviceID`, `manufacturer`, `name`, `processorId`, `SMBIOSBIOSVersion`, `serialNumber`, `volumeSerialNumber`)"
-                                     "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (uid_hash, *hardware_info))
-            except Exception as e:
-                self._logger.warning("UID association dupe: %d: %s", player_id, uid_hash) 
-            await cursor.execute("INSERT INTO `unique_id_users`(`user_id`, `uniqueid_hash`) VALUES(%s, %s)", (player_id, uid_hash))
-
-        return True
 
     def check_version(self, message):
         versionDB, updateFile = self.player_service.client_version_info
@@ -612,6 +506,41 @@ class LobbyConnection:
                 return False
         return True
 
+    async def check_policy_conformity(self, player_id, uid_hash):
+        request_data = urllib.parse.urlencode(dict(player_id=player_id, uid_hash=uid_hash)).encode()
+        with closing(urllib.request.urlopen(FAF_POLICY_SERVER_BASE_URL + '/verify', request_data)) as response:
+            response = json.loads(response.read().decode())
+
+        if response.get('result', '') == 'vm':
+            self._logger.debug("Using VM: %d: %s", player_id, uid_hash)
+            self.sendJSON(dict(command="notice", style="error",
+                               text="You need to link your account to Steam in order to use FAF in a Virtual Machine. "
+                                    "You can contact an admin on the forums."))
+
+        if response.get('result', '') == 'already_associated':
+            self._logger.warning("UID hit: %d: %s", player_id, uid_hash)
+            self.send_warning("Your computer is already associated with another FAF account.<br><br>In order to "
+                              "log in with a new account, you have to link it to Steam: <a href='" +
+                              config.APP_URL + "/faf/steam.php'>" +
+                              config.APP_URL + "/faf/steam.php</a>.<br>If you need an exception, please contact an "
+                                               "admin on the forums", fatal=True)
+            return False
+
+        if response.get('result', '') == 'fraudulent':
+            self._logger.info("Banning player %s for fraudulent looking login.", player_id)
+            with await db.db_pool as conn:
+                try:
+                    cursor = await conn.cursor()
+
+                    await cursor.execute("INSERT INTO ban (player_id, author_id, reason, level) VALUES (%s, %s, %s, 'GLOBAL')",
+                                         (player_id, player_id, "Autobanned because of fraudulent login attempt"))
+                except pymysql.MySQLError as e:
+                    raise ClientError('Banning failed: {}'.format(e))
+
+            return False
+
+        return response.get('result', '') == 'honest'
+
     async def command_hello(self, message):
         login = message['login'].strip()
         password = message['password']
@@ -628,11 +557,11 @@ class LobbyConnection:
                                      "player_id": player_id
                                  })
 
-            if not self.player_service.is_uniqueid_exempt(player_id):
-                # UniqueID check was rejected (too many accounts or tamper-evident madness)
-                uniqueid_pass = await self.validate_unique_id(cursor, player_id, steamid, message['unique_id'])
-                if not uniqueid_pass:
+            if not self.player_service.is_uniqueid_exempt(player_id) and steamid is None:
+                conforms_policy = await self.check_policy_conformity(player_id, message['unique_id'])
+                if not conforms_policy:
                     return
+
 
             # Update the user's IRC registration (why the fuck is this here?!)
             m = hashlib.md5()
