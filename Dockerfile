@@ -1,7 +1,7 @@
 FROM python:3.5
 
 # Apt-install mysql client and cleanup temporary files afterwards
-RUN apt-get update && apt-get install -y mysql-client git vim liblua5.1-dev libmagickwand-dev && apt-get clean
+RUN apt-get update && apt-get install --force-yes -y mysql-client git vim liblua5.1-dev libmagickwand-dev && apt-get clean
 RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY requirements.txt /tmp/requirements.txt
