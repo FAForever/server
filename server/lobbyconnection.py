@@ -506,8 +506,8 @@ class LobbyConnection:
                 return False
         return True
 
-    async def check_policy_conformity(self, player_id, uid_hash):
-        request_data = urllib.parse.urlencode(dict(player_id=player_id, uid_hash=uid_hash)).encode()
+    async def check_policy_conformity(self, player_id, uid_hash, session):
+        request_data = urllib.parse.urlencode(dict(player_id=player_id, uid_hash=uid_hash, session=session)).encode()
         with closing(urllib.request.urlopen(FAF_POLICY_SERVER_BASE_URL + '/verify', request_data)) as response:
             response = json.loads(response.read().decode())
 
@@ -528,12 +528,16 @@ class LobbyConnection:
 
         if response.get('result', '') == 'fraudulent':
             self._logger.info("Banning player %s for fraudulent looking login.", player_id)
+            self.send_warning("Fraudulent login attempt detected. As a precautionary measure, your account has been "
+                              "banned permanently. Please contact a moderator if you feel this is a false positive.",
+                              fatal=True)
+
             with await db.db_pool as conn:
                 try:
                     cursor = await conn.cursor()
 
                     await cursor.execute("INSERT INTO ban (player_id, author_id, reason, level) VALUES (%s, %s, %s, 'GLOBAL')",
-                                         (player_id, player_id, "Autobanned because of fraudulent login attempt"))
+                                         (player_id, player_id, "Auto-banned because of fraudulent login attempt"))
                 except pymysql.MySQLError as e:
                     raise ClientError('Banning failed: {}'.format(e))
 
@@ -558,7 +562,7 @@ class LobbyConnection:
                                  })
 
             if not self.player_service.is_uniqueid_exempt(player_id) and steamid is None:
-                conforms_policy = await self.check_policy_conformity(player_id, message['unique_id'])
+                conforms_policy = await self.check_policy_conformity(player_id, message['unique_id'], self.session)
                 if not conforms_policy:
                     return
 
