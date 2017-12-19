@@ -22,6 +22,7 @@ import datetime
 
 import aiohttp
 import pymysql
+import requests
 import rsa
 import time
 import smtplib
@@ -507,9 +508,14 @@ class LobbyConnection:
         return True
 
     async def check_policy_conformity(self, player_id, uid_hash, session):
-        request_data = urllib.parse.urlencode(dict(player_id=player_id, uid_hash=uid_hash, session=session)).encode()
-        with closing(urllib.request.urlopen(FAF_POLICY_SERVER_BASE_URL + '/verify', request_data)) as response:
-            response = json.loads(response.read().decode())
+        url = FAF_POLICY_SERVER_BASE_URL + '/verify'
+        payload = dict(player_id=player_id, uid_hash=uid_hash, session=session)
+        headers = {
+            'content-type': "application/json",
+            'cache-control': "no-cache"
+        }
+
+        response = json.loads(requests.post(url, json=payload, headers=headers).json())
 
         if response.get('result', '') == 'vm':
             self._logger.debug("Using VM: %d: %s", player_id, uid_hash)
