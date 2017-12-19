@@ -515,7 +515,7 @@ class LobbyConnection:
             'cache-control': "no-cache"
         }
 
-        response = json.loads(requests.post(url, json=payload, headers=headers).json())
+        response = requests.post(url, json=payload, headers=headers).json()
 
         if response.get('result', '') == 'vm':
             self._logger.debug("Using VM: %d: %s", player_id, uid_hash)
