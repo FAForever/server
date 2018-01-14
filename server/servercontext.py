@@ -4,7 +4,7 @@ import server
 from server.decorators import with_logger
 from server.protocol import QDataStreamProtocol
 from server.types import Address
-
+from server.connthrottler import ConnectionThrottler
 
 @with_logger
 class ServerContext:
@@ -22,6 +22,7 @@ class ServerContext:
         self._transport = None
         self._logger.debug("%s initialized with loop: %s", self, loop)
         self.addr = None
+        self.conn_throttler = ConnectionThrottler()
 
     def __repr__(self):
         return "ServerContext({})".format(self.name)
@@ -56,11 +57,17 @@ class ServerContext:
                 proto.send_raw(message)
 
     async def client_connected(self, stream_reader, stream_writer):
-        self._logger.debug("%s: Client connected", self)
+        peer_addr = Address(*stream_writer.get_extra_info('peername'))
+        allow_connection = self.conn_throttler.attempt(peer_addr.host)
+        if not allow_connection:
+            server.stats.incr('connection.throttled')
+            stream_writer.close()
+            return
+        self._logger.debug("%s: Client connected from %s", self, peer_addr.host)
         protocol = QDataStreamProtocol(stream_reader, stream_writer)
         connection = self._connection_factory()
         try:
-            await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info('peername')))
+            await connection.on_connection_made(protocol, peer_addr)
             self.connections[connection] = protocol
             server.stats.gauge('user.agents.None', 1, delta=True)
             while True:
