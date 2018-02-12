@@ -457,19 +457,6 @@ class LobbyConnection:
             self._logger.debug('Rejected login from banned user: %s, %s, %s', player_id, login, self.session)
             raise ClientError("You are banned from FAF.\n Reason :\n {}".format(ban_reason), recoverable=False)
 
-        # New accounts can only play after 24 hours
-        # if they do not link Steam
-        can_play_after = create_time + datetime.timedelta(days=1)
-
-        if not steamid and now < can_play_after :
-            self._logger.debug('Rejected login from new user: %s, %s, %s', player_id, login, self.session)
-            raise ClientError(
-                "Your account is too new. Please link your account to Steam "
-                "so you can play immediately or wait until {}. "
-                "We apologize for this inconvenience, please read the November 16th, 2017 news to understand why "
-                "we introduced this limitation".format(can_play_after),
-                recoverable=False)
-
         self._logger.debug("Login from: %s, %s, %s", player_id, login, self.session)
 
         return player_id, real_username, steamid
