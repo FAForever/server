@@ -120,6 +120,10 @@ class LobbyConnection:
         self._authenticated = False
         self.protocol.writer.close()
 
+        if self.player:
+            self.player_service.remove_player(self.player)
+            self.player = None
+
     def ensure_authenticated(self, cmd):
         if not self._authenticated:
             if cmd not in ['hello', 'ask_session', 'create_account', 'ping', 'pong']:
