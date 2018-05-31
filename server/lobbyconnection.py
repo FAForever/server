@@ -35,7 +35,7 @@ from Crypto import Random
 from Crypto.Random.random import choice
 from Crypto.Cipher import Blowfish
 from Crypto.Cipher import AES
-import pygeoip
+import geoip2.database
 
 import server
 from server import GameConnection
@@ -52,7 +52,7 @@ from . import config
 from .config import VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY, FAF_POLICY_SERVER_BASE_URL
 from server.protocol import QDataStreamProtocol
 
-gi = pygeoip.GeoIP('GeoIP.dat', pygeoip.MEMORY_CACHE)
+gi = geoip2.database.Reader('GeoLite2-Country.mmdb')
 
 
 class ClientError(Exception):
@@ -596,10 +596,10 @@ class LobbyConnection:
 
         # Country
         # -------
-
-        country = gi.country_code_by_addr(self.peer_address.host)
-        if country is not None:
-            self.player.country = str(country)
+        try:
+            self.player.country = str(gi.country(self.peer_address.host).iso_code)
+        except (geoip2.errors.AddressNotFoundError,ValueError):
+            self.player.country = ''
 
         ## AVATARS
         ## -------------------

@@ -8,7 +8,7 @@ coveralls
 docopt
 pycrypto
 semver
-pygeoip
+geoip2
 pytest==2.8.2
 pytest-mock
 pytest-cov
@@ -19,7 +19,7 @@ trueskill
 aiocron
 marisa-trie
 oauth2client
-git+https://github.com/FAForever/faftools.git@38fc8e10f3cbd50d3f6abe9168e9040c08ad26cf#egg=faftools
+git+https://github.com/FAForever/faftools.git@5fb0fdb28268b612746d693014fe18a46c3f51fd#egg=faftools
 pyopenssl
 mock
 lupa
