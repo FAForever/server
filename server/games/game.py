@@ -130,6 +130,7 @@ class Game(BaseGame):
         self.game_mode = game_mode
         self.state = GameState.INITIALIZING
         self._connections = {}
+        self.joinable = asyncio.Future()
         self.enforce_rating = False
         self.gameOptions = {'FogOfWar': 'explored',
                             'GameSpeed': 'normal',
