@@ -14,6 +14,9 @@ class Search:
     """
     Represents the state of a users search for a match.
     """
+    noobFixBaseRating = 500 # The base rating for a noob with 0 games
+    noobFixMaxGames = 10 # The number of games until rating should be applied fully
+
     def __init__(self, player, start_time=None, rating_prop='ladder_rating'):
         """
         Default ctor for a search
@@ -40,9 +43,29 @@ class Search:
             0: 0.8
         }
 
+        self.adjusted_rating = self.adjust_rating()
+
+    def adjust_rating(self):
+        if self.rating_prop=='ladder_rating':
+            numgames = self.player.numGames
+            if numgames <= self.noobFixMaxGames:
+                mean, dev = self.player.ladder_rating
+                # A simple linear interpolation
+                adjusted_mean = ((self.noobFixMaxGames - numgames) * self.noobFixBaseRating + numgames * mean) / self.noobFixMaxGames
+                self._logger.info('Adjusted mean rating for {player} with {numgames} games from {mean} to {adjusted_mean}'.format(
+                    player=self.player,
+                    numgames=numgames,
+                    mean=mean,
+                    adjusted_mean=adjusted_mean
+                ))
+                return (adjusted_mean, dev)
+    
     @property
     def rating(self):
-        return getattr(self.player, self.rating_prop)
+        if self.adjusted_rating is not None:
+            return self.adjusted_rating
+        else:
+            return getattr(self.player, self.rating_prop)
 
     @property
     def boundary_80(self):
