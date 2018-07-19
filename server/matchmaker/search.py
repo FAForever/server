@@ -14,8 +14,8 @@ class Search:
     """
     Represents the state of a users search for a match.
     """
-    noobFixBaseRating = 500 # The base rating for a noob with 0 games
-    noobFixMaxGames = 10 # The number of games until rating should be applied fully
+    newbie_base_mean = 500 # The base rating for a noob with 0 games
+    newbie_game_threshold = 10 # The number of games until rating should be applied fully
 
     def __init__(self, player, start_time=None, rating_prop='ladder_rating'):
         """
@@ -43,29 +43,29 @@ class Search:
             0: 0.8
         }
 
-        self.adjusted_rating = self.adjust_rating()
-
-    def adjust_rating(self):
+    @property
+    def adjusted_rating(self):
+        """
+        Returns an adjusted mean with a simple linear interpolation between current mean and a specified base mean
+        """
         if self.rating_prop=='ladder_rating':
             numgames = self.player.numGames
-            if numgames <= self.noobFixMaxGames:
+            if numgames <= self.newbie_game_threshold:
                 mean, dev = self.player.ladder_rating
-                # A simple linear interpolation
-                adjusted_mean = ((self.noobFixMaxGames - numgames) * self.noobFixBaseRating + numgames * mean) / self.noobFixMaxGames
-                self._logger.info('Adjusted mean rating for {player} with {numgames} games from {mean} to {adjusted_mean}'.format(
-                    player=self.player,
-                    numgames=numgames,
-                    mean=mean,
-                    adjusted_mean=adjusted_mean
-                ))
+                adjusted_mean = ((self.newbie_game_threshold - numgames) * self.newbie_base_mean + numgames * mean) / self.newbie_game_threshold
                 return (adjusted_mean, dev)
-    
+
     @property
     def rating(self):
-        if self.adjusted_rating is not None:
+        numgames = self.player.numGames
+        if numgames <= self.newbie_game_threshold:
             return self.adjusted_rating
         else:
             return getattr(self.player, self.rating_prop)
+
+    @property
+    def unadjusted_rating(self):
+        return getattr(self.player, self.rating_prop)
 
     @property
     def boundary_80(self):
@@ -146,6 +146,17 @@ class Search:
         :return:
         """
         self._logger.info("Matched %s with %s", self.player, other.player)
+        
+        numgames = self.player.numGames
+        if numgames <= self.newbie_game_threshold:
+            mean, dev = self.unadjusted_rating
+            adjusted_mean = self.adjusted_rating
+            self._logger.info('Adjusted mean rating for {player} with {numgames} games from {mean} to {adjusted_mean}'.format(
+                player=self.player,
+                numgames=numgames,
+                mean=mean,
+                adjusted_mean=adjusted_mean
+            ))
         self._match.set_result(other)
 
     async def await_match(self):
