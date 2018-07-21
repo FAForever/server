@@ -80,7 +80,8 @@ class ValidityState(IntEnum):
     FFA_NOT_RANKED = 14
     UNEVEN_TEAMS_NOT_RANKED = 15
     UNKNOWN_RESULT = 16
-
+    MULTI_TEAM = 17
+    
 
 class GameError(Exception):
     pass
@@ -199,6 +200,10 @@ class Game(BaseGame):
         return frozenset({self.get_player_option(player.id, 'Team')
                           for player in self.players})
 
+    @property
+    def is_multi_team(self):
+        return len(self.teams) > 2
+                          
     @property
     def is_ffa(self):
         if len(self.players) < 3:
@@ -551,6 +556,9 @@ class Game(BaseGame):
 
         elif self.gameOptions["RestrictedCategories"] != 0:
             await self.mark_invalid(ValidityState.BAD_UNIT_RESTRICTIONS)
+            
+        elif self.is_multi_team:
+            await self.mark_invalid(ValidityState.MULTI_TEAM)
 
     async def launch(self):
         """
