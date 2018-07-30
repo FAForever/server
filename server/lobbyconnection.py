@@ -597,7 +597,7 @@ class LobbyConnection:
         # Country
         # -------
         try:
-            self.player.country = str(gi.country(self.peer_address.host).iso_code)
+            self.player.country = str(gi.country(self.peer_address.host).country.iso_code)
         except (geoip2.errors.AddressNotFoundError,ValueError):
             self.player.country = ''
 
