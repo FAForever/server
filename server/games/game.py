@@ -600,9 +600,13 @@ class Game(BaseGame):
 
                 if not ranked:
                     await self.mark_invalid(ValidityState.BAD_MAP)
+            
+            else:
+                await self.mark_invalid(ValidityState.BAD_MAP)
 
             modId = self.game_service.featured_mods[self.game_mode].id
-
+            
+            
             # Write out the game_stats record.
             # In some cases, games can be invalidated while running: we check for those cases when
             # the game ends and update this record as appropriate.
