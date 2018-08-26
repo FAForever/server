@@ -457,6 +457,14 @@ class LobbyConnection:
             self._logger.debug('Rejected login from banned user: %s, %s, %s', player_id, login, self.session)
             raise ClientError("You are banned from FAF.\n Reason :\n {}".format(ban_reason), recoverable=False)
 
+        # New accounts are prevented from playing if they didn't link to steam
+        
+        if not steamid and create_time.timestamp() > config.NEW_ACCOUNTS_DATE_LIMIT :
+            self._logger.debug('Rejected login from new user: %s, %s, %s', player_id, login, self.session)
+            raise ClientError(
+                "You must link your account to steam in order to play Forged Alliance Forever. You can do so on {website_url} .".format(website_url=config.WWW_URL),
+                recoverable=False)
+            
         self._logger.debug("Login from: %s, %s, %s", player_id, login, self.session)
 
         return player_id, real_username, steamid
