@@ -117,7 +117,10 @@ class PlayerService:
 
             # Client version number
             await cursor.execute("SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1")
-            self.client_version_info = await cursor.fetchone()
+            result = await cursor.fetchone()
+            
+            if not (result is None):
+                self.client_version_info = result
 
             # Blacklisted email domains (we don't like disposable email)
             await cursor.execute("SELECT domain FROM email_domain_blacklist")
