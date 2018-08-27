@@ -13,3 +13,5 @@ py3env
 *.iml
 htmlcov
 develop_venv/
+.mypy_cache
+.pytest_cache
