@@ -53,4 +53,5 @@ API_TOKEN_URI = os.getenv("API_TOKEN_URI", "https://api.dev.faforever.com/jwt/au
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.dev.faforever.com/jwt")
 
 FAF_POLICY_SERVER_BASE_URL = os.getenv("FAF_POLICY_SERVER_BASE_URL", "http://faf-policy-server")
-NEW_ACCOUNTS_DATE_LIMIT = os.getenv('NEW_ACCOUNTS_DATE_LIMIT',1535760000) # 1 september 2018 by default
+FORCE_STEAM_LINK_AFTER_DATE = os.getenv('FORCE_STEAM_LINK_AFTER_DATE',1536105599) # 5 september 2018 by default
+FORCE_STEAM_LINK = os.getenv('FORCE_STEAM_LINK', False)
