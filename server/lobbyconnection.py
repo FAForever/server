@@ -459,7 +459,7 @@ class LobbyConnection:
 
         # New accounts are prevented from playing if they didn't link to steam
         
-        if not steamid and create_time.timestamp() > config.NEW_ACCOUNTS_DATE_LIMIT :
+        if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() > config.FORCE_STEAM_LINK_AFTER_DATE:
             self._logger.debug('Rejected login from new user: %s, %s, %s', player_id, login, self.session)
             raise ClientError(
                 "You must link your account to steam in order to play Forged Alliance Forever. You can do so on {website_url} .".format(website_url=config.WWW_URL),
