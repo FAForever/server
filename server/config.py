@@ -18,6 +18,7 @@ logging.getLogger('aiomeasures').setLevel(logging.INFO)
 trueskill.setup(mu=1500, sigma=500, beta=240, tau=10, draw_probability=0.10)
 
 STATSD_SERVER = os.getenv('STATSD_SERVER', '127.0.0.1:8125')
+ENABLE_STATSD = os.getenv('ENABLE_STATSD', 'false').lower() == 'true'
 
 RULE_LINK = 'http://forums.faforever.com/forums/viewtopic.php?f=2&t=581#p5710'
 WIKI_LINK = 'http://wiki.faforever.com'
