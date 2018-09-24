@@ -8,6 +8,7 @@ from typing import Union
 import trueskill
 from trueskill import Rating
 import server.db as db
+import aiomysql
 from server.abc.base_game import GameConnectionState, BaseGame, InitMode
 from server.players import Player, PlayerState
 
@@ -80,8 +81,9 @@ class ValidityState(IntEnum):
     FFA_NOT_RANKED = 14
     UNEVEN_TEAMS_NOT_RANKED = 15
     UNKNOWN_RESULT = 16
-    MULTI_TEAM = 17
-    HAS_AI_PLAYERS = 18
+    UNLOCKED_TEAMS = 17
+    MULTI_TEAM = 18
+    HAS_AI_PLAYERS = 19
 
 
 class GameError(Exception):
@@ -139,6 +141,7 @@ class Game(BaseGame):
                             'CheatsEnabled': 'false',
                             'PrebuiltUnits': 'Off',
                             'NoRushOption': 'Off',
+                            'TeamLock': 'locked',
                             'RestrictedCategories': 0}
 
         self.mods = {}
@@ -566,6 +569,9 @@ class Game(BaseGame):
         elif self.gameOptions["RestrictedCategories"] != 0:
             await self.mark_invalid(ValidityState.BAD_UNIT_RESTRICTIONS)
 
+        elif self.gameOptions["TeamLock"] != "locked":
+            await self.mark_invalid(ValidityState.UNLOCKED_TEAMS)
+
     async def launch(self):
         """
         Mark the game as live.
@@ -594,20 +600,15 @@ class Game(BaseGame):
         care about recording stats for, after all).
         """
         async with db.db_pool.get() as conn:
-            cursor = await conn.cursor()
+            cursor = await conn.cursor(aiomysql.DictCursor)
 
             # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
             # so, and grab the map id at the same time.
             await cursor.execute("SELECT id, ranked FROM map_version "
                                  "WHERE lower(filename) = lower(%s)", (self.map_file_path,))
             result = await cursor.fetchone()
-            if result:
-                (self.map_id, ranked) = result
 
-                if not ranked:
-                    await self.mark_invalid(ValidityState.BAD_MAP)
-
-            else:
+            if not result or not result['ranked']:
                 await self.mark_invalid(ValidityState.BAD_MAP)
 
             modId = self.game_service.featured_mods[self.game_mode].id

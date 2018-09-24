@@ -46,7 +46,8 @@ async def test_validate_game_settings(game: Game):
         ('CheatsEnabled', 'true', 'false', ValidityState.CHEATS_ENABLED),
         ('PrebuiltUnits', 'On', 'Off', ValidityState.PREBUILT_ENABLED),
         ('NoRushOption', 20, 'Off', ValidityState.NORUSH_ENABLED),
-        ('RestrictedCategories', 1, 0, ValidityState.BAD_UNIT_RESTRICTIONS)
+        ('RestrictedCategories', 1, 0, ValidityState.BAD_UNIT_RESTRICTIONS),
+        ('TeamLock', 'unlocked', 'locked', ValidityState.UNLOCKED_TEAMS)
     ]
 
     for data in settings:
