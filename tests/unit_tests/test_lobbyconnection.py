@@ -246,7 +246,7 @@ async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection, moc
 
     protocol.send_message.assert_any_call({
         "command": "avatar",
-        "avatarlist": [{'url': 'http://content.faforever.com/faf/avatars/qai2.png', 'tooltip': 'QAI'}]
+        "avatarlist": [{'url': 'http://content.faforever.com/faf/avatars/qai2.png', 'tooltip': 'QAI'}, {'url': 'http://content.faforever.com/faf/avatars/UEF.png', 'tooltip': 'UEF'}]
     })
 
 
