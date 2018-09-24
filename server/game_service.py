@@ -97,6 +97,8 @@ class GameService:
             self.ladder_maps = await cursor.fetchall()
 
             for mod in self.featured_mods.values():
+
+                self._logger.debug("Loading featuredMod %s", mod.name)
                 if mod.name == 'ladder1v1':
                     continue
                 self.game_mode_versions[mod.name] = {}

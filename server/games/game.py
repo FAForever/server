@@ -80,6 +80,8 @@ class ValidityState(IntEnum):
     FFA_NOT_RANKED = 14
     UNEVEN_TEAMS_NOT_RANKED = 15
     UNKNOWN_RESULT = 16
+    MULTI_TEAM = 17
+    HAS_AI_PLAYERS = 18
 
 
 class GameError(Exception):
@@ -213,6 +215,14 @@ class Game(BaseGame):
                 teams.add(team)
 
         return True
+
+    @property
+    def is_multi_team(self):
+        return len(self.teams) > 2
+
+    @property
+    def has_ai(self):
+        return len(self.AIs) > 0
 
     @property
     def is_even(self):
@@ -533,7 +543,11 @@ class Game(BaseGame):
         if self.gameOptions['Victory'] != Victory.DEMORALIZATION and self.game_mode != 'coop':
             await self.mark_invalid(ValidityState.WRONG_VICTORY_CONDITION)
 
-        if self.is_ffa:
+        if self.has_ai:
+            await self.mark_invalid(ValidityState.HAS_AI_PLAYERS)
+        elif self.is_multi_team:
+            await self.mark_invalid(ValidityState.MULTI_TEAM)
+        elif self.is_ffa:
             await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
         elif not self.is_even:
             await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
@@ -593,6 +607,9 @@ class Game(BaseGame):
                 if not ranked:
                     await self.mark_invalid(ValidityState.BAD_MAP)
 
+            else:
+                await self.mark_invalid(ValidityState.BAD_MAP)
+
             modId = self.game_service.featured_mods[self.game_mode].id
 
             # Write out the game_stats record.
@@ -645,7 +662,7 @@ class Game(BaseGame):
         return self.game_service.game_mode_versions[self.game_mode]
 
     async def mark_invalid(self, new_validity_state: ValidityState):
-        self._logger.debug("Marked as invalid because: %s", repr(new_validity_state))
+        self._logger.info("Marked as invalid because: %s", repr(new_validity_state))
         self.validity = new_validity_state
 
         # If we haven't started yet, the invalidity will be persisted to the database when we start.
