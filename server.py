@@ -44,7 +44,8 @@ if __name__ == '__main__':
         from docopt import docopt
         args = docopt(__doc__, version='FAF Server')
 
-        logger.info("Using StatsD server: ".format(config.STATSD_SERVER))
+        if config.ENABLE_STATSD:
+            logger.info("Using StatsD server: ".format(config.STATSD_SERVER))
 
         # Make sure we can shutdown gracefully
         signal.signal(signal.SIGTERM, signal_handler)
