@@ -142,6 +142,7 @@ class Game(BaseGame):
                             'PrebuiltUnits': 'Off',
                             'NoRushOption': 'Off',
                             'TeamLock': 'locked',
+                            'AIReplacement': 'Off',
                             'RestrictedCategories': 0}
 
         self.mods = {}
@@ -546,7 +547,7 @@ class Game(BaseGame):
         if self.gameOptions['Victory'] != Victory.DEMORALIZATION and self.game_mode != 'coop':
             await self.mark_invalid(ValidityState.WRONG_VICTORY_CONDITION)
 
-        if self.has_ai:
+        if self.has_ai or (self.gameOptions["AIReplacement"] != "Off"):
             await self.mark_invalid(ValidityState.HAS_AI_PLAYERS)
         elif self.is_multi_team:
             await self.mark_invalid(ValidityState.MULTI_TEAM)
