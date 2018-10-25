@@ -457,6 +457,14 @@ class LobbyConnection:
             self._logger.debug('Rejected login from banned user: %s, %s, %s', player_id, login, self.session)
             raise ClientError("You are banned from FAF.\n Reason :\n {}".format(ban_reason), recoverable=False)
 
+        # New accounts are prevented from playing if they didn't link to steam
+        
+        if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() > config.FORCE_STEAM_LINK_AFTER_DATE:
+            self._logger.debug('Rejected login from new user: %s, %s, %s', player_id, login, self.session)
+            raise ClientError(
+                "Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on <a href='{steamlink_url}'>{steamlink_url}</a>.".format(steamlink_url=config.WWW_URL + '/account/link'),
+                recoverable=False)
+            
         self._logger.debug("Login from: %s, %s, %s", player_id, login, self.session)
 
         return player_id, real_username, steamid
@@ -507,22 +515,28 @@ class LobbyConnection:
         if response.get('result', '') == 'vm':
             self._logger.debug("Using VM: %d: %s", player_id, uid_hash)
             self.sendJSON(dict(command="notice", style="error",
-                               text="You need to link your account to Steam in order to use FAF in a Virtual Machine. "
-                                    "You can contact an admin on the forums."))
+                               text="You need to link your account to Steam in order to use FAF in a virtual machine. "
+                                    "Please contact an admin or moderator on the forums if you feel this is a false positive."))
+            self.send_warning("Your computer seems to be a virtual machine.<br><br>In order to "
+                              "log in from a VM, you have to link your account to Steam: <a href='" +
+                              config.WWW_URL + "/account/link'>" +
+                              config.WWW_URL + "/account/link</a>.<br>If you need an exception, please contact an "
+                                               "admin or moderator on the forums", fatal=True)
 
         if response.get('result', '') == 'already_associated':
             self._logger.warning("UID hit: %d: %s", player_id, uid_hash)
             self.send_warning("Your computer is already associated with another FAF account.<br><br>In order to "
-                              "log in with a new account, you have to link it to Steam: <a href='" +
+                              "log in with an additional account, you have to link it to Steam: <a href='" +
                               config.WWW_URL + "/account/link'>" +
                               config.WWW_URL + "/account/link</a>.<br>If you need an exception, please contact an "
-                                               "admin on the forums", fatal=True)
+                                               "admin or moderator on the forums", fatal=True)
             return False
 
         if response.get('result', '') == 'fraudulent':
             self._logger.info("Banning player %s for fraudulent looking login.", player_id)
             self.send_warning("Fraudulent login attempt detected. As a precautionary measure, your account has been "
-                              "banned permanently. Please contact a moderator if you feel this is a false positive.",
+                              "banned permanently. Please contact an admin or moderator on the forums if you feel this is "
+                              "a false positive.",
                               fatal=True)
 
             with await db.db_pool as conn:
@@ -597,7 +611,7 @@ class LobbyConnection:
         # Country
         # -------
         try:
-            self.player.country = str(gi.country(self.peer_address.host).iso_code)
+            self.player.country = str(gi.country(self.peer_address.host).country.iso_code)
         except (geoip2.errors.AddressNotFoundError,ValueError):
             self.player.country = ''
 

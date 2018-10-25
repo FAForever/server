@@ -273,6 +273,18 @@ class GameConnection(GpgNetServerProtocol):
                 if option_key == 'Victory':
                     self.game.gameOptions['Victory'] = Victory.from_gpgnet_string(option_value)
                 elif option_key in self.game.gameOptions:
+
+                    """
+                    This block about AIReplacement is added because of a mistake in the FAF game patch code
+                    that makes "On" and "Off" be "AIReplacementOn" and "AIReplacementOff". The code
+                    below removes that extra statement to make it a simple "On" "Off".
+                    This block can be removed as soon as the game sends "On" and "Off" instead of 
+                    "AIReplacementOn" and "AIReplacementOff" to the server as game options.
+                    https://github.com/FAForever/fa/issues/2610
+                    """
+                    if option_key == "AIReplacement":
+                        option_value.replace("AIReplacement", "")
+
                     self.game.gameOptions[option_key] = option_value
 
                 if option_key == "Slots":

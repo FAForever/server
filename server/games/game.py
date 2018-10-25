@@ -8,6 +8,7 @@ from typing import Union
 import trueskill
 from trueskill import Rating
 import server.db as db
+import aiomysql
 from server.abc.base_game import GameConnectionState, BaseGame, InitMode
 from server.players import Player, PlayerState
 
@@ -80,6 +81,9 @@ class ValidityState(IntEnum):
     FFA_NOT_RANKED = 14
     UNEVEN_TEAMS_NOT_RANKED = 15
     UNKNOWN_RESULT = 16
+    UNLOCKED_TEAMS = 17
+    MULTI_TEAM = 18
+    HAS_AI_PLAYERS = 19
 
 
 class GameError(Exception):
@@ -137,6 +141,8 @@ class Game(BaseGame):
                             'CheatsEnabled': 'false',
                             'PrebuiltUnits': 'Off',
                             'NoRushOption': 'Off',
+                            'TeamLock': 'locked',
+                            'AIReplacement': 'Off',
                             'RestrictedCategories': 0}
 
         self.mods = {}
@@ -213,6 +219,14 @@ class Game(BaseGame):
                 teams.add(team)
 
         return True
+
+    @property
+    def is_multi_team(self):
+        return len(self.teams) > 2
+
+    @property
+    def has_ai(self):
+        return len(self.AIs) > 0
 
     @property
     def is_even(self):
@@ -533,7 +547,11 @@ class Game(BaseGame):
         if self.gameOptions['Victory'] != Victory.DEMORALIZATION and self.game_mode != 'coop':
             await self.mark_invalid(ValidityState.WRONG_VICTORY_CONDITION)
 
-        if self.is_ffa:
+        if self.has_ai or (self.gameOptions["AIReplacement"] != "Off"):
+            await self.mark_invalid(ValidityState.HAS_AI_PLAYERS)
+        elif self.is_multi_team:
+            await self.mark_invalid(ValidityState.MULTI_TEAM)
+        elif self.is_ffa:
             await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
         elif not self.is_even:
             await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
@@ -551,6 +569,9 @@ class Game(BaseGame):
 
         elif self.gameOptions["RestrictedCategories"] != 0:
             await self.mark_invalid(ValidityState.BAD_UNIT_RESTRICTIONS)
+
+        elif self.gameOptions["TeamLock"] != "locked":
+            await self.mark_invalid(ValidityState.UNLOCKED_TEAMS)
 
     async def launch(self):
         """
@@ -580,18 +601,16 @@ class Game(BaseGame):
         care about recording stats for, after all).
         """
         async with db.db_pool.get() as conn:
-            cursor = await conn.cursor()
+            cursor = await conn.cursor(aiomysql.DictCursor)
 
             # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
             # so, and grab the map id at the same time.
             await cursor.execute("SELECT id, ranked FROM map_version "
                                  "WHERE lower(filename) = lower(%s)", (self.map_file_path,))
             result = await cursor.fetchone()
-            if result:
-                (self.map_id, ranked) = result
 
-                if not ranked:
-                    await self.mark_invalid(ValidityState.BAD_MAP)
+            if not result or not result['ranked']:
+                await self.mark_invalid(ValidityState.BAD_MAP)
 
             modId = self.game_service.featured_mods[self.game_mode].id
 
@@ -645,7 +664,7 @@ class Game(BaseGame):
         return self.game_service.game_mode_versions[self.game_mode]
 
     async def mark_invalid(self, new_validity_state: ValidityState):
-        self._logger.debug("Marked as invalid because: %s", repr(new_validity_state))
+        self._logger.info("Marked as invalid because: %s", repr(new_validity_state))
         self.validity = new_validity_state
 
         # If we haven't started yet, the invalidity will be persisted to the database when we start.

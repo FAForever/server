@@ -26,7 +26,7 @@ from .game_service import GameService
 from .ladder_service import LadderService
 from .control import init as run_control_server
 
-__version__ = '0.9.13'
+__version__ = '0.9.17'
 __author__ = 'Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard, Michel Jung'
 __contact__ = 'admin@faforever.com'
 __license__ = 'GPLv3'
@@ -41,7 +41,14 @@ __all__ = [
     'protocol'
 ]
 
-stats = aiomeasures.StatsD(config.STATSD_SERVER)
+stats = None
+
+if not config.ENABLE_STATSD:
+    from unittest import mock
+    stats = mock.MagicMock()
+else:
+    stats = aiomeasures.StatsD(config.STATSD_SERVER)
+
 
 def run_lobby_server(address: (str, int),
                      player_service: PlayerService,

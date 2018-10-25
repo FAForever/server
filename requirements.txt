@@ -10,8 +10,8 @@ pycrypto
 semver
 geoip2
 pytest==2.8.2
-pytest-mock
-pytest-cov
+pytest-mock==1.10.0
+pytest-cov==2.5.1
 pyflakes
 msgpack-python
 rsa

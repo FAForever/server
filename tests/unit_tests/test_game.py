@@ -46,7 +46,8 @@ async def test_validate_game_settings(game: Game):
         ('CheatsEnabled', 'true', 'false', ValidityState.CHEATS_ENABLED),
         ('PrebuiltUnits', 'On', 'Off', ValidityState.PREBUILT_ENABLED),
         ('NoRushOption', 20, 'Off', ValidityState.NORUSH_ENABLED),
-        ('RestrictedCategories', 1, 0, ValidityState.BAD_UNIT_RESTRICTIONS)
+        ('RestrictedCategories', 1, 0, ValidityState.BAD_UNIT_RESTRICTIONS),
+        ('TeamLock', 'unlocked', 'locked', ValidityState.UNLOCKED_TEAMS)
     ]
 
     for data in settings:
@@ -71,6 +72,29 @@ async def test_ffa_not_rated(game):
 
     await game.on_game_end()
     assert game.validity == ValidityState.FFA_NOT_RANKED
+
+async def test_multi_team_not_rated(game):
+    game.state = GameState.LOBBY
+    add_players(game, 2, team=1)
+    add_players(game, 2, team=2)
+    add_players(game, 2, team=3)
+    await game.launch()
+    await game.add_result(0, 1, 'VICTORY', 5)
+    game.launched_at = time.time() - 60*20 # seconds
+    await game.on_game_end()
+    assert game.validity == ValidityState.MULTI_TEAM
+
+async def test_has_ai_players_not_rated(game):
+    game.state = GameState.LOBBY
+    add_players(game, 2, team=1)
+    add_players(game, 2, team=2)
+    game.AIs = {'IA Tech': {'Faction': 5, 'Color': 1, 'Team': 2, 'StartSpot': 2}, 'Oum-Ashavoh (IA Tech)': {'Army': 3}}
+    await game.launch()
+    await game.add_result(0, 1, 'VICTORY', 5)
+    game.launched_at = time.time() - 60*20 # seconds
+    await game.on_game_end()
+    assert game.validity == ValidityState.HAS_AI_PLAYERS
+
 
 async def test_uneven_teams_not_rated(game):
     game.state = GameState.LOBBY

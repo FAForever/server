@@ -18,6 +18,7 @@ logging.getLogger('aiomeasures').setLevel(logging.INFO)
 trueskill.setup(mu=1500, sigma=500, beta=240, tau=10, draw_probability=0.10)
 
 STATSD_SERVER = os.getenv('STATSD_SERVER', '127.0.0.1:8125')
+ENABLE_STATSD = os.getenv('ENABLE_STATSD', 'false').lower() == 'true'
 
 RULE_LINK = 'http://forums.faforever.com/forums/viewtopic.php?f=2&t=581#p5710'
 WIKI_LINK = 'http://wiki.faforever.com'
@@ -53,3 +54,5 @@ API_TOKEN_URI = os.getenv("API_TOKEN_URI", "https://api.dev.faforever.com/jwt/au
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.dev.faforever.com/jwt")
 
 FAF_POLICY_SERVER_BASE_URL = os.getenv("FAF_POLICY_SERVER_BASE_URL", "http://faf-policy-server")
+FORCE_STEAM_LINK_AFTER_DATE = int(os.getenv('FORCE_STEAM_LINK_AFTER_DATE', 1536105599)) # 5 september 2018 by default
+FORCE_STEAM_LINK = os.getenv('FORCE_STEAM_LINK', 'false').lower() == 'true'
