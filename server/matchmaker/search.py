@@ -2,6 +2,7 @@ import asyncio
 import time
 
 import math
+import server.config as config
 
 from server.decorators import with_logger
 from trueskill import quality_1vs1, Rating
@@ -14,6 +15,7 @@ class Search:
     """
     Represents the state of a users search for a match.
     """
+
     def __init__(self, player, start_time=None, rating_prop='ladder_rating'):
         """
         Default ctor for a search
@@ -41,7 +43,26 @@ class Search:
         }
 
     @property
+    def adjusted_rating(self):
+        """
+        Returns an adjusted mean with a simple linear interpolation between current mean and a specified base mean
+        """
+        mean, dev = self.player.ladder_rating
+        adjusted_mean = ((config.NEWBIE_MIN_GAMES - self.player.numGames) * config.NEWBIE_BASE_MEAN
+                         + self.player.numGames * mean) / config.NEWBIE_MIN_GAMES
+        return (adjusted_mean, dev)
+
+    @property
     def rating(self):
+        num_games = self.player.numGames
+        # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
+        if num_games <= config.NEWBIE_MIN_GAMES and self.rating_prop == 'ladder_rating':
+            return self.adjusted_rating
+        else:
+            return self.raw_rating
+
+    @property
+    def raw_rating(self):
         return getattr(self.player, self.rating_prop)
 
     @property
@@ -86,13 +107,13 @@ class Search:
             if deviation >= d:
                 return max(q - self.search_expansion, 0)
 
-    def quality_with(self, opponent):
-        if not isinstance(opponent, Player):
-            raise TypeError("{} is not a valid player to match with".format(opponent))
-        if not getattr(opponent, self.rating_prop):
+    def quality_with(self, opponent_search: 'Search'):
+        if not isinstance(opponent_search.player, Player):
+            raise TypeError("{} is not a valid player to match with".format(opponent_search.player))
+        if opponent_search.raw_rating is None:
             return 0
         return quality_1vs1(Rating(*self.rating),
-                            Rating(*getattr(opponent, self.rating_prop)))
+                            Rating(*opponent_search.rating))
 
     @property
     def is_matched(self):
@@ -111,8 +132,8 @@ class Search:
         """
         if not isinstance(other, Search):
             return False
-        elif self.quality_with(other.player) >= self.match_threshold and \
-            other.quality_with(self.player) >= other.match_threshold:
+        elif self.quality_with(other) >= self.match_threshold and \
+            other.quality_with(self) >= other.match_threshold:
             return True
         return False
 
@@ -123,6 +144,17 @@ class Search:
         :return:
         """
         self._logger.info("Matched %s with %s", self.player, other.player)
+        
+        numgames = self.player.numGames
+        if numgames <= config.NEWBIE_MIN_GAMES:
+            mean, dev = self.raw_rating
+            adjusted_mean = self.adjusted_rating
+            self._logger.info('Adjusted mean rating for {player} with {numgames} games from {mean} to {adjusted_mean}'.format(
+                player=self.player,
+                numgames=numgames,
+                mean=mean,
+                adjusted_mean=adjusted_mean
+            ))
         self._match.set_result(other)
 
     async def await_match(self):
