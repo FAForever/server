@@ -562,11 +562,13 @@ class LobbyConnection:
             server.stats.incr('user.logins')
             server.stats.gauge('users.online', len(self.player_service))
 
-            await cursor.execute("UPDATE login SET ip = %(ip)s, user_agent = %(user_agent)s WHERE id = %(player_id)s", {
-                                     "ip": self.peer_address.host,
-                                     "user_agent": self.user_agent,
-                                     "player_id": player_id
-                                 })
+            await cursor.execute(
+                "UPDATE login SET ip = %(ip)s, user_agent = %(user_agent)s, last_login = NOW() WHERE id = %(player_id)s",
+                {
+                    "ip": self.peer_address.host,
+                    "user_agent": self.user_agent,
+                    "player_id": player_id
+                })
 
             if not self.player_service.is_uniqueid_exempt(player_id) and steamid is None:
                 conforms_policy = await self.check_policy_conformity(player_id, message['unique_id'], self.session)
