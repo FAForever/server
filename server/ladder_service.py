@@ -43,7 +43,7 @@ class LadderService:
 
         # Host is player 1
         game.host = player1
-        game.name = str(player1.login + " Vs " + player2.login)
+        game.name = game.sanitize(str(player1.login + " Vs " + player2.login))
 
         game.set_player_option(player1.id, 'StartSpot', 1)
         game.set_player_option(player2.id, 'StartSpot', 2)

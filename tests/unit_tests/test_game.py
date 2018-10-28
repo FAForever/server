@@ -405,6 +405,16 @@ async def test_on_game_end_calls_rate_game_with_two_players(game):
 
     assert game.validity is ValidityState.VALID
 
+async def test_name_sanitization(game):
+    await game.clear_data()
+    game.state = GameState.LOBBY
+    game.name = game.sanitize("卓☻иAâé~<1000")
+    try:
+        game.name.encode('utf-16-be').decode('ascii')
+    except UnicodeDecodeError:
+        pass
+
+    assert(game.name == "_Aâé~<1000")
 
 async def test_to_dict(game, create_player):
     await game.clear_data()
@@ -430,7 +440,7 @@ async def test_to_dict(game, create_player):
         "visibility": VisibilityState.to_string(game.visibility),
         "password_protected": game.password is not None,
         "uid": game.id,
-        "title": game.name,
+        "title": game.sanitize(game.name),
         "state": 'playing',
         "featured_mod": game.game_mode,
         "featured_mod_versions": game.getGamemodVersion(),
