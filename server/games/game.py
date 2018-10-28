@@ -2,6 +2,7 @@ from enum import IntEnum, unique
 import logging
 import time
 import functools
+import re
 from collections import defaultdict
 import asyncio
 from typing import Union
@@ -122,7 +123,7 @@ class Game(BaseGame):
         self.visibility = VisibilityState.PUBLIC
         self.max_players = 12
         self.host = host
-        self.name = name
+        self.name = self.sanitize(name)
         self.map_id = None
         self.map_file_path = 'maps/%s.zip' % map
         self.map_scenario_path = None
@@ -662,6 +663,9 @@ class Game(BaseGame):
 
     def getGamemodVersion(self):
         return self.game_service.game_mode_versions[self.game_mode]
+
+    def sanitize(self, name):
+        return re.sub('[^\x20-\xFF]+', '_', name)
 
     async def mark_invalid(self, new_validity_state: ValidityState):
         self._logger.info("Marked as invalid because: %s", repr(new_validity_state))
