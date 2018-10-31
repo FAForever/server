@@ -296,7 +296,7 @@ class GameConnection(GpgNetServerProtocol):
                                                   replace("'", '')
                     self.game.map_file_path = 'maps/{}.zip'.format(self.game.map_scenario_path.split('/')[2])
                 elif option_key == 'Title':
-                    self.game.name = option_value
+                    self.game.name = self.game.sanitize_name(option_value)
 
                 self._mark_dirty()
 

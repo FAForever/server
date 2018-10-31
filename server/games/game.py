@@ -2,6 +2,7 @@ from enum import IntEnum, unique
 import logging
 import time
 import functools
+import re
 from collections import defaultdict
 import asyncio
 from typing import Union
@@ -122,7 +123,7 @@ class Game(BaseGame):
         self.visibility = VisibilityState.PUBLIC
         self.max_players = 12
         self.host = host
-        self.name = name
+        self.name = self.sanitize_name(name)
         self.map_id = None
         self.map_file_path = 'maps/%s.zip' % map
         self.map_scenario_path = None
@@ -617,6 +618,7 @@ class Game(BaseGame):
             # Write out the game_stats record.
             # In some cases, games can be invalidated while running: we check for those cases when
             # the game ends and update this record as appropriate.
+
             await cursor.execute("INSERT INTO game_stats(id, gameType, gameMod, `host`, mapId, gameName, validity)"
                                  "VALUES(%s, %s, %s, %s, %s, %s, %s)",
                                  (self.id,
@@ -662,6 +664,14 @@ class Game(BaseGame):
 
     def getGamemodVersion(self):
         return self.game_service.game_mode_versions[self.game_mode]
+
+    """
+    Replaces sequences of non-latin characters with an underscore and truncates the string to 128 characters
+    Avoids the game name to crash the mysql INSERT query by being longer than the column's max size or by
+    containing non-latin1 characters
+    """
+    def sanitize_name(self, name):
+        return re.sub('[^\x20-\xFF]+', '_', name)[0:128]
 
     async def mark_invalid(self, new_validity_state: ValidityState):
         self._logger.info("Marked as invalid because: %s", repr(new_validity_state))
