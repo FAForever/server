@@ -610,6 +610,9 @@ class Game(BaseGame):
                                  "WHERE lower(filename) = lower(%s)", (self.map_file_path,))
             result = await cursor.fetchone()
 
+            if result:
+                self.map_id = result['id']
+            
             if not result or not result['ranked']:
                 await self.mark_invalid(ValidityState.BAD_MAP)
 
