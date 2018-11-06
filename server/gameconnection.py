@@ -283,7 +283,7 @@ class GameConnection(GpgNetServerProtocol):
                     https://github.com/FAForever/fa/issues/2610
                     """
                     if option_key == "AIReplacement":
-                        option_value.replace("AIReplacement", "")
+                        option_value = option_value.replace("AIReplacement", "")
 
                     self.game.gameOptions[option_key] = option_value
 

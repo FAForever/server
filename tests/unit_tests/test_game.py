@@ -491,7 +491,7 @@ async def test_persist_results_not_called_with_no_results(game):
 
 
 async def test_persist_results_called_with_two_players(game):
-    game.clear_data()
+    await game.clear_data()
     game.state = GameState.LOBBY
     add_players(game, 2)
     await game.launch()
