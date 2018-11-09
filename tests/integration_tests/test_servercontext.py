@@ -4,6 +4,7 @@ from unittest import mock
 
 from server import ServerContext
 from server.protocol import QDataStreamProtocol
+from server import fake_statsd
 
 
 @pytest.fixture
@@ -44,3 +45,15 @@ def test_serverside_abort(loop, mock_context, mock_server):
     yield from asyncio.sleep(0.1)
 
     mock_server.on_connection_lost.assert_any_call()
+
+def test_server_fake_statsd():
+    dummy = fake_statsd.DummyConnection()
+    try:
+        with dummy.timer('a'):
+            dummy.incr('a')
+            dummy.gauge('a', 'b', delta=True)
+            unit = dummy.unit()
+
+    except:
+        pytest.fail("StatsD connection dummy raises exception when used")
+
