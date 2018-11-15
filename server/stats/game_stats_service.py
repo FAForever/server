@@ -53,6 +53,8 @@ class GameStatsService:
         a_queue = []
         # Stores events to batch update
         e_queue = []
+        self._logger.debug('Army result for %s : %s ', player, army_result)
+
         survived = army_result[1] == 'victory'
         blueprint_stats = stats['blueprints']
         unit_stats = stats['units']
