@@ -5,7 +5,6 @@ from unittest.mock import Mock, MagicMock
 import pytest
 
 from server.api.api_accessor import ApiAccessor
-from server.stats.achievement_service import AchievementService
 from server.stats.event_service import EventService
 from tests import CoroMock
 
@@ -20,12 +19,15 @@ def service(api_accessor: ApiAccessor):
     return EventService(api_accessor)
 
 
-async def test_record_multiple(service: EventService):
-    content = '''{"updated_events": [
-        { "event_id": "1-2-3", "count": 1},
-        { "event_id": "2-3-4", "count": 4}
-    ]}'''.encode('utf-8')
-    service.api_accessor.api_post = CoroMock(return_value=(None, content))
+@pytest.fixture()
+def create_queue():
+    return [
+        dict(event_id='1-2-3', count=1),
+        dict(event_id='2-3-4', count=4),
+    ]
+
+
+async def test_fill_queue(service: EventService):
 
     queue = []
     service.record_event('1-2-3', 1, queue)
@@ -36,7 +38,36 @@ async def test_record_multiple(service: EventService):
         dict(event_id='2-3-4', count=4),
     ]
 
-    result = await service.execute_batch_update(42, queue)
-    assert result == json.loads(content.decode('utf-8'))['updated_events']
 
-    service.api_accessor.api_post.assert_called_once_with("/events/recordMultiple", 42, data=dict(updates=queue))
+async def test_api_broken(service: EventService):
+    service.api_accessor.update_events = CoroMock(return_value=(500, None))
+    result = await service.execute_batch_update(42, create_queue())
+    assert result is None
+
+
+async def test_record_multiple(service: EventService):
+
+    content = '''
+        {"data": [
+            {"attributes": {"eventId": "1-2-3", "count": 1}},
+            {"attributes": {"eventId": "2-3-4", "count": 4}}
+        ]}
+    '''
+
+    queue = create_queue()
+
+    service.api_accessor.update_events = CoroMock(return_value=(200, content))
+    result = await service.execute_batch_update(42, queue)
+
+    events_data = []
+    for event in json.loads(content)['data']:
+        converted_event = dict(
+            event_id=event['attributes']['eventId'],
+            count=event['attributes']['count']
+        )
+        events_data.append(converted_event)
+
+    assert result == events_data
+
+    service.api_accessor.update_events.assert_called_once_with(queue, 42)
+
