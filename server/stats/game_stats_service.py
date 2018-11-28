@@ -42,8 +42,8 @@ class GameStatsService:
             self._logger.warn("Player %s reported stats of a game he was not part of", player.login)
             return
 
-        army_result = game.get_army_result(player)
-        if not army_result:
+        army_results = game.get_army_results(player)
+        if not army_results:
             self._logger.warn("No army result available for player %s", player.login)
             return
 
@@ -54,9 +54,9 @@ class GameStatsService:
         a_queue = []
         # Stores events to batch update
         e_queue = []
-        self._logger.debug('Army result for %s => %s ', player, army_result)
+        self._logger.debug('Army result for %s => %s ', player, army_results)
 
-        survived = army_result[1] == 'victory'
+        survived = any(result[1] == 'victory' for result in army_results)
         blueprint_stats = stats['blueprints']
         unit_stats = stats['units']
         scored_highest = highest_scorer == player.login
