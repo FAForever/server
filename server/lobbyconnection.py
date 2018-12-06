@@ -601,9 +601,14 @@ class LobbyConnection:
                              permissionGroup=permission_group,
                              lobby_connection=self)
 
-        if self.player.id in self.player_service and self.player_service[self.player.id].lobby_connection:
-            old_conn = self.player_service[self.player.id].lobby_connection
-            old_conn.send_warning("You have been signed out because you signed in elsewhere.", fatal=True)
+        old_player = self.player_service.get_player(self.player.id)
+        if old_player:
+            self._logger.debug("player {} already signed in: {}".format(self.player.id, old_player))
+            if old_player.lobby_connection:
+                old_player.lobby_connection.send_warning("You have been signed out because you signed in elsewhere.", fatal=True)
+                old_player.lobby_connection.game_connection = None
+                old_player.lobby_connection.player = None
+                self._logger.debug("Removing previous game_connection and player reference of player {} in hope on_connection_lost() wouldn't drop her out of the game".format(self.player.id))
 
         await self.player_service.fetch_player_data(self.player)
 
@@ -987,8 +992,11 @@ class LobbyConnection:
         self.drain = nopdrain
         self.send = lambda m: None
         if self.game_connection:
+            self._logger.debug("lost lobby connection killing game connection for player {}".format(self.game_connection.player.id))
             await self.game_connection.on_connection_lost()
         if self.search and not self.search.done():
             self.search.cancel()
         if self.player:
+            self._logger.debug("lost lobby connection removing player {}".format(self.player.id))
             self.player_service.remove_player(self.player)
+
