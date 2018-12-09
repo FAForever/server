@@ -11,6 +11,8 @@ import asyncio
 import logging
 import subprocess
 import sys
+
+from server.api.api_accessor import ApiAccessor
 from server.config import DB_SERVER, DB_LOGIN, DB_PORT, DB_PASSWORD
 
 import pytest
@@ -183,10 +185,34 @@ def game_service(loop, player_service, game_stats_service):
     from server import GameService
     return GameService(player_service, game_stats_service)
 
-@pytest.fixture
+@pytest.fixture()
 def api_accessor():
-    from server.api.api_accessor import ApiAccessor
-    return ApiAccessor()
+    class FakeRequestResponse:
+        def __init__(self):
+            self.status_code = 200
+            self.text = "test"
+
+    class FakeSession:
+        def __init__(self, client):
+            self.request = mock.Mock(return_value=FakeRequestResponse())
+            self.get = mock.Mock(return_value=FakeRequestResponse())
+
+        def fetch_token(self, token_url, client_id, client_secret):
+            pass
+
+    class SessionManager:
+        def __init__(self):
+            self.session = FakeSession(None)
+
+        def __enter__(self):
+            return self.session
+
+        def __exit__(self, *args):
+            pass
+
+    api_accessor = ApiAccessor()
+    api_accessor.api_session = SessionManager()
+    return api_accessor
 
 @pytest.fixture
 def event_service(api_accessor):
