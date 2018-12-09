@@ -18,7 +18,9 @@ rsa
 trueskill
 aiocron
 marisa-trie
-oauth2client
+oauthlib
+httplib2
+requests_oauthlib
 git+https://github.com/FAForever/faftools.git@5fb0fdb28268b612746d693014fe18a46c3f51fd#egg=faftools
 pyopenssl
 mock

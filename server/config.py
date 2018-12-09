@@ -48,10 +48,11 @@ DB_NAME = os.getenv("FAF_DB_NAME", "faf_test")
 CHALLONGE_KEY = "challonge_key"
 CHALLONGE_USER = "challonge_user"
 
-API_CLIENT_ID = os.getenv("API_CLIENT_ID", "6ccaf75b-a1f3-48be-bac3-4e9ffba81eb7")
+API_CLIENT_ID = os.getenv("API_CLIENT_ID", "client_id")
 API_CLIENT_SECRET = os.getenv("API_CLIENT_SECRET", "banana")
-API_TOKEN_URI = os.getenv("API_TOKEN_URI", "https://api.dev.faforever.com/jwt/auth")
-API_BASE_URL = os.getenv("API_BASE_URL", "https://api.dev.faforever.com/jwt")
+API_TOKEN_URI = os.getenv("API_TOKEN_URI", "http://api.test.faforever.com/oauth/token")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://api.test.faforever.com/")
+USE_API = os.getenv("USE_API", 'true').lower() == 'true'
 
 FAF_POLICY_SERVER_BASE_URL = os.getenv("FAF_POLICY_SERVER_BASE_URL", "http://faf-policy-server")
 FORCE_STEAM_LINK_AFTER_DATE = int(os.getenv('FORCE_STEAM_LINK_AFTER_DATE', 1536105599)) # 5 september 2018 by default
