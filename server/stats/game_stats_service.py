@@ -1,5 +1,6 @@
 from faf.factions import Faction
 from server.games import Game
+from server import config
 from server.players import Player
 from server.stats.achievement_service import *
 from server.stats.event_service import *
@@ -53,7 +54,7 @@ class GameStatsService:
         a_queue = []
         # Stores events to batch update
         e_queue = []
-        self._logger.debug('Army result for %s : %s ', player, army_result)
+        self._logger.debug('Army result for %s => %s ', player, army_result)
 
         survived = army_result[1] == 'victory'
         blueprint_stats = stats['blueprints']
@@ -95,11 +96,16 @@ class GameStatsService:
         self._lowest_acu_health(_count(blueprint_stats, lambda x: x.get('lowest_health', 0), *ACUS), survived, a_queue)
         self._highscore(scored_highest, number_of_humans, a_queue)
 
-        updated_achievements = await self._achievement_service.execute_batch_update(player.id, a_queue)
-        await self._event_service.execute_batch_update(player.id, e_queue)
+        if config.USE_API:
+            updated_achievements = await self._achievement_service.execute_batch_update(player.id, a_queue)
 
-        if player.lobby_connection is not None:
-            player.lobby_connection.send_updated_achievements(updated_achievements)
+            if updated_achievements is None:
+                self._logger.warn("API returned an error while handling the achievements batch update.")
+                return
+
+            await self._event_service.execute_batch_update(player.id, e_queue)
+            if player.lobby_connection is not None:
+                player.lobby_connection.send_updated_achievements(updated_achievements)
 
     def _category_stats(self, unit_stats, survived, achievements_queue, events_queue):
         built_air = unit_stats['air'].get('built', 0)

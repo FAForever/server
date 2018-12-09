@@ -9,21 +9,19 @@ Options:
 """
 
 import asyncio
-
 import logging
-from logging import handlers
 import signal
 import socket
 
-from server.game_service import GameService
-from server.matchmaker import MatchmakerQueue
-from server.player_service import PlayerService
-from server.natpacketserver import NatPacketServer
-from server.stats.game_stats_service import GameStatsService, EventService, AchievementService
-from server.api.api_accessor import ApiAccessor
 import server
 import server.config as config
+from server.api.api_accessor import ApiAccessor
 from server.config import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME
+from server.game_service import GameService
+from server.matchmaker import MatchmakerQueue
+from server.natpacketserver import NatPacketServer
+from server.player_service import PlayerService
+from server.stats.game_stats_service import GameStatsService, EventService, AchievementService
 
 if __name__ == '__main__':
     logger = logging.getLogger()
@@ -38,10 +36,12 @@ if __name__ == '__main__':
             if not done.done():
                 done.set_result(0)
 
+
         loop = asyncio.get_event_loop()
         done = asyncio.Future()
 
         from docopt import docopt
+
         args = docopt(__doc__, version='FAF Server')
 
         if config.ENABLE_STATSD:
@@ -61,7 +61,11 @@ if __name__ == '__main__':
         db_pool = loop.run_until_complete(pool_fut)
 
         players_online = PlayerService(db_pool)
-        api_accessor = ApiAccessor()
+
+        api_accessor = None
+        if config.USE_API:
+            api_accessor = ApiAccessor()
+
         event_service = EventService(api_accessor)
         achievement_service = AchievementService(api_accessor)
         game_stats_service = GameStatsService(event_service, achievement_service)
@@ -77,9 +81,9 @@ if __name__ == '__main__':
         ctrl_server = loop.run_until_complete(server.run_control_server(loop, players_online, games))
 
         lobby_server = server.run_lobby_server(('', 8001),
-                                    players_online,
-                                    games,
-                                    loop)
+                                               players_online,
+                                               games,
+                                               loop)
 
         for sock in lobby_server.sockets:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
