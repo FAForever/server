@@ -56,7 +56,7 @@ class GameStatsService:
         e_queue = []
         self._logger.debug('Army result for %s => %s ', player, army_result)
 
-        survived = army_result[1] == 'victory'
+        survived = army_result == 'victory'
         blueprint_stats = stats['blueprints']
         unit_stats = stats['units']
         scored_highest = highest_scorer == player.login
