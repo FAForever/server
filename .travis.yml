@@ -11,14 +11,15 @@ services:
 
 before_install:
   - sudo /etc/init.d/mysql stop
-  - sudo apt-get update
-  - pushd db
-  - docker build -t faf-db .
-  - docker run -d --name faf-db -e MYSQL_ROOT_PASSWORD=banana -e DB_NAME=faf -p 3306:3306 faf-db
-  - until docker exec -i faf-db ./healthcheck.sh 2>/dev/null; do sleep 1; done
-  - docker exec -i faf-db mysql -uroot -pbanana faf < test-data.sql
+  - git clone https://github.com/FAForever/faf-stack.git faf-stack
+      && pushd faf-stack
+      && git checkout 2873b47
+      && cp -r config.template config
+      && ./scripts/init-db.sh
+      && wget https://raw.githubusercontent.com/FAForever/db/$(grep -oP 'faforever/faf-db-migrations:\K(.*)$' ./docker-compose.yml)/test-data.sql
+      && popd
+  - docker exec -i faf-db mysql -uroot -pbanana faf < faf-stack/test-data.sql
   - docker exec -i faf-db mysql -uroot -pbanana faf -e "select * from login;"
-  - popd
   - python -m pip install coveralls
 
 install:
@@ -26,7 +27,7 @@ install:
   - docker build -t faf-python-server .
 
 script:
-  - docker run --name faf-python-server --link faf-db:db -e FAF_DB_PASSWORD=banana -e FAF_DB_NAME=faf faf-python-server bash scripts/run_tests_with_coverage.sh
+  - docker run --name faf-python-server --network="fafstack_faf" -e DB_PORT_3306_TCP_ADDR=faf-db -e FAF_DB_PASSWORD=banana -e FAF_DB_NAME=faf faf-python-server bash scripts/run_tests_with_coverage.sh
   - docker cp faf-python-server:/code/.coverage .coverage
   - sed -i.bak s#/code/#$(pwd)/#g .coverage
   - coveralls
