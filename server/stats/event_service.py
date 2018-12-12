@@ -71,7 +71,7 @@ class EventService:
                 events_data.append(
                     dict(
                         event_id=event['attributes']['eventId'],
-                        count=event['attributes']['count']
+                        count=event['attributes']['currentCount']
                     )
                 )
 

@@ -49,8 +49,8 @@ async def test_record_multiple(service: EventService):
 
     content = '''
         {"data": [
-            {"attributes": {"eventId": "1-2-3", "count": 1}},
-            {"attributes": {"eventId": "2-3-4", "count": 4}}
+            {"attributes": {"eventId": "1-2-3", "currentCount": 1}},
+            {"attributes": {"eventId": "2-3-4", "currentCount": 4}}
         ]}
     '''
 
@@ -63,7 +63,7 @@ async def test_record_multiple(service: EventService):
     for event in json.loads(content)['data']:
         converted_event = dict(
             event_id=event['attributes']['eventId'],
-            count=event['attributes']['count']
+            count=event['attributes']['currentCount']
         )
         events_data.append(converted_event)
 
