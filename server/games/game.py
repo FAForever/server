@@ -12,7 +12,7 @@ import server.db as db
 import aiomysql
 from server.abc.base_game import GameConnectionState, BaseGame, InitMode
 from server.players import Player, PlayerState
-
+from collections import Counter
 
 @unique
 class GameState(IntEnum):
@@ -711,7 +711,13 @@ class Game(BaseGame):
         return score
 
     def get_army_result(self, player):
-        return self._results.get(self.get_player_option(player.id, 'Army'))
+        results = self._results.get(self.get_player_option(player.id, 'Army'))
+        if not results:
+            return None
+
+        most_reported_result = Counter(i[1] for i in results).most_common(1)[0]
+        outcome = most_reported_result[0]
+        return outcome
 
     def compute_rating(self, rating='global'):
         """

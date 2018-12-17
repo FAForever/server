@@ -375,6 +375,22 @@ async def test_compute_rating_balanced_teamgame(game: Game, create_player):
             assert new_rating != Rating(*player.global_rating)
 
 
+async def test_game_get_army_result_takes_most_reported_result(game):
+
+    game.state = GameState.LOBBY
+    players = add_players(game, 1)
+    await game.add_result(0, 0, 'defeat', 0)
+    await game.add_result(0, 0, 'defeat', 0)
+    await game.add_result(0, 0, 'victory', 0)
+
+    assert game.get_army_result(players[0]) == 'defeat'
+
+    await game.add_result(0, 0, 'victory', 0)
+    await game.add_result(0, 0, 'victory', 0)
+
+    assert game.get_army_result(players[0]) == 'victory'
+
+
 async def test_on_game_end_does_not_call_rate_game_for_single_player(game):
     game.rate_game = CoroMock()
     game.state = GameState.LIVE
