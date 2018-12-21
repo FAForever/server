@@ -82,9 +82,9 @@ class GameService:
                 id, name, full_name, description, publish, order = await cursor.fetchone()
                 self.featured_mods[name] = FeaturedMod(id, name, full_name, description, publish, order)
 
-            await cursor.execute("SELECT id FROM table_mod WHERE ranked = 1")
+            await cursor.execute("SELECT uid FROM table_mod WHERE ranked = 1")
 
-            # Turn resultset into a list of ids
+            # Turn resultset into a list of uids
             rows = await cursor.fetchall()
             self.ranked_mods = set(map(lambda x: x[0], rows))
 
