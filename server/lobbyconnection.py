@@ -458,13 +458,13 @@ class LobbyConnection:
             raise ClientError("You are banned from FAF.\n Reason :\n {}".format(ban_reason), recoverable=False)
 
         # New accounts are prevented from playing if they didn't link to steam
-        
+
         if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() > config.FORCE_STEAM_LINK_AFTER_DATE:
             self._logger.debug('Rejected login from new user: %s, %s, %s', player_id, login, self.session)
             raise ClientError(
                 "Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on <a href='{steamlink_url}'>{steamlink_url}</a>.".format(steamlink_url=config.WWW_URL + '/account/link'),
                 recoverable=False)
-            
+
         self._logger.debug("Login from: %s, %s, %s", player_id, login, self.session)
 
         return player_id, real_username, steamid
@@ -744,8 +744,8 @@ class LobbyConnection:
         if self.connectivity.result.state == ConnectivityState.STUN:
             self.connectivity.relay_address = Address(*message['relay_address'])
 
-        uuid = message['uid']
-        port = message['gameport']
+        uuid = int(message['uid'])
+        port = int(message['gameport'])
         password = message.get('password', None)
 
         self._logger.debug("joining: %d:%d with pw: %s", uuid, port, password)
