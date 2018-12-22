@@ -106,7 +106,7 @@ def test_queue_cancel(mocker, player_service, matchmaker_queue, matchmaker_playe
     # Turn list of players into map from ids to players.
     player_service.players = dict(map(lambda x: (x.id, x), list(matchmaker_players)))
 
-    s1, s2 = Search(matchmaker_players[1]), Search(matchmaker_players[2], 0.01)
+    s1, s2 = Search(matchmaker_players[1]), Search(matchmaker_players[2])
     matchmaker_queue.push(s1)
     s1.cancel()
     try:
