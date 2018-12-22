@@ -92,9 +92,9 @@ def test_queue_race(mocker, player_service, matchmaker_queue):
     matchmaker_queue.game_service.ladder_service.start_game = CoroMock()
 
     try:
-        yield from asyncio.gather(asyncio.wait_for(matchmaker_queue.search(Search(p1, 0.1))),
-                                  asyncio.wait_for(matchmaker_queue.search(Search(p2, 0.1))),
-                                  asyncio.wait_for(matchmaker_queue.search(Search(p3, 0.1))))
+        yield from asyncio.gather(asyncio.wait_for(matchmaker_queue.search(Search(p1)), 0.1),
+                                  asyncio.wait_for(matchmaker_queue.search(Search(p2)), 0.1),
+                                  asyncio.wait_for(matchmaker_queue.search(Search(p3)), 0.1))
     except (TimeoutError, CancelledError):
         pass
 
@@ -106,11 +106,11 @@ def test_queue_cancel(mocker, player_service, matchmaker_queue, matchmaker_playe
     # Turn list of players into map from ids to players.
     player_service.players = dict(map(lambda x: (x.id, x), list(matchmaker_players)))
 
-    s1, s2 = Search(matchmaker_players[1]), Search(matchmaker_players[2], 0.01)
+    s1, s2 = Search(matchmaker_players[1]), Search(matchmaker_players[2])
     matchmaker_queue.push(s1)
     s1.cancel()
     try:
-        yield from asyncio.wait_for(matchmaker_queue.search(s2))
+        yield from asyncio.wait_for(matchmaker_queue.search(s2), 0.01)
     except (TimeoutError, CancelledError):
         pass
 
@@ -126,12 +126,12 @@ async def test_queue_mid_cancel(mocker, player_service, matchmaker_queue, matchm
 
     (s1, s2, s3) = (Search(matchmaker_players_all_match[1]),
                     Search(matchmaker_players_all_match[2]),
-                    Search(matchmaker_players_all_match[3], 0.1))
+                    Search(matchmaker_players_all_match[3]))
     asyncio.ensure_future(matchmaker_queue.search(s1))
     asyncio.ensure_future(matchmaker_queue.search(s2))
     s1.cancel()
     try:
-        await asyncio.wait_for(matchmaker_queue.search(s3))
+        await asyncio.wait_for(matchmaker_queue.search(s3), 0.1)
     except CancelledError:
         pass
 
