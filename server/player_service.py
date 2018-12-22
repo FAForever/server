@@ -118,7 +118,7 @@ class PlayerService:
             # Client version number
             await cursor.execute("SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1")
             result = await cursor.fetchone()
-            
+
             if not (result is None):
                 self.client_version_info = result
 
@@ -133,8 +133,10 @@ class PlayerService:
         for player in self:
             try:
                 if player.lobby_connection:
-                    player.lobby_connection.send_warning("""
-                    The server has been shut down for maintenance, but should be back online soon. If you experience any
-                    problems, please restart your client.<br><br>We apologize for this interruption.""")
+                    player.lobby_connection.send_warning(
+                        "The server has been shut down for maintenance, "
+                        "but should be back online soon. "
+                        "If you experience any problems, please restart your client. "
+                        "\n\nWe apologize for this interruption.")
             except Exception as ex:
                 self._logger.debug("Could not send shutdown message to %s: %s".format(player, ex))
