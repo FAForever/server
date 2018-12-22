@@ -458,17 +458,16 @@ class LobbyConnection:
             raise ClientError("You are banned from FAF.\n Reason :\n {}".format(ban_reason), recoverable=False)
 
         # New accounts are prevented from playing if they didn't link to steam
-        
+
         if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() > config.FORCE_STEAM_LINK_AFTER_DATE:
             self._logger.debug('Rejected login from new user: %s, %s, %s', player_id, login, self.session)
             raise ClientError(
                 "Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on <a href='{steamlink_url}'>{steamlink_url}</a>.".format(steamlink_url=config.WWW_URL + '/account/link'),
                 recoverable=False)
-            
+
         self._logger.debug("Login from: %s, %s, %s", player_id, login, self.session)
 
         return player_id, real_username, steamid
-
 
     def check_version(self, message):
         versionDB, updateFile = self.player_service.client_version_info
@@ -574,7 +573,6 @@ class LobbyConnection:
                 conforms_policy = await self.check_policy_conformity(player_id, message['unique_id'], self.session)
                 if not conforms_policy:
                     return
-
 
             # Update the user's IRC registration (why the fuck is this here?!)
             m = hashlib.md5()
@@ -799,13 +797,13 @@ class LobbyConnection:
                 if self.search:
                     self.search.cancel()
                 assert self.player is not None
-                self.search = Search(self.player)
                 self.player.faction = message['faction']
+                self.search = Search(self.player)
 
                 self.game_service.ladder_service.inform_player(self.player)
 
                 self._logger.info("%s is searching for ladder: %s", self.player, self.search)
-                asyncio.ensure_future(self.player_service.ladder_queue.search(self.player, search=self.search))
+                asyncio.ensure_future(self.player_service.ladder_queue.search(self.search))
 
     def command_coop_list(self, message):
         """ Request for coop map list"""

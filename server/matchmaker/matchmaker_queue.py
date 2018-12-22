@@ -62,7 +62,7 @@ class MatchmakerQueue:
     def __repr__(self):
         return repr(self.queue)
 
-    async def search(self, player, start_time=None, search=None):
+    async def search(self, search: Search):
         """
         Search for a match.
 
@@ -72,7 +72,9 @@ class MatchmakerQueue:
 
         :param player: Player to search for a matchup for
         """
-        search = search or Search(player, start_time)
+        assert search is not None
+
+        player = search.player
         with server.stats.timer('matchmaker.search'):
             try:
                 self._logger.debug("Searching for matchup for %s", player)
@@ -82,7 +84,8 @@ class MatchmakerQueue:
 
                     quality = search.quality_with(opponent_search)
                     threshold = search.match_threshold
-                    self._logger.debug("Game quality between %s and %s: %f (threshold: %f)", player, opponent, quality, threshold)
+                    self._logger.debug("Game quality between %s and %s: %f (threshold: %f)",
+                                       player, opponent, quality, threshold)
                     if quality >= threshold:
                         if self.match(search, opponent_search):
                             return
