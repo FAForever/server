@@ -63,6 +63,21 @@ class GameConnection(GpgNetServerProtocol):
 
         self.finished_sim = False
 
+        self.handlers = {
+            "Desync":               GameConnection.handle_desync,
+            "GameState":            GameConnection.handle_game_state,
+            "GameOption":           GameConnection.handle_game_option,
+            "GameMods":             GameConnection.handle_game_mods,
+            "PlayerOption":         GameConnection.handle_player_option,
+            "AIOption":             GameConnection.handle_ai_option,
+            "ClearSlot":            GameConnection.handle_clear_slot,
+            "GameResult":           GameConnection.handle_game_result,
+            "OperationComplete":    GameConnection.handle_operation_complete,
+            "JsonStats":            GameConnection.handle_json_stats,
+            "EnforceRating":        GameConnection.handle_enforce_rating,
+            "TeamkillReport":       GameConnection.handle_teamkill_report
+        }
+
     @property
     def state(self):
         """
@@ -255,154 +270,17 @@ class GameConnection(GpgNetServerProtocol):
         """
         Handle GpgNetSend messages, wrapped in the JSON protocol
         :param command: command type
-        :param arguments: command arguments
+        :param args: command arguments
         :return: None
         """
+
         try:
-            if command == 'Desync':
-                self.game.desyncs += 1
-
-            elif command == 'GameState':
-                state = args[0]
-                await self.handle_game_state(state)
-                self._mark_dirty()
-
-            elif command == 'GameOption':
-                option_key = args[0]
-                option_value = args[1]
-                if option_key == 'Victory':
-                    self.game.gameOptions['Victory'] = Victory.from_gpgnet_string(option_value)
-                elif option_key in self.game.gameOptions:
-
-                    """
-                    This block about AIReplacement is added because of a mistake in the FAF game patch code
-                    that makes "On" and "Off" be "AIReplacementOn" and "AIReplacementOff". The code
-                    below removes that extra statement to make it a simple "On" "Off".
-                    This block can be removed as soon as the game sends "On" and "Off" instead of
-                    "AIReplacementOn" and "AIReplacementOff" to the server as game options.
-                    https://github.com/FAForever/fa/issues/2610
-                    """
-                    if option_key == "AIReplacement":
-                        option_value = option_value.replace("AIReplacement", "")
-
-                    self.game.gameOptions[option_key] = option_value
-
-                if option_key == "Slots":
-                    self.game.max_players = option_value
-                elif option_key == 'ScenarioFile':
-                    raw = "%r" % option_value
-                    self.game.map_scenario_path = raw.replace('\\', '/').\
-                                                  replace('//', '/').\
-                                                  replace("'", '')
-                    self.game.map_file_path = 'maps/{}.zip'.format(self.game.map_scenario_path.split('/')[2])
-                elif option_key == 'Title':
-                    self.game.name = self.game.sanitize_name(option_value)
-
-                self._mark_dirty()
-
-            elif command == 'GameMods':
-                if args[0] == "activated":
-                    if args[1] == 0:
-                        self.game.mods = {}
-
-                if args[0] == "uids":
-                    uids = args[1].split()
-                    self.game.mods = {uid: "Unknown sim mod" for uid in uids}
-                    async with db.db_pool.get() as conn:
-                        cursor = await conn.cursor()
-                        await cursor.execute("SELECT uid, name from table_mod WHERE uid in %s", (uids,))
-                        mods = await cursor.fetchall()
-                        for (uid, name) in mods:
-                            self.game.mods[uid] = name
-                self._mark_dirty()
-
-            elif command == 'PlayerOption':
-                if self.player.state == PlayerState.HOSTING:
-                    if not len(args) == 3:
-                        self._logger.exception("Malformed playeroption args: %s", args)
-                    id = args[0]
-                    command = args[1]
-                    value = args[2]
-                    self.game.set_player_option(int(id), command, value)
-                    self._mark_dirty()
-
-            elif command == 'AIOption':
-                if self.player.state == PlayerState.HOSTING:
-                    name = args[0]
-                    command = args[1]
-                    value = args[2]
-                    self.game.set_ai_option(str(name), command, value)
-                    self._mark_dirty()
-
-            elif command == 'ClearSlot':
-                if self.player.state == PlayerState.HOSTING:
-                    slot = args[0]
-                    self.game.clear_slot(slot)
-                self._mark_dirty()
-
-            elif command == 'GameResult':
-                army = int(args[0])
-                result = str(args[1])
-                try:
-                    if not any(map(functools.partial(str.startswith, result),
-                                   ['score', 'defeat', 'victory', 'draw'])):
-                        raise ValueError()  # pragma: no cover
-                    result = result.split(' ')
-
-                    # This is the most common way for the player's sim to end
-                    # We should add a reliable message to lua in the future
-                    if result[0] in ['victory', 'draw'] and not self.finished_sim:
-                        self.finished_sim = True
-                        await self.game.check_sim_end()
-
-
-                    await self.game.add_result(self.player, army, result[0], int(result[1]))
-                except (KeyError, ValueError):  # pragma: no cover
-                    self.log.warn("Invalid result for %s reported: %s", army, result)
-                    pass
-
-            elif command == 'OperationComplete':
-                if int(args[0]) == 1:
-                    secondary, delta = int(args[1]), str(args[2])
-                    async with db.db_pool.get() as conn:
-                        cursor = await conn.cursor()
-                        # FIXME: Resolve used map earlier than this
-                        await cursor.execute("SELECT id FROM coop_map WHERE filename = %s",
-                                             self.game.map_file_path)
-                        row = await cursor.fetchone()
-                        if not row:
-                            self._logger.debug("can't find coop map: %s", self.game.map_file_path)
-                            return
-                        (mission,) = row
-
-                        await cursor.execute("INSERT INTO `coop_leaderboard`"
-                                             "(`mission`, `gameuid`, `secondary`, `time`, `player_count`) "
-                                             "VALUES (%s, %s, %s, %s, %s);",
-                                             (mission, self.game.id, secondary, delta, len(self.game.players)))
-            elif command == 'JsonStats':
-                await self.game.report_army_stats(args[0])
-
-            elif command == 'EnforceRating':
-                self.game.enforce_rating = True
-
-
-            elif command == 'TeamkillReport':
-                # args[0] -> seconds of gametime when kill happened
-                # args[1] -> victim id
-                # args[2] -> victim nickname (for debug purpose only)
-                # args[3] -> teamkiller id
-                # args[3] -> teamkiller nickname (for debug purpose only)
-                gametime, victim_id, victim_name, teamkiller_id, teamkiller_name = args
-
-                async with db.db_pool.get() as conn:
-                    cursor = await conn.cursor()
-
-                    await cursor.execute("INSERT INTO `teamkills`"
-                                         "(`teamkiller`, `victim`, `game_id`, `gametime`) "
-                                         "VALUES (%s, %s, %s, %s);",
-                                         (teamkiller_id, victim_id, self.game.id, gametime))
-
-
+            await self.handlers[command](self, *args)
+        except KeyError:
+            self._logger.exception("Unrecognized command %s: %s from player %s",
+                                   command, args, self.player)
+        except (TypeError, ValueError) as e:
+            self._logger.exception("Bad command arguments: %s", e)
         except AuthenticationError as e:
             self.log.exception("Authentication error: %s", e)
             self.abort()
@@ -410,6 +288,142 @@ class GameConnection(GpgNetServerProtocol):
             self.log.exception(e)
             self.log.exception("Something awful happened in a game thread!")
             self.abort()
+
+    async def handle_desync(self):
+        self.game.desyncs += 1
+
+    async def handle_game_option(self, key, value):
+        if key == 'Victory':
+            self.game.gameOptions['Victory'] = Victory.from_gpgnet_string(value)
+        elif key in self.game.gameOptions:
+
+            """
+            This block about AIReplacement is added because of a mistake in the FAF game patch code
+            that makes "On" and "Off" be "AIReplacementOn" and "AIReplacementOff". The code
+            below removes that extra statement to make it a simple "On" "Off".
+            This block can be removed as soon as the game sends "On" and "Off" instead of
+            "AIReplacementOn" and "AIReplacementOff" to the server as game options.
+            https://github.com/FAForever/fa/issues/2610
+            """
+            if key == "AIReplacement":
+                value = value.replace("AIReplacement", "")
+
+            self.game.gameOptions[key] = value
+
+        if key == "Slots":
+            self.game.max_players = value
+        elif key == 'ScenarioFile':
+            raw = "%r" % value
+            self.game.map_scenario_path = \
+                raw.replace('\\', '/').replace('//', '/').replace("'", '')
+            self.game.map_file_path = 'maps/{}.zip'.format(
+                self.game.map_scenario_path.split('/')[2]
+            )
+        elif key == 'Title':
+            self.game.name = self.game.sanitize_name(value)
+
+        self._mark_dirty()
+
+    async def handle_game_mods(self, mode, uids):
+        if mode == "activated":
+            if uids == 0:
+                self.game.mods = {}
+
+        elif mode == "uids":
+            uids = uids.split()
+            self.game.mods = {uid: "Unknown sim mod" for uid in uids}
+            async with db.db_pool.get() as conn:
+                cursor = await conn.cursor()
+                await cursor.execute("SELECT uid, name from table_mod WHERE uid in %s", (uids,))
+                mods = await cursor.fetchall()
+                for (uid, name) in mods:
+                    self.game.mods[uid] = name
+        self._mark_dirty()
+
+    async def handle_player_option(self, id, command, value):
+        if self.player.state != PlayerState.HOSTING:
+            return
+
+        self.game.set_player_option(int(id), command, value)
+        self._mark_dirty()
+
+    async def handle_ai_option(self, name, command, value):
+        if self.player.state != PlayerState.HOSTING:
+            return
+
+        self.game.set_ai_option(str(name), command, value)
+        self._mark_dirty()
+
+    async def handle_clear_slot(self, slot):
+        if self.player.state != PlayerState.HOSTING:
+            return
+
+        self.game.clear_slot(slot)
+        self._mark_dirty()
+
+    async def handle_game_result(self, army, result):
+        army = int(army)
+        result = str(result)
+        try:
+            if not any(map(functools.partial(str.startswith, result),
+                           ['score', 'defeat', 'victory', 'draw'])):
+                raise ValueError()  # pragma: no cover
+            result = result.split(' ')
+
+            # This is the most common way for the player's sim to end
+            # We should add a reliable message to lua in the future
+            if result[0] in ['victory', 'draw'] and not self.finished_sim:
+                self.finished_sim = True
+                await self.game.check_sim_end()
+
+
+            await self.game.add_result(self.player, army, result[0], int(result[1]))
+        except (KeyError, ValueError):  # pragma: no cover
+            self.log.warn("Invalid result for %s reported: %s", army, result)
+            pass
+
+    async def handle_operation_complete(self, army, secondary, delta):
+        if not int(army) == 1:
+            return
+
+        secondary, delta = int(secondary), str(delta)
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
+            # FIXME: Resolve used map earlier than this
+            await cursor.execute("SELECT id FROM coop_map WHERE filename LIKE '%/"
+                                 + self.game.map_file_path + ".%'")
+            (mission,) = await cursor.fetchone()
+            if not mission:
+                self._logger.debug("can't find coop map: %s", self.game.map_file_path)
+                return
+
+            await cursor.execute("INSERT INTO `coop_leaderboard`"
+                                 "(`mission`, `gameuid`, `secondary`, `time`, `player_count`) "
+                                 "VALUES (%s, %s, %s, %s, %s);",
+                                 (mission, self.game.id, secondary, delta, len(self.game.players)))
+
+    async def handle_json_stats(self, stats):
+        await self.game.report_army_stats(stats)
+
+    async def handle_enforce_rating(self):
+        self.game.enforce_rating = True
+
+    async def handle_teamkill_report(self, gametime, victim_id, victim_name, teamkiller_id, teamkiller_name):
+        """
+            :param gametime: seconds of gametime when kill happened
+            :param victim_id: victim id
+            :param victim_name: victim nickname (for debug purpose only)
+            :param teamkiller_id: teamkiller id
+            :param teamkiller_name: teamkiller nickname (for debug purpose only)
+        """
+
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
+
+            await cursor.execute("INSERT INTO `teamkills`"
+                                 "(`teamkiller`, `victim`, `game_id`, `gametime`) "
+                                 "VALUES (%s, %s, %s, %s);",
+                                 (teamkiller_id, victim_id, self.game.id, gametime))
 
     async def handle_game_state(self, state):
         """
@@ -419,7 +433,6 @@ class GameConnection(GpgNetServerProtocol):
         """
         if state == 'Idle':
             await self._handle_idle_state()
-            self._mark_dirty()
 
         elif state == 'Lobby':
             # The game is initialized and awaiting commands
@@ -433,18 +446,22 @@ class GameConnection(GpgNetServerProtocol):
             asyncio.ensure_future(self._handle_lobby_state())
 
         elif state == 'Launching':
-            if self.player.state == PlayerState.HOSTING:
-                await self.game.launch()
+            if self.player.state != PlayerState.HOSTING:
+                return
 
-                if len(self.game.mods.keys()) > 0:
-                    async with db.db_pool.get() as conn:
-                        cursor = await conn.cursor()
-                        uids = list(self.game.mods.keys())
-                        await cursor.execute("UPDATE mod_stats s "
-                                             "JOIN mod_version v ON v.mod_id = s.mod_id "
-                                             "SET s.times_played = s.times_played + 1 WHERE v.uid in %s", (uids,))
+            await self.game.launch()
+
+            if len(self.game.mods.keys()) > 0:
+                async with db.db_pool.get() as conn:
+                    cursor = await conn.cursor()
+                    uids = list(self.game.mods.keys())
+                    await cursor.execute("UPDATE mod_stats s "
+                                         "JOIN mod_version v ON v.mod_id = s.mod_id "
+                                         "SET s.times_played = s.times_played + 1 WHERE v.uid in %s", (uids,))
         elif state == 'Ended':
             await self.on_connection_lost()
+
+        self._mark_dirty()
 
     def _mark_dirty(self):
         if self.game:
