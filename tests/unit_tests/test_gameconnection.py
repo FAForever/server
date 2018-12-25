@@ -166,3 +166,18 @@ async def test_handle_action_GameResult_draw_ends_sim(game, game_connection):
 
     assert game_connection.finished_sim
     assert game.check_sim_end.called
+
+
+async def test_handle_action_OperationComplete(game, game_connection):
+    game.map_file_path = "maps/prothyon16.v0005.zip"
+    secondary = 1
+    time_taken = '09:08:07.654321'
+    await game_connection.handle_action('OperationComplete', ['1', secondary, time_taken])
+
+    import server.db as db
+    async with db.db_pool.get() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
+                             (game.id))
+
+        assert (secondary, game.id) == await cursor.fetchone()
