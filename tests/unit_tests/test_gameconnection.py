@@ -170,6 +170,7 @@ async def test_handle_action_GameResult_calls_add_result(game, game_connection):
     await game_connection.handle_action('GameResult', [0, 'score -5'])
     game.add_result.assert_called_once_with(game_connection.player, 0, 'score', -5)
 
+
 async def test_handle_action_GameOption(game, game_connection):
     game.gameOptions = {"AIReplacement": "Off"}
     await game_connection.handle_action('GameOption', ['Victory', 'sandbox'])
