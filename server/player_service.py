@@ -137,6 +137,6 @@ class PlayerService:
                         "The server has been shut down for maintenance, "
                         "but should be back online soon. "
                         "If you experience any problems, please restart your client. "
-                        "\n\nWe apologize for this interruption.")
+                        "<br/><br/>We apologize for this interruption.")
             except Exception as ex:
                 self._logger.debug("Could not send shutdown message to %s: %s".format(player, ex))
