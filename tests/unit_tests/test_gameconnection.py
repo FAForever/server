@@ -28,6 +28,7 @@ def test_abort(game_connection, game, players):
 
     game.remove_game_connection.assert_called_with(game_connection)
 
+
 async def test_handle_action_GameState_idle_adds_connection(game_connection, players, game):
     players.joining.game = game
     game_connection.lobby_connection = mock.Mock()
@@ -122,9 +123,11 @@ async def test_handle_action_GameResult_calls_add_result(game, game_connection):
     await game_connection.handle_action('GameResult', [0, 'score -5'])
     game.add_result.assert_called_once_with(game_connection.player, 0, 'score', -5)
 
+
 async def test_handle_action_GameOption_change_name(game, game_connection):
     await game_connection.handle_action('GameOption', ['Title', 'All welcome'])
     assert game.name == game.sanitize_name('All welcome')
+
 
 async def test_json_stats(game_connection, game_stats_service, players, game):
     game_stats_service.process_game_stats = mock.Mock()
@@ -134,7 +137,8 @@ async def test_json_stats(game_connection, game_stats_service, players, game):
 
 async def test_handle_action_EnforceRating(game: Game, game_connection: GameConnection):
     await game_connection.handle_action('EnforceRating', [])
-    assert game.enforce_rating == True
+    assert game.enforce_rating is True
+
 
 async def test_handle_action_TeamkillReport(game, game_connection):
     game.launch = CoroMock()
@@ -147,12 +151,14 @@ async def test_handle_action_TeamkillReport(game, game_connection):
 
         assert (game.id,) == await cursor.fetchone()
 
+
 async def test_handle_action_GameResult_victory_ends_sim(game, game_connection):
     game_connection.ConnectToHost = CoroMock()
     await game_connection.handle_action('GameResult', [0, 'victory'])
 
     assert game_connection.finished_sim
     assert game.check_sim_end.called
+
 
 async def test_handle_action_GameResult_draw_ends_sim(game, game_connection):
     game_connection.ConnectToHost = CoroMock()
