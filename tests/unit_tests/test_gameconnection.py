@@ -5,6 +5,7 @@ import pytest
 from server import GameConnection
 from server.connectivity import ConnectivityResult, ConnectivityState
 from server.games import Game
+from server.games.game import Victory
 from server.players import PlayerState
 from tests import CoroMock
 
@@ -144,8 +145,17 @@ async def test_handle_action_GameResult_calls_add_result(game, game_connection):
     await game_connection.handle_action('GameResult', [0, 'score -5'])
     game.add_result.assert_called_once_with(game_connection.player, 0, 'score', -5)
 
-
-async def test_handle_action_GameOption_change_name(game, game_connection):
+async def test_handle_action_GameOption(game, game_connection):
+    game.gameOptions = {"AIReplacement": "Off"}
+    await game_connection.handle_action('GameOption', ['Victory', 'sandbox'])
+    assert game.gameOptions['Victory'] == Victory.SANDBOX
+    await game_connection.handle_action('GameOption', ['AIReplacement', 'AIReplacementOn'])
+    assert game.gameOptions['AIReplacement'] == 'On'
+    await game_connection.handle_action('GameOption', ['Slots', '7'])
+    assert game.max_players == 7
+    # I don't know what these paths actually look like
+    await game_connection.handle_action('GameOption', ['ScenarioFile', 'C:\\Maps\\Some_Map'])
+    assert game.map_file_path == "maps/some_map.zip"
     await game_connection.handle_action('GameOption', ['Title', 'All welcome'])
     assert game.name == game.sanitize_name('All welcome')
 
