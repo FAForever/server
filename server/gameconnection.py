@@ -358,7 +358,7 @@ class GameConnection(GpgNetServerProtocol):
         if self.player.state != PlayerState.HOSTING:
             return
 
-        self.game.clear_slot(slot)
+        self.game.clear_slot(int(slot))
         self._mark_dirty()
 
     async def handle_game_result(self, army, result):

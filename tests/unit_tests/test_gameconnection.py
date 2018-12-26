@@ -151,6 +151,13 @@ async def test_handle_action_AIOption(game: Game, game_connection: GameConnectio
     game.set_ai_option.assert_called_once_with('QAI', 'StartSpot', 1)
 
 
+async def test_handle_action_ClearSlot(game: Game, game_connection: GameConnection):
+    await game_connection.handle_action('ClearSlot', [1])
+    game.clear_slot.assert_called_once_with(1)
+    await game_connection.handle_action('ClearSlot', ['1'])
+    game.clear_slot.assert_called_with(1)
+
+
 async def test_handle_action_GameResult_calls_add_result(game, game_connection):
     game_connection.ConnectToHost = CoroMock()
 
