@@ -111,6 +111,12 @@ async def test_handle_action_GameState_launching_calls_launch(game_connection: G
     game.launch.assert_any_call()
 
 
+async def test_handle_action_GameState_ended_calls_on_connection_lost(game_connection: GameConnection):
+    game_connection.on_connection_lost = CoroMock()
+    await game_connection.handle_action('GameState', ['Ended'])
+    game_connection.on_connection_lost.assert_called_once_with()
+
+
 async def test_handle_action_PlayerOption(game: Game, game_connection: GameConnection):
     await game_connection.handle_action('PlayerOption', [1, 'Color', 2])
     game.set_player_option.assert_called_once_with(1, 'Color', 2)
