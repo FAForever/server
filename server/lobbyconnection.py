@@ -165,7 +165,7 @@ class LobbyConnection:
         except (KeyError, ValueError) as ex:
             self._logger.exception(ex)
             self.abort("Garbage command: {}".format(message))
-        except Exception as ex:
+        except Exception as ex:  # pragma: no cover
             self.protocol.send_message({'command': 'invalid'})
             self._logger.exception(ex)
             self.abort("Error processing command")
@@ -443,13 +443,14 @@ class LobbyConnection:
                                   "WHERE LOWER(login)=%s "
                                   "ORDER BY expires_at DESC", (login.lower(), ))
 
+        auth_error_message = "Login not found or password incorrect. They are case sensitive."
         if cursor.rowcount < 1:
-            raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
+            raise AuthenticationError(auth_error_message)
 
         player_id, real_username, dbPassword, steamid, create_time, ban_reason, ban_expiry = await cursor.fetchone()
 
         if dbPassword != password:
-            raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
+            raise AuthenticationError(auth_error_message)
 
         now = datetime.datetime.now()
 
