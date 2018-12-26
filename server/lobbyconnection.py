@@ -209,10 +209,9 @@ class LobbyConnection:
             cursor = await conn.cursor()
 
             await cursor.execute("SELECT name, description, filename, type, id FROM `coop_map`")
-
+            rows = await cursor.fetchall()
             maps = []
-            for i in range(0, cursor.rowcount):
-                name, description, filename, type, id = await cursor.fetchone()
+            for name, description, filename, type, id in rows:
                 jsonToSend = {"command": "coop_info", "name": name, "description": description,
                               "filename": filename, "featured_mod": "coop"}
                 if type == 0:
@@ -228,7 +227,7 @@ class LobbyConnection:
                 else:
                     # Don't sent corrupt data to the client...
                     self._logger.error("Unknown coop type!")
-                    return
+                    continue
                 jsonToSend["uid"] = id
                 maps.append(jsonToSend)
 
