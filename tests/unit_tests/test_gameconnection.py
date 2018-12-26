@@ -146,6 +146,11 @@ async def test_handle_action_GameMods_post_launch_updates_played_cache(game, gam
         assert (2,) == await cursor.fetchone()
 
 
+async def test_handle_action_AIOption(game: Game, game_connection: GameConnection):
+    await game_connection.handle_action('AIOption', ['QAI', 'StartSpot', 1])
+    game.set_ai_option.assert_called_once_with('QAI', 'StartSpot', 1)
+
+
 async def test_handle_action_GameResult_calls_add_result(game, game_connection):
     game_connection.ConnectToHost = CoroMock()
 

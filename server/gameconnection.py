@@ -347,11 +347,11 @@ class GameConnection(GpgNetServerProtocol):
         self.game.set_player_option(int(id), command, value)
         self._mark_dirty()
 
-    async def handle_ai_option(self, name, command, value):
+    async def handle_ai_option(self, name, key, value):
         if self.player.state != PlayerState.HOSTING:
             return
 
-        self.game.set_ai_option(str(name), command, value)
+        self.game.set_ai_option(str(name), key, value)
         self._mark_dirty()
 
     async def handle_clear_slot(self, slot):
