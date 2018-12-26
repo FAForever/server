@@ -70,13 +70,34 @@ async def test_handle_action_GameState_lobby_calls_ConnectToHost(game_connection
     game_connection.player = players.joining
     players.joining.game = game
     game.host = players.hosting
-    game.map_file_path = 'some_map'
+    game.map_file_path = 'maps/some_map.zip'
+    game.map_folder_name = 'some_map'
 
     await game_connection.handle_action('GameState', ['Lobby'])
     # Give the connection coro time to run
     await asyncio.sleep(0.1)
 
     game_connection.ConnectToHost.assert_called_with(players.hosting.game_connection)
+
+
+async def test_handle_action_GameState_lobby_calls_ConnectToPeer(game_connection: GameConnection, players, game):
+    game_connection.send_message = mock.MagicMock()
+    game_connection.ConnectToHost = CoroMock()
+    game_connection.ConnectToPeer = CoroMock()
+    game_connection.player = players.joining
+
+    players.joining.game = game
+
+    game.host = players.hosting
+    game.map_file_path = 'maps/some_map.zip'
+    game.map_folder_name = 'some_map'
+    game.connections = [players.peer.game_connection]
+
+    await game_connection.handle_action('GameState', ['Lobby'])
+    # Give the connection coro time to run
+    await asyncio.sleep(0.1)
+
+    game_connection.ConnectToPeer.assert_called_with(players.peer.game_connection)
 
 
 async def test_handle_action_GameState_launching_calls_launch(game_connection: GameConnection, players, game):
