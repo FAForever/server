@@ -176,40 +176,6 @@ class LobbyConnection:
     def command_pong(self, msg):
         pass
 
-    @staticmethod
-    def generate_expiring_request(lifetime, plaintext):
-        """
-        Generate the parameters needed for an expiring email request with the given payload.
-        Payload should be comma-delimited, and the consumer should expect to find and verify
-        a timestamp and nonce appended to the given plaintext.
-        """
-
-        # Add nonce
-        rng = Random.new()
-        nonce = ''.join(choice(string.ascii_uppercase + string.digits) for _ in range(256))
-
-        expiry = str(time.time() + lifetime)
-
-        plaintext = (plaintext + "," + expiry + "," + nonce).encode('utf-8')
-
-        # Pad the plaintext to the next full block with commas, because I can't be arsed to
-        # write an actually clever parser.
-        bs = Blowfish.block_size
-        paddinglen = bs - (len(plaintext) % bs)
-        plaintext += b',' * paddinglen
-
-        # Generate random IV of size one block.
-        iv = rng.read(bs)
-        cipher = Blowfish.new(VERIFICATION_SECRET_KEY, Blowfish.MODE_CBC, iv)
-        ciphertext = cipher.encrypt(plaintext)
-
-        # Generate the verification hash.
-        verification = hashlib.sha256()
-        verification.update(plaintext + VERIFICATION_HASH_SECRET.encode('utf-8'))
-        verify_hex = verification.hexdigest()
-
-        return base64.urlsafe_b64encode(iv), base64.urlsafe_b64encode(ciphertext), verify_hex
-
     @asyncio.coroutine
     def command_create_account(self, message):
         raise ClientError("FAF no longer supports direct registration. Please use the website to register.", recoverable=True)
