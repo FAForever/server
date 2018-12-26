@@ -126,6 +126,13 @@ async def test_handle_action_GameMods(game: Game, game_connection: GameConnectio
     assert game.mods == {'baz': 'test-mod2', 'foo': 'test-mod'}
 
 
+async def test_handle_action_GameMods_activated(game: Game, game_connection: GameConnection):
+    await game_connection.handle_action('GameMods', ['activated', 0])
+    assert game.mods == {}
+    await game_connection.handle_action('GameMods', ['activated', '0'])
+    assert game.mods == {}
+
+
 async def test_handle_action_GameMods_post_launch_updates_played_cache(game, game_connection, db_pool):
     game.launch = CoroMock()
     game.remove_game_connection = CoroMock()
