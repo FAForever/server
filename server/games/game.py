@@ -510,7 +510,7 @@ class Game(BaseGame):
         :param value: option value
         :return:
         """
-        if not name in self.AIs:
+        if name not in self.AIs:
             self.AIs[name] = {}
         self.AIs[name][key] = value
 
