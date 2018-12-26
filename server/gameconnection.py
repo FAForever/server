@@ -326,7 +326,7 @@ class GameConnection(GpgNetServerProtocol):
 
     async def handle_game_mods(self, mode, uids):
         if mode == "activated":
-            if uids == 0:
+            if int(uids) == 0:
                 self.game.mods = {}
 
         elif mode == "uids":
