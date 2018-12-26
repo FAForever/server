@@ -145,7 +145,7 @@ class GameConnection(GpgNetServerProtocol):
             # followed by the rest of the players.
             elif player_state == PlayerState.JOINING:
                 await self.ConnectToHost(self.game.host.game_connection)
-                if self._state is GameConnectionState.ENDED: # We aborted while trying to connect
+                if self._state is GameConnectionState.ENDED:  # We aborted while trying to connect
                     return
 
                 self._state = GameConnectionState.CONNECTED_TO_HOST
@@ -154,7 +154,7 @@ class GameConnection(GpgNetServerProtocol):
                     if peer != self and peer.player != self.game.host:
                         self.log.debug("%s connecting to %s", self.player, peer)
                         asyncio.ensure_future(self.ConnectToPeer(peer))
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             self.log.exception(e)
 
     @timed(limit=0.1)
@@ -289,7 +289,7 @@ class GameConnection(GpgNetServerProtocol):
             self.log.exception("Something awful happened in a game thread!")
             self.abort()
 
-    async def handle_desync(self):
+    async def handle_desync(self):  # pragma: no cover
         self.game.desyncs += 1
 
     async def handle_game_option(self, key, value):
@@ -311,13 +311,13 @@ class GameConnection(GpgNetServerProtocol):
             self.game.gameOptions[key] = value
 
         if key == "Slots":
-            self.game.max_players = value
+            self.game.max_players = int(value)
         elif key == 'ScenarioFile':
             raw = "%r" % value
             self.game.map_scenario_path = \
                 raw.replace('\\', '/').replace('//', '/').replace("'", '')
             self.game.map_file_path = 'maps/{}.zip'.format(
-                self.game.map_scenario_path.split('/')[2]
+                self.game.map_scenario_path.split('/')[2].lower()
             )
         elif key == 'Title':
             self.game.name = self.game.sanitize_name(value)
