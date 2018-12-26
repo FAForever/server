@@ -324,13 +324,14 @@ class GameConnection(GpgNetServerProtocol):
 
         self._mark_dirty()
 
-    async def handle_game_mods(self, mode, uids):
+    async def handle_game_mods(self, mode, args):
         if mode == "activated":
-            if int(uids) == 0:
+            # In this case args is the number of mods
+            if int(args) == 0:
                 self.game.mods = {}
 
         elif mode == "uids":
-            uids = uids.split()
+            uids = args.split()
             self.game.mods = {uid: "Unknown sim mod" for uid in uids}
             async with db.db_pool.get() as conn:
                 cursor = await conn.cursor()
