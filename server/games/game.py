@@ -612,7 +612,7 @@ class Game(BaseGame):
 
             if result:
                 self.map_id = result['id']
-            
+
             if not result or not result['ranked']:
                 await self.mark_invalid(ValidityState.BAD_MAP)
 
@@ -668,12 +668,12 @@ class Game(BaseGame):
     def getGamemodVersion(self):
         return self.game_service.game_mode_versions[self.game_mode]
 
-    """
-    Replaces sequences of non-latin characters with an underscore and truncates the string to 128 characters
-    Avoids the game name to crash the mysql INSERT query by being longer than the column's max size or by
-    containing non-latin1 characters
-    """
     def sanitize_name(self, name):
+        """
+        Replaces sequences of non-latin characters with an underscore and truncates the string to 128 characters
+        Avoids the game name to crash the mysql INSERT query by being longer than the column's max size or by
+        containing non-latin1 characters
+        """
         return re.sub('[^\x20-\xFF]+', '_', name)[0:128]
 
     async def mark_invalid(self, new_validity_state: ValidityState):
