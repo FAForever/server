@@ -169,8 +169,9 @@ async def test_handle_action_GameResult_draw_ends_sim(game, game_connection):
     assert game.check_sim_end.called
 
 
-@pytest.mark.skip(reason="requires test data from faf-db:v63 which doesn't exist yet")
 async def test_handle_action_OperationComplete(game, game_connection):
+    pytest.skip("requires test data from faf-db:v63 which doesn't exist yet")
+
     game.map_file_path = "maps/prothyon16.v0005.zip"
     secondary = 1
     time_taken = '09:08:07.654321'
