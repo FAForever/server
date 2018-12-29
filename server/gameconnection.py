@@ -374,12 +374,13 @@ class GameConnection(GpgNetServerProtocol):
         async with db.db_pool.get() as conn:
             cursor = await conn.cursor()
             # FIXME: Resolve used map earlier than this
-            await cursor.execute("SELECT id FROM coop_map WHERE filename LIKE '%/"
-                                 + self.game.map_file_path + ".%'")
-            (mission,) = await cursor.fetchone()
-            if not mission:
+            await cursor.execute("SELECT id FROM coop_map WHERE filename = %s",
+                                 self.game.map_file_path)
+            row = await cursor.fetchone()
+            if not row:
                 self._logger.debug("can't find coop map: %s", self.game.map_file_path)
                 return
+            (mission,) = row
 
             await cursor.execute(
                 """ INSERT INTO `coop_leaderboard`
