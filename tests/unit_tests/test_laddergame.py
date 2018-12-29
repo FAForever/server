@@ -27,7 +27,7 @@ async def test_results_ranked_by_victory(laddergame, players):
 
 
 async def test_rate_game(laddergame: LadderGame, db_pool):
-    async with db.db_pool.get() as conn:
+    async with db_pool.get() as conn:
         cursor = await conn.cursor()
         # TODO remove as soon as we have isolated tests (transactions)
         await cursor.execute("DELETE FROM game_stats WHERE id = %s", laddergame.id)
@@ -50,7 +50,7 @@ async def test_rate_game(laddergame: LadderGame, db_pool):
     assert players[0].ladder_rating[0] > player_1_old_mean
     assert players[1].ladder_rating[0] < player_2_old_mean
 
-    async with db.db_pool.get() as conn:
+    async with db_pool.get() as conn:
         cursor = await conn.cursor(DictCursor)
         await cursor.execute("SELECT mean, deviation, after_mean, after_deviation FROM game_player_stats WHERE gameid = %s", laddergame.id)
         result = await cursor.fetchall()
