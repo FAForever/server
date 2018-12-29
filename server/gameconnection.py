@@ -63,21 +63,6 @@ class GameConnection(GpgNetServerProtocol):
 
         self.finished_sim = False
 
-        self.handlers = {
-            "Desync":               GameConnection.handle_desync,
-            "GameState":            GameConnection.handle_game_state,
-            "GameOption":           GameConnection.handle_game_option,
-            "GameMods":             GameConnection.handle_game_mods,
-            "PlayerOption":         GameConnection.handle_player_option,
-            "AIOption":             GameConnection.handle_ai_option,
-            "ClearSlot":            GameConnection.handle_clear_slot,
-            "GameResult":           GameConnection.handle_game_result,
-            "OperationComplete":    GameConnection.handle_operation_complete,
-            "JsonStats":            GameConnection.handle_json_stats,
-            "EnforceRating":        GameConnection.handle_enforce_rating,
-            "TeamkillReport":       GameConnection.handle_teamkill_report
-        }
-
     @property
     def state(self):
         """
@@ -275,7 +260,7 @@ class GameConnection(GpgNetServerProtocol):
         """
 
         try:
-            await self.handlers[command](self, *args)
+            await COMMAND_HANDLERS[command](self, *args)
         except KeyError:
             self._logger.exception("Unrecognized command %s: %s from player %s",
                                    command, args, self.player)
@@ -510,3 +495,19 @@ class GameConnection(GpgNetServerProtocol):
 
     def __str__(self):
         return "GameConnection(Player({}),Game({}))".format(self.player, self.game)
+
+
+COMMAND_HANDLERS = {
+    "Desync":               GameConnection.handle_desync,
+    "GameState":            GameConnection.handle_game_state,
+    "GameOption":           GameConnection.handle_game_option,
+    "GameMods":             GameConnection.handle_game_mods,
+    "PlayerOption":         GameConnection.handle_player_option,
+    "AIOption":             GameConnection.handle_ai_option,
+    "ClearSlot":            GameConnection.handle_clear_slot,
+    "GameResult":           GameConnection.handle_game_result,
+    "OperationComplete":    GameConnection.handle_operation_complete,
+    "JsonStats":            GameConnection.handle_json_stats,
+    "EnforceRating":        GameConnection.handle_enforce_rating,
+    "TeamkillReport":       GameConnection.handle_teamkill_report
+}
