@@ -170,6 +170,12 @@ async def test_handle_action_GameResult_draw_ends_sim(game, game_connection):
 
 
 async def test_handle_action_OperationComplete(game, game_connection):
+    """
+        Sends an OperationComplete action to handle action and verifies that
+    the `coop_leaderboard` table is updated accordingly.
+
+    Requires that the map from `game.map_file_path` exists in the database.
+    """
     pytest.skip("requires test data from faf-db:v63 which doesn't exist yet")
 
     game.map_file_path = "maps/prothyon16.v0005.zip"
