@@ -326,11 +326,11 @@ class GameConnection(GpgNetServerProtocol):
                     self.game.mods[uid] = name
         self._mark_dirty()
 
-    async def handle_player_option(self, id, command, value):
+    async def handle_player_option(self, id_, command, value):
         if self.player.state != PlayerState.HOSTING:
             return
 
-        self.game.set_player_option(int(id), command, value)
+        self.game.set_player_option(int(id_), command, value)
         self._mark_dirty()
 
     async def handle_ai_option(self, name, key, value):
@@ -362,11 +362,9 @@ class GameConnection(GpgNetServerProtocol):
                 self.finished_sim = True
                 await self.game.check_sim_end()
 
-
             await self.game.add_result(self.player, army, result[0], int(result[1]))
         except (KeyError, ValueError):  # pragma: no cover
-            self.log.warn("Invalid result for %s reported: %s", army, result)
-            pass
+            self.log.warning("Invalid result for %s reported: %s", army, result)
 
     async def handle_operation_complete(self, army, secondary, delta):
         if not int(army) == 1:
@@ -383,10 +381,12 @@ class GameConnection(GpgNetServerProtocol):
                 self._logger.debug("can't find coop map: %s", self.game.map_file_path)
                 return
 
-            await cursor.execute("INSERT INTO `coop_leaderboard`"
-                                 "(`mission`, `gameuid`, `secondary`, `time`, `player_count`) "
-                                 "VALUES (%s, %s, %s, %s, %s);",
-                                 (mission, self.game.id, secondary, delta, len(self.game.players)))
+            await cursor.execute(
+                """ INSERT INTO `coop_leaderboard`
+                    (`mission`, `gameuid`, `secondary`, `time`, `player_count`)
+                    VALUES (%s, %s, %s, %s, %s)""",
+                (mission, self.game.id, secondary, delta, len(self.game.players))
+            )
 
     async def handle_json_stats(self, stats):
         await self.game.report_army_stats(stats)
@@ -406,10 +406,11 @@ class GameConnection(GpgNetServerProtocol):
         async with db.db_pool.get() as conn:
             cursor = await conn.cursor()
 
-            await cursor.execute("INSERT INTO `teamkills`"
-                                 "(`teamkiller`, `victim`, `game_id`, `gametime`) "
-                                 "VALUES (%s, %s, %s, %s);",
-                                 (teamkiller_id, victim_id, self.game.id, gametime))
+            await cursor.execute(
+                """ INSERT INTO `teamkills` (`teamkiller`, `victim`, `game_id`, `gametime`)
+                    VALUES (%s, %s, %s, %s)""",
+                (teamkiller_id, victim_id, self.game.id, gametime)
+            )
 
     async def handle_game_state(self, state):
         """
@@ -441,9 +442,11 @@ class GameConnection(GpgNetServerProtocol):
                 async with db.db_pool.get() as conn:
                     cursor = await conn.cursor()
                     uids = list(self.game.mods.keys())
-                    await cursor.execute("UPDATE mod_stats s "
-                                         "JOIN mod_version v ON v.mod_id = s.mod_id "
-                                         "SET s.times_played = s.times_played + 1 WHERE v.uid in %s", (uids,))
+                    await cursor.execute(
+                        """ UPDATE mod_stats s JOIN mod_version v ON v.mod_id = s.mod_id
+                            SET s.times_played = s.times_played + 1 WHERE v.uid in %s""",
+                        (uids,)
+                    )
         elif state == 'Ended':
             await self.on_connection_lost()
 

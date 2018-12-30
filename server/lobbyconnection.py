@@ -170,9 +170,18 @@ class LobbyConnection:
 
             for i in range(0, cursor.rowcount):
                 section, description = yield from cursor.fetchone()
-                reply.append( {"command": "tutorials_info", "section": section, "description": description})
+                reply.append({
+                    "command": "tutorials_info",
+                    "section": section,
+                    "description": description}
+                )
 
-            yield from cursor.execute("SELECT tutorial_sections.`section`, `name`, `url`, `tutorials`.`description`, `map` FROM `tutorials` LEFT JOIN  tutorial_sections ON tutorial_sections.id = tutorials.section ORDER BY `tutorials`.`section`, name")
+            yield from cursor.execute(
+                """ SELECT tutorial_sections.`section`, `name`, `url`, `tutorials`.`description`, `map`
+                    FROM `tutorials`
+                    LEFT JOIN tutorial_sections ON tutorial_sections.id = tutorials.section
+                    ORDER BY `tutorials`.`section`, name"""
+            )
 
             for i in range(0, cursor.rowcount):
                 section, tutorial_name, url, description, map_name = yield from cursor.fetchone()
@@ -189,25 +198,24 @@ class LobbyConnection:
             await cursor.execute("SELECT name, description, filename, type, id FROM `coop_map`")
             rows = await cursor.fetchall()
             maps = []
-            for name, description, filename, type, id in rows:
-                jsonToSend = {"command": "coop_info", "name": name, "description": description,
-                              "filename": filename, "featured_mod": "coop"}
-                if type == 0:
-                    jsonToSend["type"] = "FA Campaign"
-                elif type == 1:
-                    jsonToSend["type"] = "Aeon Vanilla Campaign"
-                elif type == 2:
-                    jsonToSend["type"] = "Cybran Vanilla Campaign"
-                elif type == 3:
-                    jsonToSend["type"] = "UEF Vanilla Campaign"
-                elif type == 4:
-                    jsonToSend["type"] = "Custom Missions"
+            for name, description, filename, type_, id_ in rows:
+                json_to_send = {"command": "coop_info", "name": name, "description": description,
+                                "filename": filename, "featured_mod": "coop"}
+                campaigns = [
+                    "FA Campaign",
+                    "Aeon Vanilla Campaign",
+                    "Cybran Vanilla Campaign",
+                    "UEF Vanilla Campaign",
+                    "Custom Missions"
+                ]
+                if type_ < len(campaigns):
+                    json_to_send["type"] = campaigns[type_]
                 else:
                     # Don't sent corrupt data to the client...
                     self._logger.error("Unknown coop type!")
                     continue
-                jsonToSend["uid"] = id
-                maps.append(jsonToSend)
+                json_to_send["uid"] = id_
+                maps.append(json_to_send)
 
         self.protocol.send_messages(maps)
 
@@ -620,8 +628,8 @@ class LobbyConnection:
         if self.player.clan is not None:
             channels.append("#%s_clan" % self.player.clan)
 
-        jsonToSend = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
-        self.sendJSON(jsonToSend)
+        json_to_send = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
+        self.sendJSON(json_to_send)
 
         self.send_mod_list()
         self.send_game_list()
