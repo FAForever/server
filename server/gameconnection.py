@@ -129,16 +129,17 @@ class GameConnection(GpgNetServerProtocol):
             # If the player is joining, we connect him to host
             # followed by the rest of the players.
             elif player_state == PlayerState.JOINING:
-                await self.ConnectToHost(self.game.host.game_connection)
+                await self.connect_to_host(self.game.host.game_connection)
                 if self._state is GameConnectionState.ENDED:  # We aborted while trying to connect
                     return
 
                 self._state = GameConnectionState.CONNECTED_TO_HOST
                 self.game.add_game_connection(self)
+
                 for peer in self.game.connections:
                     if peer != self and peer.player != self.game.host:
                         self.log.debug("%s connecting to %s", self.player, peer)
-                        asyncio.ensure_future(self.ConnectToPeer(peer))
+                        asyncio.ensure_future(self.connect_to_peer(peer))
         except Exception as e:  # pragma: no cover
             self.log.exception(e)
 
@@ -159,13 +160,13 @@ class GameConnection(GpgNetServerProtocol):
         except ValueError as ex:  # pragma: no cover
             self.log.error("Garbage command %s %s", ex, message)
 
-    async def ConnectToHost(self, peer):
+    async def connect_to_host(self, peer):
         """
         Connect self to a given peer (host)
         :return:
         """
         assert peer.player.state == PlayerState.HOSTING
-        result = await self.EstablishConnection(peer)
+        result = await self.establish_connection(peer)
         if not result:
             self.abort("Failed connecting to host {}".format(peer))
         own_addr, peer_addr = result
@@ -176,12 +177,12 @@ class GameConnection(GpgNetServerProtocol):
                                 self.player.login,
                                 self.player.id)
 
-    async def ConnectToPeer(self, peer):
+    async def connect_to_peer(self, peer):
         """
         Connect two peers
         :return: None
         """
-        result = await self.EstablishConnection(peer)
+        result = await self.establish_connection(peer)
         if not result:
             self.abort("Failed connecting to {}".format(peer))
         own_addr, peer_addr = result
@@ -192,7 +193,7 @@ class GameConnection(GpgNetServerProtocol):
                                 self.player.login,
                                 self.player.id)
 
-    async def EstablishConnection(self, peer_connection: "GameConnection"):
+    async def establish_connection(self, peer_connection: "GameConnection"):
         """
         Attempt to establish a full duplex UDP connection
         between self and peer.
