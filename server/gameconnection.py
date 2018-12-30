@@ -4,11 +4,11 @@ import time
 import logging
 import functools
 from server.abc.base_game import GameConnectionState
-from server.connectivity import Connectivity, ConnectivityState, ConnectivityResult
-from server.games.game import Game, GameState, Victory
+from server.connectivity import ConnectivityState
+from server.games.game import GameState, Victory
 from server.decorators import with_logger, timed
 from server.game_service import GameService
-from server.players import PlayerState, Player
+from server.players import PlayerState
 from server.protocol import GpgNetServerProtocol
 import server.db as db
 
@@ -472,7 +472,7 @@ class GameConnection(GpgNetServerProtocol):
                     if peer != self:
                         try:
                             peer.send_DisconnectFromPeer(self.player.id)
-                        except Exception as ex: # pragma no cover
+                        except Exception as ex:  # pragma no cover
                             self.log.exception("peer_sendDisconnectFromPeer failed for player %i", self.player.id)
             self._state = GameConnectionState.ENDED
             self.loop.create_task(self.game.remove_game_connection(self))
