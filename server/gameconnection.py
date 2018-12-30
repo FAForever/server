@@ -39,15 +39,16 @@ class GameConnection(GpgNetServerProtocol):
         :return:
         """
         super().__init__()
+        self.log = logging.getLogger(__name__)
+        self.log.debug('GameConnection initializing')
+
         self.lobby_connection = lobby_connection
-        self._logger.debug('GameConnection initializing')
         self._state = GameConnectionState.INITIALIZING
         self._waiters = defaultdict(list)
         self.loop = loop
         self.player_service = player_service
         self.games = games
 
-        self.log = logging.getLogger(__name__)
         self.initTime = time.time()
         self.proxies = {}
         self._player = None
@@ -205,21 +206,21 @@ class GameConnection(GpgNetServerProtocol):
         peer = peer_connection.connectivity.result  # type: ConnectivityResult
         if peer.state == ConnectivityState.PUBLIC \
                 and own.state == ConnectivityState.PUBLIC:
-            self._logger.debug("Connecting %s to host %s directly", self, peer_connection)
+            self.log.debug("Connecting %s to host %s directly", self, peer_connection)
             return own.addr, peer.addr
         elif peer.state == ConnectivityState.STUN or own.state == ConnectivityState.STUN:
-            self._logger.debug("Connecting %s to host %s using STUN", self, peer_connection)
+            self.log.debug("Connecting %s to host %s using STUN", self, peer_connection)
             (own_addr, peer_addr) = await self.STUN(peer_connection)
             if peer_addr is None or own_addr is None:
-                self._logger.debug("STUN between %s %s failed", self, peer_connection)
-                self._logger.debug("Resolved addresses: %s, %s", peer_addr, own_addr)
+                self.log.debug("STUN between %s %s failed", self, peer_connection)
+                self.log.debug("Resolved addresses: %s, %s", peer_addr, own_addr)
                 if self.player.id < peer_connection.player.id and own.state == ConnectivityState.STUN:
                     return await self.TURN(peer_connection)
                 elif peer.state == ConnectivityState.STUN:
                     return tuple(reversed(await peer_connection.TURN(self)))
             else:
                 return own_addr, peer_addr
-        self._logger.error("Connection blocked")
+        self.log.error("Connection blocked")
 
     async def TURN(self, peer: 'GameConnection'):
         addr = await self.connectivity.create_binding(peer.connectivity)
@@ -263,10 +264,10 @@ class GameConnection(GpgNetServerProtocol):
         try:
             await COMMAND_HANDLERS[command](self, *args)
         except KeyError:
-            self._logger.exception("Unrecognized command %s: %s from player %s",
-                                   command, args, self.player)
+            self.log.exception("Unrecognized command %s: %s from player %s",
+                               command, args, self.player)
         except (TypeError, ValueError) as e:
-            self._logger.exception("Bad command arguments: %s", e)
+            self.log.exception("Bad command arguments: %s", e)
         except AuthenticationError as e:
             self.log.exception("Authentication error: %s", e)
             self.abort()
@@ -379,7 +380,7 @@ class GameConnection(GpgNetServerProtocol):
                                  self.game.map_file_path)
             row = await cursor.fetchone()
             if not row:
-                self._logger.debug("can't find coop map: %s", self.game.map_file_path)
+                self.log.debug("can't find coop map: %s", self.game.map_file_path)
                 return
             (mission,) = row
 
@@ -491,7 +492,7 @@ class GameConnection(GpgNetServerProtocol):
         try:
             await self.game.remove_game_connection(self)
         except Exception as e:  # pragma: no cover
-            self._logger.exception(e)
+            self.log.exception(e)
         finally:
             self.abort()
 
