@@ -469,7 +469,6 @@ class LobbyConnection:
 
         return player_id, real_username, steamid
 
-
     def check_version(self, message):
         versionDB, updateFile = self.player_service.client_version_info
         update_msg = dict(command="update",
@@ -574,7 +573,6 @@ class LobbyConnection:
                 conforms_policy = await self.check_policy_conformity(player_id, message['unique_id'], self.session)
                 if not conforms_policy:
                     return
-
 
             # Update the user's IRC registration (why the fuck is this here?!)
             m = hashlib.md5()
@@ -799,13 +797,13 @@ class LobbyConnection:
                 if self.search:
                     self.search.cancel()
                 assert self.player is not None
-                self.search = Search(self.player)
                 self.player.faction = message['faction']
+                self.search = Search(self.player)
 
                 self.game_service.ladder_service.inform_player(self.player)
 
                 self._logger.info("%s is searching for ladder: %s", self.player, self.search)
-                asyncio.ensure_future(self.player_service.ladder_queue.search(self.player, search=self.search))
+                asyncio.ensure_future(self.player_service.ladder_queue.search(self.search))
 
     def command_coop_list(self, message):
         """ Request for coop map list"""
