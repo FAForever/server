@@ -3,14 +3,17 @@ from collections import defaultdict
 import time
 import logging
 import functools
-from server.abc.base_game import GameConnectionState
-from server.connectivity import ConnectivityState
-from server.games.game import GameState, Victory
-from server.decorators import with_logger, timed
-from server.game_service import GameService
-from server.players import PlayerState
-from server.protocol import GpgNetServerProtocol
+from .abc.base_game import GameConnectionState
+from .connectivity import ConnectivityResult, ConnectivityState
+from .decorators import with_logger, timed
+from .games.game import Game, GameState, Victory
+from .game_service import GameService
+from .lobbyconnection import LobbyConnection
+from .players import Player, PlayerState
+from .player_service import PlayerService
+from .protocol import GpgNetServerProtocol
 import server.db as db
+
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +29,8 @@ class GameConnection(GpgNetServerProtocol):
     """
 
     def __init__(self, loop: asyncio.BaseEventLoop,
-                 lobby_connection: "LobbyConnection",
-                 player_service: "PlayerService",
+                 lobby_connection: LobbyConnection,
+                 player_service: PlayerService,
                  games: GameService):
         """
         Construct a new GameConnection
@@ -79,8 +82,8 @@ class GameConnection(GpgNetServerProtocol):
         return self._game
 
     @game.setter
-    def game(self, value):
-        self._game = value
+    def game(self, val: Game):
+        self._game = val
 
     @property
     def player(self):
@@ -90,7 +93,7 @@ class GameConnection(GpgNetServerProtocol):
         return self._player
 
     @player.setter
-    def player(self, val):
+    def player(self, val: Player):
         self._player = val
 
     def send_message(self, message):
@@ -161,7 +164,7 @@ class GameConnection(GpgNetServerProtocol):
         except ValueError as ex:  # pragma: no cover
             self.log.error("Garbage command %s %s", ex, message)
 
-    async def connect_to_host(self, peer):
+    async def connect_to_host(self, peer: "GameConnection"):
         """
         Connect self to a given peer (host)
         :return:
@@ -178,7 +181,7 @@ class GameConnection(GpgNetServerProtocol):
                                 self.player.login,
                                 self.player.id)
 
-    async def connect_to_peer(self, peer):
+    async def connect_to_peer(self, peer: "GameConnection"):
         """
         Connect two peers
         :return: None
@@ -202,8 +205,8 @@ class GameConnection(GpgNetServerProtocol):
         :param peer_connection: Client to connect to
         :return: (own_addr, remote_addr)
         """
-        own = self.connectivity.result  # type: ConnectivityResult
-        peer = peer_connection.connectivity.result  # type: ConnectivityResult
+        own: ConnectivityResult = self.connectivity.result
+        peer: ConnectivityResult = peer_connection.connectivity.result
         if peer.state == ConnectivityState.PUBLIC \
                 and own.state == ConnectivityState.PUBLIC:
             self.log.debug("Connecting %s to host %s directly", self, peer_connection)
@@ -226,7 +229,7 @@ class GameConnection(GpgNetServerProtocol):
         addr = await self.connectivity.create_binding(peer.connectivity)
         return self.lobby_connection.connectivity.relay_address, addr
 
-    async def STUN(self, peer):
+    async def STUN(self, peer: 'GameConnection'):
         """
         Perform a STUN sequence between self and peer
 
