@@ -16,19 +16,19 @@ import semver
 import geoip2.database
 
 import server
-from server import GameConnection
-from server.connectivity import Connectivity, ConnectivityState
-from server.matchmaker import Search
-from server.decorators import timed, with_logger
-from server.games.game import GameState, VisibilityState
-from server.players import Player, PlayerState
+from .gameconnection import GameConnection
+from .connectivity import Connectivity, ConnectivityState
+from .matchmaker import Search
+from .decorators import timed, with_logger
+from .games.game import GameState, VisibilityState
+from .players import Player, PlayerState
 import server.db as db
-from server.types import Address
+from .types import Address
 from .game_service import GameService
 from .player_service import PlayerService
 from . import config
 from .config import FAF_POLICY_SERVER_BASE_URL
-from server.protocol import QDataStreamProtocol
+from .protocol import QDataStreamProtocol
 
 gi = geoip2.database.Reader('GeoLite2-Country.mmdb')
 

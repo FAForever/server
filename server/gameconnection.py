@@ -3,11 +3,10 @@ from collections import defaultdict
 import time
 import logging
 from .abc.base_game import GameConnectionState
-from .connectivity import ConnectivityResult, ConnectivityState
+from .connectivity import ConnectivityState
 from .decorators import with_logger, timed
 from .games.game import Game, GameState, Victory
 from .game_service import GameService
-from .lobbyconnection import LobbyConnection
 from .players import Player, PlayerState
 from .player_service import PlayerService
 from .protocol import GpgNetServerProtocol
@@ -28,7 +27,7 @@ class GameConnection(GpgNetServerProtocol):
     """
 
     def __init__(self, loop: asyncio.BaseEventLoop,
-                 lobby_connection: LobbyConnection,
+                 lobby_connection: "LobbyConnection",
                  player_service: PlayerService,
                  games: GameService):
         """
@@ -226,7 +225,7 @@ class GameConnection(GpgNetServerProtocol):
 
     async def TURN(self, peer: 'GameConnection'):
         addr = await self.connectivity.create_binding(peer.connectivity)
-        return self.lobby_connection.connectivity.relay_address, addr
+        return self.connectivity.relay_address, addr
 
     async def STUN(self, peer: 'GameConnection'):
         """
