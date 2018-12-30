@@ -129,6 +129,72 @@ def test_command_game_join_calls_join_game(mocker,
     mock_protocol.send_message.assert_called_with(expected_reply)
 
 
+def test_command_game_join_uid_as_str(mocker,
+                                      lobbyconnection,
+                                      game_service,
+                                      test_game_info,
+                                      players,
+                                      game_stats_service):
+    lobbyconnection.game_service = game_service
+    mock_protocol = mocker.patch.object(lobbyconnection, 'protocol')
+    game = mock.create_autospec(Game(42, game_service, game_stats_service))
+    game.state = GameState.LOBBY
+    game.password = None
+    game.game_mode = 'faf'
+    game.id = 42
+    game_service.games[42] = game
+    lobbyconnection.player = players.hosting
+    players.hosting.in_game = False
+    test_game_info['uid'] = '42'  # Pass in uid as string
+
+    lobbyconnection.command_game_join(test_game_info)
+    expected_reply = {
+        'command': 'game_launch',
+        'mod': 'faf',
+        'uid': 42,
+        'args': ['/numgames {}'.format(players.hosting.numGames)]
+    }
+    mock_protocol.send_message.assert_called_with(expected_reply)
+
+
+def test_command_game_join_without_password(lobbyconnection,
+                                            game_service,
+                                            test_game_info,
+                                            players,
+                                            game_stats_service):
+    lobbyconnection.sendJSON = mock.Mock()
+    lobbyconnection.game_service = game_service
+    game = mock.create_autospec(Game(42, game_service, game_stats_service))
+    game.state = GameState.LOBBY
+    game.password = 'password'
+    game.game_mode = 'faf'
+    game.id = 42
+    game_service.games[42] = game
+    lobbyconnection.player = players.hosting
+    players.hosting.in_game = False
+    test_game_info['uid'] = 42
+    del test_game_info['password']
+
+    lobbyconnection.command_game_join(test_game_info)
+    lobbyconnection.sendJSON.assert_called_once_with(
+        dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
+
+
+def test_command_game_join_game_not_found(lobbyconnection,
+                                          game_service,
+                                          test_game_info,
+                                          players):
+    lobbyconnection.sendJSON = mock.Mock()
+    lobbyconnection.game_service = game_service
+    lobbyconnection.player = players.hosting
+    players.hosting.in_game = False
+    test_game_info['uid'] = 42
+
+    lobbyconnection.command_game_join(test_game_info)
+    lobbyconnection.sendJSON.assert_called_once_with(
+        dict(command="notice", style="info", text="The host has left the game"))
+
+
 def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
                                                          mock_games,
                                                          test_game_info_invalid):
@@ -250,7 +316,7 @@ async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection, moc
     })
 
 
-async def test_command_avatar_select(mocker, lobbyconnection: LobbyConnection, mock_player: Player):
+async def test_command_avatar_select(mocker, db_pool, lobbyconnection: LobbyConnection, mock_player: Player):
     lobbyconnection.player = mock_player
     lobbyconnection.player.id = 2  # Dostya test user
 
@@ -259,7 +325,7 @@ async def test_command_avatar_select(mocker, lobbyconnection: LobbyConnection, m
         'avatar': "http://content.faforever.com/faf/avatars/qai2.png"
     })
 
-    async with db.db_pool.get() as conn:
+    async with db_pool.get() as conn:
         cursor = await conn.cursor()
         await cursor.execute("SELECT selected from avatars where idUser=2")
         result = await cursor.fetchone()

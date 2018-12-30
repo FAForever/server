@@ -742,8 +742,8 @@ class LobbyConnection:
         if self.connectivity.result.state == ConnectivityState.STUN:
             self.connectivity.relay_address = Address(*message['relay_address'])
 
-        uuid = message['uid']
-        port = message['gameport']
+        uuid = int(message['uid'])
+        port = int(message['gameport'])
         password = message.get('password', None)
 
         self._logger.debug("joining: %d:%d with pw: %s", uuid, port, password)
