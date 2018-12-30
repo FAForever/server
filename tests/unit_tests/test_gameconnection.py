@@ -14,7 +14,7 @@ LOCAL_STUN = ConnectivityResult(addr='127.0.0.1:6112', state=ConnectivityState.S
 LOCAL_PROXY = ConnectivityResult(addr=None, state=ConnectivityState.BLOCKED)
 
 
-def assert_message_sent(game_connection, command, args):
+def assert_message_sent(game_connection: GameConnection, command, args):
     game_connection.lobby_connection.send.assert_called_with({
         'command': command,
         'target': 'game',
@@ -22,7 +22,7 @@ def assert_message_sent(game_connection, command, args):
     })
 
 
-def test_abort(game_connection, game, players):
+def test_abort(game_connection: GameConnection, game: Game, players):
     game_connection.player = players.hosting
     game_connection.game = game
 
@@ -31,7 +31,11 @@ def test_abort(game_connection, game, players):
     game.remove_game_connection.assert_called_with(game_connection)
 
 
-async def test_handle_action_GameState_idle_adds_connection(game_connection, players, game):
+async def test_handle_action_GameState_idle_adds_connection(
+    game: Game,
+    game_connection: GameConnection,
+    players
+):
     players.joining.game = game
     game_connection.lobby_connection = mock.Mock()
     game_connection.player = players.hosting
@@ -42,7 +46,10 @@ async def test_handle_action_GameState_idle_adds_connection(game_connection, pla
     game.add_game_connection.assert_called_with(game_connection)
 
 
-async def test_handle_action_GameState_idle_non_searching_player_aborts(game_connection: GameConnection, players):
+async def test_handle_action_GameState_idle_non_searching_player_aborts(
+    game_connection: GameConnection,
+    players
+):
     game_connection.player = players.hosting
     game_connection.lobby = mock.Mock()
     game_connection.abort = mock.Mock()
@@ -53,7 +60,12 @@ async def test_handle_action_GameState_idle_non_searching_player_aborts(game_con
     game_connection.abort.assert_any_call()
 
 
-async def test_handle_action_GameState_lobby_sends_HostGame(game_connection: GameConnection, loop, players, game):
+async def test_handle_action_GameState_lobby_sends_HostGame(
+    game: Game,
+    game_connection: GameConnection,
+    loop,
+    players
+):
     game_connection.player = players.hosting
     game.map_file_path = 'maps/some_map.zip'
     game.map_folder_name = 'some_map'
@@ -65,7 +77,11 @@ async def test_handle_action_GameState_lobby_sends_HostGame(game_connection: Gam
     assert_message_sent(game_connection, 'HostGame', [game.map_folder_name])
 
 
-async def test_handle_action_GameState_lobby_calls_ConnectToHost(game_connection: GameConnection, players, game):
+async def test_handle_action_GameState_lobby_calls_ConnectToHost(
+    game: Game,
+    game_connection: GameConnection,
+    players
+):
     game_connection.send_message = mock.MagicMock()
     game_connection.ConnectToHost = CoroMock()
     game_connection.player = players.joining
@@ -81,7 +97,11 @@ async def test_handle_action_GameState_lobby_calls_ConnectToHost(game_connection
     game_connection.ConnectToHost.assert_called_with(players.hosting.game_connection)
 
 
-async def test_handle_action_GameState_lobby_calls_ConnectToPeer(game_connection: GameConnection, players, game):
+async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
+    game: Game,
+    game_connection: GameConnection,
+    players
+):
     game_connection.send_message = mock.MagicMock()
     game_connection.ConnectToHost = CoroMock()
     game_connection.ConnectToPeer = CoroMock()
@@ -101,7 +121,11 @@ async def test_handle_action_GameState_lobby_calls_ConnectToPeer(game_connection
     game_connection.ConnectToPeer.assert_called_with(players.peer.game_connection)
 
 
-async def test_handle_action_GameState_launching_calls_launch(game_connection: GameConnection, players, game):
+async def test_handle_action_GameState_launching_calls_launch(
+    game: Game,
+    game_connection: GameConnection,
+    players
+):
     game_connection.player = players.hosting
     game_connection.game = game
     game.launch = CoroMock()
@@ -111,7 +135,9 @@ async def test_handle_action_GameState_launching_calls_launch(game_connection: G
     game.launch.assert_any_call()
 
 
-async def test_handle_action_GameState_ended_calls_on_connection_lost(game_connection: GameConnection):
+async def test_handle_action_GameState_ended_calls_on_connection_lost(
+    game_connection: GameConnection
+):
     game_connection.on_connection_lost = CoroMock()
     await game_connection.handle_action('GameState', ['Ended'])
     game_connection.on_connection_lost.assert_called_once_with()
@@ -139,7 +165,11 @@ async def test_handle_action_GameMods_activated(game: Game, game_connection: Gam
     assert game.mods == {}
 
 
-async def test_handle_action_GameMods_post_launch_updates_played_cache(game, game_connection, db_pool):
+async def test_handle_action_GameMods_post_launch_updates_played_cache(
+    game: Game,
+    game_connection: GameConnection,
+    db_pool
+):
     game.launch = CoroMock()
     game.remove_game_connection = CoroMock()
 
@@ -164,14 +194,14 @@ async def test_handle_action_ClearSlot(game: Game, game_connection: GameConnecti
     game.clear_slot.assert_called_with(1)
 
 
-async def test_handle_action_GameResult_calls_add_result(game, game_connection):
+async def test_handle_action_GameResult_calls_add_result(game: Game, game_connection: GameConnection):
     game_connection.ConnectToHost = CoroMock()
 
     await game_connection.handle_action('GameResult', [0, 'score -5'])
     game.add_result.assert_called_once_with(game_connection.player, 0, 'score', -5)
 
 
-async def test_handle_action_GameOption(game, game_connection):
+async def test_handle_action_GameOption(game: Game, game_connection: GameConnection):
     game.gameOptions = {"AIReplacement": "Off"}
     await game_connection.handle_action('GameOption', ['Victory', 'sandbox'])
     assert game.gameOptions['Victory'] == Victory.SANDBOX
@@ -186,7 +216,7 @@ async def test_handle_action_GameOption(game, game_connection):
     assert game.name == game.sanitize_name('All welcome')
 
 
-async def test_json_stats(game_connection, game_stats_service, players, game):
+async def test_json_stats(game_connection: GameConnection, game_stats_service, players, game):
     game_stats_service.process_game_stats = mock.Mock()
     await game_connection.handle_action('JsonStats', ['{"stats": {}}'])
     game.report_army_stats.assert_called_once_with('{"stats": {}}')
@@ -197,7 +227,7 @@ async def test_handle_action_EnforceRating(game: Game, game_connection: GameConn
     assert game.enforce_rating is True
 
 
-async def test_handle_action_TeamkillReport(game, game_connection, db_pool):
+async def test_handle_action_TeamkillReport(game: Game, game_connection: GameConnection, db_pool):
     game.launch = CoroMock()
     await game_connection.handle_action('TeamkillReport', ['200', '2', 'Dostya', '3', 'Rhiza'])
 
@@ -208,7 +238,10 @@ async def test_handle_action_TeamkillReport(game, game_connection, db_pool):
         assert (game.id,) == await cursor.fetchone()
 
 
-async def test_handle_action_GameResult_victory_ends_sim(game, game_connection):
+async def test_handle_action_GameResult_victory_ends_sim(
+    game: Game,
+    game_connection: GameConnection
+):
     game_connection.ConnectToHost = CoroMock()
     await game_connection.handle_action('GameResult', [0, 'victory'])
 
@@ -216,7 +249,10 @@ async def test_handle_action_GameResult_victory_ends_sim(game, game_connection):
     assert game.check_sim_end.called
 
 
-async def test_handle_action_GameResult_draw_ends_sim(game, game_connection):
+async def test_handle_action_GameResult_draw_ends_sim(
+    game: Game,
+    game_connection: GameConnection
+):
     game_connection.ConnectToHost = CoroMock()
     await game_connection.handle_action('GameResult', [0, 'draw'])
 
@@ -224,7 +260,7 @@ async def test_handle_action_GameResult_draw_ends_sim(game, game_connection):
     assert game.check_sim_end.called
 
 
-async def test_handle_action_OperationComplete(game, game_connection, db_pool):
+async def test_handle_action_OperationComplete(game: Game, game_connection: GameConnection, db_pool):
     """
         Sends an OperationComplete action to handle action and verifies that
     the `coop_leaderboard` table is updated accordingly.
