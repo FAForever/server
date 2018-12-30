@@ -83,7 +83,7 @@ async def test_handle_action_GameState_lobby_calls_ConnectToHost(
     players
 ):
     game_connection.send_message = mock.MagicMock()
-    game_connection.ConnectToHost = CoroMock()
+    game_connection.connect_to_host = CoroMock()
     game_connection.player = players.joining
     players.joining.game = game
     game.host = players.hosting
@@ -94,7 +94,7 @@ async def test_handle_action_GameState_lobby_calls_ConnectToHost(
     # Give the connection coro time to run
     await asyncio.sleep(0.1)
 
-    game_connection.ConnectToHost.assert_called_with(players.hosting.game_connection)
+    game_connection.connect_to_host.assert_called_with(players.hosting.game_connection)
 
 
 async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
@@ -103,8 +103,8 @@ async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
     players
 ):
     game_connection.send_message = mock.MagicMock()
-    game_connection.ConnectToHost = CoroMock()
-    game_connection.ConnectToPeer = CoroMock()
+    game_connection.connect_to_host = CoroMock()
+    game_connection.connect_to_peer = CoroMock()
     game_connection.player = players.joining
 
     players.joining.game = game
@@ -118,7 +118,7 @@ async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
     # Give the connection coro time to run
     await asyncio.sleep(0.1)
 
-    game_connection.ConnectToPeer.assert_called_with(players.peer.game_connection)
+    game_connection.connect_to_peer.assert_called_with(players.peer.game_connection)
 
 
 async def test_handle_action_GameState_launching_calls_launch(
@@ -195,7 +195,7 @@ async def test_handle_action_ClearSlot(game: Game, game_connection: GameConnecti
 
 
 async def test_handle_action_GameResult_calls_add_result(game: Game, game_connection: GameConnection):
-    game_connection.ConnectToHost = CoroMock()
+    game_connection.connect_to_host = CoroMock()
 
     await game_connection.handle_action('GameResult', [0, 'score -5'])
     game.add_result.assert_called_once_with(game_connection.player, 0, 'score', -5)
@@ -242,7 +242,7 @@ async def test_handle_action_GameResult_victory_ends_sim(
     game: Game,
     game_connection: GameConnection
 ):
-    game_connection.ConnectToHost = CoroMock()
+    game_connection.connect_to_host = CoroMock()
     await game_connection.handle_action('GameResult', [0, 'victory'])
 
     assert game_connection.finished_sim
@@ -253,7 +253,7 @@ async def test_handle_action_GameResult_draw_ends_sim(
     game: Game,
     game_connection: GameConnection
 ):
-    game_connection.ConnectToHost = CoroMock()
+    game_connection.connect_to_host = CoroMock()
     await game_connection.handle_action('GameResult', [0, 'draw'])
 
     assert game_connection.finished_sim
