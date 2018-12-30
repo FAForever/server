@@ -104,14 +104,15 @@ async def test_handle_action_GameMods(game: Game, game_connection: GameConnectio
     assert game.mods == {'baz': 'test-mod2', 'foo': 'test-mod'}
 
 
-async def test_handle_action_GameMods_post_launch_updates_played_cache(game, game_connection, db_pool):
+async def test_handle_action_GameMods_post_launch_updates_played_cache(game, game_connection):
     game.launch = CoroMock()
     game.remove_game_connection = CoroMock()
 
     await game_connection.handle_action('GameMods', ['uids', 'foo bar EA040F8E-857A-4566-9879-0D37420A5B9D'])
     await game_connection.handle_action('GameState', ['Launching'])
 
-    async with db_pool.get() as conn:
+    import server.db as db
+    async with db.db_pool.get() as conn:
         cursor = await conn.cursor()
         await cursor.execute("select `played` from table_mod where uid=%s", ('EA040F8E-857A-4566-9879-0D37420A5B9D', ))
         assert (2,) == await cursor.fetchone()
@@ -140,11 +141,12 @@ async def test_handle_action_EnforceRating(game: Game, game_connection: GameConn
     assert game.enforce_rating is True
 
 
-async def test_handle_action_TeamkillReport(game, game_connection, db_pool):
+async def test_handle_action_TeamkillReport(game, game_connection):
     game.launch = CoroMock()
     await game_connection.handle_action('TeamkillReport', ['200', '2', 'Dostya', '3', 'Rhiza'])
 
-    async with db_pool.get() as conn:
+    import server.db as db
+    async with db.db_pool.get() as conn:
         cursor = await conn.cursor()
         await cursor.execute("select game_id from teamkills where victim=2 and teamkiller=3 and game_id=%s and gametime=200", (game.id))
 
@@ -167,7 +169,7 @@ async def test_handle_action_GameResult_draw_ends_sim(game, game_connection):
     assert game.check_sim_end.called
 
 
-async def test_handle_action_OperationComplete(game, game_connection, db_pool):
+async def test_handle_action_OperationComplete(game, game_connection):
     """
         Sends an OperationComplete action to handle action and verifies that
     the `coop_leaderboard` table is updated accordingly.
@@ -181,7 +183,8 @@ async def test_handle_action_OperationComplete(game, game_connection, db_pool):
     time_taken = '09:08:07.654321'
     await game_connection.handle_action('OperationComplete', ['1', secondary, time_taken])
 
-    async with db_pool.get() as conn:
+    import server.db as db
+    async with db.db_pool.get() as conn:
         cursor = await conn.cursor()
         await cursor.execute("SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
                              (game.id))
