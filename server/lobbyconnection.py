@@ -2,39 +2,17 @@ import asyncio
 
 import hashlib
 import cgi
-import base64
-import ipaddress
 import json
 import urllib.parse
 import urllib.request
-import zipfile
-import os
-import shutil
 import random
-import re
-from collections import defaultdict
-from contextlib import closing
-from typing import List
-from typing import Mapping
-from typing import Optional
 
 import datetime
 
-import aiohttp
 import pymysql
 import requests
-import rsa
-import time
-import smtplib
-import string
-import email
-from email.mime.text import MIMEText
 
 import semver
-from Crypto import Random
-from Crypto.Random.random import choice
-from Crypto.Cipher import Blowfish
-from Crypto.Cipher import AES
 import geoip2.database
 
 import server
@@ -49,7 +27,7 @@ from server.types import Address
 from .game_service import GameService
 from .player_service import PlayerService
 from . import config
-from .config import VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY, FAF_POLICY_SERVER_BASE_URL
+from .config import FAF_POLICY_SERVER_BASE_URL
 from server.protocol import QDataStreamProtocol
 
 gi = geoip2.database.Reader('GeoLite2-Country.mmdb')
