@@ -278,7 +278,7 @@ class GameConnection(GpgNetServerProtocol):
                     This block about AIReplacement is added because of a mistake in the FAF game patch code
                     that makes "On" and "Off" be "AIReplacementOn" and "AIReplacementOff". The code
                     below removes that extra statement to make it a simple "On" "Off".
-                    This block can be removed as soon as the game sends "On" and "Off" instead of 
+                    This block can be removed as soon as the game sends "On" and "Off" instead of
                     "AIReplacementOn" and "AIReplacementOff" to the server as game options.
                     https://github.com/FAForever/fa/issues/2610
                     """
@@ -367,12 +367,13 @@ class GameConnection(GpgNetServerProtocol):
                     async with db.db_pool.get() as conn:
                         cursor = await conn.cursor()
                         # FIXME: Resolve used map earlier than this
-                        await cursor.execute("SELECT id FROM coop_map WHERE filename LIKE '%/"
-                                             + self.game.map_file_path + ".%'")
-                        (mission,) = await cursor.fetchone()
-                        if not mission:
+                        await cursor.execute("SELECT id FROM coop_map WHERE filename = %s",
+                                             self.game.map_file_path)
+                        row = await cursor.fetchone()
+                        if not row:
                             self._logger.debug("can't find coop map: %s", self.game.map_file_path)
                             return
+                        (mission,) = row
 
                         await cursor.execute("INSERT INTO `coop_leaderboard`"
                                              "(`mission`, `gameuid`, `secondary`, `time`, `player_count`) "

@@ -1,5 +1,6 @@
 import asyncio
 from unittest import mock
+import pytest
 
 from server import GameConnection
 from server.connectivity import ConnectivityResult, ConnectivityState
@@ -27,6 +28,7 @@ def test_abort(game_connection, game, players):
     game_connection.abort()
 
     game.remove_game_connection.assert_called_with(game_connection)
+
 
 async def test_handle_action_GameState_idle_adds_connection(game_connection, players, game):
     players.joining.game = game
@@ -102,15 +104,14 @@ async def test_handle_action_GameMods(game: Game, game_connection: GameConnectio
     assert game.mods == {'baz': 'test-mod2', 'foo': 'test-mod'}
 
 
-async def test_handle_action_GameMods_post_launch_updates_played_cache(game, game_connection):
+async def test_handle_action_GameMods_post_launch_updates_played_cache(game, game_connection, db_pool):
     game.launch = CoroMock()
     game.remove_game_connection = CoroMock()
 
     await game_connection.handle_action('GameMods', ['uids', 'foo bar EA040F8E-857A-4566-9879-0D37420A5B9D'])
     await game_connection.handle_action('GameState', ['Launching'])
 
-    import server.db as db
-    async with db.db_pool.get() as conn:
+    async with db_pool.get() as conn:
         cursor = await conn.cursor()
         await cursor.execute("select `played` from table_mod where uid=%s", ('EA040F8E-857A-4566-9879-0D37420A5B9D', ))
         assert (2,) == await cursor.fetchone()
@@ -122,9 +123,11 @@ async def test_handle_action_GameResult_calls_add_result(game, game_connection):
     await game_connection.handle_action('GameResult', [0, 'score -5'])
     game.add_result.assert_called_once_with(game_connection.player, 0, 'score', -5)
 
+
 async def test_handle_action_GameOption_change_name(game, game_connection):
     await game_connection.handle_action('GameOption', ['Title', 'All welcome'])
     assert game.name == game.sanitize_name('All welcome')
+
 
 async def test_json_stats(game_connection, game_stats_service, players, game):
     game_stats_service.process_game_stats = mock.Mock()
@@ -134,18 +137,19 @@ async def test_json_stats(game_connection, game_stats_service, players, game):
 
 async def test_handle_action_EnforceRating(game: Game, game_connection: GameConnection):
     await game_connection.handle_action('EnforceRating', [])
-    assert game.enforce_rating == True
+    assert game.enforce_rating is True
 
-async def test_handle_action_TeamkillReport(game, game_connection):
+
+async def test_handle_action_TeamkillReport(game, game_connection, db_pool):
     game.launch = CoroMock()
     await game_connection.handle_action('TeamkillReport', ['200', '2', 'Dostya', '3', 'Rhiza'])
 
-    import server.db as db
-    async with db.db_pool.get() as conn:
+    async with db_pool.get() as conn:
         cursor = await conn.cursor()
         await cursor.execute("select game_id from teamkills where victim=2 and teamkiller=3 and game_id=%s and gametime=200", (game.id))
 
         assert (game.id,) == await cursor.fetchone()
+
 
 async def test_handle_action_GameResult_victory_ends_sim(game, game_connection):
     game_connection.ConnectToHost = CoroMock()
@@ -154,9 +158,32 @@ async def test_handle_action_GameResult_victory_ends_sim(game, game_connection):
     assert game_connection.finished_sim
     assert game.check_sim_end.called
 
+
 async def test_handle_action_GameResult_draw_ends_sim(game, game_connection):
     game_connection.ConnectToHost = CoroMock()
     await game_connection.handle_action('GameResult', [0, 'draw'])
 
     assert game_connection.finished_sim
     assert game.check_sim_end.called
+
+
+async def test_handle_action_OperationComplete(game, game_connection, db_pool):
+    """
+        Sends an OperationComplete action to handle action and verifies that
+    the `coop_leaderboard` table is updated accordingly.
+
+    Requires that the map from `game.map_file_path` exists in the database.
+    """
+    pytest.skip("requires test data from faf-db:v63 which doesn't exist yet")
+
+    game.map_file_path = "maps/prothyon16.v0005.zip"
+    secondary = 1
+    time_taken = '09:08:07.654321'
+    await game_connection.handle_action('OperationComplete', ['1', secondary, time_taken])
+
+    async with db_pool.get() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
+                             (game.id))
+
+        assert (secondary, game.id) == await cursor.fetchone()

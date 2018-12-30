@@ -316,7 +316,7 @@ async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection, moc
     })
 
 
-async def test_command_avatar_select(mocker, lobbyconnection: LobbyConnection, mock_player: Player):
+async def test_command_avatar_select(mocker, db_pool, lobbyconnection: LobbyConnection, mock_player: Player):
     lobbyconnection.player = mock_player
     lobbyconnection.player.id = 2  # Dostya test user
 
@@ -325,7 +325,7 @@ async def test_command_avatar_select(mocker, lobbyconnection: LobbyConnection, m
         'avatar': "http://content.faforever.com/faf/avatars/qai2.png"
     })
 
-    async with db.db_pool.get() as conn:
+    async with db_pool.get() as conn:
         cursor = await conn.cursor()
         await cursor.execute("SELECT selected from avatars where idUser=2")
         result = await cursor.fetchone()
