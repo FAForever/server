@@ -1,6 +1,5 @@
 import asyncio
 from unittest import mock
-import pytest
 
 from server import GameConnection
 from server.connectivity import ConnectivityResult, ConnectivityState
@@ -169,7 +168,6 @@ async def test_handle_action_GameResult_draw_ends_sim(game, game_connection):
     assert game.check_sim_end.called
 
 
-@pytest.mark.skip(reason="requires test data from faf-db:v63 which doesn't exist yet")
 async def test_handle_action_OperationComplete(game, game_connection):
     game.map_file_path = "maps/prothyon16.v0005.zip"
     secondary = 1
