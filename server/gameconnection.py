@@ -204,8 +204,8 @@ class GameConnection(GpgNetServerProtocol):
         :param peer_connection: Client to connect to
         :return: (own_addr, remote_addr)
         """
-        own: ConnectivityResult = self.connectivity.result
-        peer: ConnectivityResult = peer_connection.connectivity.result
+        own = self.connectivity.result  # type: ConnectivityResult
+        peer = peer_connection.connectivity.result  # type: ConnectivityResult
         if peer.state == ConnectivityState.PUBLIC \
                 and own.state == ConnectivityState.PUBLIC:
             self.log.debug("Connecting %s to host %s directly", self, peer_connection)
