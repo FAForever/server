@@ -325,7 +325,7 @@ class GameConnection(GpgNetServerProtocol):
             self.game.mods = {uid: "Unknown sim mod" for uid in uids}
             async with db.db_pool.get() as conn:
                 cursor = await conn.cursor()
-                await cursor.execute("SELECT uid, name from table_mod WHERE uid in %s", (uids,))
+                await cursor.execute("SELECT `uid`, `name` from `table_mod` WHERE `uid` in %s", (uids,))
                 mods = await cursor.fetchall()
                 for (uid, name) in mods:
                     self.game.mods[uid] = name
@@ -379,7 +379,7 @@ class GameConnection(GpgNetServerProtocol):
         async with db.db_pool.get() as conn:
             cursor = await conn.cursor()
             # FIXME: Resolve used map earlier than this
-            await cursor.execute("SELECT id FROM coop_map WHERE filename = %s",
+            await cursor.execute("SELECT `id` FROM `coop_map` WHERE `filename` = %s",
                                  self.game.map_file_path)
             row = await cursor.fetchone()
             if not row:
