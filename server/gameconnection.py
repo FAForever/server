@@ -369,11 +369,10 @@ class GameConnection(GpgNetServerProtocol):
                         # FIXME: Resolve used map earlier than this
                         await cursor.execute("SELECT id FROM coop_map WHERE filename = %s",
                                              self.game.map_file_path)
-                        row = await cursor.fetchone()
-                        if not row:
+                        (mission,) = await cursor.fetchone()
+                        if not mission:
                             self._logger.debug("can't find coop map: %s", self.game.map_file_path)
                             return
-                        (mission,) = row
 
                         await cursor.execute("INSERT INTO `coop_leaderboard`"
                                              "(`mission`, `gameuid`, `secondary`, `time`, `player_count`) "
