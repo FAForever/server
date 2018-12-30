@@ -2,7 +2,6 @@ import asyncio
 from collections import defaultdict
 import time
 import logging
-import functools
 from .abc.base_game import GameConnectionState
 from .connectivity import ConnectivityResult, ConnectivityState
 from .decorators import with_logger, timed
@@ -356,8 +355,8 @@ class GameConnection(GpgNetServerProtocol):
         army = int(army)
         result = str(result)
         try:
-            if not any(map(functools.partial(str.startswith, result),
-                           ['score', 'defeat', 'victory', 'draw'])):
+            if not any([result.startswith(possible_result)
+                        for possible_result in ['score', 'defeat', 'victory', 'draw']]):
                 raise ValueError()  # pragma: no cover
             result = result.split(' ')
 
