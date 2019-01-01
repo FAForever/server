@@ -23,5 +23,3 @@ class DummyConnection:
     class unit:
         def __init__(self):
             pass
-
-

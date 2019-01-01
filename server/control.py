@@ -33,6 +33,7 @@ class ControlServer:
         player.lobby_connection.kick()
         return web.Response()
 
+
 @asyncio.coroutine
 def init(loop, player_service, game_service):
     """

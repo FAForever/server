@@ -5,12 +5,14 @@ from aiomysql import Pool
 
 db_pool = None
 
+
 def set_pool(pool: Pool):
     """
     Set the globally used pool to the given argument
     """
     global db_pool
     db_pool = pool
+
 
 @asyncio.coroutine
 def connect(loop,
