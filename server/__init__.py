@@ -11,15 +11,13 @@ import logging
 
 import aiomeasures
 
-import server.db
-
 from . import config as config
 from .games.game import GameState, VisibilityState
 from .stats.game_stats_service import GameStatsService
 from .gameconnection import GameConnection
 from .natpacketserver import NatPacketServer
 from .lobbyconnection import LobbyConnection
-from .protocol import Protocol, QDataStreamProtocol
+from .protocol import QDataStreamProtocol
 from .servercontext import ServerContext
 from .player_service import PlayerService
 from .game_service import GameService
@@ -34,7 +32,11 @@ __copyright__ = 'Copyright (c) 2011-2015 ' + __author__
 
 
 __all__ = [
+    'GameStatsService',
+    'GameService',
+    'LadderService',
     'run_lobby_server',
+    'run_control_server',
     'games',
     'control',
     'abc',

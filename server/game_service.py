@@ -13,6 +13,7 @@ from server.players import Player
 
 from .ladder_service import LadderService
 
+
 @with_logger
 class GameService:
     """

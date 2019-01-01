@@ -4,6 +4,7 @@ from enum import IntEnum, unique
 
 from .abc.base_player import BasePlayer
 
+
 @unique
 class PlayerState(IntEnum):
     IDLE = 1,
@@ -11,6 +12,7 @@ class PlayerState(IntEnum):
     HOSTING = 3,
     JOINING = 4,
     SEARCHING_LADDER = 5,
+
 
 class Player(BasePlayer):
     """
@@ -47,7 +49,7 @@ class Player(BasePlayer):
 
         self.admin = permissionGroup >= 2
         self.mod = permissionGroup >= 1
-        
+
         self.numGames = numGames
 
         self.state = PlayerState.IDLE

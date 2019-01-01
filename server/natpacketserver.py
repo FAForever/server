@@ -4,6 +4,7 @@ from typing import Dict
 import server
 from .decorators import with_logger
 
+
 @with_logger
 class NatServerProtocol(asyncio.DatagramProtocol):
     def __init__(self, address, futures):
@@ -68,8 +69,8 @@ class NatPacketServer:
                 self._logger.warn('Could not open UDP socket %s:%s', address[0], address[1])
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        for server in self.servers:
-            server.close()
+        for server_ in self.servers:
+            server_.close()
 
     @staticmethod
     def prefixed(msg: str) -> bytes:
@@ -95,7 +96,7 @@ class NatPacketServer:
         return future
 
     def send_natpacket_to(self, msg: str, addr):
-        for server, protocol in self.servers.items():
+        for _server, protocol in self.servers.items():
             self._logger.debug(">>%s/udp: %s", addr, msg)
             protocol.transport.sendto(self.prefixed(msg), addr)
             return

@@ -16,6 +16,7 @@ from .decorators import with_logger
 
 logger = logging.getLogger(__name__)
 
+
 @unique
 class ConnectivityState(Enum):
     """
