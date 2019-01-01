@@ -144,7 +144,7 @@ class Search:
         :return:
         """
         self._logger.info("Matched %s with %s", self.player, other.player)
-        
+
         numgames = self.player.numGames
         if numgames <= config.NEWBIE_MIN_GAMES:
             mean, dev = self.raw_rating

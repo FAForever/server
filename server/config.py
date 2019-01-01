@@ -1,11 +1,7 @@
-import base64
 import logging
-import traceback
 
-import rsa
 import trueskill
 import os
-import sys
 
 LOBBY_IP = os.getenv('LOBBY_IP', '37.58.123.3')
 LOBBY_UDP_PORTS = [int(port) for port in os.getenv('LOBBY_UDP_PORTS', '7,53,67,80,123,194,547,3478,3535,6112,30351').split(',')]
