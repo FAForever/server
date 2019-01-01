@@ -14,7 +14,6 @@ import pymysql
 import requests
 
 import semver
-import geoip2.database
 
 import server
 from .gameconnection import GameConnection
@@ -27,11 +26,10 @@ import server.db as db
 from .types import Address
 from .game_service import GameService
 from .player_service import PlayerService
+from .geoip_service import GeoIpService
 from . import config
 from .config import FAF_POLICY_SERVER_BASE_URL
 from .protocol import QDataStreamProtocol
-
-gi = geoip2.database.Reader('GeoLite2-Country.mmdb')
 
 
 class ClientError(Exception):
@@ -56,10 +54,15 @@ class AuthenticationError(Exception):
 @with_logger
 class LobbyConnection:
     @timed()
-    def __init__(self, loop, context=None, games: GameService=None, players: PlayerService=None, db=None):
+    def __init__(self, loop, context,
+                 geoip: GeoIpService,
+                 games: GameService,
+                 players: PlayerService,
+                 db):
         super(LobbyConnection, self).__init__()
         self.loop = loop
         self.db = db
+        self.geoip_service = geoip
         self.game_service = games
         self.player_service = players  # type: PlayerService
         self.context = context
@@ -563,10 +566,7 @@ class LobbyConnection:
 
         # Country
         # -------
-        try:
-            self.player.country = str(gi.country(self.peer_address.host).country.iso_code)
-        except (geoip2.errors.AddressNotFoundError,ValueError):
-            self.player.country = ''
+        self.player.country = self.geoip_service.country(self.peer_address.host)
 
         ## AVATARS
         ## -------------------
