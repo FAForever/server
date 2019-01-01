@@ -6,7 +6,7 @@ RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY requirements.txt /tmp/requirements.txt
 
-RUN python3.5 -m pip install --trusted-host content.faforever.com -r /tmp/requirements.txt
+RUN python3.5 -m pip install -r /tmp/requirements.txt
 
 ADD . /code/
 WORKDIR /code/
