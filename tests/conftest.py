@@ -14,6 +14,7 @@ import sys
 
 from server.api.api_accessor import ApiAccessor
 from server.config import DB_SERVER, DB_LOGIN, DB_PORT, DB_PASSWORD
+from server.geoip_service import GeoIpService
 
 import pytest
 from unittest import mock
@@ -177,15 +178,23 @@ def players(create_player):
         joining=create_player(login='James_Kirk', id=3, port=6112, state=PlayerState.JOINING)
     )
 
-@pytest.fixture
-def player_service(loop, players, db_pool):
-    from server import PlayerService
-    return PlayerService(db_pool)
 
 @pytest.fixture
-def game_service(loop, player_service, game_stats_service):
-    from server import GameService
+def player_service(loop, players, db_pool):
+    from server.player_service import PlayerService
+    return PlayerService(db_pool)
+
+
+@pytest.fixture
+def game_service(player_service, game_stats_service):
+    from server.game_service import GameService
     return GameService(player_service, game_stats_service)
+
+
+@pytest.fixture
+def geoip_service(player_service, game_stats_service) -> GeoIpService:
+    return GeoIpService()
+
 
 @pytest.fixture()
 def api_accessor():

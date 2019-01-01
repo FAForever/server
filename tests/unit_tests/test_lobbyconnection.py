@@ -7,6 +7,7 @@ from server import ServerContext, GameState, VisibilityState, GameStatsService
 from server.connectivity import Connectivity
 from server.protocol import QDataStreamProtocol
 from server.game_service import GameService
+from server.geoip_service import GeoIpService
 from server.games import Game
 from server.lobbyconnection import LobbyConnection
 from server.player_service import PlayerService
@@ -70,9 +71,15 @@ def mock_protocol():
 
 
 @pytest.fixture
-def lobbyconnection(loop, mock_context, mock_protocol, mock_games, mock_players, mock_player):
+def mock_geoip():
+    return mock.create_autospec(GeoIpService())
+
+
+@pytest.fixture
+def lobbyconnection(loop, mock_context, mock_protocol, mock_games, mock_players, mock_player, mock_geoip):
     lc = LobbyConnection(loop,
                          context=mock_context,
+                         geoip=mock_geoip,
                          games=mock_games,
                          players=mock_players)
     lc.player = mock_player

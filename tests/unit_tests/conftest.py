@@ -18,7 +18,15 @@ def lobbythread():
 def game_connection(request, game, loop, player_service, players, game_service, transport):
     from server import GameConnection, LobbyConnection
     conn = GameConnection(loop=loop,
-                          lobby_connection=mock.create_autospec(LobbyConnection(loop)),
+                          lobby_connection=mock.create_autospec(
+                              LobbyConnection(
+                                  loop=mock.Mock(),
+                                  context=mock.Mock(),
+                                  geoip=mock.Mock(),
+                                  games=mock.Mock(),
+                                  players=mock.Mock()
+                              )
+                          ),
                           player_service=player_service,
                           games=game_service)
     conn._transport = transport

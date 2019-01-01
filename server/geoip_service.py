@@ -4,12 +4,14 @@ import asyncio
 
 from datetime import datetime
 import gzip
-import geoip2
+import geoip2.database
 import os
 import shutil
 
 from .decorators import with_logger
 from . import config
+
+import traceback
 
 
 @with_logger
@@ -18,7 +20,7 @@ class GeoIpService(object):
         self.file_path = config.GEO_IP_DATABASE_PATH
 
         # crontab: min hour day month day_of_week
-        self._update_cron = aiocron.crontab('0 0 * * *', func=self.check_update_geoip_db)
+        self._update_cron = aiocron.crontab('*/10 * * * *', func=self.check_update_geoip_db)
         asyncio.ensure_future(self.check_update_geoip_db())
 
     async def check_update_geoip_db(self) -> None:
@@ -32,9 +34,16 @@ class GeoIpService(object):
             if delta.days > config.GEO_IP_DATABASE_MAX_AGE_DAYS:
                 self._logger.info("Geoip database is out of date")
                 await self.do_update_geoip_db()
-        except FileNotFoundError:
+        except FileNotFoundError:  # pragma: no cover
             self._logger.warning("Geoip database is missing...")
             await self.do_update_geoip_db()
+        except asyncio.TimeoutError:  # pragma: no cover
+            self._logger.warning("Failed to download database file! "
+                                 "Check the network connection and try again")
+        except Exception as e:  # pragma: no cover
+            self._logger.exception("Exception in GeoIpService")
+            traceback.print_exc()
+            raise e
 
         self.load_db()
 
@@ -44,7 +53,7 @@ class GeoIpService(object):
         chunk_size = 1024
         temp_file_path = "/tmp/geoip.mmdb.gz"
         async with aiohttp.ClientSession() as session:
-            async with session.get(config.GEO_IP_DATABASE_URL) as resp:
+            async with session.get(config.GEO_IP_DATABASE_URL, timeout=60 * 20) as resp:
                 with open(temp_file_path, 'wb') as f:
                     while True:
                         chunk = await resp.content.read(chunk_size)
@@ -64,5 +73,8 @@ class GeoIpService(object):
     def country(self, address: str) -> str:
         try:
             return str(self.db.country(address).country.iso_code)
-        except (geoip2.errors.AddressNotFoundError, ValueError):
+        except geoip2.errors.AddressNotFoundError:
+            return ''
+        except ValueError as e:  # pragma: no cover
+            self._logger.exception("ValueError: %s", e)
             return ''

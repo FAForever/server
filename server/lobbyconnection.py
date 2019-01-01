@@ -57,11 +57,9 @@ class LobbyConnection:
     def __init__(self, loop, context,
                  geoip: GeoIpService,
                  games: GameService,
-                 players: PlayerService,
-                 db):
+                 players: PlayerService):
         super(LobbyConnection, self).__init__()
         self.loop = loop
-        self.db = db
         self.geoip_service = geoip
         self.game_service = games
         self.player_service = players  # type: PlayerService
