@@ -11,8 +11,8 @@ geoip2
 pytest==2.8.2
 pytest-mock==1.10.0
 pytest-cov==2.5.1
-rsa
 msgpack-python
+rsa
 trueskill
 aiocron
 marisa-trie
