@@ -11,6 +11,7 @@ import zipfile
 import os
 import shutil
 import random
+import html
 import re
 from collections import defaultdict
 from contextlib import closing
@@ -819,7 +820,7 @@ class LobbyConnection:
 
         assert isinstance(self.player, Player)
 
-        title = cgi.escape(message.get('title', ''))
+        title = html.escape(message.get('title', '') or '')
         port = message.get('gameport')
         visibility = VisibilityState.from_string(message.get('visibility'))
         if not isinstance(visibility, VisibilityState):
