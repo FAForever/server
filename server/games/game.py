@@ -13,6 +13,8 @@ import aiomysql
 from server.abc.base_game import GameConnectionState, BaseGame, InitMode
 from server.players import Player, PlayerState
 from collections import Counter
+from typing import Dict, Any, Tuple
+
 
 @unique
 class GameState(IntEnum):
@@ -138,7 +140,7 @@ class Game(BaseGame):
         self.enforce_rating = False
         self.gameOptions = {'FogOfWar': 'explored',
                             'GameSpeed': 'normal',
-                            'Victory': Victory.from_gpgnet_string('demoralization'),
+                            'Victory': Victory.DEMORALIZATION,
                             'CheatsEnabled': 'false',
                             'PrebuiltUnits': 'Off',
                             'NoRushOption': 'Off',
@@ -540,39 +542,76 @@ class Game(BaseGame):
         """
         Mark the game invalid if it has non-compliant options
         """
-        for id in self.mods.keys():
-            if id not in self.game_service.ranked_mods:
+
+        # Only allow ranked mods
+        for mod_id in self.mods.keys():
+            if mod_id not in self.game_service.ranked_mods:
                 await self.mark_invalid(ValidityState.BAD_MOD)
-                break
+                return
 
-        if self.gameOptions['Victory'] != Victory.DEMORALIZATION and self.game_mode != 'coop':
-            await self.mark_invalid(ValidityState.WRONG_VICTORY_CONDITION)
-
-        if self.has_ai or (self.gameOptions["AIReplacement"] != "Off"):
+        if self.has_ai:
             await self.mark_invalid(ValidityState.HAS_AI_PLAYERS)
-        elif self.is_multi_team:
+            return
+        if self.is_multi_team:
             await self.mark_invalid(ValidityState.MULTI_TEAM)
-        elif self.is_ffa:
+            return
+        if self.is_ffa:
             await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
-        elif not self.is_even:
+            return
+        valid_options = {
+            "AIReplacement": ("Off", ValidityState.HAS_AI_PLAYERS),
+            "FogOfWar": ("explored", ValidityState.NO_FOG_OF_WAR),
+            "CheatsEnabled": ("false", ValidityState.CHEATS_ENABLED),
+            "PrebuiltUnits": ("Off", ValidityState.PREBUILT_ENABLED),
+            "NoRushOption": ("Off", ValidityState.NORUSH_ENABLED),
+            "RestrictedCategories": (0, ValidityState.BAD_UNIT_RESTRICTIONS),
+            "TeamLock": ("locked", ValidityState.UNLOCKED_TEAMS)
+        }
+        if self._validate_game_options(valid_options) is False:
+            return
+
+        if self.game_mode in ('faf', 'ladder1v1'):
+            await self._validate_faf_game_settings()
+        elif self.game_mode == 'coop':
+            await self._validate_coop_game_settings()
+
+    async def _validate_game_options(self,
+                                     valid_options: Dict[str, Tuple[Any, ValidityState]]) -> bool:
+        for key, value in self.gameOptions.items():
+            if key in valid_options:
+                (valid_value, validity_state) = valid_options[key]
+                if self.gameOptions[key] != valid_value:
+                    await self.mark_invalid(validity_state)
+                    return False
+        return True
+
+    async def _validate_coop_game_settings(self):
+        """
+        Checks which only apply to the coop mode
+        """
+        # Note, the UNEVEN_TEAMS_NOT_RANKED state is used as a placeholder for reasons
+        # which don't exist in the database.
+        valid_options = {
+            "Victory": (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
+            "TeamSpawn": ("fixed", ValidityState.UNEVEN_TEAMS_NOT_RANKED),
+            "RevealedCivilians": ("No", ValidityState.UNEVEN_TEAMS_NOT_RANKED),
+            "Difficulty": (3, ValidityState.UNEVEN_TEAMS_NOT_RANKED),
+            "Expansion": ("true", ValidityState.UNEVEN_TEAMS_NOT_RANKED),
+        }
+        self._validate_game_options(valid_options)
+
+    async def _validate_faf_game_settings(self):
+        """
+        Checks which only apply to the faf or ladder1v1 mode
+        """
+        if not self.is_even:
             await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
-        elif self.gameOptions["FogOfWar"] != "explored":
-            await self.mark_invalid(ValidityState.NO_FOG_OF_WAR)
+            return
 
-        elif self.gameOptions["CheatsEnabled"] != "false":
-            await self.mark_invalid(ValidityState.CHEATS_ENABLED)
-
-        elif self.gameOptions["PrebuiltUnits"] != "Off":
-            await self.mark_invalid(ValidityState.PREBUILT_ENABLED)
-
-        elif self.gameOptions["NoRushOption"] != "Off":
-            await self.mark_invalid(ValidityState.NORUSH_ENABLED)
-
-        elif self.gameOptions["RestrictedCategories"] != 0:
-            await self.mark_invalid(ValidityState.BAD_UNIT_RESTRICTIONS)
-
-        elif self.gameOptions["TeamLock"] != "locked":
-            await self.mark_invalid(ValidityState.UNLOCKED_TEAMS)
+        valid_options = {
+            "Victory": (Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION)
+        }
+        self._validate_game_options(valid_options)
 
     async def launch(self):
         """
