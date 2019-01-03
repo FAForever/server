@@ -567,7 +567,7 @@ class Game(BaseGame):
             "RestrictedCategories": (0, ValidityState.BAD_UNIT_RESTRICTIONS),
             "TeamLock": ("locked", ValidityState.UNLOCKED_TEAMS)
         }
-        if self._validate_game_options(valid_options) is False:
+        if await self._validate_game_options(valid_options) is False:
             return
 
         if self.game_mode in ('faf', 'ladder1v1'):
@@ -598,7 +598,7 @@ class Game(BaseGame):
             "Difficulty": (3, ValidityState.UNEVEN_TEAMS_NOT_RANKED),
             "Expansion": ("true", ValidityState.UNEVEN_TEAMS_NOT_RANKED),
         }
-        self._validate_game_options(valid_options)
+        await self._validate_game_options(valid_options)
 
     async def _validate_faf_game_settings(self):
         """
@@ -611,7 +611,7 @@ class Game(BaseGame):
         valid_options = {
             "Victory": (Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION)
         }
-        self._validate_game_options(valid_options)
+        await self._validate_game_options(valid_options)
 
     async def launch(self):
         """
