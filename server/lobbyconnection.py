@@ -55,9 +55,9 @@ class AuthenticationError(Exception):
 class LobbyConnection:
     @timed()
     def __init__(self, loop, context,
-                 geoip: GeoIpService,
                  games: GameService,
-                 players: PlayerService):
+                 players: PlayerService,
+                 geoip: GeoIpService):
         super(LobbyConnection, self).__init__()
         self.loop = loop
         self.geoip_service = geoip

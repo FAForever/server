@@ -54,10 +54,10 @@ else:
 
 
 def run_lobby_server(address: (str, int),
-                     geoip_service: GeoIpService,
                      player_service: PlayerService,
                      games: GameService,
-                     loop):
+                     loop,
+                     geoip_service: GeoIpService):
     """
     Run the lobby server
 
