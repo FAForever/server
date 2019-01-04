@@ -19,7 +19,7 @@ async def test_check_update(geoip_service):
 
     await geoip_service.check_update_geoip_db()
 
-    geoip_service.do_update_geoip_db.assert_called_once_with()
+    geoip_service.download_geoip_db.assert_called_once_with()
 
 
 async def test_do_update(geoip_service, loop):
@@ -47,7 +47,7 @@ async def test_do_update(geoip_service, loop):
     if os.path.isfile(path):
         os.remove(path)
     # Need to call it like this because the function is mocked
-    await GeoIpService.do_update_geoip_db(geoip_service)
+    await GeoIpService.download_geoip_db(geoip_service)
     assert os.path.isfile(path) is True
     with open(path) as f:
         assert f.read() == random_text

@@ -64,7 +64,7 @@ def game_stats_service():
 @pytest.fixture
 def geoip_service():
     service = GeoIpService()
-    service.do_update_geoip_db = CoroMock()
+    service.download_geoip_db = CoroMock()
     return service
 
 
