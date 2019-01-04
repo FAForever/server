@@ -1,7 +1,6 @@
 import asyncio
 from collections import defaultdict
 import time
-import logging
 from .abc.base_game import GameConnectionState
 from .connectivity import ConnectivityState
 from .decorators import with_logger, timed
@@ -11,9 +10,6 @@ from .players import Player, PlayerState
 from .player_service import PlayerService
 from .protocol import GpgNetServerProtocol
 import server.db as db
-
-
-logger = logging.getLogger(__name__)
 
 
 class AuthenticationError(Exception):
@@ -40,8 +36,7 @@ class GameConnection(GpgNetServerProtocol):
         :return:
         """
         super().__init__()
-        self.log = logging.getLogger(__name__)
-        self.log.debug('GameConnection initializing')
+        self._logger.debug('GameConnection initializing')
 
         self.lobby_connection = lobby_connection
         self._state = GameConnectionState.INITIALIZING
@@ -114,7 +109,7 @@ class GameConnection(GpgNetServerProtocol):
         elif state == PlayerState.JOINING:
             pass
         else:
-            self.log.exception("Unknown PlayerState")
+            self._logger.exception("Unknown PlayerState")
             self.abort()
 
     async def _handle_lobby_state(self):
@@ -140,10 +135,10 @@ class GameConnection(GpgNetServerProtocol):
 
                 for peer in self.game.connections:
                     if peer != self and peer.player != self.game.host:
-                        self.log.debug("%s connecting to %s", self.player, peer)
+                        self._logger.debug("%s connecting to %s", self.player, peer)
                         asyncio.ensure_future(self.connect_to_peer(peer))
         except Exception as e:  # pragma: no cover
-            self.log.exception(e)
+            self._logger.exception(e)
 
     @timed(limit=0.1)
     async def on_message_received(self, message):
@@ -160,7 +155,7 @@ class GameConnection(GpgNetServerProtocol):
                     waiter.set_result(message)
                     self._waiters[cmd_id].remove(waiter)
         except ValueError as ex:  # pragma: no cover
-            self.log.error("Garbage command %s %s", ex, message)
+            self._logger.error("Garbage command %s %s", ex, message)
 
     async def connect_to_host(self, peer: "GameConnection"):
         """
@@ -207,21 +202,21 @@ class GameConnection(GpgNetServerProtocol):
         peer = peer_connection.connectivity.result  # type: ConnectivityResult
         if peer.state == ConnectivityState.PUBLIC \
                 and own.state == ConnectivityState.PUBLIC:
-            self.log.debug("Connecting %s to host %s directly", self, peer_connection)
+            self._logger.debug("Connecting %s to host %s directly", self, peer_connection)
             return own.addr, peer.addr
         elif peer.state == ConnectivityState.STUN or own.state == ConnectivityState.STUN:
-            self.log.debug("Connecting %s to host %s using STUN", self, peer_connection)
+            self._logger.debug("Connecting %s to host %s using STUN", self, peer_connection)
             (own_addr, peer_addr) = await self.STUN(peer_connection)
             if peer_addr is None or own_addr is None:
-                self.log.debug("STUN between %s %s failed", self, peer_connection)
-                self.log.debug("Resolved addresses: %s, %s", peer_addr, own_addr)
+                self._logger.debug("STUN between %s %s failed", self, peer_connection)
+                self._logger.debug("Resolved addresses: %s, %s", peer_addr, own_addr)
                 if self.player.id < peer_connection.player.id and own.state == ConnectivityState.STUN:
                     return await self.TURN(peer_connection)
                 elif peer.state == ConnectivityState.STUN:
                     return tuple(reversed(await peer_connection.TURN(self)))
             else:
                 return own_addr, peer_addr
-        self.log.error("Connection blocked")
+        self._logger.error("Connection blocked")
 
     async def TURN(self, peer: 'GameConnection'):
         addr = await self.connectivity.create_binding(peer.connectivity)
@@ -265,16 +260,16 @@ class GameConnection(GpgNetServerProtocol):
         try:
             await COMMAND_HANDLERS[command](self, *args)
         except KeyError:
-            self.log.exception("Unrecognized command %s: %s from player %s",
+            self._logger.exception("Unrecognized command %s: %s from player %s",
                                command, args, self.player)
         except (TypeError, ValueError) as e:
-            self.log.exception("Bad command arguments: %s", e)
+            self._logger.exception("Bad command arguments: %s", e)
         except AuthenticationError as e:
-            self.log.exception("Authentication error: %s", e)
+            self._logger.exception("Authentication error: %s", e)
             self.abort()
         except Exception as e:  # pragma: no cover
-            self.log.exception(e)
-            self.log.exception("Something awful happened in a game thread!")
+            self._logger.exception(e)
+            self._logger.exception("Something awful happened in a game thread!")
             self.abort()
 
     async def handle_desync(self):  # pragma: no cover
@@ -367,7 +362,7 @@ class GameConnection(GpgNetServerProtocol):
 
             await self.game.add_result(self.player, army, result[0], int(result[1]))
         except (KeyError, ValueError):  # pragma: no cover
-            self.log.warning("Invalid result for %s reported: %s", army, result)
+            self._logger.warning("Invalid result for %s reported: %s", army, result)
 
     async def handle_operation_complete(self, army, secondary, delta):
         if not int(army) == 1:
@@ -381,7 +376,7 @@ class GameConnection(GpgNetServerProtocol):
                                  self.game.map_file_path)
             row = await cursor.fetchone()
             if not row:
-                self.log.debug("can't find coop map: %s", self.game.map_file_path)
+                self._logger.debug("can't find coop map: %s", self.game.map_file_path)
                 return
             (mission,) = row
 
@@ -476,16 +471,16 @@ class GameConnection(GpgNetServerProtocol):
                         try:
                             peer.send_DisconnectFromPeer(self.player.id)
                         except Exception as ex:  # pragma no cover
-                            self.log.exception("peer_sendDisconnectFromPeer failed for player %i", self.player.id)
+                            self._logger.exception("peer_sendDisconnectFromPeer failed for player %i", self.player.id)
             self._state = GameConnectionState.ENDED
             self.loop.create_task(self.game.remove_game_connection(self))
             self._mark_dirty()
-            self.log.debug("%s.abort(%s)", self, logspam)
+            self._logger.debug("%s.abort(%s)", self, logspam)
             self.player.state = PlayerState.IDLE
             del self.player.game
             del self.player.game_connection
         except Exception as ex:  # pragma: no cover
-            self.log.debug("Exception in abort(): %s", ex)
+            self._logger.debug("Exception in abort(): %s", ex)
         finally:
             self.lobby_connection.game_connection = None
 
@@ -493,7 +488,7 @@ class GameConnection(GpgNetServerProtocol):
         try:
             await self.game.remove_game_connection(self)
         except Exception as e:  # pragma: no cover
-            self.log.exception(e)
+            self._logger.exception(e)
         finally:
             self.abort()
 
