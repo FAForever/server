@@ -1,10 +1,12 @@
 from aiohttp import web
-from unittest.mock import Mock
+import gzip
 import os
 import random
 import string
+from unittest.mock import Mock
 
 import server.config
+from server.geoip_service import GeoIpService
 
 
 async def test_check_update(geoip_service):
@@ -20,24 +22,32 @@ async def test_check_update(geoip_service):
     geoip_service.do_update_geoip_db.assert_called_once_with()
 
 
-async def test_do_update(geoip_service):
+async def test_do_update(geoip_service, loop):
+    # Config variables
     PORT = 8137
     path = '/tmp/fake_db.mmdb'
-    with open(path, 'a'):
-        os.utime(path, (0, 0))
     server.config.GEO_IP_DATABASE_URL = 'http://localhost:{}'.format(PORT)
     geoip_service.file_path = '/tmp/fake_db.mmdb'
-    random_text = ''.join(random.choice(string.printable) for i in range(20))
+    random_text = ''.join(random.choice(string.ascii_letters) for i in range(20))
 
+    # Set up local http server for geoip service to connect to
     async def file_download(request):
-        return web.Response(text=random_text)
+        resp = web.StreamResponse()
+        await resp.prepare(request)
+        await resp.write(gzip.compress(random_text.encode()))
+        await resp.write_eof()
+        return resp
 
     app = web.Application()
     app.add_routes([web.get('/', file_download)])
-    web.run_app(app, port=PORT)
 
-    assert os.path.isfile(path) is False
-    await geoip_service.do_update_geoip_db()
+    await loop.create_server(app.make_handler(), '127.0.0.1', PORT)
+
+    # Test geoip update
+    if os.path.isfile(path):
+        os.remove(path)
+    # Need to call it like this because the function is mocked
+    await GeoIpService.do_update_geoip_db(geoip_service)
     assert os.path.isfile(path) is True
     with open(path) as f:
         assert f.read() == random_text
