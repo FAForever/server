@@ -1,5 +1,4 @@
 import asyncio
-import socket
 from typing import Union
 from unittest import mock
 
@@ -7,8 +6,8 @@ from typing import List
 from unittest.mock import call
 
 from server.decorators import with_logger
-from server.protocol import QDataStreamProtocol
 from server.protocol.gpgnet import GpgNetClientProtocol
+
 
 @with_logger
 class UDPClientProtocol:
@@ -32,8 +31,9 @@ class UDPClientProtocol:
     def sendto(self, msg: str, addr):
         self.transport.sendto(msg.encode(), addr)
 
+
 @with_logger
-class TestClient(GpgNetClientProtocol):
+class ClientTest(GpgNetClientProtocol):
     """
     Client used for acting as a GPGNet client (The game itself).
 
@@ -42,7 +42,7 @@ class TestClient(GpgNetClientProtocol):
     send/receive out-of-band UDP messages.
     """
     def __init__(self, loop, process_nat_packets=True, proto=None):
-        super(TestClient, self).__init__()
+        super(ClientTest, self).__init__()
         self.process_nat_packets = process_nat_packets
         self.messages = mock.MagicMock()
         self.udp_messages = mock.MagicMock()
