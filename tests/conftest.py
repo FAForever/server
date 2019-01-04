@@ -18,6 +18,7 @@ from server.config import DB_SERVER, DB_LOGIN, DB_PORT, DB_PASSWORD
 import pytest
 from unittest import mock
 from trueskill import Rating
+from tests import CoroMock
 
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -141,6 +142,7 @@ def game(players):
     from server.abc.base_game import InitMode
     mock_parent = mock.Mock()
     game = mock.create_autospec(spec=Game(1, mock_parent, mock.Mock()))
+    game.remove_game_connection = CoroMock()
     players.hosting.getGame = mock.Mock(return_value=game)
     players.joining.getGame = mock.Mock(return_value=game)
     players.peer.getGame = mock.Mock(return_value=game)
