@@ -66,7 +66,7 @@ class GeoIpService(object):
                 shutil.copyfileobj(f_in, f_out)
         self._logger.info("New database download complete")
 
-    def load_db(self) -> None:
+    def load_db(self) -> None:  # pragma: no cover
         """ Loads the database into memory. """
         self.db = geoip2.database.Reader(self.file_path)
 

@@ -5,14 +5,17 @@ from server import GameStatsService, LobbyConnection
 from server.abc.base_game import BaseGame
 from server.games import Game
 from server.gameconnection import GameConnection, GameConnectionState
+from server.geoip_service import GeoIpService
 from server.players import Player
 from tests import CoroMock
 
-@pytest.fixture()
+
+@pytest.fixture
 def lobbythread():
     return mock.Mock(
         sendJSON=lambda obj: None
     )
+
 
 @pytest.fixture
 def game_connection(request, game, loop, player_service, players, game_service, transport):
@@ -51,10 +54,17 @@ def mock_game_connection(state=GameConnectionState.INITIALIZING, player=None):
     return gc
 
 
-@pytest.fixture()
+@pytest.fixture
 def game_stats_service():
     service = mock.Mock(spec=GameStatsService)
     service.process_game_stats = CoroMock()
+    return service
+
+
+@pytest.fixture
+def geoip_service():
+    service = GeoIpService()
+    service.do_update_geoip_db = CoroMock()
     return service
 
 
@@ -78,6 +88,7 @@ def connections(loop, player_service, game_service, transport, game):
     return mock.Mock(
         make_connection=make_connection
     )
+
 
 def add_connected_player(game: Game, player):
     game.game_service.player_service[player.id] = player
@@ -103,6 +114,7 @@ def add_connected_players(game: BaseGame, players):
         game.set_player_option(player.id, 'Faction', 0)
         game.set_player_option(player.id, 'Color', 0)
     game.host = players[0]
+
 
 def add_players(gameobj: BaseGame, n: int, team: int=None):
     game = gameobj
