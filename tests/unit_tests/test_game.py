@@ -9,10 +9,14 @@ from trueskill import Rating
 
 from server.games.game import Game, GameState, GameError, Victory, VisibilityState, ValidityState
 from server.games import CustomGame
+from server.games.coop import CoopGame
 from server.gameconnection import GameConnection, GameConnectionState
 from server.players import Player
 from tests import CoroMock
 from tests.unit_tests.conftest import mock_game_connection, add_players, add_connected_players, add_connected_player
+
+from typing import List, Tuple, Any
+
 
 @pytest.yield_fixture
 def game(loop, game_service, game_stats_service):
@@ -20,15 +24,24 @@ def game(loop, game_service, game_stats_service):
     yield game
     loop.run_until_complete(game.clear_data())
 
+
+@pytest.yield_fixture
+def coop_game(loop, game_service, game_stats_service):
+    game = CoopGame(42, game_service, game_stats_service)
+    yield game
+    loop.run_until_complete(game.clear_data())
+
+
 @pytest.yield_fixture
 def custom_game(loop, game_service, game_stats_service):
     game = CustomGame(42, game_service, game_stats_service)
     yield game
     loop.run_until_complete(game.clear_data())
 
+
 def test_initialization(game: Game):
     assert game.state == GameState.INITIALIZING
-    assert game.enforce_rating == False
+    assert game.enforce_rating is False
 
 
 def test_instance_logging(game_stats_service):
@@ -41,25 +54,47 @@ def test_instance_logging(game_stats_service):
 
 async def test_validate_game_settings(game: Game):
     settings = [
-        ('Victory', Victory.SANDBOX, Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION),
-        ('FogOfWar', 'none', 'explored', ValidityState.NO_FOG_OF_WAR),
-        ('CheatsEnabled', 'true', 'false', ValidityState.CHEATS_ENABLED),
-        ('PrebuiltUnits', 'On', 'Off', ValidityState.PREBUILT_ENABLED),
-        ('NoRushOption', 20, 'Off', ValidityState.NORUSH_ENABLED),
-        ('RestrictedCategories', 1, 0, ValidityState.BAD_UNIT_RESTRICTIONS),
-        ('TeamLock', 'unlocked', 'locked', ValidityState.UNLOCKED_TEAMS)
+        ('Victory', Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
+        ('FogOfWar', 'none', ValidityState.NO_FOG_OF_WAR),
+        ('CheatsEnabled', 'true', ValidityState.CHEATS_ENABLED),
+        ('PrebuiltUnits', 'On', ValidityState.PREBUILT_ENABLED),
+        ('NoRushOption', 20, ValidityState.NORUSH_ENABLED),
+        ('RestrictedCategories', 1, ValidityState.BAD_UNIT_RESTRICTIONS),
+        ('TeamLock', 'unlocked', ValidityState.UNLOCKED_TEAMS)
     ]
 
-    for data in settings:
-        key, value, default, expected = data
-        game.gameOptions[key] = value
-        await game.validate_game_settings()
-        assert game.validity is expected
-        game.gameOptions[key] = default
+    await check_game_settings(game, settings)
 
     game.validity = ValidityState.VALID
     await game.validate_game_settings()
     assert game.validity is ValidityState.VALID
+
+
+async def test_validate_game_settings_coop(coop_game: Game):
+    settings = [
+        ('Victory', Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION),
+        ('TeamSpawn', 'open', ValidityState.UNEVEN_TEAMS_NOT_RANKED),
+        ('RevealedCivilians', 'Yes', ValidityState.UNEVEN_TEAMS_NOT_RANKED),
+        ('Difficulty', 1, ValidityState.UNEVEN_TEAMS_NOT_RANKED),
+        ('Expansion', 'false', ValidityState.UNEVEN_TEAMS_NOT_RANKED),
+    ]
+
+    await check_game_settings(coop_game, settings)
+
+    coop_game.validity = ValidityState.VALID
+    await coop_game.validate_game_settings()
+    assert coop_game.validity is ValidityState.VALID
+
+
+async def check_game_settings(game: Game, settings: List[Tuple[str, Any, ValidityState]]):
+    for data in settings:
+        key, value, expected = data
+        old = game.gameOptions.get(key)
+        game.gameOptions[key] = value
+        await game.validate_game_settings()
+        assert game.validity is expected
+        game.gameOptions[key] = old
+
 
 async def test_ffa_not_rated(game):
     game.state = GameState.LOBBY
