@@ -61,9 +61,12 @@ class GeoIpService(object):
                             break
                         f.write(chunk)
         # Unzip the archive and overwrite the old file
-        with gzip.open(temp_file_path, 'rb') as f_in:
-            with open(self.file_path, 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
+        try:
+            with gzip.open(temp_file_path, 'rb') as f_in:
+                with open(self.file_path, 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+        except OSError:  # pragma: no cover
+            self._logger.warning("Failed to unzip downloaded file!")
         self._logger.info("New database download complete")
 
     def load_db(self) -> None:  # pragma: no cover
