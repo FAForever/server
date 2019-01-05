@@ -1,13 +1,14 @@
-FROM python:3.6-alpine
+FROM python:3.6-slim
 
-# Apk install and cleanup temporary files afterwards
-# openssl-dev for pycrypto
-# lua5.1-dev for lupa
-RUN apk update && \
-    apk add \
+# Apt-install mysql client and cleanup temporary files afterwards
+# Need pkg-config for building lupa v1.4
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends \
         mysql-client \
-        git vim bash \
-        g++ musl-dev libffi-dev openssl-dev lua5.1-dev
+        git vim \
+        build-essential liblua5.2-dev pkg-config && \
+    apt-get clean
+RUN rm -rf  /tmp/* /var/tmp/*
 
 COPY requirements.txt /tmp/requirements.txt
 
