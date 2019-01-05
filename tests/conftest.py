@@ -192,7 +192,7 @@ def game_service(player_service, game_stats_service):
 
 
 @pytest.fixture
-def geoip_service(player_service, game_stats_service) -> GeoIpService:
+def geoip_service() -> GeoIpService:
     return GeoIpService()
 
 
