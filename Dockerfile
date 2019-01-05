@@ -8,7 +8,7 @@ RUN apt-get install -y --no-install-recommends \
         git vim \
         build-essential liblua5.2-dev pkg-config && \
     apt-get clean
-RUN rm -rf  /tmp/* /var/tmp/*
+RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY requirements.txt /tmp/requirements.txt
 
