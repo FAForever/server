@@ -27,6 +27,7 @@ async def test_check_update(fake_geoip_service, fake_geoip_path):
         os.utime(fake_geoip_path, (0, 0))
     server.config.GEO_IP_DATABASE_MAX_AGE_DAYS = 32
     fake_geoip_service.load_db = Mock()
+    fake_geoip_service.download_geoip_db.reset_mock()
 
     await fake_geoip_service.check_update_geoip_db()
 
