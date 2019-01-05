@@ -8,6 +8,7 @@ from datetime import datetime
 import aiocron
 import aiohttp
 import geoip2.database
+from maxminddb.errors import InvalidDatabaseError
 
 from . import config
 from .decorators import with_logger
@@ -25,6 +26,7 @@ class GeoIpService(object):
 
     def __init__(self):
         self.file_path = config.GEO_IP_DATABASE_PATH
+        self.db = None
 
         # crontab: min hour day month day_of_week
         self._update_cron = aiocron.crontab('*/10 * * * *', func=self.check_update_geoip_db)
@@ -95,22 +97,28 @@ class GeoIpService(object):
                             break
                         f.write(chunk)
 
-    def load_db(self) -> None:  # pragma: no cover
+    def load_db(self) -> None:
         """
             Loads the database into memory.
         """
-
-        self.db = geoip2.database.Reader(self.file_path)
+        try:
+            self.db = geoip2.database.Reader(self.file_path)
+        except InvalidDatabaseError:
+            self._logger.warning("Failed to load maxmind db! Maybe the download was interrupted")
+            pass
 
     def country(self, address: str) -> str:
         """
             Look up an ip address in the db and return it's country code.
         """
+        default_value = ''
+        if self.db is None:
+            return default_value
 
         try:
             return str(self.db.country(address).country.iso_code)
         except geoip2.errors.AddressNotFoundError:
-            return ''
+            return default_value
         except ValueError as e:  # pragma: no cover
             self._logger.exception("ValueError: %s", e)
-            return ''
+            return default_value
