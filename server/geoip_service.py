@@ -89,7 +89,7 @@ class GeoIpService(object):
 
         chunk_size = 1024
         async with aiohttp.ClientSession() as session:
-            async with session.get(config.GEO_IP_DATABASE_URL, timeout=60 * 20) as resp:
+            async with session.get(url, timeout=60 * 20) as resp:
                 with open(file_path, 'wb') as f:
                     while True:
                         chunk = await resp.content.read(chunk_size)
