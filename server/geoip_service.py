@@ -1,17 +1,16 @@
-import aiocron
-import aiohttp
 import asyncio
-
-from datetime import datetime
 import gzip
-import geoip2.database
 import os
 import shutil
-
-from .decorators import with_logger
-from . import config
-
 import traceback
+from datetime import datetime
+
+import aiocron
+import aiohttp
+import geoip2.database
+
+from . import config
+from .decorators import with_logger
 
 
 @with_logger

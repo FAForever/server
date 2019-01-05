@@ -1,4 +1,3 @@
-from aiohttp import web
 import gzip
 import os
 import random
@@ -6,6 +5,7 @@ import string
 from unittest.mock import Mock
 
 import server.config
+from aiohttp import web
 from server.geoip_service import GeoIpService
 
 
