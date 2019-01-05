@@ -29,7 +29,8 @@ class GeoIpService(object):
         self.db = None
 
         # crontab: min hour day month day_of_week
-        self._update_cron = aiocron.crontab('*/10 * * * *', func=self.check_update_geoip_db)
+        # Run every Wednesday because GeoLite2 is updated on Tuesdays
+        self._update_cron = aiocron.crontab('0 0 0 * * WED', func=self.check_update_geoip_db)
         asyncio.ensure_future(self.check_update_geoip_db())
 
     async def check_update_geoip_db(self) -> None:
