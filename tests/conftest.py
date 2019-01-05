@@ -193,7 +193,8 @@ def game_service(player_service, game_stats_service):
 
 @pytest.fixture
 @mock.patch("server.geoip_service.aiocron")
-def geoip_service(_mock) -> GeoIpService:
+@mock.patch("server.geoip_service.asyncio.ensure_future")
+def geoip_service(_1, _2) -> GeoIpService:
     return GeoIpService()
 
 
