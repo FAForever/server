@@ -56,3 +56,5 @@ FORCE_STEAM_LINK = os.getenv('FORCE_STEAM_LINK', 'false').lower() == 'true'
 
 NEWBIE_BASE_MEAN = int(os.getenv('NEWBIE_BASE_MEAN', 500))
 NEWBIE_MIN_GAMES = int(os.getenv('NEWBIE_MIN_GAMES', 10))
+
+CONTROL_SERVER_PORT = int(os.getenv('CONTROL_SERVER_PORT', 4000))
