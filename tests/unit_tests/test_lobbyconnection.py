@@ -236,6 +236,63 @@ def test_send_mod_list(mocker, lobbyconnection, mock_games):
     protocol.send_messages.assert_called_with(mock_games.all_game_modes())
 
 
+async def test_send_coop_maps(mocker, lobbyconnection):
+    pytest.skip("requires test data from faf-db:v63 which doesn't exist yet")
+
+    protocol = mocker.patch.object(lobbyconnection, 'protocol')
+
+    await lobbyconnection.send_coop_maps()
+
+    args = protocol.send_messages.call_args_list
+    print(args)
+    assert len(args) == 1
+    coop_maps = args[0][0][0]
+    for info in coop_maps:
+        del info['uid']
+    assert coop_maps == [
+        {
+            "command": "coop_info",
+            "name": "FA Campaign map",
+            "description": "A map from the FA campaign",
+            "filename": "maps/scmp_coop_123.v0002.zip",
+            "featured_mod": "coop",
+            "type": "FA Campaign"
+        },
+        {
+            "command": "coop_info",
+            "name": "Aeon Campaign map",
+            "description": "A map from the Aeon campaign",
+            "filename": "maps/scmp_coop_124.v0000.zip",
+            "featured_mod": "coop",
+            "type": "Aeon Vanilla Campaign"
+        },
+        {
+            "command": "coop_info",
+            "name": "Cybran Campaign map",
+            "description": "A map from the Cybran campaign",
+            "filename": "maps/scmp_coop_125.v0001.zip",
+            "featured_mod": "coop",
+            "type": "Cybran Vanilla Campaign"
+        },
+        {
+            "command": "coop_info",
+            "name": "UEF Campaign map",
+            "description": "A map from the UEF campaign",
+            "filename": "maps/scmp_coop_126.v0099.zip",
+            "featured_mod": "coop",
+            "type": "UEF Vanilla Campaign"
+        },
+        {
+            "command": "coop_info",
+            "name": "Prothyon - 16",
+            "description": "Prothyon - 16 is a secret UEF facility...",
+            "filename": "maps/prothyon16.v0005.zip",
+            "featured_mod": "coop",
+            "type": "Custom Missions"
+        }
+    ]
+
+
 @asyncio.coroutine
 def test_command_admin_closelobby(mocker, lobbyconnection):
     mocker.patch.object(lobbyconnection, 'protocol')

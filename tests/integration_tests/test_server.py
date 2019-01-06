@@ -3,7 +3,7 @@ import hashlib
 
 from server import VisibilityState
 
-from tests.integration_tests.testclient import TestClient
+from tests.integration_tests.testclient import ClientTest
 
 slow = pytest.mark.slow
 
@@ -139,7 +139,7 @@ async def test_public_host(loop, lobby_server, player_service):
                             visibility=VisibilityState.to_string(VisibilityState.PUBLIC)))
     await proto.drain()
 
-    with TestClient(loop=loop, process_nat_packets=True, proto=proto) as client:
+    with ClientTest(loop=loop, process_nat_packets=True, proto=proto) as client:
         await client.listen_udp()
         client.send_GameState(['Idle'])
         client.send_GameState(['Lobby'])
