@@ -44,6 +44,20 @@ def test_game_info_invalid():
     }
 
 
+@pytest.fixture()
+def test_game_info_none_title():
+    return {
+        'title': None,
+        'gameport': '8000',
+        'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
+        'mod': 'faf',
+        'mapname': 'scmp_007',
+        'password': None,
+        'lobby_rating': 1,
+        'options': []
+    }
+
+
 @pytest.fixture
 def mock_player():
     return mock.create_autospec(Player(login='Dummy', id=42))
@@ -204,6 +218,14 @@ def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
     assert mock_games.create_game.mock_calls == []
     lobbyconnection.sendJSON.assert_called_once_with(
         dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
+
+
+def test_command_game_host_none_title(lobbyconnection,
+                                      mock_games,
+                                      test_game_info_none_title):
+
+    lobbyconnection.command_game_host(test_game_info_none_title)
+    assert(lobbyconnection.game_connection.game.name == "%s' game".format(lobbyconnection.player.login))
 
 
 def test_abort(loop, mocker, lobbyconnection):
