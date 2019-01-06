@@ -261,7 +261,7 @@ class GameConnection(GpgNetServerProtocol):
             await COMMAND_HANDLERS[command](self, *args)
         except KeyError:
             self._logger.exception("Unrecognized command %s: %s from player %s",
-                               command, args, self.player)
+                                   command, args, self.player)
         except (TypeError, ValueError) as e:
             self._logger.exception("Bad command arguments: %s", e)
         except AuthenticationError as e:
