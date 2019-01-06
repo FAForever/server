@@ -10,6 +10,7 @@ import urllib.request
 import requests
 
 import pymysql
+import semver
 import server
 import server.db as db
 
