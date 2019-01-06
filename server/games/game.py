@@ -87,6 +87,10 @@ class ValidityState(IntEnum):
     UNLOCKED_TEAMS = 17
     MULTI_TEAM = 18
     HAS_AI_PLAYERS = 19
+    CIVILIANS_REVEALED = 20
+    TOO_EASY = 21
+    EXPANSION_DISABLED = 22
+    SPAWN_NOT_FIXED = 23
 
 
 class GameError(Exception):
@@ -589,14 +593,13 @@ class Game(BaseGame):
         """
         Checks which only apply to the coop mode
         """
-        # Note, the UNEVEN_TEAMS_NOT_RANKED state is used as a placeholder for reasons
-        # which don't exist in the database.
+
         valid_options = {
             "Victory": (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
-            "TeamSpawn": ("fixed", ValidityState.UNEVEN_TEAMS_NOT_RANKED),
-            "RevealedCivilians": ("No", ValidityState.UNEVEN_TEAMS_NOT_RANKED),
-            "Difficulty": (3, ValidityState.UNEVEN_TEAMS_NOT_RANKED),
-            "Expansion": ("true", ValidityState.UNEVEN_TEAMS_NOT_RANKED),
+            "TeamSpawn": ("fixed", ValidityState.SPAWN_NOT_FIXED),
+            "RevealedCivilians": ("No", ValidityState.CIVILIANS_REVEALED),
+            "Difficulty": (3, ValidityState.TOO_EASY),
+            "Expansion": ("true", ValidityState.EXPANSION_DISABLED),
         }
         await self._validate_game_options(valid_options)
 
