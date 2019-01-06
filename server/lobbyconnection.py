@@ -2,55 +2,33 @@ import asyncio
 
 import hashlib
 import cgi
-import base64
-import ipaddress
 import json
 import urllib.parse
 import urllib.request
-import zipfile
-import os
-import shutil
 import random
-import re
-from collections import defaultdict
-from contextlib import closing
-from typing import List
-from typing import Mapping
-from typing import Optional
 
 import datetime
 
-import aiohttp
 import pymysql
 import requests
-import rsa
-import time
-import smtplib
-import string
-import email
-from email.mime.text import MIMEText
 
 import semver
-from Crypto import Random
-from Crypto.Random.random import choice
-from Crypto.Cipher import Blowfish
-from Crypto.Cipher import AES
 import geoip2.database
 
 import server
-from server import GameConnection
-from server.connectivity import Connectivity, ConnectivityState
-from server.matchmaker import Search
-from server.decorators import timed, with_logger
-from server.games.game import GameState, VisibilityState
-from server.players import Player, PlayerState
+from .gameconnection import GameConnection
+from .connectivity import Connectivity, ConnectivityState
+from .matchmaker import Search
+from .decorators import timed, with_logger
+from .games.game import GameState, VisibilityState
+from .players import Player, PlayerState
 import server.db as db
-from server.types import Address
+from .types import Address
 from .game_service import GameService
 from .player_service import PlayerService
 from . import config
-from .config import VERIFICATION_HASH_SECRET, VERIFICATION_SECRET_KEY, FAF_POLICY_SERVER_BASE_URL
-from server.protocol import QDataStreamProtocol
+from .config import FAF_POLICY_SERVER_BASE_URL
+from .protocol import QDataStreamProtocol
 
 gi = geoip2.database.Reader('GeoLite2-Country.mmdb')
 
@@ -165,7 +143,7 @@ class LobbyConnection:
         except (KeyError, ValueError) as ex:
             self._logger.exception(ex)
             self.abort("Garbage command: {}".format(message))
-        except Exception as ex:
+        except Exception as ex:  # pragma: no cover
             self.protocol.send_message({'command': 'invalid'})
             self._logger.exception(ex)
             self.abort("Error processing command")
@@ -175,40 +153,6 @@ class LobbyConnection:
 
     def command_pong(self, msg):
         pass
-
-    @staticmethod
-    def generate_expiring_request(lifetime, plaintext):
-        """
-        Generate the parameters needed for an expiring email request with the given payload.
-        Payload should be comma-delimited, and the consumer should expect to find and verify
-        a timestamp and nonce appended to the given plaintext.
-        """
-
-        # Add nonce
-        rng = Random.new()
-        nonce = ''.join(choice(string.ascii_uppercase + string.digits) for _ in range(256))
-
-        expiry = str(time.time() + lifetime)
-
-        plaintext = (plaintext + "," + expiry + "," + nonce).encode('utf-8')
-
-        # Pad the plaintext to the next full block with commas, because I can't be arsed to
-        # write an actually clever parser.
-        bs = Blowfish.block_size
-        paddinglen = bs - (len(plaintext) % bs)
-        plaintext += b',' * paddinglen
-
-        # Generate random IV of size one block.
-        iv = rng.read(bs)
-        cipher = Blowfish.new(VERIFICATION_SECRET_KEY, Blowfish.MODE_CBC, iv)
-        ciphertext = cipher.encrypt(plaintext)
-
-        # Generate the verification hash.
-        verification = hashlib.sha256()
-        verification.update(plaintext + VERIFICATION_HASH_SECRET.encode('utf-8'))
-        verify_hex = verification.hexdigest()
-
-        return base64.urlsafe_b64encode(iv), base64.urlsafe_b64encode(ciphertext), verify_hex
 
     @asyncio.coroutine
     def command_create_account(self, message):
@@ -226,9 +170,18 @@ class LobbyConnection:
 
             for i in range(0, cursor.rowcount):
                 section, description = yield from cursor.fetchone()
-                reply.append( {"command": "tutorials_info", "section": section, "description": description})
+                reply.append({
+                    "command": "tutorials_info",
+                    "section": section,
+                    "description": description}
+                )
 
-            yield from cursor.execute("SELECT tutorial_sections.`section`, `name`, `url`, `tutorials`.`description`, `map` FROM `tutorials` LEFT JOIN  tutorial_sections ON tutorial_sections.id = tutorials.section ORDER BY `tutorials`.`section`, name")
+            yield from cursor.execute(
+                """ SELECT tutorial_sections.`section`, `name`, `url`, `tutorials`.`description`, `map`
+                    FROM `tutorials`
+                    LEFT JOIN tutorial_sections ON tutorial_sections.id = tutorials.section
+                    ORDER BY `tutorials`.`section`, name"""
+            )
 
             for i in range(0, cursor.rowcount):
                 section, tutorial_name, url, description, map_name = yield from cursor.fetchone()
@@ -243,28 +196,26 @@ class LobbyConnection:
             cursor = await conn.cursor()
 
             await cursor.execute("SELECT name, description, filename, type, id FROM `coop_map`")
-
+            rows = await cursor.fetchall()
             maps = []
-            for i in range(0, cursor.rowcount):
-                name, description, filename, type, id = await cursor.fetchone()
-                jsonToSend = {"command": "coop_info", "name": name, "description": description,
-                              "filename": filename, "featured_mod": "coop"}
-                if type == 0:
-                    jsonToSend["type"] = "FA Campaign"
-                elif type == 1:
-                    jsonToSend["type"] = "Aeon Vanilla Campaign"
-                elif type == 2:
-                    jsonToSend["type"] = "Cybran Vanilla Campaign"
-                elif type == 3:
-                    jsonToSend["type"] = "UEF Vanilla Campaign"
-                elif type == 4:
-                    jsonToSend["type"] = "Custom Missions"
+            for name, description, filename, type_, id_ in rows:
+                json_to_send = {"command": "coop_info", "name": name, "description": description,
+                                "filename": filename, "featured_mod": "coop"}
+                campaigns = [
+                    "FA Campaign",
+                    "Aeon Vanilla Campaign",
+                    "Cybran Vanilla Campaign",
+                    "UEF Vanilla Campaign",
+                    "Custom Missions"
+                ]
+                if type_ < len(campaigns):
+                    json_to_send["type"] = campaigns[type_]
                 else:
                     # Don't sent corrupt data to the client...
                     self._logger.error("Unknown coop type!")
-                    return
-                jsonToSend["uid"] = id
-                maps.append(jsonToSend)
+                    continue
+                json_to_send["uid"] = id_
+                maps.append(json_to_send)
 
         self.protocol.send_messages(maps)
 
@@ -443,13 +394,14 @@ class LobbyConnection:
                                   "WHERE LOWER(login)=%s "
                                   "ORDER BY expires_at DESC", (login.lower(), ))
 
+        auth_error_message = "Login not found or password incorrect. They are case sensitive."
         if cursor.rowcount < 1:
-            raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
+            raise AuthenticationError(auth_error_message)
 
         player_id, real_username, dbPassword, steamid, create_time, ban_reason, ban_expiry = await cursor.fetchone()
 
         if dbPassword != password:
-            raise AuthenticationError("Login not found or password incorrect. They are case sensitive.")
+            raise AuthenticationError(auth_error_message)
 
         now = datetime.datetime.now()
 
@@ -676,8 +628,8 @@ class LobbyConnection:
         if self.player.clan is not None:
             channels.append("#%s_clan" % self.player.clan)
 
-        jsonToSend = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
-        self.sendJSON(jsonToSend)
+        json_to_send = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
+        self.sendJSON(json_to_send)
 
         self.send_mod_list()
         self.send_game_list()

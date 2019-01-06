@@ -8,7 +8,7 @@ import server.config as config
 from server.natpacketserver import NatPacketServer
 
 
-class TestClientProto(asyncio.DatagramProtocol):
+class ClientTestProto(asyncio.DatagramProtocol):
     def __init__(self, message):
         self.message = message
 
@@ -21,7 +21,7 @@ async def test_receives_udp(loop: asyncio.BaseEventLoop):
 
     async with NatPacketServer(addr) as server:
         recv_fut = server.await_packet(msg)
-        await loop.create_datagram_endpoint(lambda: TestClientProto(("\x08"+msg).encode()),
+        await loop.create_datagram_endpoint(lambda: ClientTestProto(("\x08"+msg).encode()),
                                             remote_addr=addr)
         received_msg, _ = await recv_fut
         assert received_msg == msg
