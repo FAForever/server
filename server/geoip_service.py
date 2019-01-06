@@ -2,7 +2,6 @@ import asyncio
 import gzip
 import os
 import shutil
-import traceback
 from datetime import datetime
 
 import aiocron
@@ -53,8 +52,7 @@ class GeoIpService(object):
             self._logger.warning("Failed to download database file! "
                                  "Check the network connection and try again")
         except Exception as e:  # pragma: no cover
-            self._logger.exception("Exception in GeoIpService")
-            traceback.print_exc()
+            self._logger.exception(e)
             raise e
 
         self.load_db()
