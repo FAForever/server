@@ -21,11 +21,11 @@ class ControlServer:
         self.game_service = game_service
         self.player_service = player_service
 
-    def games(self):
+    def games(self, request):
         body = dumps(to_dict_list(self.game_service.all_games))
         return web.Response(body=body.encode(), content_type='application/json')
 
-    def players(self):
+    def players(self, request):
         body = dumps(to_dict_list(self.player_service.players.values()))
         return web.Response(body=body.encode(), content_type='application/json')
 
