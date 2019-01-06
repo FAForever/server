@@ -88,7 +88,7 @@ class ValidityState(IntEnum):
     MULTI_TEAM = 18
     HAS_AI_PLAYERS = 19
     CIVILIANS_REVEALED = 20
-    TOO_EASY = 21
+    WRONG_DIFFICULTY = 21
     EXPANSION_DISABLED = 22
     SPAWN_NOT_FIXED = 23
 
@@ -598,7 +598,7 @@ class Game(BaseGame):
             "Victory": (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
             "TeamSpawn": ("fixed", ValidityState.SPAWN_NOT_FIXED),
             "RevealedCivilians": ("No", ValidityState.CIVILIANS_REVEALED),
-            "Difficulty": (3, ValidityState.TOO_EASY),
+            "Difficulty": (3, ValidityState.WRONG_DIFFICULTY),
             "Expansion": ("true", ValidityState.EXPANSION_DISABLED),
         }
         await self._validate_game_options(valid_options)
