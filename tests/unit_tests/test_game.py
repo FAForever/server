@@ -493,14 +493,14 @@ async def test_persist_results_not_called_with_one_player(game):
 
 async def test_persist_results_not_called_with_no_results(game):
     game.state = GameState.LOBBY
-    add_players(game, 5)
+    add_players(game, 2)
     game.persist_results = CoroMock()
     game.launched_at = time.time() - 60*20
 
     await game.launch()
     await game.on_game_end()
 
-    assert len(game.players) == 5
+    assert len(game.players) == 2
     assert len(game._results) == 0
     assert game.validity is ValidityState.UNKNOWN_RESULT
     game.persist_results.assert_not_called()

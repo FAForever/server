@@ -358,26 +358,28 @@ class Game(BaseGame):
             elif self.state == GameState.LIVE:
                 self._logger.info("Game finished normally")
 
-                if self.desyncs > 20:
-                    await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
-                    return
+                if self.validity is ValidityState.VALID:
+                    if self.desyncs > 20:
+                        await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
+                        return
 
-                if time.time() - self.launched_at > 4*60 and self.is_mutually_agreed_draw:
-                    self._logger.info("Game is a mutual draw")
-                    await self.mark_invalid(ValidityState.MUTUAL_DRAW)
-                    return
+                    if time.time() - self.launched_at > 4*60 and self.is_mutually_agreed_draw:
+                        self._logger.info("Game is a mutual draw")
+                        await self.mark_invalid(ValidityState.MUTUAL_DRAW)
+                        return
 
-                if len(self.players) < 2:
-                    await self.mark_invalid(ValidityState.SINGLE_PLAYER)
-                    return
+                    if len(self.players) < 2:
+                        await self.mark_invalid(ValidityState.SINGLE_PLAYER)
+                        return
 
-                if len(self._results) == 0:
-                    await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
-                    return
+                    if len(self._results) == 0:
+                        await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
+                        return
 
-                await self.persist_results()
-                await self.rate_game()
-                await self._process_pending_army_stats()
+                    await self.persist_results()
+                    await self.rate_game()
+                    await self._process_pending_army_stats()
+
         except Exception as e:
             self._logger.exception("Error during game end: %s", e)
         finally:
@@ -613,7 +615,7 @@ class Game(BaseGame):
             if result:
                 self.map_id = result['id']
 
-            if not result or not result['ranked']:
+            if (not result or not result['ranked']) and self.validity is ValidityState.VALID:
                 await self.mark_invalid(ValidityState.BAD_MAP)
 
             modId = self.game_service.featured_mods[self.game_mode].id
