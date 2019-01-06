@@ -1,35 +1,31 @@
 import asyncio
-
+import datetime
 import hashlib
-import cgi
+import html
 import json
+import random
 import urllib.parse
 import urllib.request
-import random
-import html
 
-import datetime
-
-import pymysql
 import requests
 
-import semver
-
+import pymysql
 import server
-from .gameconnection import GameConnection
-from .connectivity import Connectivity, ConnectivityState
-from .matchmaker import Search
-from .decorators import timed, with_logger
-from .games.game import GameState, VisibilityState
-from .players import Player, PlayerState
 import server.db as db
-from .types import Address
-from .game_service import GameService
-from .player_service import PlayerService
-from .geoip_service import GeoIpService
+
 from . import config
 from .config import FAF_POLICY_SERVER_BASE_URL
+from .connectivity import Connectivity, ConnectivityState
+from .decorators import timed, with_logger
+from .game_service import GameService
+from .gameconnection import GameConnection
+from .games.game import GameState, VisibilityState
+from .geoip_service import GeoIpService
+from .matchmaker import Search
+from .player_service import PlayerService
+from .players import Player, PlayerState
 from .protocol import QDataStreamProtocol
+from .types import Address
 
 
 class ClientError(Exception):
