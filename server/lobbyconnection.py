@@ -772,7 +772,8 @@ class LobbyConnection:
 
         assert isinstance(self.player, Player)
 
-        title = html.escape(message.get('title', '') or '')
+        default_title = "%s' game".format(self.player.login)
+        title = html.escape(message.get('title') or default_title)
         port = message.get('gameport')
         visibility = VisibilityState.from_string(message.get('visibility'))
         if not isinstance(visibility, VisibilityState):
