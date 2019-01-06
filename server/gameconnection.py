@@ -451,6 +451,10 @@ class GameConnection(GpgNetServerProtocol):
 
         self._mark_dirty()
 
+    async def handle_game_ended(self):
+        """ Signals that the simulation has ended. This is currently unused """
+        pass
+
     def _mark_dirty(self):
         if self.game:
             self.games.mark_dirty(self.game)
@@ -511,5 +515,6 @@ COMMAND_HANDLERS = {
     "OperationComplete":    GameConnection.handle_operation_complete,
     "JsonStats":            GameConnection.handle_json_stats,
     "EnforceRating":        GameConnection.handle_enforce_rating,
-    "TeamkillReport":       GameConnection.handle_teamkill_report
+    "TeamkillReport":       GameConnection.handle_teamkill_report,
+    "GameEnded":            GameConnection.handle_game_ended
 }
