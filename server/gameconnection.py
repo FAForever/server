@@ -1,15 +1,17 @@
 import asyncio
-from collections import defaultdict
 import time
+from collections import defaultdict
+
+import server.db as db
+
 from .abc.base_game import GameConnectionState
 from .connectivity import ConnectivityState
-from .decorators import with_logger, timed
-from .games.game import Game, GameState, Victory
+from .decorators import timed, with_logger
 from .game_service import GameService
-from .players import Player, PlayerState
+from .games.game import Game, GameState, ValidityState, Victory
 from .player_service import PlayerService
+from .players import Player, PlayerState
 from .protocol import GpgNetServerProtocol
-import server.db as db
 
 
 class AuthenticationError(Exception):
@@ -369,6 +371,10 @@ class GameConnection(GpgNetServerProtocol):
             return
 
         secondary, delta = int(secondary), str(delta)
+
+        if self.game.validity != ValidityState.COOP_NOT_RANKED:
+            return
+
         async with db.db_pool.get() as conn:
             cursor = await conn.cursor()
             # FIXME: Resolve used map earlier than this
