@@ -73,10 +73,10 @@ async def test_validate_game_settings(game: Game):
 async def test_validate_game_settings_coop(coop_game: Game):
     settings = [
         ('Victory', Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION),
-        ('TeamSpawn', 'open', ValidityState.UNEVEN_TEAMS_NOT_RANKED),
-        ('RevealedCivilians', 'Yes', ValidityState.UNEVEN_TEAMS_NOT_RANKED),
-        ('Difficulty', 1, ValidityState.UNEVEN_TEAMS_NOT_RANKED),
-        ('Expansion', 'false', ValidityState.UNEVEN_TEAMS_NOT_RANKED),
+        ('TeamSpawn', 'open', ValidityState.SPAWN_NOT_FIXED),
+        ('RevealedCivilians', 'Yes', ValidityState.CIVILIANS_REVEALED),
+        ('Difficulty', 1, ValidityState.TOO_EASY),
+        ('Expansion', 'false', ValidityState.EXPANSION_DISABLED),
     ]
 
     await check_game_settings(coop_game, settings)
