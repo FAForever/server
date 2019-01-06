@@ -452,7 +452,9 @@ class GameConnection(GpgNetServerProtocol):
         self._mark_dirty()
 
     async def handle_game_ended(self):
-        """ Signals that the simulation has ended. This is currently unused """
+        """
+        Signals that the simulation has ended. This is currently unused
+        """
         pass
 
     def _mark_dirty(self):
