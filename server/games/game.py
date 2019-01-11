@@ -91,6 +91,7 @@ class ValidityState(IntEnum):
     WRONG_DIFFICULTY = 21
     EXPANSION_DISABLED = 22
     SPAWN_NOT_FIXED = 23
+    OTHER_UNRANK = 24
 
 
 class GameError(Exception):
