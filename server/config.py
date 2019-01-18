@@ -60,7 +60,7 @@ NEWBIE_MIN_GAMES = int(os.getenv('NEWBIE_MIN_GAMES', 10))
 GEO_IP_DATABASE_PATH = os.getenv("GEO_IP_DATABASE_PATH", "GeoLite2-Country.mmdb")
 GEO_IP_DATABASE_URL = os.getenv(
     "GEO_IP_DATABASE_URL",
-    "http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz"
+    "http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.mmdb.gz"
 )
 GEO_IP_DATABASE_MAX_AGE_DAYS = int(os.getenv('GEO_IP_DATABASE_MAX_AGE_DAYS', 22))
 
