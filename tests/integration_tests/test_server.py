@@ -19,11 +19,12 @@ slow = pytest.mark.slow
 
 
 @pytest.fixture
-def lobby_server(request, loop, db_pool, player_service, game_service):
-    ctx = run_lobby_server(('127.0.0.1', None),
-                           player_service,
-                           game_service,
-                           loop)
+def lobby_server(request, loop, db_pool, player_service, game_service, geoip_service):
+    ctx = run_lobby_server(address=('127.0.0.1', None),
+                           geoip_service=geoip_service,
+                           player_service=player_service,
+                           games=game_service,
+                           loop=loop)
     player_service.is_uniqueid_exempt = lambda id: True
 
     def fin():

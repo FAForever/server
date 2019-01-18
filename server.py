@@ -18,6 +18,7 @@ import server.config as config
 from server.api.api_accessor import ApiAccessor
 from server.config import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME
 from server.game_service import GameService
+from server.geoip_service import GeoIpService
 from server.matchmaker import MatchmakerQueue
 from server.natpacketserver import NatPacketServer
 from server.player_service import PlayerService
@@ -69,6 +70,7 @@ if __name__ == '__main__':
         event_service = EventService(api_accessor)
         achievement_service = AchievementService(api_accessor)
         game_stats_service = GameStatsService(event_service, achievement_service)
+        geoip_service = GeoIpService()
 
         natpacket_server = NatPacketServer(addresses=config.LOBBY_NAT_ADDRESSES, loop=loop)
         loop.run_until_complete(natpacket_server.listen())
@@ -80,10 +82,11 @@ if __name__ == '__main__':
 
         ctrl_server = loop.run_until_complete(server.run_control_server(loop, players_online, games))
 
-        lobby_server = server.run_lobby_server(('', 8001),
-                                               players_online,
-                                               games,
-                                               loop)
+        lobby_server = server.run_lobby_server(address=('', 8001),
+                                               geoip_service=geoip_service,
+                                               player_service=players_online,
+                                               games=games,
+                                               loop=loop)
 
         for sock in lobby_server.sockets:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
