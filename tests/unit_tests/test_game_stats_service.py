@@ -1,6 +1,7 @@
-from unittest.mock import Mock, MagicMock
+from unittest.mock import MagicMock, Mock
+
 import pytest
-from faf.factions import Faction
+from server.factions import Faction
 from server.games import Game
 from server.lobbyconnection import LobbyConnection
 from server.players import Player
@@ -62,7 +63,7 @@ def unit_stats():
 
 
 async def test_process_game_stats(game_stats_service, event_service, achievement_service, player, game):
-    
+
     with open("tests/data/game_stats_full_example.json", "r") as stats_file:
         stats = stats_file.read()
 

@@ -18,5 +18,4 @@ aiocron
 marisa-trie
 oauthlib
 requests_oauthlib
-git+https://github.com/FAForever/faftools.git@5fb0fdb28268b612746d693014fe18a46c3f51fd#egg=faftools
 mock
