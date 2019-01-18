@@ -1,37 +1,32 @@
 import asyncio
-
+import datetime
 import hashlib
-import cgi
+import html
 import json
+import random
 import urllib.parse
 import urllib.request
-import random
-import html
 
-import datetime
-
-import pymysql
 import requests
 
+import pymysql
 import semver
-import geoip2.database
-
 import server
-from .gameconnection import GameConnection
-from .connectivity import Connectivity, ConnectivityState
-from .matchmaker import Search
-from .decorators import timed, with_logger
-from .games.game import GameState, VisibilityState
-from .players import Player, PlayerState
 import server.db as db
-from .types import Address
-from .game_service import GameService
-from .player_service import PlayerService
+
 from . import config
 from .config import FAF_POLICY_SERVER_BASE_URL
+from .connectivity import Connectivity, ConnectivityState
+from .decorators import timed, with_logger
+from .game_service import GameService
+from .gameconnection import GameConnection
+from .games.game import GameState, VisibilityState
+from .geoip_service import GeoIpService
+from .matchmaker import Search
+from .player_service import PlayerService
+from .players import Player, PlayerState
 from .protocol import QDataStreamProtocol
-
-gi = geoip2.database.Reader('GeoLite2-Country.mmdb')
+from .types import Address
 
 
 class ClientError(Exception):
@@ -56,10 +51,13 @@ class AuthenticationError(Exception):
 @with_logger
 class LobbyConnection:
     @timed()
-    def __init__(self, loop, context=None, games: GameService=None, players: PlayerService=None, db=None):
+    def __init__(self, loop, context,
+                 games: GameService,
+                 players: PlayerService,
+                 geoip: GeoIpService):
         super(LobbyConnection, self).__init__()
         self.loop = loop
-        self.db = db
+        self.geoip_service = geoip
         self.game_service = games
         self.player_service = players  # type: PlayerService
         self.context = context
@@ -563,10 +561,7 @@ class LobbyConnection:
 
         # Country
         # -------
-        try:
-            self.player.country = str(gi.country(self.peer_address.host).country.iso_code)
-        except (geoip2.errors.AddressNotFoundError,ValueError):
-            self.player.country = ''
+        self.player.country = self.geoip_service.country(self.peer_address.host)
 
         ## AVATARS
         ## -------------------

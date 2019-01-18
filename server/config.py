@@ -57,4 +57,11 @@ FORCE_STEAM_LINK = os.getenv('FORCE_STEAM_LINK', 'false').lower() == 'true'
 NEWBIE_BASE_MEAN = int(os.getenv('NEWBIE_BASE_MEAN', 500))
 NEWBIE_MIN_GAMES = int(os.getenv('NEWBIE_MIN_GAMES', 10))
 
+GEO_IP_DATABASE_PATH = os.getenv("GEO_IP_DATABASE_PATH", "GeoLite2-Country.mmdb")
+GEO_IP_DATABASE_URL = os.getenv(
+    "GEO_IP_DATABASE_URL",
+    "http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.mmdb.gz"
+)
+GEO_IP_DATABASE_MAX_AGE_DAYS = int(os.getenv('GEO_IP_DATABASE_MAX_AGE_DAYS', 22))
+
 CONTROL_SERVER_PORT = int(os.getenv('CONTROL_SERVER_PORT', 4000))

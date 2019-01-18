@@ -19,6 +19,7 @@ from .natpacketserver import NatPacketServer
 from .lobbyconnection import LobbyConnection
 from .protocol import QDataStreamProtocol
 from .servercontext import ServerContext
+from .geoip_service import GeoIpService
 from .player_service import PlayerService
 from .game_service import GameService
 from .ladder_service import LadderService
@@ -55,7 +56,8 @@ else:
 def run_lobby_server(address: (str, int),
                      player_service: PlayerService,
                      games: GameService,
-                     loop):
+                     loop,
+                     geoip_service: GeoIpService):
     """
     Run the lobby server
 
@@ -138,6 +140,7 @@ def run_lobby_server(address: (str, int),
 
     def initialize_connection():
         return LobbyConnection(context=ctx,
+                               geoip=geoip_service,
                                games=games,
                                players=player_service,
                                loop=loop)
