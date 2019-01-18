@@ -2,7 +2,7 @@ from abc import ABCMeta
 
 from trueskill import Rating
 
-from faf.factions import Faction
+from ..factions import Faction
 
 
 class BasePlayer:
@@ -11,12 +11,12 @@ class BasePlayer:
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, id, login):
+    def __init__(self, id_, login):
         self._faction = 0
         self._global_rating = (1500, 500)
         self._ladder_rating = (1500, 500)
 
-        self.id = id
+        self.id = id_
         self.login = login
 
     @property
