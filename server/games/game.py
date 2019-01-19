@@ -237,27 +237,38 @@ class Game(BaseGame):
         return len(self.AIs) > 0
 
     @property
-    def is_even(self):
+    def is_even(self) -> bool:
         teams = self.team_count()
-        if 1 in teams: # someone is in ffa team, all teams need to have 1 player
-            c = 1
-            teams.pop(1)
-        else:
-            n = len(teams)
-            if n <= 1: # 0 teams are considered even, single team not
-                return n == 0
+        if len(teams) < 2:
+            return False
+        team_member_counts = list(teams.values())
 
-            # all teams needs to have same count as the first
-            c = list(teams.values())[0]
-
-        for _, v in teams.items():
-            if v != c:
+        # Make sure each team has the same numer of players as the first team
+        first_count = team_member_counts[0]
+        for num_team_members in team_member_counts:
+            if num_team_members != first_count:
                 return False
 
         return True
 
-    def team_count(self):
-        teams = defaultdict(int)
+    def team_count(self) -> Dict[int, int]:
+        """
+        Returns a dictionary containing team ids and their respective number of
+        players.
+
+        Example:
+            Team 1 has 2 players
+            Team 2 has 3 players
+            team 3 has 1 player
+
+            Return value is:
+            {
+                1: 2,
+                2: 3,
+                3: 1
+            }
+        """
+        teams: Dict[int, int] = defaultdict(int)
         for player in self.players:
             teams[self.get_player_option(player.id, 'Team')] += 1
 
@@ -365,6 +376,9 @@ class Game(BaseGame):
             elif self.state == GameState.LIVE:
                 self._logger.info("Game finished normally")
 
+                if self.validity is not ValidityState.VALID:
+                    return
+
                 if self.desyncs > 20:
                     await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
                     return
@@ -372,10 +386,6 @@ class Game(BaseGame):
                 if time.time() - self.launched_at > 4*60 and self.is_mutually_agreed_draw:
                     self._logger.info("Game is a mutual draw")
                     await self.mark_invalid(ValidityState.MUTUAL_DRAW)
-                    return
-
-                if len(self.players) < 2:
-                    await self.mark_invalid(ValidityState.SINGLE_PLAYER)
                     return
 
                 if len(self._results) == 0:
@@ -612,6 +622,10 @@ class Game(BaseGame):
             await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
             return
 
+        if len(self.players) < 2:
+            await self.mark_invalid(ValidityState.SINGLE_PLAYER)
+            return
+
         valid_options = {
             "Victory": (Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION)
         }
@@ -656,7 +670,7 @@ class Game(BaseGame):
             if result:
                 self.map_id = result['id']
 
-            if not result or not result['ranked']:
+            if (not result or not result['ranked']) and self.validity is ValidityState.VALID:
                 await self.mark_invalid(ValidityState.BAD_MAP)
 
             modId = self.game_service.featured_mods[self.game_mode].id
