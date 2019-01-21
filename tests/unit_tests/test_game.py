@@ -541,8 +541,8 @@ async def test_persist_results_not_called_with_one_player(game):
 
 async def test_persist_results_not_called_with_no_results(game):
     game.state = GameState.LOBBY
-    add_players(game, 2, team=1)
     add_players(game, 2, team=2)
+    add_players(game, 2, team=3)
     game.persist_results = CoroMock()
     game.launched_at = time.time() - 60*20
 

@@ -365,6 +365,9 @@ class Game(BaseGame):
             elif self.state == GameState.LIVE:
                 self._logger.info("Game finished normally")
 
+                if self.validity is not ValidityState.VALID:
+                    return
+
                 if self.desyncs > 20:
                     await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
                     return
@@ -372,10 +375,6 @@ class Game(BaseGame):
                 if time.time() - self.launched_at > 4*60 and self.is_mutually_agreed_draw:
                     self._logger.info("Game is a mutual draw")
                     await self.mark_invalid(ValidityState.MUTUAL_DRAW)
-                    return
-
-                if len(self.players) < 2:
-                    await self.mark_invalid(ValidityState.SINGLE_PLAYER)
                     return
 
                 if len(self._results) == 0:
@@ -612,6 +611,10 @@ class Game(BaseGame):
             await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
             return
 
+        if len(self.players) < 2:
+            await self.mark_invalid(ValidityState.SINGLE_PLAYER)
+            return
+
         valid_options = {
             "Victory": (Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION)
         }
@@ -656,7 +659,7 @@ class Game(BaseGame):
             if result:
                 self.map_id = result['id']
 
-            if not result or not result['ranked']:
+            if (not result or not result['ranked']) and self.validity is ValidityState.VALID:
                 await self.mark_invalid(ValidityState.BAD_MAP)
 
             modId = self.game_service.featured_mods[self.game_mode].id
