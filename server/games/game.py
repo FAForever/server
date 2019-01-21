@@ -257,6 +257,20 @@ class Game(BaseGame):
         return True
 
     def team_count(self):
+        """
+        Returns a dictionary containing team ids and their respective number of
+        players.
+        Example:
+            Team 1 has 2 players
+            Team 2 has 3 players
+            team 3 has 1 player
+            Return value is:
+            {
+                1: 2,
+                2: 3,
+                3: 1
+            }
+        """
         teams = defaultdict(int)
         for player in self.players:
             teams[self.get_player_option(player.id, 'Team')] += 1
