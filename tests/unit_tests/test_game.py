@@ -652,3 +652,32 @@ def test_visibility_states():
     for string_value, enum_value in states:
         assert (VisibilityState.from_string(string_value) == enum_value and
                 VisibilityState.to_string(enum_value) == string_value)
+
+
+def test_is_even(game: Game):
+    game.state = GameState.LOBBY
+    add_players(game, 4, team=2)
+    add_players(game, 4, team=3)
+
+    assert game.is_even
+
+
+def test_is_even_no_players(game: Game):
+    game.state = GameState.LOBBY
+
+    assert game.is_even
+
+
+def test_is_even_single_player(game: Game):
+    game.state = GameState.LOBBY
+    add_players(game, 2, team=2)
+
+    assert not game.is_even
+
+
+def test_is_even_ffa(game: Game):
+    game.state = GameState.LOBBY
+    # Team 1 is the special "-" team
+    add_players(game, 5, team=1)
+
+    assert game.is_even
