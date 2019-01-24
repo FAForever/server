@@ -24,11 +24,6 @@ class LadderGame(Game):
     def is_winner(self, player: Player):
         return self.get_army_score(self.get_player_option(player.id, 'Army')) > 0
 
-    async def on_game_end(self):
-        await super().on_game_end()
-        if self.validity != ValidityState.VALID:
-            return
-
     @property
     def is_draw(self):
         for army in self.armies:
