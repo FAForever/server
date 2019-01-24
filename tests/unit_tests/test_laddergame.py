@@ -26,6 +26,37 @@ async def test_results_ranked_by_victory(laddergame, players):
     assert laddergame.get_army_score(1) == 0
 
 
+async def test_get_army_score_no_results(laddergame, players):
+    laddergame.state = GameState.LOBBY
+    add_connected_players(laddergame, [players.hosting, players.joining])
+
+    assert laddergame.get_army_score(0) == 0
+
+
+async def test_is_winner(laddergame, players):
+    laddergame.state = GameState.LOBBY
+    add_connected_players(laddergame, [players.hosting, players.joining])
+
+    await laddergame.add_result(players.hosting, 0, 'victory', 1)
+    await laddergame.add_result(players.joining, 1, 'defeat', 0)
+
+    assert laddergame.is_winner(players.hosting)
+    assert laddergame.is_winner(players.joining) is False
+    assert laddergame.is_draw is False
+
+
+async def test_is_winner_on_draw(laddergame, players):
+    laddergame.state = GameState.LOBBY
+    add_connected_players(laddergame, [players.hosting, players.joining])
+
+    await laddergame.add_result(players.hosting, 0, 'draw', 1)
+    await laddergame.add_result(players.joining, 1, 'draw', 1)
+
+    assert laddergame.is_winner(players.hosting) is False
+    assert laddergame.is_winner(players.joining) is False
+    assert laddergame.is_draw
+
+
 async def test_rate_game(laddergame: LadderGame, db_pool):
     async with db_pool.get() as conn:
         cursor = await conn.cursor()
