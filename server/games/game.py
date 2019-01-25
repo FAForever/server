@@ -556,7 +556,7 @@ class Game(BaseGame):
             await cursor.execute(
                 "UPDATE ladder1v1_rating "
                 "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1, winGames = winGames + %s "
-                "WHERE id = %s", (new_rating.mu, new_rating.sigma, player.id, 1 if is_victory else 0))
+                "WHERE id = %s", (new_rating.mu, new_rating.sigma, 1 if is_victory else 0, player.id))
         else:
             await cursor.execute(
                 "UPDATE " + table + " "
