@@ -833,7 +833,7 @@ class Game(BaseGame):
         :return:
         """
         score = 0
-        for result in self._results[army]:
+        for result in self._results.get(army, []):
             score = max(score, result[2])
         return score
 

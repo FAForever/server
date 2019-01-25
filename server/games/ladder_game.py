@@ -2,7 +2,8 @@ import logging
 
 from server.abc.base_game import InitMode
 from server.players import Player
-from .game import Game, ValidityState
+
+from .game import Game, GameOutcome, ValidityState
 
 logger = logging.getLogger(__name__)
 
@@ -11,8 +12,8 @@ class LadderGame(Game):
     """Class for 1v1 ladder games"""
     init_mode = InitMode.AUTO_LOBBY
 
-    def __init__(self, id, *args, **kwargs):
-        super(self.__class__, self).__init__(id, *args, **kwargs)
+    def __init__(self, id_, *args, **kwargs):
+        super(self.__class__, self).__init__(id_, *args, **kwargs)
         self.game_mode = 'ladder1v1'
         self.max_players = 2
 
@@ -22,7 +23,7 @@ class LadderGame(Game):
             await self.persist_rating_change_stats(new_ratings, rating='ladder')
 
     def is_winner(self, player: Player):
-        return self.get_army_score(self.get_player_option(player.id, 'Army')) > 0
+        return self.outcome(player) == GameOutcome.VICTORY
 
     @property
     def is_draw(self):
@@ -31,17 +32,3 @@ class LadderGame(Game):
                 if result[1] == 'draw':
                     return True
         return False
-
-    def get_army_score(self, army):
-        """
-        The head-to-head matchup ranking uses only win/loss as a factor
-        :param army:
-        :return:
-        """
-        if army not in self._results:
-            return 0
-
-        for result in self._results[army]:
-            if result[1] == 'victory':
-                return 1
-        return 0
