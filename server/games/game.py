@@ -516,8 +516,7 @@ class Game(BaseGame):
             await cursor.execute("DELETE FROM game_stats "
                                  "WHERE id=%s", (self.id,))
 
-    @asyncio.coroutine
-    def persist_rating_change_stats(self, rating_groups, rating='global'):
+    async def persist_rating_change_stats(self, rating_groups, rating='global'):
         """
         Persist computed ratings to the respective players' selected rating
         :param rating_groups: of the form returned by Game.compute_rating
@@ -532,16 +531,16 @@ class Game(BaseGame):
 
         rating_table = '{}_rating'.format('ladder1v1' if rating == 'ladder' else rating)
 
-        with (yield from db.db_pool) as conn:
-            cursor = yield from conn.cursor()
+        async with db.db_pool.get() as conn:
+            cursor = await conn.cursor()
 
             for player, new_rating in new_ratings.items():
                 self._logger.debug("New %s rating for %s: %s", rating, player, new_rating)
                 setattr(player, '{}_rating'.format(rating), new_rating)
-                yield from cursor.execute("UPDATE game_player_stats "
-                                          "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
-                                          "WHERE gameId = %s AND playerId = %s",
-                                          (new_rating.mu, new_rating.sigma, self.id, player.id))
+                await cursor.execute("UPDATE game_player_stats "
+                                     "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
+                                     "WHERE gameId = %s AND playerId = %s",
+                                     (new_rating.mu, new_rating.sigma, self.id, player.id))
                 if rating != 'ladder':
                     player.numGames += 1
 
@@ -549,14 +548,14 @@ class Game(BaseGame):
                 # the `winGames` column which doesn't exist on the global_rating table
                 if rating == 'ladder' and rating_table == 'ladder1v1_rating':
                     is_victory = self.outcome(player) == GameOutcome.VICTORY
-                    yield from cursor.execute(
+                    await cursor.execute(
                         "UPDATE ladder1v1_rating "
                         "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1, winGames = winGames + %s "
                         "WHERE id = %s", (new_rating.mu, new_rating.sigma, player.id, 1 if is_victory else 0))
                 else:
-                    yield from cursor.execute("UPDATE " + rating_table + " "
-                                              "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1 "
-                                              "WHERE id = %s", (new_rating.mu, new_rating.sigma, player.id))
+                    await cursor.execute("UPDATE " + rating_table + " "
+                                         "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1 "
+                                         "WHERE id = %s", (new_rating.mu, new_rating.sigma, player.id))
                 self.game_service.player_service.mark_dirty(player)
 
     def set_player_option(self, id, key, value):
