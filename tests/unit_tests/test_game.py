@@ -1,19 +1,20 @@
 import logging
+import time
 from unittest import mock
-from mock import patch
 
 import pytest
-import time
-
-from trueskill import Rating
-
-from server.games.game import Game, GameState, GameError, Victory, VisibilityState, ValidityState
-from server.games import CustomGame
-from server.games.coop import CoopGame
+from mock import patch
 from server.gameconnection import GameConnection, GameConnectionState
+from server.games import CustomGame
+from server.games.game import (Game, GameError, GameOutcome, GameState,
+                               ValidityState, Victory, VisibilityState)
 from server.players import Player
 from tests import CoroMock
-from tests.unit_tests.conftest import mock_game_connection, add_players, add_connected_players, add_connected_player
+from tests.unit_tests.conftest import (add_connected_player,
+                                       add_connected_players, add_players,
+                                       mock_game_connection)
+from trueskill import Rating
+
 
 from typing import List, Tuple, Any
 
@@ -632,6 +633,63 @@ async def test_players_exclude_observers(game: Game):
     await game.launch()
 
     assert game.players == frozenset(players)
+
+
+async def test_game_outcomes(game: Game, players):
+    await game.clear_data()
+
+    game.state = GameState.LOBBY
+    players.hosting.ladder_rating = Rating(1500, 250)
+    players.joining.ladder_rating = Rating(1500, 250)
+    add_connected_players(game, [players.hosting, players.joining])
+    await game.launch()
+    await game.add_result(players.hosting, 0, 'victory', 1)
+    await game.add_result(players.joining, 1, 'defeat', 0)
+    game.set_player_option(players.hosting.id, 'Team', 1)
+    game.set_player_option(players.joining.id, 'Team', 1)
+
+    host_outcome = game.outcome(players.hosting)
+    guest_outcome = game.outcome(players.joining)
+    assert host_outcome is GameOutcome.VICTORY
+    assert guest_outcome is GameOutcome.DEFEAT
+
+
+async def test_game_outcomes_no_results(game: Game, players):
+    await game.clear_data()
+
+    game.state = GameState.LOBBY
+    players.hosting.ladder_rating = Rating(1500, 250)
+    players.joining.ladder_rating = Rating(1500, 250)
+    add_connected_players(game, [players.hosting, players.joining])
+    await game.launch()
+    game.set_player_option(players.hosting.id, 'Team', 1)
+    game.set_player_option(players.joining.id, 'Team', 1)
+
+    host_outcome = game.outcome(players.hosting)
+    guest_outcome = game.outcome(players.joining)
+    assert host_outcome is None
+    assert guest_outcome is None
+
+
+async def test_game_outcomes_conflicting(game: Game, players):
+    await game.clear_data()
+
+    game.state = GameState.LOBBY
+    players.hosting.ladder_rating = Rating(1500, 250)
+    players.joining.ladder_rating = Rating(1500, 250)
+    add_connected_players(game, [players.hosting, players.joining])
+    await game.launch()
+    await game.add_result(players.hosting, 0, 'victory', 1)
+    await game.add_result(players.joining, 1, 'victory', 0)
+    await game.add_result(players.hosting, 0, 'defeat', 1)
+    await game.add_result(players.joining, 1, 'defeat', 0)
+    game.set_player_option(players.hosting.id, 'Team', 1)
+    game.set_player_option(players.joining.id, 'Team', 1)
+
+    host_outcome = game.outcome(players.hosting)
+    guest_outcome = game.outcome(players.joining)
+    assert host_outcome is None
+    assert guest_outcome is None
 
 
 def test_victory_conditions():

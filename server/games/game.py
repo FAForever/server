@@ -1,4 +1,4 @@
-from enum import IntEnum, unique
+from enum import Enum, IntEnum, unique
 import logging
 import time
 import functools
@@ -33,14 +33,17 @@ class Victory(IntEnum):
 
     @staticmethod
     def from_gpgnet_string(value):
-        if value == "demoralization":
-            return Victory.DEMORALIZATION
-        elif value == "domination":
-            return Victory.DOMINATION
-        elif value == "eradication":
-            return Victory.ERADICATION
-        elif value == "sandbox":
-            return Victory.SANDBOX
+        """
+        :param value: The string to convert from
+
+        :return: Victory or None if the string is not valid
+        """
+        return {
+            "demoralization": Victory.DEMORALIZATION,
+            "domination": Victory.DOMINATION,
+            "eradication": Victory.ERADICATION,
+            "sandbox": Victory.SANDBOX
+        }.get(value)
 
 
 @unique
@@ -50,10 +53,15 @@ class VisibilityState(IntEnum):
 
     @staticmethod
     def from_string(value):
-        if value == "public":
-            return VisibilityState.PUBLIC
-        elif value == "friends":
-            return VisibilityState.FRIENDS
+        """
+        :param value: The string to convert from
+
+        :return: VisibilityState or None if the string is not valid
+        """
+        return {
+            "public": VisibilityState.PUBLIC,
+            "friends": VisibilityState.FRIENDS
+        }.get(value)
 
     @staticmethod
     def to_string(value):
@@ -92,6 +100,27 @@ class ValidityState(IntEnum):
     EXPANSION_DISABLED = 22
     SPAWN_NOT_FIXED = 23
     OTHER_UNRANK = 24
+
+
+class GameOutcome(Enum):
+    VICTORY = 1
+    DEFEAT = 2
+    DRAW = 3
+    MUTUAL_DRAW = 4
+
+    @staticmethod
+    def from_string(value) -> "GameOutcome":
+        """
+        :param value: The string to convert from
+
+        :return: VisibilityState or None if the string is not valid
+        """
+        return {
+            "victory": GameOutcome.VICTORY,
+            "defeat": GameOutcome.DEFEAT,
+            "draw": GameOutcome.DRAW,
+            "mutual_draw": GameOutcome.MUTUAL_DRAW
+        }.get(value)
 
 
 class GameError(Exception):
@@ -278,6 +307,30 @@ class Game(BaseGame):
             teams[self.get_player_option(player.id, 'Team')] += 1
 
         return teams
+
+    def outcome(self, player: Player) -> Union[GameOutcome, None]:
+        """
+        Determines whet the game outcome was for a given player. Did the
+        player win, lose, draw?
+
+        :param player: The player who's perspective we want
+        :return: GameOutcome or None if the outcome could not be determined
+        """
+        army = self.get_player_option(player.id, 'Army')
+        if army not in self._results:
+            return None
+
+        outcomes = set()
+        for result in self._results[army]:
+            outcomes.add(GameOutcome.from_string(result[1]))
+
+        # If there was exactly 1 outcome then return it
+        if len(outcomes) == 1:
+            return outcomes.pop()
+
+        # If there were no outcomes, or the outcomes do not agree then we can't
+        # determine the outcome
+        return None
 
     async def add_result(self, reporter: Union[Player, int], army: int, result_type: str, score: int):
         """
@@ -494,7 +547,7 @@ class Game(BaseGame):
 
                 yield from cursor.execute("UPDATE " + rating_table + " "
                                           "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1 "
-                                          "WHERE id = %s".format(rating), (new_rating.mu, new_rating.sigma, player.id))
+                                          "WHERE id = %s", (new_rating.mu, new_rating.sigma, player.id))
                 self.game_service.player_service.mark_dirty(player)
 
     def set_player_option(self, id, key, value):
