@@ -545,9 +545,18 @@ class Game(BaseGame):
                 if rating != 'ladder':
                     player.numGames += 1
 
-                yield from cursor.execute("UPDATE " + rating_table + " "
-                                          "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1 "
-                                          "WHERE id = %s", (new_rating.mu, new_rating.sigma, player.id))
+                # If we are updating the ladder1v1_rating table then we also need to update
+                # the `winGames` column which doesn't exist on the global_rating table
+                if rating == 'ladder' and rating_table == 'ladder1v1_rating':
+                    is_victory = self.outcome(player) == GameOutcome.VICTORY
+                    yield from cursor.execute(
+                        "UPDATE ladder1v1_rating "
+                        "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1, winGames = winGames + %s "
+                        "WHERE id = %s", (new_rating.mu, new_rating.sigma, player.id, 1 if is_victory else 0))
+                else:
+                    yield from cursor.execute("UPDATE " + rating_table + " "
+                                              "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1 "
+                                              "WHERE id = %s", (new_rating.mu, new_rating.sigma, player.id))
                 self.game_service.player_service.mark_dirty(player)
 
     def set_player_option(self, id, key, value):
