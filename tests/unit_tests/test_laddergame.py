@@ -71,6 +71,11 @@ async def test_rate_game(laddergame: LadderGame, db_pool):
     player_1_old_mean = players[0].ladder_rating[0]
     player_2_old_mean = players[1].ladder_rating[0]
 
+    async with db_pool.get() as conn:
+        cursor = await conn.cursor(DictCursor)
+        await cursor.execute("SELECT mean, deviation, numGames, winGames, is_active FROM ladder1v1_rating WHERE id = %s", players[0].id)
+        ladder_result_before = await cursor.fetchone()
+
     await laddergame.launch()
     laddergame.launched_at = time.time() - 60*20
     await laddergame.add_result(0, 0, 'victory', 5)
@@ -85,6 +90,8 @@ async def test_rate_game(laddergame: LadderGame, db_pool):
         cursor = await conn.cursor(DictCursor)
         await cursor.execute("SELECT mean, deviation, after_mean, after_deviation FROM game_player_stats WHERE gameid = %s", laddergame.id)
         result = await cursor.fetchall()
+        await cursor.execute("SELECT mean, deviation, numGames, winGames, is_active FROM ladder1v1_rating WHERE id = %s", players[0].id)
+        ladder_result = await cursor.fetchone()
 
     assert result[0]['mean'] == 1500
     assert result[0]['deviation'] == 500
@@ -95,3 +102,6 @@ async def test_rate_game(laddergame: LadderGame, db_pool):
     assert result[1]['deviation'] == 500
     assert result[1]['after_mean'] < result[0]['mean']
     assert result[1]['after_deviation'] < result[0]['deviation']
+
+    assert ladder_result['numGames'] == ladder_result_before['numGames'] + 1
+    assert ladder_result['winGames'] == ladder_result_before['winGames'] + 1
