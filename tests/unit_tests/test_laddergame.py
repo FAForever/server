@@ -52,7 +52,6 @@ async def test_is_winner(laddergame, players):
 
     assert laddergame.is_winner(players.hosting)
     assert laddergame.is_winner(players.joining) is False
-    assert laddergame.is_draw is False
 
 
 async def test_is_winner_on_draw(laddergame, players):
@@ -64,7 +63,6 @@ async def test_is_winner_on_draw(laddergame, players):
 
     assert laddergame.is_winner(players.hosting) is False
     assert laddergame.is_winner(players.joining) is False
-    assert laddergame.is_draw
 
 
 async def test_rate_game(laddergame: LadderGame, db_pool):

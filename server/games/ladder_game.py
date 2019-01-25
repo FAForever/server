@@ -25,14 +25,6 @@ class LadderGame(Game):
     def is_winner(self, player: Player):
         return self.outcome(player) == GameOutcome.VICTORY
 
-    @property
-    def is_draw(self):
-        for army in self.armies:
-            for result in self._results[army]:
-                if result[1] == 'draw':
-                    return True
-        return False
-
     def get_army_score(self, army: int) -> int:
         """
         We override this function so that ladder game scores are only reported
