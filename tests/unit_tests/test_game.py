@@ -561,7 +561,7 @@ async def test_persist_results_called_with_two_players(game):
     add_players(game, 2)
     await game.launch()
     assert len(game.players) == 2
-    await game.add_result(0, 1, 'VICTORY', 5)
+    await game.add_result(0, 1, 'victory', 5)
     await game.on_game_end()
 
     assert game.get_army_score(1) == 5
@@ -569,6 +569,38 @@ async def test_persist_results_called_with_two_players(game):
 
     await game.load_results()
     assert game.get_army_score(1) == 5
+
+
+async def test_get_army_score_conflicting_results_clear_winner(game):
+    game.state = GameState.LOBBY
+    add_players(game, 3, team=2)
+    add_players(game, 3, team=3)
+    await game.launch()
+
+    await game.add_result(0, 0, 'victory', 1000)
+    await game.add_result(1, 0, 'victory', 1234)
+    await game.add_result(2, 0, 'victory', 1234)
+    await game.add_result(3, 1, 'defeat', 100)
+    await game.add_result(4, 1, 'defeat', 123)
+    await game.add_result(5, 1, 'defeat', 100)
+
+    # Choose the most frequently reported score
+    assert game.get_army_score(0) == 1234
+    assert game.get_army_score(1) == 100
+
+
+async def test_get_army_score_conflicting_results_tied(game):
+    game.state = GameState.LOBBY
+    add_players(game, 2, team=2)
+    add_players(game, 2, team=3)
+    await game.add_result(0, 0, 'victory', 1000)
+    await game.add_result(1, 0, 'victory', 1234)
+    await game.add_result(2, 1, 'defeat', 100)
+    await game.add_result(3, 1, 'defeat', 123)
+
+    # Choose the highest score
+    assert game.get_army_score(0) == 1234
+    assert game.get_army_score(1) == 123
 
 
 def test_equality(game):

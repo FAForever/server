@@ -5,7 +5,7 @@ import re
 import time
 from collections import Counter, defaultdict
 from enum import Enum, IntEnum, unique
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, Dict
 
 import aiomysql
 import server.db as db
@@ -825,16 +825,30 @@ class Game(BaseGame):
         """
         Since we log multiple results from multiple sources, we have to pick one.
 
-        We're optimistic and simply choose the highest reported score.
+        On conflict we try to pick the most frequently reported score. If there
+        are multiple scores with the same number of reports, we pick the greater
+        score.
 
         TODO: Flag games with conflicting scores for manual review.
         :param army index of army
         :raise KeyError
         :return:
         """
-        score = 0
+        scores: Dict[int, int] = defaultdict(int)
         for result in self._results.get(army, []):
-            score = max(score, result[2])
+            scores[result[2]] += 1
+
+        # There were no results
+        if not scores:
+            return 0
+
+        # All scores agreed
+        if len(scores) == 1:
+            return scores.popitem()[0]
+
+        # Return the highest score with the most votes
+        self._logger.info("Conflicting scores (%s) reported for game %s", scores, self)
+        score, _votes = max(scores.items(), key=lambda kv: kv[::-1])
         return score
 
     def get_army_result(self, player):
