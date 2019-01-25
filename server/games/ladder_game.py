@@ -32,3 +32,13 @@ class LadderGame(Game):
                 if result[1] == 'draw':
                     return True
         return False
+
+    def get_army_score(self, army: int) -> int:
+        """
+        We override this function so that ladder game scores are only reported
+        as 1 for win and 0 for anything else.
+        """
+        for result in self._results.get(army, []):
+            if result[1] == 'victory':
+                return 1
+        return 0

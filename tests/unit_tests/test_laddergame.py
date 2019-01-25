@@ -33,6 +33,16 @@ async def test_get_army_score_no_results(laddergame, players):
     assert laddergame.get_army_score(0) == 0
 
 
+async def test_get_army_score_returns_0_or_1_only(laddergame, players):
+    laddergame.state = GameState.LOBBY
+    add_connected_players(laddergame, [players.hosting, players.joining])
+
+    await laddergame.add_result(players.hosting, 0, 'victory', 100)
+    await laddergame.add_result(players.joining, 1, 'defeat', 50)
+
+    assert laddergame.get_army_score(0) == 1
+
+
 async def test_is_winner(laddergame, players):
     laddergame.state = GameState.LOBBY
     add_connected_players(laddergame, [players.hosting, players.joining])
