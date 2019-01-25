@@ -1,19 +1,18 @@
-from enum import Enum, IntEnum, unique
-import logging
-import time
-import functools
-import re
-from collections import defaultdict
 import asyncio
-from typing import Union
-import trueskill
-from trueskill import Rating
-import server.db as db
+import functools
+import logging
+import re
+import time
+from collections import Counter, defaultdict
+from enum import Enum, IntEnum, unique
+from typing import Any, Optional, Union
+
 import aiomysql
-from server.abc.base_game import GameConnectionState, BaseGame, InitMode
+import server.db as db
+import trueskill
+from server.abc.base_game import BaseGame, GameConnectionState, InitMode
 from server.players import Player, PlayerState
-from collections import Counter
-from typing import Dict, Any, Tuple
+from trueskill import Rating
 
 
 @unique
@@ -32,7 +31,7 @@ class Victory(IntEnum):
     SANDBOX = 3
 
     @staticmethod
-    def from_gpgnet_string(value):
+    def from_gpgnet_string(value: str) -> Optional["Victory"]:
         """
         :param value: The string to convert from
 
@@ -52,7 +51,7 @@ class VisibilityState(IntEnum):
     FRIENDS = 1
 
     @staticmethod
-    def from_string(value):
+    def from_string(value: str) -> Optional["VisibilityState"]:
         """
         :param value: The string to convert from
 
@@ -64,11 +63,12 @@ class VisibilityState(IntEnum):
         }.get(value)
 
     @staticmethod
-    def to_string(value):
+    def to_string(value: "VisibilityState") -> Optional[str]:
         if value == VisibilityState.PUBLIC:
             return "public"
         elif value == VisibilityState.FRIENDS:
             return "friends"
+        return None
 
 
 # Identifiers must be kept in sync with the contents of the invalid_game_reasons table.
@@ -109,7 +109,7 @@ class GameOutcome(Enum):
     MUTUAL_DRAW = 4
 
     @staticmethod
-    def from_string(value) -> "GameOutcome":
+    def from_string(value: str) -> Optional["GameOutcome"]:
         """
         :param value: The string to convert from
 
@@ -204,7 +204,7 @@ class Game(BaseGame):
                           for player in self.players})
 
     @property
-    def is_mutually_agreed_draw(self):
+    def is_mutually_agreed_draw(self) -> bool:
         # Don't count non-reported games as mutual draws
         if not len(self._results):
             return False
@@ -245,7 +245,7 @@ class Game(BaseGame):
                           for player in self.players})
 
     @property
-    def is_ffa(self):
+    def is_ffa(self) -> bool:
         if len(self.players) < 3:
             return False
 
@@ -260,15 +260,15 @@ class Game(BaseGame):
         return True
 
     @property
-    def is_multi_team(self):
+    def is_multi_team(self) -> bool:
         return len(self.teams) > 2
 
     @property
-    def has_ai(self):
+    def has_ai(self) -> bool:
         return len(self.AIs) > 0
 
     @property
-    def is_even(self):
+    def is_even(self) -> bool:
         teams = self.team_count()
         if 1 in teams: # someone is in ffa team, all teams need to have 1 player
             c = 1
@@ -308,9 +308,9 @@ class Game(BaseGame):
 
         return teams
 
-    def outcome(self, player: Player) -> Union[GameOutcome, None]:
+    def outcome(self, player: Player) -> Optional[GameOutcome]:
         """
-        Determines whet the game outcome was for a given player. Did the
+        Determines what the game outcome was for a given player. Did the
         player win, lose, draw?
 
         :param player: The player who's perspective we want
@@ -577,16 +577,15 @@ class Game(BaseGame):
             self._player_options[id_] = {}
         self._player_options[id_][key] = value
 
-    def get_player_option(self, id_, key):
+    def get_player_option(self, player_id: int, key: str) -> Any:
         """
         Retrieve game-associative options for given player, by their uid
-        :param id_:
-        :type id_: int
-        :param key:
-        :return:
+        :param player_id: The id of the player
+        :param key: The name of the option
+        :return: Any
         """
         try:
-            return self._player_options[id_][key]
+            return self._player_options[player_id][key]
         except KeyError:
             return None
 
