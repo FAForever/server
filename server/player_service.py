@@ -51,27 +51,29 @@ class PlayerService:
     def fetch_player_data(self, player):
         with (yield from self.db_pool) as conn:
             cur = yield from conn.cursor()
-            yield from cur.execute('SELECT mean, deviation, numGames FROM `global_rating` '
-                                   'WHERE id=%s', player.id)
+            yield from cur.execute(
+                """ SELECT mean, deviation, numGames FROM `global_rating`
+                    WHERE id=%s""", player.id)
             result = yield from cur.fetchone()
             if not result:
                 result = (1500, 500, 0)
             (mean, dev, num_games) = result
             player.global_rating = (mean, dev)
             player.numGames = num_games
-            yield from cur.execute('SELECT mean, deviation FROM `ladder1v1_rating` '
-                                   'WHERE id=%s', player.id)
+            yield from cur.execute(
+                """ SELECT mean, deviation FROM `ladder1v1_rating`
+                    WHERE id=%s""", player.id)
             player.ladder_rating = yield from cur.fetchone()
 
             ## Clan informations
             try:
                 yield from cur.execute(
-                    "SELECT tag "
-                    "FROM login "
-                    "JOIN clan_membership "
-                    "ON login.id = clan_membership.player_id "
-                    "JOIN clan ON clan_membership.clan_id = clan.id "
-                    "where player_id =  %s", player.id)
+                    """ SELECT tag
+                        FROM login
+                        JOIN clan_membership
+                        ON login.id = clan_membership.player_id
+                        JOIN clan ON clan_membership.clan_id = clan.id
+                        WHERE player_id =  %s""", player.id)
                 result = yield from cur.fetchone()
                 if result:
                     (player.clan, ) = result
