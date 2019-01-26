@@ -176,9 +176,9 @@ class LobbyConnection:
                 )
 
             yield from cursor.execute(
-                """ SELECT tutorial_sections.`section`, `name`, `url`, `tutorials`.`description`, `map`
+                """ SELECT ts.`section`, `name`, `url`, `tutorials`.`description`, `map`
                     FROM `tutorials`
-                    LEFT JOIN tutorial_sections ON tutorial_sections.id = tutorials.section
+                    LEFT JOIN tutorial_sections as ts ON ts.id = tutorials.section
                     ORDER BY `tutorials`.`section`, name"""
             )
 
@@ -242,8 +242,9 @@ class LobbyConnection:
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute("DELETE FROM friends_and_foes WHERE user_id = %s AND subject_id = %s",
-                                      (self.player.id, target_id))
+            yield from cursor.execute(
+                "DELETE FROM friends_and_foes WHERE user_id = %s AND subject_id = %s",
+                (self.player.id, target_id))
 
     @timed()
     @asyncio.coroutine
@@ -260,8 +261,9 @@ class LobbyConnection:
         with (yield from db.db_pool) as conn:
             cursor = yield from conn.cursor()
 
-            yield from cursor.execute("INSERT INTO friends_and_foes(user_id, subject_id, `status`) VALUES(%s, %s, %s)",
-                                      (self.player.id, target_id, status))
+            yield from cursor.execute(
+                "INSERT INTO friends_and_foes(user_id, subject_id, `status`) VALUES(%s, %s, %s)",
+                (self.player.id, target_id, status))
 
     def kick(self, message=None):
         self.sendJSON(dict(command="notice", style="kick"))
@@ -338,9 +340,10 @@ class LobbyConnection:
                 iduser = message["iduser"]
                 with (yield from db.db_pool) as conn:
                     cursor = yield from conn.cursor()
-                    yield from cursor.execute("DELETE FROM `avatars` "
-                                              "WHERE `idUser` = %s "
-                                              "AND `idAvatar` = %s", (iduser, idavatar))
+                    yield from cursor.execute(
+                        """ DELETE FROM `avatars`
+                            WHERE `idUser` = %s
+                            AND `idAvatar` = %s""", (iduser, idavatar))
 
             elif action == "add_avatar":
                 who = message['user']
@@ -350,15 +353,16 @@ class LobbyConnection:
                     cursor = yield from conn.cursor()
                     if avatar is None:
                         yield from cursor.execute(
-                            "DELETE FROM `avatars` "
-                            "WHERE `idUser` = "
-                            "(SELECT `id` FROM `login` WHERE `login`.`login` = %s)", (who, ))
+                            """ DELETE FROM `avatars`
+                                WHERE `idUser` =
+                                (SELECT `id` FROM `login` WHERE `login`.`login` = %s)""", (who, ))
                     else:
                         yield from cursor.execute(
-                            "INSERT INTO `avatars`(`idUser`, `idAvatar`) "
-                            "VALUES ((SELECT id FROM login WHERE login.login = %s),"
-                            "(SELECT id FROM avatars_list WHERE avatars_list.url = %s)) "
-                            "ON DUPLICATE KEY UPDATE `idAvatar` = (SELECT id FROM avatars_list WHERE avatars_list.url = %s)",
+                            """ INSERT INTO `avatars`(`idUser`, `idAvatar`)
+                                VALUES ((SELECT id FROM login WHERE login.login = %s),
+                                (SELECT id FROM avatars_list WHERE avatars_list.url = %s))
+                                ON DUPLICATE KEY UPDATE `idAvatar` =
+                                    (SELECT id FROM avatars_list WHERE avatars_list.url = %s)""",
                             (who, avatar, avatar))
 
             elif action == "broadcast":
@@ -381,17 +385,18 @@ class LobbyConnection:
 
     async def check_user_login(self, cursor, login, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.
-        await cursor.execute("SELECT login.id as id,"
-                                  "login.login as username,"
-                                  "login.password as password,"
-                                  "login.steamid as steamid,"
-                                  "login.create_time as create_time,"
-                                  "lobby_ban.reason as reason,"
-                                  "lobby_ban.expires_at as expires_at "
-                                  "FROM login "
-                                  "LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser "
-                                  "WHERE LOWER(login)=%s "
-                                  "ORDER BY expires_at DESC", (login.lower(), ))
+        await cursor.execute(
+            """ SELECT login.id as id,
+                login.login as username,
+                login.password as password,
+                login.steamid as steamid,
+                login.create_time as create_time,
+                lobby_ban.reason as reason,
+                lobby_ban.expires_at as expires_at
+                FROM login
+                LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser
+                WHERE LOWER(login)=%s
+                ORDER BY expires_at DESC""", (login.lower(), ))
 
         auth_error_message = "Login not found or password incorrect. They are case sensitive."
         if cursor.rowcount < 1:
@@ -513,7 +518,11 @@ class LobbyConnection:
             server.stats.gauge('users.online', len(self.player_service))
 
             await cursor.execute(
-                "UPDATE login SET ip = %(ip)s, user_agent = %(user_agent)s, last_login = NOW() WHERE id = %(player_id)s",
+                """ UPDATE login SET
+                        ip = %(ip)s,
+                        user_agent = %(user_agent)s,
+                        last_login = NOW()
+                    WHERE id = %(player_id)s""",
                 {
                     "ip": self.peer_address.host,
                     "user_agent": self.user_agent,
@@ -568,9 +577,9 @@ class LobbyConnection:
         async with db.db_pool.get() as conn:
             cursor = await conn.cursor()
             await cursor.execute(
-                "SELECT url, tooltip FROM `avatars` "
-                "LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` "
-                "WHERE `idUser` = %s AND `selected` = 1", (self.player.id, ))
+                """ SELECT url, tooltip FROM `avatars`
+                    LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id`
+                    WHERE `idUser` = %s AND `selected` = 1""", (self.player.id, ))
             avatar = await cursor.fetchone()
             if avatar:
                 url, tooltip = avatar
@@ -605,8 +614,9 @@ class LobbyConnection:
         foes = []
         async with db.db_pool.get() as conn:
             cursor = await conn.cursor()
-            await cursor.execute("SELECT `subject_id`, `status` "
-                                 "FROM friends_and_foes WHERE user_id = %s", (self.player.id,))
+            await cursor.execute(
+                """ SELECT `subject_id`, `status`
+                    FROM friends_and_foes WHERE user_id = %s""", (self.player.id,))
 
             for target_id, status in await cursor.fetchall():
                 if status == "FRIEND":
@@ -648,8 +658,9 @@ class LobbyConnection:
             async with db.db_pool.get() as conn:
                 cursor = await conn.cursor()
                 await cursor.execute(
-                    "SELECT url, tooltip FROM `avatars` "
-                    "LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = %s", (self.player.id,))
+                    """ SELECT url, tooltip FROM `avatars`
+                            LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id`
+                        WHERE `idUser` = %s""", (self.player.id,))
 
                 avatars = await cursor.fetchall()
                 for url, tooltip in avatars:
@@ -668,9 +679,9 @@ class LobbyConnection:
                     "UPDATE `avatars` SET `selected` = 0 WHERE `idUser` = %s", (self.player.id, ))
                 if avatar is not None:
                     await cursor.execute(
-                        "UPDATE `avatars` SET `selected` = 1 WHERE `idAvatar` ="
-                        "(SELECT id FROM avatars_list WHERE avatars_list.url = %s) and "
-                        "`idUser` = %s", (avatar, self.player.id))
+                        """ UPDATE `avatars` SET `selected` = 1 WHERE `idAvatar` =
+                            (SELECT id FROM avatars_list WHERE avatars_list.url = %s) and
+                            `idUser` = %s""", (avatar, self.player.id))
         else:
             raise KeyError('invalid action')
 
@@ -876,17 +887,19 @@ class LobbyConnection:
 
                 # TODO: Avoid sending all the mod info in the world just because we liked it?
                 if canLike:
-                    yield from cursor.execute("UPDATE mod_stats s "
-                                              "JOIN mod_version v ON v.mod_id = s.mod_id "
-                                              "SET s.likes = s.likes + 1, likers=%s WHERE v.uid = %s",
-                                              json.dumps(likers), uid)
+                    yield from cursor.execute(
+                        """ UPDATE mod_stats s
+                            JOIN mod_version v ON v.mod_id = s.mod_id
+                            SET s.likes = s.likes + 1, likers=%s WHERE v.uid = %s""",
+                        json.dumps(likers), uid)
                     self.sendJSON(out)
 
             elif type == "download":
                 uid = message["uid"]
-                yield from cursor.execute("UPDATE mod_stats s "
-                                          "JOIN mod_version v ON v.mod_id = s.mod_id "
-                                          "SET downloads=downloads+1 WHERE v.uid = %s", uid)
+                yield from cursor.execute(
+                    """ UPDATE mod_stats s
+                        JOIN mod_version v ON v.mod_id = s.mod_id
+                        SET downloads=downloads+1 WHERE v.uid = %s""", uid)
             else:
                 raise ValueError('invalid type argument')
 
