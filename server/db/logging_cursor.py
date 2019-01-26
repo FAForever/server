@@ -12,9 +12,10 @@ class LoggingCursor(aiomysql.Cursor):
         super().__init__(connection, echo)
 
     async def execute(self, query, args=None):
-        self._logger.debug("Executing query: %s with args: %s", query, args)
+        clean_query = ' '.join(query.split())
+        self._logger.debug("Executing query: %s with args: %s", clean_query, args)
         return await super().execute(query, args)
 
     @property
-    def size(self):
+    def size(self) -> int:
         return self.rowcount
