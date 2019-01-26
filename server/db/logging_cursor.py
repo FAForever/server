@@ -12,7 +12,7 @@ class LoggingCursor(aiomysql.Cursor):
         super().__init__(connection, echo)
 
     async def execute(self, query, args=None):
-        clean_query = ' '.join(query.split())
+        clean_query = ' '.join(str(query).split())
         self._logger.debug("Executing query: %s with args: %s", clean_query, args)
         return await super().execute(query, args)
 
