@@ -109,7 +109,7 @@ class GameService:
                 tfiles = t + "_files"
                 await cursor.execute(
                     """ SELECT {}.fileId, MAX({}.version)
-                        FROM {} LEFT JOIN {} ON {}.fileId = %s.id
+                        FROM {} LEFT JOIN {} ON {}.fileId = {}.id
                         GROUP BY {}.fileId""".format(tfiles, tfiles, tfiles, t, tfiles, t, tfiles)
                 )
                 rows = await cursor.fetchall()
