@@ -90,11 +90,13 @@ class GameService:
             self.ranked_mods = set(map(lambda x: x[0], rows))
 
             # Load all ladder maps
-            await cursor.execute("SELECT ladder_map.idmap, "
-                                 "table_map.name, "
-                                 "table_map.filename "
-                                 "FROM ladder_map "
-                                 "INNER JOIN table_map ON table_map.id = ladder_map.idmap")
+            await cursor.execute(
+                """ SELECT
+                        ladder_map.idmap,
+                        table_map.name,
+                        table_map.filename
+                    FROM ladder_map
+                    INNER JOIN table_map ON table_map.id = ladder_map.idmap""")
             self.ladder_maps = await cursor.fetchall()
 
             for mod in self.featured_mods.values():
@@ -105,9 +107,11 @@ class GameService:
                 self.game_mode_versions[mod.name] = {}
                 t = "updates_{}".format(mod.name)
                 tfiles = t + "_files"
-                await cursor.execute("SELECT %s.fileId, MAX(%s.version) "
-                                     "FROM %s LEFT JOIN %s ON %s.fileId = %s.id "
-                                     "GROUP BY %s.fileId" % (tfiles, tfiles, tfiles, t, tfiles, t, tfiles))
+                await cursor.execute(
+                    """ SELECT {}.fileId, MAX({}.version)
+                        FROM {} LEFT JOIN {} ON {}.fileId = %s.id
+                        GROUP BY {}.fileId""".format(tfiles, tfiles, tfiles, t, tfiles, t, tfiles)
+                )
                 rows = await cursor.fetchall()
                 for fileId, version in rows:
                     self.game_mode_versions[mod.name][fileId] = version
