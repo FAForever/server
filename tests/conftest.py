@@ -133,6 +133,31 @@ def db_pool(request, loop):
 
     return pool
 
+
+@pytest.fixture(scope='session')
+def db_engine(request, loop):
+    import server
+
+    def opt(val):
+        return request.config.getoption(val)
+    host, user, pw, db, port = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt('--mysql_database'), opt('--mysql_port')
+    engine_fut = asyncio.async(server.db.connect_engine(
+        loop=loop,
+        host=host,
+        user=user,
+        password=pw or None,
+        port=port,
+        db=db))
+    engine = loop.run_until_complete(engine_fut)
+
+    def fin():
+        engine.close()
+        loop.run_until_complete(engine.wait_closed())
+    request.addfinalizer(fin)
+
+    return engine
+
+
 @pytest.fixture
 def transport():
     return mock.Mock(spec=asyncio.Transport)

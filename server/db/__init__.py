@@ -1,8 +1,11 @@
 import aiomysql
 from .logging_cursor import LoggingCursor
 from aiomysql import Pool
+from aiomysql.sa import create_engine
+from . import models
 
-db_pool: Pool = None
+db_pool = None
+engine = None
 
 
 def set_pool(pool: Pool):
@@ -13,9 +16,19 @@ def set_pool(pool: Pool):
     db_pool = pool
 
 
-async def connect(loop,
-                  host='localhost', port=3306, user='root', password='', db='faf_test',
-                  minsize=1, maxsize=1, cursorclass=LoggingCursor) -> Pool:
+def set_engine(engine_):
+    """
+    Set the globally used engine to the given argument
+    """
+    global engine
+    engine = engine_
+
+
+async def connect(
+    loop,
+    host='localhost', port=3306, user='root', password='', db='faf_test',
+    minsize=1, maxsize=1, cursorclass=LoggingCursor
+) -> Pool:
     """
     Initialize the database pool
     :param loop:
@@ -40,3 +53,17 @@ async def connect(loop,
                                       cursorclass=cursorclass)
     set_pool(pool)
     return pool
+
+
+async def connect_engine(loop, host='localhost', port=3306, user='root',
+                         password='', db='faf_test'):
+    engine = await create_engine(
+        user=user,
+        db=db,
+        host=host,
+        password=password,
+        loop=loop
+    )
+
+    set_engine(engine)
+    return engine

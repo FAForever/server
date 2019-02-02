@@ -52,14 +52,31 @@ if __name__ == '__main__':
         signal.signal(signal.SIGTERM, signal_handler)
         signal.signal(signal.SIGINT, signal_handler)
 
-        pool_fut = asyncio.async(server.db.connect(host=DB_SERVER,
-                                                   port=int(DB_PORT),
-                                                   user=DB_LOGIN,
-                                                   password=DB_PASSWORD,
-                                                   maxsize=10,
-                                                   db=DB_NAME,
-                                                   loop=loop))
+        pool_fut = asyncio.async(
+            server.db.connect(
+                host=DB_SERVER,
+                port=int(DB_PORT),
+                user=DB_LOGIN,
+                password=DB_PASSWORD,
+                maxsize=10,
+                db=DB_NAME,
+                loop=loop
+            )
+        )
+
+        engine_fut = asyncio.async(
+            server.db.connect(
+                host=DB_SERVER,
+                port=int(DB_PORT),
+                user=DB_LOGIN,
+                password=DB_PASSWORD,
+                maxsize=10,
+                db=DB_NAME,
+                loop=loop
+            )
+        )
         db_pool = loop.run_until_complete(pool_fut)
+        engine = loop.run_until_complete(engine_fut)
 
         players_online = PlayerService(db_pool)
 
