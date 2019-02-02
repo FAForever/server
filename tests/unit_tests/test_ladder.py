@@ -58,3 +58,23 @@ async def test_choose_map(ladder_service: LadderService):
     # Make the probability very low that the test passes because we got lucky
     for _ in range(20):
         assert chosen_map == (4, "CHOOSE_ME", "maps/choose_me.v001.zip")
+
+
+async def test_choose_map_all_maps_played(ladder_service: LadderService):
+    ladder_service.get_ladder_history = CoroMock(
+        return_value=[
+            (1, datetime.now()),
+            (2, datetime.now()),
+            (3, datetime.now())
+        ]
+    )
+
+    ladder_service.game_service.ladder_maps = [
+        (1, "some_map", "maps/some_map.v001.zip"),
+        (2, "some_map", "maps/some_map.v001.zip"),
+        (3, "some_map", "maps/some_map.v001.zip"),
+    ]
+
+    chosen_map = await ladder_service.choose_map([None])
+
+    assert chosen_map is not None
