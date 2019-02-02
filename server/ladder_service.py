@@ -6,7 +6,7 @@ from typing import List, Tuple
 from sqlalchemy import and_, func, select, text
 
 from . import db
-from .db.models import game_player_stats, game_stats
+from .db.models import game_featuredMods, game_player_stats, game_stats
 from .decorators import with_logger
 from .games import LadderGame
 from .players import Player, PlayerState
@@ -101,12 +101,12 @@ class LadderService:
                 game_stats.c.mapId,
                 game_player_stats.c.scoreTime
             ]).select_from(
-                game_player_stats.join(game_stats)
+                game_player_stats.join(game_stats).join(game_featuredMods)
             ).where(
                 and_(
                     game_player_stats.c.playerId == player.id,
                     game_player_stats.c.scoreTime >= func.now() - text("interval 1 day"),
-                    game_stats.c.gameMod == 6  # 6 is ladder, TODO: replace with name
+                    game_featuredMods.c.gamemod == "ladder1v1"
                 )
             ).limit(limit)
 
