@@ -2,7 +2,6 @@ import aiomysql
 from .logging_cursor import LoggingCursor
 from aiomysql import Pool
 from aiomysql.sa import create_engine
-from . import models
 
 db_pool = None
 engine = None
