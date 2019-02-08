@@ -7,23 +7,17 @@ these should be put in the ``conftest.py'' relative to it.
 """
 
 import asyncio
-
 import logging
-import subprocess
-import sys
-
-from server.api.api_accessor import ApiAccessor
-from server.config import DB_SERVER, DB_LOGIN, DB_PORT, DB_PASSWORD
-from server.geoip_service import GeoIpService
+from unittest import mock
 
 import pytest
-from unittest import mock
-from trueskill import Rating
+from server.api.api_accessor import ApiAccessor
+from server.config import DB_LOGIN, DB_PASSWORD, DB_PORT, DB_SERVER
+from server.geoip_service import GeoIpService
 from tests import CoroMock
+from trueskill import Rating
 
 logging.getLogger().setLevel(logging.DEBUG)
-
-import os
 
 
 def async_test(f):
