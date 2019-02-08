@@ -4,7 +4,7 @@ import logging
 import re
 import time
 from collections import Counter, defaultdict
-from enum import Enum, IntEnum, unique
+from enum import Enum, unique
 from typing import Any, Optional, Union, Dict
 
 import aiomysql
@@ -16,7 +16,7 @@ from trueskill import Rating
 
 
 @unique
-class GameState(IntEnum):
+class GameState(Enum):
     INITIALIZING = 0
     LOBBY = 1
     LIVE = 2
@@ -24,7 +24,7 @@ class GameState(IntEnum):
 
 
 @unique
-class Victory(IntEnum):
+class Victory(Enum):
     DEMORALIZATION = 0
     DOMINATION = 1
     ERADICATION = 2
@@ -46,7 +46,7 @@ class Victory(IntEnum):
 
 
 @unique
-class VisibilityState(IntEnum):
+class VisibilityState(Enum):
     PUBLIC = 0
     FRIENDS = 1
 
@@ -62,19 +62,18 @@ class VisibilityState(IntEnum):
             "friends": VisibilityState.FRIENDS
         }.get(value)
 
-    @staticmethod
-    def to_string(value: "VisibilityState") -> Optional[str]:
-        if value == VisibilityState.PUBLIC:
-            return "public"
-        elif value == VisibilityState.FRIENDS:
-            return "friends"
-        return None
+    def to_string(self) -> Optional[str]:
+        return {
+            VisibilityState.PUBLIC: "public",
+            VisibilityState.FRIENDS: "friends"
+        }.get(self)
 
 
 # Identifiers must be kept in sync with the contents of the invalid_game_reasons table.
 # New reasons added should have a description added to that table. Identifiers should never be
 # reused, and values should never be deleted from invalid_game_reasons.
-class ValidityState(IntEnum):
+@unique
+class ValidityState(Enum):
     VALID = 0
     TOO_MANY_DESYNCS = 1
     WRONG_VICTORY_CONDITION = 2
@@ -102,6 +101,7 @@ class ValidityState(IntEnum):
     OTHER_UNRANK = 24
 
 
+@unique
 class GameOutcome(Enum):
     VICTORY = 1
     DEFEAT = 2
@@ -531,7 +531,7 @@ class Game(BaseGame):
 
         rating_table = '{}_rating'.format('ladder1v1' if rating == 'ladder' else rating)
 
-        async with db.db_pool.get() as conn:
+        async with db.db_pool.acquire() as conn:
             cursor = await conn.cursor()
 
             for player, new_rating in new_ratings.items():
@@ -834,9 +834,9 @@ class Game(BaseGame):
         :raise KeyError
         :return:
         """
-        scores: Dict[int, int] = defaultdict(int)
-        for result in self._results.get(army, []):
-            scores[result[2]] += 1
+        scores: Dict[int, int] = Counter(
+            map(lambda res: res[2], self._results.get(army, []))
+        )
 
         # There were no results
         if not scores:
