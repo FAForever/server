@@ -5,14 +5,15 @@ import re
 import time
 from collections import Counter, defaultdict
 from enum import Enum, unique
-from typing import Any, Optional, Union, Dict
+from typing import Any, Dict, Optional, Union
 
 import aiomysql
 import server.db as db
 import trueskill
-from server.abc.base_game import BaseGame, GameConnectionState, InitMode
-from server.players import Player, PlayerState
 from trueskill import Rating
+
+from ..abc.base_game import BaseGame, GameConnectionState, InitMode
+from ..players import Player, PlayerState
 
 
 @unique
@@ -133,18 +134,16 @@ class Game(BaseGame):
     """
     init_mode = InitMode.NORMAL_LOBBY
 
-    def __init__(self, id, game_service, game_stats_service,
-                 host=None,
-                 name='None',
-                 map='SCMP_007',
-                 game_mode='faf'):
-        """
-        Initializes a new game
-        :type id int
-        :type name: str
-        :type map: str
-        :return: Game
-        """
+    def __init__(
+        self,
+        id_: int,
+        game_service: "GameService",
+        game_stats_service: "GameStatsService",
+        host: Optional[Player]=None,
+        name: str='None',
+        map_: str='SCMP_007',
+        game_mode: str='faf'
+    ):
         super().__init__()
         self._results = {}
         self._army_stats = None
@@ -154,14 +153,14 @@ class Game(BaseGame):
         self._player_options = {}
         self.launched_at = None
         self.ended = False
-        self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, id))
-        self.id = id
+        self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, id_))
+        self.id = id_
         self.visibility = VisibilityState.PUBLIC
         self.max_players = 12
         self.host = host
         self.name = self.sanitize_name(name)
         self.map_id = None
-        self.map_file_path = 'maps/%s.zip' % map
+        self.map_file_path = f'maps/{map_}.zip'
         self.map_scenario_path = None
         self.password = None
         self._players = []
@@ -728,6 +727,8 @@ class Game(BaseGame):
         Runs at game-start to populate the game_stats table (games that start are ones we actually
         care about recording stats for, after all).
         """
+        assert self.host is not None
+
         async with db.db_pool.get() as conn:
             cursor = await conn.cursor(aiomysql.DictCursor)
 
@@ -795,7 +796,7 @@ class Game(BaseGame):
     def getGamemodVersion(self):
         return self.game_service.game_mode_versions[self.game_mode]
 
-    def sanitize_name(self, name):
+    def sanitize_name(self, name: str) -> str:
         """
         Replaces sequences of non-latin characters with an underscore and truncates the string to 128 characters
         Avoids the game name to crash the mysql INSERT query by being longer than the column's max size or by
