@@ -39,11 +39,7 @@ def test_inform_player(ladder_service: LadderService):
 
 async def test_choose_map(ladder_service: LadderService):
     ladder_service.get_ladder_history = CoroMock(
-        return_value=[
-            (1, datetime.now()),
-            (2, datetime.now()),
-            (3, datetime.now())
-        ]
+        return_value=[1, 2, 3]
     )
 
     ladder_service.game_service.ladder_maps = [
@@ -62,11 +58,7 @@ async def test_choose_map(ladder_service: LadderService):
 
 async def test_choose_map_all_maps_played(ladder_service: LadderService):
     ladder_service.get_ladder_history = CoroMock(
-        return_value=[
-            (1, datetime.now()),
-            (2, datetime.now()),
-            (3, datetime.now())
-        ]
+        return_value=[1, 2, 3]
     )
 
     ladder_service.game_service.ladder_maps = [

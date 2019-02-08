@@ -79,7 +79,7 @@ class LadderService:
             raise RuntimeError("Ladder maps not set!")
 
         recently_played_map_ids = {
-            map_id for player in players for map_id, _ in
+            map_id for player in players for map_id in
             await self.get_ladder_history(player)
         }
         randomized_maps = random.sample(maps, len(maps))
@@ -95,11 +95,10 @@ class LadderService:
             # If all maps were played recently, pick a random one
             return randomized_maps[0]
 
-    async def get_ladder_history(self, player: Player, limit=3) -> List[Tuple[int, datetime]]:
+    async def get_ladder_history(self, player: Player, limit=3) -> List[int]:
         async with db.engine.acquire() as conn:
             query = select([
                 game_stats.c.mapId,
-                game_player_stats.c.scoreTime
             ]).select_from(
                 game_player_stats.join(game_stats).join(game_featuredMods)
             ).where(
@@ -111,4 +110,4 @@ class LadderService:
             ).limit(limit)
 
             # Collect all the rows from the ResultProxy
-            return [row async for row in await conn.execute(query)]
+            return [row[0] async for row in await conn.execute(query)]
