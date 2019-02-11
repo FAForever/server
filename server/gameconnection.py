@@ -25,14 +25,17 @@ class GameConnection(GpgNetServerProtocol):
     Responsible for connections to the game, using the GPGNet protocol
     """
 
-    def __init__(self, loop: asyncio.BaseEventLoop,
-                 lobby_connection: "LobbyConnection",
-                 player_service: PlayerService,
-                 games: GameService):
+    def __init__(
+        self,
+        game: Game,
+        player: Player,
+        lobby_connection: "LobbyConnection",
+        player_service: PlayerService,
+        games: GameService
+    ):
         """
         Construct a new GameConnection
 
-        :param loop: asyncio event loop to use
         :param lobby_connection: The lobby connection we're associated with
         :param player_service: PlayerService
         :param games: GamesService
@@ -44,14 +47,13 @@ class GameConnection(GpgNetServerProtocol):
         self.lobby_connection = lobby_connection
         self._state = GameConnectionState.INITIALIZING
         self._waiters = defaultdict(list)
-        self.loop = loop
         self.player_service = player_service
         self.games = games
 
         self.initTime = time.time()
         self.proxies = {}
-        self._player = None
-        self._game = None
+        self._player = player
+        self._game = game
 
         self.last_pong = time.time()
 
@@ -71,7 +73,7 @@ class GameConnection(GpgNetServerProtocol):
         return self._state
 
     @property
-    def game(self):
+    def game(self) -> Game:
         """
         :rtype: Game
         """
@@ -513,7 +515,7 @@ class GameConnection(GpgNetServerProtocol):
                         except Exception as ex:  # pragma no cover
                             self._logger.exception("peer_sendDisconnectFromPeer failed for player %i", self.player.id)
             self._state = GameConnectionState.ENDED
-            self.loop.create_task(self.game.remove_game_connection(self))
+            asyncio.ensure_future(self.game.remove_game_connection(self))
             self._mark_dirty()
             self._logger.debug("%s.abort(%s)", self, logspam)
             self.player.state = PlayerState.IDLE

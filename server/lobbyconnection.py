@@ -698,7 +698,7 @@ class LobbyConnection:
                 self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
                 return
 
-            self.launch_game(game, port, False)
+            self.launch_game(game, port, is_host=False)
         except KeyError:
             self.sendJSON(dict(command="notice", style="info", text="The host has left the game"))
 
@@ -786,22 +786,24 @@ class LobbyConnection:
             mapname=mapname,
             password=password
         )
-        self.launch_game(game, port, True)
+        self.launch_game(game, port, is_host=True)
         server.stats.incr('game.hosted')
 
     def launch_game(self, game, port, is_host=False, use_map=None):
-        # FIXME: Setting up a ridiculous amount of cyclic pointers here
+        # TODO: Fix setting up a ridiculous amount of cyclic pointers here
         if self.game_connection:
             self.game_connection.abort("Player launched a new game")
-        self.game_connection = GameConnection(self.loop,
-                                              self,
-                                              self.player_service,
-                                              self.game_service)
-        self.game_connection.player = self.player
-        self.player.game_connection = self.game_connection
-        self.game_connection.game = game
+
         if is_host:
             game.host = self.player
+
+        self.game_connection = GameConnection(
+            game=game,
+            player=self.player,
+            lobby_connection=self,
+            player_service=self.player_service,
+            games=self.game_service
+        )
 
         self.player.state = PlayerState.HOSTING if is_host else PlayerState.JOINING
         self.player.game = game

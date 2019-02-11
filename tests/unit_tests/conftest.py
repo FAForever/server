@@ -18,23 +18,24 @@ def lobbythread():
 
 
 @pytest.fixture
-def game_connection(request, game, loop, player_service, players, game_service, transport):
+def game_connection(request, game, player_service, players, game_service, transport):
     from server import GameConnection, LobbyConnection
-    conn = GameConnection(loop=loop,
-                          lobby_connection=mock.create_autospec(
-                              LobbyConnection(
-                                  loop=mock.Mock(),
-                                  context=mock.Mock(),
-                                  geoip=mock.Mock(),
-                                  games=mock.Mock(),
-                                  players=mock.Mock()
-                              )
-                          ),
-                          player_service=player_service,
-                          games=game_service)
+    conn = GameConnection(
+        game=game,
+        player=players.hosting,
+        lobby_connection=mock.create_autospec(
+            LobbyConnection(
+                loop=mock.Mock(),
+                context=mock.Mock(),
+                geoip=mock.Mock(),
+                games=mock.Mock(),
+                players=mock.Mock()
+            )
+        ),
+        player_service=player_service,
+        games=game_service
+    )
     conn._transport = transport
-    conn.player = players.hosting
-    conn.game = game
     conn.lobby = mock.Mock(spec=LobbyConnection)
     conn.finished_sim = False
 
@@ -75,12 +76,13 @@ def connections(loop, player_service, game_service, transport, game):
     def make_connection(player, connectivity):
         lc = LobbyConnection(loop)
         lc.protocol = mock.Mock()
-        conn = GameConnection(loop=loop,
-                              lobby_connection=lc,
-                              player_service=player_service,
-                              games=game_service)
-        conn.player = player
-        conn.game = game
+        conn = GameConnection(
+            game=game,
+            player=player,
+            lobby_connection=lc,
+            player_service=player_service,
+            games=game_service
+        )
         conn._transport = transport
         conn._connectivity_state.set_result(connectivity)
         return conn
