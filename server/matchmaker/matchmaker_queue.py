@@ -30,7 +30,7 @@ class MatchmakerQueue:
         """
         self.queue[search.player] = search
 
-    def match(self, s1: Search, s2: Search):
+    def match(self, s1: Search, s2: Search) -> bool:
         """
         Mark the given two searches as matched
         :param s1:
