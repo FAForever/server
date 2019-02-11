@@ -80,7 +80,7 @@ if __name__ == '__main__':
         server.NatPacketServer.instance = natpacket_server
 
         games = GameService(players_online, game_stats_service)
-        matchmaker_queue = MatchmakerQueue('ladder1v1', players_online, games)
+        matchmaker_queue = MatchmakerQueue('ladder1v1', game_service=games)
         players_online.ladder_queue = matchmaker_queue
 
         ctrl_server = loop.run_until_complete(server.run_control_server(loop, players_online, games))

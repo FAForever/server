@@ -198,7 +198,7 @@ def players(create_player):
 
 
 @pytest.fixture
-def player_service(loop, players, db_engine):
+def player_service(loop, db_engine):
     from server.player_service import PlayerService
     return PlayerService()
 
