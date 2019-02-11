@@ -83,10 +83,10 @@ class PlayerService:
         if player.id in self.players:
             del self.players[player.id]
 
-    def get_permission_group(self, user_id: int):
+    def get_permission_group(self, user_id: int) -> int:
         return self.privileged_users.get(user_id, 0)
 
-    def is_uniqueid_exempt(self, user_id):
+    def is_uniqueid_exempt(self, user_id: int) -> bool:
         return user_id in self.uniqueid_exempt
 
     def has_blacklisted_domain(self, email: str) -> bool:
