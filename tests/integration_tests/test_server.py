@@ -1,30 +1,27 @@
-import pytest
+import asyncio
 import hashlib
+import logging
 
-from server import VisibilityState
-
+import pytest
+from server import VisibilityState, run_lobby_server
+from server.protocol import QDataStreamProtocol
 from tests.integration_tests.testclient import ClientTest
 
 slow = pytest.mark.slow
 
 TEST_ADDRESS = ('127.0.0.1', None)
 
-import asyncio
-import logging
-import pytest
-from server import run_lobby_server
-from server.protocol import QDataStreamProtocol
-
-slow = pytest.mark.slow
-
 
 @pytest.fixture
-def lobby_server(request, loop, db_engine, player_service, game_service, geoip_service):
-    ctx = run_lobby_server(address=('127.0.0.1', None),
-                           geoip_service=geoip_service,
-                           player_service=player_service,
-                           games=game_service,
-                           loop=loop)
+def lobby_server(request, loop, db_engine, player_service, game_service, geoip_service, matchmaker_queue):
+    ctx = run_lobby_server(
+        address=('127.0.0.1', None),
+        geoip_service=geoip_service,
+        player_service=player_service,
+        games=game_service,
+        matchmaker_queue=matchmaker_queue,
+        loop=loop
+    )
     player_service.is_uniqueid_exempt = lambda id: True
 
     def fin():

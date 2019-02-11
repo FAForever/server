@@ -75,11 +75,13 @@ def mock_geoip():
 
 @pytest.fixture
 def lobbyconnection(loop, mock_context, mock_protocol, mock_games, mock_players, mock_player, mock_geoip):
-    lc = LobbyConnection(loop,
-                         context=mock_context,
-                         geoip=mock_geoip,
-                         games=mock_games,
-                         players=mock_players)
+    lc = LobbyConnection(
+        context=mock_context,
+        geoip=mock_geoip,
+        games=mock_games,
+        players=mock_players,
+        matchmaker_queue=mock.Mock()
+    )
     lc.player = mock_player
     lc.connectivity = mock.create_autospec(Connectivity)
     lc.protocol = mock_protocol

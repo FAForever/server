@@ -14,6 +14,7 @@ import pytest
 from server.api.api_accessor import ApiAccessor
 from server.config import DB_LOGIN, DB_PASSWORD, DB_PORT, DB_SERVER
 from server.geoip_service import GeoIpService
+from server.matchmaker import MatchmakerQueue
 from tests import CoroMock
 from trueskill import Rating
 
@@ -63,6 +64,7 @@ def pytest_runtest_setup(item):
     if getattr(item.obj, 'slow', None) and item.config.getvalue('noslow'):
         pytest.skip("slow test")
 
+
 def pytest_pyfunc_call(pyfuncitem):
     testfn = pyfuncitem.obj
 
@@ -84,11 +86,13 @@ def pytest_pyfunc_call(pyfuncitem):
         raise err
     return True
 
+
 @pytest.fixture(scope='session', autouse=True)
 def loop(request):
     import server
     server.stats = mock.MagicMock()
     return asyncio.get_event_loop()
+
 
 @pytest.fixture
 def sqlquery():
@@ -133,6 +137,7 @@ def db_engine(request, loop):
     return engine
 
 
+
 @pytest.fixture
 def transport():
     return mock.Mock(spec=asyncio.Transport)
@@ -173,6 +178,7 @@ def make_game(uid, players):
 @pytest.fixture
 def create_player():
     from server.players import Player, PlayerState
+
     def make(login='', id=0, port=6112, state=PlayerState.HOSTING, ip='127.0.0.1', global_rating=Rating(1500, 250), ladder_rating=Rating(1500, 250)):
         p = mock.create_autospec(spec=Player(login))
         p.global_rating = global_rating
@@ -214,6 +220,11 @@ def geoip_service() -> GeoIpService:
     return GeoIpService()
 
 
+@pytest.fixture
+def matchmaker_queue(game_service) -> MatchmakerQueue:
+    return MatchmakerQueue("ladder1v1test", game_service)
+
+
 @pytest.fixture()
 def api_accessor():
     class FakeRequestResponse:
@@ -243,15 +254,18 @@ def api_accessor():
     api_accessor.api_session = SessionManager()
     return api_accessor
 
+
 @pytest.fixture
 def event_service(api_accessor):
     from server.stats.event_service import EventService
     return EventService(api_accessor)
 
+
 @pytest.fixture
 def achievement_service(api_accessor):
     from server.stats.achievement_service import AchievementService
     return AchievementService(api_accessor)
+
 
 @pytest.fixture
 def game_stats_service(event_service, achievement_service):

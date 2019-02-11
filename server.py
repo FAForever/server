@@ -73,23 +73,23 @@ if __name__ == '__main__':
         event_service = EventService(api_accessor)
         achievement_service = AchievementService(api_accessor)
         game_stats_service = GameStatsService(event_service, achievement_service)
-        geoip_service = GeoIpService()
 
         natpacket_server = NatPacketServer(addresses=config.LOBBY_NAT_ADDRESSES, loop=loop)
         loop.run_until_complete(natpacket_server.listen())
         server.NatPacketServer.instance = natpacket_server
 
         games = GameService(players_online, game_stats_service)
-        matchmaker_queue = MatchmakerQueue('ladder1v1', game_service=games)
-        players_online.ladder_queue = matchmaker_queue
 
         ctrl_server = loop.run_until_complete(server.run_control_server(loop, players_online, games))
 
-        lobby_server = server.run_lobby_server(address=('', 8001),
-                                               geoip_service=geoip_service,
-                                               player_service=players_online,
-                                               games=games,
-                                               loop=loop)
+        lobby_server = server.run_lobby_server(
+            address=('', 8001),
+            geoip_service=GeoIpService(),
+            player_service=players_online,
+            games=games,
+            matchmaker_queue=MatchmakerQueue('ladder1v1', game_service=games),
+            loop=loop
+        )
 
         for sock in lobby_server.sockets:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)

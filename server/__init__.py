@@ -24,6 +24,7 @@ from .player_service import PlayerService
 from .game_service import GameService
 from .ladder_service import LadderService
 from .control import init as run_control_server
+from .matchmaker import MatchmakerQueue
 
 __version__ = '0.9.17'
 __author__ = 'Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard, Michel Jung'
@@ -53,11 +54,14 @@ else:
     stats = aiomeasures.StatsD(config.STATSD_SERVER)
 
 
-def run_lobby_server(address: (str, int),
-                     player_service: PlayerService,
-                     games: GameService,
-                     loop,
-                     geoip_service: GeoIpService):
+def run_lobby_server(
+    address: (str, int),
+    player_service: PlayerService,
+    games: GameService,
+    loop,
+    geoip_service: GeoIpService,
+    matchmaker_queue: MatchmakerQueue
+):
     """
     Run the lobby server
 
@@ -139,11 +143,13 @@ def run_lobby_server(address: (str, int),
         loop.call_later(45, ping_broadcast)
 
     def initialize_connection():
-        return LobbyConnection(context=ctx,
-                               geoip=geoip_service,
-                               games=games,
-                               players=player_service,
-                               loop=loop)
+        return LobbyConnection(
+            context=ctx,
+            geoip=geoip_service,
+            games=games,
+            players=player_service,
+            matchmaker_queue=matchmaker_queue
+        )
     ctx = ServerContext(initialize_connection, name="LobbyServer", loop=loop)
     loop.call_later(5, report_dirties)
     loop.call_soon(ping_broadcast)

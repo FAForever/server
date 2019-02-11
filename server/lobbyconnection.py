@@ -22,7 +22,7 @@ from .game_service import GameService
 from .gameconnection import GameConnection
 from .games import GameMode, GameState, VisibilityState
 from .geoip_service import GeoIpService
-from .matchmaker import Search
+from .matchmaker import MatchmakerQueue, Search
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import QDataStreamProtocol
@@ -51,14 +51,18 @@ class AuthenticationError(Exception):
 @with_logger
 class LobbyConnection():
     @timed()
-    def __init__(self, loop, context,
-                 games: GameService,
-                 players: PlayerService,
-                 geoip: GeoIpService):
-        self.loop = loop
+    def __init__(
+        self,
+        context,
+        games: GameService,
+        players: PlayerService,
+        geoip: GeoIpService,
+        matchmaker_queue: MatchmakerQueue
+    ):
         self.geoip_service = geoip
         self.game_service = games
-        self.player_service = players  # type: PlayerService
+        self.player_service = players
+        self.matchmaker_queue = matchmaker_queue
         self.context = context
         self.ladderPotentialPlayers = []
         self.warned = False
@@ -741,7 +745,7 @@ class LobbyConnection():
                 self.game_service.ladder_service.inform_player(self.player)
 
                 self._logger.info("%s is searching for ladder: %s", self.player, self.search)
-                asyncio.ensure_future(self.player_service.ladder_queue.search(self.search))
+                asyncio.ensure_future(self.matchmaker_queue.search(self.search))
 
     def command_coop_list(self, message):
         """ Request for coop map list"""
