@@ -509,22 +509,32 @@ class GameConnection(GpgNetServerProtocol):
         try:
             if self._state is GameConnectionState.ENDED:
                 return
+
+            self._logger.debug("%s.abort(%s)", self, log_message)
+
             if self.game.state == GameState.LOBBY:
-                for peer in self.game.connections:
-                    if peer != self:
-                        try:
-                            peer.send_DisconnectFromPeer(self.player.id)
-                        except Exception as ex:  # pragma no cover
-                            self._logger.exception("peer_sendDisconnectFromPeer failed for player %i", self.player.id)
+                self.disconnect_all_peers()
+
             self._state = GameConnectionState.ENDED
             asyncio.ensure_future(self.game.remove_game_connection(self))
             self._mark_dirty()
-            self._logger.debug("%s.abort(%s)", self, log_message)
             self.player.state = PlayerState.IDLE
             del self.player.game
             del self.player.game_connection
         except Exception as ex:  # pragma: no cover
             self._logger.debug("Exception in abort(): %s", ex)
+
+    def disconnect_all_peers(self):
+        for peer in self.game.connections:
+            if peer == self:
+                continue
+
+            try:
+                peer.send_DisconnectFromPeer(self.player.id)
+            except Exception as ex:  # pragma no cover
+                self._logger.exception(
+                    "peer_sendDisconnectFromPeer failed for player %i",
+                    self.player.id)
 
     async def on_connection_lost(self):
         try:
