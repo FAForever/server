@@ -36,11 +36,6 @@ class GameConnection(GpgNetServerProtocol):
     ):
         """
         Construct a new GameConnection
-
-        :param lobby_connection: The lobby connection we're associated with
-        :param player_service: PlayerService
-        :param games: GamesService
-        :return:
         """
         super().__init__()
         self._logger.debug('GameConnection initializing')
@@ -49,7 +44,7 @@ class GameConnection(GpgNetServerProtocol):
         self._state = GameConnectionState.INITIALIZING
         self._waiters = defaultdict(list)
         self.player_service = player_service
-        self.games = games
+        self.game_service = games
 
         self.initTime = time.time()
         self.proxies = {}
@@ -58,7 +53,6 @@ class GameConnection(GpgNetServerProtocol):
 
         self.last_pong = time.time()
 
-        self.ip, self.port = None, None
         self._transport = None
 
         self.connectivity = connectivity
@@ -497,7 +491,7 @@ class GameConnection(GpgNetServerProtocol):
 
     def _mark_dirty(self):
         if self.game:
-            self.games.mark_dirty(self.game)
+            self.game_service.mark_dirty(self.game)
 
     def abort(self, log_message: str=''):
         """
