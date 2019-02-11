@@ -6,13 +6,13 @@ import server.db as db
 from sqlalchemy import text
 
 from .abc.base_game import GameConnectionState
-from .connectivity import ConnectivityState
+from .connectivity import Connectivity, ConnectivityState
 from .decorators import timed, with_logger
 from .game_service import GameService
 from .games.game import Game, GameState, ValidityState, Victory
 from .player_service import PlayerService
 from .players import Player, PlayerState
-from .protocol import GpgNetServerProtocol
+from .protocol import GpgNetServerProtocol, QDataStreamProtocol
 
 
 class AuthenticationError(Exception):
@@ -29,7 +29,8 @@ class GameConnection(GpgNetServerProtocol):
         self,
         game: Game,
         player: Player,
-        lobby_connection: "LobbyConnection",
+        protocol: QDataStreamProtocol,
+        connectivity: Connectivity,
         player_service: PlayerService,
         games: GameService
     ):
@@ -44,7 +45,7 @@ class GameConnection(GpgNetServerProtocol):
         super().__init__()
         self._logger.debug('GameConnection initializing')
 
-        self.lobby_connection = lobby_connection
+        self.protocol = protocol
         self._state = GameConnectionState.INITIALIZING
         self._waiters = defaultdict(list)
         self.player_service = player_service
@@ -58,10 +59,9 @@ class GameConnection(GpgNetServerProtocol):
         self.last_pong = time.time()
 
         self.ip, self.port = None, None
-        self.lobby = None
         self._transport = None
 
-        self.connectivity = self.lobby_connection.connectivity  # type: Connectivity
+        self.connectivity = connectivity
 
         self.finished_sim = False
 
@@ -95,8 +95,10 @@ class GameConnection(GpgNetServerProtocol):
         self._player = val
 
     def send_message(self, message):
-        self.lobby_connection.send({**message,
-                                    'target': 'game'})
+        message['target'] = "game"
+
+        self._logger.debug(">>: %s", message)
+        self.protocol.send_message(message)
 
     async def _handle_idle_state(self):
         """
@@ -497,7 +499,7 @@ class GameConnection(GpgNetServerProtocol):
         if self.game:
             self.games.mark_dirty(self.game)
 
-    def abort(self, logspam=''):
+    def abort(self, log_message: str=''):
         """
         Abort the connection
 
@@ -517,14 +519,12 @@ class GameConnection(GpgNetServerProtocol):
             self._state = GameConnectionState.ENDED
             asyncio.ensure_future(self.game.remove_game_connection(self))
             self._mark_dirty()
-            self._logger.debug("%s.abort(%s)", self, logspam)
+            self._logger.debug("%s.abort(%s)", self, log_message)
             self.player.state = PlayerState.IDLE
             del self.player.game
             del self.player.game_connection
         except Exception as ex:  # pragma: no cover
             self._logger.debug("Exception in abort(): %s", ex)
-        finally:
-            self.lobby_connection.game_connection = None
 
     async def on_connection_lost(self):
         try:

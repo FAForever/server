@@ -49,13 +49,12 @@ class AuthenticationError(Exception):
 
 
 @with_logger
-class LobbyConnection:
+class LobbyConnection():
     @timed()
     def __init__(self, loop, context,
                  games: GameService,
                  players: PlayerService,
                  geoip: GeoIpService):
-        super(LobbyConnection, self).__init__()
         self.loop = loop
         self.geoip_service = geoip
         self.game_service = games
@@ -92,6 +91,7 @@ class LobbyConnection:
             self._logger.warning("Aborting %s. %s" % (self.peer_address.host, logspam))
         if self.game_connection:
             self.game_connection.abort()
+            self.game_connection = None
         self._authenticated = False
         self.protocol.writer.close()
 
@@ -800,7 +800,8 @@ class LobbyConnection:
         self.game_connection = GameConnection(
             game=game,
             player=self.player,
-            lobby_connection=self,
+            protocol=self.protocol,
+            connectivity=self.connectivity,
             player_service=self.player_service,
             games=self.game_service
         )

@@ -19,24 +19,16 @@ def lobbythread():
 
 @pytest.fixture
 def game_connection(request, game, player_service, players, game_service, transport):
-    from server import GameConnection, LobbyConnection
+    from server import GameConnection
     conn = GameConnection(
         game=game,
         player=players.hosting,
-        lobby_connection=mock.create_autospec(
-            LobbyConnection(
-                loop=mock.Mock(),
-                context=mock.Mock(),
-                geoip=mock.Mock(),
-                games=mock.Mock(),
-                players=mock.Mock()
-            )
-        ),
+        protocol=mock.Mock(),
+        connectivity=mock.Mock(),
         player_service=player_service,
         games=game_service
     )
     conn._transport = transport
-    conn.lobby = mock.Mock(spec=LobbyConnection)
     conn.finished_sim = False
 
     def fin():
@@ -74,17 +66,16 @@ def connections(loop, player_service, game_service, transport, game):
     from server import GameConnection
 
     def make_connection(player, connectivity):
-        lc = LobbyConnection(loop)
-        lc.protocol = mock.Mock()
         conn = GameConnection(
             game=game,
             player=player,
-            lobby_connection=lc,
+            protocol=mock.Mock(),
+            connectivity=connectivity,
             player_service=player_service,
             games=game_service
         )
         conn._transport = transport
-        conn._connectivity_state.set_result(connectivity)
+        # conn._connectivity_state.set_result(connectivity)
         return conn
 
     return mock.Mock(
