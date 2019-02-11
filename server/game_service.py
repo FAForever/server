@@ -2,11 +2,11 @@ import asyncio
 from typing import Union
 
 import aiocron
-
 import server.db as db
 from server import GameState, VisibilityState
 from server.decorators import with_logger
-from server.games import FeaturedMod, LadderGame, CoopGame, CustomGame
+from server.games import (CoopGame, CustomGame, FeaturedMod, GameMode,
+                          LadderGame)
 from server.games.game import Game
 from server.matchmaker import MatchmakerQueue
 from server.players import Player
@@ -115,7 +115,7 @@ class GameService:
             self.game_mode_versions['ladder1v1'] = self.game_mode_versions['faf']
 
             # meh meh
-            self.ladder_service = LadderService(self, self.game_stats_service)
+            self.ladder_service = LadderService(self)
 
     @property
     def dirty_games(self):
@@ -142,7 +142,7 @@ class GameService:
 
     def create_game(self,
                     visibility=VisibilityState.PUBLIC,
-                    game_mode: str=None,
+                    game_mode: GameMode=None,
                     host: Player=None,
                     name: str=None,
                     mapname: str=None,
@@ -150,25 +150,27 @@ class GameService:
         """
         Main entrypoint for creating new games
         """
-        id_ = self.create_uid()
+        game_id = self.create_uuid()
         args = {
-            "id_": id_,
+            "id": game_id,
             "host": host,
             "name": name,
-            "map_": mapname,
-            "game_mode": game_mode,
+            "map": mapname,
+            "game_mode": str(game_mode),
             "game_service": self,
             "game_stats_service": self.game_stats_service
         }
-        if game_mode == 'ladder1v1':
-            game = LadderGame(**args)
-        elif game_mode == 'coop':
-            game = CoopGame(**args)
-        elif game_mode == 'faf' or game_mode == 'fafbeta' or game_mode == 'equilibrium':
-            game = CustomGame(**args)
-        else:
-            game = Game(**args)
-        self.games[id_] = game
+
+        GameClass = {
+            GameMode.LADDER:        LadderGame,
+            GameMode.COOP:          CoopGame,
+            GameMode.FAF:           CustomGame,
+            GameMode.FAF_BETA:      CustomGame,
+            GameMode.EQUILIBRIUM:   CustomGame
+        }.get(game_mode, Game)
+        game = GameClass(**args)
+
+        self.games[game_id] = game
 
         game.visibility = visibility
         game.password = password
