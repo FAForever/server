@@ -1,5 +1,5 @@
 import asyncio
-from typing import Union
+from typing import Dict, List, Optional, Union, ValuesView
 
 import aiocron
 import server.db as db
@@ -39,7 +39,7 @@ class GameService:
         self.ladder_service = None
 
         # The set of active games
-        self.games = dict()
+        self.games: Dict[int, Game] = dict()
 
         # Cached versions for files by game_mode ( featured mod name )
         # For use by the patcher
@@ -142,11 +142,11 @@ class GameService:
 
     def create_game(self,
                     visibility=VisibilityState.PUBLIC,
-                    game_mode: GameMode=None,
-                    host: Player=None,
-                    name: str=None,
-                    mapname: str=None,
-                    password: str=None):
+                    game_mode: GameMode=GameMode.UNKNOWN,
+                    host: Optional[Player]=None,
+                    name: Optional[str]=None,
+                    mapname: Optional[str]=None,
+                    password: Optional[str]=None):
         """
         Main entrypoint for creating new games
         """
@@ -179,12 +179,12 @@ class GameService:
         return game
 
     @property
-    def live_games(self):
+    def live_games(self) -> List[Game]:
         return [game for game in self.games.values()
                 if game.state == GameState.LIVE]
 
     @property
-    def open_games(self):
+    def open_games(self) -> List[Game]:
         """
         Return all games that meet the client's definition of "not closed".
         Server game states are mapped to client game states as follows:
@@ -201,11 +201,11 @@ class GameService:
                 if game.state == GameState.LOBBY or game.state == GameState.LIVE]
 
     @property
-    def all_games(self):
+    def all_games(self) -> ValuesView[Game]:
         return self.games.values()
 
     @property
-    def pending_games(self):
+    def pending_games(self) -> List[Game]:
         return [game for game in self.games.values()
                 if game.state == GameState.LOBBY or game.state == GameState.INITIALIZING]
 
@@ -226,5 +226,5 @@ class GameService:
             })
         return mods
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int) -> Game:
         return self.games[item]
