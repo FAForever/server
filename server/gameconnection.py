@@ -49,6 +49,7 @@ class GameConnection(GpgNetServerProtocol):
         self.initTime = time.time()
         self.proxies = {}
         self._player = player
+        player.game_connection = self  # Set up weak reference to self
         self._game = game
 
         self.last_pong = time.time()

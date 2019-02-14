@@ -6,11 +6,11 @@ import pytest
 from server import GameState, ServerContext, VisibilityState
 from server.connectivity import Connectivity
 from server.game_service import GameService
-from server.games import Game, CustomGame, GameMode
+from server.games import CustomGame, Game, GameMode
 from server.geoip_service import GeoIpService
 from server.lobbyconnection import LobbyConnection
 from server.player_service import PlayerService
-from server.players import Player
+from server.players import Player, PlayerState
 from server.protocol import QDataStreamProtocol
 from tests import CoroMock
 
@@ -106,6 +106,27 @@ def test_command_game_host_creates_game(lobbyconnection,
     }
     mock_games.create_game \
         .assert_called_with(**expected_call)
+
+
+def test_launch_game(lobbyconnection, game, create_player):
+    old_game_conn = mock.Mock()
+
+    lobbyconnection.player = create_player()
+    lobbyconnection.game_connection = old_game_conn
+    lobbyconnection.sendJSON = mock.Mock()
+    port = 1337
+    lobbyconnection.launch_game(game, port)
+
+    # Verify all side effects of launch_game here
+    old_game_conn.abort.assert_called_with("Player launched a new game")
+    assert lobbyconnection.game_connection is not None
+    assert lobbyconnection.game_connection.game == game
+    assert lobbyconnection.player.game == game
+    assert lobbyconnection.player.game_port == port
+    assert lobbyconnection.player.game_connection == lobbyconnection.game_connection
+    assert lobbyconnection.game_connection.player == lobbyconnection.player
+    assert lobbyconnection.player.state == PlayerState.JOINING
+    lobbyconnection.sendJSON.assert_called_once()
 
 
 def test_command_game_host_creates_correct_game(
