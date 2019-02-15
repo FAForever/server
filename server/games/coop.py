@@ -8,7 +8,8 @@ class CoopGame(Game):
     init_mode = InitMode.NORMAL_LOBBY
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, game_mode='coop', **kwargs)
+        kwargs["game_mode"] = 'coop'
+        super().__init__(*args, **kwargs)
 
         self.validity = ValidityState.COOP_NOT_RANKED
         self.gameOptions.update({
