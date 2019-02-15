@@ -516,7 +516,7 @@ class GameConnection(GpgNetServerProtocol):
         return "{}:{}".format(self.player.ip, self.player.game_port)
 
     def __str__(self):
-        return "GameConnection(Player({}),Game({}))".format(self.player, self.game)
+        return "GameConnection({}, {})".format(self.player, self.game)
 
 
 COMMAND_HANDLERS = {
