@@ -316,7 +316,7 @@ class GameConnection(GpgNetServerProtocol):
                 self.game.mods = {}
 
         elif mode == "uids":
-            uids = args.split()
+            uids = str(args).split()
             self.game.mods = {uid: "Unknown sim mod" for uid in uids}
             async with db.db_pool.get() as conn:
                 cursor = await conn.cursor()
@@ -459,7 +459,15 @@ class GameConnection(GpgNetServerProtocol):
 
     async def handle_game_ended(self):
         """
-        Signals that the simulation has ended. This is currently unused
+        Signals that the simulation has ended. This is currently unused but
+        included for documentation purposes.
+        """
+        pass
+
+    async def handle_rehost(self):
+        """
+        Signals that the user has rehosted the game. This is currently unused but
+        included for documentation purposes.
         """
         pass
 
@@ -524,5 +532,6 @@ COMMAND_HANDLERS = {
     "JsonStats":            GameConnection.handle_json_stats,
     "EnforceRating":        GameConnection.handle_enforce_rating,
     "TeamkillReport":       GameConnection.handle_teamkill_report,
-    "GameEnded":            GameConnection.handle_game_ended
+    "GameEnded":            GameConnection.handle_game_ended,
+    "Rehost":               GameConnection.handle_rehost
 }
