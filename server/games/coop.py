@@ -17,5 +17,5 @@ class CoopGame(Game):
             'TeamSpawn': 'fixed',
             'RevealedCivilians': 'No',
             'Difficulty': 3,
-            'Expansion': 'true'
+            'Expansion': 1
         })

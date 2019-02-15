@@ -143,15 +143,17 @@ class Game(BaseGame):
         self.state = GameState.INITIALIZING
         self._connections = {}
         self.enforce_rating = False
-        self.gameOptions = {'FogOfWar': 'explored',
-                            'GameSpeed': 'normal',
-                            'Victory': Victory.DEMORALIZATION,
-                            'CheatsEnabled': 'false',
-                            'PrebuiltUnits': 'Off',
-                            'NoRushOption': 'Off',
-                            'TeamLock': 'locked',
-                            'AIReplacement': 'Off',
-                            'RestrictedCategories': 0}
+        self.gameOptions = {
+            'FogOfWar': 'explored',
+            'GameSpeed': 'normal',
+            'Victory': Victory.DEMORALIZATION,
+            'CheatsEnabled': 'false',
+            'PrebuiltUnits': 'Off',
+            'NoRushOption': 'Off',
+            'TeamLock': 'locked',
+            'AIReplacement': 'Off',
+            'RestrictedCategories': 0
+        }
 
         self.mods = {}
         self._logger.debug("%s created", self)
@@ -613,7 +615,7 @@ class Game(BaseGame):
             "TeamSpawn": ("fixed", ValidityState.SPAWN_NOT_FIXED),
             "RevealedCivilians": ("No", ValidityState.CIVILIANS_REVEALED),
             "Difficulty": (3, ValidityState.WRONG_DIFFICULTY),
-            "Expansion": ("true", ValidityState.EXPANSION_DISABLED),
+            "Expansion": (1, ValidityState.EXPANSION_DISABLED),
         }
         await self._validate_game_options(valid_options)
 

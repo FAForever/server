@@ -79,7 +79,7 @@ async def test_validate_game_settings_coop(coop_game: Game):
         ('TeamSpawn', 'open', ValidityState.SPAWN_NOT_FIXED),
         ('RevealedCivilians', 'Yes', ValidityState.CIVILIANS_REVEALED),
         ('Difficulty', 1, ValidityState.WRONG_DIFFICULTY),
-        ('Expansion', 'false', ValidityState.EXPANSION_DISABLED),
+        ('Expansion', 0, ValidityState.EXPANSION_DISABLED),
     ]
 
     await check_game_settings(coop_game, settings)
@@ -90,8 +90,7 @@ async def test_validate_game_settings_coop(coop_game: Game):
 
 
 async def check_game_settings(game: Game, settings: List[Tuple[str, Any, ValidityState]]):
-    for data in settings:
-        key, value, expected = data
+    for key, value, expected in settings:
         old = game.gameOptions.get(key)
         game.gameOptions[key] = value
         await game.validate_game_settings()
