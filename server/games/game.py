@@ -578,7 +578,7 @@ class Game(BaseGame):
         :param player_id: The id of the player
         :param key: The name of the option
         """
-        return self._player_options.get(player_id, {}).get(key)
+        return self._player_options[player_id].get(key)
 
     def set_ai_option(self, name, key, value):
         """
