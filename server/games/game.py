@@ -150,7 +150,7 @@ class Game(BaseGame):
         self._players_with_unsent_army_stats = []
         self._game_stats_service = game_stats_service
         self.game_service = game_service
-        self._player_options = {}
+        self._player_options: Dict[int, Dict[str, Any]] = defaultdict(dict)
         self.launched_at = None
         self.ended = False
         self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, id_))
@@ -562,31 +562,23 @@ class Game(BaseGame):
                 "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1 "
                 "WHERE id = %s", (new_rating.mu, new_rating.sigma, player.id))
 
-    def set_player_option(self, id_, key, value):
+    def set_player_option(self, player_id: int, key: str, value: Any):
         """
         Set game-associative options for given player, by id
-        :param id_: int
-        :type id_: int
-        :param key: option key string
-        :type key: str
-        :param value: option value
-        :return: None
-        """
-        if id_ not in self._player_options:
-            self._player_options[id_] = {}
-        self._player_options[id_][key] = value
 
-    def get_player_option(self, player_id: int, key: str) -> Any:
+        :param player_id: The given player's id
+        :param key: option key string
+        :param value: option value
+        """
+        self._player_options[player_id][key] = value
+
+    def get_player_option(self, player_id: int, key: str) -> Optional[Any]:
         """
         Retrieve game-associative options for given player, by their uid
         :param player_id: The id of the player
         :param key: The name of the option
-        :return: Any
         """
-        try:
-            return self._player_options[player_id][key]
-        except KeyError:
-            return None
+        return self._player_options.get(player_id, {}).get(key)
 
     def set_ai_option(self, name, key, value):
         """
