@@ -1,4 +1,3 @@
-from datetime import datetime
 from unittest import mock
 
 import pytest
@@ -70,3 +69,10 @@ async def test_choose_map_all_maps_played(ladder_service: LadderService):
     chosen_map = await ladder_service.choose_map([None])
 
     assert chosen_map is not None
+
+
+async def test_choose_map_raises_on_empty_map_pool(ladder_service: LadderService):
+    ladder_service.game_service.ladder_maps = []
+
+    with pytest.raises(RuntimeError):
+        await ladder_service.choose_map([])
