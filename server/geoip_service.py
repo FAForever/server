@@ -102,9 +102,8 @@ class GeoIpService(object):
         """
         try:
             self.db = geoip2.database.Reader(self.file_path)
-        except InvalidDatabaseError:
-            self._logger.warning("Failed to load maxmind db! Maybe the download was interrupted")
-            pass
+        except (InvalidDatabaseError, FileNotFoundError, ValueError):
+            self._logger.exception("Failed to load maxmind db! Maybe the download was interrupted")
 
     def country(self, address: str) -> str:
         """

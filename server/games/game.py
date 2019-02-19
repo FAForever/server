@@ -13,6 +13,8 @@ import aiomysql
 from server.abc.base_game import GameConnectionState, BaseGame, InitMode
 from server.players import Player, PlayerState
 from collections import Counter
+from typing import Dict, Any, Tuple
+
 
 @unique
 class GameState(IntEnum):
@@ -85,6 +87,11 @@ class ValidityState(IntEnum):
     UNLOCKED_TEAMS = 17
     MULTI_TEAM = 18
     HAS_AI_PLAYERS = 19
+    CIVILIANS_REVEALED = 20
+    WRONG_DIFFICULTY = 21
+    EXPANSION_DISABLED = 22
+    SPAWN_NOT_FIXED = 23
+    OTHER_UNRANK = 24
 
 
 class GameError(Exception):
@@ -136,15 +143,17 @@ class Game(BaseGame):
         self.state = GameState.INITIALIZING
         self._connections = {}
         self.enforce_rating = False
-        self.gameOptions = {'FogOfWar': 'explored',
-                            'GameSpeed': 'normal',
-                            'Victory': Victory.from_gpgnet_string('demoralization'),
-                            'CheatsEnabled': 'false',
-                            'PrebuiltUnits': 'Off',
-                            'NoRushOption': 'Off',
-                            'TeamLock': 'locked',
-                            'AIReplacement': 'Off',
-                            'RestrictedCategories': 0}
+        self.gameOptions = {
+            'FogOfWar': 'explored',
+            'GameSpeed': 'normal',
+            'Victory': Victory.DEMORALIZATION,
+            'CheatsEnabled': 'false',
+            'PrebuiltUnits': 'Off',
+            'NoRushOption': 'Off',
+            'TeamLock': 'locked',
+            'AIReplacement': 'Off',
+            'RestrictedCategories': 0
+        }
 
         self.mods = {}
         self._logger.debug("%s created", self)
@@ -250,6 +259,20 @@ class Game(BaseGame):
         return True
 
     def team_count(self):
+        """
+        Returns a dictionary containing team ids and their respective number of
+        players.
+        Example:
+            Team 1 has 2 players
+            Team 2 has 3 players
+            team 3 has 1 player
+            Return value is:
+            {
+                1: 2,
+                2: 3,
+                3: 1
+            }
+        """
         teams = defaultdict(int)
         for player in self.players:
             teams[self.get_player_option(player.id, 'Team')] += 1
@@ -358,6 +381,9 @@ class Game(BaseGame):
             elif self.state == GameState.LIVE:
                 self._logger.info("Game finished normally")
 
+                if self.validity is not ValidityState.VALID:
+                    return
+
                 if self.desyncs > 20:
                     await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
                     return
@@ -365,10 +391,6 @@ class Game(BaseGame):
                 if time.time() - self.launched_at > 4*60 and self.is_mutually_agreed_draw:
                     self._logger.info("Game is a mutual draw")
                     await self.mark_invalid(ValidityState.MUTUAL_DRAW)
-                    return
-
-                if len(self.players) < 2:
-                    await self.mark_invalid(ValidityState.SINGLE_PLAYER)
                     return
 
                 if len(self._results) == 0:
@@ -540,39 +562,79 @@ class Game(BaseGame):
         """
         Mark the game invalid if it has non-compliant options
         """
-        for id in self.mods.keys():
-            if id not in self.game_service.ranked_mods:
+
+        # Only allow ranked mods
+        for mod_id in self.mods.keys():
+            if mod_id not in self.game_service.ranked_mods:
                 await self.mark_invalid(ValidityState.BAD_MOD)
-                break
+                return
 
-        if self.gameOptions['Victory'] != Victory.DEMORALIZATION and self.game_mode != 'coop':
-            await self.mark_invalid(ValidityState.WRONG_VICTORY_CONDITION)
-
-        if self.has_ai or (self.gameOptions["AIReplacement"] != "Off"):
+        if self.has_ai:
             await self.mark_invalid(ValidityState.HAS_AI_PLAYERS)
-        elif self.is_multi_team:
+            return
+        if self.is_multi_team:
             await self.mark_invalid(ValidityState.MULTI_TEAM)
-        elif self.is_ffa:
+            return
+        if self.is_ffa:
             await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
-        elif not self.is_even:
+            return
+        valid_options = {
+            "AIReplacement": ("Off", ValidityState.HAS_AI_PLAYERS),
+            "FogOfWar": ("explored", ValidityState.NO_FOG_OF_WAR),
+            "CheatsEnabled": ("false", ValidityState.CHEATS_ENABLED),
+            "PrebuiltUnits": ("Off", ValidityState.PREBUILT_ENABLED),
+            "NoRushOption": ("Off", ValidityState.NORUSH_ENABLED),
+            "RestrictedCategories": (0, ValidityState.BAD_UNIT_RESTRICTIONS),
+            "TeamLock": ("locked", ValidityState.UNLOCKED_TEAMS)
+        }
+        if await self._validate_game_options(valid_options) is False:
+            return
+
+        if self.game_mode in ('faf', 'ladder1v1'):
+            await self._validate_faf_game_settings()
+        elif self.game_mode == 'coop':
+            await self._validate_coop_game_settings()
+
+    async def _validate_game_options(self,
+                                     valid_options: Dict[str, Tuple[Any, ValidityState]]) -> bool:
+        for key, value in self.gameOptions.items():
+            if key in valid_options:
+                (valid_value, validity_state) = valid_options[key]
+                if self.gameOptions[key] != valid_value:
+                    await self.mark_invalid(validity_state)
+                    return False
+        return True
+
+    async def _validate_coop_game_settings(self):
+        """
+        Checks which only apply to the coop mode
+        """
+
+        valid_options = {
+            "Victory": (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
+            "TeamSpawn": ("fixed", ValidityState.SPAWN_NOT_FIXED),
+            "RevealedCivilians": ("No", ValidityState.CIVILIANS_REVEALED),
+            "Difficulty": (3, ValidityState.WRONG_DIFFICULTY),
+            "Expansion": (1, ValidityState.EXPANSION_DISABLED),
+        }
+        await self._validate_game_options(valid_options)
+
+    async def _validate_faf_game_settings(self):
+        """
+        Checks which only apply to the faf or ladder1v1 mode
+        """
+        if not self.is_even:
             await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
-        elif self.gameOptions["FogOfWar"] != "explored":
-            await self.mark_invalid(ValidityState.NO_FOG_OF_WAR)
+            return
 
-        elif self.gameOptions["CheatsEnabled"] != "false":
-            await self.mark_invalid(ValidityState.CHEATS_ENABLED)
+        if len(self.players) < 2:
+            await self.mark_invalid(ValidityState.SINGLE_PLAYER)
+            return
 
-        elif self.gameOptions["PrebuiltUnits"] != "Off":
-            await self.mark_invalid(ValidityState.PREBUILT_ENABLED)
-
-        elif self.gameOptions["NoRushOption"] != "Off":
-            await self.mark_invalid(ValidityState.NORUSH_ENABLED)
-
-        elif self.gameOptions["RestrictedCategories"] != 0:
-            await self.mark_invalid(ValidityState.BAD_UNIT_RESTRICTIONS)
-
-        elif self.gameOptions["TeamLock"] != "locked":
-            await self.mark_invalid(ValidityState.UNLOCKED_TEAMS)
+        valid_options = {
+            "Victory": (Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION)
+        }
+        await self._validate_game_options(valid_options)
 
     async def launch(self):
         """
@@ -613,7 +675,7 @@ class Game(BaseGame):
             if result:
                 self.map_id = result['id']
 
-            if not result or not result['ranked']:
+            if (not result or not result['ranked']) and self.validity is ValidityState.VALID:
                 await self.mark_invalid(ValidityState.BAD_MAP)
 
             modId = self.game_service.featured_mods[self.game_mode].id

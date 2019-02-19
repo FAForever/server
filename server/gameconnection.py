@@ -1,15 +1,17 @@
 import asyncio
-from collections import defaultdict
 import time
+from collections import defaultdict
+
+import server.db as db
+
 from .abc.base_game import GameConnectionState
 from .connectivity import ConnectivityState
-from .decorators import with_logger, timed
-from .games.game import Game, GameState, Victory
+from .decorators import timed, with_logger
 from .game_service import GameService
-from .players import Player, PlayerState
+from .games.game import Game, GameState, ValidityState, Victory
 from .player_service import PlayerService
+from .players import Player, PlayerState
 from .protocol import GpgNetServerProtocol
-import server.db as db
 
 
 class AuthenticationError(Exception):
@@ -314,7 +316,7 @@ class GameConnection(GpgNetServerProtocol):
                 self.game.mods = {}
 
         elif mode == "uids":
-            uids = args.split()
+            uids = str(args).split()
             self.game.mods = {uid: "Unknown sim mod" for uid in uids}
             async with db.db_pool.get() as conn:
                 cursor = await conn.cursor()
@@ -369,6 +371,10 @@ class GameConnection(GpgNetServerProtocol):
             return
 
         secondary, delta = int(secondary), str(delta)
+
+        if self.game.validity != ValidityState.COOP_NOT_RANKED:
+            return
+
         async with db.db_pool.get() as conn:
             cursor = await conn.cursor()
             # FIXME: Resolve used map earlier than this
@@ -453,7 +459,15 @@ class GameConnection(GpgNetServerProtocol):
 
     async def handle_game_ended(self):
         """
-        Signals that the simulation has ended. This is currently unused
+        Signals that the simulation has ended. This is currently unused but
+        included for documentation purposes.
+        """
+        pass
+
+    async def handle_rehost(self):
+        """
+        Signals that the user has rehosted the game. This is currently unused but
+        included for documentation purposes.
         """
         pass
 
@@ -502,7 +516,7 @@ class GameConnection(GpgNetServerProtocol):
         return "{}:{}".format(self.player.ip, self.player.game_port)
 
     def __str__(self):
-        return "GameConnection(Player({}),Game({}))".format(self.player, self.game)
+        return "GameConnection({}, {})".format(self.player, self.game)
 
 
 COMMAND_HANDLERS = {
@@ -518,5 +532,6 @@ COMMAND_HANDLERS = {
     "JsonStats":            GameConnection.handle_json_stats,
     "EnforceRating":        GameConnection.handle_enforce_rating,
     "TeamkillReport":       GameConnection.handle_teamkill_report,
-    "GameEnded":            GameConnection.handle_game_ended
+    "GameEnded":            GameConnection.handle_game_ended,
+    "Rehost":               GameConnection.handle_rehost
 }
