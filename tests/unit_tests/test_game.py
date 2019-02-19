@@ -1,11 +1,12 @@
 import logging
 import time
+from typing import Any, List, Tuple
 from unittest import mock
 
 import pytest
 from mock import patch
 from server.gameconnection import GameConnection, GameConnectionState
-from server.games import CustomGame
+from server.games import CoopGame, CustomGame
 from server.games.game import (Game, GameError, GameOutcome, GameState,
                                ValidityState, Victory, VisibilityState)
 from server.players import Player
@@ -14,9 +15,6 @@ from tests.unit_tests.conftest import (add_connected_player,
                                        add_connected_players, add_players,
                                        mock_game_connection)
 from trueskill import Rating
-
-
-from typing import List, Tuple, Any
 
 
 @pytest.yield_fixture

@@ -5,7 +5,7 @@ import re
 import time
 from collections import Counter, defaultdict
 from enum import Enum, unique
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import aiomysql
 import server.db as db
