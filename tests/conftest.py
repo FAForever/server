@@ -100,32 +100,10 @@ def sqlquery():
     query.addBindValue = lambda v: None
     return query
 
+
 @pytest.fixture
-def mock_db_pool(loop, db_pool, autouse=True):
-    return db_pool
-
-@pytest.fixture(scope='session')
-def db_pool(request, loop):
-    import server
-
-    def opt(val):
-        return request.config.getoption(val)
-    host, user, pw, db, port = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt('--mysql_database'), opt('--mysql_port')
-    pool_fut = asyncio.async(server.db.connect(loop=loop,
-                                               host=host,
-                                               user=user,
-                                               password=pw or None,
-                                               port=port,
-                                               db=db))
-    pool = loop.run_until_complete(pool_fut)
-
-
-    def fin():
-        pool.close()
-        loop.run_until_complete(pool.wait_closed())
-    request.addfinalizer(fin)
-
-    return pool
+def mock_db_engine(loop, db_engine, autouse=True):
+    return db_engine
 
 
 @pytest.fixture(scope='session')
@@ -135,13 +113,16 @@ def db_engine(request, loop):
     def opt(val):
         return request.config.getoption(val)
     host, user, pw, db, port = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt('--mysql_database'), opt('--mysql_port')
-    engine_fut = asyncio.async(server.db.connect_engine(
-        loop=loop,
-        host=host,
-        user=user,
-        password=pw or None,
-        port=port,
-        db=db))
+    engine_fut = asyncio.async(
+        server.db.connect_engine(
+            loop=loop,
+            host=host,
+            user=user,
+            password=pw or None,
+            port=port,
+            db=db
+        )
+    )
     engine = loop.run_until_complete(engine_fut)
 
     def fin():
@@ -215,9 +196,9 @@ def players(create_player):
 
 
 @pytest.fixture
-def player_service(loop, players, db_pool):
+def player_service(loop, players, db_engine):
     from server.player_service import PlayerService
-    return PlayerService(db_pool)
+    return PlayerService()
 
 
 @pytest.fixture

@@ -1,18 +1,17 @@
-import aiomysql
 import asyncio
+
 import aiocron
 import marisa_trie
 import pymysql
-
+import server.db as db
 from server.decorators import with_logger
 from server.players import Player
 
 
 @with_logger
 class PlayerService:
-    def __init__(self, db_pool: aiomysql.Pool):
+    def __init__(self):
         self.players = dict()
-        self.db_pool = db_pool
 
         # Static-ish data fields.
         self.privileged_users = {}
@@ -47,34 +46,35 @@ class PlayerService:
     def clear_dirty(self):
         self._dirty_players = set()
 
-    @asyncio.coroutine
-    def fetch_player_data(self, player):
-        with (yield from self.db_pool) as conn:
-            cur = yield from conn.cursor()
-            yield from cur.execute('SELECT mean, deviation, numGames FROM `global_rating` '
-                                   'WHERE id=%s', player.id)
-            result = yield from cur.fetchone()
-            if not result:
-                result = (1500, 500, 0)
-            (mean, dev, num_games) = result
+    async def fetch_player_data(self, player):
+        async with db.engine.acquire() as conn:
+            result = await conn.execute(
+                'SELECT mean, deviation, numGames FROM `global_rating` '
+                'WHERE id=%s', player.id)
+            row = await result.fetchone()
+            if not row:
+                (mean, dev, num_games) = (1500, 500, 0)
+            (mean, dev, num_games) = row[0], row[1], row[2]
             player.global_rating = (mean, dev)
             player.numGames = num_games
-            yield from cur.execute('SELECT mean, deviation FROM `ladder1v1_rating` '
-                                   'WHERE id=%s', player.id)
-            player.ladder_rating = yield from cur.fetchone()
+            result = await conn.execute(
+                'SELECT mean, deviation FROM `ladder1v1_rating` '
+                'WHERE id=%s', player.id)
+            row = await result.fetchone()
+            player.ladder_rating = (row[0], row[1])
 
             ## Clan informations
             try:
-                yield from cur.execute(
+                result = await conn.execute(
                     "SELECT tag "
                     "FROM login "
                     "JOIN clan_membership "
                     "ON login.id = clan_membership.player_id "
                     "JOIN clan ON clan_membership.clan_id = clan.id "
                     "where player_id =  %s", player.id)
-                result = yield from cur.fetchone()
-                if result:
-                    (player.clan, ) = result
+                row = await result.fetchone()
+                if row:
+                    player.clan = row[0]
             except (pymysql.ProgrammingError, pymysql.OperationalError):
                 pass
 
@@ -102,31 +102,28 @@ class PlayerService:
         Update rarely-changing data, such as the admin list and the list of users exempt from the
         uniqueid check.
         """
-        async with self.db_pool.get() as conn:
-            cursor = await conn.cursor()
-
+        async with db.engine.acquire() as conn:
             # Admins/mods
-            await cursor.execute("SELECT `user_id`, `group` FROM lobby_admin")
-            rows = await cursor.fetchall()
-            self.privileged_users = dict(rows)
+            result = await conn.execute("SELECT `user_id`, `group` FROM lobby_admin")
+            rows = await result.fetchall()
+            self.privileged_users = dict(map(lambda r: (r[0], r[1]), rows))
 
             # UniqueID-exempt users.
-            await cursor.execute("SELECT `user_id` FROM uniqueid_exempt")
-            rows = await cursor.fetchall()
+            result = await conn.execute("SELECT `user_id` FROM uniqueid_exempt")
+            rows = await result.fetchall()
             self.uniqueid_exempt = frozenset(map(lambda x: x[0], rows))
 
             # Client version number
-            await cursor.execute("SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1")
-            result = await cursor.fetchone()
-
-            if not (result is None):
-                self.client_version_info = result
+            result = await conn.execute("SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1")
+            row = await result.fetchone()
+            if row is not None:
+                self.client_version_info = (row[0], row[1])
 
             # Blacklisted email domains (we don't like disposable email)
-            await cursor.execute("SELECT domain FROM email_domain_blacklist")
-            rows = await cursor.fetchall()
+            result = await conn.execute("SELECT domain FROM email_domain_blacklist")
             # Get list of reversed blacklisted domains (so we can (pre)suffix-match incoming emails
             # in sublinear time)
+            rows = await result.fetchall()
             self.blacklisted_email_domains = marisa_trie.Trie(map(lambda x: x[0], rows))
 
     def broadcast_shutdown(self):

@@ -3,6 +3,7 @@ import time
 from collections import defaultdict
 
 import server.db as db
+from sqlalchemy import text
 
 from .abc.base_game import GameConnectionState
 from .connectivity import ConnectivityState
@@ -320,12 +321,12 @@ class GameConnection(GpgNetServerProtocol):
         elif mode == "uids":
             uids = str(args).split()
             self.game.mods = {uid: "Unknown sim mod" for uid in uids}
-            async with db.db_pool.get() as conn:
-                cursor = await conn.cursor()
-                await cursor.execute("SELECT `uid`, `name` from `table_mod` WHERE `uid` in %s", (uids,))
-                mods = await cursor.fetchall()
-                for (uid, name) in mods:
-                    self.game.mods[uid] = name
+            async with db.engine.acquire() as conn:
+                result = await conn.execute(
+                    text("SELECT `uid`, `name` from `table_mod` WHERE `uid` in :ids"),
+                    ids=tuple(uids))
+                for row in await result.fetchall():
+                    self.game.mods[row["uid"]] = row["name"]
         self._mark_dirty()
 
     async def handle_player_option(self, id_, command, value):
@@ -372,23 +373,22 @@ class GameConnection(GpgNetServerProtocol):
         if not int(army) == 1:
             return
 
-        secondary, delta = int(secondary), str(delta)
-
         if self.game.validity != ValidityState.COOP_NOT_RANKED:
             return
 
-        async with db.db_pool.get() as conn:
-            cursor = await conn.cursor()
+        secondary, delta = int(secondary), str(delta)
+        async with db.engine.acquire() as conn:
             # FIXME: Resolve used map earlier than this
-            await cursor.execute("SELECT `id` FROM `coop_map` WHERE `filename` = %s",
-                                 self.game.map_file_path)
-            row = await cursor.fetchone()
+            result = await conn.execute(
+                "SELECT `id` FROM `coop_map` WHERE `filename` = %s",
+                self.game.map_file_path)
+            row = await result.fetchone()
             if not row:
                 self._logger.debug("can't find coop map: %s", self.game.map_file_path)
                 return
             (mission,) = row
 
-            await cursor.execute(
+            await conn.execute(
                 """ INSERT INTO `coop_leaderboard`
                     (`mission`, `gameuid`, `secondary`, `time`, `player_count`)
                     VALUES (%s, %s, %s, %s, %s)""",
@@ -410,10 +410,8 @@ class GameConnection(GpgNetServerProtocol):
             :param teamkiller_name: teamkiller nickname (for debug purpose only)
         """
 
-        async with db.db_pool.get() as conn:
-            cursor = await conn.cursor()
-
-            await cursor.execute(
+        async with db.engine.acquire() as conn:
+            await conn.execute(
                 """ INSERT INTO `teamkills` (`teamkiller`, `victim`, `game_id`, `gametime`)
                     VALUES (%s, %s, %s, %s)""",
                 (teamkiller_id, victim_id, self.game.id, gametime)
@@ -446,13 +444,12 @@ class GameConnection(GpgNetServerProtocol):
             await self.game.launch()
 
             if len(self.game.mods.keys()) > 0:
-                async with db.db_pool.get() as conn:
-                    cursor = await conn.cursor()
+                async with db.engine.acquire() as conn:
                     uids = list(self.game.mods.keys())
-                    await cursor.execute(
+                    await conn.execute(text(
                         """ UPDATE mod_stats s JOIN mod_version v ON v.mod_id = s.mod_id
-                            SET s.times_played = s.times_played + 1 WHERE v.uid in %s""",
-                        (uids,)
+                            SET s.times_played = s.times_played + 1 WHERE v.uid in :ids"""),
+                        ids=tuple(uids)
                     )
         elif state == 'Ended':
             await self.on_connection_lost()

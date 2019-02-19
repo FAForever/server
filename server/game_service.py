@@ -52,9 +52,7 @@ class GameService:
         self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
 
     async def initialise_game_counter(self):
-        async with db.db_pool.get() as conn:
-            cursor = await conn.cursor()
-
+        async with db.engine.acquire() as conn:
             # InnoDB, unusually, doesn't allow insertion of values greater than the next expected
             # value into an auto_increment field. We'd like to do that, because we no longer insert
             # games into the database when they don't start, so game ids aren't contiguous (as
@@ -66,50 +64,53 @@ class GameService:
             # doing LAST_UPDATE_ID to get the id number, and then doing an UPDATE when the actual
             # data to go into the row becomes available: we now only do a single insert for each
             # game, and don't end up with 800,000 junk rows in the database.
-            await cursor.execute("SELECT MAX(id) FROM game_stats")
-            (self.game_id_counter, ) = await cursor.fetchone()
+            result = await conn.execute("SELECT MAX(id) FROM game_stats")
+            row = await result.fetchone()
+            self.game_id_counter = row[0]
 
     async def update_data(self):
         """
         Loads from the database the mostly-constant things that it doesn't make sense to query every
         time we need, but which can in principle change over time.
         """
-        async with db.db_pool.get() as conn:
-            cursor = await conn.cursor()
+        async with db.engine.acquire() as conn:
+            result = await conn.execute("SELECT `id`, `gamemod`, `name`, description, publish, `order` FROM game_featuredMods")
 
-            await cursor.execute("SELECT `id`, `gamemod`, `name`, description, publish, `order` FROM game_featuredMods")
+            rows = await result.fetchall()
+            for row in rows:
+                mod_id, name, full_name, description, publish, order = (row[i] for i in range(6))
+                self.featured_mods[name] = FeaturedMod(
+                    mod_id, name, full_name, description, publish, order)
 
-            for i in range(0, cursor.rowcount):
-                id, name, full_name, description, publish, order = await cursor.fetchone()
-                self.featured_mods[name] = FeaturedMod(id, name, full_name, description, publish, order)
-
-            await cursor.execute("SELECT uid FROM table_mod WHERE ranked = 1")
+            result = await conn.execute("SELECT uid FROM table_mod WHERE ranked = 1")
+            rows = await result.fetchall()
 
             # Turn resultset into a list of uids
-            rows = await cursor.fetchall()
             self.ranked_mods = set(map(lambda x: x[0], rows))
 
             # Load all ladder maps
-            await cursor.execute("SELECT ladder_map.idmap, "
-                                 "table_map.name, "
-                                 "table_map.filename "
-                                 "FROM ladder_map "
-                                 "INNER JOIN table_map ON table_map.id = ladder_map.idmap")
-            self.ladder_maps = await cursor.fetchall()
+            result = await conn.execute(
+                "SELECT ladder_map.idmap, "
+                "table_map.name, "
+                "table_map.filename "
+                "FROM ladder_map "
+                "INNER JOIN table_map ON table_map.id = ladder_map.idmap")
+            self.ladder_maps = list(await result.fetchall())
 
             for mod in self.featured_mods.values():
-
                 self._logger.debug("Loading featuredMod %s", mod.name)
                 if mod.name == 'ladder1v1':
                     continue
                 self.game_mode_versions[mod.name] = {}
                 t = "updates_{}".format(mod.name)
                 tfiles = t + "_files"
-                await cursor.execute("SELECT %s.fileId, MAX(%s.version) "
-                                     "FROM %s LEFT JOIN %s ON %s.fileId = %s.id "
-                                     "GROUP BY %s.fileId" % (tfiles, tfiles, tfiles, t, tfiles, t, tfiles))
-                rows = await cursor.fetchall()
-                for fileId, version in rows:
+                result = await conn.execute(
+                    "SELECT %s.fileId, MAX(%s.version) "
+                    "FROM %s LEFT JOIN %s ON %s.fileId = %s.id "
+                    "GROUP BY %s.fileId" % (tfiles, tfiles, tfiles, t, tfiles, t, tfiles))
+                rows = await result.fetchall()
+                for row in rows:
+                    fileId, version = row[0], row[1]
                     self.game_mode_versions[mod.name][fileId] = version
             # meh
             self.game_mode_versions['ladder1v1'] = self.game_mode_versions['faf']
