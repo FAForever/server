@@ -194,9 +194,13 @@ class LobbyConnection:
             rows = await result.fetchall()
             maps = []
             for row in rows:
-                name, description, filename, type_, id_ = row[0], row[1], row[2], row[3], row[4]
-                json_to_send = {"command": "coop_info", "name": name, "description": description,
-                                "filename": filename, "featured_mod": "coop"}
+                json_to_send = {
+                    "command": "coop_info",
+                    "name": row["name"],
+                    "description": row["description"],
+                    "filename": row["filename"],
+                    "featured_mod": "coop"
+                }
                 campaigns = [
                     "FA Campaign",
                     "Aeon Vanilla Campaign",
@@ -204,13 +208,13 @@ class LobbyConnection:
                     "UEF Vanilla Campaign",
                     "Custom Missions"
                 ]
-                if type_ < len(campaigns):
-                    json_to_send["type"] = campaigns[type_]
+                if row["type"] < len(campaigns):
+                    json_to_send["type"] = campaigns[row["type"]]
                 else:
                     # Don't sent corrupt data to the client...
                     self._logger.error("Unknown coop type!")
                     continue
-                json_to_send["uid"] = id_
+                json_to_send["uid"] = row["id"]
                 maps.append(json_to_send)
 
         self.protocol.send_messages(maps)
@@ -800,10 +804,12 @@ class LobbyConnection:
         self.player.state = PlayerState.HOSTING if is_host else PlayerState.JOINING
         self.player.game = game
         self.player.game_port = port
-        cmd = {"command": "game_launch",
-                       "mod": game.game_mode,
-                       "uid": game.id,
-                       "args": ["/numgames " + str(self.player.numGames)]}
+        cmd = {
+            "command": "game_launch",
+            "mod": game.game_mode,
+            "uid": game.id,
+            "args": ["/numgames " + str(self.player.numGames)]
+        }
         if use_map:
             cmd['mapname'] = use_map
         self.sendJSON(cmd)
