@@ -195,6 +195,7 @@ class Game(BaseGame):
         tm = 30 if self.game_mode != 'coop' else 60
         await self.sleep(tm)
         if self.state == GameState.INITIALIZING:
+            self._logger.debug("Game setup timed out.. Cancelling game")
             await self.on_game_end()
 
     @property
