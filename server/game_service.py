@@ -76,8 +76,7 @@ class GameService:
         async with db.engine.acquire() as conn:
             result = await conn.execute("SELECT `id`, `gamemod`, `name`, description, publish, `order` FROM game_featuredMods")
 
-            rows = await result.fetchall()
-            for row in rows:
+            async for row in result:
                 mod_id, name, full_name, description, publish, order = (row[i] for i in range(6))
                 self.featured_mods[name] = FeaturedMod(
                     mod_id, name, full_name, description, publish, order)
@@ -95,7 +94,7 @@ class GameService:
                 "table_map.filename "
                 "FROM ladder_map "
                 "INNER JOIN table_map ON table_map.id = ladder_map.idmap")
-            self.ladder_maps = list(await result.fetchall())
+            self.ladder_maps = [(row[0], row[1], row[2]) async for row in result]
 
             for mod in self.featured_mods.values():
                 self._logger.debug("Loading featuredMod %s", mod.name)
@@ -108,8 +107,8 @@ class GameService:
                     "SELECT %s.fileId, MAX(%s.version) "
                     "FROM %s LEFT JOIN %s ON %s.fileId = %s.id "
                     "GROUP BY %s.fileId" % (tfiles, tfiles, tfiles, t, tfiles, t, tfiles))
-                rows = await result.fetchall()
-                for row in rows:
+
+                async for row in result:
                     fileId, version = row[0], row[1]
                     self.game_mode_versions[mod.name][fileId] = version
             # meh
