@@ -76,3 +76,12 @@ async def test_choose_map_raises_on_empty_map_pool(ladder_service: LadderService
 
     with pytest.raises(RuntimeError):
         await ladder_service.choose_map([])
+
+
+async def test_get_ladder_history(ladder_service: LadderService, players, db_engine):
+    async with db_engine.acquire() as conn:
+        await conn.execute("insert into game_player_stats (gameId, playerId, AI, faction, color, team, place, mean, deviation, scoreTime) values (1, 1, 0, 0, 0, 2, 0, 1500, 500, NOW())")
+    history = await ladder_service.get_ladder_history(players.hosting)
+
+    print(history)
+    assert history == [1]
