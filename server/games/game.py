@@ -767,22 +767,26 @@ class Game(BaseGame):
             options = {key: player_option(key)
                        for key in ['Team', 'StartSpot', 'Color', 'Faction']}
 
-            if options.get('Team') or 0 > 0 and options.get('StartSpot') or 0 >= 0:
-                if self.game_mode == 'ladder1v1':
-                    mean, dev = player.ladder_rating
-                else:
-                    mean, dev = player.global_rating
+            def is_observer() -> bool:
+                return options.get('Team', -1) < 0 or options.get('StartSpot', 0) < 0
 
-                query_args.append((self.id,
-                                   str(player.id),
-                                   options['Faction'],
-                                   options['Color'],
-                                   options['Team'],
-                                   options['StartSpot'],
-                                   mean,
-                                   dev,
-                                   0,
-                                   -1))
+            if is_observer():
+                continue
+
+            if self.game_mode == 'ladder1v1':
+                mean, dev = player.ladder_rating
+            else:
+                mean, dev = player.global_rating
+
+            query_args.append((
+                self.id,
+                str(player.id),
+                options['Faction'],
+                options['Color'],
+                options['Team'],
+                options['StartSpot'],
+                mean, dev, 0, -1
+            ))
 
         async with db.engine.acquire() as conn:
             await conn.execute(query_str, query_args)
