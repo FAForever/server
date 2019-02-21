@@ -325,7 +325,7 @@ class GameConnection(GpgNetServerProtocol):
                 result = await conn.execute(
                     text("SELECT `uid`, `name` from `table_mod` WHERE `uid` in :ids"),
                     ids=tuple(uids))
-                for row in await result.fetchall():
+                async for row in result:
                     self.game.mods[row["uid"]] = row["name"]
         self._mark_dirty()
 

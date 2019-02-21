@@ -165,7 +165,7 @@ class LobbyConnection:
             # Can probably replace two queries with one here if we're smart enough.
             result = await conn.execute("SELECT `section`,`description` FROM `tutorial_sections`")
 
-            for row in await result.fetchall():
+            async for row in result:
                 section, description = row[0], row[1]
                 reply.append({
                     "command": "tutorials_info",
@@ -180,7 +180,7 @@ class LobbyConnection:
                     ORDER BY `tutorials`.`section`, name"""
             )
 
-            for row in await result.fetchall():
+            async for row in result:
                 section, tutorial_name, url, description, map_name = row[0], row[1], row[2], row[3], row[4]
                 reply.append({"command": "tutorials_info", "tutorial": tutorial_name, "url": url,
                               "tutorial_section": section, "description": description,
@@ -191,9 +191,9 @@ class LobbyConnection:
     async def send_coop_maps(self):
         async with db.engine.acquire() as conn:
             result = await conn.execute("SELECT name, description, filename, type, id FROM `coop_map`")
-            rows = await result.fetchall()
+
             maps = []
-            for row in rows:
+            async for row in result:
                 json_to_send = {
                     "command": "coop_info",
                     "name": row["name"],
@@ -323,7 +323,7 @@ class LobbyConnection:
                     result = await conn.execute("SELECT url, tooltip FROM `avatars_list`")
 
                     data = {"command": "admin", "avatarlist": []}
-                    for row in await result.fetchall():
+                    async for row in result:
                         data['avatarlist'].append({
                             "url": row["url"],
                             "tooltip": row["tooltip"]
@@ -602,7 +602,7 @@ class LobbyConnection:
                 "SELECT `subject_id`, `status` "
                 "FROM friends_and_foes WHERE user_id = %s", (self.player.id,))
 
-            for row in await result.fetchall():
+            async for row in result:
                 target_id, status = row["subject_id"], row["status"]
                 if status == "FRIEND":
                     friends.append(target_id)
@@ -645,7 +645,7 @@ class LobbyConnection:
                     "SELECT url, tooltip FROM `avatars` "
                     "LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = %s", (self.player.id,))
 
-                for row in await result.fetchall():
+                async for row in result:
                     avatar = {"url": row["url"], "tooltip": row["tooltip"]}
                     avatarList.append(avatar)
 
@@ -821,7 +821,7 @@ class LobbyConnection:
             if type == "start":
                 result = await conn.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon FROM table_mod ORDER BY likes DESC LIMIT 100")
 
-                for row in await result.fetchall():
+                async for row in result:
                     uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = (row[i] for i in range(12))
                     try:
                         link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)

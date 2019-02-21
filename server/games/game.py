@@ -470,8 +470,8 @@ class Game(BaseGame):
                 "SELECT `playerId`, `place`, `score` "
                 "FROM `game_player_stats` "
                 "WHERE `gameId`=%s", (self.id,))
-            rows = await result.fetchall()
-            for row in rows:
+
+            async for row in result:
                 player_id, startspot, score = row[0], row[1], row[2]
                 # FIXME: Assertion about startspot == army
                 # FIXME: Reporter not retained in database
