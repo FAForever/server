@@ -110,4 +110,6 @@ class LadderService:
             ).limit(limit)
 
             # Collect all the rows from the ResultProxy
-            return [row[0] async for row in await conn.execute(query)]
+            result = await conn.execute(query)
+            rows = await result.fetchall()
+            return list(map(lambda row: row[game_stats.c.mapId], rows))

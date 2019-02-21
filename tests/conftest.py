@@ -137,6 +137,7 @@ def db_engine(request, loop):
 def transport():
     return mock.Mock(spec=asyncio.Transport)
 
+
 @pytest.fixture
 def game(players):
     return make_game(1, players)
