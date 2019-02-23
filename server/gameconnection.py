@@ -274,7 +274,7 @@ class GameConnection(GpgNetServerProtocol):
             self._logger.exception("Something awful happened in a game thread!")
             self.abort()
 
-    async def handle_desync(self):  # pragma: no cover
+    async def handle_desync(self, *_args):  # pragma: no cover
         self.game.desyncs += 1
 
     async def handle_game_option(self, key, value):
@@ -471,6 +471,20 @@ class GameConnection(GpgNetServerProtocol):
         """
         pass
 
+    async def handle_bottleneck(self):
+        """
+        Not sure what this command means. This is currently unused but
+        included for documentation purposes.
+        """
+        pass
+
+    async def handle_bottleneck_cleared(self):
+        """
+        Not sure what this command means. This is currently unused but
+        included for documentation purposes.
+        """
+        pass
+
     def _mark_dirty(self):
         if self.game:
             self.games.mark_dirty(self.game)
@@ -533,5 +547,7 @@ COMMAND_HANDLERS = {
     "EnforceRating":        GameConnection.handle_enforce_rating,
     "TeamkillReport":       GameConnection.handle_teamkill_report,
     "GameEnded":            GameConnection.handle_game_ended,
-    "Rehost":               GameConnection.handle_rehost
+    "Rehost":               GameConnection.handle_rehost,
+    "Bottleneck":           GameConnection.handle_bottleneck,
+    "BottleneckCleared":    GameConnection.handle_bottleneck_cleared
 }
