@@ -267,7 +267,6 @@ async def test_handle_action_OperationComplete(game: Game, game_connection: Game
 
     Requires that the map from `game.map_file_path` exists in the database.
     """
-    pytest.skip("requires test data from faf-db:v63 which doesn't exist yet")
 
     game.map_file_path = "maps/prothyon16.v0005.zip"
     secondary = 1
