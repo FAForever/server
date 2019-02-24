@@ -139,10 +139,25 @@ def transport():
 
 @pytest.fixture
 def game(players):
+    return make_game(1, players)
+
+
+GAME_UID = 1
+
+
+@pytest.fixture
+def ugame(players):
+    global GAME_UID
+    game = make_game(GAME_UID, players)
+    GAME_UID += 1
+    return game
+
+
+def make_game(uid, players):
     from server.games import Game
     from server.abc.base_game import InitMode
     mock_parent = mock.Mock()
-    game = mock.create_autospec(spec=Game(1, mock_parent, mock.Mock()))
+    game = mock.create_autospec(spec=Game(uid, mock_parent, mock.Mock()))
     game.remove_game_connection = CoroMock()
     players.hosting.getGame = mock.Mock(return_value=game)
     players.joining.getGame = mock.Mock(return_value=game)
@@ -150,8 +165,9 @@ def game(players):
     game.hostPlayer = players.hosting
     game.init_mode = InitMode.NORMAL_LOBBY
     game.name = "Some game name"
-    game.id = 1
+    game.id = uid
     return game
+
 
 @pytest.fixture
 def create_player():

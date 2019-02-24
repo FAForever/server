@@ -1,11 +1,10 @@
 import asyncio
 from unittest import mock
-import pytest
 
 from server import GameConnection
 from server.connectivity import ConnectivityResult, ConnectivityState
 from server.games import Game
-from server.games.game import Victory
+from server.games.game import ValidityState, Victory
 from server.players import PlayerState
 from tests import CoroMock
 
@@ -260,7 +259,7 @@ async def test_handle_action_GameResult_draw_ends_sim(
     assert game.check_sim_end.called
 
 
-async def test_handle_action_OperationComplete(game: Game, game_connection: GameConnection, db_pool):
+async def test_handle_action_OperationComplete(ugame: Game, game_connection: GameConnection, db_pool):
     """
         Sends an OperationComplete action to handle action and verifies that
     the `coop_leaderboard` table is updated accordingly.
@@ -268,7 +267,10 @@ async def test_handle_action_OperationComplete(game: Game, game_connection: Game
     Requires that the map from `game.map_file_path` exists in the database.
     """
 
-    game.map_file_path = "maps/prothyon16.v0005.zip"
+    ugame.map_file_path = "maps/prothyon16.v0005.zip"
+    ugame.validity = ValidityState.COOP_NOT_RANKED
+    game_connection.game = ugame
+
     secondary = 1
     time_taken = '09:08:07.654321'
     await game_connection.handle_action('OperationComplete', ['1', secondary, time_taken])
@@ -276,6 +278,30 @@ async def test_handle_action_OperationComplete(game: Game, game_connection: Game
     async with db_pool.get() as conn:
         cursor = await conn.cursor()
         await cursor.execute("SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
-                             (game.id))
+                             (ugame.id))
 
-        assert (secondary, game.id) == await cursor.fetchone()
+        assert (secondary, ugame.id) == await cursor.fetchone()
+
+
+async def test_handle_action_OperationComplete_invalid(ugame: Game, game_connection: GameConnection, db_pool):
+    """
+        Sends an OperationComplete action to handle action and verifies that
+    the `coop_leaderboard` table is updated accordingly.
+
+    Requires that the map from `game.map_file_path` exists in the database.
+    """
+
+    ugame.map_file_path = "maps/prothyon16.v0005.zip"
+    ugame.validity = ValidityState.OTHER_UNRANK
+    game_connection.game = ugame
+
+    secondary = 1
+    time_taken = '09:08:07.654321'
+    await game_connection.handle_action('OperationComplete', ['1', secondary, time_taken])
+
+    async with db_pool.get() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
+                             (ugame.id))
+
+        assert await cursor.fetchone() is None
