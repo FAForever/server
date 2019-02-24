@@ -262,8 +262,10 @@ class GameConnection(GpgNetServerProtocol):
         try:
             await COMMAND_HANDLERS[command](self, *args)
         except KeyError:
-            self._logger.exception("Unrecognized command %s: %s from player %s",
-                                   command, args, self.player)
+            self._logger.warning(
+                "Unrecognized command %s: %s from player %s",
+                command, args, self.player
+            )
         except (TypeError, ValueError) as e:
             self._logger.exception("Bad command arguments: %s", e)
         except AuthenticationError as e:
@@ -457,28 +459,35 @@ class GameConnection(GpgNetServerProtocol):
 
         self._mark_dirty()
 
-    async def handle_game_ended(self):
+    async def handle_game_ended(self, *args):
         """
         Signals that the simulation has ended. This is currently unused but
         included for documentation purposes.
         """
         pass
 
-    async def handle_rehost(self):
+    async def handle_rehost(self, *args):
         """
         Signals that the user has rehosted the game. This is currently unused but
         included for documentation purposes.
         """
         pass
 
-    async def handle_bottleneck(self):
+    async def handle_bottleneck(self, *args):
         """
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         """
         pass
 
-    async def handle_bottleneck_cleared(self):
+    async def handle_bottleneck_cleared(self, *args):
+        """
+        Not sure what this command means. This is currently unused but
+        included for documentation purposes.
+        """
+        pass
+
+    async def handle_disconnected(self, *args):
         """
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
@@ -549,5 +558,6 @@ COMMAND_HANDLERS = {
     "GameEnded":            GameConnection.handle_game_ended,
     "Rehost":               GameConnection.handle_rehost,
     "Bottleneck":           GameConnection.handle_bottleneck,
-    "BottleneckCleared":    GameConnection.handle_bottleneck_cleared
+    "BottleneckCleared":    GameConnection.handle_bottleneck_cleared,
+    "Disconnected":         GameConnection.handle_disconnected
 }
