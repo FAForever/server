@@ -28,47 +28,45 @@ class SessionManager:
     def update_token(self, token):
         self.token = token
 
-    def __enter__(self):
-        if not self.session:
-            try:
-                self.session = OAuth2Session(
-                    client=self.client,
-                    token=self.token,
-                    auto_refresh_url=API_TOKEN_URI,
-                    auto_refresh_kwargs={
-                        "client_id": API_CLIENT_ID,
-                        "client_secret": API_CLIENT_SECRET
-                    },
-                    token_updater=self.update_token
-                )
-                self.token = self.session.fetch_token(
-                    token_url=API_TOKEN_URI,
-                    client_id=API_CLIENT_ID,
-                    client_secret=API_CLIENT_SECRET
-                )
-            except:
-                self.__exit__(*sys.exc_info())
-
-        return self.session
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type == MissingTokenError:
+    def get_session(self):
+        if self.session is not None:
+            return self.session
+        try:
+            session = OAuth2Session(
+                client=self.client,
+                token=self.token,
+                auto_refresh_url=API_TOKEN_URI,
+                auto_refresh_kwargs={
+                    "client_id": API_CLIENT_ID,
+                    "client_secret": API_CLIENT_SECRET
+                },
+                token_updater=self.update_token
+            )
+            token = self.session.fetch_token(
+                token_url=API_TOKEN_URI,
+                client_id=API_CLIENT_ID,
+                client_secret=API_CLIENT_SECRET
+            )
+        except MissingTokenError:
             self.logger.error("There was an error while connecting the API - token is missing or invalid")
-
-        elif exc_type == InsecureTransportError:
+            raise ConnectionError
+        except InsecureTransportError:
             self.logger.error(
                 "API (%s,%s) should be HTTPS, not HTTP. Enable OAUTHLIB_INSECURE_TRANSPORT to avoid this warning.",
                 config.API_BASE_URL,
                 config.API_TOKEN_URI
             )
-
-        elif exc_type == SSLError:
+            raise ConnectionError
+        except SSLError:
             self.logger.error("The certificate verification failed while connecting the API")
+            raise ConnectionError
+        except Exception as e:
+            self.logger.error(format(e))
+            raise ConnectionError
 
-        elif exc_type:
-            self.logger.error(format(exc_val))
-        if exc_type:
-            self.session = None
+        self.session = session
+        self.token = token
+        return self.session
 
 
 class ApiAccessor:
@@ -97,12 +95,12 @@ class ApiAccessor:
         return code, text
 
     async def api_get(self, path):
-        with self.api_session as api:
-            result = api.get(API_BASE_URL + path)
+        api = self.api_session.get_session()
+        result = api.get(API_BASE_URL + path)
         return result.status_code, result.text
 
     async def api_patch(self, path, json_data):
         headers = {'Content-type': 'application/json'}
-        with self.api_session as api:
-            result = api.request("PATCH", API_BASE_URL + path, headers=headers, json=json_data)
+        api = self.api_session.get_session()
+        result = api.request("PATCH", API_BASE_URL + path, headers=headers, json=json_data)
         return result.status_code, result.text

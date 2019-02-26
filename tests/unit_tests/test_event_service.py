@@ -45,6 +45,12 @@ async def test_api_broken(service: EventService):
     assert result is None
 
 
+async def test_api_throws(service: EventService):
+    service.api_accessor.update_events.side_effect = ConnectionError
+    result = await service.execute_batch_update(42, create_queue())
+    assert result is None
+
+
 async def test_record_multiple(service: EventService):
 
     content = '''

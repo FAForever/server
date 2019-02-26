@@ -232,11 +232,8 @@ def api_accessor():
         def __init__(self):
             self.session = FakeSession(None)
 
-        def __enter__(self):
+        def get_session(self):
             return self.session
-
-        def __exit__(self, *args):
-            pass
 
     api_accessor = ApiAccessor()
     api_accessor.api_session = SessionManager()

@@ -1,11 +1,12 @@
+import pytest
 from server.api.api_accessor import ApiAccessor
 from server.config import API_BASE_URL
 
 
 async def test_api_accessor():
     api_accessor = ApiAccessor()
-    with api_accessor.api_session as api:
-        assert api is None
+    with pytest.raises(ConnectionError):
+        api_accessor.api_session.get_session()
 
 
 async def test_api_get(api_accessor):

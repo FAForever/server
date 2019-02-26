@@ -95,7 +95,11 @@ class AchievementService:
         Else, it returns None
         """
         self._logger.debug("Updating %d achievements", len(queue))
-        response, content = await self.api_accessor.update_achievements(queue, player_id)
+        try:
+            response, content = await self.api_accessor.update_achievements(queue, player_id)
+        except ConnectionError:
+            self._logger.error("Failed to update achievements: connection error")
+            return None
         if response < 300:
             """
             Converting the Java API data to the structure mentioned above

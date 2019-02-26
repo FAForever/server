@@ -53,6 +53,13 @@ async def test_api_broken(service: AchievementService):
     assert result is None
 
 
+async def test_api_throws(service: AchievementService):
+    queue = create_queue()
+    service.api_accessor.update_achievements.side_effect = ConnectionError
+    result = await service.execute_batch_update(42, queue)
+    assert result is None
+
+
 async def test_update_multiple(service: AchievementService):
     content = '''
         {"data": [
