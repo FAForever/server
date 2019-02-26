@@ -1,8 +1,8 @@
 import random
 import asyncio
 
-from server.games.ladder_game import LadderGame
-from server.players import PlayerState
+from .games import LadderGame
+from .players import PlayerState
 
 
 class LadderService:
@@ -33,7 +33,7 @@ class LadderService:
 
         (map_id, map_name, map_path) = random.choice(self.game_service.ladder_maps)
 
-        game = LadderGame(self.game_service.createUuid(), self.game_service, self.game_stats_service)
+        game = LadderGame(self.game_service.create_uid(), self.game_service, self.game_stats_service)
         self.game_service.games[game.id] = game
 
         player1.game = game

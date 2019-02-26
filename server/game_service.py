@@ -135,9 +135,7 @@ class GameService:
         self._dirty_games = set()
         self._dirty_queues = set()
 
-    # This is still used by ladderGamesContainer: refactoring to make this interaction less
-    # ugly would be nice.
-    def createUuid(self):
+    def create_uid(self) -> int:
         self.game_id_counter += 1
 
         return self.game_id_counter
@@ -152,12 +150,12 @@ class GameService:
         """
         Main entrypoint for creating new games
         """
-        id = self.createUuid()
+        id_ = self.create_uid()
         args = {
-            "id": id,
+            "id_": id_,
             "host": host,
             "name": name,
-            "map": mapname,
+            "map_": mapname,
             "game_mode": game_mode,
             "game_service": self,
             "game_stats_service": self.game_stats_service
@@ -170,7 +168,7 @@ class GameService:
             game = CustomGame(**args)
         else:
             game = Game(**args)
-        self.games[id] = game
+        self.games[id_] = game
 
         game.visibility = visibility
         game.password = password

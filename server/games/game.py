@@ -1,23 +1,23 @@
-from enum import IntEnum, unique
-import logging
-import time
-import functools
-import re
-from collections import defaultdict
 import asyncio
-from typing import Union
+import functools
+import logging
+import re
+import time
+from collections import Counter, defaultdict
+from enum import Enum, unique
+from typing import Any, Dict, Optional, Tuple, Union
+
+import aiomysql
+import server.db as db
 import trueskill
 from trueskill import Rating
-import server.db as db
-import aiomysql
-from server.abc.base_game import GameConnectionState, BaseGame, InitMode
-from server.players import Player, PlayerState
-from collections import Counter
-from typing import Dict, Any, Tuple
+
+from ..abc.base_game import BaseGame, GameConnectionState, InitMode
+from ..players import Player, PlayerState
 
 
 @unique
-class GameState(IntEnum):
+class GameState(Enum):
     INITIALIZING = 0
     LOBBY = 1
     LIVE = 2
@@ -25,48 +25,56 @@ class GameState(IntEnum):
 
 
 @unique
-class Victory(IntEnum):
+class Victory(Enum):
     DEMORALIZATION = 0
     DOMINATION = 1
     ERADICATION = 2
     SANDBOX = 3
 
     @staticmethod
-    def from_gpgnet_string(value):
-        if value == "demoralization":
-            return Victory.DEMORALIZATION
-        elif value == "domination":
-            return Victory.DOMINATION
-        elif value == "eradication":
-            return Victory.ERADICATION
-        elif value == "sandbox":
-            return Victory.SANDBOX
+    def from_gpgnet_string(value: str) -> Optional["Victory"]:
+        """
+        :param value: The string to convert from
+
+        :return: Victory or None if the string is not valid
+        """
+        return {
+            "demoralization": Victory.DEMORALIZATION,
+            "domination": Victory.DOMINATION,
+            "eradication": Victory.ERADICATION,
+            "sandbox": Victory.SANDBOX
+        }.get(value)
 
 
 @unique
-class VisibilityState(IntEnum):
+class VisibilityState(Enum):
     PUBLIC = 0
     FRIENDS = 1
 
     @staticmethod
-    def from_string(value):
-        if value == "public":
-            return VisibilityState.PUBLIC
-        elif value == "friends":
-            return VisibilityState.FRIENDS
+    def from_string(value: str) -> Optional["VisibilityState"]:
+        """
+        :param value: The string to convert from
 
-    @staticmethod
-    def to_string(value):
-        if value == VisibilityState.PUBLIC:
-            return "public"
-        elif value == VisibilityState.FRIENDS:
-            return "friends"
+        :return: VisibilityState or None if the string is not valid
+        """
+        return {
+            "public": VisibilityState.PUBLIC,
+            "friends": VisibilityState.FRIENDS
+        }.get(value)
+
+    def to_string(self) -> Optional[str]:
+        return {
+            VisibilityState.PUBLIC: "public",
+            VisibilityState.FRIENDS: "friends"
+        }.get(self)
 
 
 # Identifiers must be kept in sync with the contents of the invalid_game_reasons table.
 # New reasons added should have a description added to that table. Identifiers should never be
 # reused, and values should never be deleted from invalid_game_reasons.
-class ValidityState(IntEnum):
+@unique
+class ValidityState(Enum):
     VALID = 0
     TOO_MANY_DESYNCS = 1
     WRONG_VICTORY_CONDITION = 2
@@ -94,6 +102,28 @@ class ValidityState(IntEnum):
     OTHER_UNRANK = 24
 
 
+@unique
+class GameOutcome(Enum):
+    VICTORY = 1
+    DEFEAT = 2
+    DRAW = 3
+    MUTUAL_DRAW = 4
+
+    @staticmethod
+    def from_string(value: str) -> Optional["GameOutcome"]:
+        """
+        :param value: The string to convert from
+
+        :return: VisibilityState or None if the string is not valid
+        """
+        return {
+            "victory": GameOutcome.VICTORY,
+            "defeat": GameOutcome.DEFEAT,
+            "draw": GameOutcome.DRAW,
+            "mutual_draw": GameOutcome.MUTUAL_DRAW
+        }.get(value)
+
+
 class GameError(Exception):
     pass
 
@@ -104,35 +134,33 @@ class Game(BaseGame):
     """
     init_mode = InitMode.NORMAL_LOBBY
 
-    def __init__(self, id, game_service, game_stats_service,
-                 host=None,
-                 name='None',
-                 map='SCMP_007',
-                 game_mode='faf'):
-        """
-        Initializes a new game
-        :type id int
-        :type name: str
-        :type map: str
-        :return: Game
-        """
+    def __init__(
+        self,
+        id_: int,
+        game_service: "GameService",
+        game_stats_service: "GameStatsService",
+        host: Optional[Player]=None,
+        name: str='None',
+        map_: str='SCMP_007',
+        game_mode: str='faf'
+    ):
         super().__init__()
         self._results = {}
         self._army_stats = None
         self._players_with_unsent_army_stats = []
         self._game_stats_service = game_stats_service
         self.game_service = game_service
-        self._player_options = {}
+        self._player_options: Dict[int, Dict[str, Any]] = defaultdict(dict)
         self.launched_at = None
         self.ended = False
-        self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, id))
-        self.id = id
+        self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, id_))
+        self.id = id_
         self.visibility = VisibilityState.PUBLIC
         self.max_players = 12
         self.host = host
         self.name = self.sanitize_name(name)
         self.map_id = None
-        self.map_file_path = 'maps/%s.zip' % map
+        self.map_file_path = f'maps/{map_}.zip'
         self.map_scenario_path = None
         self.password = None
         self._players = []
@@ -175,7 +203,7 @@ class Game(BaseGame):
                           for player in self.players})
 
     @property
-    def is_mutually_agreed_draw(self):
+    def is_mutually_agreed_draw(self) -> bool:
         # Don't count non-reported games as mutual draws
         if not len(self._results):
             return False
@@ -216,7 +244,7 @@ class Game(BaseGame):
                           for player in self.players})
 
     @property
-    def is_ffa(self):
+    def is_ffa(self) -> bool:
         if len(self.players) < 3:
             return False
 
@@ -231,15 +259,15 @@ class Game(BaseGame):
         return True
 
     @property
-    def is_multi_team(self):
+    def is_multi_team(self) -> bool:
         return len(self.teams) > 2
 
     @property
-    def has_ai(self):
+    def has_ai(self) -> bool:
         return len(self.AIs) > 0
 
     @property
-    def is_even(self):
+    def is_even(self) -> bool:
         teams = self.team_count()
         if 1 in teams: # someone is in ffa team, all teams need to have 1 player
             c = 1
@@ -278,6 +306,30 @@ class Game(BaseGame):
             teams[self.get_player_option(player.id, 'Team')] += 1
 
         return teams
+
+    def outcome(self, player: Player) -> Optional[GameOutcome]:
+        """
+        Determines what the game outcome was for a given player. Did the
+        player win, lose, draw?
+
+        :param player: The player who's perspective we want
+        :return: GameOutcome or None if the outcome could not be determined
+        """
+        army = self.get_player_option(player.id, 'Army')
+        if army not in self._results:
+            return None
+
+        outcomes = set()
+        for result in self._results[army]:
+            outcomes.add(GameOutcome.from_string(result[1]))
+
+        # If there was exactly 1 outcome then return it
+        if len(outcomes) == 1:
+            return outcomes.pop()
+
+        # If there were no outcomes, or the outcomes do not agree then we can't
+        # determine the outcome
+        return None
 
     async def add_result(self, reporter: Union[Player, int], army: int, result_type: str, score: int):
         """
@@ -463,8 +515,7 @@ class Game(BaseGame):
             await cursor.execute("DELETE FROM game_stats "
                                  "WHERE id=%s", (self.id,))
 
-    @asyncio.coroutine
-    def persist_rating_change_stats(self, rating_groups, rating='global'):
+    async def persist_rating_change_stats(self, rating_groups, rating='global'):
         """
         Persist computed ratings to the respective players' selected rating
         :param rating_groups: of the form returned by Game.compute_rating
@@ -479,50 +530,55 @@ class Game(BaseGame):
 
         rating_table = '{}_rating'.format('ladder1v1' if rating == 'ladder' else rating)
 
-        with (yield from db.db_pool) as conn:
-            cursor = yield from conn.cursor()
+        async with db.db_pool.acquire() as conn:
+            cursor = await conn.cursor()
 
             for player, new_rating in new_ratings.items():
                 self._logger.debug("New %s rating for %s: %s", rating, player, new_rating)
                 setattr(player, '{}_rating'.format(rating), new_rating)
-                yield from cursor.execute("UPDATE game_player_stats "
-                                          "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
-                                          "WHERE gameId = %s AND playerId = %s",
-                                          (new_rating.mu, new_rating.sigma, self.id, player.id))
+                await cursor.execute("UPDATE game_player_stats "
+                                     "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
+                                     "WHERE gameId = %s AND playerId = %s",
+                                     (new_rating.mu, new_rating.sigma, self.id, player.id))
                 if rating != 'ladder':
                     player.numGames += 1
 
-                yield from cursor.execute("UPDATE " + rating_table + " "
-                                          "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1 "
-                                          "WHERE id = %s".format(rating), (new_rating.mu, new_rating.sigma, player.id))
+                await self._update_rating_table(cursor, rating_table, player, new_rating)
+
                 self.game_service.player_service.mark_dirty(player)
 
-    def set_player_option(self, id, key, value):
+    async def _update_rating_table(self, cursor, table: str, player: Player, new_rating):
+        # If we are updating the ladder1v1_rating table then we also need to update
+        # the `winGames` column which doesn't exist on the global_rating table
+        if table == 'ladder1v1_rating':
+            is_victory = self.outcome(player) == GameOutcome.VICTORY
+            await cursor.execute(
+                "UPDATE ladder1v1_rating "
+                "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1, winGames = winGames + %s "
+                "WHERE id = %s", (new_rating.mu, new_rating.sigma, 1 if is_victory else 0, player.id))
+        else:
+            await cursor.execute(
+                "UPDATE " + table + " "
+                "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1 "
+                "WHERE id = %s", (new_rating.mu, new_rating.sigma, player.id))
+
+    def set_player_option(self, player_id: int, key: str, value: Any):
         """
         Set game-associative options for given player, by id
-        :param id: int
-        :type id: int
-        :param key: option key string
-        :type key: str
-        :param value: option value
-        :return: None
-        """
-        if id not in self._player_options:
-            self._player_options[id] = {}
-        self._player_options[id][key] = value
 
-    def get_player_option(self, id, key):
+        :param player_id: The given player's id
+        :param key: option key string
+        :param value: option value
+        """
+        self._player_options[player_id][key] = value
+
+    def get_player_option(self, player_id: int, key: str) -> Optional[Any]:
         """
         Retrieve game-associative options for given player, by their uid
-        :param id:
-        :type id: int
-        :param key:
-        :return:
+        :param player_id: The id of the player
+        :param key: The name of the option
         """
-        try:
-            return self._player_options[id][key]
-        except KeyError:
-            return None
+        return self._player_options[player_id].get(key)
 
     def set_ai_option(self, name, key, value):
         """
@@ -663,6 +719,8 @@ class Game(BaseGame):
         Runs at game-start to populate the game_stats table (games that start are ones we actually
         care about recording stats for, after all).
         """
+        assert self.host is not None
+
         async with db.db_pool.get() as conn:
             cursor = await conn.cursor(aiomysql.DictCursor)
 
@@ -730,7 +788,7 @@ class Game(BaseGame):
     def getGamemodVersion(self):
         return self.game_service.game_mode_versions[self.game_mode]
 
-    def sanitize_name(self, name):
+    def sanitize_name(self, name: str) -> str:
         """
         Replaces sequences of non-latin characters with an underscore and truncates the string to 128 characters
         Avoids the game name to crash the mysql INSERT query by being longer than the column's max size or by
@@ -760,16 +818,30 @@ class Game(BaseGame):
         """
         Since we log multiple results from multiple sources, we have to pick one.
 
-        We're optimistic and simply choose the highest reported score.
+        On conflict we try to pick the most frequently reported score. If there
+        are multiple scores with the same number of reports, we pick the greater
+        score.
 
         TODO: Flag games with conflicting scores for manual review.
         :param army index of army
         :raise KeyError
         :return:
         """
-        score = 0
-        for result in self._results[army]:
-            score = max(score, result[2])
+        scores: Dict[int, int] = Counter(
+            map(lambda res: res[2], self._results.get(army, []))
+        )
+
+        # There were no results
+        if not scores:
+            return 0
+
+        # All scores agreed
+        if len(scores) == 1:
+            return scores.popitem()[0]
+
+        # Return the highest score with the most votes
+        self._logger.info("Conflicting scores (%s) reported for game %s", scores, self)
+        score, _votes = max(scores.items(), key=lambda kv: kv[::-1])
         return score
 
     def get_army_result(self, player):

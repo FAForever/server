@@ -26,12 +26,51 @@ async def test_results_ranked_by_victory(laddergame, players):
     assert laddergame.get_army_score(1) == 0
 
 
+async def test_get_army_score_no_results(laddergame, players):
+    laddergame.state = GameState.LOBBY
+    add_connected_players(laddergame, [players.hosting, players.joining])
+
+    assert laddergame.get_army_score(0) == 0
+
+
+async def test_get_army_score_returns_0_or_1_only(laddergame, players):
+    laddergame.state = GameState.LOBBY
+    add_connected_players(laddergame, [players.hosting, players.joining])
+
+    await laddergame.add_result(players.hosting, 0, 'victory', 100)
+    await laddergame.add_result(players.joining, 1, 'defeat', 50)
+
+    assert laddergame.get_army_score(0) == 1
+
+
+async def test_is_winner(laddergame, players):
+    laddergame.state = GameState.LOBBY
+    add_connected_players(laddergame, [players.hosting, players.joining])
+
+    await laddergame.add_result(players.hosting, 0, 'victory', 1)
+    await laddergame.add_result(players.joining, 1, 'defeat', 0)
+
+    assert laddergame.is_winner(players.hosting)
+    assert laddergame.is_winner(players.joining) is False
+
+
+async def test_is_winner_on_draw(laddergame, players):
+    laddergame.state = GameState.LOBBY
+    add_connected_players(laddergame, [players.hosting, players.joining])
+
+    await laddergame.add_result(players.hosting, 0, 'draw', 1)
+    await laddergame.add_result(players.joining, 1, 'draw', 1)
+
+    assert laddergame.is_winner(players.hosting) is False
+    assert laddergame.is_winner(players.joining) is False
+
+
 async def test_rate_game(laddergame: LadderGame, db_pool):
     async with db_pool.get() as conn:
         cursor = await conn.cursor()
         # TODO remove as soon as we have isolated tests (transactions)
-        await cursor.execute("DELETE FROM game_stats WHERE id = %s", laddergame.id)
         await cursor.execute("DELETE FROM game_player_stats WHERE gameId = %s", laddergame.id)
+        await cursor.execute("DELETE FROM game_stats WHERE id = %s", laddergame.id)
 
     laddergame.state = GameState.LOBBY
     players = add_players(laddergame, 2)
@@ -64,3 +103,41 @@ async def test_rate_game(laddergame: LadderGame, db_pool):
     assert result[1]['deviation'] == 500
     assert result[1]['after_mean'] < result[0]['mean']
     assert result[1]['after_deviation'] < result[0]['deviation']
+
+
+async def test_persist_rating_victory(laddergame: LadderGame, db_pool):
+    async with db_pool.get() as conn:
+        cursor = await conn.cursor()
+        # TODO remove as soon as we have isolated tests (transactions)
+        await cursor.execute("DELETE FROM game_player_stats WHERE gameId = %s", laddergame.id)
+        await cursor.execute("DELETE FROM game_stats WHERE id = %s", laddergame.id)
+
+    laddergame.state = GameState.LOBBY
+    players = add_players(laddergame, 2)
+    laddergame.set_player_option(players[0].id, 'Team', 1)
+    laddergame.set_player_option(players[1].id, 'Team', 2)
+
+    async with db_pool.get() as conn:
+        cursor = await conn.cursor(DictCursor)
+        await cursor.execute("SELECT id, numGames, winGames FROM ladder1v1_rating WHERE id in %s ORDER BY id",
+                             ([players[0].id, players[1].id],))
+        result_before = await cursor.fetchall()
+
+    await laddergame.launch()
+    laddergame.launched_at = time.time() - 60*20
+    await laddergame.add_result(0, 0, 'victory', 5)
+    await laddergame.add_result(0, 1, 'defeat', -5)
+    await laddergame.on_game_end()
+
+    assert laddergame.validity is ValidityState.VALID
+
+    async with db_pool.get() as conn:
+        cursor = await conn.cursor(DictCursor)
+        await cursor.execute("SELECT id, numGames, winGames FROM ladder1v1_rating WHERE id in %s ORDER BY id",
+                             ([players[0].id, players[1].id],))
+        result_after = await cursor.fetchall()
+
+    assert result_after[0]['numGames'] == result_before[0]['numGames'] + 1
+    assert result_after[1]['numGames'] == result_before[1]['numGames'] + 1
+    assert result_after[0]['winGames'] == result_before[0]['winGames'] + 1
+    assert result_after[1]['winGames'] == result_before[1]['winGames']
