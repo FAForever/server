@@ -280,7 +280,8 @@ async def test_handle_action_OperationComplete(ugame: Game, game_connection: Gam
             (ugame.id))
 
         row = await result.fetchone()
-        assert (secondary, ugame.id) == (row[0], row[1])
+
+    assert (secondary, ugame.id) == (row[0], row[1])
 
 
 async def test_handle_action_OperationComplete_invalid(ugame: Game, game_connection: GameConnection, db_engine):
@@ -305,4 +306,5 @@ async def test_handle_action_OperationComplete_invalid(ugame: Game, game_connect
             (ugame.id))
 
         row = await result.fetchone()
-        assert (secondary, ugame.id) == (row[0], row[1])
+
+    assert row is None

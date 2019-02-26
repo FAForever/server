@@ -487,7 +487,7 @@ class LobbyConnection:
                               "a false positive.",
                               fatal=True)
 
-            with await db.db_pool as conn:
+            with await db.engine.acquire() as conn:
                 try:
                     await conn.execute(
                         "INSERT INTO ban (player_id, author_id, reason, level) VALUES (%s, %s, %s, 'GLOBAL')",

@@ -532,7 +532,7 @@ class Game(BaseGame):
 
         rating_table = '{}_rating'.format('ladder1v1' if rating == 'ladder' else rating)
 
-        async with db.db_pool.acquire() as conn:
+        async with db.engine.acquire() as conn:
             for player, new_rating in new_ratings.items():
                 self._logger.debug("New %s rating for %s: %s", rating, player, new_rating)
                 setattr(player, '{}_rating'.format(rating), new_rating)

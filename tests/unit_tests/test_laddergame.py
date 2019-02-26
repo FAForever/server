@@ -1,9 +1,7 @@
 import pytest
 import time
 
-from aiomysql import DictCursor
-
-from server import db
+from sqlalchemy import text
 from server.games import LadderGame
 from server.games.game import GameState, ValidityState
 from tests.unit_tests.conftest import add_players
@@ -103,7 +101,7 @@ async def test_rate_game(laddergame: LadderGame, db_engine):
     assert rows[1]['after_deviation'] < rows[0]['deviation']
 
 
-async def test_persist_rating_victory(laddergame: LadderGame, eb_engine):
+async def test_persist_rating_victory(laddergame: LadderGame, db_engine):
     async with db_engine.acquire() as conn:
         # TODO remove as soon as we have isolated tests (transactions)
         await conn.execute("DELETE FROM game_player_stats WHERE gameId = %s", laddergame.id)
@@ -114,10 +112,11 @@ async def test_persist_rating_victory(laddergame: LadderGame, eb_engine):
     laddergame.set_player_option(players[0].id, 'Team', 1)
     laddergame.set_player_option(players[1].id, 'Team', 2)
 
-    async with eb_engine.acquire() as conn:
+    async with db_engine.acquire() as conn:
         result = await conn.execute(
-            "SELECT id, numGames, winGames FROM ladder1v1_rating WHERE id in %s ORDER BY id",
-            ([players[0].id, players[1].id],))
+            text("SELECT id, numGames, winGames FROM ladder1v1_rating WHERE id in :ids ORDER BY id"),
+            ids=tuple([players[0].id, players[1].id])
+        )
         result_before = await result.fetchall()
 
     await laddergame.launch()
@@ -128,10 +127,11 @@ async def test_persist_rating_victory(laddergame: LadderGame, eb_engine):
 
     assert laddergame.validity is ValidityState.VALID
 
-    async with eb_engine.acquire() as conn:
+    async with db_engine.acquire() as conn:
         result = await conn.execute(
-            "SELECT id, numGames, winGames FROM ladder1v1_rating WHERE id in %s ORDER BY id",
-            ([players[0].id, players[1].id],))
+            text("SELECT id, numGames, winGames FROM ladder1v1_rating WHERE id in :ids ORDER BY id"),
+            ids=tuple([players[0].id, players[1].id])
+        )
         result_after = await result.fetchall()
 
     assert result_after[0]['numGames'] == result_before[0]['numGames'] + 1
