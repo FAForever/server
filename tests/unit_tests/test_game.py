@@ -1,21 +1,20 @@
 import logging
+import time
+from typing import Any, List, Tuple
 from unittest import mock
-from mock import patch
 
 import pytest
-import time
-
-from trueskill import Rating
-
-from server.games.game import Game, GameState, GameError, Victory, VisibilityState, ValidityState
-from server.games import CustomGame
-from server.games.coop import CoopGame
+from mock import patch
 from server.gameconnection import GameConnection, GameConnectionState
+from server.games import CoopGame, CustomGame
+from server.games.game import (Game, GameError, GameOutcome, GameState,
+                               ValidityState, Victory, VisibilityState)
 from server.players import Player
 from tests import CoroMock
-from tests.unit_tests.conftest import mock_game_connection, add_players, add_connected_players, add_connected_player
-
-from typing import List, Tuple, Any
+from tests.unit_tests.conftest import (add_connected_player,
+                                       add_connected_players, add_players,
+                                       mock_game_connection)
+from trueskill import Rating
 
 
 @pytest.yield_fixture
@@ -560,7 +559,7 @@ async def test_persist_results_called_with_two_players(game):
     add_players(game, 2)
     await game.launch()
     assert len(game.players) == 2
-    await game.add_result(0, 1, 'VICTORY', 5)
+    await game.add_result(0, 1, 'victory', 5)
     await game.on_game_end()
 
     assert game.get_army_score(1) == 5
@@ -568,6 +567,38 @@ async def test_persist_results_called_with_two_players(game):
 
     await game.load_results()
     assert game.get_army_score(1) == 5
+
+
+async def test_get_army_score_conflicting_results_clear_winner(game):
+    game.state = GameState.LOBBY
+    add_players(game, 3, team=2)
+    add_players(game, 3, team=3)
+    await game.launch()
+
+    await game.add_result(0, 0, 'victory', 1000)
+    await game.add_result(1, 0, 'victory', 1234)
+    await game.add_result(2, 0, 'victory', 1234)
+    await game.add_result(3, 1, 'defeat', 100)
+    await game.add_result(4, 1, 'defeat', 123)
+    await game.add_result(5, 1, 'defeat', 100)
+
+    # Choose the most frequently reported score
+    assert game.get_army_score(0) == 1234
+    assert game.get_army_score(1) == 100
+
+
+async def test_get_army_score_conflicting_results_tied(game):
+    game.state = GameState.LOBBY
+    add_players(game, 2, team=2)
+    add_players(game, 2, team=3)
+    await game.add_result(0, 0, 'victory', 1000)
+    await game.add_result(1, 0, 'victory', 1234)
+    await game.add_result(2, 1, 'defeat', 100)
+    await game.add_result(3, 1, 'defeat', 123)
+
+    # Choose the highest score
+    assert game.get_army_score(0) == 1234
+    assert game.get_army_score(1) == 123
 
 
 def test_equality(game):
@@ -632,6 +663,63 @@ async def test_players_exclude_observers(game: Game):
     await game.launch()
 
     assert game.players == frozenset(players)
+
+
+async def test_game_outcomes(game: Game, players):
+    await game.clear_data()
+
+    game.state = GameState.LOBBY
+    players.hosting.ladder_rating = Rating(1500, 250)
+    players.joining.ladder_rating = Rating(1500, 250)
+    add_connected_players(game, [players.hosting, players.joining])
+    await game.launch()
+    await game.add_result(players.hosting, 0, 'victory', 1)
+    await game.add_result(players.joining, 1, 'defeat', 0)
+    game.set_player_option(players.hosting.id, 'Team', 1)
+    game.set_player_option(players.joining.id, 'Team', 1)
+
+    host_outcome = game.outcome(players.hosting)
+    guest_outcome = game.outcome(players.joining)
+    assert host_outcome is GameOutcome.VICTORY
+    assert guest_outcome is GameOutcome.DEFEAT
+
+
+async def test_game_outcomes_no_results(game: Game, players):
+    await game.clear_data()
+
+    game.state = GameState.LOBBY
+    players.hosting.ladder_rating = Rating(1500, 250)
+    players.joining.ladder_rating = Rating(1500, 250)
+    add_connected_players(game, [players.hosting, players.joining])
+    await game.launch()
+    game.set_player_option(players.hosting.id, 'Team', 1)
+    game.set_player_option(players.joining.id, 'Team', 1)
+
+    host_outcome = game.outcome(players.hosting)
+    guest_outcome = game.outcome(players.joining)
+    assert host_outcome is None
+    assert guest_outcome is None
+
+
+async def test_game_outcomes_conflicting(game: Game, players):
+    await game.clear_data()
+
+    game.state = GameState.LOBBY
+    players.hosting.ladder_rating = Rating(1500, 250)
+    players.joining.ladder_rating = Rating(1500, 250)
+    add_connected_players(game, [players.hosting, players.joining])
+    await game.launch()
+    await game.add_result(players.hosting, 0, 'victory', 1)
+    await game.add_result(players.joining, 1, 'victory', 0)
+    await game.add_result(players.hosting, 0, 'defeat', 1)
+    await game.add_result(players.joining, 1, 'defeat', 0)
+    game.set_player_option(players.hosting.id, 'Team', 1)
+    game.set_player_option(players.joining.id, 'Team', 1)
+
+    host_outcome = game.outcome(players.hosting)
+    guest_outcome = game.outcome(players.joining)
+    assert host_outcome is None
+    assert guest_outcome is None
 
 
 def test_victory_conditions():
