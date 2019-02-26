@@ -244,8 +244,6 @@ def test_send_mod_list(mocker, lobbyconnection, mock_games):
 
 
 async def test_send_coop_maps(mocker, lobbyconnection):
-    pytest.skip("requires test data from faf-db:v63 which doesn't exist yet")
-
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
 
     await lobbyconnection.send_coop_maps()
