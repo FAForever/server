@@ -5,7 +5,7 @@ aiomysql
 aiomeasures
 coveralls
 docopt
-pycrypto
+pycrypto==2.6
 semver
 geoip2
 pytest==2.8.2
