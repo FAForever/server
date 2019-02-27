@@ -6,7 +6,7 @@ RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY requirements.txt /tmp/requirements.txt
 
-RUN python3.5 -m pip install -r /tmp/requirements.txt
+RUN python3.5 -m pip install -r /tmp/requirements.txt --no-use-pep517
 
 ADD . /code/
 WORKDIR /code/
