@@ -386,7 +386,7 @@ class GameConnection(GpgNetServerProtocol):
             if not row:
                 self._logger.debug("can't find coop map: %s", self.game.map_file_path)
                 return
-            mission = row["mission"]
+            mission = row["id"]
 
             await conn.execute(
                 """ INSERT INTO `coop_leaderboard`
