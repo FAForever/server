@@ -1,7 +1,6 @@
 import asyncio
 import random
-from datetime import datetime
-from typing import List, Tuple
+from typing import List, NamedTuple
 
 from sqlalchemy import and_, func, select, text
 
@@ -10,6 +9,8 @@ from .db.models import game_featuredMods, game_player_stats, game_stats
 from .decorators import with_logger
 from .games import LadderGame
 from .players import Player, PlayerState
+
+MapDescription = NamedTuple('Map', [("id", int), ("name", str), ("path", str)])
 
 
 @with_logger
@@ -71,7 +72,7 @@ class LadderService:
         await asyncio.sleep(4)
         guest.lobby_connection.launch_game(game, guest.game_port, is_host=False, use_map=mapname)
 
-    async def choose_map(self, players: [Player]) -> Tuple[int, str, str]:
+    async def choose_map(self, players: [Player]) -> MapDescription:
         maps = self.game_service.ladder_maps
 
         if not maps:
