@@ -37,7 +37,6 @@ if __name__ == '__main__':
             if not done.done():
                 done.set_result(0)
 
-
         loop = asyncio.get_event_loop()
         done = asyncio.Future()
 
@@ -52,16 +51,20 @@ if __name__ == '__main__':
         signal.signal(signal.SIGTERM, signal_handler)
         signal.signal(signal.SIGINT, signal_handler)
 
-        pool_fut = asyncio.async(server.db.connect(host=DB_SERVER,
-                                                   port=int(DB_PORT),
-                                                   user=DB_LOGIN,
-                                                   password=DB_PASSWORD,
-                                                   maxsize=10,
-                                                   db=DB_NAME,
-                                                   loop=loop))
-        db_pool = loop.run_until_complete(pool_fut)
+        engine_fut = asyncio.async(
+            server.db.connect_engine(
+                host=DB_SERVER,
+                port=int(DB_PORT),
+                user=DB_LOGIN,
+                password=DB_PASSWORD,
+                maxsize=10,
+                db=DB_NAME,
+                loop=loop
+            )
+        )
+        engine = loop.run_until_complete(engine_fut)
 
-        players_online = PlayerService(db_pool)
+        players_online = PlayerService()
 
         api_accessor = None
         if config.USE_API:
@@ -93,6 +96,11 @@ if __name__ == '__main__':
 
         loop.run_until_complete(done)
         players_online.broadcast_shutdown()
+
+        # Close DB connections
+        engine.close()
+        loop.run_until_complete(engine.wait_closed())
+
         loop.close()
 
     except Exception as ex:
