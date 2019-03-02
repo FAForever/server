@@ -7,23 +7,17 @@ these should be put in the ``conftest.py'' relative to it.
 """
 
 import asyncio
-
 import logging
-import subprocess
-import sys
-
-from server.api.api_accessor import ApiAccessor
-from server.config import DB_SERVER, DB_LOGIN, DB_PORT, DB_PASSWORD
-from server.geoip_service import GeoIpService
+from unittest import mock
 
 import pytest
-from unittest import mock
-from trueskill import Rating
+from server.api.api_accessor import ApiAccessor
+from server.config import DB_LOGIN, DB_PASSWORD, DB_PORT, DB_SERVER
+from server.geoip_service import GeoIpService
 from tests import CoroMock
+from trueskill import Rating
 
 logging.getLogger().setLevel(logging.DEBUG)
-
-import os
 
 
 def async_test(f):
@@ -106,36 +100,43 @@ def sqlquery():
     query.addBindValue = lambda v: None
     return query
 
+
 @pytest.fixture
-def mock_db_pool(loop, db_pool, autouse=True):
-    return db_pool
+def mock_db_engine(loop, db_engine, autouse=True):
+    return db_engine
+
 
 @pytest.fixture(scope='session')
-def db_pool(request, loop):
+def db_engine(request, loop):
     import server
 
     def opt(val):
         return request.config.getoption(val)
     host, user, pw, db, port = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt('--mysql_database'), opt('--mysql_port')
-    pool_fut = asyncio.async(server.db.connect(loop=loop,
-                                               host=host,
-                                               user=user,
-                                               password=pw or None,
-                                               port=port,
-                                               db=db))
-    pool = loop.run_until_complete(pool_fut)
-
+    engine_fut = asyncio.async(
+        server.db.connect_engine(
+            loop=loop,
+            host=host,
+            user=user,
+            password=pw or None,
+            port=port,
+            db=db
+        )
+    )
+    engine = loop.run_until_complete(engine_fut)
 
     def fin():
-        pool.close()
-        loop.run_until_complete(pool.wait_closed())
+        engine.close()
+        loop.run_until_complete(engine.wait_closed())
     request.addfinalizer(fin)
 
-    return pool
+    return engine
+
 
 @pytest.fixture
 def transport():
     return mock.Mock(spec=asyncio.Transport)
+
 
 @pytest.fixture
 def game(players):
@@ -196,9 +197,9 @@ def players(create_player):
 
 
 @pytest.fixture
-def player_service(loop, players, db_pool):
+def player_service(loop, players, db_engine):
     from server.player_service import PlayerService
-    return PlayerService(db_pool)
+    return PlayerService()
 
 
 @pytest.fixture

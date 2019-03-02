@@ -56,8 +56,8 @@ def mock_context(loop):
 
 
 @pytest.fixture
-def mock_players(mock_db_pool):
-    return mock.create_autospec(PlayerService(mock_db_pool))
+def mock_players(db_engine):
+    return mock.create_autospec(PlayerService())
 
 
 @pytest.fixture
@@ -378,7 +378,7 @@ async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection, moc
     })
 
 
-async def test_command_avatar_select(mocker, db_pool, lobbyconnection: LobbyConnection, mock_player: Player):
+async def test_command_avatar_select(mocker, db_engine, lobbyconnection: LobbyConnection, mock_player: Player):
     lobbyconnection.player = mock_player
     lobbyconnection.player.id = 2  # Dostya test user
 
@@ -387,11 +387,10 @@ async def test_command_avatar_select(mocker, db_pool, lobbyconnection: LobbyConn
         'avatar': "http://content.faforever.com/faf/avatars/qai2.png"
     })
 
-    async with db_pool.get() as conn:
-        cursor = await conn.cursor()
-        await cursor.execute("SELECT selected from avatars where idUser=2")
-        result = await cursor.fetchone()
-        assert result == (1,)
+    async with db_engine.acquire() as conn:
+        result = await conn.execute("SELECT selected from avatars where idUser=2")
+        row = await result.fetchone()
+        assert row[0] == 1
 
 
 async def test_broadcast(lobbyconnection: LobbyConnection, mocker):

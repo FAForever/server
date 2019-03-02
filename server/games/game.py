@@ -195,6 +195,7 @@ class Game(BaseGame):
         tm = 30 if self.game_mode != 'coop' else 60
         await self.sleep(tm)
         if self.state == GameState.INITIALIZING:
+            self._logger.debug("Game setup timed out.. Cancelling game")
             await self.on_game_end()
 
     @property
@@ -418,11 +419,11 @@ class Game(BaseGame):
         if len([conn for conn in self._connections.values() if not conn.finished_sim]) > 0:
             return
         self.ended = True
-        async with db.db_pool.get() as conn:
-            cursor = await conn.cursor()
-            await cursor.execute("UPDATE game_stats "
-                                 "SET endTime = NOW() "
-                                 "WHERE id = %s", (self.id,))
+        async with db.engine.acquire() as conn:
+            await conn.execute(
+                "UPDATE game_stats "
+                "SET endTime = NOW() "
+                "WHERE id = %s", (self.id,))
 
     async def on_game_end(self):
         try:
@@ -464,13 +465,14 @@ class Game(BaseGame):
         :return:
         """
         self._results = {}
-        async with db.db_pool.get() as conn:
-            cursor = await conn.cursor()
-            await cursor.execute("SELECT `playerId`, `place`, `score` "
-                                 "FROM `game_player_stats` "
-                                 "WHERE `gameId`=%s", (self.id,))
-            results = await cursor.fetchall()
-            for player_id, startspot, score in results:
+        async with db.engine.acquire() as conn:
+            result = await conn.execute(
+                "SELECT `playerId`, `place`, `score` "
+                "FROM `game_player_stats` "
+                "WHERE `gameId`=%s", (self.id,))
+
+            async for row in result:
+                player_id, startspot, score = row[0], row[1], row[2]
                 # FIXME: Assertion about startspot == army
                 # FIXME: Reporter not retained in database
                 await self.add_result(0, startspot, 'score', score)
@@ -495,25 +497,25 @@ class Game(BaseGame):
                 # Default to -1 if there is no result
                 scores[player] = -1
 
-        async with db.db_pool.get() as conn:
-            cursor = await conn.cursor()
-
+        async with db.engine.acquire() as conn:
             rows = []
             for player, score in scores.items():
                 self._logger.info("Score for player %s: %s", player, score)
                 rows.append((score, self.id, player.id))
 
-            await cursor.executemany("UPDATE game_player_stats "
-                                     "SET `score`=%s, `scoreTime`=NOW() "
-                                     "WHERE `gameId`=%s AND `playerId`=%s", rows)
+            await conn.execute(
+                "UPDATE game_player_stats "
+                "SET `score`=%s, `scoreTime`=NOW() "
+                "WHERE `gameId`=%s AND `playerId`=%s", rows)
 
     async def clear_data(self):
-        async with db.db_pool.get() as conn:
-            cursor = await conn.cursor()
-            await cursor.execute("DELETE FROM game_player_stats "
-                                 "WHERE gameId=%s", (self.id,))
-            await cursor.execute("DELETE FROM game_stats "
-                                 "WHERE id=%s", (self.id,))
+        async with db.engine.acquire() as conn:
+            await conn.execute(
+                "DELETE FROM game_player_stats "
+                "WHERE gameId=%s", (self.id,))
+            await conn.execute(
+                "DELETE FROM game_stats "
+                "WHERE id=%s", (self.id,))
 
     async def persist_rating_change_stats(self, rating_groups, rating='global'):
         """
@@ -530,34 +532,33 @@ class Game(BaseGame):
 
         rating_table = '{}_rating'.format('ladder1v1' if rating == 'ladder' else rating)
 
-        async with db.db_pool.acquire() as conn:
-            cursor = await conn.cursor()
-
+        async with db.engine.acquire() as conn:
             for player, new_rating in new_ratings.items():
                 self._logger.debug("New %s rating for %s: %s", rating, player, new_rating)
                 setattr(player, '{}_rating'.format(rating), new_rating)
-                await cursor.execute("UPDATE game_player_stats "
-                                     "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
-                                     "WHERE gameId = %s AND playerId = %s",
-                                     (new_rating.mu, new_rating.sigma, self.id, player.id))
+                await conn.execute(
+                    "UPDATE game_player_stats "
+                    "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
+                    "WHERE gameId = %s AND playerId = %s",
+                    (new_rating.mu, new_rating.sigma, self.id, player.id))
                 if rating != 'ladder':
                     player.numGames += 1
 
-                await self._update_rating_table(cursor, rating_table, player, new_rating)
+                await self._update_rating_table(conn, rating_table, player, new_rating)
 
                 self.game_service.player_service.mark_dirty(player)
 
-    async def _update_rating_table(self, cursor, table: str, player: Player, new_rating):
+    async def _update_rating_table(self, conn, table: str, player: Player, new_rating):
         # If we are updating the ladder1v1_rating table then we also need to update
         # the `winGames` column which doesn't exist on the global_rating table
         if table == 'ladder1v1_rating':
             is_victory = self.outcome(player) == GameOutcome.VICTORY
-            await cursor.execute(
+            await conn.execute(
                 "UPDATE ladder1v1_rating "
                 "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1, winGames = winGames + %s "
                 "WHERE id = %s", (new_rating.mu, new_rating.sigma, 1 if is_victory else 0, player.id))
         else:
-            await cursor.execute(
+            await conn.execute(
                 "UPDATE " + table + " "
                 "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1 "
                 "WHERE id = %s", (new_rating.mu, new_rating.sigma, player.id))
@@ -721,19 +722,18 @@ class Game(BaseGame):
         """
         assert self.host is not None
 
-        async with db.db_pool.get() as conn:
-            cursor = await conn.cursor(aiomysql.DictCursor)
-
+        async with db.engine.acquire() as conn:
             # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
             # so, and grab the map id at the same time.
-            await cursor.execute("SELECT id, ranked FROM map_version "
-                                 "WHERE lower(filename) = lower(%s)", (self.map_file_path,))
-            result = await cursor.fetchone()
+            result = await conn.execute(
+                "SELECT id, ranked FROM map_version "
+                "WHERE lower(filename) = lower(%s)", (self.map_file_path,))
+            row = await result.fetchone()
 
-            if result:
-                self.map_id = result['id']
+            if row:
+                self.map_id = row['id']
 
-            if (not result or not result['ranked']) and self.validity is ValidityState.VALID:
+            if (not row or not row['ranked']) and self.validity is ValidityState.VALID:
                 await self.mark_invalid(ValidityState.BAD_MAP)
 
             modId = self.game_service.featured_mods[self.game_mode].id
@@ -742,15 +742,19 @@ class Game(BaseGame):
             # In some cases, games can be invalidated while running: we check for those cases when
             # the game ends and update this record as appropriate.
 
-            await cursor.execute("INSERT INTO game_stats(id, gameType, gameMod, `host`, mapId, gameName, validity)"
-                                 "VALUES(%s, %s, %s, %s, %s, %s, %s)",
-                                 (self.id,
-                                  str(self.gameOptions.get('Victory').value),
-                                  modId,
-                                  self.host.id,
-                                  self.map_id,
-                                  self.name,
-                                  self.validity.value))
+            await conn.execute(
+                "INSERT INTO game_stats(id, gameType, gameMod, `host`, mapId, gameName, validity)"
+                "VALUES(%s, %s, %s, %s, %s, %s, %s)",
+                (
+                    self.id,
+                    str(self.gameOptions.get('Victory').value),
+                    modId,
+                    self.host.id,
+                    self.map_id,
+                    self.name,
+                    self.validity.value
+                )
+            )
 
     async def update_game_player_stats(self):
         query_str = "INSERT INTO `game_player_stats` " \
@@ -763,27 +767,29 @@ class Game(BaseGame):
             options = {key: player_option(key)
                        for key in ['Team', 'StartSpot', 'Color', 'Faction']}
 
-            if options.get('Team') or 0 > 0 and options.get('StartSpot') or 0 >= 0:
-                if self.game_mode == 'ladder1v1':
-                    mean, dev = player.ladder_rating
-                else:
-                    mean, dev = player.global_rating
+            def is_observer() -> bool:
+                return options.get('Team', -1) < 0 or options.get('StartSpot', 0) < 0
 
-                query_args.append((self.id,
-                                   str(player.id),
-                                   options['Faction'],
-                                   options['Color'],
-                                   options['Team'],
-                                   options['StartSpot'],
-                                   mean,
-                                   dev,
-                                   0,
-                                   -1))
+            if is_observer():
+                continue
 
-        async with db.db_pool.get() as conn:
-            cursor = await conn.cursor()
+            if self.game_mode == 'ladder1v1':
+                mean, dev = player.ladder_rating
+            else:
+                mean, dev = player.global_rating
 
-            await cursor.executemany(query_str, query_args)
+            query_args.append((
+                self.id,
+                str(player.id),
+                options['Faction'],
+                options['Color'],
+                options['Team'],
+                options['StartSpot'],
+                mean, dev, 0, -1
+            ))
+
+        async with db.engine.acquire() as conn:
+            await conn.execute(query_str, query_args)
 
     def getGamemodVersion(self):
         return self.game_service.game_mode_versions[self.game_mode]
@@ -807,12 +813,10 @@ class Game(BaseGame):
 
         # Currently, we can only end up here if a game desynced or was a custom game that terminated
         # too quickly.
-        async with db.db_pool.get() as conn:
-            cursor = await conn.cursor()
-
-            await cursor.execute("UPDATE game_stats "
-                                 "SET validity = %s "
-                                 "WHERE id = %s", (new_validity_state.value, self.id))
+        async with db.engine.acquire() as conn:
+            await conn.execute(
+                "UPDATE game_stats SET validity = %s "
+                "WHERE id = %s", (new_validity_state.value, self.id))
 
     def get_army_score(self, army):
         """

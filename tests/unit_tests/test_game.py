@@ -223,7 +223,7 @@ async def test_game_end_when_no_more_connections(game: Game, mock_game_connectio
 
     game.on_game_end.assert_any_call()
 
-@patch('server.games.game.db.db_pool')  # FIXME
+@patch('server.games.game.db.engine')  # FIXME
 async def test_game_sim_ends_when_no_more_connections(game: Game, players):
     await game.clear_data()
     game.state = GameState.LOBBY
@@ -237,7 +237,7 @@ async def test_game_sim_ends_when_no_more_connections(game: Game, players):
     await game.remove_game_connection(join_conn)
     assert game.ended
 
-@patch('server.games.game.db.db_pool')  # FIXME
+@patch('server.games.game.db.engine')  # FIXME
 async def test_game_sim_ends_when_connections_ended_sim(game: Game, players):
     await game.clear_data()
     game.state = GameState.LOBBY

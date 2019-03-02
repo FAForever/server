@@ -7,7 +7,7 @@ class Faction(IntEnum):
     aeon = 2
     cybran = 3
     seraphim = 4
-    nomads = 5
+    nomad = 5
 
     @staticmethod
     def from_string(value):
