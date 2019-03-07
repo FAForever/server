@@ -147,6 +147,7 @@ async def test_uneven_teams_not_rated(game):
     await game.on_game_end()
     assert game.validity == ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
+
 async def test_single_team_not_rated(game):
     n_players = 4
     game.state = GameState.LOBBY
@@ -159,6 +160,7 @@ async def test_single_team_not_rated(game):
     await game.on_game_end()
 
     assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
+
 
 def test_set_player_option(game, players, mock_game_connection):
     game.state = GameState.LOBBY
@@ -175,6 +177,7 @@ def test_set_player_option(game, players, mock_game_connection):
 
 def test_invalid_get_player_option_key(game: Game, players):
     assert game.get_player_option(players.hosting.id, -1) is None
+
 
 def test_add_game_connection(game: Game, players, mock_game_connection):
     game.state = GameState.LOBBY
@@ -223,6 +226,7 @@ async def test_game_end_when_no_more_connections(game: Game, mock_game_connectio
 
     game.on_game_end.assert_any_call()
 
+
 @patch('server.games.game.db.engine')  # FIXME
 async def test_game_sim_ends_when_no_more_connections(game: Game, players):
     await game.clear_data()
@@ -236,6 +240,7 @@ async def test_game_sim_ends_when_no_more_connections(game: Game, players):
     await game.remove_game_connection(host_conn)
     await game.remove_game_connection(join_conn)
     assert game.ended
+
 
 @patch('server.games.game.db.engine')  # FIXME
 async def test_game_sim_ends_when_connections_ended_sim(game: Game, players):
@@ -252,12 +257,14 @@ async def test_game_sim_ends_when_connections_ended_sim(game: Game, players):
     await game.check_sim_end()
     assert game.ended
 
+
 async def test_game_marked_dirty_when_timed_out(game: Game):
     game.state = GameState.INITIALIZING
     game.sleep = CoroMock()
     await game.timeout_game()
     assert game.state == GameState.ENDED
     assert game in game.game_service.dirty_games
+
 
 async def test_clear_slot(game: Game, mock_game_connection: GameConnection):
     game.state = GameState.LOBBY
@@ -267,7 +274,6 @@ async def test_clear_slot(game: Game, mock_game_connection: GameConnection):
     ]
     add_connected_players(game, players)
     game.set_ai_option('rush', 'StartSpot', 3)
-
 
     game.clear_slot(0)
     game.clear_slot(3)
@@ -558,6 +564,23 @@ async def test_persist_results_called_with_two_players(game):
     game.state = GameState.LOBBY
     add_players(game, 2)
     await game.launch()
+    assert len(game.players) == 2
+    await game.add_result(0, 1, 'victory', 5)
+    await game.on_game_end()
+
+    assert game.get_army_score(1) == 5
+    assert len(game.players) == 2
+
+    await game.load_results()
+    assert game.get_army_score(1) == 5
+
+
+async def test_persist_results_called_for_unranked(game):
+    await game.clear_data()
+    game.state = GameState.LOBBY
+    add_players(game, 2)
+    await game.launch()
+    game.validity = ValidityState.BAD_UNIT_RESTRICTIONS
     assert len(game.players) == 2
     await game.add_result(0, 1, 'victory', 5)
     await game.on_game_end()
