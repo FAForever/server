@@ -450,7 +450,7 @@ class Game(BaseGame):
                 await self.persist_results()
                 await self.rate_game()
                 await self._process_pending_army_stats()
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             self._logger.exception("Error during game end: %s", e)
         finally:
             self.state = GameState.ENDED
