@@ -4,6 +4,7 @@ from oauthlib.oauth2 import BackendApplicationClient
 from oauthlib.oauth2.rfc6749.errors import MissingTokenError, InsecureTransportError
 from requests.exceptions import SSLError
 from requests_oauthlib import OAuth2Session
+import asyncio
 import sys
 
 import server.config as config
@@ -98,11 +99,23 @@ class ApiAccessor:
 
     async def api_get(self, path):
         with self.api_session as api:
-            result = api.get(API_BASE_URL + path)
+            loop = asyncio.get_event_loop()
+            future = loop.run_in_executor(
+                None,
+                lambda: api.get(API_BASE_URL + path)
+            )
+            result = await future
+
         return result.status_code, result.text
 
     async def api_patch(self, path, json_data):
         headers = {'Content-type': 'application/json'}
         with self.api_session as api:
-            result = api.request("PATCH", API_BASE_URL + path, headers=headers, json=json_data)
+            loop = asyncio.get_event_loop()
+            future = loop.run_in_executor(
+                None,
+                lambda: api.request("PATCH", API_BASE_URL + path, headers=headers, json=json_data)
+            )
+            result = await future
+
         return result.status_code, result.text
