@@ -434,9 +434,6 @@ class Game(BaseGame):
             elif self.state == GameState.LIVE:
                 self._logger.info("Game finished normally")
 
-                if self.validity is not ValidityState.VALID:
-                    return
-
                 if self.desyncs > 20:
                     await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
                     return
@@ -453,7 +450,7 @@ class Game(BaseGame):
                 await self.persist_results()
                 await self.rate_game()
                 await self._process_pending_army_stats()
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             self._logger.exception("Error during game end: %s", e)
         finally:
             self.state = GameState.ENDED
