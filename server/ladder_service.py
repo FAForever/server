@@ -105,10 +105,10 @@ class LadderService:
             ).where(
                 and_(
                     game_player_stats.c.playerId == player.id,
-                    game_player_stats.c.scoreTime >= func.now() - text("interval 1 day"),
+                    game_stats.c.startTime >= func.now() - text("interval 1 day"),
                     game_featuredMods.c.gamemod == "ladder1v1"
                 )
-            ).limit(limit)
+            ).order_by(game_stats.c.startTime.desc()).limit(limit)
 
             # Collect all the rows from the ResultProxy
             return [row[game_stats.c.mapId] async for row in await conn.execute(query)]
