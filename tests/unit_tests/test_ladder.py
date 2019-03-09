@@ -92,18 +92,17 @@ async def test_get_ladder_history_many_maps(ladder_service: LadderService, playe
     num_maps = 7
     async with db_engine.acquire() as conn:
         for i in range(num_maps):
-            sql = f"""insert into game_stats
-                (id, startTime, gameType, gameMod, host, mapId, gameName, validity)
-                values ({game_id_start+i}, NOW() + interval {i+1} minute, '0', 6, 1, {i}, 'MapRepitition', 0)"""
-            print(sql)
             await conn.execute(
-                    sql
+                f"""insert into game_stats
+                    (id, startTime, gameType, gameMod, host, mapId, gameName, validity)
+                    values ({game_id_start+i}, NOW() + interval {i+1} minute, '0', 6, 1, {i}, 'MapRepitition', 0)"""
                 )
             await conn.execute(
                 f"""insert into game_player_stats
                     (gameId, playerId, AI, faction, color, team, place, mean, deviation, scoreTime)
                     values ({game_id_start+i}, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval {i+1} minute)
                 """)
-        history = await ladder_service.get_ladder_history(players.hosting)
 
-        assert history == list(reversed(range(num_maps-3, num_maps)))
+    history = await ladder_service.get_ladder_history(players.hosting)
+
+    assert history == list(reversed(range(num_maps-3, num_maps)))
