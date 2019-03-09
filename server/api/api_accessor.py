@@ -99,7 +99,7 @@ class ApiAccessor:
 
     async def api_get(self, path):
         with self.api_session as api:
-            result = await ApiAccessor.run_in_executor(
+            result = await run_in_executor(
                 lambda: api.get(API_BASE_URL + path)
             )
 
@@ -108,14 +108,14 @@ class ApiAccessor:
     async def api_patch(self, path, json_data):
         headers = {'Content-type': 'application/json'}
         with self.api_session as api:
-            result = await ApiAccessor.run_in_executor(
+            result = await run_in_executor(
                 lambda: api.request("PATCH", API_BASE_URL + path, headers=headers, json=json_data)
             )
 
         return result.status_code, result.text
 
-    @staticmethod
-    async def run_in_executor(func):
-        loop = asyncio.get_event_loop()
-        future = loop.run_in_executor(None, func)
-        return await future
+
+async def run_in_executor(func):
+    loop = asyncio.get_event_loop()
+    future = loop.run_in_executor(None, func)
+    return await future
