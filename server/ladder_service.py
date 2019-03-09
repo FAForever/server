@@ -5,6 +5,7 @@ from typing import List, NamedTuple
 from sqlalchemy import and_, func, select, text
 
 from . import db
+from .config import LADDER_ANTI_REPETITION_LIMIT
 from .db.models import game_featuredMods, game_player_stats, game_stats
 from .decorators import with_logger
 from .games import LadderGame
@@ -81,7 +82,7 @@ class LadderService:
 
         recently_played_map_ids = {
             map_id for player in players for map_id in
-            await self.get_ladder_history(player)
+            await self.get_ladder_history(player, limit=LADDER_ANTI_REPETITION_LIMIT)
         }
         randomized_maps = random.sample(maps, len(maps))
 
