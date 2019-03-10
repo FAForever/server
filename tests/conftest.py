@@ -186,6 +186,7 @@ def create_player():
         return p
     return make
 
+
 @pytest.fixture
 def players(create_player):
     from server.players import PlayerState
