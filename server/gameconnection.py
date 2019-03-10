@@ -10,7 +10,6 @@ from .game_service import GameService
 from .games.game import Game, GameState, ValidityState, Victory
 from .player_service import PlayerService
 from .players import Player, PlayerState
-from .lobbyconnection import LobbyConnection
 from .protocol import GpgNetServerProtocol
 
 
@@ -25,7 +24,7 @@ class GameConnection(GpgNetServerProtocol):
     """
 
     def __init__(self, loop: asyncio.BaseEventLoop,
-                 lobby_connection: LobbyConnection,
+                 lobby_connection: "LobbyConnection",
                  player_service: PlayerService,
                  games: GameService):
         """

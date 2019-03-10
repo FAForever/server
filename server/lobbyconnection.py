@@ -27,7 +27,7 @@ from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import QDataStreamProtocol
 from .types import Address
-
+from .ice_servers.nts import TwilioNTS
 
 class ClientError(Exception):
     """
