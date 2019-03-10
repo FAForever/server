@@ -15,7 +15,7 @@ from . import config as config
 from .games.game import GameState, VisibilityState
 from .stats.game_stats_service import GameStatsService
 from .gameconnection import GameConnection
-from .natpacketserver import NatPacketServer
+from .ice_servers.nts import TwilioNTS
 from .lobbyconnection import LobbyConnection
 from .protocol import QDataStreamProtocol
 from .servercontext import ServerContext
@@ -57,8 +57,8 @@ def run_lobby_server(address: (str, int),
                      player_service: PlayerService,
                      games: GameService,
                      nts_client: TwilioNTS,
-                     loop
-                     geoip_service: GeoIpService):
+                     geoip_service: GeoIpService,
+                     loop):
     """
     Run the lobby server
 

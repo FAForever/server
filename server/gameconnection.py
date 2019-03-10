@@ -1,15 +1,16 @@
 import asyncio
 import time
+from collections import defaultdict
 import server.db as db
 from sqlalchemy import text
 
 from .abc.base_game import GameConnectionState
-from .connectivity import ConnectivityState
 from .decorators import timed, with_logger
 from .game_service import GameService
 from .games.game import Game, GameState, ValidityState, Victory
 from .player_service import PlayerService
 from .players import Player, PlayerState
+from .lobbyconnection import LobbyConnection
 from .protocol import GpgNetServerProtocol
 
 
@@ -24,7 +25,7 @@ class GameConnection(GpgNetServerProtocol):
     """
 
     def __init__(self, loop: asyncio.BaseEventLoop,
-                 lobby_connection: "LobbyConnection",
+                 lobby_connection: LobbyConnection,
                  player_service: PlayerService,
                  games: GameService):
         """
@@ -164,91 +165,24 @@ class GameConnection(GpgNetServerProtocol):
         :return:
         """
         assert peer.player.state == PlayerState.HOSTING
-        result = await self.establish_connection(peer)
-        if not result:
-            self.abort("Failed connecting to host {}".format(peer))
-        own_addr, peer_addr = result
-        self.send_JoinGame(peer_addr,
-                           peer.player.login,
+        self.send_JoinGame(peer.player.login,
                            peer.player.id)
-        peer.send_ConnectToPeer(own_addr,
-                                self.player.login,
-                                self.player.id)
+
+        peer.send_ConnectToPeer(self.player.login,
+                                self.player.id,
+                                True)
 
     async def connect_to_peer(self, peer: "GameConnection"):
         """
         Connect two peers
         :return: None
         """
-        result = await self.establish_connection(peer)
-        if not result:
-            self.abort("Failed connecting to {}".format(peer))
-        own_addr, peer_addr = result
-        self.send_ConnectToPeer(peer_addr,
-                                peer.player.login,
-                                peer.player.id)
-        peer.send_ConnectToPeer(own_addr,
-                                self.player.login,
-                                self.player.id)
-
-    async def establish_connection(self, peer_connection: "GameConnection"):
-        """
-        Attempt to establish a full duplex UDP connection
-        between self and peer.
-
-        :param peer_connection: Client to connect to
-        :return: (own_addr, remote_addr)
-        """
-        own = self.connectivity.result  # type: ConnectivityResult
-        peer = peer_connection.connectivity.result  # type: ConnectivityResult
-        if peer.state == ConnectivityState.PUBLIC \
-                and own.state == ConnectivityState.PUBLIC:
-            self._logger.debug("Connecting %s to host %s directly", self, peer_connection)
-            return own.addr, peer.addr
-        elif peer.state == ConnectivityState.STUN or own.state == ConnectivityState.STUN:
-            self._logger.debug("Connecting %s to host %s using STUN", self, peer_connection)
-            (own_addr, peer_addr) = await self.STUN(peer_connection)
-            if peer_addr is None or own_addr is None:
-                self._logger.debug("STUN between %s %s failed", self, peer_connection)
-                self._logger.debug("Resolved addresses: %s, %s", peer_addr, own_addr)
-                if self.player.id < peer_connection.player.id and own.state == ConnectivityState.STUN:
-                    return await self.TURN(peer_connection)
-                elif peer.state == ConnectivityState.STUN:
-                    return tuple(reversed(await peer_connection.TURN(self)))
-            else:
-                return own_addr, peer_addr
-        self._logger.error("Connection blocked")
-
-    async def TURN(self, peer: 'GameConnection'):
-        addr = await self.connectivity.create_binding(peer.connectivity)
-        return self.connectivity.relay_address, addr
-
-    async def STUN(self, peer: 'GameConnection'):
-        """
-        Perform a STUN sequence between self and peer
-
-        :param peer:
-        :return: (own_addr, remote_addr) | None
-        """
-        own_addr = asyncio.ensure_future(self.connectivity.ProbePeerNAT(peer))
-        remote_addr = asyncio.ensure_future(peer.connectivity.ProbePeerNAT(self))
-        (done, pending) = await asyncio.wait([own_addr, remote_addr], return_when=asyncio.FIRST_COMPLETED)
-        if own_addr.done() and remote_addr.done() and not own_addr.cancelled() and not remote_addr.cancelled():
-            # Both peers got it the first time
-            return own_addr.result(), remote_addr.result()
-        if own_addr.done() and not own_addr.cancelled():
-            # Remote received our packet, we didn't receive theirs
-            # Instruct remote to try our new address
-            own_addr = own_addr.result()
-            remote_addr = await peer.connectivity.ProbePeerNAT(self, use_address=own_addr)
-        elif remote_addr.done() and not remote_addr.cancelled():
-            # Opposite of the above
-            remote_addr = remote_addr.result()
-            own_addr = await self.connectivity.ProbePeerNAT(peer, use_address=remote_addr)
-        for p in pending:
-            if not p.done():
-                p.cancel()
-        return own_addr, remote_addr
+        self.send_ConnectToPeer(peer.player.login,
+                                peer.player.id,
+                                True)
+        peer.send_ConnectToPeer(self.player.login,
+                                self.player.id,
+                                False)
 
     async def handle_action(self, command, args):
         """
@@ -427,7 +361,7 @@ class GameConnection(GpgNetServerProtocol):
             self._logger.info("Ignoring ICE message for player without game connection: %s", receiver_id)
             return
 
-        game_connection.send_message(dict(command="IceMsg", args=[int(self.player.id), ice_msg]))
+        game_connection.send_message(dict(command="IceMessage", args=[int(self.player.id), ice_msg]))
 
 
 

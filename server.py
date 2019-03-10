@@ -69,6 +69,13 @@ if __name__ == '__main__':
 
         players_online = PlayerService()
 
+        twilio_nts = None
+        if TWILIO_ACCOUNT_SID:
+            twilio_nts = TwilioNTS()
+        else:
+            logger.warning(
+                "Twilio is not set up. You must set TWILIO_ACCOUNT_SID and TWILIO_TOKEN to use the Twilio ICE servers.")
+
         api_accessor = None
         if config.USE_API:
             api_accessor = ApiAccessor()
@@ -96,7 +103,7 @@ if __name__ == '__main__':
                                                geoip_service=geoip_service,
                                                player_service=players_online,
                                                games=games,
-                                               nts_client=twilio_nts
+                                               nts_client=twilio_nts,
                                                loop=loop)
 
         for sock in lobby_server.sockets:
