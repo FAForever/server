@@ -5,6 +5,7 @@ from typing import List, NamedTuple
 from sqlalchemy import and_, func, select, text
 
 from . import db
+from .config import LADDER_ANTI_REPETITION_LIMIT
 from .db.models import game_featuredMods, game_player_stats, game_stats
 from .decorators import with_logger
 from .games import LadderGame
@@ -81,7 +82,7 @@ class LadderService:
 
         recently_played_map_ids = {
             map_id for player in players for map_id in
-            await self.get_ladder_history(player)
+            await self.get_ladder_history(player, limit=LADDER_ANTI_REPETITION_LIMIT)
         }
         randomized_maps = random.sample(maps, len(maps))
 
@@ -105,10 +106,10 @@ class LadderService:
             ).where(
                 and_(
                     game_player_stats.c.playerId == player.id,
-                    game_player_stats.c.scoreTime >= func.now() - text("interval 1 day"),
+                    game_stats.c.startTime >= func.now() - text("interval 1 day"),
                     game_featuredMods.c.gamemod == "ladder1v1"
                 )
-            ).limit(limit)
+            ).order_by(game_stats.c.startTime.desc()).limit(limit)
 
             # Collect all the rows from the ResultProxy
             return [row[game_stats.c.mapId] async for row in await conn.execute(query)]

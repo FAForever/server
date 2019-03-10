@@ -2,7 +2,9 @@ from unittest import mock
 
 import pytest
 from server import GameService, GameStatsService, LadderService
+from server.db.models import game_player_stats, game_stats
 from server.players import Player
+from sqlalchemy import func, text
 from tests import CoroMock
 
 
@@ -80,8 +82,47 @@ async def test_choose_map_raises_on_empty_map_pool(ladder_service: LadderService
 
 async def test_get_ladder_history(ladder_service: LadderService, players, db_engine):
     async with db_engine.acquire() as conn:
-        await conn.execute("insert into game_player_stats (gameId, playerId, AI, faction, color, team, place, mean, deviation, scoreTime) values (1, 1, 0, 0, 0, 2, 0, 1500, 500, NOW())")
+        await conn.execute(
+            game_player_stats.insert().values(gameId=1, playerId=players.hosting.id, AI=False, faction=0, color=0, team=2, place=0, mean=1500, deviation=500, scoreTime=func.now())
+        )
     history = await ladder_service.get_ladder_history(players.hosting)
 
     print(history)
     assert history == [1]
+
+
+async def test_get_ladder_history_many_maps(ladder_service: LadderService, players, db_engine):
+    game_id_start = 41935  # Some arbitrary number
+    num_maps = 7
+    async with db_engine.acquire() as conn:
+        for i in range(num_maps):
+            await conn.execute(
+                game_stats.insert().values(
+                    id=game_id_start+i,
+                    startTime=func.now() + text(f"interval {i+1} minute"),
+                    gameType='0',
+                    gameMod=6,
+                    host=players.hosting.id,
+                    mapId=i,
+                    gameName="MapRepitition",
+                    validity=0
+                )
+            )
+            await conn.execute(
+                game_player_stats.insert().values(
+                    gameId=game_id_start+i,
+                    playerId=players.hosting.id,
+                    AI=False,
+                    faction=0,
+                    color=0,
+                    team=2,
+                    place=0,
+                    mean=1500,
+                    deviation=500,
+                    scoreTime=func.now() + text(f"interval {i+1} minute")
+                )
+            )
+
+    history = await ladder_service.get_ladder_history(players.hosting)
+
+    assert history == [num_maps-1, num_maps-2, num_maps-3]
