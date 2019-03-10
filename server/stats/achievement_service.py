@@ -91,12 +91,30 @@ class AchievementService:
                 "current_steps": integer,
                 "newly_unlocked": boolean
             }]
+
+        Else, it returns None
         """
         self._logger.debug("Updating %d achievements", len(queue))
-        data = dict(updates=queue)
-        response, content = await self.api_accessor.api_post("/achievements/updateMultiple", player_id, data=data)
+        response, content = await self.api_accessor.update_achievements(queue, player_id)
+        if response < 300:
+            """
+            Converting the Java API data to the structure mentioned above
+            """
+            api_data = json.loads(content)['data']
+            achievements_data = []
+            for achievement in api_data:
+                converted_achievement = dict(
+                    achievement_id=achievement['attributes']['achievementId'],
+                    current_state=achievement['attributes']['state'],
+                    newly_unlocked=achievement['attributes']['newlyUnlocked']
+                )
+                if 'steps' in achievement['attributes']:
+                    converted_achievement['current_steps'] = achievement['attributes']['steps']
 
-        return json.loads(content.decode('utf-8'))['updated_achievements']
+                achievements_data.append(converted_achievement)
+
+            return achievements_data
+        return None
 
     def unlock(self, achievement_id, queue):
         """

@@ -1,13 +1,11 @@
-import base64
 import logging
-import traceback
 
-import rsa
 import trueskill
 import os
-import sys
 
 LOBBY_IP = os.getenv('LOBBY_IP', '37.58.123.3')
+LOBBY_UDP_PORTS = [int(port) for port in os.getenv('LOBBY_UDP_PORTS', '7,53,67,80,123,194,547,3478,3535,6112,30351').split(',')]
+LOBBY_NAT_ADDRESSES = list(map(lambda p: ('0.0.0.0', p), LOBBY_UDP_PORTS))
 
 logging.getLogger('aiomeasures').setLevel(logging.INFO)
 
@@ -46,10 +44,11 @@ DB_NAME = os.getenv("FAF_DB_NAME", "faf_test")
 CHALLONGE_KEY = "challonge_key"
 CHALLONGE_USER = "challonge_user"
 
-API_CLIENT_ID = os.getenv("API_CLIENT_ID", "6ccaf75b-a1f3-48be-bac3-4e9ffba81eb7")
+API_CLIENT_ID = os.getenv("API_CLIENT_ID", "client_id")
 API_CLIENT_SECRET = os.getenv("API_CLIENT_SECRET", "banana")
-API_TOKEN_URI = os.getenv("API_TOKEN_URI", "https://api.dev.faforever.com/jwt/auth")
-API_BASE_URL = os.getenv("API_BASE_URL", "https://api.dev.faforever.com/jwt")
+API_TOKEN_URI = os.getenv("API_TOKEN_URI", "http://api.test.faforever.com/oauth/token")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://api.test.faforever.com/")
+USE_API = os.getenv("USE_API", 'true').lower() == 'true'
 
 FAF_POLICY_SERVER_BASE_URL = os.getenv("FAF_POLICY_SERVER_BASE_URL", "http://faf-policy-server")
 FORCE_STEAM_LINK_AFTER_DATE = int(os.getenv('FORCE_STEAM_LINK_AFTER_DATE', 1536105599)) # 5 september 2018 by default
@@ -64,3 +63,15 @@ TWILIO_TTL = os.getenv("TWILIO_TTL", 86400)
 
 COTURN_HOSTS = os.getenv('COTURN_HOSTS', "").split(',')
 COTURN_KEYS = os.getenv('COTURN_KEYS', "").split(',')
+
+GEO_IP_DATABASE_PATH = os.getenv("GEO_IP_DATABASE_PATH", "GeoLite2-Country.mmdb")
+GEO_IP_DATABASE_URL = os.getenv(
+    "GEO_IP_DATABASE_URL",
+    "http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.mmdb.gz"
+)
+GEO_IP_DATABASE_MAX_AGE_DAYS = int(os.getenv('GEO_IP_DATABASE_MAX_AGE_DAYS', 22))
+
+CONTROL_SERVER_PORT = int(os.getenv('CONTROL_SERVER_PORT', 4000))
+
+LADDER_ANTI_REPETITION_LIMIT = int(os.getenv('LADDER_ANTI_REPETITION_LIMIT', 3))
+

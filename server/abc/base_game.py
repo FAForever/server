@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from enum import Enum, IntEnum, unique
-from server.players import Player
+
 
 @unique
 class GameConnectionState(Enum):
@@ -8,6 +8,7 @@ class GameConnectionState(Enum):
     INITIALIZED = 1
     CONNECTED_TO_HOST = 2
     ENDED = 3
+
 
 @unique
 class InitMode(IntEnum):

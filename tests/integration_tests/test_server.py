@@ -3,7 +3,7 @@ import hashlib
 
 from server import VisibilityState
 
-from tests.integration_tests.testclient import TestClient
+from tests.integration_tests.testclient import ClientTest
 
 slow = pytest.mark.slow
 
@@ -19,11 +19,12 @@ slow = pytest.mark.slow
 
 
 @pytest.fixture
-def lobby_server(request, loop, db_pool, player_service, game_service):
-    ctx = run_lobby_server(('127.0.0.1', None),
-                           player_service,
-                           game_service,
-                           loop)
+def lobby_server(request, loop, db_engine, player_service, game_service, geoip_service):
+    ctx = run_lobby_server(address=('127.0.0.1', None),
+                           geoip_service=geoip_service,
+                           player_service=player_service,
+                           games=game_service,
+                           loop=loop)
     player_service.is_uniqueid_exempt = lambda id: True
 
     def fin():
@@ -139,7 +140,7 @@ async def test_public_host(loop, lobby_server, player_service):
                             visibility=VisibilityState.to_string(VisibilityState.PUBLIC)))
     await proto.drain()
 
-    with TestClient(loop=loop, process_nat_packets=True, proto=proto) as client:
+    with ClientTest(loop=loop, process_nat_packets=True, proto=proto) as client:
         await client.listen_udp()
         client.send_GameState(['Idle'])
         client.send_GameState(['Lobby'])

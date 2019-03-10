@@ -11,19 +11,18 @@ import logging
 
 import aiomeasures
 
-import server.db
-
 from . import config as config
 from .games.game import GameState, VisibilityState
 from .stats.game_stats_service import GameStatsService
 from .gameconnection import GameConnection
+from .natpacketserver import NatPacketServer
 from .lobbyconnection import LobbyConnection
-from .protocol import Protocol, QDataStreamProtocol
+from .protocol import QDataStreamProtocol
 from .servercontext import ServerContext
+from .geoip_service import GeoIpService
 from .player_service import PlayerService
 from .game_service import GameService
 from .ladder_service import LadderService
-from .ice_servers.nts import TwilioNTS
 from .control import init as run_control_server
 
 __version__ = '0.9.17'
@@ -34,7 +33,11 @@ __copyright__ = 'Copyright (c) 2011-2015 ' + __author__
 
 
 __all__ = [
+    'GameStatsService',
+    'GameService',
+    'LadderService',
     'run_lobby_server',
+    'run_control_server',
     'games',
     'control',
     'abc',
@@ -44,8 +47,8 @@ __all__ = [
 stats = None
 
 if not config.ENABLE_STATSD:
-    from . import fake_statsd
-    stats = fake_statsd.DummyConnection()
+    from unittest import mock
+    stats = mock.MagicMock()
 else:
     stats = aiomeasures.StatsD(config.STATSD_SERVER)
 
@@ -54,7 +57,8 @@ def run_lobby_server(address: (str, int),
                      player_service: PlayerService,
                      games: GameService,
                      nts_client: TwilioNTS,
-                     loop):
+                     loop
+                     geoip_service: GeoIpService):
     """
     Run the lobby server
 
@@ -137,9 +141,9 @@ def run_lobby_server(address: (str, int),
 
     def initialize_connection():
         return LobbyConnection(context=ctx,
+                               geoip=geoip_service,
                                games=games,
                                players=player_service,
-                               nts_client=nts_client,
                                loop=loop)
     ctx = ServerContext(initialize_connection, name="LobbyServer", loop=loop)
     loop.call_later(5, report_dirties)

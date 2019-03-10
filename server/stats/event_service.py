@@ -57,12 +57,27 @@ class EventService:
                 "event_id": string,
                 "count": long
             }]
+        Else, returns None
         """
         self._logger.debug("Recording %d events", len(queue))
-        data = dict(updates=queue)
-        response, content = await self.api_accessor.api_post("/events/recordMultiple", player_id, data=data)
+        response, content = await self.api_accessor.update_events(queue, player_id)
 
-        return json.loads(content.decode('utf-8'))['updated_events']
+        if response < 300:
+            """
+            Converting the Java API data to the structure mentioned above
+            """
+            events_data = []
+            for event in json.loads(content)['data']:
+                events_data.append(
+                    dict(
+                        event_id=event['attributes']['eventId'],
+                        count=event['attributes']['currentCount']
+                    )
+                )
+
+            return events_data
+
+        return None
 
     def record_event(self, event_id, count, queue):
         """

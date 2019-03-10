@@ -6,3 +6,9 @@ just used for 1v1 ``ladder''.
 """
 from .matchmaker_queue import MatchmakerQueue
 from .search import Search
+
+
+__all__ = [
+    'MatchmakerQueue',
+    'Search'
+]

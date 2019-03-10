@@ -7,19 +7,17 @@ these should be put in the ``conftest.py'' relative to it.
 """
 
 import asyncio
-
 import logging
-import subprocess
-import sys
-from server.config import DB_SERVER, DB_LOGIN, DB_PORT, DB_PASSWORD
+from unittest import mock
 
 import pytest
-from unittest import mock
+from server.api.api_accessor import ApiAccessor
+from server.config import DB_LOGIN, DB_PASSWORD, DB_PORT, DB_SERVER
+from server.geoip_service import GeoIpService
+from tests import CoroMock
 from trueskill import Rating
 
 logging.getLogger().setLevel(logging.DEBUG)
-
-import os
 
 
 def async_test(f):
@@ -102,51 +100,75 @@ def sqlquery():
     query.addBindValue = lambda v: None
     return query
 
+
 @pytest.fixture
-def mock_db_pool(loop, db_pool, autouse=True):
-    return db_pool
+def mock_db_engine(loop, db_engine, autouse=True):
+    return db_engine
+
 
 @pytest.fixture(scope='session')
-def db_pool(request, loop):
+def db_engine(request, loop):
     import server
 
     def opt(val):
         return request.config.getoption(val)
     host, user, pw, db, port = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt('--mysql_database'), opt('--mysql_port')
-    pool_fut = asyncio.async(server.db.connect(loop=loop,
-                                               host=host,
-                                               user=user,
-                                               password=pw or None,
-                                               port=port,
-                                               db=db))
-    pool = loop.run_until_complete(pool_fut)
-
+    engine_fut = asyncio.async(
+        server.db.connect_engine(
+            loop=loop,
+            host=host,
+            user=user,
+            password=pw or None,
+            port=port,
+            db=db
+        )
+    )
+    engine = loop.run_until_complete(engine_fut)
 
     def fin():
-        pool.close()
-        loop.run_until_complete(pool.wait_closed())
+        engine.close()
+        loop.run_until_complete(engine.wait_closed())
     request.addfinalizer(fin)
 
-    return pool
+    return engine
+
 
 @pytest.fixture
 def transport():
     return mock.Mock(spec=asyncio.Transport)
 
+
 @pytest.fixture
 def game(players):
+    return make_game(1, players)
+
+
+GAME_UID = 1
+
+
+@pytest.fixture
+def ugame(players):
+    global GAME_UID
+    game = make_game(GAME_UID, players)
+    GAME_UID += 1
+    return game
+
+
+def make_game(uid, players):
     from server.games import Game
     from server.abc.base_game import InitMode
     mock_parent = mock.Mock()
-    game = mock.create_autospec(spec=Game(1, mock_parent, mock.Mock()))
+    game = mock.create_autospec(spec=Game(uid, mock_parent, mock.Mock()))
+    game.remove_game_connection = CoroMock()
     players.hosting.getGame = mock.Mock(return_value=game)
     players.joining.getGame = mock.Mock(return_value=game)
     players.peer.getGame = mock.Mock(return_value=game)
     game.hostPlayer = players.hosting
     game.init_mode = InitMode.NORMAL_LOBBY
     game.name = "Some game name"
-    game.id = 1
+    game.id = uid
     return game
+
 
 @pytest.fixture
 def create_player():
@@ -162,6 +184,7 @@ def create_player():
         return p
     return make
 
+
 @pytest.fixture
 def players(create_player):
     from server.players import PlayerState
@@ -171,20 +194,52 @@ def players(create_player):
         joining=create_player(login='James_Kirk', id=3, port=6112, state=PlayerState.JOINING)
     )
 
-@pytest.fixture
-def player_service(loop, players, db_pool):
-    from server import PlayerService
-    return PlayerService(db_pool)
 
 @pytest.fixture
-def game_service(loop, player_service, game_stats_service):
-    from server import GameService
+def player_service(loop, players, db_engine):
+    from server.player_service import PlayerService
+    return PlayerService()
+
+
+@pytest.fixture
+def game_service(player_service, game_stats_service):
+    from server.game_service import GameService
     return GameService(player_service, game_stats_service)
 
+
 @pytest.fixture
+def geoip_service() -> GeoIpService:
+    return GeoIpService()
+
+
+@pytest.fixture()
 def api_accessor():
-    from server.api.api_accessor import ApiAccessor
-    return ApiAccessor()
+    class FakeRequestResponse:
+        def __init__(self):
+            self.status_code = 200
+            self.text = "test"
+
+    class FakeSession:
+        def __init__(self, client):
+            self.request = mock.Mock(return_value=FakeRequestResponse())
+            self.get = mock.Mock(return_value=FakeRequestResponse())
+
+        def fetch_token(self, token_url, client_id, client_secret):
+            pass
+
+    class SessionManager:
+        def __init__(self):
+            self.session = FakeSession(None)
+
+        def __enter__(self):
+            return self.session
+
+        def __exit__(self, *args):
+            pass
+
+    api_accessor = ApiAccessor()
+    api_accessor.api_session = SessionManager()
+    return api_accessor
 
 @pytest.fixture
 def event_service(api_accessor):

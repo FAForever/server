@@ -1,10 +1,9 @@
 import gc
 from unittest import mock
 
-from trueskill import Rating
-
-from faf.factions import Faction
+from server.factions import Faction
 from server.players import Player
+from trueskill import Rating
 
 
 def test_ratings():

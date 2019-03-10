@@ -7,6 +7,7 @@ from unittest import mock
 from server import ServerContext, GameState, VisibilityState
 from server.protocol import QDataStreamProtocol
 from server.game_service import GameService
+from server.geoip_service import GeoIpService
 from server.games import Game
 from server.lobbyconnection import LobbyConnection
 from server.player_service import PlayerService
@@ -54,8 +55,8 @@ def mock_context(loop):
 
 
 @pytest.fixture
-def mock_players(mock_db_pool):
-    return mock.create_autospec(PlayerService(mock_db_pool))
+def mock_players(db_engine):
+    return mock.create_autospec(PlayerService())
 
 
 @pytest.fixture
@@ -69,9 +70,15 @@ def mock_protocol():
 
 
 @pytest.fixture
-def lobbyconnection(loop, mock_context, mock_protocol, mock_games, mock_players, mock_player):
+def mock_geoip():
+    return mock.create_autospec(GeoIpService())
+
+
+@pytest.fixture
+def lobbyconnection(loop, mock_context, mock_protocol, mock_games, mock_players, mock_player, mock_geoip):
     lc = LobbyConnection(loop,
                          context=mock_context,
+                         geoip=mock_geoip,
                          games=mock_games,
                          players=mock_players)
     lc.player = mock_player
@@ -130,6 +137,72 @@ def test_command_game_join_calls_join_game(mocker,
     mock_protocol.send_message.assert_called_with(expected_reply)
 
 
+def test_command_game_join_uid_as_str(mocker,
+                                      lobbyconnection,
+                                      game_service,
+                                      test_game_info,
+                                      players,
+                                      game_stats_service):
+    lobbyconnection.game_service = game_service
+    mock_protocol = mocker.patch.object(lobbyconnection, 'protocol')
+    game = mock.create_autospec(Game(42, game_service, game_stats_service))
+    game.state = GameState.LOBBY
+    game.password = None
+    game.game_mode = 'faf'
+    game.id = 42
+    game_service.games[42] = game
+    lobbyconnection.player = players.hosting
+    players.hosting.in_game = False
+    test_game_info['uid'] = '42'  # Pass in uid as string
+
+    lobbyconnection.command_game_join(test_game_info)
+    expected_reply = {
+        'command': 'game_launch',
+        'mod': 'faf',
+        'uid': 42,
+        'args': ['/numgames {}'.format(players.hosting.numGames)]
+    }
+    mock_protocol.send_message.assert_called_with(expected_reply)
+
+
+def test_command_game_join_without_password(lobbyconnection,
+                                            game_service,
+                                            test_game_info,
+                                            players,
+                                            game_stats_service):
+    lobbyconnection.sendJSON = mock.Mock()
+    lobbyconnection.game_service = game_service
+    game = mock.create_autospec(Game(42, game_service, game_stats_service))
+    game.state = GameState.LOBBY
+    game.password = 'password'
+    game.game_mode = 'faf'
+    game.id = 42
+    game_service.games[42] = game
+    lobbyconnection.player = players.hosting
+    players.hosting.in_game = False
+    test_game_info['uid'] = 42
+    del test_game_info['password']
+
+    lobbyconnection.command_game_join(test_game_info)
+    lobbyconnection.sendJSON.assert_called_once_with(
+        dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
+
+
+def test_command_game_join_game_not_found(lobbyconnection,
+                                          game_service,
+                                          test_game_info,
+                                          players):
+    lobbyconnection.sendJSON = mock.Mock()
+    lobbyconnection.game_service = game_service
+    lobbyconnection.player = players.hosting
+    players.hosting.in_game = False
+    test_game_info['uid'] = 42
+
+    lobbyconnection.command_game_join(test_game_info)
+    lobbyconnection.sendJSON.assert_called_once_with(
+        dict(command="notice", style="info", text="The host has left the game"))
+
+
 def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
                                                          mock_games,
                                                          test_game_info_invalid):
@@ -169,6 +242,61 @@ def test_send_mod_list(mocker, lobbyconnection, mock_games):
     lobbyconnection.send_mod_list()
 
     protocol.send_messages.assert_called_with(mock_games.all_game_modes())
+
+
+async def test_send_coop_maps(mocker, lobbyconnection):
+    protocol = mocker.patch.object(lobbyconnection, 'protocol')
+
+    await lobbyconnection.send_coop_maps()
+
+    args = protocol.send_messages.call_args_list
+    print(args)
+    assert len(args) == 1
+    coop_maps = args[0][0][0]
+    for info in coop_maps:
+        del info['uid']
+    assert coop_maps == [
+        {
+            "command": "coop_info",
+            "name": "FA Campaign map",
+            "description": "A map from the FA campaign",
+            "filename": "maps/scmp_coop_123.v0002.zip",
+            "featured_mod": "coop",
+            "type": "FA Campaign"
+        },
+        {
+            "command": "coop_info",
+            "name": "Aeon Campaign map",
+            "description": "A map from the Aeon campaign",
+            "filename": "maps/scmp_coop_124.v0000.zip",
+            "featured_mod": "coop",
+            "type": "Aeon Vanilla Campaign"
+        },
+        {
+            "command": "coop_info",
+            "name": "Cybran Campaign map",
+            "description": "A map from the Cybran campaign",
+            "filename": "maps/scmp_coop_125.v0001.zip",
+            "featured_mod": "coop",
+            "type": "Cybran Vanilla Campaign"
+        },
+        {
+            "command": "coop_info",
+            "name": "UEF Campaign map",
+            "description": "A map from the UEF campaign",
+            "filename": "maps/scmp_coop_126.v0099.zip",
+            "featured_mod": "coop",
+            "type": "UEF Vanilla Campaign"
+        },
+        {
+            "command": "coop_info",
+            "name": "Prothyon - 16",
+            "description": "Prothyon - 16 is a secret UEF facility...",
+            "filename": "maps/prothyon16.v0005.zip",
+            "featured_mod": "coop",
+            "type": "Custom Missions"
+        }
+    ]
 
 
 @asyncio.coroutine
@@ -251,7 +379,7 @@ async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection, moc
     })
 
 
-async def test_command_avatar_select(mocker, lobbyconnection: LobbyConnection, mock_player: Player):
+async def test_command_avatar_select(mocker, db_engine, lobbyconnection: LobbyConnection, mock_player: Player):
     lobbyconnection.player = mock_player
     lobbyconnection.player.id = 2  # Dostya test user
 
@@ -260,11 +388,10 @@ async def test_command_avatar_select(mocker, lobbyconnection: LobbyConnection, m
         'avatar': "http://content.faforever.com/faf/avatars/qai2.png"
     })
 
-    async with db.db_pool.get() as conn:
-        cursor = await conn.cursor()
-        await cursor.execute("SELECT selected from avatars where idUser=2")
-        result = await cursor.fetchone()
-        assert result == (1,)
+    async with db_engine.acquire() as conn:
+        result = await conn.execute("SELECT selected from avatars where idUser=2")
+        row = await result.fetchone()
+        assert row[0] == 1
 
 
 async def test_broadcast(lobbyconnection: LobbyConnection, mocker):

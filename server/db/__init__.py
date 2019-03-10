@@ -1,42 +1,32 @@
-import asyncio
-import aiomysql
-from .logging_cursor import LoggingCursor
-from aiomysql import Pool
+from aiomysql.sa import create_engine
 
-db_pool = None
+engine = None
 
-def set_pool(pool: Pool):
-    """
-    Set the globally used pool to the given argument
-    """
-    global db_pool
-    db_pool = pool
 
-@asyncio.coroutine
-def connect(loop,
-            host='localhost', port=3306, user='root', password='', db='faf_test',
-            minsize=1, maxsize=1, cursorclass=LoggingCursor):
+def set_engine(engine_):
     """
-    Initialize the database pool
-    :param loop:
-    :param host:
-    :param user:
-    :param password:
-    :param db:
-    :param minsize:
-    :param maxsize:
-    :param cursorclass:
-    :return:
+    Set the globally used engine to the given argument
     """
-    pool = yield from aiomysql.create_pool(host=host,
-                                           port=port,
-                                           user=user,
-                                           password=password,
-                                           db=db,
-                                           autocommit=True,
-                                           loop=loop,
-                                           minsize=minsize,
-                                           maxsize=maxsize,
-                                           cursorclass=cursorclass)
-    set_pool(pool)
-    return pool
+    global engine
+    engine = engine_
+
+
+async def connect_engine(
+    loop, host='localhost', port=3306, user='root', password='', db='faf_test',
+    minsize=1, maxsize=1, echo=True
+):
+    engine = await create_engine(
+        host=host,
+        port=port,
+        user=user,
+        password=password,
+        db=db,
+        autocommit=True,
+        loop=loop,
+        minsize=minsize,
+        maxsize=maxsize,
+        echo=echo
+    )
+
+    set_engine(engine)
+    return engine

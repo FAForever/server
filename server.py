@@ -9,20 +9,23 @@ Options:
 """
 
 import asyncio
-
 import logging
+from logging import handlers
 import signal
 import socket
 
-from server.game_service import GameService
-from server.matchmaker import MatchmakerQueue
-from server.player_service import PlayerService
-from server.stats.game_stats_service import GameStatsService, EventService, AchievementService
-from server.api.api_accessor import ApiAccessor
-from server.ice_servers.nts import TwilioNTS
 import server
 import server.config as config
+from server.api.api_accessor import ApiAccessor
 from server.config import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME, TWILIO_ACCOUNT_SID
+from server.game_service import GameService
+from server.geoip_service import GeoIpService
+from server.matchmaker import MatchmakerQueue
+from server.natpacketserver import NatPacketServer
+from server.player_service import PlayerService
+from server.natpacketserver import NatPacketServer
+from server.stats.game_stats_service import GameStatsService, EventService, AchievementService
+from server.ice_servers.nts import TwilioNTS
 
 if __name__ == '__main__':
     logger = logging.getLogger()
@@ -41,6 +44,7 @@ if __name__ == '__main__':
         done = asyncio.Future()
 
         from docopt import docopt
+
         args = docopt(__doc__, version='FAF Server')
 
         if config.ENABLE_STATSD:
@@ -50,44 +54,61 @@ if __name__ == '__main__':
         signal.signal(signal.SIGTERM, signal_handler)
         signal.signal(signal.SIGINT, signal_handler)
 
-        pool_fut = asyncio.async(server.db.connect(host=DB_SERVER,
-                                                   port=int(DB_PORT),
-                                                   user=DB_LOGIN,
-                                                   password=DB_PASSWORD,
-                                                   maxsize=10,
-                                                   db=DB_NAME,
-                                                   loop=loop))
-        db_pool = loop.run_until_complete(pool_fut)
+        engine_fut = asyncio.async(
+            server.db.connect_engine(
+                host=DB_SERVER,
+                port=int(DB_PORT),
+                user=DB_LOGIN,
+                password=DB_PASSWORD,
+                maxsize=10,
+                db=DB_NAME,
+                loop=loop
+            )
+        )
+        engine = loop.run_until_complete(engine_fut)
 
-        players_online = PlayerService(db_pool)
-        api_accessor = ApiAccessor()
+        players_online = PlayerService()
+
+        api_accessor = None
+        if config.USE_API:
+            api_accessor = ApiAccessor()
+
         event_service = EventService(api_accessor)
         achievement_service = AchievementService(api_accessor)
         game_stats_service = GameStatsService(event_service, achievement_service)
+        geoip_service = GeoIpService()
+
+        natpacket_server = NatPacketServer(addresses=config.LOBBY_NAT_ADDRESSES, loop=loop)
+        loop.run_until_complete(natpacket_server.listen())
+        server.NatPacketServer.instance = natpacket_server
+
+        natpacket_server = NatPacketServer(addresses=config.LOBBY_NAT_ADDRESSES, loop=loop)
+        loop.run_until_complete(natpacket_server.listen())
+        server.NatPacketServer.instance = natpacket_server
 
         games = GameService(players_online, game_stats_service)
         matchmaker_queue = MatchmakerQueue('ladder1v1', players_online, games)
         players_online.ladder_queue = matchmaker_queue
 
-        if TWILIO_ACCOUNT_SID:
-          twilio_nts = TwilioNTS()
-        else:
-          logger.warn("Twilio not set up. You must set TWILIO_ACCOUNT_SID and TWILIO_TOKEN to use the Twilio ICE servers.")
-          twilio_nts = None
-
         ctrl_server = loop.run_until_complete(server.run_control_server(loop, players_online, games))
 
-        lobby_server = server.run_lobby_server(('', 8001),
-                                    players_online,
-                                    games,
-                                    twilio_nts,
-                                    loop)
+        lobby_server = server.run_lobby_server(address=('', 8001),
+                                               geoip_service=geoip_service,
+                                               player_service=players_online,
+                                               games=games,
+                                               nts_client=twilio_nts
+                                               loop=loop)
 
         for sock in lobby_server.sockets:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
 
         loop.run_until_complete(done)
         players_online.broadcast_shutdown()
+
+        # Close DB connections
+        engine.close()
+        loop.run_until_complete(engine.wait_closed())
+
         loop.close()
 
     except Exception as ex:
