@@ -59,9 +59,7 @@ else:
 
 def encode_message(message: str):
     # Crazy evil encoding scheme
-    return QDataStreamProtocol.pack_block(
-        QDataStreamProtocol.pack_qstring(message)
-    )
+    return QDataStreamProtocol.pack_message(message)
 
 
 def encode_dict(d: Dict[Any, Any]):
@@ -131,7 +129,7 @@ def run_lobby_server(
         finally:
             loop.call_later(1, report_dirties)
 
-    ping_msg = QDataStreamProtocol.pack_block(QDataStreamProtocol.pack_qstring('PING'))
+    ping_msg = encode_message('PING')
 
     def ping_broadcast():
         ctx.broadcast_raw(ping_msg)
