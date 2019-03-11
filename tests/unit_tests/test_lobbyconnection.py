@@ -49,11 +49,6 @@ def mock_player():
 
 
 @pytest.fixture
-def mock_context(loop):
-    return mock.create_autospec(ServerContext(lambda: None, loop))
-
-
-@pytest.fixture
 def mock_players(db_engine):
     return mock.create_autospec(PlayerService())
 
@@ -74,9 +69,8 @@ def mock_geoip():
 
 
 @pytest.fixture
-def lobbyconnection(loop, mock_context, mock_protocol, mock_games, mock_players, mock_player, mock_geoip):
+def lobbyconnection(loop, mock_protocol, mock_games, mock_players, mock_player, mock_geoip):
     lc = LobbyConnection(
-        context=mock_context,
         geoip=mock_geoip,
         games=mock_games,
         players=mock_players,

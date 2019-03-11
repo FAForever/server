@@ -34,9 +34,11 @@ __copyright__ = 'Copyright (c) 2011-2015 ' + __author__
 
 
 __all__ = [
+    'GameConnection',
     'GameStatsService',
     'GameService',
     'LadderService',
+    'NatPacketServer'
     'run_lobby_server',
     'run_control_server',
     'games',
@@ -144,7 +146,6 @@ def run_lobby_server(
 
     def initialize_connection():
         return LobbyConnection(
-            context=ctx,
             geoip=geoip_service,
             games=games,
             players=player_service,

@@ -53,7 +53,6 @@ class LobbyConnection():
     @timed()
     def __init__(
         self,
-        context,
         games: GameService,
         players: PlayerService,
         geoip: GeoIpService,
@@ -63,7 +62,6 @@ class LobbyConnection():
         self.game_service = games
         self.player_service = players
         self.matchmaker_queue = matchmaker_queue
-        self.context = context
         self.ladderPotentialPlayers = []
         self.warned = False
         self._authenticated = False
