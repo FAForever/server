@@ -150,12 +150,12 @@ class GameService:
         """
         Main entrypoint for creating new games
         """
-        game_id = self.create_uuid()
+        game_id = self.create_uid()
         args = {
-            "id": game_id,
+            "id_": game_id,
             "host": host,
             "name": name,
-            "map": mapname,
+            "map_": mapname,
             "game_mode": str(game_mode),
             "game_service": self,
             "game_stats_service": self.game_stats_service
