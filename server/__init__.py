@@ -144,7 +144,7 @@ def run_lobby_server(
             players=player_service,
             matchmaker_queue=matchmaker_queue
         )
-    ctx = ServerContext(make_connection, name="LobbyServer", loop=loop)
+    ctx = ServerContext(make_connection, name="LobbyServer")
     loop.call_later(5, report_dirties)
     loop.call_soon(ping_broadcast)
     loop.run_until_complete(ctx.listen(*address))
