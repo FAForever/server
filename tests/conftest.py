@@ -108,11 +108,11 @@ def sqlquery():
 
 
 @pytest.fixture
-def mock_db_engine(loop, db_engine, autouse=True):
+def mock_db_engine(loop, db_engine):
     return db_engine
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='session', autouse=True)
 def db_engine(request, loop):
     import server
 
@@ -137,6 +137,16 @@ def db_engine(request, loop):
     request.addfinalizer(fin)
 
     return engine
+
+
+@pytest.fixture(scope='session', autouse=True)
+def test_data(db_engine, loop):
+    async def load_data():
+        with open('tests/data/test-data.sql') as f:
+            async with db_engine.acquire() as conn:
+                await conn.execute(f.read())
+
+    loop.run_until_complete(load_data())
 
 
 @pytest.fixture

@@ -23,7 +23,7 @@ def mock_games(mock_players):
 
 
 @pytest.fixture
-def lobby_server(request, loop, db_engine, player_and_game_service, geoip_service):
+def lobby_server(request, loop, player_and_game_service, geoip_service):
     (player_service, game_service) = player_and_game_service
     server.NatPacketServer.instance = NatPacketServer(addresses=server.config.LOBBY_NAT_ADDRESSES, loop=loop)
     loop.run_until_complete(server.NatPacketServer.instance.listen())

@@ -9,7 +9,7 @@ from tests import CoroMock
 
 
 @pytest.fixture
-def ladder_service(game_service: GameService, db_engine):
+def ladder_service(game_service: GameService):
     return LadderService(game_service)
 
 
