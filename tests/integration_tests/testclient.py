@@ -33,7 +33,7 @@ class UDPClientProtocol(asyncio.DatagramProtocol):
 
 
 @with_logger
-class ClientTest():
+class ClientTest(GpgNetClientProtocol):
     """
     Client used for acting as a GPGNet client (The game itself).
 
@@ -52,9 +52,14 @@ class ClientTest():
         self._udp_transport, self._udp_protocol = (None, None)
         self._gpg_socket_pair = None
 
-    def send_connectivity_message(self, command_id, arguments: List[Union[int, str, bool]]) -> None:
+    def send_connectivity_message(self, command_id, arguments: List[Union[int, str, bool]]):
         self._proto.send_message({'command': command_id,
                                   'target': 'connectivity',
+                                  'args': arguments})
+
+    def send_gpgnet_message(self, command_id, arguments: List[Union[int, str, bool]]):
+        self._proto.send_message({'command': command_id,
+                                  'target': 'game',
                                   'args': arguments})
 
     async def listen_udp(self, port=6112):

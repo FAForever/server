@@ -1,54 +1,12 @@
-import asyncio
-import hashlib
-import logging
-
 import pytest
 from server import VisibilityState
-from server.protocol import QDataStreamProtocol
+
+from .conftest import connect_client, perform_login, read_until, connect_and_sign_in
 from .testclient import ClientTest
 
 slow = pytest.mark.slow
 
 TEST_ADDRESS = ('127.0.0.1', None)
-
-
-async def connect_client(server):
-    return QDataStreamProtocol(
-        *(await asyncio.open_connection(*server.sockets[0].getsockname()))
-    )
-
-
-async def get_session(proto):
-    proto.send_message({'command': 'ask_session', 'user_agent': 'faf-client', 'version': '0.11.16'})
-    await proto.drain()
-    msg = await proto.read_message()
-
-    return msg['session']
-
-
-async def perform_login(proto, credentials):
-    login, pw = credentials
-    pw_hash = hashlib.sha256(pw.encode('utf-8'))
-    proto.send_message({
-        'command': 'hello',
-        'version': '1.0.0-dev',
-        'user_agent': 'faf-client',
-        'login': login,
-        'password': pw_hash.hexdigest(),
-        'unique_id': 'some_id'
-    })
-    await proto.drain()
-
-
-async def read_until(proto, pred):
-    while True:
-        msg = await proto.read_message()
-        try:
-            if pred(msg):
-                return msg
-        except (KeyError, ValueError):
-            logging.getLogger().info("read_until predicate raised during message: {}".format(msg))
-            pass
 
 
 @slow
@@ -58,6 +16,18 @@ async def test_server_invalid_login(loop, lobby_server):
     msg = await proto.read_message()
     assert msg == {'command': 'authentication_failed',
                    'text': 'Login not found or password incorrect. They are case sensitive.'}
+    proto.close()
+
+
+@slow
+async def test_server_ban(loop, lobby_server):
+    proto = await connect_client(lobby_server)
+    await perform_login(proto, ('Dostya', 'vodka'))
+    msg = await proto.read_message()
+    assert msg == {
+        'command': 'notice',
+        'style': 'error',
+        'text': 'You are banned from FAF.\n Reason :\n Test permanent ban'}
     proto.close()
 
 
@@ -96,27 +66,27 @@ async def test_player_info_broadcast(loop, lobby_server):
     p2.close()
 
 
-async def connect_and_sign_in(credentials, lobby_server):
-    proto = await connect_client(lobby_server)
-    session = await get_session(proto)
-    await perform_login(proto, credentials)
-    hello = await proto.read_message()
-    player_id = hello['id']
-    return player_id, session, proto
-
-
 @slow
 async def test_public_host(loop, lobby_server, player_service):
-    player_id, session, proto = await connect_and_sign_in(('test', 'test_password'),
-                                                          lobby_server)
+    # TODO: This test can't fail, why is it here?
+    player_id, session, proto = await connect_and_sign_in(
+        ('test', 'test_password'),
+        lobby_server
+    )
 
-    proto.send_message(dict(command='game_host',
-                            mod='faf',
-                            visibility=VisibilityState.to_string(VisibilityState.PUBLIC)))
-    await proto.drain()
+    await read_until(proto, lambda msg: msg['command'] == 'game_info')
 
     with ClientTest(loop=loop, process_nat_packets=True, proto=proto) as client:
         await client.listen_udp()
+        await client.perform_connectivity_test()
+
+        proto.send_message({
+            'command': 'game_host',
+            'mod': 'faf',
+            'visibility': VisibilityState.to_string(VisibilityState.PUBLIC)
+        })
+        await proto.drain()
+
         client.send_GameState(['Idle'])
         client.send_GameState(['Lobby'])
         await client._proto.writer.drain()
