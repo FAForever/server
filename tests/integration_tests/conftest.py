@@ -8,10 +8,11 @@ import server
 from server import GameService, PlayerService, run_lobby_server
 from server.natpacketserver import NatPacketServer
 from server.protocol import QDataStreamProtocol
+from server.matchmaker import MatchmakerQueue
 
 
 @pytest.fixture
-def mock_players(db_engine):
+def mock_players():
     m = mock.create_autospec(PlayerService())
     m.client_version_info = (0, None)
     return m
@@ -23,8 +24,7 @@ def mock_games(mock_players):
 
 
 @pytest.fixture
-def lobby_server(request, loop, player_and_game_service, geoip_service):
-    (player_service, game_service) = player_and_game_service
+def lobby_server(request, loop, player_service, game_service, geoip_service):
     server.NatPacketServer.instance = NatPacketServer(addresses=server.config.LOBBY_NAT_ADDRESSES, loop=loop)
     loop.run_until_complete(server.NatPacketServer.instance.listen())
     ctx = run_lobby_server(
@@ -32,6 +32,7 @@ def lobby_server(request, loop, player_and_game_service, geoip_service):
         geoip_service=geoip_service,
         player_service=player_service,
         games=game_service,
+        matchmaker_queue=MatchmakerQueue('ladder1v1', game_service),
         loop=loop
     )
     player_service.is_uniqueid_exempt = lambda id: True

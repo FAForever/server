@@ -215,15 +215,7 @@ def players(create_player):
 
 
 @pytest.fixture
-def player_and_game_service(loop, players, db_engine, game_stats_service):
-    ps = PlayerService()
-    gs = GameService(ps, game_stats_service)
-    ps.ladder_queue = MatchmakerQueue('ladder1v1', ps, gs)
-    return ps, gs
-
-
-@pytest.fixture
-def player_service(loop, players, db_engine):
+def player_service(loop, players):
     return PlayerService()
 
 
