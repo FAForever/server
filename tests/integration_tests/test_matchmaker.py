@@ -4,17 +4,13 @@ from .conftest import connect_and_sign_in, read_until
 from .testclient import ClientTest
 
 
-async def test_game_matchmaking(loop, lobby_server, db_engine):
-    async with db_engine.acquire() as conn:
-        result = await conn.execute("SELECT mean, deviation, id from ladder1v1_rating WHERE id in (1,3)")
-        ratings = [(row['mean'], row['deviation'], row['id']) async for row in result]
-        await conn.execute("UPDATE ladder1v1_rating SET mean=2000,deviation=500 WHERE id in (1,3)")
+async def test_game_matchmaking(loop, lobby_server):
     _, _, proto1 = await connect_and_sign_in(
-        ('test', 'test_password'),
+        ('ladder1', 'ladder1'),
         lobby_server
     )
     _, _, proto2 = await connect_and_sign_in(
-        ('Rhiza', 'puff_the_magic_dragon'),
+        ('ladder2', 'ladder2'),
         lobby_server
     )
 
@@ -52,8 +48,32 @@ async def test_game_matchmaking(loop, lobby_server, db_engine):
             assert msg1['mod'] == 'ladder1v1'
             assert msg2['mod'] == 'ladder1v1'
 
-    async with db_engine.acquire() as conn:
-        await conn.execute(
-            "UPDATE ladder1v1_rating SET mean=%s,deviation=%s WHERE id =%s",
-            ratings
-        )
+
+async def test_game_matchmaking_ban(loop, lobby_server, db_engine):
+    _, _, proto = await connect_and_sign_in(
+        ('ladder_ban', 'ladder_ban'),
+        lobby_server
+    )
+
+    await read_until(proto, lambda msg: msg['command'] == 'game_info')
+
+    with ClientTest(loop=loop, process_nat_packets=True, proto=proto) as client1:
+        port = 6112
+        await client1.listen_udp(port=port)
+        await client1.perform_connectivity_test(port=port)
+
+        proto.send_message({
+            'command': 'game_matchmaking',
+            'state': 'start',
+            'faction': 'uef'
+        })
+        await proto.drain()
+
+        # This may fail due to a timeout error
+        msg = await read_until(proto, lambda msg: msg['command'] == 'notice')
+
+        assert msg == {
+            'command': 'notice',
+            'style': 'error',
+            'text': 'You are banned from the matchmaker. Contact an admin to have the reason.'
+        }
