@@ -20,9 +20,9 @@ from .connectivity import Connectivity, ConnectivityState
 from .decorators import timed, with_logger
 from .game_service import GameService
 from .gameconnection import GameConnection
-from .games.game import GameState, VisibilityState
+from .games import GameMode, GameState, VisibilityState
 from .geoip_service import GeoIpService
-from .matchmaker import Search
+from .matchmaker import MatchmakerQueue, Search
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import QDataStreamProtocol
@@ -49,18 +49,19 @@ class AuthenticationError(Exception):
 
 
 @with_logger
-class LobbyConnection:
+class LobbyConnection():
     @timed()
-    def __init__(self, loop, context,
-                 games: GameService,
-                 players: PlayerService,
-                 geoip: GeoIpService):
-        super(LobbyConnection, self).__init__()
-        self.loop = loop
+    def __init__(
+        self,
+        games: GameService,
+        players: PlayerService,
+        geoip: GeoIpService,
+        matchmaker_queue: MatchmakerQueue
+    ):
         self.geoip_service = geoip
         self.game_service = games
-        self.player_service = players  # type: PlayerService
-        self.context = context
+        self.player_service = players
+        self.matchmaker_queue = matchmaker_queue
         self.ladderPotentialPlayers = []
         self.warned = False
         self._authenticated = False
@@ -92,6 +93,7 @@ class LobbyConnection:
             self._logger.warning("Aborting %s. %s" % (self.peer_address.host, logspam))
         if self.game_connection:
             self.game_connection.abort()
+            self.game_connection = None
         self._authenticated = False
         self.protocol.writer.close()
 
@@ -698,7 +700,7 @@ class LobbyConnection:
                 self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
                 return
 
-            self.launch_game(game, port, False)
+            self.launch_game(game, port, is_host=False)
         except KeyError:
             self.sendJSON(dict(command="notice", style="info", text="The host has left the game"))
 
@@ -741,7 +743,7 @@ class LobbyConnection:
                 self.game_service.ladder_service.inform_player(self.player)
 
                 self._logger.info("%s is searching for ladder: %s", self.player, self.search)
-                asyncio.ensure_future(self.player_service.ladder_queue.search(self.search))
+                asyncio.ensure_future(self.matchmaker_queue.search(self.search))
 
     def command_coop_list(self, message):
         """ Request for coop map list"""
@@ -776,30 +778,35 @@ class LobbyConnection:
         mapname = message.get('mapname')
         password = message.get('password')
 
-        game = self.game_service.create_game(**{
-            'visibility': visibility,
-            'game_mode': mod.lower(),
-            'host': self.player,
-            'name': title if title else self.player.login,
-            'mapname': mapname,
-            'password': password
-        })
-        self.launch_game(game, port, True)
+        game_mode = GameMode.from_string(mod.lower())
+
+        game = self.game_service.create_game(
+            visibility=visibility,
+            game_mode=game_mode,
+            host=self.player,
+            name=title if title else self.player.login,
+            mapname=mapname,
+            password=password
+        )
+        self.launch_game(game, port, is_host=True)
         server.stats.incr('game.hosted')
 
     def launch_game(self, game, port, is_host=False, use_map=None):
-        # FIXME: Setting up a ridiculous amount of cyclic pointers here
+        # TODO: Fix setting up a ridiculous amount of cyclic pointers here
         if self.game_connection:
             self.game_connection.abort("Player launched a new game")
-        self.game_connection = GameConnection(self.loop,
-                                              self,
-                                              self.player_service,
-                                              self.game_service)
-        self.game_connection.player = self.player
-        self.player.game_connection = self.game_connection
-        self.game_connection.game = game
+
         if is_host:
             game.host = self.player
+
+        self.game_connection = GameConnection(
+            game=game,
+            player=self.player,
+            protocol=self.protocol,
+            connectivity=self.connectivity,
+            player_service=self.player_service,
+            games=self.game_service
+        )
 
         self.player.state = PlayerState.HOSTING if is_host else PlayerState.JOINING
         self.player.game = game

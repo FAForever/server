@@ -1,20 +1,18 @@
 import asyncio
+from unittest import mock
 from unittest.mock import Mock
 
 import pytest
-from unittest import mock
-from server import ServerContext, GameState, VisibilityState, GameStatsService
+from server import GameState, ServerContext, VisibilityState
 from server.connectivity import Connectivity
-from server.protocol import QDataStreamProtocol
 from server.game_service import GameService
+from server.games import CustomGame, Game, GameMode
 from server.geoip_service import GeoIpService
-from server.games import Game
 from server.lobbyconnection import LobbyConnection
 from server.player_service import PlayerService
-from server.players import Player
+from server.players import Player, PlayerState
+from server.protocol import QDataStreamProtocol
 from tests import CoroMock
-
-import server.db as db
 
 
 @pytest.fixture()
@@ -51,11 +49,6 @@ def mock_player():
 
 
 @pytest.fixture
-def mock_context(loop):
-    return mock.create_autospec(ServerContext(lambda: None, loop))
-
-
-@pytest.fixture
 def mock_players(db_engine):
     return mock.create_autospec(PlayerService())
 
@@ -76,12 +69,13 @@ def mock_geoip():
 
 
 @pytest.fixture
-def lobbyconnection(loop, mock_context, mock_protocol, mock_games, mock_players, mock_player, mock_geoip):
-    lc = LobbyConnection(loop,
-                         context=mock_context,
-                         geoip=mock_geoip,
-                         games=mock_games,
-                         players=mock_players)
+def lobbyconnection(loop, mock_protocol, mock_games, mock_players, mock_player, mock_geoip):
+    lc = LobbyConnection(
+        geoip=mock_geoip,
+        games=mock_games,
+        players=mock_players,
+        matchmaker_queue=mock.Mock()
+    )
     lc.player = mock_player
     lc.connectivity = mock.create_autospec(Connectivity)
     lc.protocol = mock_protocol
@@ -97,7 +91,7 @@ def test_command_game_host_creates_game(lobbyconnection,
     lobbyconnection.protocol = mock.Mock()
     lobbyconnection.command_game_host(test_game_info)
     expected_call = {
-        'game_mode': test_game_info['mod'],
+        'game_mode': GameMode.FAF,
         'name': test_game_info['title'],
         'host': players.hosting,
         'visibility': VisibilityState.PUBLIC,
@@ -106,6 +100,42 @@ def test_command_game_host_creates_game(lobbyconnection,
     }
     mock_games.create_game \
         .assert_called_with(**expected_call)
+
+
+def test_launch_game(lobbyconnection, game, create_player):
+    old_game_conn = mock.Mock()
+
+    lobbyconnection.player = create_player()
+    lobbyconnection.game_connection = old_game_conn
+    lobbyconnection.sendJSON = mock.Mock()
+    port = 1337
+    lobbyconnection.launch_game(game, port)
+
+    # Verify all side effects of launch_game here
+    old_game_conn.abort.assert_called_with("Player launched a new game")
+    assert lobbyconnection.game_connection is not None
+    assert lobbyconnection.game_connection.game == game
+    assert lobbyconnection.player.game == game
+    assert lobbyconnection.player.game_port == port
+    assert lobbyconnection.player.game_connection == lobbyconnection.game_connection
+    assert lobbyconnection.game_connection.player == lobbyconnection.player
+    assert lobbyconnection.player.state == PlayerState.JOINING
+    lobbyconnection.sendJSON.assert_called_once()
+
+
+def test_command_game_host_creates_correct_game(
+        lobbyconnection, game_service, test_game_info, players):
+    lobbyconnection.player = players.hosting
+    lobbyconnection.game_service = game_service
+    lobbyconnection.launch_game = mock.Mock()
+
+    players.hosting.in_game = False
+    lobbyconnection.protocol = mock.Mock()
+    lobbyconnection.command_game_host(test_game_info)
+    args_list = lobbyconnection.launch_game.call_args_list
+    assert len(args_list) == 1
+    args, kwargs = args_list[0]
+    assert isinstance(args[0], CustomGame)
 
 
 def test_command_game_join_calls_join_game(mocker,

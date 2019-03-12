@@ -1,4 +1,5 @@
 import asyncio
+from typing import Optional, Set
 
 import aiocron
 import marisa_trie
@@ -20,7 +21,6 @@ class PlayerService:
         self.blacklisted_email_domains = {}
         self._dirty_players = set()
 
-        self.ladder_queue = None
         asyncio.get_event_loop().run_until_complete(asyncio.async(self.update_data()))
         self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
 
@@ -30,17 +30,17 @@ class PlayerService:
     def __iter__(self):
         return self.players.values().__iter__()
 
-    def __getitem__(self, item) -> Player:
-        return self.players.get(item)
+    def __getitem__(self, player_id: int) -> Optional[Player]:
+        return self.players.get(player_id)
 
-    def __setitem__(self, key, value):
-        self.players[key] = value
+    def __setitem__(self, player_id: int, player: Player):
+        self.players[player_id] = player
 
     @property
-    def dirty_players(self):
+    def dirty_players(self) -> Set[Player]:
         return self._dirty_players
 
-    def mark_dirty(self, player):
+    def mark_dirty(self, player: Player):
         self._dirty_players.add(player)
 
     def clear_dirty(self):
@@ -78,24 +78,23 @@ class PlayerService:
             except (pymysql.ProgrammingError, pymysql.OperationalError):
                 pass
 
-    def remove_player(self, player):
+    def remove_player(self, player: Player):
         if player.id in self.players:
             del self.players[player.id]
 
-    def get_permission_group(self, user_id):
+    def get_permission_group(self, user_id: int) -> int:
         return self.privileged_users.get(user_id, 0)
 
-    def is_uniqueid_exempt(self, user_id):
+    def is_uniqueid_exempt(self, user_id: int) -> bool:
         return user_id in self.uniqueid_exempt
 
-    def has_blacklisted_domain(self, email):
+    def has_blacklisted_domain(self, email: str) -> bool:
         # A valid email only has one @ anyway.
         domain = email.split("@")[1]
         return domain in self.blacklisted_email_domains
 
-    def get_player(self, player_id):
-        if player_id in self.players:
-            return self.players[player_id]
+    def get_player(self, player_id: int) -> Optional[Player]:
+        return self.players.get(player_id)
 
     async def update_data(self):
         """

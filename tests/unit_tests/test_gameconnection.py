@@ -14,7 +14,7 @@ LOCAL_PROXY = ConnectivityResult(addr=None, state=ConnectivityState.BLOCKED)
 
 
 def assert_message_sent(game_connection: GameConnection, command, args):
-    game_connection.lobby_connection.send.assert_called_with({
+    game_connection.protocol.send_message.assert_called_with({
         'command': command,
         'target': 'game',
         'args': args
@@ -36,7 +36,6 @@ async def test_handle_action_GameState_idle_adds_connection(
     players
 ):
     players.joining.game = game
-    game_connection.lobby_connection = mock.Mock()
     game_connection.player = players.hosting
     game_connection.game = game
 

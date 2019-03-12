@@ -406,6 +406,7 @@ class Game(BaseGame):
 
         self._logger.info("Removed game connection %s", game_connection)
 
+        # TODO: Extract boolean expression to method
         if len(self._connections) == 0 or (self.host == game_connection.player and self.state != GameState.LIVE):
             await self.on_game_end()
         else:

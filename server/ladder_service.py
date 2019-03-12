@@ -8,7 +8,7 @@ from . import db
 from .config import LADDER_ANTI_REPETITION_LIMIT
 from .db.models import game_featuredMods, game_player_stats, game_stats
 from .decorators import with_logger
-from .games import LadderGame
+from .games import GameMode
 from .players import Player, PlayerState
 
 MapDescription = NamedTuple('Map', [("id", int), ("name", str), ("path", str)])
@@ -20,10 +20,9 @@ class LadderService:
     Service responsible for managing the 1v1 ladder. Does matchmaking, updates statistics, and
     launches the games.
     """
-    def __init__(self, games_service, game_stats_service):
+    def __init__(self, games_service: "GameService"):
         self._informed_players = []
         self.game_service = games_service
-        self.game_stats_service = game_stats_service
 
     def inform_player(self, player):
         if player not in self._informed_players:
@@ -43,16 +42,16 @@ class LadderService:
 
         (map_id, map_name, map_path) = await self.choose_map([host, guest])
 
-        game = LadderGame(self.game_service.create_uid(), self.game_service, self.game_stats_service)
-        self.game_service.games[game.id] = game
+        game = self.game_service.create_game(
+            game_mode=GameMode.LADDER,
+            host=host,
+            name=f"{host.login} Vs {guest.login}"
+        )
 
         host.game = game
         guest.game = game
 
         game.map_file_path = map_path
-
-        game.host = host
-        game.name = game.sanitize_name(str(host.login + " Vs " + guest.login))
 
         game.set_player_option(host.id, 'StartSpot', 1)
         game.set_player_option(guest.id, 'StartSpot', 2)

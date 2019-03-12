@@ -9,8 +9,8 @@ from tests import CoroMock
 
 
 @pytest.fixture
-def matchmaker_queue(player_service, game_service):
-    return MatchmakerQueue('test_queue', player_service, Mock())
+def matchmaker_queue(game_service):
+    return MatchmakerQueue('test_queue', game_service=Mock())
 
 
 @pytest.fixture

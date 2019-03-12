@@ -1,12 +1,12 @@
 import asyncio
-from typing import Union
+from typing import Dict, List, Optional, Union, ValuesView
 
 import aiocron
-
 import server.db as db
 from server import GameState, VisibilityState
 from server.decorators import with_logger
-from server.games import FeaturedMod, LadderGame, CoopGame, CustomGame
+from server.games import (CoopGame, CustomGame, FeaturedMod, GameMode,
+                          LadderGame)
 from server.games.game import Game
 from server.matchmaker import MatchmakerQueue
 from server.players import Player
@@ -39,7 +39,7 @@ class GameService:
         self.ladder_service = None
 
         # The set of active games
-        self.games = dict()
+        self.games: Dict[int, Game] = dict()
 
         # Cached versions for files by game_mode ( featured mod name )
         # For use by the patcher
@@ -115,7 +115,7 @@ class GameService:
             self.game_mode_versions['ladder1v1'] = self.game_mode_versions['faf']
 
             # meh meh
-            self.ladder_service = LadderService(self, self.game_stats_service)
+            self.ladder_service = LadderService(self)
 
     @property
     def dirty_games(self):
@@ -142,33 +142,35 @@ class GameService:
 
     def create_game(self,
                     visibility=VisibilityState.PUBLIC,
-                    game_mode: str=None,
-                    host: Player=None,
-                    name: str=None,
-                    mapname: str=None,
-                    password: str=None):
+                    game_mode: GameMode=GameMode.UNKNOWN,
+                    host: Optional[Player]=None,
+                    name: Optional[str]=None,
+                    mapname: Optional[str]=None,
+                    password: Optional[str]=None):
         """
         Main entrypoint for creating new games
         """
-        id_ = self.create_uid()
+        game_id = self.create_uid()
         args = {
-            "id_": id_,
+            "id_": game_id,
             "host": host,
             "name": name,
             "map_": mapname,
-            "game_mode": game_mode,
+            "game_mode": str(game_mode),
             "game_service": self,
             "game_stats_service": self.game_stats_service
         }
-        if game_mode == 'ladder1v1':
-            game = LadderGame(**args)
-        elif game_mode == 'coop':
-            game = CoopGame(**args)
-        elif game_mode == 'faf' or game_mode == 'fafbeta' or game_mode == 'equilibrium':
-            game = CustomGame(**args)
-        else:
-            game = Game(**args)
-        self.games[id_] = game
+
+        GameClass = {
+            GameMode.LADDER:        LadderGame,
+            GameMode.COOP:          CoopGame,
+            GameMode.FAF:           CustomGame,
+            GameMode.FAF_BETA:      CustomGame,
+            GameMode.EQUILIBRIUM:   CustomGame
+        }.get(game_mode, Game)
+        game = GameClass(**args)
+
+        self.games[game_id] = game
 
         game.visibility = visibility
         game.password = password
@@ -177,12 +179,12 @@ class GameService:
         return game
 
     @property
-    def live_games(self):
+    def live_games(self) -> List[Game]:
         return [game for game in self.games.values()
                 if game.state == GameState.LIVE]
 
     @property
-    def open_games(self):
+    def open_games(self) -> List[Game]:
         """
         Return all games that meet the client's definition of "not closed".
         Server game states are mapped to client game states as follows:
@@ -199,11 +201,11 @@ class GameService:
                 if game.state == GameState.LOBBY or game.state == GameState.LIVE]
 
     @property
-    def all_games(self):
+    def all_games(self) -> ValuesView[Game]:
         return self.games.values()
 
     @property
-    def pending_games(self):
+    def pending_games(self) -> List[Game]:
         return [game for game in self.games.values()
                 if game.state == GameState.LOBBY or game.state == GameState.INITIALIZING]
 
@@ -224,5 +226,5 @@ class GameService:
             })
         return mods
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int) -> Game:
         return self.games[item]
