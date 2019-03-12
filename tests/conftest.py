@@ -13,8 +13,10 @@ from unittest import mock
 import pytest
 from server.api.api_accessor import ApiAccessor
 from server.config import DB_LOGIN, DB_PASSWORD, DB_PORT, DB_SERVER
+from server.game_service import GameService
 from server.geoip_service import GeoIpService
 from server.matchmaker import MatchmakerQueue
+from server.player_service import PlayerService
 from tests import CoroMock
 from trueskill import Rating
 
@@ -137,7 +139,6 @@ def db_engine(request, loop):
     return engine
 
 
-
 @pytest.fixture
 def transport():
     return mock.Mock(spec=asyncio.Transport)
@@ -204,14 +205,20 @@ def players(create_player):
 
 
 @pytest.fixture
-def player_service(loop, db_engine):
-    from server.player_service import PlayerService
+def player_and_game_service(loop, players, db_engine, game_stats_service):
+    ps = PlayerService()
+    gs = GameService(ps, game_stats_service)
+    ps.ladder_queue = MatchmakerQueue('ladder1v1', ps, gs)
+    return ps, gs
+
+
+@pytest.fixture
+def player_service(loop, players, db_engine):
     return PlayerService()
 
 
 @pytest.fixture
 def game_service(player_service, game_stats_service):
-    from server.game_service import GameService
     return GameService(player_service, game_stats_service)
 
 
