@@ -8,6 +8,7 @@ Distributed under GPLv3, see license.txt
 """
 import json
 import logging
+from typing import Any, Dict
 
 import aiomeasures
 
@@ -24,6 +25,7 @@ from .player_service import PlayerService
 from .game_service import GameService
 from .ladder_service import LadderService
 from .control import init as run_control_server
+from .matchmaker import MatchmakerQueue
 
 __version__ = '0.9.17'
 __author__ = 'Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard, Michel Jung'
@@ -33,9 +35,11 @@ __copyright__ = 'Copyright (c) 2011-2015 ' + __author__
 
 
 __all__ = [
+    'GameConnection',
     'GameStatsService',
     'GameService',
     'LadderService',
+    'NatPacketServer',
     'run_lobby_server',
     'run_control_server',
     'games',
@@ -53,47 +57,40 @@ else:
     stats = aiomeasures.StatsD(config.STATSD_SERVER)
 
 
-def run_lobby_server(address: (str, int),
-                     player_service: PlayerService,
-                     games: GameService,
-                     loop,
-                     geoip_service: GeoIpService):
+def encode_message(message: str):
+    # Crazy evil encoding scheme
+    return QDataStreamProtocol.pack_message(message)
+
+
+def encode_dict(d: Dict[Any, Any]):
+    return encode_message(json.dumps(d))
+
+
+def encode_players(players):
+    return encode_dict({
+        'command': 'player_info',
+        'players': [player.to_dict() for player in players]
+    })
+
+
+def encode_queues(queues):
+    return encode_dict({
+        'command': 'matchmaker_info',
+        'queues': [queue.to_dict() for queue in queues]
+    })
+
+
+def run_lobby_server(
+    address: (str, int),
+    player_service: PlayerService,
+    games: GameService,
+    loop,
+    geoip_service: GeoIpService,
+    matchmaker_queue: MatchmakerQueue
+) -> ServerContext:
     """
     Run the lobby server
-
-    :param address: Address to listen on
-    :param player_service: Service to talk to about players
-    :param games: Service to talk to about games
-    :param loop: Event loop to use
-    :return ServerContext: A server object
     """
-    def encode_game(game):
-        # Crazy evil encoding scheme
-        return QDataStreamProtocol.pack_block(
-            QDataStreamProtocol.pack_qstring(json.dumps(game.to_dict()))
-        )
-
-    def encode_players(players):
-        return QDataStreamProtocol.pack_block(
-            QDataStreamProtocol.pack_qstring(json.dumps(
-                    {
-                        'command': 'player_info',
-                        'players': [player.to_dict() for player in players]
-                    }
-            ))
-        )
-
-    def encode_queues(queues):
-        return QDataStreamProtocol.pack_block(
-            QDataStreamProtocol.pack_qstring(
-                json.dumps(
-                    {
-                        'command': 'matchmaker_info',
-                        'queues': [queue.to_dict() for queue in queues]
-                    }
-                )
-            )
-        )
 
     def report_dirties():
         try:
@@ -116,7 +113,7 @@ def run_lobby_server(address: (str, int),
                     games.remove_game(game)
 
                 # So we're going to be broadcasting this to _somebody_...
-                message = encode_game(game)
+                message = encode_dict(game.to_dict())
 
                 # These games shouldn't be broadcast, but instead privately sent to those who are
                 # allowed to see them.
@@ -132,19 +129,20 @@ def run_lobby_server(address: (str, int),
         finally:
             loop.call_later(1, report_dirties)
 
-    ping_msg = QDataStreamProtocol.pack_block(QDataStreamProtocol.pack_qstring('PING'))
+    ping_msg = encode_message('PING')
 
     def ping_broadcast():
         ctx.broadcast_raw(ping_msg)
         loop.call_later(45, ping_broadcast)
 
-    def initialize_connection():
-        return LobbyConnection(context=ctx,
-                               geoip=geoip_service,
-                               games=games,
-                               players=player_service,
-                               loop=loop)
-    ctx = ServerContext(initialize_connection, name="LobbyServer", loop=loop)
+    def make_connection() -> LobbyConnection:
+        return LobbyConnection(
+            geoip=geoip_service,
+            games=games,
+            players=player_service,
+            matchmaker_queue=matchmaker_queue
+        )
+    ctx = ServerContext(make_connection, name="LobbyServer")
     loop.call_later(5, report_dirties)
     loop.call_soon(ping_broadcast)
     loop.run_until_complete(ctx.listen(*address))

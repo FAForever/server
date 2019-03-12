@@ -1,22 +1,26 @@
 import asyncio
-import time
-
 import math
+import time
+from typing import Optional
+
 import server.config as config
-
 from server.decorators import with_logger
-from trueskill import quality_1vs1, Rating
-
 from server.players import Player
+from trueskill import Rating, quality_1vs1
 
 
 @with_logger
-class Search:
+class Search():
     """
     Represents the state of a users search for a match.
     """
 
-    def __init__(self, player, start_time=None, rating_prop='ladder_rating'):
+    def __init__(
+        self,
+        player: Player,
+        start_time: Optional[float]=None,
+        rating_prop: str='ladder_rating'
+    ):
         """
         Default ctor for a search
 

@@ -27,33 +27,31 @@ def mock_server(loop):
     mock_server.on_connection_lost = mock.Mock()
     return mock_server
 
+
 @pytest.fixture
 def mock_context(loop, request, mock_server):
-    ctx = ServerContext(lambda: mock_server, loop, name='TestServer')
+    ctx = ServerContext(lambda: mock_server, name='TestServer')
 
     def fin():
         ctx.close()
     request.addfinalizer(fin)
     return loop.run_until_complete(ctx.listen('127.0.0.1', None))
 
-@asyncio.coroutine
-def test_serverside_abort(loop, mock_context, mock_server):
-    (reader, writer) = yield from asyncio.open_connection(*mock_context.sockets[0].getsockname())
+
+async def test_serverside_abort(mock_context, mock_server):
+    (reader, writer) = await asyncio.open_connection(*mock_context.sockets[0].getsockname())
     proto = QDataStreamProtocol(reader, writer)
     proto.send_message({"some_junk": True})
-    yield from writer.drain()
-    yield from asyncio.sleep(0.1)
+    await writer.drain()
+    await asyncio.sleep(0.1)
 
     mock_server.on_connection_lost.assert_any_call()
 
+
 def test_server_fake_statsd():
     dummy = fake_statsd.DummyConnection()
-    try:
-        with dummy.timer('a'):
-            dummy.incr('a')
-            dummy.gauge('a', 'b', delta=True)
-            unit = dummy.unit()
-
-    except:
-        pytest.fail("StatsD connection dummy raises exception when used")
-
+    # Verify that no exceptions are raised
+    with dummy.timer('a'):
+        dummy.incr('a')
+        dummy.gauge('a', 'b', delta=True)
+        dummy.unit()
