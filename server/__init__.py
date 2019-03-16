@@ -47,8 +47,8 @@ __all__ = [
 stats = None
 
 if not config.ENABLE_STATSD:
-    from unittest import mock
-    stats = mock.MagicMock()
+    from . import fake_statsd
+    stats = fake_statsd.DummyConnection()
 else:
     stats = aiomeasures.StatsD(config.STATSD_SERVER)
 
