@@ -361,7 +361,7 @@ class GameConnection(GpgNetServerProtocol):
             self._logger.info("Ignoring ICE message for player without game connection: {}".format(receiver_id))
             return
 
-        game_connection.send_message(dict(command="IceMessage", args=[int(self.player.id), ice_msg]))
+        game_connection.send_message(dict(command="IceMsg", args=[int(self.player.id), ice_msg]))
 
 
 
@@ -502,5 +502,5 @@ COMMAND_HANDLERS = {
     "Bottleneck":           GameConnection.handle_bottleneck,
     "BottleneckCleared":    GameConnection.handle_bottleneck_cleared,
     "Disconnected":         GameConnection.handle_disconnected,
-    "IceMessage":           GameConnection.handle_ice_message
+    "IceMsg":           GameConnection.handle_ice_message
 }
