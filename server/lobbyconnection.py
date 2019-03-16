@@ -51,20 +51,19 @@ class AuthenticationError(Exception):
 @with_logger
 class LobbyConnection():
     @timed()
-    def __init__(self, loop, context,
+    def __init__(self,
                  games: GameService,
                  players: PlayerService,
                  nts_client: TwilioNTS,
                  geoip: GeoIpService,
                  matchmaker_queue: MatchmakerQueue):
         super(LobbyConnection, self).__init__()
-        self.loop = loop
+
         self.geoip_service = geoip
         self.game_service = games
         self.player_service = players  # type: PlayerService
         self.nts_client = nts_client
         self.coturn_generator = CoturnHMAC()
-        self.context = context
         self.matchmaker_queue = matchmaker_queue
         self.ladderPotentialPlayers = []
         self.warned = False
