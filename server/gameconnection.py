@@ -167,21 +167,21 @@ class GameConnection(GpgNetServerProtocol):
         self.send_JoinGame(peer.player.login,
                            peer.player.id)
 
-        peer.send_ConnectToPeer(self.player.login,
-                                self.player.id,
-                                True)
+        peer.send_ConnectToPeer(player_name=self.player.login,
+                                player_uid=self.player.id,
+                                offer=True)
 
     async def connect_to_peer(self, peer: "GameConnection"):
         """
         Connect two peers
         :return: None
         """
-        self.send_ConnectToPeer(peer.player.login,
-                                peer.player.id,
-                                True)
-        peer.send_ConnectToPeer(self.player.login,
-                                self.player.id,
-                                False)
+        self.send_ConnectToPeer(player_name=peer.player.login,
+                                player_uid=peer.player.id,
+                                offer=True)
+        peer.send_ConnectToPeer(player_name=self.player.login,
+                                player_uid=self.player.id,
+                                offer=False)
 
     async def handle_action(self, command, args):
         """
@@ -350,14 +350,15 @@ class GameConnection(GpgNetServerProtocol):
             )
 
     async def handle_ice_message(self, receiver_id, ice_msg):
+        receiver_id = int(receiver_id)
         peer = self.player_service.get_player(receiver_id)
         if not peer:
-           self._logger.info("Ignoring ICE message for unknown player: %s", receiver_id)
-           return
+            self._logger.info("Ignoring ICE message for unknown player: {}".format(receiver_id))
+            return
 
         game_connection = peer.game_connection
         if not game_connection:
-            self._logger.info("Ignoring ICE message for player without game connection: %s", receiver_id)
+            self._logger.info("Ignoring ICE message for player without game connection: {}".format(receiver_id))
             return
 
         game_connection.send_message(dict(command="IceMessage", args=[int(self.player.id), ice_msg]))
@@ -478,12 +479,6 @@ class GameConnection(GpgNetServerProtocol):
             self._logger.exception(e)
         finally:
             self.abort()
-
-    def address_and_port(self):
-        return "{}:{}".format(self.player.ip, self.player.game_port)
-
-    def address_and_port(self):
-        return "{}:{}".format(self.player.ip, self.player.game_port)
 
     def __str__(self):
         return "GameConnection({}, {})".format(self.player, self.game)
