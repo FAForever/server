@@ -13,8 +13,10 @@ from unittest import mock
 import pytest
 from server.api.api_accessor import ApiAccessor
 from server.config import DB_LOGIN, DB_PASSWORD, DB_PORT, DB_SERVER
+from server.game_service import GameService
 from server.geoip_service import GeoIpService
 from server.matchmaker import MatchmakerQueue
+from server.player_service import PlayerService
 from tests import CoroMock
 from trueskill import Rating
 
@@ -106,11 +108,11 @@ def sqlquery():
 
 
 @pytest.fixture
-def mock_db_engine(loop, db_engine, autouse=True):
+def mock_db_engine(loop, db_engine):
     return db_engine
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='session', autouse=True)
 def db_engine(request, loop):
     import server
 
@@ -136,6 +138,15 @@ def db_engine(request, loop):
 
     return engine
 
+
+@pytest.fixture(scope='session', autouse=True)
+def test_data(db_engine, loop):
+    async def load_data():
+        with open('tests/data/test-data.sql') as f:
+            async with db_engine.acquire() as conn:
+                await conn.execute(f.read())
+
+    loop.run_until_complete(load_data())
 
 
 @pytest.fixture
@@ -204,14 +215,12 @@ def players(create_player):
 
 
 @pytest.fixture
-def player_service(loop, db_engine):
-    from server.player_service import PlayerService
+def player_service(loop, players):
     return PlayerService()
 
 
 @pytest.fixture
 def game_service(player_service, game_stats_service):
-    from server.game_service import GameService
     return GameService(player_service, game_stats_service)
 
 

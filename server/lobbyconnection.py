@@ -626,7 +626,7 @@ class LobbyConnection():
 
         self.send_mod_list()
         self.send_game_list()
-        self.send_tutorial_section()
+        await self.send_tutorial_section()
 
     @timed
     def command_ask_session(self, message):
@@ -759,33 +759,32 @@ class LobbyConnection():
 
         assert isinstance(self.player, Player)
 
-        default_title = "%s' game".format(self.player.login)
-        title = html.escape(message.get('title') or default_title)
-        port = message.get('gameport')
         visibility = VisibilityState.from_string(message.get('visibility'))
         if not isinstance(visibility, VisibilityState):
             # Protocol violation.
-            self.abort("%s sent a nonsense visibility code: %s" % (self.player.login, message.get('visibility')))
+            self.abort("{} sent a nonsense visibility code: {}".format(self.player.login, message.get('visibility')))
             return
 
-        mod = message.get('mod')
+        title = html.escape(message.get('title') or f"{self.player.login}'s game")
+
         try:
             title.encode('ascii')
         except UnicodeEncodeError:
             self.sendJSON(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
             return
 
+        port = message.get('gameport')
+        mod = message.get('mod')
         mapname = message.get('mapname')
         password = message.get('password')
-
         game_mode = GameMode.from_string(mod.lower())
 
         game = self.game_service.create_game(
             visibility=visibility,
             game_mode=game_mode,
             host=self.player,
-            name=title if title else self.player.login,
-            mapname=mapname,
+            name=title,
+            mapname=mapname or 'scmp_007',
             password=password
         )
         self.launch_game(game, port, is_host=True)
