@@ -55,7 +55,7 @@ class LobbyConnection():
                  games: GameService,
                  players: PlayerService,
                  nts_client: TwilioNTS,
-                 geoip: GeoIpService
+                 geoip: GeoIpService,
                  matchmaker_queue: MatchmakerQueue):
         super(LobbyConnection, self).__init__()
         self.loop = loop
@@ -810,7 +810,6 @@ class LobbyConnection():
             game=game,
             player=self.player,
             protocol=self.protocol,
-            connectivity=self.connectivity,
             player_service=self.player_service,
             games=self.game_service
         )

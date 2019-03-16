@@ -28,7 +28,6 @@ class GameConnection(GpgNetServerProtocol):
         game: Game,
         player: Player,
         protocol: QDataStreamProtocol,
-        connectivity: Connectivity,
         player_service: PlayerService,
         games: GameService
     ):
@@ -53,8 +52,6 @@ class GameConnection(GpgNetServerProtocol):
         self.last_pong = time.time()
 
         self._transport = None
-
-        self.connectivity = connectivity
 
         self.finished_sim = False
 

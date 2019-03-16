@@ -87,12 +87,12 @@ if __name__ == '__main__':
         ctrl_server = loop.run_until_complete(server.run_control_server(loop, players_online, games))
 
         lobby_server = server.run_lobby_server(address=('', 8001),
-            geoip_service=geoip_service,
+            geoip_service=GeoIpService(),
             player_service=players_online,
             games=games,
             nts_client=twilio_nts,
             matchmaker_queue=MatchmakerQueue('ladder1v1', game_service=games),
-                                               loop=loop)
+            loop=loop)
 
         for sock in lobby_server.sockets:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)

@@ -24,7 +24,6 @@ def game_connection(request, game, player_service, players, game_service, transp
         game=game,
         player=players.hosting,
         protocol=mock.Mock(),
-        connectivity=mock.Mock(),
         nts_client=mock.Mock(),
         player_service=player_service,
         games=game_service
@@ -67,12 +66,11 @@ def geoip_service():
 def connections(loop, player_service, game_service, transport, game):
     from server import GameConnection
 
-    def make_connection(player, connectivity):
+    def make_connection(player):
         conn = GameConnection(
             game=game,
             player=player,
             protocol=mock.Mock(),
-            connectivity=connectivity,
             player_service=player_service,
             games=game_service
         )
