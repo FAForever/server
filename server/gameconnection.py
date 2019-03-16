@@ -10,7 +10,7 @@ from .game_service import GameService
 from .games.game import Game, GameState, ValidityState, Victory
 from .player_service import PlayerService
 from .players import Player, PlayerState
-from .protocol import GpgNetServerProtocol
+from .protocol import GpgNetServerProtocol, QDataStreamProtocol
 
 
 class AuthenticationError(Exception):
@@ -23,41 +23,38 @@ class GameConnection(GpgNetServerProtocol):
     Responsible for connections to the game, using the GPGNet protocol
     """
 
-    def __init__(self, loop: asyncio.BaseEventLoop,
-                 lobby_connection: "LobbyConnection",
-                 player_service: PlayerService,
-                 games: GameService):
+    def __init__(
+        self,
+        game: Game,
+        player: Player,
+        protocol: QDataStreamProtocol,
+        connectivity: Connectivity,
+        player_service: PlayerService,
+        games: GameService
+    ):
         """
         Construct a new GameConnection
-
-        :param loop: asyncio event loop to use
-        :param lobby_connection: The lobby connection we're associated with
-        :param player_service: PlayerService
-        :param games: GamesService
-        :return:
         """
         super().__init__()
         self._logger.debug('GameConnection initializing')
 
-        self.lobby_connection = lobby_connection
+        self.protocol = protocol
         self._state = GameConnectionState.INITIALIZING
         self._waiters = defaultdict(list)
-        self.loop = loop
         self.player_service = player_service
-        self.games = games
+        self.game_service = games
 
         self.initTime = time.time()
         self.proxies = {}
-        self._player = None
-        self._game = None
+        self._player = player
+        player.game_connection = self  # Set up weak reference to self
+        self._game = game
 
         self.last_pong = time.time()
 
-        self.ip, self.port = None, None
-        self.lobby = None
         self._transport = None
 
-        self.connectivity = self.lobby_connection.connectivity  # type: Connectivity
+        self.connectivity = connectivity
 
         self.finished_sim = False
 
@@ -69,7 +66,7 @@ class GameConnection(GpgNetServerProtocol):
         return self._state
 
     @property
-    def game(self):
+    def game(self) -> Game:
         """
         :rtype: Game
         """
@@ -91,8 +88,10 @@ class GameConnection(GpgNetServerProtocol):
         self._player = val
 
     def send_message(self, message):
-        self.lobby_connection.send({**message,
-                                    'target': 'game'})
+        message['target'] = "game"
+
+        self._logger.debug(">>: %s", message)
+        self.protocol.send_message(message)
 
     async def _handle_idle_state(self):
         """
@@ -441,9 +440,9 @@ class GameConnection(GpgNetServerProtocol):
 
     def _mark_dirty(self):
         if self.game:
-            self.games.mark_dirty(self.game)
+            self.game_service.mark_dirty(self.game)
 
-    def abort(self, logspam=''):
+    def abort(self, log_message: str=''):
         """
         Abort the connection
 
@@ -453,24 +452,32 @@ class GameConnection(GpgNetServerProtocol):
         try:
             if self._state is GameConnectionState.ENDED:
                 return
+
+            self._logger.debug("%s.abort(%s)", self, log_message)
+
             if self.game.state == GameState.LOBBY:
-                for peer in self.game.connections:
-                    if peer != self:
-                        try:
-                            peer.send_DisconnectFromPeer(self.player.id)
-                        except Exception as ex:  # pragma no cover
-                            self._logger.exception("peer_sendDisconnectFromPeer failed for player %i", self.player.id)
+                self.disconnect_all_peers()
+
             self._state = GameConnectionState.ENDED
-            self.loop.create_task(self.game.remove_game_connection(self))
+            asyncio.ensure_future(self.game.remove_game_connection(self))
             self._mark_dirty()
-            self._logger.debug("%s.abort(%s)", self, logspam)
             self.player.state = PlayerState.IDLE
             del self.player.game
             del self.player.game_connection
         except Exception as ex:  # pragma: no cover
             self._logger.debug("Exception in abort(): %s", ex)
-        finally:
-            self.lobby_connection.game_connection = None
+
+    def disconnect_all_peers(self):
+        for peer in self.game.connections:
+            if peer == self:
+                continue
+
+            try:
+                peer.send_DisconnectFromPeer(self.player.id)
+            except Exception as ex:  # pragma no cover
+                self._logger.exception(
+                    "peer_sendDisconnectFromPeer failed for player %i",
+                    self.player.id)
 
     async def on_connection_lost(self):
         try:

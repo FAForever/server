@@ -20,9 +20,9 @@ from .config import FAF_POLICY_SERVER_BASE_URL
 from .decorators import timed, with_logger
 from .game_service import GameService
 from .gameconnection import GameConnection
-from .games.game import GameState, VisibilityState
+from .games import GameMode, GameState, VisibilityState
 from .geoip_service import GeoIpService
-from .matchmaker import Search
+from .matchmaker import MatchmakerQueue, Search
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import QDataStreamProtocol
@@ -49,13 +49,14 @@ class AuthenticationError(Exception):
 
 
 @with_logger
-class LobbyConnection:
+class LobbyConnection():
     @timed()
     def __init__(self, loop, context,
                  games: GameService,
                  players: PlayerService,
                  nts_client: TwilioNTS,
-                 geoip: GeoIpService):
+                 geoip: GeoIpService
+                 matchmaker_queue: MatchmakerQueue):
         super(LobbyConnection, self).__init__()
         self.loop = loop
         self.geoip_service = geoip
@@ -64,6 +65,7 @@ class LobbyConnection:
         self.nts_client = nts_client
         self.coturn_generator = CoturnHMAC()
         self.context = context
+        self.matchmaker_queue = matchmaker_queue
         self.ladderPotentialPlayers = []
         self.warned = False
         self._authenticated = False
@@ -94,6 +96,7 @@ class LobbyConnection:
             self._logger.warning("Aborting %s. %s" % (self.peer_address.host, logspam))
         if self.game_connection:
             self.game_connection.abort()
+            self.game_connection = None
         self._authenticated = False
         self.protocol.writer.close()
 
@@ -629,7 +632,7 @@ class LobbyConnection:
 
         self.send_mod_list()
         self.send_game_list()
-        self.send_tutorial_section()
+        await self.send_tutorial_section()
 
     def command_restore_game_session(self, message):
         game_id = message.get('game_id')
@@ -715,7 +718,8 @@ class LobbyConnection:
                 self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
                 return
 
-            self.launch_game(game, False)
+            self.launch_game(game, is_host=False)
+
         except KeyError:
             self.sendJSON(dict(command="notice", style="info", text="The host has left the game"))
 
@@ -748,7 +752,7 @@ class LobbyConnection:
                 self.game_service.ladder_service.inform_player(self.player)
 
                 self._logger.info("%s is searching for ladder: %s", self.player, self.search)
-                asyncio.ensure_future(self.player_service.ladder_queue.search(self.search))
+                asyncio.ensure_future(self.matchmaker_queue.search(self.search))
 
     def command_coop_list(self, message):
         """ Request for coop map list"""
@@ -761,45 +765,55 @@ class LobbyConnection:
 
         assert isinstance(self.player, Player)
 
-        default_title = "%s' game".format(self.player.login)
-        title = html.escape(message.get('title') or default_title)
         visibility = VisibilityState.from_string(message.get('visibility'))
         if not isinstance(visibility, VisibilityState):
             # Protocol violation.
-            self.abort("%s sent a nonsense visibility code: %s" % (self.player.login, message.get('visibility')))
+            self.abort("{} sent a nonsense visibility code: {}".format(self.player.login, message.get('visibility')))
             return
 
-        mod = message.get('mod')
+        title = html.escape(message.get('title') or f"{self.player.login}'s game")
+
         try:
             title.encode('ascii')
         except UnicodeEncodeError:
             self.sendJSON(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
             return
 
+        port = message.get('gameport')
+        mod = message.get('mod')
         mapname = message.get('mapname')
         password = message.get('password')
 
-        game = self.game_service.create_game(**{
-            'visibility': visibility,
-            'game_mode': mod.lower(),
-            'host': self.player,
-            'name': title if title else self.player.login,
-            'mapname': mapname,
-            'password': password
-        })
-        self.launch_game(game, True)
+        game_mode = GameMode.from_string(mod.lower())
+
+        game = self.game_service.create_game(
+            visibility=visibility,
+            game_mode=game_mode,
+            host=self.player,
+            name=title,
+            mapname=mapname or 'scmp_007',
+            password=password
+        )
+        self.launch_game(game, is_host=True)
         server.stats.incr('game.hosted')
+
 
     def launch_game(self, game, is_host=False, use_map=None):
 
         if self.game_connection:
             self.game_connection.abort("Player launched a new game")
 
-        self.game_connection = GameConnection(self.loop,self, self.player_service, self.game_service, self.player, game)
-        self.player.game_connection = self.game_connection
-
         if is_host:
             game.host = self.player
+
+        self.game_connection = GameConnection(
+            game=game,
+            player=self.player,
+            protocol=self.protocol,
+            connectivity=self.connectivity,
+            player_service=self.player_service,
+            games=self.game_service
+        )
 
         self.player.state = PlayerState.HOSTING if is_host else PlayerState.JOINING
         self.player.game = game

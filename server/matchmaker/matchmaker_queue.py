@@ -10,8 +10,11 @@ from .search import Search
 
 @with_logger
 class MatchmakerQueue:
-    def __init__(self, queue_name: str, player_service: "PlayerService", game_service: "GameService"):
-        self.player_service = player_service
+    def __init__(
+        self,
+        queue_name: str,
+        game_service: "GameService"
+    ):
         self.game_service = game_service
         self.queue_name = queue_name
         self.rating_prop = 'ladder_rating'
@@ -27,7 +30,7 @@ class MatchmakerQueue:
         """
         self.queue[search.player] = search
 
-    def match(self, s1: Search, s2: Search):
+    def match(self, s1: Search, s2: Search) -> bool:
         """
         Mark the given two searches as matched
         :param s1:
