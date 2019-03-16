@@ -143,6 +143,7 @@ def run_lobby_server(address: (str, int),
         return LobbyConnection(context=ctx,
                                geoip=geoip_service,
                                games=games,
+                               nts_client=nts_client,
                                players=player_service,
                                loop=loop)
     ctx = ServerContext(initialize_connection, name="LobbyServer", loop=loop)

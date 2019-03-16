@@ -26,6 +26,7 @@ def game_connection(request, game, loop, player_service, players, game_service, 
                                   loop=mock.Mock(),
                                   context=mock.Mock(),
                                   geoip=mock.Mock(),
+                                  nts_client=mock.Mock(),
                                   games=mock.Mock(),
                                   players=mock.Mock()
                               )

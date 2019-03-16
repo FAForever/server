@@ -14,6 +14,7 @@ from server.player_service import PlayerService
 from server.players import Player, PlayerState
 from server.types import Address
 from tests import CoroMock
+from server.ice_servers.nts import TwilioNTS
 
 import server.db as db
 
@@ -48,6 +49,9 @@ def test_game_info_invalid():
 def mock_player():
     return mock.create_autospec(Player(login='Dummy', id=42))
 
+@pytest.fixture
+def mock_nts_client():
+    return mock.create_autospec(TwilioNTS)
 
 @pytest.fixture
 def mock_context(loop):
@@ -75,12 +79,13 @@ def mock_geoip():
 
 
 @pytest.fixture
-def lobbyconnection(loop, mock_context, mock_protocol, mock_games, mock_players, mock_player, mock_geoip):
+def lobbyconnection(loop, mock_context, mock_protocol, mock_games, mock_players, mock_player, mock_geoip, mock_nts_client):
     lc = LobbyConnection(loop,
                          context=mock_context,
                          geoip=mock_geoip,
                          games=mock_games,
-                         players=mock_players)
+                         players=mock_players,
+                         nts_client=mock_nts_client)
     lc.player = mock_player
     lc.protocol = mock_protocol
     lc.player_service.get_permission_group.return_value = 0

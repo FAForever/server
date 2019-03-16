@@ -19,9 +19,10 @@ slow = pytest.mark.slow
 
 
 @pytest.fixture
-def lobby_server(request, loop, db_engine, player_service, game_service, geoip_service):
+def lobby_server(request, loop, db_engine, player_service, game_service, nts_client, geoip_service):
     ctx = run_lobby_server(address=('127.0.0.1', None),
                            geoip_service=geoip_service,
+                           nts_client=nts_client,
                            player_service=player_service,
                            games=game_service,
                            loop=loop)
