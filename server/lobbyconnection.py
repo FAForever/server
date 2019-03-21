@@ -760,9 +760,6 @@ class LobbyConnection():
 
     @timed()
     def command_game_host(self, message):
-        if not self.able_to_launch_game:
-            raise ClientError("You are already in a game or haven't run the connectivity test yet")
-
         assert isinstance(self.player, Player)
 
         visibility = VisibilityState.from_string(message.get('visibility'))
