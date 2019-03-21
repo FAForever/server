@@ -5,6 +5,13 @@ from ..games.game import Victory
 
 metadata = MetaData()
 
+friends_and_foes = Table(
+    'friends_and_foes', metadata,
+    Column('user_id',       Integer, ForeignKey('login.id')),
+    Column('subject_id',    Integer, ForeignKey('login.id')),
+    Column('status',        Enum('FRIEND', 'FOE'))
+)
+
 game_featuredMods = Table(
     'game_featuredMods', metadata,
     Column('id',            Integer,    primary_key=True),

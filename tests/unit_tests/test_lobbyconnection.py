@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import pytest
 from server import GameState, VisibilityState
 from server.connectivity import Connectivity
+from server.db.models import friends_and_foes
 from server.game_service import GameService
 from server.games import CustomGame, Game
 from server.geoip_service import GeoIpService
@@ -12,6 +13,7 @@ from server.lobbyconnection import LobbyConnection
 from server.player_service import PlayerService
 from server.players import Player, PlayerState
 from server.protocol import QDataStreamProtocol
+from sqlalchemy import select, and_
 from tests import CoroMock
 
 
@@ -411,8 +413,10 @@ async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection, moc
 async def test_command_avatar_select(mocker, db_engine, lobbyconnection: LobbyConnection, mock_player: Player):
     lobbyconnection.player = mock_player
     lobbyconnection.player.id = 2  # Dostya test user
+    lobbyconnection._authenticated = True
 
-    await lobbyconnection.command_avatar({
+    await lobbyconnection.on_message_received({
+        'command': 'avatar',
         'action': 'select',
         'avatar': "http://content.faforever.com/faf/avatars/qai2.png"
     })
@@ -421,6 +425,31 @@ async def test_command_avatar_select(mocker, db_engine, lobbyconnection: LobbyCo
         result = await conn.execute("SELECT selected from avatars where idUser=2")
         row = await result.fetchone()
         assert row[0] == 1
+
+
+async def test_command_social_add_friend(lobbyconnection, mock_player, db_engine):
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.id = 1
+    lobbyconnection._authenticated = True
+
+    await lobbyconnection.on_message_received({
+        'command': 'social_add',
+        'friend': 2
+    })
+
+    async with db_engine.acquire() as conn:
+        result = await conn.execute(
+            select([friends_and_foes.c.subject_id]).where(
+                and_(
+                    friends_and_foes.c.user_id == lobbyconnection.player.id,
+                    friends_and_foes.c.status == 'FRIEND'
+                )
+            )
+        )
+
+        friends = [row['subject_id'] async for row in result]
+
+    assert friends == [2]
 
 
 async def test_broadcast(lobbyconnection: LobbyConnection, mocker):
