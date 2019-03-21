@@ -427,6 +427,20 @@ async def test_command_avatar_select(mocker, db_engine, lobbyconnection: LobbyCo
         assert row[0] == 1
 
 
+async def get_friends(player_id, db_engine):
+    async with db_engine.acquire() as conn:
+        result = await conn.execute(
+            select([friends_and_foes.c.subject_id]).where(
+                and_(
+                    friends_and_foes.c.user_id == player_id,
+                    friends_and_foes.c.status == 'FRIEND'
+                )
+            )
+        )
+
+        return [row['subject_id'] async for row in result]
+
+
 async def test_command_social_add_friend(lobbyconnection, mock_player, db_engine):
     lobbyconnection.player = mock_player
     lobbyconnection.player.id = 1
@@ -437,19 +451,25 @@ async def test_command_social_add_friend(lobbyconnection, mock_player, db_engine
         'friend': 2
     })
 
-    async with db_engine.acquire() as conn:
-        result = await conn.execute(
-            select([friends_and_foes.c.subject_id]).where(
-                and_(
-                    friends_and_foes.c.user_id == lobbyconnection.player.id,
-                    friends_and_foes.c.status == 'FRIEND'
-                )
-            )
-        )
-
-        friends = [row['subject_id'] async for row in result]
-
+    friends = await get_friends(lobbyconnection.player.id, db_engine)
     assert friends == [2]
+
+
+async def test_command_social_remove_friend(lobbyconnection, mock_player, db_engine):
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.id = 2
+    lobbyconnection._authenticated = True
+
+    friends = await get_friends(lobbyconnection.player.id, db_engine)
+    assert friends == [1]
+
+    await lobbyconnection.on_message_received({
+        'command': 'social_remove',
+        'friend': 1
+    })
+
+    friends = await get_friends(lobbyconnection.player.id, db_engine)
+    assert friends == []
 
 
 async def test_broadcast(lobbyconnection: LobbyConnection, mocker):

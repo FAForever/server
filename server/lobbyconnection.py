@@ -13,6 +13,7 @@ import pymysql
 import semver
 import server
 import server.db as db
+from sqlalchemy import and_
 
 from . import config
 from .config import FAF_POLICY_SERVER_BASE_URL
@@ -235,17 +236,18 @@ class LobbyConnection():
 
     async def command_social_remove(self, message):
         if "friend" in message:
-            target_id = message['friend']
+            subject_id = message['friend']
         elif "foe" in message:
-            target_id = message['foe']
+            subject_id = message['foe']
         else:
             self.abort("No-op social_remove.")
             return
 
         async with db.engine.acquire() as conn:
-            await conn.execute(
-                "DELETE FROM friends_and_foes WHERE user_id = %s AND subject_id = %s",
-                (self.player.id, target_id))
+            await conn.execute(friends_and_foes.delete().where(and_(
+                friends_and_foes.c.user_id == self.player.id,
+                friends_and_foes.c.subject_id == subject_id
+            )))
 
     async def command_social_add(self, message):
         if "friend" in message:

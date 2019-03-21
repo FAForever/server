@@ -40,3 +40,5 @@ insert into game_player_stats (gameId, playerId, AI, faction, color, team, place
     (41941, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 6 minute);
 
 delete from friends_and_foes where user_id = 1 and subject_id = 2;
+insert into friends_and_foes (user_id, subject_id, status) values
+    (2, 1, 'FRIEND');
