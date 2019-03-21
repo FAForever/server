@@ -28,6 +28,7 @@ from .players import Player, PlayerState
 from .protocol import QDataStreamProtocol
 from .types import Address
 from .ice_servers.nts import TwilioNTS
+from .ice_servers.coturn import CoturnHMAC
 
 class ClientError(Exception):
     """
