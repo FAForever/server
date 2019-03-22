@@ -774,8 +774,8 @@ class LobbyConnection():
             return
 
         port = message.get('gameport')
-        mod = message.get('mod')
-        mapname = message.get('mapname')
+        mod = message.get('mod') or 'faf'
+        mapname = message.get('mapname') or 'scmp_007'
         password = message.get('password')
         game_mode = mod.lower()
 
@@ -784,7 +784,7 @@ class LobbyConnection():
             game_mode=game_mode,
             host=self.player,
             name=title,
-            mapname=mapname or 'scmp_007',
+            mapname=mapname,
             password=password
         )
         self.launch_game(game, port, is_host=True)
