@@ -175,37 +175,6 @@ class LobbyConnection():
     def command_create_account(self, message):
         raise ClientError("FAF no longer supports direct registration. Please use the website to register.", recoverable=True)
 
-    @timed()
-    async def send_tutorial_section(self):
-        reply = []
-
-        async with db.engine.acquire() as conn:
-            # Can probably replace two queries with one here if we're smart enough.
-            result = await conn.execute("SELECT `section`,`description` FROM `tutorial_sections`")
-
-            async for row in result:
-                section, description = row[0], row[1]
-                reply.append({
-                    "command": "tutorials_info",
-                    "section": section,
-                    "description": description}
-                )
-
-            result = await conn.execute(
-                """ SELECT tutorial_sections.`section`, `name`, `url`, `tutorials`.`description`, `map`
-                    FROM `tutorials`
-                    LEFT JOIN tutorial_sections ON tutorial_sections.id = tutorials.section
-                    ORDER BY `tutorials`.`section`, name"""
-            )
-
-            async for row in result:
-                section, tutorial_name, url, description, map_name = row[0], row[1], row[2], row[3], row[4]
-                reply.append({"command": "tutorials_info", "tutorial": tutorial_name, "url": url,
-                              "tutorial_section": section, "description": description,
-                              "mapname": map_name})
-
-        self.protocol.send_messages(reply)
-
     async def send_coop_maps(self):
         async with db.engine.acquire() as conn:
             result = await conn.execute("SELECT name, description, filename, type, id FROM `coop_map`")
@@ -649,7 +618,6 @@ class LobbyConnection():
 
         self.send_mod_list()
         self.send_game_list()
-        await self.send_tutorial_section()
 
     def command_restore_game_session(self, message):
         game_id = int(message.get('game_id'))
