@@ -20,7 +20,7 @@ from .connectivity import Connectivity, ConnectivityState
 from .decorators import timed, with_logger
 from .game_service import GameService
 from .gameconnection import GameConnection
-from .games import GameMode, GameState, VisibilityState
+from .games import GameState, VisibilityState
 from .geoip_service import GeoIpService
 from .matchmaker import MatchmakerQueue, Search
 from .player_service import PlayerService
@@ -777,7 +777,7 @@ class LobbyConnection():
         mod = message.get('mod')
         mapname = message.get('mapname')
         password = message.get('password')
-        game_mode = GameMode.from_string(mod.lower())
+        game_mode = mod.lower()
 
         game = self.game_service.create_game(
             visibility=visibility,

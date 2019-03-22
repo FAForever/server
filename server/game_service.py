@@ -5,8 +5,7 @@ import aiocron
 import server.db as db
 from server import GameState, VisibilityState
 from server.decorators import with_logger
-from server.games import (CoopGame, CustomGame, FeaturedMod, GameMode,
-                          LadderGame)
+from server.games import CoopGame, CustomGame, FeaturedMod, LadderGame
 from server.games.game import Game
 from server.matchmaker import MatchmakerQueue
 from server.players import Player
@@ -142,7 +141,7 @@ class GameService:
 
     def create_game(self,
                     visibility=VisibilityState.PUBLIC,
-                    game_mode: GameMode=GameMode.UNKNOWN,
+                    game_mode: Optional[str]=None,
                     host: Optional[Player]=None,
                     name: Optional[str]=None,
                     mapname: Optional[str]=None,
@@ -156,17 +155,17 @@ class GameService:
             "host": host,
             "name": name,
             "map_": mapname,
-            "game_mode": str(game_mode),
+            "game_mode": game_mode,
             "game_service": self,
             "game_stats_service": self.game_stats_service
         }
 
         GameClass = {
-            GameMode.LADDER:        LadderGame,
-            GameMode.COOP:          CoopGame,
-            GameMode.FAF:           CustomGame,
-            GameMode.FAF_BETA:      CustomGame,
-            GameMode.EQUILIBRIUM:   CustomGame
+            'ladder1v1':    LadderGame,
+            'coop':         CoopGame,
+            'faf':          CustomGame,
+            'fafbeta':      CustomGame,
+            'equilibrium':  CustomGame
         }.get(game_mode, Game)
         game = GameClass(**args)
 
