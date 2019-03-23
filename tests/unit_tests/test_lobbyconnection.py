@@ -3,19 +3,17 @@ from unittest import mock
 from unittest.mock import Mock
 
 import pytest
-from server import GameState, ServerContext, VisibilityState
-from server.db.models import friends_and_foes
+from server import GameState, VisibilityState
+from server.db.models import ban, friends_and_foes
 from server.game_service import GameService
 from server.games import CustomGame, Game
 from server.geoip_service import GeoIpService
 from server.lobbyconnection import LobbyConnection
 from server.player_service import PlayerService
 from server.players import Player, PlayerState
-from server.types import Address
 from server.protocol import QDataStreamProtocol
-from sqlalchemy import select, and_
-from tests import CoroMock
-from server.ice_servers.nts import TwilioNTS
+from server.types import Address
+from sqlalchemy import and_, select
 
 
 @pytest.fixture()
@@ -357,6 +355,79 @@ def test_command_admin_closelobby(mocker, lobbyconnection):
                  "Please refer to our rules for the lobby/game here {rule_link}."
                  .format(rule_link=config.RULE_LINK))
     )
+
+
+async def test_command_admin_closelobby_with_ban(mocker, lobbyconnection, db_engine):
+    mocker.patch.object(lobbyconnection, 'protocol')
+    config = mocker.patch('server.lobbyconnection.config')
+    player = mocker.patch.object(lobbyconnection, 'player')
+    player.login = 'Sheeo'
+    player.id = 1
+    player.admin = True
+    banme = mock.Mock()
+    banme.id = 200
+    lobbyconnection.player_service = {1: player, banme.id: banme}
+    lobbyconnection._authenticated = True
+
+    await lobbyconnection.on_message_received({
+        'command': 'admin',
+        'action': 'closelobby',
+        'user_id': banme.id,
+        'ban': {
+            'reason': 'Unit test',
+            'duration': 2,
+            'period': 'DAY'
+        }
+    })
+
+    banme.lobby_connection.kick.assert_any_call(
+        message=("You were kicked from FAF by an administrator (Sheeo). "
+                 "Please refer to our rules for the lobby/game here {rule_link}."
+                 .format(rule_link=config.RULE_LINK))
+    )
+
+    async with db_engine.acquire() as conn:
+        result = await conn.execute(select([ban]).where(ban.c.player_id == banme.id))
+
+        bans = [row['reason'] async for row in result]
+
+    assert len(bans) == 1
+    assert bans[0] == 'Unit test'
+
+
+async def test_command_admin_closelobby_with_ban_bad_period(mocker, lobbyconnection, db_engine):
+    proto = mocker.patch.object(lobbyconnection, 'protocol')
+    player = mocker.patch.object(lobbyconnection, 'player')
+    player.admin = True
+    banme = mock.Mock()
+    banme.id = 1
+    lobbyconnection.player_service = {1: player, banme.id: banme}
+    lobbyconnection._authenticated = True
+
+    await lobbyconnection.on_message_received({
+        'command': 'admin',
+        'action': 'closelobby',
+        'user_id': banme.id,
+        'ban': {
+            'reason': 'Unit test',
+            'duration': 2,
+            'period': ') injected!'
+        }
+    })
+
+    banme.lobbyconnection.kick.assert_not_called()
+    proto.send_message.assert_called_once_with({
+        'command': 'notice',
+        'style': 'error',
+        'text': "Period ') INJECTED!' is not allowed!"
+    })
+
+    async with db_engine.acquire() as conn:
+        result = await conn.execute(select([ban]).where(ban.c.player_id == banme.id))
+
+        bans = [row['reason'] async for row in result]
+
+    assert len(bans) == 0
 
 
 @asyncio.coroutine
