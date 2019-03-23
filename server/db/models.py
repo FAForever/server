@@ -5,6 +5,26 @@ from ..games.game import Victory
 
 metadata = MetaData()
 
+avatars = Table(
+    'avatars', metadata,
+    Column('id',            Integer,    primary_key=True),
+    Column('idUser',        Integer,    ForeignKey('login.id')),
+    Column('idAvatar',      Integer,    ForeignKey('avatars_list.id')),
+    Column('selected',      Boolean,    nullable=False),
+    Column('expires_at',    TIMESTAMP),
+    Column('create_time',   TIMESTAMP,  nullable=False),
+    Column('update_time',   TIMESTAMP,  nullable=False)
+)
+
+avatars_list = Table(
+    'avatars_list', metadata,
+    Column('id',            Integer,    primary_key=True),
+    Column('url',           String,     nullable=False),
+    Column('tooltip',       String),
+    Column('create_time',   TIMESTAMP,  nullable=False),
+    Column('update_time',   TIMESTAMP,  nullable=False)
+)
+
 ban = Table(
     'ban', metadata,
     Column('id',            Integer,    primary_key=True),

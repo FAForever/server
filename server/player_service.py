@@ -6,9 +6,10 @@ import marisa_trie
 import server.db as db
 from server.decorators import with_logger
 from server.players import Player
-from sqlalchemy import select
+from sqlalchemy import and_, select
 
-from .db.models import clan, clan_membership, global_rating, ladder1v1_rating
+from .db.models import (avatars, avatars_list, clan, clan_membership,
+                        global_rating, ladder1v1_rating)
 
 
 @with_logger
@@ -50,23 +51,32 @@ class PlayerService:
 
     async def fetch_player_data(self, player):
         async with db.engine.acquire() as conn:
-            result = await conn.execute(
-                select([
-                    global_rating.c.mean,
-                    global_rating.c.deviation,
-                    global_rating.c.numGames,
-                    ladder1v1_rating.c.mean,
-                    ladder1v1_rating.c.deviation,
-                    clan.c.tag
-                ], use_labels=True)
-                .select_from(
-                    clan_membership
-                    .join(clan)
-                    .join(global_rating, clan_membership.c.player_id == global_rating.c.id)
-                    .join(ladder1v1_rating, clan_membership.c.player_id == ladder1v1_rating.c.id)
-                ).where(clan_membership.c.player_id == player.id)
+            sql = select([
+                avatars_list.c.url,
+                avatars_list.c.tooltip,
+                global_rating.c.mean,
+                global_rating.c.deviation,
+                global_rating.c.numGames,
+                ladder1v1_rating.c.mean,
+                ladder1v1_rating.c.deviation,
+                clan.c.tag
+            ], use_labels=True).select_from(
+                global_rating.join(ladder1v1_rating, global_rating.c.id == ladder1v1_rating.c.id)
+                .outerjoin(clan_membership, clan_membership.c.player_id == global_rating.c.id)
+                .outerjoin(clan)
+                .outerjoin(avatars, global_rating.c.id == avatars.c.idUser)
+                .outerjoin(avatars_list)
+            ).where(
+                global_rating.c.id == player.id,
             )
+            result = await conn.execute(
+                sql
+            )
+            print(sql)
             row = await result.fetchone()
+            print(row)
+            if not row:
+                return
 
             player.global_rating = (
                 row[global_rating.c.mean],
@@ -80,6 +90,10 @@ class PlayerService:
             )
 
             player.clan = row.get(clan.c.tag)
+
+            url, tooltip = row.get(avatars_list.c.url), row.get(avatars_list.c.tooltip)
+            if url and tooltip:
+                player.avatar = {"url": url, "tooltip": tooltip}
 
     def remove_player(self, player: Player):
         if player.id in self.players:

@@ -565,17 +565,6 @@ class LobbyConnection():
         # -------
         self.player.country = self.geoip_service.country(self.peer_address.host)
 
-        ## AVATARS
-        ## -------------------
-        async with db.engine.acquire() as conn:
-            result = await conn.execute(
-                "SELECT url, tooltip FROM `avatars` "
-                "LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` "
-                "WHERE `idUser` = %s AND `selected` = 1", (self.player.id, ))
-            row = await result.fetchone()
-            if row:
-                self.player.avatar = {"url": row["url"], "tooltip": row['tooltip']}
-
         # Send the player their own player info.
         self.sendJSON({
             "command": "welcome",

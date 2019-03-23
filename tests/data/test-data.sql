@@ -24,6 +24,9 @@ insert into ladder1v1_rating (id, mean, deviation, numGames, is_active) values
     (102, 1500, 500, 0, 1)
 ;
 
+insert into avatars (idUser, idAvatar, selected) values
+    (50, 2, 1);
+
 delete from matchmaker_ban where id = 102 and userid = 102;
 insert into matchmaker_ban (id, userid) values (102, 102);
 
