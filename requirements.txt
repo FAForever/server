@@ -20,3 +20,4 @@ oauthlib
 requests_oauthlib
 mock
 SQLAlchemy
+mypy
