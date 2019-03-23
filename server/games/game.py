@@ -406,8 +406,10 @@ class Game(BaseGame):
 
         self._logger.info("Removed game connection %s", game_connection)
 
-        # TODO: Extract boolean expression to method
-        if len(self._connections) == 0 or (self.host == game_connection.player and self.state != GameState.LIVE):
+        def host_left_lobby() -> bool:
+            return game_connection.player == self.host and self.state != GameState.LIVE
+
+        if len(self._connections) == 0 or host_left_lobby():
             await self.on_game_end()
         else:
             await self._process_pending_army_stats()
