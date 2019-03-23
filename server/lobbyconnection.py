@@ -70,12 +70,9 @@ class LobbyConnection():
         self.nts_client = nts_client
         self.coturn_generator = CoturnHMAC()
         self.matchmaker_queue = matchmaker_queue
-        self.ladderPotentialPlayers = []
-        self.warned = False
         self._authenticated = False
         self.player = None  # type: Player
         self.game_connection = None  # type: GameConnection
-        self.leagueAvatar = None
         self.peer_address = None  # type: Optional[Address]
         self.session = int(random.randrange(0, 4294967295))
         self.protocol = None

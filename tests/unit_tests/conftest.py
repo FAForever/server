@@ -18,7 +18,7 @@ def lobbythread():
 
 
 @pytest.fixture
-def game_connection(request, game, player_service, players, game_service, transport):
+def game_connection(request, game, players, game_service):
     from server import GameConnection
     conn = GameConnection(
         game=game,
@@ -28,7 +28,6 @@ def game_connection(request, game, player_service, players, game_service, transp
         games=game_service
     )
 
-    conn._transport = transport
     conn.finished_sim = False
 
     def fin():
@@ -59,27 +58,6 @@ def geoip_service():
     service = GeoIpService()
     service.download_geoip_db = CoroMock()
     return service
-
-
-@pytest.fixture
-def connections(loop, player_service, game_service, transport, game):
-    from server import GameConnection
-
-    def make_connection(player):
-        conn = GameConnection(
-            game=game,
-            player=player,
-            protocol=mock.Mock(),
-            player_service=player_service,
-            games=game_service
-        )
-        conn._transport = transport
-        # conn._connectivity_state.set_result(connectivity)
-        return conn
-
-    return mock.Mock(
-        make_connection=make_connection
-    )
 
 
 def add_connected_player(game: Game, player):
