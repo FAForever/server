@@ -65,11 +65,9 @@ class LadderService:
         game.set_player_option(host.id, 'Team', 1)
         game.set_player_option(guest.id, 'Team', 1)
 
-        mapname = map_path[5:-4]  # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
-                                  # Really in the future, just send a better description
-        host.lobby_connection.launch_game(game, is_host=True, use_map=mapname)
+        host.lobby_connection.launch_game(game, is_host=True, use_map=map_name)
         await asyncio.sleep(4)
-        guest.lobby_connection.launch_game(game, is_host=False, use_map=mapname)
+        guest.lobby_connection.launch_game(game, is_host=False, use_map=map_name)
 
     async def choose_map(self, players: [Player]) -> MapDescription:
         maps = self.game_service.ladder_maps
