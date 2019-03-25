@@ -1,6 +1,6 @@
 import asyncio
 import random
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Set
 
 from sqlalchemy import and_, func, select, text
 
@@ -20,12 +20,12 @@ class LadderService:
     launches the games.
     """
     def __init__(self, games_service: "GameService"):
-        self._informed_players = []
+        self._informed_players: Set[Player] = set()
         self.game_service = games_service
 
     def inform_player(self, player):
         if player not in self._informed_players:
-            self._informed_players.append(player)
+            self._informed_players.add(player)
             player.state = PlayerState.SEARCHING_LADDER
             mean, deviation = player.ladder_rating
 
