@@ -121,12 +121,26 @@ global_rating = Table(
     Column('is_active', Boolean,    nullable=False),
 )
 
+login = Table(
+    'login', metadata,
+    Column('id',            Integer,    primary_key=True),
+    Column('login',         String,     nullable=False, unique=True),
+    Column('password',      String,     nullable=False),
+    Column('email',         String,     nullable=False, unique=True),
+    Column('ip',            String),
+    Column('steamid',       Integer,     unique=True),
+    Column('create_time',   TIMESTAMP,  nullable=False),
+    Column('update_time',   TIMESTAMP,  nullable=False),
+    Column('user_agent',    String),
+    Column('last_login',    TIMESTAMP)
+)
+
 ladder1v1_rating = Table(
     'ladder1v1_rating', metadata,
-    Column('id',        Integer,    ForeignKey('login.id'), primary_key=True),
-    Column('mean',      Float),
-    Column('deviation', Float),
-    Column('numGames',  Integer,    nullable=False),
-    Column('winGames',  Integer,    nullable=False),
-    Column('is_active', Boolean,    nullable=False),
+    Column('id',            Integer,    ForeignKey('login.id'), primary_key=True),
+    Column('mean',          Float),
+    Column('deviation',     Float),
+    Column('numGames',      Integer,    nullable=False),
+    Column('winGames',      Integer,    nullable=False),
+    Column('is_active',     Boolean,    nullable=False)
 )

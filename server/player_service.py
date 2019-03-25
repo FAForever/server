@@ -6,10 +6,10 @@ import marisa_trie
 import server.db as db
 from server.decorators import with_logger
 from server.players import Player
-from sqlalchemy import and_, select
+from sqlalchemy import select
 
 from .db.models import (avatars, avatars_list, clan, clan_membership,
-                        global_rating, ladder1v1_rating)
+                        global_rating, ladder1v1_rating, login)
 
 
 @with_logger
@@ -61,20 +61,19 @@ class PlayerService:
                 ladder1v1_rating.c.deviation,
                 clan.c.tag
             ], use_labels=True).select_from(
-                global_rating.join(ladder1v1_rating, global_rating.c.id == ladder1v1_rating.c.id)
-                .outerjoin(clan_membership, clan_membership.c.player_id == global_rating.c.id)
+                login
+                .join(global_rating)
+                .join(ladder1v1_rating)
+                .outerjoin(clan_membership)
                 .outerjoin(clan)
-                .outerjoin(avatars, global_rating.c.id == avatars.c.idUser)
+                .outerjoin(avatars)
                 .outerjoin(avatars_list)
-            ).where(
-                global_rating.c.id == player.id,
-            )
+            ).where(login.c.id == player.id)
+
             result = await conn.execute(
                 sql
             )
-            print(sql)
             row = await result.fetchone()
-            print(row)
             if not row:
                 return
 
