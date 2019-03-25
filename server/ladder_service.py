@@ -23,7 +23,7 @@ class LadderService:
         self._informed_players: Set[Player] = set()
         self.game_service = games_service
 
-    def inform_player(self, player):
+    def inform_player(self, player: Player):
         if player not in self._informed_players:
             self._informed_players.add(player)
             player.state = PlayerState.SEARCHING_LADDER
