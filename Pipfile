@@ -20,6 +20,8 @@ marisa-trie = "*"
 oauthlib = "*"
 requests-oauthlib = "*"
 sqlalchemy = "*"
+twilio = "*"
+humanize = "*"
 
 [dev-packages]
 pytest = "*"
