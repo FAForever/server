@@ -19,7 +19,6 @@ def service(api_accessor: ApiAccessor):
     return EventService(api_accessor)
 
 
-@pytest.fixture()
 def create_queue():
     return [
         dict(event_id='1-2-3', count=1),
@@ -70,4 +69,3 @@ async def test_record_multiple(service: EventService):
     assert result == events_data
 
     service.api_accessor.update_events.assert_called_once_with(queue, 42)
-

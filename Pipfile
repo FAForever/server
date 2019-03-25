@@ -1,0 +1,32 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+requests = "*"
+typing = "*"
+aiohttp = "==3.5.1"
+aiomysql = "*"
+aiomeasures = "*"
+docopt = "*"
+pycrypto = "*"
+semver = "*"
+"geoip2" = "*"
+msgpack-python = "*"
+trueskill = "*"
+aiocron = "*"
+marisa-trie = "*"
+oauthlib = "*"
+requests-oauthlib = "*"
+sqlalchemy = "*"
+
+[dev-packages]
+pytest = "*"
+pytest-mock = "*"
+pytest-cov = "*"
+coveralls = "*"
+mock = "*"
+
+[requires]
+python_version = "3.6"
