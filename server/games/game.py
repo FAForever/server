@@ -884,7 +884,7 @@ class Game(BaseGame):
                     team_scores[team] += self.get_army_score(army)
                 except KeyError:
                     team_scores[team] += 0
-                    self._logger.warn("Missing game result for %s: %s", army, player)
+                    self._logger.warning("Missing game result for %s: %s", army, player)
             elif team == 1:
                 ffa_scores.append((player, self.get_army_score(army)))
         ranks = [-score for team, score in sorted(team_scores.items(), key=lambda t: t[0])]
