@@ -4,12 +4,9 @@ from server import VisibilityState
 from .conftest import connect_client, perform_login, read_until, connect_and_sign_in
 from .testclient import ClientTest
 
-slow = pytest.mark.slow
-
 TEST_ADDRESS = ('127.0.0.1', None)
 
 
-@slow
 async def test_server_invalid_login(loop, lobby_server):
     proto = await connect_client(lobby_server)
     await perform_login(proto, ('Cat', 'epic'))
@@ -19,7 +16,6 @@ async def test_server_invalid_login(loop, lobby_server):
     proto.close()
 
 
-@slow
 async def test_server_ban(loop, lobby_server):
     proto = await connect_client(lobby_server)
     await perform_login(proto, ('Dostya', 'vodka'))
@@ -31,7 +27,6 @@ async def test_server_ban(loop, lobby_server):
     proto.close()
 
 
-@slow
 async def test_server_valid_login(loop, lobby_server):
     proto = await connect_client(lobby_server)
     await perform_login(proto, ('test', 'test_password'))
@@ -66,7 +61,7 @@ async def test_player_info_broadcast(loop, lobby_server):
     p2.close()
 
 
-@slow
+@pytest.mark.slow
 async def test_public_host(loop, lobby_server, player_service):
     # TODO: This test can't fail, why is it here?
     player_id, session, proto = await connect_and_sign_in(
@@ -89,7 +84,7 @@ async def test_public_host(loop, lobby_server, player_service):
         await client._proto.writer.drain()
 
 
-@slow
+@pytest.mark.slow
 async def test_host_missing_fields(loop, lobby_server, player_service):
     player_id, session, proto = await connect_and_sign_in(
         ('test', 'test_password'),

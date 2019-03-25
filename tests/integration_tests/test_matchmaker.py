@@ -2,6 +2,8 @@ from .conftest import connect_and_sign_in, read_until
 from .testclient import ClientTest
 
 
+@pytest.mark.slow
+@pytest.mark.timeout(6)
 async def test_game_matchmaking(loop, lobby_server):
     _, _, proto1 = await connect_and_sign_in(
         ('ladder1', 'ladder1'),
