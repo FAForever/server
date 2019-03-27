@@ -29,7 +29,8 @@ class GameConnection(GpgNetServerProtocol):
         player: Player,
         protocol: QDataStreamProtocol,
         player_service: PlayerService,
-        games: GameService
+        games: GameService,
+        state: GameConnectionState = GameConnectionState.INITIALIZING
     ):
         """
         Construct a new GameConnection
@@ -38,7 +39,7 @@ class GameConnection(GpgNetServerProtocol):
         self._logger.debug('GameConnection initializing')
 
         self.protocol = protocol
-        self._state = GameConnectionState.INITIALIZING
+        self._state = state
         self._waiters = defaultdict(list)
         self.player_service = player_service
         self.game_service = games
@@ -506,5 +507,5 @@ COMMAND_HANDLERS = {
     "Bottleneck":           GameConnection.handle_bottleneck,
     "BottleneckCleared":    GameConnection.handle_bottleneck_cleared,
     "Disconnected":         GameConnection.handle_disconnected,
-    "IceMsg":           GameConnection.handle_ice_message
+    "IceMsg":               GameConnection.handle_ice_message
 }

@@ -37,7 +37,7 @@ DB_SERVER = os.getenv("DB_PORT_3306_TCP_ADDR", "127.0.0.1")
 DB_PORT = int(os.getenv("DB_PORT_3306_TCP_PORT", "3306"))
 DB_LOGIN = os.getenv("FAF_DB_LOGIN", "root")
 DB_PASSWORD = os.getenv("FAF_DB_PASSWORD", "banana")
-DB_NAME = os.getenv("FAF_DB_NAME", "faf_test")
+DB_NAME = os.getenv("FAF_DB_NAME", "faf")
 
 CHALLONGE_KEY = "challonge_key"
 CHALLONGE_USER = "challonge_user"
@@ -59,8 +59,8 @@ TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
 TWILIO_TOKEN = os.getenv("TWILIO_TOKEN", "")
 TWILIO_TTL = os.getenv("TWILIO_TTL", 86400)
 
-COTURN_HOSTS = os.getenv('COTURN_HOSTS', "").split(',')
-COTURN_KEYS = os.getenv('COTURN_KEYS', "").split(',')
+COTURN_HOSTS = os.getenv('COTURN_HOSTS', "geosearchef.de").split(',')
+COTURN_KEYS = os.getenv('COTURN_KEYS', "wop0CC7EUxrrcavH7aKCvaUjmpT3ZwW7N5ozYI7Jps").split(',')
 
 GEO_IP_DATABASE_PATH = os.getenv("GEO_IP_DATABASE_PATH", "GeoLite2-Country.mmdb")
 GEO_IP_DATABASE_URL = os.getenv(

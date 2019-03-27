@@ -17,10 +17,9 @@ class CoturnHMAC:
         self.coturn_hosts = coturn_hosts or COTURN_HOSTS
         self.coturn_keys = coturn_keys or COTURN_KEYS
 
-    def fetch_token(self, username='faf-user', ttl=None):
+    def fetch_token(self, username='faf-user', ttl=TWILIO_TTL):
         servers = []
 
-        ttl = ttl or TWILIO_TTL
         if ttl is not None:
             ttl = int(ttl)
         else:

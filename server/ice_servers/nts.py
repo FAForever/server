@@ -27,13 +27,12 @@ class TwilioNTS:
         self.twilio_token = token or TWILIO_TOKEN
         self.client = TwilioRestClient(self.twilio_account_sid, self.twilio_token)
 
-    async def fetch_token(self, ttl=None):
+    async def fetch_token(self, ttl=TWILIO_TTL):
         """
         Fetches token from Twilio
 
         :param ttl - ttl in seconds or None for default of 24h
         """
-        ttl = ttl or TWILIO_TTL
         if ttl is not None:
             ttl = int(ttl)
         loop = asyncio.get_event_loop()

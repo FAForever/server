@@ -29,6 +29,7 @@ from .protocol import QDataStreamProtocol
 from .types import Address
 from .ice_servers.nts import TwilioNTS
 from .ice_servers.coturn import CoturnHMAC
+from .abc.base_game import GameConnectionState
 
 class ClientError(Exception):
     """
@@ -648,8 +649,14 @@ class LobbyConnection():
             return
 
         self._logger.debug("Restoring game session of player %s to game %s", self.player, game)
-        self.game_connection = GameConnection(self.loop, self, self.player_service, self.game_service, self.player,
-                                              game, GameConnectionState.CONNECTED_TO_HOST)
+        self.game_connection = GameConnection(
+            game=game,
+            player=self.player,
+            protocol=self.protocol,
+            player_service=self.player_service,
+            games=self.game_service,
+            state=GameConnectionState.CONNECTED_TO_HOST
+        )
         self.player.game_connection = self.game_connection
         game.add_game_connection(self.game_connection)
         self.player.state = PlayerState.PLAYING
