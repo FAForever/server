@@ -8,7 +8,7 @@ Distributed under GPLv3, see license.txt
 """
 import json
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import aiomeasures
 
@@ -39,7 +39,6 @@ __all__ = [
     'GameStatsService',
     'GameService',
     'LadderService',
-    'NatPacketServer',
     'run_lobby_server',
     'run_control_server',
     'games',
@@ -85,7 +84,7 @@ def run_lobby_server(
     player_service: PlayerService,
     games: GameService,
     loop,
-    nts_client: TwilioNTS,
+    nts_client: Optional[TwilioNTS],
     geoip_service: GeoIpService,
     matchmaker_queue: MatchmakerQueue
 ) -> ServerContext:
@@ -135,7 +134,7 @@ def run_lobby_server(
     def ping_broadcast():
         ctx.broadcast_raw(ping_msg)
         loop.call_later(45, ping_broadcast)
-        
+
     def make_connection() -> LobbyConnection:
         return LobbyConnection(
             geoip=geoip_service,
@@ -145,7 +144,7 @@ def run_lobby_server(
             matchmaker_queue=matchmaker_queue
         )
     ctx = ServerContext(make_connection, name="LobbyServer")
-    
+
     loop.call_later(5, report_dirties)
     loop.call_soon(ping_broadcast)
     loop.run_until_complete(ctx.listen(*address))

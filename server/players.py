@@ -1,6 +1,6 @@
 import weakref
 
-from enum import IntEnum, unique, Enum
+from enum import unique, Enum
 
 from .abc.base_player import BasePlayer
 
@@ -21,8 +21,19 @@ class Player(BasePlayer):
     In the context of a game, the Game object holds game-specific
     information about players.
     """
-    def __init__(self, login=None, session=0, ip=None, id=0,
-                 global_rating=None, ladder_rating=None, clan=None, numGames=0, permissionGroup=0, lobby_connection=None):
+    def __init__(
+        self,
+        login: str = None,
+        session: int = 0,
+        ip=None,
+        id: int = 0,
+        global_rating=None,
+        ladder_rating=None,
+        clan=None,
+        numGames: int = 0,
+        permissionGroup: int = 0,
+        lobby_connection: "LobbyConnection" = None
+    ):
         super().__init__(id, login)
 
         # The id of the user in the `login` table of the database.

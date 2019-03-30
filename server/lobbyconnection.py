@@ -2,11 +2,11 @@ import asyncio
 import datetime
 import hashlib
 import html
-import ipaddress
 import json
 import random
 import urllib.parse
 import urllib.request
+from typing import Optional
 
 import requests
 
@@ -16,20 +16,21 @@ import server
 import server.db as db
 
 from . import config
+from .abc.base_game import GameConnectionState
 from .config import FAF_POLICY_SERVER_BASE_URL
 from .decorators import timed, with_logger
 from .game_service import GameService
 from .gameconnection import GameConnection
 from .games import GameMode, GameState, VisibilityState
 from .geoip_service import GeoIpService
+from .ice_servers.coturn import CoturnHMAC
+from .ice_servers.nts import TwilioNTS
 from .matchmaker import MatchmakerQueue, Search
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import QDataStreamProtocol
 from .types import Address
-from .ice_servers.nts import TwilioNTS
-from .ice_servers.coturn import CoturnHMAC
-from .abc.base_game import GameConnectionState
+
 
 class ClientError(Exception):
     """
@@ -53,17 +54,17 @@ class AuthenticationError(Exception):
 @with_logger
 class LobbyConnection():
     @timed()
-    def __init__(self,
-                 games: GameService,
-                 players: PlayerService,
-                 nts_client: TwilioNTS,
-                 geoip: GeoIpService,
-                 matchmaker_queue: MatchmakerQueue):
-        super(LobbyConnection, self).__init__()
-
+    def __init__(
+        self,
+        games: GameService,
+        players: PlayerService,
+        nts_client: Optional[TwilioNTS],
+        geoip: GeoIpService,
+        matchmaker_queue: MatchmakerQueue
+    ):
         self.geoip_service = geoip
         self.game_service = games
-        self.player_service = players  # type: PlayerService
+        self.player_service = players
         self.nts_client = nts_client
         self.coturn_generator = CoturnHMAC()
         self.matchmaker_queue = matchmaker_queue
@@ -76,9 +77,10 @@ class LobbyConnection():
         self.peer_address = None  # type: Optional[Address]
         self.session = int(random.randrange(0, 4294967295))
         self.protocol = None
-        self._logger.debug("LobbyConnection initialized")
         self.search = None
         self.user_agent = None
+
+        self._logger.debug("LobbyConnection initialized")
 
     @property
     def authenticated(self):
@@ -543,12 +545,14 @@ class LobbyConnection():
                 self._logger.error("Failure updating NickServ password for %s", login)
 
         permission_group = self.player_service.get_permission_group(player_id)
-        self.player = Player(login=str(login),
-                             session=self.session,
-                             ip=self.peer_address.host,
-                             id=player_id,
-                             permissionGroup=permission_group,
-                             lobby_connection=self)
+        self.player = Player(
+            login=str(login),
+            session=self.session,
+            ip=self.peer_address.host,
+            id=player_id,
+            permissionGroup=permission_group,
+            lobby_connection=self
+        )
 
         old_player = self.player_service.get_player(self.player.id)
         if old_player:
@@ -636,7 +640,7 @@ class LobbyConnection():
         await self.send_tutorial_section()
 
     def command_restore_game_session(self, message):
-        game_id = message.get('game_id')
+        game_id = int(message.get('game_id'))
 
         # Restore the player's game connection, if the game still exists and is live
         if not game_id or game_id not in self.game_service:
@@ -657,7 +661,7 @@ class LobbyConnection():
             games=self.game_service,
             state=GameConnectionState.CONNECTED_TO_HOST
         )
-        self.player.game_connection = self.game_connection
+
         game.add_game_connection(self.game_connection)
         self.player.state = PlayerState.PLAYING
         if not hasattr(self.player, "game"):
