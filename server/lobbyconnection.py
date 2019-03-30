@@ -914,12 +914,11 @@ class LobbyConnection():
         if self.nts_client:
             ice_servers = ice_servers + await self.nts_client.server_tokens(ttl=ttl)
 
-        out = {
+        self.sendJSON({
             'command': 'ice_servers',
             'ice_servers': ice_servers,
             'ttl': ttl
-        }
-        self.sendJSON(out)
+        })
 
     def send_warning(self, message: str, fatal: bool=False):
         """
