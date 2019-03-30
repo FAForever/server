@@ -787,7 +787,6 @@ class LobbyConnection():
             self.sendJSON(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
             return
 
-        port = message.get('gameport')
         mod = message.get('mod')
         mapname = message.get('mapname')
         password = message.get('password')
@@ -805,8 +804,7 @@ class LobbyConnection():
         self.launch_game(game, is_host=True)
         server.stats.incr('game.hosted')
 
-
-    def launch_game(self, game, is_host=False, use_map=None):
+    def launch_game(self, game, *, is_host=False, use_map=None):
 
         if self.game_connection:
             self.game_connection.abort("Player launched a new game")

@@ -79,7 +79,7 @@ def lobbyconnection(loop, mock_protocol, mock_games, mock_players, mock_player, 
         nts_client=mock_nts_client,
         matchmaker_queue=mock.Mock()
     )
-    
+
     lc.player = mock_player
     lc.protocol = mock_protocol
     lc.player_service.get_permission_group.return_value = 0
@@ -114,15 +114,13 @@ def test_launch_game(lobbyconnection, game, create_player):
     lobbyconnection.player = create_player()
     lobbyconnection.game_connection = old_game_conn
     lobbyconnection.sendJSON = mock.Mock()
-    port = 1337
-    lobbyconnection.launch_game(game, port)
+    lobbyconnection.launch_game(game)
 
     # Verify all side effects of launch_game here
     old_game_conn.abort.assert_called_with("Player launched a new game")
     assert lobbyconnection.game_connection is not None
     assert lobbyconnection.game_connection.game == game
     assert lobbyconnection.player.game == game
-    assert lobbyconnection.player.game_port == port
     assert lobbyconnection.player.game_connection == lobbyconnection.game_connection
     assert lobbyconnection.game_connection.player == lobbyconnection.player
     assert lobbyconnection.player.state == PlayerState.JOINING
@@ -503,7 +501,7 @@ async def test_game_connection_restored_if_game_exists(lobbyconnection: LobbyCon
     game.game_mode = 'faf'
     game.id = 42
     game_service.games[42] = game
-    
+
     lobbyconnection.command_restore_game_session({'game_id': 42})
 
     assert lobbyconnection.game_connection
