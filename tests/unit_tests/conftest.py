@@ -1,7 +1,7 @@
 from unittest import mock
 import pytest
 
-from server import GameStatsService, LobbyConnection
+from server import GameStatsService
 from server.abc.base_game import BaseGame
 from server.games import Game
 from server.gameconnection import GameConnection, GameConnectionState
@@ -24,11 +24,10 @@ def game_connection(request, game, player_service, players, game_service, transp
         game=game,
         player=players.hosting,
         protocol=mock.Mock(),
-        nts_client=mock.Mock(),
         player_service=player_service,
         games=game_service
     )
-    
+
     conn._transport = transport
     conn.finished_sim = False
 
