@@ -17,7 +17,7 @@ import server.db as db
 
 from . import config
 from .abc.base_game import GameConnectionState
-from .config import FAF_POLICY_SERVER_BASE_URL
+from .config import FAF_POLICY_SERVER_BASE_URL, TWILIO_TTL
 from .decorators import timed, with_logger
 from .game_service import GameService
 from .gameconnection import GameConnection
@@ -902,18 +902,23 @@ class LobbyConnection():
 
     @asyncio.coroutine
     async def command_ice_servers(self, message):
-        if self.player:
+        if not self.player:
+            return
 
-            ttl = 24 * 3600
-            ice_servers = self.coturn_generator.fetch_token(self.player.id, ttl)
-            if self.nts_client:
-                twilio_token = await self.nts_client.fetch_token()
-                ice_servers = ice_servers + twilio_token['ice_servers']
+        ice_servers = self.coturn_generator.server_tokens(
+            username=self.player.id,
+            ttl=TWILIO_TTL
+        )
 
-            out = dict(command='ice_servers',
-                       ice_servers=ice_servers,
-                       ttl=ttl)
-            self.sendJSON(out)
+        if self.nts_client:
+            ice_servers = ice_servers + await self.nts_client.server_tokens()
+
+        out = {
+            'command': 'ice_servers',
+            'ice_servers': ice_servers,
+            'ttl': TWILIO_TTL
+        }
+        self.sendJSON(out)
 
     def send_warning(self, message: str, fatal: bool=False):
         """

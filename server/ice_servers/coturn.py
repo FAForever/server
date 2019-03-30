@@ -6,24 +6,22 @@ Creates ice_server record with temporary credentials computed from coturn static
 http://stackoverflow.com/a/35767224
 """
 
-import time
-import hmac
 import base64
+import hmac
+import time
 from hashlib import sha1
+from typing import Dict, List
+
 from server.config import COTURN_HOSTS, COTURN_KEYS, TWILIO_TTL
 
+
 class CoturnHMAC:
-    def __init__(self, coturn_hosts=None, coturn_keys=None):
-        self.coturn_hosts = coturn_hosts or COTURN_HOSTS
-        self.coturn_keys = coturn_keys or COTURN_KEYS
+    def __init__(self, coturn_hosts=COTURN_HOSTS, coturn_keys=COTURN_KEYS):
+        self.coturn_hosts = coturn_hosts
+        self.coturn_keys = coturn_keys
 
-    def fetch_token(self, username='faf-user', ttl=TWILIO_TTL):
+    def server_tokens(self, username='faf-user', ttl=TWILIO_TTL) -> List[Dict]:
         servers = []
-
-        if ttl is not None:
-            ttl = int(ttl)
-        else:
-            ttl = 3600*24
 
         # See https://github.com/coturn/coturn/wiki/turnserver#turn-rest-api
         # create hmac of coturn_key + timestamp:username

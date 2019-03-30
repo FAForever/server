@@ -57,7 +57,7 @@ NEWBIE_MIN_GAMES = int(os.getenv('NEWBIE_MIN_GAMES', 10))
 
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
 TWILIO_TOKEN = os.getenv("TWILIO_TOKEN", "")
-TWILIO_TTL = os.getenv("TWILIO_TTL", 86400)
+TWILIO_TTL = os.getenv("TWILIO_TTL", 3600*24)
 
 COTURN_HOSTS = os.getenv('COTURN_HOSTS', "geosearchef.de").split(',')
 COTURN_KEYS = os.getenv('COTURN_KEYS', "wop0CC7EUxrrcavH7aKCvaUjmpT3ZwW7N5ozYI7Jps").split(',')
@@ -72,4 +72,3 @@ GEO_IP_DATABASE_MAX_AGE_DAYS = int(os.getenv('GEO_IP_DATABASE_MAX_AGE_DAYS', 22)
 CONTROL_SERVER_PORT = int(os.getenv('CONTROL_SERVER_PORT', 4000))
 
 LADDER_ANTI_REPETITION_LIMIT = int(os.getenv('LADDER_ANTI_REPETITION_LIMIT', 3))
-
