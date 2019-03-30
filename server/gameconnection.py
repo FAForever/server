@@ -57,17 +57,11 @@ class GameConnection(GpgNetServerProtocol):
         self.finished_sim = False
 
     @property
-    def state(self):
-        """
-        :rtype: GameConnectionState
-        """
+    def state(self) -> GameConnectionState:
         return self._state
 
     @property
     def game(self) -> Game:
-        """
-        :rtype: Game
-        """
         return self._game
 
     @game.setter
@@ -75,10 +69,7 @@ class GameConnection(GpgNetServerProtocol):
         self._game = val
 
     @property
-    def player(self):
-        """
-        :rtype: Player
-        """
+    def player(self) -> Player:
         return self._player
 
     @player.setter
@@ -301,7 +292,6 @@ class GameConnection(GpgNetServerProtocol):
         if not int(army) == 1:
             return
 
-
         if self.game.validity != ValidityState.COOP_NOT_RANKED:
             return
 
@@ -350,17 +340,22 @@ class GameConnection(GpgNetServerProtocol):
         receiver_id = int(receiver_id)
         peer = self.player_service.get_player(receiver_id)
         if not peer:
-            self._logger.info("Ignoring ICE message for unknown player: {}".format(receiver_id))
+            self._logger.info(
+                "Ignoring ICE message for unknown player: %s", receiver_id
+            )
             return
 
         game_connection = peer.game_connection
         if not game_connection:
-            self._logger.info("Ignoring ICE message for player without game connection: {}".format(receiver_id))
+            self._logger.info(
+                "Ignoring ICE message for player without game connection: %s", receiver_id
+            )
             return
 
-        game_connection.send_message(dict(command="IceMsg", args=[int(self.player.id), ice_msg]))
-
-
+        game_connection.send_message({
+            "command": "IceMsg",
+            "args": [int(self.player.id), ice_msg]
+        })
 
     async def handle_game_state(self, state):
         """
@@ -472,7 +467,7 @@ class GameConnection(GpgNetServerProtocol):
 
             try:
                 peer.send_DisconnectFromPeer(self.player.id)
-            except Exception as ex:  # pragma no cover
+            except Exception:  # pragma no cover
                 self._logger.exception(
                     "peer_sendDisconnectFromPeer failed for player %i",
                     self.player.id)
