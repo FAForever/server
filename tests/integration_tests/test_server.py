@@ -8,6 +8,7 @@ slow = pytest.mark.slow
 
 TEST_ADDRESS = ('127.0.0.1', None)
 
+
 @slow
 async def test_server_invalid_login(loop, lobby_server):
     proto = await connect_client(lobby_server)
@@ -76,9 +77,6 @@ async def test_public_host(loop, lobby_server, player_service):
     await read_until(proto, lambda msg: msg['command'] == 'game_info')
 
     with ClientTest(loop=loop, process_nat_packets=True, proto=proto) as client:
-        await client.listen_udp()
-        await client.perform_connectivity_test()
-
         proto.send_message({
             'command': 'game_host',
             'mod': 'faf',
@@ -101,9 +99,6 @@ async def test_host_missing_fields(loop, lobby_server, player_service):
     await read_until(proto, lambda msg: msg['command'] == 'game_info')
 
     with ClientTest(loop=loop, process_nat_packets=True, proto=proto) as client:
-        await client.listen_udp()
-        await client.perform_connectivity_test()
-
         proto.send_message({
             'command': 'game_host',
             'mod': 'faf',

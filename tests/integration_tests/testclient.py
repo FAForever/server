@@ -70,17 +70,6 @@ class ClientTest(GpgNetClientProtocol):
                 local_addr=('0.0.0.0', port)
             )
 
-    async def perform_connectivity_test(self, port=6112):
-        self.send_connectivity_message('InitiateTest', [port])
-        await self._proto.drain()
-
-        msg = await self._proto.read_message()
-        assert msg == {
-            'command': 'ConnectivityState',
-            'target': 'connectivity',
-            'args': ['PUBLIC', f'127.0.0.1:{port}']
-        }
-
     @asyncio.coroutine
     def connect(self, host, port):
         self._logger.debug("Connecting to %s:%s/tcp" % (host, port))
