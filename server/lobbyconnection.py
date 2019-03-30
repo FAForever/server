@@ -905,18 +905,19 @@ class LobbyConnection():
         if not self.player:
             return
 
+        ttl = TWILIO_TTL
         ice_servers = self.coturn_generator.server_tokens(
             username=self.player.id,
-            ttl=TWILIO_TTL
+            ttl=ttl
         )
 
         if self.nts_client:
-            ice_servers = ice_servers + await self.nts_client.server_tokens()
+            ice_servers = ice_servers + await self.nts_client.server_tokens(ttl=ttl)
 
         out = {
             'command': 'ice_servers',
             'ice_servers': ice_servers,
-            'ttl': TWILIO_TTL
+            'ttl': ttl
         }
         self.sendJSON(out)
 
