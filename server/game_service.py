@@ -139,13 +139,15 @@ class GameService:
 
         return self.game_id_counter
 
-    def create_game(self,
-                    visibility=VisibilityState.PUBLIC,
-                    game_mode: Optional[str]=None,
-                    host: Optional[Player]=None,
-                    name: Optional[str]=None,
-                    mapname: Optional[str]=None,
-                    password: Optional[str]=None):
+    def create_game(
+        self,
+        game_mode: str,
+        visibility=VisibilityState.PUBLIC,
+        host: Optional[Player]=None,
+        name: Optional[str]=None,
+        mapname: Optional[str]=None,
+        password: Optional[str]=None
+    ):
         """
         Main entrypoint for creating new games
         """
