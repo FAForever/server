@@ -8,7 +8,6 @@ from . import db
 from .config import LADDER_ANTI_REPETITION_LIMIT
 from .db.models import game_featuredMods, game_player_stats, game_stats
 from .decorators import with_logger
-from .games import GameMode
 from .players import Player, PlayerState
 
 MapDescription = NamedTuple('Map', [("id", int), ("name", str), ("path", str)])
@@ -43,7 +42,7 @@ class LadderService:
         (map_id, map_name, map_path) = await self.choose_map([host, guest])
 
         game = self.game_service.create_game(
-            game_mode=GameMode.LADDER,
+            game_mode='ladder1v1',
             host=host,
             name=f"{host.login} Vs {guest.login}"
         )

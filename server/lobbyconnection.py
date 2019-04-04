@@ -20,7 +20,7 @@ from .connectivity import Connectivity, ConnectivityState
 from .decorators import timed, with_logger
 from .game_service import GameService
 from .gameconnection import GameConnection
-from .games import GameMode, GameState, VisibilityState
+from .games import GameState, VisibilityState
 from .geoip_service import GeoIpService
 from .matchmaker import MatchmakerQueue, Search
 from .player_service import PlayerService
@@ -774,17 +774,17 @@ class LobbyConnection():
             return
 
         port = message.get('gameport')
-        mod = message.get('mod')
-        mapname = message.get('mapname')
+        mod = message.get('mod') or 'faf'
+        mapname = message.get('mapname') or 'scmp_007'
         password = message.get('password')
-        game_mode = GameMode.from_string(mod.lower())
+        game_mode = mod.lower()
 
         game = self.game_service.create_game(
             visibility=visibility,
             game_mode=game_mode,
             host=self.player,
             name=title,
-            mapname=mapname or 'scmp_007',
+            mapname=mapname,
             password=password
         )
         self.launch_game(game, port, is_host=True)
