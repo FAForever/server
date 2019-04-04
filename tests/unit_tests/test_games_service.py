@@ -1,6 +1,6 @@
 import pytest
 from server.game_service import GameService
-from server.games import CustomGame, Game, VisibilityState
+from server.games import CustomGame, Game, LadderGame, VisibilityState
 from server.players import PlayerState
 
 
@@ -39,6 +39,18 @@ def test_all_games(players, game_service):
     )
     assert game in game_service.pending_games
     assert isinstance(game, CustomGame)
+
+
+def test_create_game_ladder1v1(players, game_service):
+    game = game_service.create_game(
+        game_mode='ladder1v1',
+        host=players.hosting,
+        name='Test Ladder',
+    )
+    assert game is not None
+    assert game in game_service.dirty_games
+    assert isinstance(game, LadderGame)
+    assert game.game_mode == 'ladder1v1'
 
 
 def test_create_game_other_gamemode(players, game_service):
