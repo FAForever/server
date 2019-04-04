@@ -107,7 +107,7 @@ async def test_host_missing_fields(loop, lobby_server, player_service):
 
         proto.send_message({
             'command': 'game_host',
-            'mod': 'faf',
+            'mod': '',
             'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
             'title': ''
         })
@@ -118,3 +118,4 @@ async def test_host_missing_fields(loop, lobby_server, player_service):
         assert msg['title'] == 'test&#x27;s game'
         assert msg['mapname'] == 'scmp_007'
         assert msg['map_file_path'] == 'maps/scmp_007.zip'
+        assert msg['featured_mod'] == 'faf'

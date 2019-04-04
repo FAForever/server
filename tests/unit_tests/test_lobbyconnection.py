@@ -3,10 +3,10 @@ from unittest import mock
 from unittest.mock import Mock
 
 import pytest
-from server import GameState, ServerContext, VisibilityState
+from server import GameState, VisibilityState
 from server.connectivity import Connectivity
 from server.game_service import GameService
-from server.games import CustomGame, Game, GameMode
+from server.games import CustomGame, Game
 from server.geoip_service import GeoIpService
 from server.lobbyconnection import LobbyConnection
 from server.player_service import PlayerService
@@ -91,7 +91,7 @@ def test_command_game_host_creates_game(lobbyconnection,
     lobbyconnection.protocol = mock.Mock()
     lobbyconnection.command_game_host(test_game_info)
     expected_call = {
-        'game_mode': GameMode.FAF,
+        'game_mode': 'faf',
         'name': test_game_info['title'],
         'host': players.hosting,
         'visibility': VisibilityState.PUBLIC,
