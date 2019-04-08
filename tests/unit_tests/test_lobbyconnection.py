@@ -446,6 +446,9 @@ async def test_command_social_add_friend(lobbyconnection, mock_player, db_engine
     lobbyconnection.player.id = 1
     lobbyconnection._authenticated = True
 
+    friends = await get_friends(lobbyconnection.player.id, db_engine)
+    assert friends == []
+
     await lobbyconnection.on_message_received({
         'command': 'social_add',
         'friend': 2
