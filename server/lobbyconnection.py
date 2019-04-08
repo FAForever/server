@@ -236,9 +236,9 @@ class LobbyConnection():
 
     async def command_social_remove(self, message):
         if "friend" in message:
-            subject_id = message['friend']
+            subject_id = message["friend"]
         elif "foe" in message:
-            subject_id = message['foe']
+            subject_id = message["foe"]
         else:
             self.abort("No-op social_remove.")
             return
