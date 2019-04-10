@@ -13,10 +13,12 @@ import pymysql
 import semver
 import server
 import server.db as db
+from sqlalchemy import and_
 
 from . import config
 from .config import FAF_POLICY_SERVER_BASE_URL
 from .connectivity import Connectivity, ConnectivityState
+from .db.models import friends_and_foes
 from .decorators import timed, with_logger
 from .game_service import GameService
 from .gameconnection import GameConnection
@@ -234,33 +236,35 @@ class LobbyConnection():
 
     async def command_social_remove(self, message):
         if "friend" in message:
-            target_id = message['friend']
+            subject_id = message["friend"]
         elif "foe" in message:
-            target_id = message['foe']
+            subject_id = message["foe"]
         else:
             self.abort("No-op social_remove.")
             return
 
         async with db.engine.acquire() as conn:
-            await conn.execute(
-                "DELETE FROM friends_and_foes WHERE user_id = %s AND subject_id = %s",
-                (self.player.id, target_id))
+            await conn.execute(friends_and_foes.delete().where(and_(
+                friends_and_foes.c.user_id == self.player.id,
+                friends_and_foes.c.subject_id == subject_id
+            )))
 
-    @timed()
     async def command_social_add(self, message):
         if "friend" in message:
             status = "FRIEND"
-            target_id = message['friend']
+            subject_id = message["friend"]
         elif "foe" in message:
             status = "FOE"
-            target_id = message['foe']
+            subject_id = message["foe"]
         else:
             return
 
         async with db.engine.acquire() as conn:
-            await conn.execute(
-                "INSERT INTO friends_and_foes(user_id, subject_id, `status`) VALUES(%s, %s, %s)",
-                (self.player.id, target_id, status))
+            await conn.execute(friends_and_foes.insert().values(
+                user_id=self.player.id,
+                status=status,
+                subject_id=subject_id,
+            ))
 
     def kick(self, message=None):
         self.sendJSON(dict(command="notice", style="kick"))
