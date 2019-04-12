@@ -398,10 +398,11 @@ class GameConnection(GpgNetServerProtocol):
 
     async def handle_game_ended(self, *args):
         """
-        Signals that the simulation has ended. This is currently unused but
-        included for documentation purposes.
+        Signals that the simulation has ended. This may be implemented wrongly, added during ICE impl
         """
-        pass
+        await self.on_connection_lost()
+        self._mark_dirty()
+
 
     async def handle_rehost(self, *args):
         """
