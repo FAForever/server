@@ -179,7 +179,7 @@ class GameConnection(GpgNetServerProtocol):
         :return: None
         """
 
-        self._logger.error('Handling GPGNET: ' + command)
+        #self._logger.error('Handling GPGNET: ' + command)
 
         try:
             await COMMAND_HANDLERS[command](self, *args)

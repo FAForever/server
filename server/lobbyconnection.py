@@ -118,6 +118,9 @@ class LobbyConnection():
         """
         Dispatches incoming messages
         """
+
+        #self._logger.error('Message received: ' + message['command'])
+
         try:
             cmd = message['command']
             if not self.ensure_authenticated(cmd):
@@ -634,6 +637,8 @@ class LobbyConnection():
 
         json_to_send = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
         self.sendJSON(json_to_send)
+
+        self.sendJSON(dict(command="notice", style="info", text="Due to a bug, after finishing a game, please wait 120 seconds before joining the next one."))
 
         self.send_mod_list()
         self.send_game_list()
