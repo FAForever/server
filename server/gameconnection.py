@@ -179,6 +179,8 @@ class GameConnection(GpgNetServerProtocol):
         :return: None
         """
 
+        self._logger.error('Handling GPGNET: ' + command)
+
         try:
             await COMMAND_HANDLERS[command](self, *args)
         except KeyError:
@@ -363,6 +365,8 @@ class GameConnection(GpgNetServerProtocol):
         :param state: new state
         :return: None
         """
+        self._logger.error('Received game state: ' + state)
+
         if state == 'Idle':
             await self._handle_idle_state()
 
@@ -400,6 +404,8 @@ class GameConnection(GpgNetServerProtocol):
         """
         Signals that the simulation has ended. This may be implemented wrongly, added during ICE impl
         """
+        self._logger.error('Received game ended')
+
         await self.on_connection_lost()
         self._mark_dirty()
 
