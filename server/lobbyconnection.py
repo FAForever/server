@@ -80,6 +80,8 @@ class LobbyConnection():
         self.search = None
         self.user_agent = None
 
+        self._attempted_connectivity_test = False
+
         self._logger.debug("LobbyConnection initialized")
 
     @property
@@ -130,6 +132,11 @@ class LobbyConnection():
                 if not self.game_connection:
                     return
                 await self.game_connection.handle_action(cmd, message.get('args', []))
+                return
+
+            if target == 'connectivity' and message.get('command') == 'InitiateTest':
+                self._attempted_connectivity_test = True
+                raise ClientError("Your client version is no longer supported. Please update to the newest version.")
                 return
 
             handler = getattr(self, 'command_{}'.format(cmd))
@@ -638,8 +645,6 @@ class LobbyConnection():
         json_to_send = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
         self.sendJSON(json_to_send)
 
-        self.sendJSON(dict(command="notice", style="info", text="Due to a bug, after finishing a game, please wait 120 seconds before joining the next one."))
-
         self.send_mod_list()
         self.send_game_list()
         await self.send_tutorial_section()
@@ -719,6 +724,9 @@ class LobbyConnection():
         """
         assert isinstance(self.player, Player)
 
+        if self._attempted_connectivity_test:
+            raise ClientError("Cannot join game. Please update your client to the newest version.")
+
         uuid = int(message['uid'])
         password = message.get('password', None)
 
@@ -742,6 +750,9 @@ class LobbyConnection():
     async def command_game_matchmaking(self, message):
         mod = message.get('mod', 'ladder1v1')
         state = message['state']
+
+        if self._attempted_connectivity_test:
+            raise ClientError("Cannot host game. Please update your client to the newest version.")
 
         if state == "stop":
             if self.search:
@@ -777,6 +788,9 @@ class LobbyConnection():
     @timed()
     def command_game_host(self, message):
         assert isinstance(self.player, Player)
+
+        if self._attempted_connectivity_test:
+            raise ClientError("Cannot join game. Please update your client to the newest version.")
 
         visibility = VisibilityState.from_string(message.get('visibility'))
         if not isinstance(visibility, VisibilityState):
