@@ -121,8 +121,6 @@ class LobbyConnection():
         Dispatches incoming messages
         """
 
-        #self._logger.error('Message received: ' + message['command'])
-
         try:
             cmd = message['command']
             if not self.ensure_authenticated(cmd):
@@ -136,7 +134,7 @@ class LobbyConnection():
 
             if target == 'connectivity' and message.get('command') == 'InitiateTest':
                 self._attempted_connectivity_test = True
-                raise ClientError("Your client version is no longer supported. Please update to the newest version.")
+                raise ClientError("Your client version is no longer supported. Please update to the newest version: https://faforever.com")
                 return
 
             handler = getattr(self, 'command_{}'.format(cmd))
