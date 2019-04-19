@@ -2,15 +2,10 @@ import asyncio
 from unittest import mock
 
 from server import GameConnection
-from server.connectivity import ConnectivityResult, ConnectivityState
 from server.games import Game
 from server.games.game import ValidityState, Victory
 from server.players import PlayerState
 from tests import CoroMock
-
-LOCAL_PUBLIC = ConnectivityResult(addr='127.0.0.1:6112', state=ConnectivityState.PUBLIC)
-LOCAL_STUN = ConnectivityResult(addr='127.0.0.1:6112', state=ConnectivityState.STUN)
-LOCAL_PROXY = ConnectivityResult(addr=None, state=ConnectivityState.BLOCKED)
 
 
 def assert_message_sent(game_connection: GameConnection, command, args):

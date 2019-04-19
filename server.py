@@ -16,13 +16,13 @@ import socket
 import server
 import server.config as config
 from server.api.api_accessor import ApiAccessor
-from server.config import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME
+from server.config import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME, TWILIO_ACCOUNT_SID
 from server.game_service import GameService
 from server.geoip_service import GeoIpService
 from server.matchmaker import MatchmakerQueue
-from server.natpacketserver import NatPacketServer
 from server.player_service import PlayerService
 from server.stats.game_stats_service import GameStatsService, EventService, AchievementService
+from server.ice_servers.nts import TwilioNTS
 
 if __name__ == '__main__':
     logger = logging.getLogger()
@@ -66,6 +66,13 @@ if __name__ == '__main__':
 
         players_online = PlayerService()
 
+        twilio_nts = None
+        if TWILIO_ACCOUNT_SID:
+            twilio_nts = TwilioNTS()
+        else:
+            logger.warning(
+                "Twilio is not set up. You must set TWILIO_ACCOUNT_SID and TWILIO_TOKEN to use the Twilio ICE servers.")
+
         api_accessor = None
         if config.USE_API:
             api_accessor = ApiAccessor()
@@ -73,10 +80,6 @@ if __name__ == '__main__':
         event_service = EventService(api_accessor)
         achievement_service = AchievementService(api_accessor)
         game_stats_service = GameStatsService(event_service, achievement_service)
-
-        natpacket_server = NatPacketServer(addresses=config.LOBBY_NAT_ADDRESSES, loop=loop)
-        loop.run_until_complete(natpacket_server.listen())
-        server.NatPacketServer.instance = natpacket_server
 
         games = GameService(players_online, game_stats_service)
 
@@ -87,6 +90,7 @@ if __name__ == '__main__':
             geoip_service=GeoIpService(),
             player_service=players_online,
             games=games,
+            nts_client=twilio_nts,
             matchmaker_queue=MatchmakerQueue('ladder1v1', game_service=games),
             loop=loop
         )

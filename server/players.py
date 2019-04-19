@@ -1,12 +1,12 @@
 import weakref
 
-from enum import IntEnum, unique
+from enum import unique, Enum
 
 from .abc.base_player import BasePlayer
 
 
 @unique
-class PlayerState(IntEnum):
+class PlayerState(Enum):
     IDLE = 1,
     PLAYING = 2,
     HOSTING = 3,
@@ -21,14 +21,24 @@ class Player(BasePlayer):
     In the context of a game, the Game object holds game-specific
     information about players.
     """
-    def __init__(self, login=None, session=0, ip=None, port=None, id=0,
-                 global_rating=None, ladder_rating=None, clan=None, numGames=0, permissionGroup=0, lobby_connection=None):
+    def __init__(
+        self,
+        login: str = None,
+        session: int = 0,
+        ip=None,
+        id: int = 0,
+        global_rating=None,
+        ladder_rating=None,
+        clan=None,
+        numGames: int = 0,
+        permissionGroup: int = 0,
+        lobby_connection: "LobbyConnection" = None
+    ):
         super().__init__(id, login)
 
         # The id of the user in the `login` table of the database.
         self.session = session
         self.ip = ip
-        self._game_port = port
 
         if global_rating is None:
             global_rating = (1500, 500)
@@ -109,18 +119,6 @@ class Player(BasePlayer):
     @property
     def in_game(self):
         return self.game is not None
-
-    @property
-    def game_port(self):
-        return self._game_port or 6112
-
-    @game_port.setter
-    def game_port(self, value):
-        self._game_port = value
-
-    @property
-    def address_and_port(self):
-        return "{}:{}".format(self.ip, self.game_port)
 
     def to_dict(self):
         """

@@ -1,12 +1,10 @@
 import asyncio
 import time
 from collections import defaultdict
-
 import server.db as db
 from sqlalchemy import text
 
 from .abc.base_game import GameConnectionState
-from .connectivity import Connectivity, ConnectivityState
 from .decorators import timed, with_logger
 from .game_service import GameService
 from .games.game import Game, GameState, ValidityState, Victory
@@ -30,9 +28,9 @@ class GameConnection(GpgNetServerProtocol):
         game: Game,
         player: Player,
         protocol: QDataStreamProtocol,
-        connectivity: Connectivity,
         player_service: PlayerService,
-        games: GameService
+        games: GameService,
+        state: GameConnectionState = GameConnectionState.INITIALIZING
     ):
         """
         Construct a new GameConnection
@@ -41,7 +39,7 @@ class GameConnection(GpgNetServerProtocol):
         self._logger.debug('GameConnection initializing')
 
         self.protocol = protocol
-        self._state = GameConnectionState.INITIALIZING
+        self._state = state
         self._waiters = defaultdict(list)
         self.player_service = player_service
         self.game_service = games
@@ -56,22 +54,14 @@ class GameConnection(GpgNetServerProtocol):
 
         self._transport = None
 
-        self.connectivity = connectivity
-
         self.finished_sim = False
 
     @property
-    def state(self):
-        """
-        :rtype: GameConnectionState
-        """
+    def state(self) -> GameConnectionState:
         return self._state
 
     @property
     def game(self) -> Game:
-        """
-        :rtype: Game
-        """
         return self._game
 
     @game.setter
@@ -79,10 +69,7 @@ class GameConnection(GpgNetServerProtocol):
         self._game = val
 
     @property
-    def player(self):
-        """
-        :rtype: Player
-        """
+    def player(self) -> Player:
         return self._player
 
     @player.setter
@@ -165,91 +152,24 @@ class GameConnection(GpgNetServerProtocol):
         :return:
         """
         assert peer.player.state == PlayerState.HOSTING
-        result = await self.establish_connection(peer)
-        if not result:
-            self.abort("Failed connecting to host {}".format(peer))
-        own_addr, peer_addr = result
-        self.send_JoinGame(peer_addr,
-                           peer.player.login,
+        self.send_JoinGame(peer.player.login,
                            peer.player.id)
-        peer.send_ConnectToPeer(own_addr,
-                                self.player.login,
-                                self.player.id)
+
+        peer.send_ConnectToPeer(player_name=self.player.login,
+                                player_uid=self.player.id,
+                                offer=True)
 
     async def connect_to_peer(self, peer: "GameConnection"):
         """
         Connect two peers
         :return: None
         """
-        result = await self.establish_connection(peer)
-        if not result:
-            self.abort("Failed connecting to {}".format(peer))
-        own_addr, peer_addr = result
-        self.send_ConnectToPeer(peer_addr,
-                                peer.player.login,
-                                peer.player.id)
-        peer.send_ConnectToPeer(own_addr,
-                                self.player.login,
-                                self.player.id)
-
-    async def establish_connection(self, peer_connection: "GameConnection"):
-        """
-        Attempt to establish a full duplex UDP connection
-        between self and peer.
-
-        :param peer_connection: Client to connect to
-        :return: (own_addr, remote_addr)
-        """
-        own = self.connectivity.result  # type: ConnectivityResult
-        peer = peer_connection.connectivity.result  # type: ConnectivityResult
-        if peer.state == ConnectivityState.PUBLIC \
-                and own.state == ConnectivityState.PUBLIC:
-            self._logger.debug("Connecting %s to host %s directly", self, peer_connection)
-            return own.addr, peer.addr
-        elif peer.state == ConnectivityState.STUN or own.state == ConnectivityState.STUN:
-            self._logger.debug("Connecting %s to host %s using STUN", self, peer_connection)
-            (own_addr, peer_addr) = await self.STUN(peer_connection)
-            if peer_addr is None or own_addr is None:
-                self._logger.debug("STUN between %s %s failed", self, peer_connection)
-                self._logger.debug("Resolved addresses: %s, %s", peer_addr, own_addr)
-                if self.player.id < peer_connection.player.id and own.state == ConnectivityState.STUN:
-                    return await self.TURN(peer_connection)
-                elif peer.state == ConnectivityState.STUN:
-                    return tuple(reversed(await peer_connection.TURN(self)))
-            else:
-                return own_addr, peer_addr
-        self._logger.error("Connection blocked")
-
-    async def TURN(self, peer: 'GameConnection'):
-        addr = await self.connectivity.create_binding(peer.connectivity)
-        return self.connectivity.relay_address, addr
-
-    async def STUN(self, peer: 'GameConnection'):
-        """
-        Perform a STUN sequence between self and peer
-
-        :param peer:
-        :return: (own_addr, remote_addr) | None
-        """
-        own_addr = asyncio.ensure_future(self.connectivity.ProbePeerNAT(peer))
-        remote_addr = asyncio.ensure_future(peer.connectivity.ProbePeerNAT(self))
-        (done, pending) = await asyncio.wait([own_addr, remote_addr], return_when=asyncio.FIRST_COMPLETED)
-        if own_addr.done() and remote_addr.done() and not own_addr.cancelled() and not remote_addr.cancelled():
-            # Both peers got it the first time
-            return own_addr.result(), remote_addr.result()
-        if own_addr.done() and not own_addr.cancelled():
-            # Remote received our packet, we didn't receive theirs
-            # Instruct remote to try our new address
-            own_addr = own_addr.result()
-            remote_addr = await peer.connectivity.ProbePeerNAT(self, use_address=own_addr)
-        elif remote_addr.done() and not remote_addr.cancelled():
-            # Opposite of the above
-            remote_addr = remote_addr.result()
-            own_addr = await self.connectivity.ProbePeerNAT(peer, use_address=remote_addr)
-        for p in pending:
-            if not p.done():
-                p.cancel()
-        return own_addr, remote_addr
+        self.send_ConnectToPeer(player_name=peer.player.login,
+                                player_uid=peer.player.id,
+                                offer=True)
+        peer.send_ConnectToPeer(player_name=self.player.login,
+                                player_uid=self.player.id,
+                                offer=False)
 
     async def handle_action(self, command, args):
         """
@@ -416,12 +336,34 @@ class GameConnection(GpgNetServerProtocol):
                 (teamkiller_id, victim_id, self.game.id, gametime)
             )
 
+    async def handle_ice_message(self, receiver_id, ice_msg):
+        receiver_id = int(receiver_id)
+        peer = self.player_service.get_player(receiver_id)
+        if not peer:
+            self._logger.info(
+                "Ignoring ICE message for unknown player: %s", receiver_id
+            )
+            return
+
+        game_connection = peer.game_connection
+        if not game_connection:
+            self._logger.info(
+                "Ignoring ICE message for player without game connection: %s", receiver_id
+            )
+            return
+
+        game_connection.send_message({
+            "command": "IceMsg",
+            "args": [int(self.player.id), ice_msg]
+        })
+
     async def handle_game_state(self, state):
         """
         Changes in game state
         :param state: new state
         :return: None
         """
+
         if state == 'Idle':
             await self._handle_idle_state()
 
@@ -461,6 +403,7 @@ class GameConnection(GpgNetServerProtocol):
         included for documentation purposes.
         """
         pass
+
 
     async def handle_rehost(self, *args):
         """
@@ -526,7 +469,7 @@ class GameConnection(GpgNetServerProtocol):
 
             try:
                 peer.send_DisconnectFromPeer(self.player.id)
-            except Exception as ex:  # pragma no cover
+            except Exception:  # pragma no cover
                 self._logger.exception(
                     "peer_sendDisconnectFromPeer failed for player %i",
                     self.player.id)
@@ -538,9 +481,6 @@ class GameConnection(GpgNetServerProtocol):
             self._logger.exception(e)
         finally:
             self.abort()
-
-    def address_and_port(self):
-        return "{}:{}".format(self.player.ip, self.player.game_port)
 
     def __str__(self):
         return "GameConnection({}, {})".format(self.player, self.game)
@@ -563,5 +503,6 @@ COMMAND_HANDLERS = {
     "Rehost":               GameConnection.handle_rehost,
     "Bottleneck":           GameConnection.handle_bottleneck,
     "BottleneckCleared":    GameConnection.handle_bottleneck_cleared,
-    "Disconnected":         GameConnection.handle_disconnected
+    "Disconnected":         GameConnection.handle_disconnected,
+    "IceMsg":               GameConnection.handle_ice_message
 }

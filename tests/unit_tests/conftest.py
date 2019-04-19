@@ -1,7 +1,7 @@
 from unittest import mock
 import pytest
 
-from server import GameStatsService, LobbyConnection
+from server import GameStatsService
 from server.abc.base_game import BaseGame
 from server.games import Game
 from server.gameconnection import GameConnection, GameConnectionState
@@ -24,10 +24,10 @@ def game_connection(request, game, player_service, players, game_service, transp
         game=game,
         player=players.hosting,
         protocol=mock.Mock(),
-        connectivity=mock.Mock(),
         player_service=player_service,
         games=game_service
     )
+
     conn._transport = transport
     conn.finished_sim = False
 
@@ -65,12 +65,11 @@ def geoip_service():
 def connections(loop, player_service, game_service, transport, game):
     from server import GameConnection
 
-    def make_connection(player, connectivity):
+    def make_connection(player):
         conn = GameConnection(
             game=game,
             player=player,
             protocol=mock.Mock(),
-            connectivity=connectivity,
             player_service=player_service,
             games=game_service
         )
