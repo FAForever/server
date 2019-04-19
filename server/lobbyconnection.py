@@ -14,14 +14,16 @@ import pymysql
 import semver
 import server
 import server.db as db
+from sqlalchemy import and_
 
 from . import config
-from .abc.base_game import GameConnectionState
 from .config import FAF_POLICY_SERVER_BASE_URL, TWILIO_TTL
+from .db.models import friends_and_foes
+from .abc.base_game import GameConnectionState
 from .decorators import timed, with_logger
 from .game_service import GameService
 from .gameconnection import GameConnection
-from .games import GameMode, GameState, VisibilityState
+from .games import GameState, VisibilityState
 from .geoip_service import GeoIpService
 from .ice_servers.coturn import CoturnHMAC
 from .ice_servers.nts import TwilioNTS
@@ -248,33 +250,35 @@ class LobbyConnection():
 
     async def command_social_remove(self, message):
         if "friend" in message:
-            target_id = message['friend']
+            subject_id = message["friend"]
         elif "foe" in message:
-            target_id = message['foe']
+            subject_id = message["foe"]
         else:
             self.abort("No-op social_remove.")
             return
 
         async with db.engine.acquire() as conn:
-            await conn.execute(
-                "DELETE FROM friends_and_foes WHERE user_id = %s AND subject_id = %s",
-                (self.player.id, target_id))
+            await conn.execute(friends_and_foes.delete().where(and_(
+                friends_and_foes.c.user_id == self.player.id,
+                friends_and_foes.c.subject_id == subject_id
+            )))
 
-    @timed()
     async def command_social_add(self, message):
         if "friend" in message:
             status = "FRIEND"
-            target_id = message['friend']
+            subject_id = message["friend"]
         elif "foe" in message:
             status = "FOE"
-            target_id = message['foe']
+            subject_id = message["foe"]
         else:
             return
 
         async with db.engine.acquire() as conn:
-            await conn.execute(
-                "INSERT INTO friends_and_foes(user_id, subject_id, `status`) VALUES(%s, %s, %s)",
-                (self.player.id, target_id, status))
+            await conn.execute(friends_and_foes.insert().values(
+                user_id=self.player.id,
+                status=status,
+                subject_id=subject_id,
+            ))
 
     def kick(self, message=None):
         self.sendJSON(dict(command="notice", style="kick"))
@@ -804,25 +808,24 @@ class LobbyConnection():
             self.sendJSON(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
             return
 
-        mod = message.get('mod')
-        mapname = message.get('mapname')
+        mod = message.get('mod') or 'faf'
+        mapname = message.get('mapname') or 'scmp_007'
         password = message.get('password')
-
-        game_mode = GameMode.from_string(mod.lower())
+        game_mode = mod.lower()
 
         game = self.game_service.create_game(
             visibility=visibility,
             game_mode=game_mode,
             host=self.player,
             name=title,
-            mapname=mapname or 'scmp_007',
+            mapname=mapname,
             password=password
         )
         self.launch_game(game, is_host=True)
         server.stats.incr('game.hosted')
 
-    def launch_game(self, game, *, is_host=False, use_map=None):
-
+    def launch_game(self, game, port, is_host=False, use_map=None):
+        # TODO: Fix setting up a ridiculous amount of cyclic pointers here
         if self.game_connection:
             self.game_connection.abort("Player launched a new game")
 

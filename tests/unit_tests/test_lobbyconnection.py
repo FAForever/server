@@ -4,14 +4,16 @@ from unittest.mock import Mock
 
 import pytest
 from server import GameState, ServerContext, VisibilityState
+from server.db.models import friends_and_foes
 from server.game_service import GameService
-from server.games import CustomGame, Game, GameMode
+from server.games import CustomGame, Game
 from server.geoip_service import GeoIpService
 from server.lobbyconnection import LobbyConnection
 from server.player_service import PlayerService
 from server.players import Player, PlayerState
 from server.types import Address
 from server.protocol import QDataStreamProtocol
+from sqlalchemy import select, and_
 from tests import CoroMock
 from server.ice_servers.nts import TwilioNTS
 
@@ -97,7 +99,7 @@ def test_command_game_host_creates_game(lobbyconnection,
     lobbyconnection.protocol = mock.Mock()
     lobbyconnection.command_game_host(test_game_info)
     expected_call = {
-        'game_mode': GameMode.FAF,
+        'game_mode': 'faf',
         'name': test_game_info['title'],
         'host': players.hosting,
         'visibility': VisibilityState.PUBLIC,
@@ -415,8 +417,10 @@ async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection, moc
 async def test_command_avatar_select(mocker, db_engine, lobbyconnection: LobbyConnection, mock_player: Player):
     lobbyconnection.player = mock_player
     lobbyconnection.player.id = 2  # Dostya test user
+    lobbyconnection._authenticated = True
 
-    await lobbyconnection.command_avatar({
+    await lobbyconnection.on_message_received({
+        'command': 'avatar',
         'action': 'select',
         'avatar': "http://content.faforever.com/faf/avatars/qai2.png"
     })
@@ -425,6 +429,54 @@ async def test_command_avatar_select(mocker, db_engine, lobbyconnection: LobbyCo
         result = await conn.execute("SELECT selected from avatars where idUser=2")
         row = await result.fetchone()
         assert row[0] == 1
+
+
+async def get_friends(player_id, db_engine):
+    async with db_engine.acquire() as conn:
+        result = await conn.execute(
+            select([friends_and_foes.c.subject_id]).where(
+                and_(
+                    friends_and_foes.c.user_id == player_id,
+                    friends_and_foes.c.status == 'FRIEND'
+                )
+            )
+        )
+
+        return [row['subject_id'] async for row in result]
+
+
+async def test_command_social_add_friend(lobbyconnection, mock_player, db_engine):
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.id = 1
+    lobbyconnection._authenticated = True
+
+    friends = await get_friends(lobbyconnection.player.id, db_engine)
+    assert friends == []
+
+    await lobbyconnection.on_message_received({
+        'command': 'social_add',
+        'friend': 2
+    })
+
+    friends = await get_friends(lobbyconnection.player.id, db_engine)
+    assert friends == [2]
+
+
+async def test_command_social_remove_friend(lobbyconnection, mock_player, db_engine):
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.id = 2
+    lobbyconnection._authenticated = True
+
+    friends = await get_friends(lobbyconnection.player.id, db_engine)
+    assert friends == [1]
+
+    await lobbyconnection.on_message_received({
+        'command': 'social_remove',
+        'friend': 1
+    })
+
+    friends = await get_friends(lobbyconnection.player.id, db_engine)
+    assert friends == []
 
 
 async def test_broadcast(lobbyconnection: LobbyConnection, mocker):
