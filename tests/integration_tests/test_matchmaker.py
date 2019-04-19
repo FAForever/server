@@ -1,5 +1,3 @@
-import pytest
-
 from .conftest import connect_and_sign_in, read_until
 from .testclient import ClientTest
 
@@ -19,13 +17,6 @@ async def test_game_matchmaking(loop, lobby_server):
 
     with ClientTest(loop=loop, process_nat_packets=True, proto=proto1) as client1:
         with ClientTest(loop=loop, process_nat_packets=True, proto=proto2) as client2:
-            port1, port2 = 6112, 6113
-            await client1.listen_udp(port=port1)
-            await client1.perform_connectivity_test(port=port1)
-
-            await client2.listen_udp(port=port2)
-            await client2.perform_connectivity_test(port=port2)
-
             proto1.send_message({
                 'command': 'game_matchmaking',
                 'state': 'start',
@@ -58,10 +49,6 @@ async def test_game_matchmaking_ban(loop, lobby_server, db_engine):
     await read_until(proto, lambda msg: msg['command'] == 'game_info')
 
     with ClientTest(loop=loop, process_nat_packets=True, proto=proto) as client1:
-        port = 6112
-        await client1.listen_udp(port=port)
-        await client1.perform_connectivity_test(port=port)
-
         proto.send_message({
             'command': 'game_matchmaking',
             'state': 'start',

@@ -9,6 +9,7 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
     """
     Defines an interface for the server side GPGNet protocol
     """
+    # TODO: Do we need to remove port parameters here?
     def send_CreateLobby(self, init_mode: InitMode, port: int, login: str, uid: int, natTraversalProvider: int):
         """
         Tells the client to create a new LobbyComm instance and have it listen on the given port number
@@ -20,23 +21,21 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
         """
         self.send_gpgnet_message('CreateLobby', [int(init_mode.value), port, login, uid, natTraversalProvider])
 
-    def send_ConnectToPeer(self, address_and_port: str, player_name: str, player_uid: int):
+    def send_ConnectToPeer(self, player_name: str, player_uid: int, offer: bool):
         """
         Tells a client that has a listening LobbyComm instance to connect to the given peer
-        :param address_and_port: String of the form "adress:port"
         :param player_name: Remote player name
         :param player_uid: Remote player identifier
         """
-        self.send_gpgnet_message('ConnectToPeer', [address_and_port, player_name, player_uid])
+        self.send_gpgnet_message('ConnectToPeer', [player_name, player_uid, offer])
 
-    def send_JoinGame(self, address_and_port: str, remote_player_name: str, remote_player_uid: int):
+    def send_JoinGame(self, remote_player_name: str, remote_player_uid: int):
         """
-        Tells the game to join the given peer by address_and_port
-        :param address_and_port:
+        Tells the game to join the given peer by ID
         :param remote_player_name:
         :param remote_player_uid:
         """
-        self.send_gpgnet_message('JoinGame', [address_and_port, remote_player_name, remote_player_uid])
+        self.send_gpgnet_message('JoinGame', [remote_player_name, remote_player_uid])
 
     def send_HostGame(self, map):
         """
@@ -44,16 +43,6 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
         :param map: Which scenario to use
         """
         self.send_gpgnet_message('HostGame', [str(map)])
-
-    def send_SendNatPacket(self, address_and_port: str, message: str):
-        """
-        Instructs the game to send a nat-traversal UDP packet to the given remote address and port.
-
-        The game will send the message verbatim as UDP-datagram prefixed with a \0x08 byte.
-        :param address_and_port:
-        :param message:
-        """
-        self.send_gpgnet_message('SendNatPacket', [address_and_port, message])
 
     def send_DisconnectFromPeer(self, id: int):
         """
@@ -63,7 +52,6 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
         :return:
         """
         self.send_gpgnet_message('DisconnectFromPeer', [id])
-
 
     def send_Ping(self):
         """
@@ -87,14 +75,6 @@ class GpgNetClientProtocol(metaclass=ABCMeta):
         Sent by the client when the state of LobbyComm changes
         """
         self.send_gpgnet_message('GameState', arguments)
-
-    def send_ProcessNatPacket(self, arguments: List[Union[int, str, bool]]) -> None:
-        """
-        Sent by the client when it received a nat packet
-        :param arguments:
-        :return:
-        """
-        self.send_gpgnet_message('ProcessNatPacket', arguments)
 
     @abstractmethod
     def send_gpgnet_message(self, command_id, arguments: List[Union[int, str, bool]]) -> None:

@@ -92,6 +92,10 @@ Can be combined !, e.g. `{command: social, teaminvite: <...>, friends: <..>}`
 * `{command: avatar, action: list_avatar}`: Send a list of available avatars
 * `{command: avatar, action: select, avatar: <avatar_url>}`: Select a valid avatar for the player
 
+##### ICE Servers
+
+* `{command: ice_servers}`: Send ICE TURN/STUN servers - Returns: `{command: ice_servers, : <ice servers>, date_created: <date token was created in ISO 8601 format>, ttl: <ttl in seconds>}`
+
 ##### Misc
 
 * [deprecated] `{command: ask_session}`: response with an welcome command and an valid session (can be delayed)

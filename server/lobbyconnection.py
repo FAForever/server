@@ -6,6 +6,7 @@ import json
 import random
 import urllib.parse
 import urllib.request
+from typing import Optional
 
 import requests
 
@@ -16,14 +17,16 @@ import server.db as db
 from sqlalchemy import and_
 
 from . import config
-from .config import FAF_POLICY_SERVER_BASE_URL
-from .connectivity import Connectivity, ConnectivityState
+from .config import FAF_POLICY_SERVER_BASE_URL, TWILIO_TTL
 from .db.models import friends_and_foes
+from .abc.base_game import GameConnectionState
 from .decorators import timed, with_logger
 from .game_service import GameService
 from .gameconnection import GameConnection
 from .games import GameState, VisibilityState
 from .geoip_service import GeoIpService
+from .ice_servers.coturn import CoturnHMAC
+from .ice_servers.nts import TwilioNTS
 from .matchmaker import MatchmakerQueue, Search
 from .player_service import PlayerService
 from .players import Player, PlayerState
@@ -57,26 +60,31 @@ class LobbyConnection():
         self,
         games: GameService,
         players: PlayerService,
+        nts_client: Optional[TwilioNTS],
         geoip: GeoIpService,
         matchmaker_queue: MatchmakerQueue
     ):
         self.geoip_service = geoip
         self.game_service = games
         self.player_service = players
+        self.nts_client = nts_client
+        self.coturn_generator = CoturnHMAC()
         self.matchmaker_queue = matchmaker_queue
         self.ladderPotentialPlayers = []
         self.warned = False
         self._authenticated = False
         self.player = None  # type: Player
         self.game_connection = None  # type: GameConnection
-        self.connectivity = None  # type: Connectivity
         self.leagueAvatar = None
         self.peer_address = None  # type: Optional[Address]
         self.session = int(random.randrange(0, 4294967295))
         self.protocol = None
-        self._logger.debug("LobbyConnection initialized")
         self.search = None
         self.user_agent = None
+
+        self._attempted_connectivity_test = False
+
+        self._logger.debug("LobbyConnection initialized")
 
     @property
     def authenticated(self):
@@ -99,9 +107,13 @@ class LobbyConnection():
         self._authenticated = False
         self.protocol.writer.close()
 
+        if self.player:
+            self.player_service.remove_player(self.player)
+            self.player = None
+
     def ensure_authenticated(self, cmd):
         if not self._authenticated:
-            if cmd not in ['hello', 'ask_session', 'create_account', 'ping', 'pong']:
+            if cmd not in ['hello', 'ask_session', 'create_account', 'ping', 'pong', 'Bottleneck']:  # Bottleneck is sent by the game during reconnect
                 self.abort("Message invalid for unauthenticated connection: %s" % cmd)
                 return False
         return True
@@ -110,6 +122,7 @@ class LobbyConnection():
         """
         Dispatches incoming messages
         """
+
         try:
             cmd = message['command']
             if not self.ensure_authenticated(cmd):
@@ -120,11 +133,12 @@ class LobbyConnection():
                     return
                 await self.game_connection.handle_action(cmd, message.get('args', []))
                 return
-            elif target == 'connectivity':
-                if not self.connectivity:
-                    return
-                await self.connectivity.on_message_received(message)
+
+            if target == 'connectivity' and message.get('command') == 'InitiateTest':
+                self._attempted_connectivity_test = True
+                raise ClientError("Your client version is no longer supported. Please update to the newest version: https://faforever.com")
                 return
+
             handler = getattr(self, 'command_{}'.format(cmd))
             if asyncio.iscoroutinefunction(handler):
                 await handler(message)
@@ -543,18 +557,23 @@ class LobbyConnection():
                 self._logger.error("Failure updating NickServ password for %s", login)
 
         permission_group = self.player_service.get_permission_group(player_id)
-        self.player = Player(login=str(login),
-                             session=self.session,
-                             ip=self.peer_address.host,
-                             port=None,
-                             id=player_id,
-                             permissionGroup=permission_group,
-                             lobby_connection=self)
-        self.connectivity = Connectivity(self, self.peer_address.host, self.player)
+        self.player = Player(
+            login=str(login),
+            session=self.session,
+            ip=self.peer_address.host,
+            id=player_id,
+            permissionGroup=permission_group,
+            lobby_connection=self
+        )
 
-        if self.player.id in self.player_service and self.player_service[self.player.id].lobby_connection:
-            old_conn = self.player_service[self.player.id].lobby_connection
-            old_conn.send_warning("You have been signed out because you signed in elsewhere.", fatal=True)
+        old_player = self.player_service.get_player(self.player.id)
+        if old_player:
+            self._logger.debug("player {} already signed in: {}".format(self.player.id, old_player))
+            if old_player.lobby_connection:
+                old_player.lobby_connection.send_warning("You have been signed out because you signed in elsewhere.", fatal=True)
+                old_player.lobby_connection.game_connection = None
+                old_player.lobby_connection.player = None
+                self._logger.debug("Removing previous game_connection and player reference of player {} in hope on_connection_lost() wouldn't drop her out of the game".format(self.player.id))
 
         await self.player_service.fetch_player_data(self.player)
 
@@ -632,6 +651,34 @@ class LobbyConnection():
         self.send_game_list()
         await self.send_tutorial_section()
 
+    def command_restore_game_session(self, message):
+        game_id = int(message.get('game_id'))
+
+        # Restore the player's game connection, if the game still exists and is live
+        if not game_id or game_id not in self.game_service:
+            self.send_warning("The game you were connected to does no longer exist")
+            return
+
+        game = self.game_service[game_id]  # type: Game
+        if game.state != GameState.LOBBY and game.state != GameState.LIVE:
+            self.send_warning("The game you were connected to is no longer available")
+            return
+
+        self._logger.debug("Restoring game session of player %s to game %s", self.player, game)
+        self.game_connection = GameConnection(
+            game=game,
+            player=self.player,
+            protocol=self.protocol,
+            player_service=self.player_service,
+            games=self.game_service,
+            state=GameConnectionState.CONNECTED_TO_HOST
+        )
+
+        game.add_game_connection(self.game_connection)
+        self.player.state = PlayerState.PLAYING
+        if not hasattr(self.player, "game"):
+            self.player.game = game
+
     @timed
     def command_ask_session(self, message):
         if self.check_version(message):
@@ -672,27 +719,20 @@ class LobbyConnection():
         else:
             raise KeyError('invalid action')
 
-    @property
-    def able_to_launch_game(self):
-        return self.connectivity.result
-
     @timed
     def command_game_join(self, message):
         """
         We are going to join a game.
         """
         assert isinstance(self.player, Player)
-        if not self.able_to_launch_game:
-            raise ClientError("You are already in a game or haven't run the connectivity test yet")
 
-        if self.connectivity.result.state == ConnectivityState.STUN:
-            self.connectivity.relay_address = Address(*message['relay_address'])
+        if self._attempted_connectivity_test:
+            raise ClientError("Cannot join game. Please update your client to the newest version.")
 
         uuid = int(message['uid'])
-        port = int(message['gameport'])
         password = message.get('password', None)
 
-        self._logger.debug("joining: %d:%d with pw: %s", uuid, port, password)
+        self._logger.debug("joining: %d with pw: %s", uuid, password)
         try:
             game = self.game_service[uuid]
             if not game or game.state != GameState.LOBBY:
@@ -704,29 +744,23 @@ class LobbyConnection():
                 self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
                 return
 
-            self.launch_game(game, port, is_host=False)
+            self.launch_game(game, is_host=False)
+
         except KeyError:
             self.sendJSON(dict(command="notice", style="info", text="The host has left the game"))
 
     async def command_game_matchmaking(self, message):
         mod = message.get('mod', 'ladder1v1')
-        port = message.get('gameport', None)
         state = message['state']
 
-        if not self.able_to_launch_game:
-            raise ClientError("You are already in a game or are otherwise having connection problems. Please report this issue using HELP -> Tech support.")
+        if self._attempted_connectivity_test:
+            raise ClientError("Cannot host game. Please update your client to the newest version.")
 
         if state == "stop":
             if self.search:
                 self._logger.info("%s stopped searching for ladder: %s", self.player, self.search)
                 self.search.cancel()
             return
-
-        if self.connectivity.result.state == ConnectivityState.STUN:
-            self.connectivity.relay_address = Address(*message['relay_address'])
-
-        if port:
-            self.player.game_port = port
 
         async with db.engine.acquire() as conn:
             result = await conn.execute("SELECT id FROM matchmaker_ban WHERE `userid` = %s", (self.player.id))
@@ -755,13 +789,10 @@ class LobbyConnection():
 
     @timed()
     def command_game_host(self, message):
-        if not self.able_to_launch_game:
-            raise ClientError("You are already in a game or haven't run the connectivity test yet")
-
-        if self.connectivity.result.state == ConnectivityState.STUN:
-            self.connectivity.relay_address = Address(*message['relay_address'])
-
         assert isinstance(self.player, Player)
+
+        if self._attempted_connectivity_test:
+            raise ClientError("Cannot join game. Please update your client to the newest version.")
 
         visibility = VisibilityState.from_string(message.get('visibility'))
         if not isinstance(visibility, VisibilityState):
@@ -777,7 +808,6 @@ class LobbyConnection():
             self.sendJSON(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
             return
 
-        port = message.get('gameport')
         mod = message.get('mod') or 'faf'
         mapname = message.get('mapname') or 'scmp_007'
         password = message.get('password')
@@ -791,10 +821,10 @@ class LobbyConnection():
             mapname=mapname,
             password=password
         )
-        self.launch_game(game, port, is_host=True)
+        self.launch_game(game, is_host=True)
         server.stats.incr('game.hosted')
 
-    def launch_game(self, game, port, is_host=False, use_map=None):
+    def launch_game(self, game, is_host=False, use_map=None):
         # TODO: Fix setting up a ridiculous amount of cyclic pointers here
         if self.game_connection:
             self.game_connection.abort("Player launched a new game")
@@ -806,14 +836,12 @@ class LobbyConnection():
             game=game,
             player=self.player,
             protocol=self.protocol,
-            connectivity=self.connectivity,
             player_service=self.player_service,
             games=self.game_service
         )
 
         self.player.state = PlayerState.HOSTING if is_host else PlayerState.JOINING
         self.player.game = game
-        self.player.game_port = port
         cmd = {
             "command": "game_launch",
             "mod": game.game_mode,
@@ -892,6 +920,26 @@ class LobbyConnection():
             else:
                 raise ValueError('invalid type argument')
 
+    @asyncio.coroutine
+    async def command_ice_servers(self, message):
+        if not self.player:
+            return
+
+        ttl = TWILIO_TTL
+        ice_servers = self.coturn_generator.server_tokens(
+            username=self.player.id,
+            ttl=ttl
+        )
+
+        if self.nts_client:
+            ice_servers = ice_servers + await self.nts_client.server_tokens(ttl=ttl)
+
+        self.sendJSON({
+            'command': 'ice_servers',
+            'ice_servers': ice_servers,
+            'ttl': ttl
+        })
+
     def send_warning(self, message: str, fatal: bool=False):
         """
         Display a warning message to the client
@@ -931,8 +979,11 @@ class LobbyConnection():
         self.drain = nopdrain
         self.send = lambda m: None
         if self.game_connection:
+            self._logger.debug(
+                "Lost lobby connection killing game connection for player {}".format(self.game_connection.player.id))
             await self.game_connection.on_connection_lost()
         if self.search and not self.search.done():
             self.search.cancel()
         if self.player:
+            self._logger.debug("Lost lobby connection removing player {}".format(self.player.id))
             self.player_service.remove_player(self.player)

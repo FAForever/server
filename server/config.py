@@ -4,8 +4,6 @@ import trueskill
 import os
 
 LOBBY_IP = os.getenv('LOBBY_IP', '37.58.123.3')
-LOBBY_UDP_PORTS = [int(port) for port in os.getenv('LOBBY_UDP_PORTS', '7,53,67,80,123,194,547,3478,3535,6112,30351').split(',')]
-LOBBY_NAT_ADDRESSES = list(map(lambda p: ('0.0.0.0', p), LOBBY_UDP_PORTS))
 
 logging.getLogger('aiomeasures').setLevel(logging.INFO)
 
@@ -39,7 +37,7 @@ DB_SERVER = os.getenv("DB_PORT_3306_TCP_ADDR", "127.0.0.1")
 DB_PORT = int(os.getenv("DB_PORT_3306_TCP_PORT", "3306"))
 DB_LOGIN = os.getenv("FAF_DB_LOGIN", "root")
 DB_PASSWORD = os.getenv("FAF_DB_PASSWORD", "banana")
-DB_NAME = os.getenv("FAF_DB_NAME", "faf_test")
+DB_NAME = os.getenv("FAF_DB_NAME", "faf")
 
 CHALLONGE_KEY = "challonge_key"
 CHALLONGE_USER = "challonge_user"
@@ -56,6 +54,13 @@ FORCE_STEAM_LINK = os.getenv('FORCE_STEAM_LINK', 'false').lower() == 'true'
 
 NEWBIE_BASE_MEAN = int(os.getenv('NEWBIE_BASE_MEAN', 500))
 NEWBIE_MIN_GAMES = int(os.getenv('NEWBIE_MIN_GAMES', 10))
+
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
+TWILIO_TOKEN = os.getenv("TWILIO_TOKEN", "")
+TWILIO_TTL = os.getenv("TWILIO_TTL", 3600*24)
+
+COTURN_HOSTS = os.getenv('COTURN_HOSTS', "").split(',')
+COTURN_KEYS = os.getenv('COTURN_KEYS', "").split(',')
 
 GEO_IP_DATABASE_PATH = os.getenv("GEO_IP_DATABASE_PATH", "GeoLite2-Country.mmdb")
 GEO_IP_DATABASE_URL = os.getenv(

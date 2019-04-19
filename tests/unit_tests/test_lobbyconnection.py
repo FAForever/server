@@ -3,8 +3,7 @@ from unittest import mock
 from unittest.mock import Mock
 
 import pytest
-from server import GameState, VisibilityState
-from server.connectivity import Connectivity
+from server import GameState, ServerContext, VisibilityState
 from server.db.models import friends_and_foes
 from server.game_service import GameService
 from server.games import CustomGame, Game
@@ -12,16 +11,17 @@ from server.geoip_service import GeoIpService
 from server.lobbyconnection import LobbyConnection
 from server.player_service import PlayerService
 from server.players import Player, PlayerState
+from server.types import Address
 from server.protocol import QDataStreamProtocol
 from sqlalchemy import select, and_
 from tests import CoroMock
+from server.ice_servers.nts import TwilioNTS
 
 
 @pytest.fixture()
 def test_game_info():
     return {
         'title': 'Test game',
-        'gameport': '8000',
         'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
         'mod': 'faf',
         'mapname': 'scmp_007',
@@ -35,7 +35,6 @@ def test_game_info():
 def test_game_info_invalid():
     return {
         'title': 'Title with non ASCI char \xc3',
-        'gameport': '8000',
         'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
         'mod': 'faf',
         'mapname': 'scmp_007',
@@ -49,6 +48,9 @@ def test_game_info_invalid():
 def mock_player():
     return mock.create_autospec(Player(login='Dummy', id=42))
 
+@pytest.fixture
+def mock_nts_client():
+    return mock.create_autospec(TwilioNTS)
 
 @pytest.fixture
 def mock_players(db_engine):
@@ -76,11 +78,15 @@ def lobbyconnection(loop, mock_protocol, mock_games, mock_players, mock_player, 
         geoip=mock_geoip,
         games=mock_games,
         players=mock_players,
+        nts_client=mock_nts_client,
         matchmaker_queue=mock.Mock()
     )
+
     lc.player = mock_player
-    lc.connectivity = mock.create_autospec(Connectivity)
     lc.protocol = mock_protocol
+    lc.player_service.get_permission_group.return_value = 0
+    lc.player_service.fetch_player_data = CoroMock()
+    lc.peer_address = Address('127.0.0.1', 1234)
     return lc
 
 
@@ -110,15 +116,13 @@ def test_launch_game(lobbyconnection, game, create_player):
     lobbyconnection.player = create_player()
     lobbyconnection.game_connection = old_game_conn
     lobbyconnection.sendJSON = mock.Mock()
-    port = 1337
-    lobbyconnection.launch_game(game, port)
+    lobbyconnection.launch_game(game)
 
     # Verify all side effects of launch_game here
     old_game_conn.abort.assert_called_with("Player launched a new game")
     assert lobbyconnection.game_connection is not None
     assert lobbyconnection.game_connection.game == game
     assert lobbyconnection.player.game == game
-    assert lobbyconnection.player.game_port == port
     assert lobbyconnection.player.game_connection == lobbyconnection.game_connection
     assert lobbyconnection.game_connection.player == lobbyconnection.player
     assert lobbyconnection.player.state == PlayerState.JOINING
@@ -492,3 +496,65 @@ async def test_broadcast(lobbyconnection: LobbyConnection, mocker):
 
     player.lobby_connection.send_warning.assert_called_with("This is a test message")
     tuna.lobby_connection.send_warning.assert_called_with("This is a test message")
+
+async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnection: LobbyConnection, mocker, mock_player):
+    protocol = mocker.patch.object(lobbyconnection, 'protocol')
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.game_connection = None
+    lobbyconnection.player.state = PlayerState.IDLE
+    lobbyconnection.command_restore_game_session({'game_id': 123})
+
+    assert not lobbyconnection.player.game_connection
+    assert lobbyconnection.player.state == PlayerState.IDLE
+
+    protocol.send_message.assert_any_call({
+        "command": "notice",
+        "style": "info",
+        "text": "The game you were connected to does no longer exist"
+    })
+
+@pytest.mark.parametrize("game_state", [GameState.INITIALIZING, GameState.ENDED])
+async def test_game_connection_not_restored_if_game_state_prohibits(lobbyconnection: LobbyConnection, game_service: GameService,
+                                                                    game_stats_service, game_state, mock_player, mocker):
+    protocol = mocker.patch.object(lobbyconnection, 'protocol')
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.game_connection = None
+    lobbyconnection.player.state = PlayerState.IDLE
+    lobbyconnection.game_service = game_service
+    game = mock.create_autospec(Game(42, game_service, game_stats_service))
+    game.state = game_state
+    game.password = None
+    game.game_mode = 'faf'
+    game.id = 42
+    game_service.games[42] = game
+
+    lobbyconnection.command_restore_game_session({'game_id': 42})
+
+    assert not lobbyconnection.game_connection
+    assert lobbyconnection.player.state == PlayerState.IDLE
+
+    protocol.send_message.assert_any_call({
+        "command": "notice",
+        "style": "info",
+        "text": "The game you were connected to is no longer available"
+    })
+
+
+@pytest.mark.parametrize("game_state", [GameState.LIVE, GameState.LOBBY])
+async def test_game_connection_restored_if_game_exists(lobbyconnection: LobbyConnection, game_service: GameService,
+                                                       game_stats_service, game_state, mock_player):
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.game_connection = None
+    lobbyconnection.player.state = PlayerState.IDLE
+    lobbyconnection.game_service = game_service
+    game = mock.create_autospec(Game(42, game_service, game_stats_service))
+    game.state = game_state
+    game.password = None
+    game.game_mode = 'faf'
+    game.id = 42
+    game_service.games[42] = game
+
+    lobbyconnection.command_restore_game_session({'game_id': 42})
+
+    assert lobbyconnection.game_connection
+    assert lobbyconnection.player.state == PlayerState.PLAYING

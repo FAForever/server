@@ -229,3 +229,6 @@ class GameService:
 
     def __getitem__(self, item: int) -> Game:
         return self.games[item]
+
+    def __contains__(self, item):
+        return item in self.games
