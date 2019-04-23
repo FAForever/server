@@ -404,7 +404,6 @@ class GameConnection(GpgNetServerProtocol):
         """
         pass
 
-
     async def handle_rehost(self, *args):
         """
         Signals that the user has rehosted the game. This is currently unused but
@@ -430,6 +429,18 @@ class GameConnection(GpgNetServerProtocol):
         """
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
+        """
+        pass
+
+    async def handle_chat(self, message: str):
+        """
+        Whenever the player sends a chat message during the game lobby.
+        """
+        pass
+
+    async def handle_game_full(self):
+        """
+        Sent when all game slots are full
         """
         pass
 
@@ -504,5 +515,7 @@ COMMAND_HANDLERS = {
     "Bottleneck":           GameConnection.handle_bottleneck,
     "BottleneckCleared":    GameConnection.handle_bottleneck_cleared,
     "Disconnected":         GameConnection.handle_disconnected,
-    "IceMsg":               GameConnection.handle_ice_message
+    "IceMsg":               GameConnection.handle_ice_message,
+    "Chat":                 GameConnection.handle_chat,
+    "GameFull":             GameConnection.handle_game_full
 }
