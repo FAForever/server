@@ -14,6 +14,7 @@ from server.players import Player, PlayerState
 from server.protocol import QDataStreamProtocol
 from server.types import Address
 from sqlalchemy import and_, select
+from tests import CoroMock
 
 
 @pytest.fixture()
