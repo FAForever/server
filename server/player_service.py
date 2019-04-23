@@ -70,9 +70,7 @@ class PlayerService:
                 .outerjoin(avatars_list)
             ).where(login.c.id == player.id)
 
-            result = await conn.execute(
-                sql
-            )
+            result = await conn.execute(sql)
             row = await result.fetchone()
             if not row:
                 return
