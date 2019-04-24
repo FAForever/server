@@ -28,11 +28,12 @@ from .games import GameState, VisibilityState
 from .geoip_service import GeoIpService
 from .ice_servers.coturn import CoturnHMAC
 from .ice_servers.nts import TwilioNTS
-from .matchmaker import MatchmakerQueue, Search
+from .matchmaker import Search
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import QDataStreamProtocol
 from .types import Address
+from .ladder_service import LadderService
 
 
 class ClientError(Exception):
@@ -63,14 +64,14 @@ class LobbyConnection():
         players: PlayerService,
         nts_client: Optional[TwilioNTS],
         geoip: GeoIpService,
-        matchmaker_queue: MatchmakerQueue
+        ladder_service: LadderService
     ):
         self.geoip_service = geoip
         self.game_service = games
         self.player_service = players
         self.nts_client = nts_client
         self.coturn_generator = CoturnHMAC()
-        self.matchmaker_queue = matchmaker_queue
+        self.ladder_service = ladder_service
         self._authenticated = False
         self.player = None  # type: Player
         self.game_connection = None  # type: GameConnection
@@ -748,10 +749,8 @@ class LobbyConnection():
                 self.player.faction = message['faction']
                 self.search = Search(self.player)
 
-                self.game_service.ladder_service.inform_player(self.player)
-
                 self._logger.info("%s is searching for ladder: %s", self.player, self.search)
-                asyncio.ensure_future(self.matchmaker_queue.search(self.search))
+                asyncio.ensure_future(self.ladder_service.start_search(self.player, self.search, queue_name='ladder1v1'))
 
     def command_coop_list(self, message):
         """ Request for coop map list"""

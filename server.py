@@ -85,10 +85,7 @@ if __name__ == '__main__':
         game_stats_service = GameStatsService(event_service, achievement_service)
 
         games = GameService(players_online, game_stats_service)
-        matchmaker_queue = MatchmakerQueue('ladder1v1', game_service=games)
-        ladder_service = LadderService(games, matchmaker_queue)
-        # TODO: Fix cyclic dependency
-        games.ladder_service = ladder_service
+        ladder_service = LadderService(games)
 
         ctrl_server = loop.run_until_complete(server.run_control_server(loop, players_online, games))
 
@@ -107,7 +104,7 @@ if __name__ == '__main__':
 
         loop.run_until_complete(done)
         players_online.broadcast_shutdown()
-        matchmaker_queue.shutdown()
+        ladder_service.shutdown_queues()
 
         # Close DB connections
         engine.close()

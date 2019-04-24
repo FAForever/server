@@ -60,8 +60,14 @@ def game_stats_service():
 
 
 @pytest.fixture
-def ladder_service(game_service: GameService, matchmaker_queue):
-    return LadderService(game_service, matchmaker_queue)
+def ladder_service(request, game_service: GameService):
+    ladder_service = LadderService(game_service)
+
+    def fin():
+        ladder_service.shutdown_queues()
+
+    request.addfinalizer(fin)
+    return ladder_service
 
 
 @pytest.fixture

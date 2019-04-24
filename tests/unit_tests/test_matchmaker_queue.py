@@ -8,7 +8,6 @@ import pytest
 import server.config as config
 from server.matchmaker import MatchmakerQueue, Search
 from server.players import Player
-from tests import CoroMock
 
 
 @pytest.fixture
@@ -102,14 +101,12 @@ async def test_shutdown_matchmaker(matchmaker_queue):
         assert False
 
 
-async def test_queue_race(mocker, player_service, matchmaker_queue, ladder_service):
+async def test_queue_race(mocker, player_service, matchmaker_queue):
     p1, p2, p3 = Player('Dostya', id=1, ladder_rating=(2300, 150), numGames=(config.NEWBIE_MIN_GAMES+1)), \
                  Player('Brackman', id=2, ladder_rating=(2200, 150), numGames=(config.NEWBIE_MIN_GAMES+1)), \
                  Player('Zoidberg', id=3, ladder_rating=(2300, 125), numGames=(config.NEWBIE_MIN_GAMES+1))
 
     player_service.players = {p1.id: p1, p2.id: p2, p3.id: p3}
-
-    ladder_service.start_game = CoroMock()
 
     try:
         await asyncio.gather(
@@ -122,7 +119,6 @@ async def test_queue_race(mocker, player_service, matchmaker_queue, ladder_servi
 
     assert len(matchmaker_queue) == 0
     await asyncio.sleep(1)  # Wait for the game to be started
-    ladder_service.start_game.assert_called()
 
 
 async def test_queue_cancel(mocker, player_service, matchmaker_queue, matchmaker_players):
@@ -141,11 +137,9 @@ async def test_queue_cancel(mocker, player_service, matchmaker_queue, matchmaker
     assert not s2.is_matched
 
 
-async def test_queue_mid_cancel(mocker, player_service, matchmaker_queue, matchmaker_players_all_match, ladder_service):
+async def test_queue_mid_cancel(mocker, player_service, matchmaker_queue, matchmaker_players_all_match):
     # Turn list of players into map from ids to players.
     player_service.players = dict(map(lambda x: (x.id, x), list(matchmaker_players_all_match)))
-
-    ladder_service.start_game = CoroMock()
 
     (s1, s2, s3) = (Search(matchmaker_players_all_match[1]),
                     Search(matchmaker_players_all_match[2]),
@@ -163,4 +157,3 @@ async def test_queue_mid_cancel(mocker, player_service, matchmaker_queue, matchm
     assert s3.is_matched
     assert len(matchmaker_queue) == 0
     await asyncio.sleep(1)  # Wait for the game to be started
-    ladder_service.start_game.assert_called()

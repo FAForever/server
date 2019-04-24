@@ -24,12 +24,11 @@ def mock_games(mock_players):
 
 @pytest.fixture
 def ladder_service(game_service):
-    return LadderService(game_service, MatchmakerQueue('ladder1v1', game_service))
+    return LadderService(game_service)
 
 
 @pytest.fixture
 def lobby_server(request, loop, player_service, game_service, geoip_service, ladder_service):
-    game_service.ladder_service = ladder_service
     ctx = run_lobby_server(
         address=('127.0.0.1', None),
         geoip_service=geoip_service,
@@ -43,7 +42,7 @@ def lobby_server(request, loop, player_service, game_service, geoip_service, lad
 
     def fin():
         ctx.close()
-        ladder_service.matchmaker_queue.shutdown()
+        ladder_service.shutdown_queues()
         loop.run_until_complete(ctx.wait_closed())
 
     request.addfinalizer(fin)

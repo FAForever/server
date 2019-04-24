@@ -1,7 +1,9 @@
+import asyncio
 from unittest import mock
 
 import pytest
 from server import GameService, LadderService
+from server.matchmaker import Search
 from server.players import Player
 from tests import CoroMock
 
@@ -28,6 +30,41 @@ def test_inform_player(ladder_service: LadderService):
     ladder_service.inform_player(p1)
 
     assert p1.lobby_connection.sendJSON.called
+
+
+async def test_start_search(ladder_service: LadderService):
+    p1 = mock.create_autospec(Player('Dostya', id=1))
+    p1.ladder_rating = (1500, 500)
+    ladder_service.inform_player = mock.Mock()
+
+    asyncio.ensure_future(
+        ladder_service.start_search(p1, Search(p1), 'ladder1v1')
+    )
+
+    await asyncio.sleep(0)
+
+    ladder_service.inform_player.assert_called_once()
+    assert ladder_service.queues['ladder1v1'].queue[p1]
+
+
+async def test_start_game_called_on_match(ladder_service: LadderService):
+    p1 = Player('Dostya',   id=1, ladder_rating=(2300, 64))
+    p2 = Player('QAI',      id=4, ladder_rating=(2350, 125))
+
+    ladder_service.start_game = CoroMock()
+    ladder_service.inform_player = mock.Mock()
+
+    asyncio.ensure_future(
+        ladder_service.start_search(p1, Search(p1), 'ladder1v1')
+    )
+    asyncio.ensure_future(
+        ladder_service.start_search(p2, Search(p2), 'ladder1v1')
+    )
+
+    await asyncio.sleep(1)
+
+    ladder_service.inform_player.assert_called()
+    ladder_service.start_game.assert_called_once()
 
 
 async def test_choose_map(ladder_service: LadderService):

@@ -141,7 +141,7 @@ def run_lobby_server(
             games=games,
             nts_client=nts_client,
             players=player_service,
-            matchmaker_queue=ladder_service.matchmaker_queue
+            ladder_service=ladder_service
         )
     ctx = ServerContext(make_connection, name="LobbyServer")
     loop.call_later(DIRTY_REPORT_INTERVAL, report_dirties)

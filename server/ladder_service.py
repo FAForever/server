@@ -8,6 +8,7 @@ from . import db
 from .config import LADDER_ANTI_REPETITION_LIMIT
 from .db.models import game_featuredMods, game_player_stats, game_stats
 from .decorators import with_logger
+from .matchmaker import MatchmakerQueue, Search
 from .players import Player, PlayerState
 
 MapDescription = NamedTuple('Map', [("id", int), ("name", str), ("path", str)])
@@ -19,14 +20,23 @@ class LadderService:
     Service responsible for managing the 1v1 ladder. Does matchmaking, updates statistics, and
     launches the games.
     """
-    def __init__(self, games_service: "GameService", matchmaker_queue):
+    def __init__(self, games_service: "GameService"):
         self._informed_players: Set[Player] = set()
         self.game_service = games_service
-        self.matchmaker_queue = matchmaker_queue
+
+        # Hardcoded here until it needs to be dynamic
+        self.queues = {
+            'ladder1v1': MatchmakerQueue('ladder1v1', game_service=games_service)
+        }
 
         asyncio.ensure_future(self.handle_queue_matches())
 
+    async def start_search(self, initiator: Player, search: Search, queue_name: str):
+        self.inform_player(initiator)
+        await self.queues[queue_name].search(search)
+
     def inform_player(self, player: Player):
+        # TODO: Remove players from _informed_players at some point
         if player not in self._informed_players:
             self._informed_players.add(player)
             player.state = PlayerState.SEARCHING_LADDER
@@ -39,7 +49,7 @@ class LadderService:
                 player.lobby_connection.sendJSON(dict(command="notice", style="info", text="The system is still learning you. <b><br><br>The learning phase is " + str(progress)+"% complete<b>"))
 
     async def handle_queue_matches(self):
-        async for s1, s2 in self.matchmaker_queue.iter_matches():
+        async for s1, s2 in self.queues["ladder1v1"].iter_matches():
             asyncio.ensure_future(self.start_game(s1.player, s2.player))
 
     async def start_game(self, host: Player, guest: Player):
@@ -118,3 +128,7 @@ class LadderService:
 
             # Collect all the rows from the ResultProxy
             return [row[game_stats.c.mapId] async for row in await conn.execute(query)]
+
+    def shutdown_queues(self):
+        for queue in self.queues.values():
+            queue.shutdown()

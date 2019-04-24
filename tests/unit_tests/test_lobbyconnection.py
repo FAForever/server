@@ -80,7 +80,7 @@ def lobbyconnection(loop, mock_protocol, mock_games, mock_players, mock_player, 
         games=mock_games,
         players=mock_players,
         nts_client=mock_nts_client,
-        matchmaker_queue=mock.Mock()
+        ladder_service=mock.Mock()
     )
 
     lc.player = mock_player
@@ -286,7 +286,6 @@ async def test_send_coop_maps(mocker, lobbyconnection):
     await lobbyconnection.send_coop_maps()
 
     args = protocol.send_messages.call_args_list
-    print(args)
     assert len(args) == 1
     coop_maps = args[0][0][0]
     for info in coop_maps:
