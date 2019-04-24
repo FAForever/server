@@ -82,6 +82,7 @@ if __name__ == '__main__':
         game_stats_service = GameStatsService(event_service, achievement_service)
 
         games = GameService(players_online, game_stats_service)
+        matchmaker_queue = MatchmakerQueue('ladder1v1', game_service=games)
 
         ctrl_server = loop.run_until_complete(server.run_control_server(loop, players_online, games))
 
@@ -91,7 +92,7 @@ if __name__ == '__main__':
             player_service=players_online,
             games=games,
             nts_client=twilio_nts,
-            matchmaker_queue=MatchmakerQueue('ladder1v1', game_service=games),
+            matchmaker_queue=matchmaker_queue,
             loop=loop
         )
 
@@ -100,6 +101,7 @@ if __name__ == '__main__':
 
         loop.run_until_complete(done)
         players_online.broadcast_shutdown()
+        matchmaker_queue.shutdown()
 
         # Close DB connections
         engine.close()

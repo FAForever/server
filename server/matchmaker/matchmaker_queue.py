@@ -1,6 +1,6 @@
 import asyncio
 
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from concurrent.futures import CancelledError
 
 import server
@@ -19,6 +19,8 @@ class MatchmakerQueue:
         self.queue_name = queue_name
         self.rating_prop = 'ladder_rating'
         self.queue = OrderedDict()
+        self._matches = deque()
+        self._shutdown = False
         self._logger.debug("MatchmakerQueue initialized for %s", queue_name)
 
     def push(self, search: Search):
@@ -48,6 +50,17 @@ class MatchmakerQueue:
         self.game_service.mark_dirty(self)
         asyncio.ensure_future(self.game_service.ladder_service.start_game(s1.player, s2.player))
         return True
+
+    async def iter_matches(self):
+        while not self._shutdown:
+            if not self._matches:
+                await asyncio.sleep(1)
+                continue
+
+            yield self._matches.popleft()
+
+    def shutdown(self):
+        self._shutdown = True
 
     def __len__(self):
         return self.queue.__len__()
