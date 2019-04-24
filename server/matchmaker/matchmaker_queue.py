@@ -23,14 +23,66 @@ class MatchmakerQueue:
         self._shutdown = False
         self._logger.debug("MatchmakerQueue initialized for %s", queue_name)
 
-    def push(self, search: Search):
-        """
-        Push the given search object onto the queue
+    async def iter_matches(self):
+        """ Asynchronusly yields matches as they become available """
 
-        :param search:
-        :return:
+        while not self._shutdown:
+            if not self._matches:
+                await asyncio.sleep(1)
+                continue
+
+            yield self._matches.popleft()
+
+    async def search(self, search: Search):
         """
+        Search for a match.
+
+        If a suitable match is found, immediately calls on_matched_with on both players.
+
+        Otherwise, puts a search object into the Queue and awaits completion
+
+        :param player: Player to search for a matchup for
+        """
+        assert search is not None
+
+        with server.stats.timer('matchmaker.search'):
+            try:
+                if self.find_match(search):
+                    return
+
+                self._logger.debug("Found nobody searching, pushing to queue: %s", search)
+                self.push(search)
+                await search.await_match()
+                self._logger.debug("Search complete: %s", search)
+            except CancelledError:
+                pass
+            finally:
+                # If the queue was cancelled, or some other error occured,
+                # make sure to clean up.
+                self.game_service.mark_dirty(self)
+                if search.player in self.queue:
+                    del self.queue[search.player]
+
+    def find_match(self, search: Search) -> bool:
+        self._logger.debug("Searching for matchup for %s", search.player)
+        for opponent, opponent_search in self.queue.copy().items():
+            if opponent == search.player:
+                continue
+
+            quality = search.quality_with(opponent_search)
+            threshold = search.match_threshold
+            self._logger.debug("Game quality between %s and %s: %f (threshold: %f)",
+                               search.player, opponent, quality, threshold)
+            if quality >= threshold:
+                return self.match(search, opponent_search)
+
+            return False
+
+    def push(self, search: Search):
+        """ Push the given search object onto the queue """
+
         self.queue[search.player] = search
+        self.game_service.mark_dirty(self)
 
     def match(self, s1: Search, s2: Search) -> bool:
         """
@@ -47,17 +99,10 @@ class MatchmakerQueue:
             del self.queue[s1.player]
         if s2.player in self.queue:
             del self.queue[s2.player]
+
+        self._matches.append((s1, s2))
         self.game_service.mark_dirty(self)
-        asyncio.ensure_future(self.game_service.ladder_service.start_game(s1.player, s2.player))
         return True
-
-    async def iter_matches(self):
-        while not self._shutdown:
-            if not self._matches:
-                await asyncio.sleep(1)
-                continue
-
-            yield self._matches.popleft()
 
     def shutdown(self):
         self._shutdown = True
@@ -77,45 +122,3 @@ class MatchmakerQueue:
 
     def __repr__(self):
         return repr(self.queue)
-
-    async def search(self, search: Search):
-        """
-        Search for a match.
-
-        If a suitable match is found, immediately calls on_matched_with on both players.
-
-        Otherwise, puts a search object into the Queue and awaits completion
-
-        :param player: Player to search for a matchup for
-        """
-        assert search is not None
-
-        player = search.player
-        with server.stats.timer('matchmaker.search'):
-            try:
-                self._logger.debug("Searching for matchup for %s", player)
-                for opponent, opponent_search in self.queue.copy().items():
-                    if opponent == player:
-                        continue
-
-                    quality = search.quality_with(opponent_search)
-                    threshold = search.match_threshold
-                    self._logger.debug("Game quality between %s and %s: %f (threshold: %f)",
-                                       player, opponent, quality, threshold)
-                    if quality >= threshold:
-                        if self.match(search, opponent_search):
-                            return
-
-                self._logger.debug("Found nobody searching, pushing to queue: %s", search)
-                self.queue[player] = search
-                self.game_service.mark_dirty(self)
-                await search.await_match()
-                self._logger.debug("Search complete: %s", search)
-            except CancelledError:
-                pass
-            finally:
-                # If the queue was cancelled, or some other error occured,
-                # make sure to clean up.
-                self.game_service.mark_dirty(self)
-                if player in self.queue:
-                    del self.queue[player]

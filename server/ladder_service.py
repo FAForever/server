@@ -19,9 +19,12 @@ class LadderService:
     Service responsible for managing the 1v1 ladder. Does matchmaking, updates statistics, and
     launches the games.
     """
-    def __init__(self, games_service: "GameService"):
+    def __init__(self, games_service: "GameService", matchmaker_queue):
         self._informed_players: Set[Player] = set()
         self.game_service = games_service
+        self.matchmaker_queue = matchmaker_queue
+
+        asyncio.ensure_future(self.handle_queue_matches())
 
     def inform_player(self, player: Player):
         if player not in self._informed_players:
@@ -34,6 +37,10 @@ class LadderService:
             elif deviation > 250:
                 progress = (500.0 - deviation) / 2.5
                 player.lobby_connection.sendJSON(dict(command="notice", style="info", text="The system is still learning you. <b><br><br>The learning phase is " + str(progress)+"% complete<b>"))
+
+    async def handle_queue_matches(self):
+        async for s1, s2 in self.matchmaker_queue.iter_matches():
+            asyncio.ensure_future(self.start_game(s1.player, s2.player))
 
     async def start_game(self, host: Player, guest: Player):
         host.state = PlayerState.HOSTING

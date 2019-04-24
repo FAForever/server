@@ -10,8 +10,6 @@ from server.games.game import Game
 from server.matchmaker import MatchmakerQueue
 from server.players import Player
 
-from .ladder_service import LadderService
-
 
 @with_logger
 class GameService:
@@ -112,9 +110,6 @@ class GameService:
                     self.game_mode_versions[mod.name][fileId] = version
             # meh
             self.game_mode_versions['ladder1v1'] = self.game_mode_versions['faf']
-
-            # meh meh
-            self.ladder_service = LadderService(self)
 
     @property
     def dirty_games(self):

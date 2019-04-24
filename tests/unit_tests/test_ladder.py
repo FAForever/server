@@ -2,15 +2,8 @@ from unittest import mock
 
 import pytest
 from server import GameService, LadderService
-from server.db.models import game_player_stats, game_stats
 from server.players import Player
-from sqlalchemy import func, text
 from tests import CoroMock
-
-
-@pytest.fixture
-def ladder_service(game_service: GameService):
-    return LadderService(game_service)
 
 
 async def test_start_game(ladder_service: LadderService, game_service: GameService):
