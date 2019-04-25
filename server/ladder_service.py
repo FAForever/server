@@ -1,6 +1,7 @@
 import asyncio
 import random
-from typing import List, NamedTuple, Set
+from collections import defaultdict
+from typing import Dict, List, NamedTuple, Set
 
 from sqlalchemy import and_, func, select, text
 
@@ -8,6 +9,7 @@ from . import db
 from .config import LADDER_ANTI_REPETITION_LIMIT
 from .db.models import game_featuredMods, game_player_stats, game_stats
 from .decorators import with_logger
+from .game_service import GameService
 from .matchmaker import MatchmakerQueue, Search
 from .players import Player, PlayerState
 
@@ -20,7 +22,7 @@ class LadderService:
     Service responsible for managing the 1v1 ladder. Does matchmaking, updates statistics, and
     launches the games.
     """
-    def __init__(self, games_service: "GameService"):
+    def __init__(self, games_service: GameService):
         self._informed_players: Set[Player] = set()
         self.game_service = games_service
 
@@ -29,17 +31,37 @@ class LadderService:
             'ladder1v1': MatchmakerQueue('ladder1v1', game_service=games_service)
         }
 
+        self.searches: Dict[str, Dict[Player, Search]] = defaultdict(dict)
+
         asyncio.ensure_future(self.handle_queue_matches())
 
     async def start_search(self, initiator: Player, search: Search, queue_name: str):
         self.inform_player(initiator)
-        await self.queues[queue_name].search(search)
+        initiator.state = PlayerState.SEARCHING_LADDER
+
+        self.cancel_existing_searches(initiator)
+        self.searches[queue_name][initiator] = search
+
+        self._logger.info("%s is searching for '%s': %s", initiator, queue_name, search)
+
+        asyncio.ensure_future(self.queues[queue_name].search(search))
+
+    def cancel_search(self, initiator: Player):
+        initiator.state = PlayerState.IDLE
+
+        self.cancel_existing_searches(initiator)
+        self._logger.info("%s stopped searching for ladder", initiator)
+
+    def cancel_existing_searches(self, initiator: Player):
+        for queue_name in self.queues:
+            search = self.searches[queue_name].get(initiator)
+            if search:
+                search.cancel()
 
     def inform_player(self, player: Player):
         # TODO: Remove players from _informed_players at some point
         if player not in self._informed_players:
             self._informed_players.add(player)
-            player.state = PlayerState.SEARCHING_LADDER
             mean, deviation = player.ladder_rating
 
             if deviation > 490:

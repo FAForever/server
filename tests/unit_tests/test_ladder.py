@@ -4,7 +4,7 @@ from unittest import mock
 import pytest
 from server import GameService, LadderService
 from server.matchmaker import Search
-from server.players import Player
+from server.players import Player, PlayerState
 from tests import CoroMock
 
 
@@ -32,19 +32,64 @@ def test_inform_player(ladder_service: LadderService):
     assert p1.lobby_connection.sendJSON.called
 
 
-async def test_start_search(ladder_service: LadderService):
+async def test_start_and_cancel_search(ladder_service: LadderService):
     p1 = mock.create_autospec(Player('Dostya', id=1))
     p1.ladder_rating = (1500, 500)
-    ladder_service.inform_player = mock.Mock()
 
-    asyncio.ensure_future(
-        ladder_service.start_search(p1, Search(p1), 'ladder1v1')
-    )
+    search = Search(p1)
 
-    await asyncio.sleep(0)
+    await ladder_service.start_search(p1, search, 'ladder1v1')
+    await asyncio.sleep(0)  # Give the other coro a chance to run
 
-    ladder_service.inform_player.assert_called_once()
+    assert p1.state == PlayerState.SEARCHING_LADDER
     assert ladder_service.queues['ladder1v1'].queue[p1]
+    assert not search.is_cancelled
+
+    ladder_service.cancel_search(p1)
+
+    assert p1.state == PlayerState.IDLE
+    assert search.is_cancelled
+
+
+async def test_start_search_cancels_previous_search(ladder_service: LadderService):
+    p1 = mock.create_autospec(Player('Dostya', id=1))
+    p1.ladder_rating = (1500, 500)
+
+    search1 = Search(p1)
+
+    await ladder_service.start_search(p1, search1, 'ladder1v1')
+    await asyncio.sleep(0)  # Give the other coro a chance to run
+
+    assert p1.state == PlayerState.SEARCHING_LADDER
+    assert ladder_service.queues['ladder1v1'].queue[p1]
+
+    search2 = Search(p1)
+
+    await ladder_service.start_search(p1, search2, 'ladder1v1')
+    await asyncio.sleep(0)  # Give the other coro a chance to run
+
+    assert p1.state == PlayerState.SEARCHING_LADDER
+    assert search1.is_cancelled
+    assert ladder_service.queues['ladder1v1'].queue[p1]
+
+
+async def test_cancel_all_searchs(ladder_service: LadderService):
+    p1 = mock.create_autospec(Player('Dostya', id=1))
+    p1.ladder_rating = (1500, 500)
+
+    search = Search(p1)
+
+    await ladder_service.start_search(p1, search, 'ladder1v1')
+    await asyncio.sleep(0)  # Give the other coro a chance to run
+
+    assert p1.state == PlayerState.SEARCHING_LADDER
+    assert ladder_service.queues['ladder1v1'].queue[p1]
+    assert not search.is_cancelled
+
+    ladder_service.cancel_search(p1)
+
+    assert p1.state == PlayerState.IDLE
+    assert search.is_cancelled
 
 
 async def test_start_game_called_on_match(ladder_service: LadderService):

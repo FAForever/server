@@ -78,7 +78,6 @@ class LobbyConnection():
         self.peer_address = None  # type: Optional[Address]
         self.session = int(random.randrange(0, 4294967295))
         self.protocol = None
-        self.search = None
         self.user_agent = None
 
         self._attempted_connectivity_test = False
@@ -721,16 +720,14 @@ class LobbyConnection():
             self.sendJSON(dict(command="notice", style="info", text="The host has left the game"))
 
     async def command_game_matchmaking(self, message):
-        mod = message.get('mod', 'ladder1v1')
-        state = message['state']
+        mod = str(message.get('mod', 'ladder1v1'))
+        state = str(message['state'])
 
         if self._attempted_connectivity_test:
             raise ClientError("Cannot host game. Please update your client to the newest version.")
 
         if state == "stop":
-            if self.search:
-                self._logger.info("%s stopped searching for ladder: %s", self.player, self.search)
-                self.search.cancel()
+            self.ladder_service.cancel_search(self.player, mod)
             return
 
         async with db.engine.acquire() as conn:
@@ -741,16 +738,19 @@ class LobbyConnection():
                                    text="You are banned from the matchmaker. Contact an admin to have the reason."))
                 return
 
-        if mod == "ladder1v1":
-            if state == "start":
-                if self.search:
-                    self.search.cancel()
-                assert self.player is not None
-                self.player.faction = message['faction']
-                self.search = Search(self.player)
+        if state == "start":
+            assert self.player is not None
+            self.player.faction = message['faction']
 
-                self._logger.info("%s is searching for ladder: %s", self.player, self.search)
-                asyncio.ensure_future(self.ladder_service.start_search(self.player, self.search, queue_name='ladder1v1'))
+            if mod == "ladder1v1":
+                search = Search(self.player)
+            else:
+                # TODO: Put player parties here
+                search = Search(self.player)
+
+            await self.ladder_service.start_search(
+                self.player, search, queue_name=mod
+            )
 
     def command_coop_list(self, message):
         """ Request for coop map list"""
@@ -951,8 +951,9 @@ class LobbyConnection():
             self._logger.debug(
                 "Lost lobby connection killing game connection for player {}".format(self.game_connection.player.id))
             await self.game_connection.on_connection_lost()
-        if self.search and not self.search.done():
-            self.search.cancel()
+
+        self.ladder_service.cancel_all_searches(self.player)
+
         if self.player:
             self._logger.debug("Lost lobby connection removing player {}".format(self.player.id))
             self.player_service.remove_player(self.player)
