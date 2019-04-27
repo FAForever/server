@@ -6,7 +6,7 @@ from typing import Optional
 import server.config as config
 from server.decorators import with_logger
 from server.players import Player
-from trueskill import Rating, quality_1vs1
+from trueskill import Rating, quality
 
 
 @with_logger
@@ -116,8 +116,11 @@ class Search():
             raise TypeError("{} is not a valid player to match with".format(opponent_search.player))
         if opponent_search.raw_rating is None:
             return 0
-        return quality_1vs1(Rating(*self.rating),
-                            Rating(*opponent_search.rating))
+
+        team1 = [Rating(*self.rating)]
+        team2 = [Rating(*opponent_search.rating)]
+
+        return quality([team1, team2])
 
     @property
     def is_matched(self):
