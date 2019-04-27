@@ -39,7 +39,7 @@ class LadderService:
         self.inform_player(initiator)
         initiator.state = PlayerState.SEARCHING_LADDER
 
-        self.cancel_existing_searches(initiator)
+        self._cancel_existing_searches(initiator)
         self.searches[queue_name][initiator] = search
 
         self._logger.info("%s is searching for '%s': %s", initiator, queue_name, search)
@@ -49,17 +49,16 @@ class LadderService:
     def cancel_search(self, initiator: Player):
         initiator.state = PlayerState.IDLE
 
-        self.cancel_existing_searches(initiator)
+        self._cancel_existing_searches(initiator)
         self._logger.info("%s stopped searching for ladder", initiator)
 
-    def cancel_existing_searches(self, initiator: Player):
+    def _cancel_existing_searches(self, initiator: Player):
         for queue_name in self.queues:
             search = self.searches[queue_name].get(initiator)
             if search:
                 search.cancel()
 
     def inform_player(self, player: Player):
-        # TODO: Remove players from _informed_players at some point
         if player not in self._informed_players:
             self._informed_players.add(player)
             mean, deviation = player.ladder_rating
@@ -150,6 +149,10 @@ class LadderService:
 
             # Collect all the rows from the ResultProxy
             return [row[game_stats.c.mapId] async for row in await conn.execute(query)]
+
+    def on_connection_lost(self, player):
+        self.cancel_search(player)
+        self._informed_players.remove(player)
 
     def shutdown_queues(self):
         for queue in self.queues.values():

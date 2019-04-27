@@ -952,7 +952,7 @@ class LobbyConnection():
                 "Lost lobby connection killing game connection for player {}".format(self.game_connection.player.id))
             await self.game_connection.on_connection_lost()
 
-        self.ladder_service.cancel_all_searches(self.player)
+        self.ladder_service.on_connection_lost(self.player)
 
         if self.player:
             self._logger.debug("Lost lobby connection removing player {}".format(self.player.id))

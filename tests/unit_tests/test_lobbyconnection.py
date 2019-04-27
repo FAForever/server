@@ -8,6 +8,8 @@ from server.db.models import ban, friends_and_foes
 from server.game_service import GameService
 from server.games import CustomGame, Game
 from server.geoip_service import GeoIpService
+from server.ice_servers.nts import TwilioNTS
+from server.ladder_service import LadderService
 from server.lobbyconnection import LobbyConnection
 from server.player_service import PlayerService
 from server.players import Player, PlayerState
@@ -80,7 +82,7 @@ def lobbyconnection(loop, mock_protocol, mock_games, mock_players, mock_player, 
         games=mock_games,
         players=mock_players,
         nts_client=mock_nts_client,
-        ladder_service=mock.Mock()
+        ladder_service=mock.create_autospec(LadderService)
     )
 
     lc.player = mock_player
@@ -570,6 +572,7 @@ async def test_broadcast(lobbyconnection: LobbyConnection, mocker):
     player.lobby_connection.send_warning.assert_called_with("This is a test message")
     tuna.lobby_connection.send_warning.assert_called_with("This is a test message")
 
+
 async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnection: LobbyConnection, mocker, mock_player):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
     lobbyconnection.player = mock_player
@@ -585,6 +588,7 @@ async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnecti
         "style": "info",
         "text": "The game you were connected to does no longer exist"
     })
+
 
 @pytest.mark.parametrize("game_state", [GameState.INITIALIZING, GameState.ENDED])
 async def test_game_connection_not_restored_if_game_state_prohibits(lobbyconnection: LobbyConnection, game_service: GameService,
@@ -631,3 +635,10 @@ async def test_game_connection_restored_if_game_exists(lobbyconnection: LobbyCon
 
     assert lobbyconnection.game_connection
     assert lobbyconnection.player.state == PlayerState.PLAYING
+
+
+async def test_connection_lost(lobbyconnection):
+    await lobbyconnection.on_connection_lost()
+
+    lobbyconnection.ladder_service.on_connection_lost.assert_called_once_with(lobbyconnection.player)
+    lobbyconnection.player_service.remove_player.assert_called_once_with(lobbyconnection.player)
