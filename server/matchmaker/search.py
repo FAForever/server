@@ -111,14 +111,14 @@ class Search():
             if deviation >= d:
                 return max(q - self.search_expansion, 0)
 
-    def quality_with(self, opponent_search: 'Search'):
-        if not isinstance(opponent_search.player, Player):
+    def quality_with(self, other: 'Search'):
+        assert other.raw_rating is not None
+
+        if not isinstance(other.player, Player):
             raise TypeError("{} is not a valid player to match with".format(opponent_search.player))
-        if opponent_search.raw_rating is None:
-            return 0
 
         team1 = [Rating(*self.rating)]
-        team2 = [Rating(*opponent_search.rating)]
+        team2 = [Rating(*other.rating)]
 
         return quality([team1, team2])
 
