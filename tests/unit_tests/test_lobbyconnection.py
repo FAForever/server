@@ -47,9 +47,11 @@ def test_game_info_invalid():
 def mock_player():
     return mock.create_autospec(Player(login='Dummy', id=42))
 
+
 @pytest.fixture
 def mock_nts_client():
     return mock.create_autospec(TwilioNTS)
+
 
 @pytest.fixture
 def mock_players(db_engine):

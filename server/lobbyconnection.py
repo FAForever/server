@@ -298,7 +298,10 @@ class LobbyConnection():
                                             player_id=player.id,
                                             author_id=self.player.id,
                                             reason=reason,
-                                            expires_at=func.now() + text(f"interval :duration {period}"),
+                                            expires_at=func.date_add(
+                                                func.now(),
+                                                text(f"interval :duration {period}")
+                                            ),
                                             level='GLOBAL'
                                         ),
                                         duration=duration
