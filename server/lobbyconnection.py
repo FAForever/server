@@ -727,7 +727,7 @@ class LobbyConnection():
             raise ClientError("Cannot host game. Please update your client to the newest version.")
 
         if state == "stop":
-            self.ladder_service.cancel_search(self.player, mod)
+            self.ladder_service.cancel_search(self.player)
             return
 
         async with db.engine.acquire() as conn:

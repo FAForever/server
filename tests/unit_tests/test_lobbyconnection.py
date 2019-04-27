@@ -336,8 +336,7 @@ async def test_send_coop_maps(mocker, lobbyconnection):
     ]
 
 
-@asyncio.coroutine
-def test_command_admin_closelobby(mocker, lobbyconnection):
+async def test_command_admin_closelobby(mocker, lobbyconnection):
     mocker.patch.object(lobbyconnection, 'protocol')
     mocker.patch.object(lobbyconnection, '_logger')
     config = mocker.patch('server.lobbyconnection.config')
@@ -348,7 +347,7 @@ def test_command_admin_closelobby(mocker, lobbyconnection):
     tuna.id = 55
     lobbyconnection.player_service = {1: player, 55: tuna}
 
-    yield from lobbyconnection.command_admin({
+    await lobbyconnection.command_admin({
         'command': 'admin',
         'action': 'closelobby',
         'user_id': 55
@@ -434,19 +433,20 @@ async def test_command_admin_closelobby_with_ban_bad_period(mocker, lobbyconnect
     assert len(bans) == 0
 
 
-@asyncio.coroutine
-def test_command_admin_closeFA(mocker, lobbyconnection):
+async def test_command_admin_closeFA(mocker, lobbyconnection):
     mocker.patch.object(lobbyconnection, 'protocol')
     mocker.patch.object(lobbyconnection, '_logger')
     config = mocker.patch('server.lobbyconnection.config')
     player = mocker.patch.object(lobbyconnection, 'player')
     player.login = 'Sheeo'
+    player.admin = True
     player.id = 42
     tuna = mock.Mock()
     tuna.id = 55
+    lobbyconnection._authenticated = True
     lobbyconnection.player_service = {42: player, 55: tuna}
 
-    yield from lobbyconnection.command_admin({
+    await lobbyconnection.on_message_received({
         'command': 'admin',
         'action': 'closeFA',
         'user_id': 55
@@ -635,6 +635,19 @@ async def test_game_connection_restored_if_game_exists(lobbyconnection: LobbyCon
 
     assert lobbyconnection.game_connection
     assert lobbyconnection.player.state == PlayerState.PLAYING
+
+
+async def test_command_game_matchmaking(lobbyconnection, mock_player, db_engine):
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.id = 1
+    lobbyconnection._authenticated = True
+
+    await lobbyconnection.on_message_received({
+        'command': 'game_matchmaking',
+        'state': 'stop'
+    })
+
+    lobbyconnection.ladder_service.cancel_search.assert_called_with(lobbyconnection.player)
 
 
 async def test_connection_lost(lobbyconnection):
