@@ -38,7 +38,7 @@ async def test_start_and_cancel_search(ladder_service: LadderService):
 
     search = Search([p1])
 
-    await ladder_service.start_search(p1, search, 'ladder1v1')
+    ladder_service.start_search(p1, search, 'ladder1v1')
     await asyncio.sleep(0)  # Give the other coro a chance to run
 
     assert p1.state == PlayerState.SEARCHING_LADDER
@@ -57,7 +57,7 @@ async def test_start_search_cancels_previous_search(ladder_service: LadderServic
 
     search1 = Search([p1])
 
-    await ladder_service.start_search(p1, search1, 'ladder1v1')
+    ladder_service.start_search(p1, search1, 'ladder1v1')
     await asyncio.sleep(0)  # Give the other coro a chance to run
 
     assert p1.state == PlayerState.SEARCHING_LADDER
@@ -65,7 +65,7 @@ async def test_start_search_cancels_previous_search(ladder_service: LadderServic
 
     search2 = Search([p1])
 
-    await ladder_service.start_search(p1, search2, 'ladder1v1')
+    ladder_service.start_search(p1, search2, 'ladder1v1')
     await asyncio.sleep(0)  # Give the other coro a chance to run
 
     assert p1.state == PlayerState.SEARCHING_LADDER
@@ -80,7 +80,7 @@ async def test_cancel_all_searchs(ladder_service: LadderService):
 
     search = Search([p1])
 
-    await ladder_service.start_search(p1, search, 'ladder1v1')
+    ladder_service.start_search(p1, search, 'ladder1v1')
     await asyncio.sleep(0)  # Give the other coro a chance to run
 
     assert p1.state == PlayerState.SEARCHING_LADDER
@@ -100,12 +100,8 @@ async def test_start_game_called_on_match(ladder_service: LadderService):
     ladder_service.start_game = CoroMock()
     ladder_service.inform_player = mock.Mock()
 
-    asyncio.ensure_future(
-        ladder_service.start_search(p1, Search([p1]), 'ladder1v1')
-    )
-    asyncio.ensure_future(
-        ladder_service.start_search(p2, Search([p2]), 'ladder1v1')
-    )
+    ladder_service.start_search(p1, Search([p1]), 'ladder1v1')
+    ladder_service.start_search(p2, Search([p2]), 'ladder1v1')
 
     await asyncio.sleep(1)
 

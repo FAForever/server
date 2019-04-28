@@ -35,7 +35,7 @@ class LadderService:
 
         asyncio.ensure_future(self.handle_queue_matches())
 
-    async def start_search(self, initiator: Player, search: Search, queue_name: str):
+    def start_search(self, initiator: Player, search: Search, queue_name: str):
         self._cancel_existing_searches(initiator)
 
         for player in search.players:

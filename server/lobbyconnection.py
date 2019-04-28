@@ -748,7 +748,7 @@ class LobbyConnection():
                 # TODO: Put player parties here
                 search = Search([self.player])
 
-            await self.ladder_service.start_search(
+            self.ladder_service.start_search(
                 self.player, search, queue_name=mod
             )
 
