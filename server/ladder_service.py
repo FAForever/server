@@ -165,7 +165,8 @@ class LadderService:
 
     def on_connection_lost(self, player):
         self.cancel_search(player)
-        self._informed_players.remove(player)
+        if player in self._informed_players:
+            self._informed_players.remove(player)
 
     def shutdown_queues(self):
         for queue in self.queues.values():
