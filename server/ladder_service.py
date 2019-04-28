@@ -56,7 +56,8 @@ class LadderService:
 
         for search in searches:
             for player in search.players:
-                player.state = PlayerState.IDLE
+                if player.state == PlayerState.SEARCHING_LADDER:
+                    player.state = PlayerState.IDLE
             self._logger.info("%s stopped searching for ladder: %s", player, search)
 
     def _cancel_existing_searches(self, initiator: Player) -> List[Search]:
