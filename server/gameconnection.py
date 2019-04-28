@@ -92,7 +92,7 @@ class GameConnection(GpgNetServerProtocol):
         elif state == PlayerState.JOINING:
             pass
         else:
-            self._logger.exception("Unknown PlayerState")
+            self._logger.exception("Unknown PlayerState: %s", state)
             self.abort()
 
     async def _handle_lobby_state(self):
