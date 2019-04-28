@@ -36,10 +36,15 @@ class LadderService:
         asyncio.ensure_future(self.handle_queue_matches())
 
     async def start_search(self, initiator: Player, search: Search, queue_name: str):
-        self.inform_player(initiator)
-        initiator.state = PlayerState.SEARCHING_LADDER
-
         self._cancel_existing_searches(initiator)
+
+        for player in search.players:
+            player.state = PlayerState.SEARCHING_LADDER
+
+            # For now, inform_player is only designed for ladder1v1
+            if queue_name == "ladder1v1":
+                self.inform_player(player)
+
         self.searches[queue_name][initiator] = search
 
         self._logger.info("%s is searching for '%s': %s", initiator, queue_name, search)
@@ -47,16 +52,21 @@ class LadderService:
         asyncio.ensure_future(self.queues[queue_name].search(search))
 
     def cancel_search(self, initiator: Player):
-        initiator.state = PlayerState.IDLE
+        searches = self._cancel_existing_searches(initiator)
 
-        self._cancel_existing_searches(initiator)
-        self._logger.info("%s stopped searching for ladder", initiator)
+        for search in searches:
+            for player in search.players:
+                player.state = PlayerState.IDLE
+            self._logger.info("%s stopped searching for ladder: %s", player, search)
 
-    def _cancel_existing_searches(self, initiator: Player):
+    def _cancel_existing_searches(self, initiator: Player) -> List[Search]:
+        searches = []
         for queue_name in self.queues:
             search = self.searches[queue_name].get(initiator)
             if search:
                 search.cancel()
+                searches.append(search)
+        return searches
 
     def inform_player(self, player: Player):
         if player not in self._informed_players:
