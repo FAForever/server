@@ -748,9 +748,7 @@ class LobbyConnection():
                 # TODO: Put player parties here
                 search = Search([self.player])
 
-            self.ladder_service.start_search(
-                self.player, search, queue_name=mod
-            )
+            self.ladder_service.start_search(self.player, search, queue_name=mod)
 
     def command_coop_list(self, message):
         """ Request for coop map list"""

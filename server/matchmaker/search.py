@@ -17,7 +17,7 @@ class Search():
 
     def __init__(
         self,
-        target: List[Player],
+        players: List[Player],
         start_time: Optional[float]=None,
         rating_prop: str='ladder_rating'
     ):
@@ -29,6 +29,11 @@ class Search():
         :param rating_prop: 'ladder_rating' or 'global_rating'
         :return: the search object
         """
+        assert isinstance(players, list)
+        for player in players:
+            assert getattr(player, rating_prop) is not None
+
+        self.players = players
         self.rating_prop = rating_prop
         self.start_time = start_time or time.time()
         self._match = asyncio.Future()
@@ -44,13 +49,6 @@ class Search():
             0: 0.8
         }
 
-        if isinstance(target, list):
-            self.players = target
-            for player in self.players:
-                assert getattr(player, rating_prop) is not None
-        else:
-            raise TypeError("Invalid object")
-
     def adjusted_rating(self, player: Player):
         """
         Returns an adjusted mean with a simple linear interpolation between current mean and a specified base mean
@@ -64,9 +62,8 @@ class Search():
     def ratings(self):
         ratings = []
         for player, rating in zip(self.players, self.raw_ratings):
-            num_games = player.numGames
             # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
-            if num_games <= config.NEWBIE_MIN_GAMES and self.rating_prop == 'ladder_rating':
+            if player.numGames <= config.NEWBIE_MIN_GAMES and self.rating_prop == 'ladder_rating':
                 rating = self.adjusted_rating(player)
             ratings.append(rating)
         return ratings
