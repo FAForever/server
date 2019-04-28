@@ -10,6 +10,7 @@ from typing import Optional
 
 import requests
 
+import humanize
 import pymysql
 import semver
 import server
@@ -404,7 +405,7 @@ class LobbyConnection():
 
         if ban_reason is not None and now < ban_expiry:
             self._logger.debug('Rejected login from banned user: %s, %s, %s', player_id, login, self.session)
-            raise ClientError("You are banned from FAF.\n Reason :\n {}".format(ban_reason), recoverable=False)
+            raise ClientError("You are banned from FAF for {}.\n Reason :\n {}".format(humanize.naturaldelta(ban_expiry-now), ban_reason), recoverable=False)
 
         # New accounts are prevented from playing if they didn't link to steam
 
