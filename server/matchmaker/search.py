@@ -1,7 +1,7 @@
 import asyncio
 import math
 import time
-from typing import Optional
+from typing import List, Optional
 
 import server.config as config
 from server.decorators import with_logger
@@ -17,7 +17,7 @@ class Search():
 
     def __init__(
         self,
-        player: Player,
+        target: List[Player],
         start_time: Optional[float]=None,
         rating_prop: str='ladder_rating'
     ):
@@ -30,8 +30,6 @@ class Search():
         :return: the search object
         """
         self.rating_prop = rating_prop
-        self.player = player
-        assert getattr(self.player, rating_prop) is not None
         self.start_time = start_time or time.time()
         self._match = asyncio.Future()
 
@@ -46,28 +44,36 @@ class Search():
             0: 0.8
         }
 
-    @property
-    def adjusted_rating(self):
+        if isinstance(target, list):
+            self.players = target
+            for player in self.players:
+                assert getattr(player, rating_prop) is not None
+        else:
+            raise TypeError("Invalid object")
+
+    def adjusted_rating(self, player: Player):
         """
         Returns an adjusted mean with a simple linear interpolation between current mean and a specified base mean
         """
-        mean, dev = self.player.ladder_rating
-        adjusted_mean = ((config.NEWBIE_MIN_GAMES - self.player.numGames) * config.NEWBIE_BASE_MEAN
-                         + self.player.numGames * mean) / config.NEWBIE_MIN_GAMES
+        mean, dev = player.ladder_rating
+        adjusted_mean = ((config.NEWBIE_MIN_GAMES - player.numGames) * config.NEWBIE_BASE_MEAN
+                         + player.numGames * mean) / config.NEWBIE_MIN_GAMES
         return (adjusted_mean, dev)
 
     @property
-    def rating(self):
-        num_games = self.player.numGames
-        # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
-        if num_games <= config.NEWBIE_MIN_GAMES and self.rating_prop == 'ladder_rating':
-            return self.adjusted_rating
-        else:
-            return self.raw_rating
+    def ratings(self):
+        ratings = []
+        for player, rating in zip(self.players, self.raw_ratings):
+            num_games = player.numGames
+            # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
+            if num_games <= config.NEWBIE_MIN_GAMES and self.rating_prop == 'ladder_rating':
+                rating = self.adjusted_rating(player)
+            ratings.append(rating)
+        return ratings
 
     @property
-    def raw_rating(self):
-        return getattr(self.player, self.rating_prop)
+    def raw_ratings(self):
+        return [getattr(player, self.rating_prop) for player in self.players]
 
     @property
     def boundary_80(self):
@@ -76,7 +82,8 @@ class Search():
 
         These are the mean, rounded to nearest 10, +/- 200, assuming sigma <= 100
         """
-        mu, _ = self.rating
+        # TODO: Figure out what do do with these boundaries
+        mu, _ = self.ratings[0]  # Takes the rating of the first player, only works for 1v1
         rounded_mu = int(math.ceil(mu/10)*10)
         return rounded_mu - 200, rounded_mu + 200
 
@@ -87,7 +94,8 @@ class Search():
 
         These are the mean, rounded to nearest 10, +/- 100, assuming sigma <= 200
         """
-        mu, _ = self.rating
+        # TODO: Figure out what do do with these boundaries
+        mu, _ = self.ratings[0]  # Takes the rating of the first player, only works for 1v1
         rounded_mu = int(math.ceil(mu/10)*10)
         return rounded_mu - 100, rounded_mu + 100
 
@@ -105,20 +113,21 @@ class Search():
 
         :return:
         """
-        _, deviation = self.rating
+        thresholds = []
+        for rating in self.ratings:
+            _, deviation = rating
 
-        for d, q in self._deviation_quality.items():
-            if deviation >= d:
-                return max(q - self.search_expansion, 0)
+            for d, q in self._deviation_quality.items():
+                if deviation >= d:
+                    thresholds.append(max(q - self.search_expansion, 0))
+        return min(thresholds)
 
     def quality_with(self, other: 'Search'):
-        assert other.raw_rating is not None
+        assert all(other.raw_ratings)
+        assert other.players
 
-        if not isinstance(other.player, Player):
-            raise TypeError("{} is not a valid player to match with".format(opponent_search.player))
-
-        team1 = [Rating(*self.rating)]
-        team2 = [Rating(*other.rating)]
+        team1 = [Rating(*rating) for rating in self.ratings]
+        team2 = [Rating(*rating) for rating in other.ratings]
 
         return quality([team1, team2])
 
@@ -140,7 +149,7 @@ class Search():
         if not isinstance(other, Search):
             return False
         elif self.quality_with(other) >= self.match_threshold and \
-            other.quality_with(self) >= other.match_threshold:
+                other.quality_with(self) >= other.match_threshold:
             return True
         return False
 
@@ -150,18 +159,19 @@ class Search():
         :param opponent:
         :return:
         """
-        self._logger.info("Matched %s with %s", self.player, other.player)
+        self._logger.info("Matched %s with %s", self.players, other.players)
 
-        numgames = self.player.numGames
-        if numgames <= config.NEWBIE_MIN_GAMES:
-            mean, dev = self.raw_rating
-            adjusted_mean = self.adjusted_rating
-            self._logger.info('Adjusted mean rating for {player} with {numgames} games from {mean} to {adjusted_mean}'.format(
-                player=self.player,
-                numgames=numgames,
-                mean=mean,
-                adjusted_mean=adjusted_mean
-            ))
+        for player, raw_rating in zip(self.players, self.raw_ratings):
+            numgames = player.numGames
+            if numgames <= config.NEWBIE_MIN_GAMES:
+                mean, dev = raw_rating
+                adjusted_mean = self.adjusted_rating(player)
+                self._logger.info('Adjusted mean rating for {player} with {numgames} games from {mean} to {adjusted_mean}'.format(
+                    player=player,
+                    numgames=numgames,
+                    mean=mean,
+                    adjusted_mean=adjusted_mean
+                ))
         self._match.set_result(other)
 
     async def await_match(self):
@@ -180,4 +190,4 @@ class Search():
         self._match.cancel()
 
     def __str__(self):
-        return "Search({}, {}, {})".format(self.player, self.match_threshold, self.search_expansion)
+        return "Search({}, {}, {})".format(self.players, self.match_threshold, self.search_expansion)

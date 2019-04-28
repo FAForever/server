@@ -743,10 +743,10 @@ class LobbyConnection():
             self.player.faction = message['faction']
 
             if mod == "ladder1v1":
-                search = Search(self.player)
+                search = Search([self.player])
             else:
                 # TODO: Put player parties here
-                search = Search(self.player)
+                search = Search([self.player])
 
             await self.ladder_service.start_search(
                 self.player, search, queue_name=mod

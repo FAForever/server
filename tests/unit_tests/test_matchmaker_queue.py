@@ -36,43 +36,55 @@ def matchmaker_players_all_match():
 
 def test_newbie_min_games(mocker, loop, matchmaker_players):
     p1, _, _, _, _, p6 = matchmaker_players
-    s1, s6 = Search(p1), Search(p6)
-    assert s1.rating == p1.ladder_rating and s6.rating != p6.ladder_rating
+    s1, s6 = Search([p1]), Search([p6])
+    assert s1.ratings[0] == p1.ladder_rating and s6.ratings[0] != p6.ladder_rating
 
 
 def test_search_threshold(mocker, loop, matchmaker_players):
-    s = Search(matchmaker_players[0])
+    s = Search([matchmaker_players[0]])
     assert s.match_threshold <= 1
     assert s.match_threshold >= 0
 
 
 def test_search_quality_equivalence(mocker, loop, matchmaker_players):
     p1, _, _, p4, _, _ = matchmaker_players
-    s1, s4 = Search(p1), Search(p4)
+    s1, s4 = Search([p1]), Search([p4])
     assert s1.quality_with(s4) == s4.quality_with(s1)
 
 
 def test_search_quality(mocker, loop, matchmaker_players):
     p1, _, p3, _, p5, p6 = matchmaker_players
-    s1, s3, s5, s6 = Search(p1), Search(p3), Search(p5), Search(p6)
+    s1, s3, s5, s6 = Search([p1]), Search([p3]), Search([p5]), Search([p6])
     assert s3.quality_with(s5) > 0.7 and s1.quality_with(s6) < 0.2
 
 
 async def test_search_match(mocker, loop, matchmaker_players):
     p1, _, _, p4, _, _ = matchmaker_players
-    s1, s4 = Search(p1), Search(p4)
+    s1, s4 = Search([p1]), Search([p4])
     assert s1.matches_with(s4)
+
+
+async def test_search_team_match(matchmaker_players):
+    p1, p2, p3, p4, _, _ = matchmaker_players
+    s1, s4 = Search([p1, p3]), Search([p2, p4])
+    assert s1.matches_with(s4)
+
+
+async def test_search_team_not_match(matchmaker_players):
+    p1, p2, p3, p4, _, _ = matchmaker_players
+    s1, s4 = Search([p1, p4]), Search([p2, p3])
+    assert not s1.matches_with(s4)
 
 
 async def test_search_no_match(mocker, loop, matchmaker_players):
     p1, p2, _, _, _, _ = matchmaker_players
-    s1, s2 = Search(p1), Search(p2)
+    s1, s2 = Search([p1]), Search([p2])
     assert not s1.matches_with(s2)
 
 
 async def test_search_await(mocker, loop, matchmaker_players):
     p1, p2, _, _, _, _ = matchmaker_players
-    s1, s2 = Search(p1), Search(p2)
+    s1, s2 = Search([p1]), Search([p2])
     assert not s1.matches_with(s2)
     await_coro = asyncio.ensure_future(s1.await_match())
     s1.match(s2)
@@ -110,9 +122,9 @@ async def test_queue_race(mocker, player_service, matchmaker_queue):
 
     try:
         await asyncio.gather(
-            asyncio.wait_for(matchmaker_queue.search(Search(p1)), 0.1),
-            asyncio.wait_for(matchmaker_queue.search(Search(p2)), 0.1),
-            asyncio.wait_for(matchmaker_queue.search(Search(p3)), 0.1)
+            asyncio.wait_for(matchmaker_queue.search(Search([p1])), 0.1),
+            asyncio.wait_for(matchmaker_queue.search(Search([p2])), 0.1),
+            asyncio.wait_for(matchmaker_queue.search(Search([p3])), 0.1)
         )
     except (TimeoutError, CancelledError):
         pass
@@ -125,7 +137,7 @@ async def test_queue_cancel(mocker, player_service, matchmaker_queue, matchmaker
     # Turn list of players into map from ids to players.
     player_service.players = dict(map(lambda x: (x.id, x), list(matchmaker_players)))
 
-    s1, s2 = Search(matchmaker_players[1]), Search(matchmaker_players[2])
+    s1, s2 = Search([matchmaker_players[1]]), Search([matchmaker_players[2]])
     matchmaker_queue.push(s1)
     s1.cancel()
     try:
@@ -140,10 +152,10 @@ async def test_queue_cancel(mocker, player_service, matchmaker_queue, matchmaker
 async def test_queue_mid_cancel(mocker, player_service, matchmaker_queue, matchmaker_players_all_match):
     # Turn list of players into map from ids to players.
     player_service.players = dict(map(lambda x: (x.id, x), list(matchmaker_players_all_match)))
-
-    (s1, s2, s3) = (Search(matchmaker_players_all_match[1]),
-                    Search(matchmaker_players_all_match[2]),
-                    Search(matchmaker_players_all_match[3]))
+    p0, p1, p2, p3, _ = matchmaker_players_all_match
+    (s1, s2, s3) = (Search([p1]),
+                    Search([p2]),
+                    Search([p3]))
     asyncio.ensure_future(matchmaker_queue.search(s1))
     asyncio.ensure_future(matchmaker_queue.search(s2))
     s1.cancel()

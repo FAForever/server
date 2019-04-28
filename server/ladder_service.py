@@ -71,7 +71,10 @@ class LadderService:
 
     async def handle_queue_matches(self):
         async for s1, s2 in self.queues["ladder1v1"].iter_matches():
-            asyncio.ensure_future(self.start_game(s1.player, s2.player))
+            assert len(s1.players) == 1
+            assert len(s2.players) == 1
+            p1, p2 = s1.players[0], s2.players[0]
+            asyncio.ensure_future(self.start_game(p1, p2))
 
     async def start_game(self, host: Player, guest: Player):
         host.state = PlayerState.HOSTING

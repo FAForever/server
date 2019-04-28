@@ -60,28 +60,28 @@ class MatchmakerQueue:
                 # If the queue was cancelled, or some other error occured,
                 # make sure to clean up.
                 self.game_service.mark_dirty(self)
-                if search.player in self.queue:
-                    del self.queue[search.player]
+                if search in self.queue:
+                    del self.queue[search]
 
     def find_match(self, search: Search) -> bool:
-        self._logger.debug("Searching for matchup for %s", search.player)
-        for opponent, opponent_search in self.queue.copy().items():
-            if opponent == search.player:
+        self._logger.debug("Searching for matchup for %s", search.players)
+        for other in self.queue.copy().values():
+            if other == search:
                 continue
 
-            quality = search.quality_with(opponent_search)
+            quality = search.quality_with(other)
             threshold = search.match_threshold
             self._logger.debug("Game quality between %s and %s: %f (threshold: %f)",
-                               search.player, opponent, quality, threshold)
+                               search.players, other.players, quality, threshold)
             if quality >= threshold:
-                return self.match(search, opponent_search)
+                return self.match(search, other)
 
             return False
 
     def push(self, search: Search):
         """ Push the given search object onto the queue """
 
-        self.queue[search.player] = search
+        self.queue[search] = search
         self.game_service.mark_dirty(self)
 
     def match(self, s1: Search, s2: Search) -> bool:
@@ -95,10 +95,10 @@ class MatchmakerQueue:
             return False
         s1.match(s2)
         s2.match(s1)
-        if s1.player in self.queue:
-            del self.queue[s1.player]
-        if s2.player in self.queue:
-            del self.queue[s2.player]
+        if s1 in self.queue:
+            del self.queue[s1]
+        if s2 in self.queue:
+            del self.queue[s2]
 
         self._matches.append((s1, s2))
         self.game_service.mark_dirty(self)
@@ -116,8 +116,8 @@ class MatchmakerQueue:
         """
         return {
             'queue_name': self.queue_name,
-            'boundary_80s': [search.boundary_80 for player, search in self.queue.items()],
-            'boundary_75s': [search.boundary_75 for player, search in self.queue.items()]
+            'boundary_80s': [search.boundary_80 for search in self.queue.values()],
+            'boundary_75s': [search.boundary_75 for search in self.queue.values()]
         }
 
     def __repr__(self):
