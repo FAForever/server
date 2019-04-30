@@ -1,7 +1,8 @@
 insert into login (id, login, email, password, create_time) values
     (100, 'ladder1', 'ladder1@example.com', SHA2('ladder1', 256), '2000-01-01 00:00:00'),
     (101, 'ladder2', 'ladder2@example.com', SHA2('ladder2', 256), '2000-01-01 00:00:00'),
-    (102, 'ladder_ban', 'ladder_ban@example.com', SHA2('ladder_ban', 256), '2000-01-01 00:00:00')
+    (102, 'ladder_ban', 'ladder_ban@example.com', SHA2('ladder_ban', 256), '2000-01-01 00:00:00'),
+    (200, 'banme', 'banme@example.com', SHA2('banme', 256), '2000-01-01 00:00:00')
 ;
 
 
@@ -19,6 +20,8 @@ insert into ladder1v1_rating (id, mean, deviation, numGames, is_active) values
 
 delete from matchmaker_ban where id = 102 and userid = 102;
 insert into matchmaker_ban (id, userid) values (102, 102);
+
+delete from ban where player_id = 200;
 
 insert into game_stats (id, startTime, gameType, gameMod, host, mapId, gameName, validity) values
     (41935, NOW(), '0', 6, 1, 0, 'MapRepetition', 0),

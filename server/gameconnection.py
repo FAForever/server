@@ -1,6 +1,6 @@
 import asyncio
-import time
 from collections import defaultdict
+
 import server.db as db
 from sqlalchemy import text
 
@@ -41,18 +41,12 @@ class GameConnection(GpgNetServerProtocol):
         self.protocol = protocol
         self._state = state
         self._waiters = defaultdict(list)
-        self.player_service = player_service
         self.game_service = games
+        self.player_service = player_service
 
-        self.initTime = time.time()
-        self.proxies = {}
         self._player = player
         player.game_connection = self  # Set up weak reference to self
         self._game = game
-
-        self.last_pong = time.time()
-
-        self._transport = None
 
         self.finished_sim = False
 
