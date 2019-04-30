@@ -130,7 +130,6 @@ async def test_queue_race(mocker, player_service, matchmaker_queue):
         pass
 
     assert len(matchmaker_queue) == 0
-    await asyncio.sleep(1)  # Wait for the game to be started
 
 
 async def test_queue_cancel(mocker, player_service, matchmaker_queue, matchmaker_players):
@@ -168,4 +167,3 @@ async def test_queue_mid_cancel(mocker, player_service, matchmaker_queue, matchm
     assert s2.is_matched
     assert s3.is_matched
     assert len(matchmaker_queue) == 0
-    await asyncio.sleep(1)  # Wait for the game to be started
