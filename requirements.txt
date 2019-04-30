@@ -21,3 +21,4 @@ requests_oauthlib
 mock
 SQLAlchemy
 twilio
+humanize

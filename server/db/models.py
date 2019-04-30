@@ -1,9 +1,22 @@
-from sqlalchemy import (TIMESTAMP, Boolean, Column, Enum, Float, ForeignKey,
-                        Integer, MetaData, String, Table, Text)
+from sqlalchemy import (TIMESTAMP, Boolean, Column, DateTime, Enum, Float,
+                        ForeignKey, Integer, MetaData, String, Table, Text)
 
 from ..games.game import Victory
 
 metadata = MetaData()
+
+ban = Table(
+    'ban', metadata,
+    Column('id',            Integer,    primary_key=True),
+    Column('player_id',     Integer,    ForeignKey('login.id'), nullable=False),
+    Column('author_id',     Integer,    ForeignKey('login.id'), nullable=False),
+    Column('reason',        Text,       nullable=False),
+    Column('expires_at',    DateTime),
+    Column('level',         Enum('CHAT', 'GLOBAL'), nullable=False),
+    Column('create_time',   TIMESTAMP,  nullable=False),
+    Column('update_time',   TIMESTAMP,  nullable=False),
+    Column('report_id',     Integer,    ForeignKey('moderation_report.id'))
+)
 
 friends_and_foes = Table(
     'friends_and_foes', metadata,

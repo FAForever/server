@@ -10,16 +10,17 @@ from typing import Optional
 
 import requests
 
+import humanize
 import pymysql
 import semver
 import server
 import server.db as db
-from sqlalchemy import and_
+from sqlalchemy import and_, func, text
 
 from . import config
-from .config import FAF_POLICY_SERVER_BASE_URL, TWILIO_TTL
-from .db.models import friends_and_foes
 from .abc.base_game import GameConnectionState
+from .config import FAF_POLICY_SERVER_BASE_URL, TWILIO_TTL
+from .db.models import ban, friends_and_foes
 from .decorators import timed, with_logger
 from .game_service import GameService
 from .gameconnection import GameConnection
@@ -70,12 +71,9 @@ class LobbyConnection():
         self.nts_client = nts_client
         self.coturn_generator = CoturnHMAC()
         self.matchmaker_queue = matchmaker_queue
-        self.ladderPotentialPlayers = []
-        self.warned = False
         self._authenticated = False
         self.player = None  # type: Player
         self.game_connection = None  # type: GameConnection
-        self.leagueAvatar = None
         self.peer_address = None  # type: Optional[Address]
         self.session = int(random.randrange(0, 4294967295))
         self.protocol = None
@@ -281,7 +279,7 @@ class LobbyConnection():
                     if 'ban' in message:
                         reason = message['ban'].get('reason', 'Unspecified')
                         duration = int(message['ban'].get('duration', 1))
-                        period = message['ban'].get('period', 'DAY')
+                        period = message['ban'].get('period', 'DAY').upper()
                         self._logger.warn('Administrative action: %s closed client for %s with %s ban (Reason: %s)', self.player, player, duration, reason)
                         async with db.engine.acquire() as conn:
                             try:
@@ -291,10 +289,24 @@ class LobbyConnection():
                                 if row:
                                     ban_fail = row[0]
                                 else:
-                                    # FIXME: Interpolating the period into this is terrible and insecure - but the data comes from trusted users (admins) only
+                                    if period not in ["DAY", "WEEK", "MONTH"]:
+                                        self._logger.warn('Tried to ban player with invalid period')
+                                        raise ClientError(f"Period '{period}' is not allowed!")
+
+                                    # NOTE: Text formatting in sql string is only ok because we just checked it's value
                                     await conn.execute(
-                                        "INSERT INTO ban (player_id, author_id, reason, expires_at, level) VALUES (%s, %s, %s, DATE_ADD(NOW(), INTERVAL %s {}), 'GLOBAL')".format(period),
-                                        (player.id, self.player.id, reason, duration))
+                                        ban.insert().values(
+                                            player_id=player.id,
+                                            author_id=self.player.id,
+                                            reason=reason,
+                                            expires_at=func.date_add(
+                                                func.now(),
+                                                text(f"interval :duration {period}")
+                                            ),
+                                            level='GLOBAL'
+                                        ),
+                                        duration=duration
+                                    )
                             except pymysql.MySQLError as e:
                                 raise ClientError('Your ban attempt upset the database: {}'.format(e))
                     else:
@@ -393,7 +405,7 @@ class LobbyConnection():
 
         if ban_reason is not None and now < ban_expiry:
             self._logger.debug('Rejected login from banned user: %s, %s, %s', player_id, login, self.session)
-            raise ClientError("You are banned from FAF.\n Reason :\n {}".format(ban_reason), recoverable=False)
+            raise ClientError("You are banned from FAF for {}.\n Reason :\n {}".format(humanize.naturaldelta(ban_expiry-now), ban_reason), recoverable=False)
 
         # New accounts are prevented from playing if they didn't link to steam
 
