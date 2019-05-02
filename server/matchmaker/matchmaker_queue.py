@@ -20,17 +20,19 @@ class MatchmakerQueue:
         self.rating_prop = 'ladder_rating'
         self.queue = OrderedDict()
         self._matches = deque()
-        self._shutdown = False
+        self._is_running = True
         self._logger.debug("MatchmakerQueue initialized for %s", queue_name)
 
     async def iter_matches(self):
-        """ Asynchronusly yields matches as they become available """
+        """ Asynchronously yields matches as they become available """
 
-        while not self._shutdown:
+        while self._is_running:
             if not self._matches:
+                # There are no matches so there is nothing to do
                 await asyncio.sleep(1)
                 continue
 
+            # Yield the next available match to the caller
             yield self._matches.popleft()
 
     async def search(self, search: Search):
@@ -105,7 +107,7 @@ class MatchmakerQueue:
         return True
 
     def shutdown(self):
-        self._shutdown = True
+        self._is_running = False
 
     def __len__(self):
         return self.queue.__len__()
