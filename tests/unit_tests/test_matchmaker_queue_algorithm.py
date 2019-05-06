@@ -28,7 +28,7 @@ def test_rank_all():
     s3 = Search([p(2000, 300, num_games=50)])
     searches = [s1, s2, s3]
 
-    ranks = algorithm.rank_all(searches)
+    ranks = algorithm._rank_all(searches)
 
     assert ranks == {
         s1: [s3, s2],

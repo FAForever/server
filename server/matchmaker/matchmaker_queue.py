@@ -56,13 +56,16 @@ class MatchmakerQueue:
 
             self.find_matches()
 
+            # Any searches in the queue at this point were unable to find a
+            # match this round and will have higher priority next round.
+
+            self.game_service.mark_dirty(self)
+
     async def search(self, search: Search):
         """
         Search for a match.
 
-        If a suitable match is found, immediately calls on_matched_with on both players.
-
-        Otherwise, puts a search object into the Queue and awaits completion
+        Puts a search object into the Queue and awaits completion.
 
         :param player: Player to search for a matchup for
         """
@@ -87,7 +90,7 @@ class MatchmakerQueue:
 
         new_matches = stable_marriage(self.queue.values())
         for s1, s2 in new_matches:
-            self.match(s1, s2)
+            self.match(s1, s2)  # Does nothing if one search was canceled
         self._matches.extend(new_matches)
 
     def push(self, search: Search):
@@ -113,7 +116,6 @@ class MatchmakerQueue:
             del self.queue[s2]
 
         self._matches.append((s1, s2))
-        self.game_service.mark_dirty(self)
         return True
 
     def shutdown(self):
