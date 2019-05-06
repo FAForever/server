@@ -1,10 +1,12 @@
 import asyncio
-
 from collections import OrderedDict, deque
 from concurrent.futures import CancelledError
+from time import time
 
 import server
 from server.decorators import with_logger
+
+from .algorithm import time_until_next_pop, MAX_QUEUE_POP_TIME, stable_marriage
 from .search import Search
 
 
@@ -21,6 +23,8 @@ class MatchmakerQueue:
         self.queue = OrderedDict()
         self._matches = deque()
         self._is_running = True
+        self._last_queue_pop = time()
+        asyncio.ensure_future(self.queue_pop_timer())
         self._logger.debug("MatchmakerQueue initialized for %s", queue_name)
 
     async def iter_matches(self):
@@ -34,6 +38,23 @@ class MatchmakerQueue:
 
             # Yield the next available match to the caller
             yield self._matches.popleft()
+
+    async def queue_pop_timer(self):
+        """ Periodically tries to match all Searches in the queue. The amount
+        of time until next queue 'pop' is determined by the number of players
+        in the queue.
+        """
+        next_pop = MAX_QUEUE_POP_TIME
+        while self._is_running:
+            time_elapsed = time() - self._last_queue_pop
+            time_remaining = next_pop - time_elapsed
+            if time_remaining > 0:
+                await asyncio.sleep(time_remaining)
+
+            self._last_queue_pop = time()
+            next_pop = time_until_next_pop(num_queued=len(self))
+
+            self.find_matches()
 
     async def search(self, search: Search):
         """
@@ -49,10 +70,6 @@ class MatchmakerQueue:
 
         with server.stats.timer('matchmaker.search'):
             try:
-                if self.find_match(search):
-                    return
-
-                self._logger.debug("Found nobody searching, pushing to queue: %s", search)
                 self.push(search)
                 await search.await_match()
                 self._logger.debug("Search complete: %s", search)
@@ -65,25 +82,13 @@ class MatchmakerQueue:
                 if search in self.queue:
                     del self.queue[search]
 
-    def find_match(self, search: Search) -> bool:
-        self._logger.debug(
-            "Searching for matchup for %s (threshold: %f)",
-            search.players, search.match_threshold
-        )
+    def find_matches(self):
+        self._logger.debug("Searching for matches: ", self.queue_name)
 
-        for other in self.queue.copy().values():
-            if other == search:
-                continue
-
-            self._logger.debug(
-                "Game quality with %s: %f (other threshold: %f)",
-                other.players, search.quality_with(other), other.match_threshold
-            )
-
-            if search.matches_with(other):
-                return self.match(search, other)
-
-        return False
+        new_matches = stable_marriage(self.queue.values())
+        for s1, s2 in new_matches:
+            self.match(s1, s2)
+        self._matches.extend(new_matches)
 
     def push(self, search: Search):
         """ Push the given search object onto the queue """

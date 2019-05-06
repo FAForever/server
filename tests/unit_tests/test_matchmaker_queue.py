@@ -170,11 +170,15 @@ async def test_queue_race(mocker, player_service, matchmaker_queue):
 
     player_service.players = {p1.id: p1, p2.id: p2, p3.id: p3}
 
+    async def find_matches():
+        await asyncio.sleep(0.01)
+        matchmaker_queue.find_matches()
     try:
         await asyncio.gather(
             asyncio.wait_for(matchmaker_queue.search(Search([p1])), 0.1),
             asyncio.wait_for(matchmaker_queue.search(Search([p2])), 0.1),
-            asyncio.wait_for(matchmaker_queue.search(Search([p3])), 0.1)
+            asyncio.wait_for(matchmaker_queue.search(Search([p3])), 0.1),
+            asyncio.ensure_future(find_matches())
         )
     except (TimeoutError, CancelledError):
         pass
@@ -208,8 +212,15 @@ async def test_queue_mid_cancel(mocker, player_service, matchmaker_queue, matchm
     asyncio.ensure_future(matchmaker_queue.search(s1))
     asyncio.ensure_future(matchmaker_queue.search(s2))
     s1.cancel()
+
+    async def find_matches():
+        await asyncio.sleep(0.01)
+        matchmaker_queue.find_matches()
     try:
-        await asyncio.wait_for(matchmaker_queue.search(s3), 0.1)
+        await asyncio.gather(
+            asyncio.wait_for(matchmaker_queue.search(s3), 0.1),
+            asyncio.ensure_future(find_matches())
+        )
     except CancelledError:
         pass
 
