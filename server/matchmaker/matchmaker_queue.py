@@ -88,9 +88,11 @@ class MatchmakerQueue:
     def find_matches(self):
         self._logger.debug("Searching for matches: ", self.queue_name)
 
-        new_matches = stable_marriage(self.queue.values())
-        for s1, s2 in new_matches:
-            self.match(s1, s2)  # Does nothing if one search was canceled
+        # Call self.match on all matches and filter out the ones that were canceled
+        new_matches = filter(
+            lambda m: self.match(m[0], m[1]),
+            stable_marriage(self.queue.values())
+        )
         self._matches.extend(new_matches)
 
     def push(self, search: Search):
