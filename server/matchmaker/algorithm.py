@@ -3,6 +3,7 @@ from collections import deque
 from statistics import mean
 from typing import Deque, Dict, Iterable, List, Set, Tuple
 
+from .. import config
 from .search import Search
 
 ################################################################################
@@ -10,9 +11,9 @@ from .search import Search
 ################################################################################
 
 # The maximum amount of time (in seconds) to wait if no one is searching.
-MAX_QUEUE_POP_TIME = 60 * 15
-# An arbitrary number determining how rapidly the queue time falls off when the
-# number of players increases. See https://www.desmos.com/calculator/v3tdrjbqub.
+MAX_QUEUE_POP_TIME = config.MAX_QUEUE_POP_TIME
+# The number of searches in the queue required for the queue time to be cut in
+# half. See https://www.desmos.com/calculator/v3tdrjbqub.
 QUEUE_POP_TIME_SCALE_FACTOR = 20
 # How many previous queue sizes to consider
 QUEUE_TIME_MOVING_AVG_SIZE = 5
