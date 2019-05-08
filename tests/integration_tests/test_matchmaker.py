@@ -1,6 +1,6 @@
 import asyncio
 
-import pytest
+from tests import CoroMock
 
 from .conftest import connect_and_sign_in, read_until
 from .testclient import ClientTest
@@ -11,6 +11,8 @@ aiosleep = asyncio.sleep
 
 async def test_game_matchmaking(loop, lobby_server, mocker):
     mocker.patch('server.ladder_service.asyncio.sleep', side_effect=lambda _: aiosleep(0.1))
+    mocker.patch('server.games.game.Game.await_hosted', CoroMock())
+
 
     _, _, proto1 = await connect_and_sign_in(
         ('ladder1', 'ladder1'),

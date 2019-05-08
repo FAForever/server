@@ -16,11 +16,28 @@ async def test_start_game(ladder_service: LadderService, game_service: GameServi
     p2.id = 2
     game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
 
-    with mock.patch('asyncio.sleep', CoroMock()):
+    with mock.patch('server.games.game.Game.await_hosted', CoroMock()):
         await ladder_service.start_game(p1, p2)
 
     assert p1.lobby_connection.launch_game.called
     assert p2.lobby_connection.launch_game.called
+
+
+async def test_start_game_timeout(ladder_service: LadderService, game_service: GameService):
+    p1 = mock.create_autospec(Player('Dostya', id=1))
+    p2 = mock.create_autospec(Player('Rhiza', id=2))
+
+    p1.id = 1
+    p2.id = 2
+    game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
+
+    with mock.patch('server.games.game.Game.sleep', CoroMock()):
+        await ladder_service.start_game(p1, p2)
+
+    assert p1.lobby_connection.launch_game.called
+    assert not p2.lobby_connection.launch_game.called
+    p1.lobby_connection.send.assert_called_once_with({"command": "game_launch_timeout"})
+    p2.lobby_connection.send.assert_called_once_with({"command": "game_launch_timeout"})
 
 
 def test_inform_player(ladder_service: LadderService):

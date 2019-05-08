@@ -120,7 +120,13 @@ class LadderService:
         mapname = map_path[5:-4]  # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
                                   # Really in the future, just send a better description
         host.lobby_connection.launch_game(game, is_host=True, use_map=mapname)
-        await asyncio.sleep(4)
+        try:
+            await game.await_hosted()
+        except TimeoutError:
+            msg = {"command": "game_launch_timeout"}
+            host.lobby_connection.send(msg)
+            guest.lobby_connection.send(msg)
+            return
         guest.lobby_connection.launch_game(game, is_host=False, use_map=mapname)
 
     async def choose_map(self, players: [Player]) -> MapDescription:
