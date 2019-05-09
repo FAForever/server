@@ -310,10 +310,10 @@ class Game(BaseGame):
         return teams
 
     async def await_hosted(self):
-        await asyncio.wait_for(self._is_hosted, None)
+        return await asyncio.wait_for(self._is_hosted, None)
 
     def set_hosted(self):
-        self._is_hosted.set_result(None)
+        self._is_hosted.set_result(True)
 
     def outcome(self, player: Player) -> Optional[GameOutcome]:
         """
@@ -457,6 +457,8 @@ class Game(BaseGame):
                     await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
                     return
 
+                if not self._is_hosted.done():
+                    self._is_hosted.set_result(False)
                 await self.persist_results()
                 await self.rate_game()
                 await self._process_pending_army_stats()

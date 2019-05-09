@@ -131,6 +131,7 @@ class GameConnection(GpgNetServerProtocol):
         :param message:
         :return:
         """
+        self._logger.debug("<<: %s", message)
         try:
             cmd_id, args = message['command'], message['args']
             await self.handle_action(cmd_id, args)
@@ -173,7 +174,6 @@ class GameConnection(GpgNetServerProtocol):
         :param args: command arguments
         :return: None
         """
-
         try:
             await COMMAND_HANDLERS[command](self, *args)
         except KeyError:

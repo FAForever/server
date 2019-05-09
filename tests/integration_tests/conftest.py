@@ -6,7 +6,6 @@ from unittest import mock
 import pytest
 from server import GameService, PlayerService, run_lobby_server
 from server.ladder_service import LadderService
-from server.matchmaker import MatchmakerQueue
 from server.protocol import QDataStreamProtocol
 
 

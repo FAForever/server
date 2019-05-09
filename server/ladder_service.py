@@ -121,12 +121,15 @@ class LadderService:
                                   # Really in the future, just send a better description
         host.lobby_connection.launch_game(game, is_host=True, use_map=mapname)
         try:
-            await game.await_hosted()
+            hosted = await game.await_hosted()
+            if not hosted:
+                raise TimeoutError("Host left lobby")
         except TimeoutError:
             msg = {"command": "game_launch_timeout"}
             host.lobby_connection.send(msg)
             guest.lobby_connection.send(msg)
             return
+
         guest.lobby_connection.launch_game(game, is_host=False, use_map=mapname)
 
     async def choose_map(self, players: [Player]) -> MapDescription:
