@@ -75,7 +75,7 @@ def test_search_await(mocker, loop, matchmaker_players):
     p1, p2, _, _, _, _ = matchmaker_players
     s1, s2 = Search(p1), Search(p2)
     assert not s1.matches_with(s2)
-    await_coro = asyncio.async(s1.await_match())
+    await_coro = asyncio.ensure_future(s1.await_match())
     s1.match(s2)
     yield from asyncio.wait_for(await_coro, 1)
     assert await_coro.done()

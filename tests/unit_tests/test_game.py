@@ -13,7 +13,7 @@ from server.players import Player
 from tests import CoroMock
 from tests.unit_tests.conftest import (add_connected_player,
                                        add_connected_players, add_players,
-                                       mock_game_connection)
+                                       make_mock_game_connection)
 from trueskill import Rating
 
 
@@ -227,7 +227,6 @@ async def test_game_end_when_no_more_connections(game: Game, mock_game_connectio
     game.on_game_end.assert_any_call()
 
 
-@patch('server.games.game.db.engine')  # FIXME
 async def test_game_sim_ends_when_no_more_connections(game: Game, players):
     await game.clear_data()
     game.state = GameState.LOBBY
@@ -242,7 +241,6 @@ async def test_game_sim_ends_when_no_more_connections(game: Game, players):
     assert game.ended
 
 
-@patch('server.games.game.db.engine')  # FIXME
 async def test_game_sim_ends_when_connections_ended_sim(game: Game, players):
     await game.clear_data()
     game.state = GameState.LOBBY
@@ -676,7 +674,7 @@ async def test_players_exclude_observers(game: Game):
     obs = Player(id=3, login='Zoidberg', global_rating=(1500, 500))
 
     game.game_service.player_service[obs.id] = obs
-    gc = mock_game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=obs)
+    gc = make_mock_game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=obs)
     game.set_player_option(obs.id, 'Army', -1)
     game.set_player_option(obs.id, 'StartSpot', -1)
     game.set_player_option(obs.id, 'Team', 0)

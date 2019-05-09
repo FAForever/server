@@ -24,7 +24,7 @@ class PlayerService:
         self.blacklisted_email_domains = {}
         self._dirty_players = set()
 
-        asyncio.get_event_loop().run_until_complete(asyncio.async(self.update_data()))
+        asyncio.get_event_loop().run_until_complete(asyncio.ensure_future(self.update_data()))
         self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
 
     def __len__(self):

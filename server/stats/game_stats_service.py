@@ -42,12 +42,12 @@ class GameStatsService:
             return
 
         if stats is None:
-            self._logger.warn("Player %s reported stats of a game he was not part of", player.login)
+            self._logger.warning("Player %s reported stats of a game he was not part of", player.login)
             return
 
         army_result = game.get_army_result(player)
         if not army_result:
-            self._logger.warn("No army result available for player %s", player.login)
+            self._logger.warning("No army result available for player %s", player.login)
             return
 
         self._logger.debug("Processing game stats for player: %s", player.login)
@@ -103,7 +103,7 @@ class GameStatsService:
             updated_achievements = await self._achievement_service.execute_batch_update(player.id, a_queue)
 
             if updated_achievements is None:
-                self._logger.warn("API returned an error while handling the achievements batch update.")
+                self._logger.warning("API returned an error while handling the achievements batch update.")
                 return
 
             await self._event_service.execute_batch_update(player.id, e_queue)

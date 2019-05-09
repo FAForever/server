@@ -10,9 +10,11 @@ RUN apt-get install -y --no-install-recommends \
     apt-get clean
 RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-COPY requirements.txt /tmp/requirements.txt
+COPY Pipfile Pipfile
+COPY Pipfile.lock Pipfile.lock
 
-RUN python3 -m pip install -r /tmp/requirements.txt
+RUN python3 -m pip install pipenv
+RUN pipenv install --ignore-pipfile --system --deploy
 
 ADD . /code/
 WORKDIR /code/
