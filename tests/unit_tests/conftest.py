@@ -38,7 +38,11 @@ def game_connection(request, game, players, game_service, player_service):
 
 
 @pytest.fixture
-def mock_game_connection(state=GameConnectionState.INITIALIZING, player=None):
+def mock_game_connection():
+    return make_mock_game_connection()
+
+
+def make_mock_game_connection(state=GameConnectionState.INITIALIZING, player=None):
     gc = mock.create_autospec(spec=GameConnection)
     gc.state = state
     gc.player = player
@@ -62,7 +66,7 @@ def geoip_service():
 
 def add_connected_player(game: Game, player):
     game.game_service.player_service[player.id] = player
-    gc = mock_game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=player)
+    gc = make_mock_game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=player)
     game.set_player_option(player.id, 'Army', 0)
     game.set_player_option(player.id, 'StartSpot', 0)
     game.set_player_option(player.id, 'Team', 0)

@@ -264,7 +264,7 @@ class LobbyConnection():
             if action == "closeFA":
                 player = self.player_service[message['user_id']]
                 if player:
-                    self._logger.warn('Administrative action: %s closed game for %s', self.player, player)
+                    self._logger.warning('Administrative action: %s closed game for %s', self.player, player)
                     player.lobby_connection.sendJSON(dict(command="notice", style="kill"))
                     player.lobby_connection.sendJSON(dict(command="notice", style="info",
                                        text=("Your game was closed by an administrator ({admin_name}). "
@@ -280,7 +280,7 @@ class LobbyConnection():
                         reason = message['ban'].get('reason', 'Unspecified')
                         duration = int(message['ban'].get('duration', 1))
                         period = message['ban'].get('period', 'DAY').upper()
-                        self._logger.warn('Administrative action: %s closed client for %s with %s ban (Reason: %s)', self.player, player, duration, reason)
+                        self._logger.warning('Administrative action: %s closed client for %s with %s ban (Reason: %s)', self.player, player, duration, reason)
                         async with db.engine.acquire() as conn:
                             try:
                                 result = await conn.execute("SELECT reason from lobby_ban WHERE idUser=%s AND expires_at > NOW()", (message['user_id']))
@@ -310,7 +310,7 @@ class LobbyConnection():
                             except pymysql.MySQLError as e:
                                 raise ClientError('Your ban attempt upset the database: {}'.format(e))
                     else:
-                        self._logger.warn('Administrative action: %s closed client for %s', self.player, player)
+                        self._logger.warning('Administrative action: %s closed client for %s', self.player, player)
                     player.lobby_connection.kick(
                         message=("You were kicked from FAF by an administrator ({admin_name}). "
                          "Please refer to our rules for the lobby/game here {rule_link}."

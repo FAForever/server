@@ -1,8 +1,6 @@
 import asyncio
-from typing import Union
+from typing import List, Union
 from unittest import mock
-
-from typing import List
 from unittest.mock import call
 
 from server.decorators import with_logger

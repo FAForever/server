@@ -119,7 +119,7 @@ def db_engine(request, loop):
     def opt(val):
         return request.config.getoption(val)
     host, user, pw, db, port = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt('--mysql_database'), opt('--mysql_port')
-    engine_fut = asyncio.async(
+    engine_fut = asyncio.ensure_future(
         server.db.connect_engine(
             loop=loop,
             host=host,

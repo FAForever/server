@@ -27,7 +27,7 @@ class ServerContext:
 
     async def listen(self, host, port):
         self.addr = (host, port)
-        self._logger.debug("ServerContext.listen(%s,%d)", host, port)
+        self._logger.debug("ServerContext.listen(%s, %s)", host, port)
         self._server = await asyncio.start_server(
             self.client_connected,
             host=host,

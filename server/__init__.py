@@ -47,6 +47,7 @@ __all__ = [
     'protocol'
 ]
 
+DIRTY_REPORT_INTERVAL = 1  # Seconds
 stats = None
 
 if not config.ENABLE_STATSD:
@@ -127,7 +128,7 @@ def run_lobby_server(
         except Exception as e:
             logging.getLogger().exception(e)
         finally:
-            loop.call_later(1, report_dirties)
+            loop.call_later(DIRTY_REPORT_INTERVAL, report_dirties)
 
     ping_msg = encode_message('PING')
 
@@ -144,8 +145,7 @@ def run_lobby_server(
             matchmaker_queue=matchmaker_queue
         )
     ctx = ServerContext(make_connection, name="LobbyServer")
-
-    loop.call_later(5, report_dirties)
+    loop.call_later(DIRTY_REPORT_INTERVAL, report_dirties)
     loop.call_soon(ping_broadcast)
     loop.run_until_complete(ctx.listen(*address))
     return ctx

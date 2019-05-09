@@ -1,8 +1,14 @@
+import asyncio
+
+import pytest
+
 from .conftest import connect_and_sign_in, read_until
 from .testclient import ClientTest
 
 
-async def test_game_matchmaking(loop, lobby_server):
+@pytest.mark.slow
+async def test_game_matchmaking(loop, lobby_server, mocker):
+    mocker.patch('server.ladder_service.asyncio.sleep', return_value=asyncio.sleep(0.5))
     _, _, proto1 = await connect_and_sign_in(
         ('ladder1', 'ladder1'),
         lobby_server

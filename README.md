@@ -32,13 +32,20 @@ If you cannot find `faf-server`in the list, run `docker run` without `-d` to see
 
 If you have a different root password, database name then the default (see [config.py](https://github.com/FAForever/server/blob/develop/server/config.py#L43)), you must pass it over the environment parameter of docker, e.g.
 
-    docker run --link faf-db:db -p 8001:8001 -p 30351:30351 -e FAF_DB_PASSWORD=<wanted_password> -e FAF_DB_NAME=<db_name> faf-server 
-   
+    docker run --link faf-db:db -p 8001:8001 -p 30351:30351 -e FAF_DB_PASSWORD=<wanted_password> -e FAF_DB_NAME=<db_name> faf-server
+
 ## Running the tests
 
-Run `py.test`
+Some of the tests require the database to be pre-populated with test data. Grab
+the latest `test-data.sql` from [FAForever/db](https://github.com/FAForever/db),
+then run something like:
 
-    docker run --link faf-db:db faf-server bash -c py.test
+    $ docker exec -i faf-db mysql < test-data.sql
+    $ pipenv shell
+    $ scripts/run_tests_with_coverage.sh
+
+The exact docker command may vary depending on your docker version and server
+configuration.
 
 # Contributing
 
@@ -83,7 +90,7 @@ With a few message-types (`UPLOAD_MOD`, `UPLOAD_MAP`), there are more fields.
 
 ##### Social
 Can be combined !, e.g. `{command: social, teaminvite: <...>, friends: <..>}`
-* `{command: social, teaminvite: <player_name>}`: Invite a Player to a Team 
+* `{command: social, teaminvite: <player_name>}`: Invite a Player to a Team
 * `{command: social, friends: <list of ALL friends>}`: Update the friends on the db
 * `{command: social, foes: <list of ALL foes>}`: Update the foe (muted players) on the db
 

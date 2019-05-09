@@ -51,7 +51,7 @@ if __name__ == '__main__':
         signal.signal(signal.SIGTERM, signal_handler)
         signal.signal(signal.SIGINT, signal_handler)
 
-        engine_fut = asyncio.async(
+        engine_fut = asyncio.ensure_future(
             server.db.connect_engine(
                 host=DB_SERVER,
                 port=int(DB_PORT),
