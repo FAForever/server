@@ -16,3 +16,4 @@ develop_venv/
 .mypy_cache
 .pytest_cache
 .venv
+test-data.sql
