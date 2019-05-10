@@ -312,8 +312,9 @@ class Game(BaseGame):
     async def await_hosted(self):
         return await asyncio.wait_for(self._is_hosted, None)
 
-    def set_hosted(self):
-        self._is_hosted.set_result(True)
+    def set_hosted(self, value: bool=True):
+        if not self._is_hosted.done():
+            self._is_hosted.set_result(value)
 
     def outcome(self, player: Player) -> Optional[GameOutcome]:
         """
@@ -457,14 +458,13 @@ class Game(BaseGame):
                     await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
                     return
 
-                if not self._is_hosted.done():
-                    self._is_hosted.set_result(False)
                 await self.persist_results()
                 await self.rate_game()
                 await self._process_pending_army_stats()
         except Exception as e:  # pragma: no cover
             self._logger.exception("Error during game end: %s", e)
         finally:
+            self.set_hosted(value=False)
             self.state = GameState.ENDED
             self.game_service.mark_dirty(self)
 
