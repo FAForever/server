@@ -10,7 +10,6 @@ logging.addLevelName(TRACE, 'TRACE')
 logging.getLogger('aiomeasures').setLevel(logging.INFO)
 
 # Environment
-LOBBY_IP = os.getenv('LOBBY_IP', '37.58.123.3')
 
 # Credit to Axle for parameter changes, see: http://forums.faforever.com/viewtopic.php?f=45&t=11698#p119599
 # Optimum values for ladder here, using them for global as well.
