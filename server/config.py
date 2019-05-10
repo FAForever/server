@@ -3,13 +3,13 @@ import logging
 import trueskill
 import os
 
-# Logging
+# Logging setup
 TRACE = 5
-LOG_LEVEL = int(os.getenv('LOG_LEVEL', logging.DEBUG))
 logging.addLevelName(TRACE, 'TRACE')
 logging.getLogger('aiomeasures').setLevel(logging.INFO)
 
 # Environment
+LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'DEBUG'))
 
 # Credit to Axle for parameter changes, see: http://forums.faforever.com/viewtopic.php?f=45&t=11698#p119599
 # Optimum values for ladder here, using them for global as well.
