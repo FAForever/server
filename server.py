@@ -29,7 +29,7 @@ if __name__ == '__main__':
     stderr_handler = logging.StreamHandler()
     stderr_handler.setFormatter(logging.Formatter('%(levelname)-8s %(name)-30s %(message)s'))
     logger.addHandler(stderr_handler)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(config.LOG_LEVEL)
 
     try:
         def signal_handler(signal, frame):
