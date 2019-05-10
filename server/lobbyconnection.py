@@ -293,7 +293,7 @@ class LobbyConnection():
                                     ban_fail = row[0]
                                 else:
                                     if period not in ["DAY", "WEEK", "MONTH"]:
-                                        self._logger.warn('Tried to ban player with invalid period')
+                                        self._logger.warning('Tried to ban player with invalid period')
                                         raise ClientError(f"Period '{period}' is not allowed!")
 
                                     # NOTE: Text formatting in sql string is only ok because we just checked it's value
