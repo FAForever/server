@@ -19,7 +19,7 @@ from sqlalchemy import and_, func, text
 
 from . import config
 from .abc.base_game import GameConnectionState
-from .config import FAF_POLICY_SERVER_BASE_URL, TWILIO_TTL
+from .config import FAF_POLICY_SERVER_BASE_URL, TRACE, TWILIO_TTL
 from .db.models import ban, friends_and_foes
 from .decorators import timed, with_logger
 from .game_service import GameService
@@ -120,6 +120,7 @@ class LobbyConnection():
         """
         Dispatches incoming messages
         """
+        self._logger.log(TRACE, "<<: %s", message)
 
         try:
             cmd = message['command']
@@ -930,7 +931,7 @@ class LobbyConnection():
         :param message:
         :return:
         """
-        self._logger.debug(">>: %s", message)
+        self._logger.log(TRACE, ">>: %s", message)
         self.protocol.send_message(message)
 
     async def drain(self):
