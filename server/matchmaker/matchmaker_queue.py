@@ -86,7 +86,7 @@ class MatchmakerQueue:
                     del self.queue[search]
 
     def find_matches(self):
-        self._logger.debug("Searching for matches: ", self.queue_name)
+        self._logger.debug("Searching for matches: %s", self.queue_name)
 
         # Call self.match on all matches and filter out the ones that were canceled
         new_matches = filter(
@@ -117,7 +117,6 @@ class MatchmakerQueue:
         if s2 in self.queue:
             del self.queue[s2]
 
-        self._matches.append((s1, s2))
         return True
 
     def shutdown(self):

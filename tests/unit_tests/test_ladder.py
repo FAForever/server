@@ -153,7 +153,6 @@ async def test_cancel_twice(ladder_service: LadderService):
     assert searches == [search2]
 
 
-@mock.patch('server.matchmaker.algorithm.MAX_QUEUE_POP_TIME', 1)
 async def test_start_game_called_on_match(ladder_service: LadderService):
     p1 = mock.create_autospec(Player('Dostya', id=1))
     p1.ladder_rating = (2300, 64)
