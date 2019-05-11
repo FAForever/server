@@ -30,7 +30,7 @@ def mock_server(loop):
 
 @pytest.fixture
 def mock_context(loop, request, mock_server):
-    ctx = ServerContext(lambda: mock_server, name='TestServer')
+    ctx = ServerContext(lambda protocol, peername: mock_server, name='TestServer')
 
     def fin():
         ctx.close()

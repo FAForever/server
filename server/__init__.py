@@ -18,7 +18,7 @@ from .stats.game_stats_service import GameStatsService
 from .gameconnection import GameConnection
 from .ice_servers.nts import TwilioNTS
 from .lobbyconnection import LobbyConnection
-from .protocol import QDataStreamProtocol
+from .protocol import QDataStreamProtocol, Protocol
 from .servercontext import ServerContext
 from .geoip_service import GeoIpService
 from .player_service import PlayerService
@@ -26,6 +26,7 @@ from .game_service import GameService
 from .ladder_service import LadderService
 from .control import init as run_control_server
 from .matchmaker import MatchmakerQueue
+from .types import Address
 
 __version__ = '0.9.17'
 __author__ = 'Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard, Michel Jung'
@@ -136,13 +137,15 @@ def run_lobby_server(
         ctx.broadcast_raw(ping_msg)
         loop.call_later(45, ping_broadcast)
 
-    def make_connection() -> LobbyConnection:
+    def make_connection(protocol: Protocol, peername: Address) -> LobbyConnection:
         return LobbyConnection(
             geoip=geoip_service,
             games=games,
             nts_client=nts_client,
             players=player_service,
-            matchmaker_queue=matchmaker_queue
+            matchmaker_queue=matchmaker_queue,
+            protocol=protocol,
+            peername=peername
         )
     ctx = ServerContext(make_connection, name="LobbyServer")
     loop.call_later(DIRTY_REPORT_INTERVAL, report_dirties)

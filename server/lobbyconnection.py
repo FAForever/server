@@ -31,7 +31,7 @@ from .ice_servers.nts import TwilioNTS
 from .matchmaker import MatchmakerQueue, Search
 from .player_service import PlayerService
 from .players import Player, PlayerState
-from .protocol import QDataStreamProtocol
+from .protocol import QDataStreamProtocol, Protocol
 from .types import Address
 
 
@@ -63,36 +63,33 @@ class LobbyConnection():
         players: PlayerService,
         nts_client: Optional[TwilioNTS],
         geoip: GeoIpService,
-        matchmaker_queue: MatchmakerQueue
+        matchmaker_queue: MatchmakerQueue,
+        protocol: Protocol,
+        peername: Address
     ):
         self.geoip_service = geoip
         self.game_service = games
         self.player_service = players
+        self.protocol = protocol
+        self.peer_address = peername
         self.nts_client = nts_client
         self.coturn_generator = CoturnHMAC()
         self.matchmaker_queue = matchmaker_queue
         self._authenticated = False
         self.player = None  # type: Player
         self.game_connection = None  # type: GameConnection
-        self.peer_address = None  # type: Optional[Address]
         self.session = int(random.randrange(0, 4294967295))
-        self.protocol = None
         self.search = None
         self.user_agent = None
-
         self._attempted_connectivity_test = False
+
+        server.stats.incr("server.connections")
 
         self._logger.debug("LobbyConnection initialized")
 
     @property
     def authenticated(self):
         return self._authenticated
-
-    @asyncio.coroutine
-    def on_connection_made(self, protocol: QDataStreamProtocol, peername: Address):
-        self.protocol = protocol
-        self.peer_address = peername
-        server.stats.incr("server.connections")
 
     def abort(self, logspam=""):
         if self.player:
@@ -103,7 +100,7 @@ class LobbyConnection():
             self.game_connection.abort()
             self.game_connection = None
         self._authenticated = False
-        self.protocol.writer.close()
+        self.protocol.close()
 
         if self.player:
             self.player_service.remove_player(self.player)
@@ -144,12 +141,12 @@ class LobbyConnection():
             else:
                 handler(message)
         except AuthenticationError as ex:
-            self.protocol.send_message(
+            self.send(
                 {'command': 'authentication_failed',
                  'text': ex.message}
             )
         except ClientError as ex:
-            self.protocol.send_message(
+            self.send(
                 {'command': 'notice',
                  'style': 'error',
                  'text': ex.message}
@@ -160,12 +157,12 @@ class LobbyConnection():
             self._logger.exception(ex)
             self.abort("Garbage command: {}".format(message))
         except Exception as ex:  # pragma: no cover
-            self.protocol.send_message({'command': 'invalid'})
+            self.send({'command': 'invalid'})
             self._logger.exception(ex)
             self.abort("Error processing command")
 
     def command_ping(self, msg):
-        self.protocol.send_raw(self.protocol.pack_message('PONG'))
+        self.protocol.send_raw(QDataStreamProtocol.pack_message('PONG'))
 
     def command_pong(self, msg):
         pass

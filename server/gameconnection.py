@@ -10,7 +10,7 @@ from .game_service import GameService
 from .games.game import Game, GameState, ValidityState, Victory
 from .player_service import PlayerService
 from .players import Player, PlayerState
-from .protocol import GpgNetServerProtocol, QDataStreamProtocol
+from .protocol import GpgNetServerProtocol, Protocol
 
 
 class AuthenticationError(Exception):
@@ -27,7 +27,7 @@ class GameConnection(GpgNetServerProtocol):
         self,
         game: Game,
         player: Player,
-        protocol: QDataStreamProtocol,
+        protocol: Protocol,
         player_service: PlayerService,
         games: GameService,
         state: GameConnectionState = GameConnectionState.INITIALIZING

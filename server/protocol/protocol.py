@@ -41,3 +41,17 @@ class Protocol(metaclass=ABCMeta):
         :param data: bytes to send
         """
         pass  # pragma: no cover
+
+    @abstractmethod
+    async def drain(self) -> None:
+        """
+        Await the write buffer to empty
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def close(self) -> None:
+        """
+        Close the stream
+        """
+        pass  # pragma: no cover

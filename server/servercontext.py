@@ -58,9 +58,11 @@ class ServerContext:
     async def client_connected(self, stream_reader, stream_writer):
         self._logger.debug("%s: Client connected", self)
         protocol = QDataStreamProtocol(stream_reader, stream_writer)
-        connection = self._connection_factory()
+        connection = self._connection_factory(
+            protocol=protocol,
+            peername=Address(*stream_writer.get_extra_info('peername'))
+        )
         try:
-            await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info('peername')))
             self.connections[connection] = protocol
             server.stats.gauge('user.agents.None', 1, delta=True)
             while True:

@@ -11,7 +11,7 @@ from server.geoip_service import GeoIpService
 from server.lobbyconnection import LobbyConnection
 from server.player_service import PlayerService
 from server.players import Player, PlayerState
-from server.protocol import QDataStreamProtocol
+from server.protocol import Protocol, QDataStreamProtocol
 from server.types import Address
 from sqlalchemy import and_, select
 from tests import CoroMock
@@ -80,7 +80,9 @@ def lobbyconnection(loop, mock_protocol, mock_games, mock_players, mock_player, 
         games=mock_games,
         players=mock_players,
         nts_client=mock_nts_client,
-        matchmaker_queue=mock.Mock()
+        matchmaker_queue=mock.Mock(),
+        protocol=mock.create_autospec(Protocol),
+        peername=mock.create_autospec(Address)
     )
 
     lc.player = mock_player
@@ -255,7 +257,7 @@ def test_abort(loop, mocker, lobbyconnection):
 
     lobbyconnection.abort()
 
-    proto.writer.close.assert_any_call()
+    proto.close.assert_any_call()
 
 
 def test_send_game_list(mocker, lobbyconnection, game_stats_service):
