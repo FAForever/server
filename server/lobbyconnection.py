@@ -31,7 +31,7 @@ from .ice_servers.nts import TwilioNTS
 from .matchmaker import MatchmakerQueue, Search
 from .player_service import PlayerService
 from .players import Player, PlayerState
-from .protocol import QDataStreamProtocol, Protocol
+from .protocol import Protocol, QDataStreamProtocol, UTF8Protocol
 from .types import Address
 
 
@@ -117,7 +117,8 @@ class LobbyConnection():
         """
         Dispatches incoming messages
         """
-        self._logger.log(TRACE, "<<: %s", message)
+        login = self.player.login if self.player else ''
+        self._logger.log(TRACE, "<< %s: %s", login or '', message)
 
         try:
             cmd = message['command']
@@ -166,6 +167,12 @@ class LobbyConnection():
 
     def command_pong(self, msg):
         pass
+
+    async def command_use_protocol(self, msg):
+        protocol_name = msg['protocol']
+        if protocol_name == 'UTF8Protocol':
+            self.send(msg)
+            self.protocol = UTF8Protocol(self.protocol.reader, self.protocol.writer)
 
     @asyncio.coroutine
     def command_create_account(self, message):
@@ -928,7 +935,8 @@ class LobbyConnection():
         :param message:
         :return:
         """
-        self._logger.log(TRACE, ">>: %s", message)
+        login = self.player.login if self.player else ''
+        self._logger.log(TRACE, ">> %s: %s", login, message)
         self.protocol.send_message(message)
 
     async def drain(self):

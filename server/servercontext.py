@@ -1,9 +1,9 @@
 import asyncio
 
 import server
-from server.decorators import with_logger
-from server.protocol import QDataStreamProtocol
-from server.types import Address
+from .decorators import with_logger
+from .protocol import QDataStreamProtocol
+from .types import Address
 
 
 @with_logger
@@ -17,7 +17,7 @@ class ServerContext:
         self.name = name
         self._server = None
         self._connection_factory = connection_factory
-        self.connections = {}
+        self.connections = set()
         self._transport = None
         self._logger.debug("%s initialized", self)
         self.addr = None
@@ -47,13 +47,19 @@ class ServerContext:
         self._logger.debug("%s Closed", self)
 
     def __contains__(self, connection):
-        return connection in self.connections.keys()
+        return connection in self.connections
 
-    def broadcast_raw(self, message, validate_fn=lambda a: True):
+    def broadcast(self, message, validate_fn=lambda a: True):
         server.stats.incr('server.broadcasts')
-        for conn, proto in self.connections.items():
+        for conn in self.connections:
             if validate_fn(conn):
-                proto.send_raw(message)
+                conn.protocol.send_message(message)
+
+    def broadcast_raw(self, message: bytes):
+        """ Deprecated function used for sending PING messages """
+        server.stats.incr('server.broadcasts')
+        for conn in self.connections:
+            conn.protocol.send_raw(message)
 
     async def client_connected(self, stream_reader, stream_writer):
         self._logger.debug("%s: Client connected", self)
@@ -63,7 +69,7 @@ class ServerContext:
             peername=Address(*stream_writer.get_extra_info('peername'))
         )
         try:
-            self.connections[connection] = protocol
+            self.connections.add(connection)
             server.stats.gauge('user.agents.None', 1, delta=True)
             while True:
                 message = await protocol.read_message()
@@ -84,7 +90,7 @@ class ServerContext:
         except Exception as ex:
             self._logger.exception(ex)
         finally:
-            del self.connections[connection]
+            self.connections.remove(connection)
             server.stats.gauge('user.agents.{}'.format(connection.user_agent), -1, delta=True)
             protocol.writer.close()
             await connection.on_connection_lost()

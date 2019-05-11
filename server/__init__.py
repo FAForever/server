@@ -63,22 +63,18 @@ def encode_message(message: str):
     return QDataStreamProtocol.pack_message(message)
 
 
-def encode_dict(d: Dict[Any, Any]):
-    return encode_message(json.dumps(d))
-
-
 def encode_players(players):
-    return encode_dict({
+    return {
         'command': 'player_info',
         'players': [player.to_dict() for player in players]
-    })
+    }
 
 
 def encode_queues(queues):
-    return encode_dict({
+    return {
         'command': 'matchmaker_info',
         'queues': [queue.to_dict() for queue in queues]
-    })
+    }
 
 
 def run_lobby_server(
@@ -103,10 +99,10 @@ def run_lobby_server(
             player_service.clear_dirty()
 
             if len(dirty_queues) > 0:
-                ctx.broadcast_raw(encode_queues(dirty_queues))
+                ctx.broadcast(encode_queues(dirty_queues))
 
             if len(dirty_players) > 0:
-                ctx.broadcast_raw(encode_players(dirty_players), lambda lobby_conn: lobby_conn.authenticated)
+                ctx.broadcast(encode_players(dirty_players), lambda lobby_conn: lobby_conn.authenticated)
 
             # TODO: This spams squillions of messages: we should implement per-connection message
             # aggregation at the next abstraction layer down :P
@@ -115,17 +111,19 @@ def run_lobby_server(
                     games.remove_game(game)
 
                 # So we're going to be broadcasting this to _somebody_...
-                message = encode_dict(game.to_dict())
+                message = game.to_dict()
 
                 # These games shouldn't be broadcast, but instead privately sent to those who are
                 # allowed to see them.
                 if game.visibility == VisibilityState.FRIENDS:
                     # To see this game, you must have an authenticated connection and be a friend of the host, or the host.
-                    validation_func = lambda lobby_conn: lobby_conn.player.id in game.host.friends or lobby_conn.player == game.host
+                    def validation_func(lobby_conn):
+                        return lobby_conn.player.id in game.host.friends or lobby_conn.player == game.host
                 else:
-                    validation_func = lambda lobby_conn: lobby_conn.player.id not in game.host.foes
+                    def validation_func(lobby_conn):
+                        return lobby_conn.player.id not in game.host.foes
 
-                ctx.broadcast_raw(message, lambda lobby_conn: lobby_conn.authenticated and validation_func(lobby_conn))
+                ctx.broadcast(message, lambda lobby_conn: lobby_conn.authenticated and validation_func(lobby_conn))
         except Exception as e:
             logging.getLogger().exception(e)
         finally:

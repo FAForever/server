@@ -1,7 +1,9 @@
 import pytest
 from server import VisibilityState
+from server.protocol import UTF8Protocol
 
-from .conftest import connect_client, perform_login, read_until, connect_and_sign_in
+from .conftest import (connect_and_sign_in, connect_client, perform_login,
+                       read_until)
 from .testclient import ClientTest
 
 TEST_ADDRESS = ('127.0.0.1', None)
@@ -108,3 +110,59 @@ async def test_host_missing_fields(loop, lobby_server, player_service):
         assert msg['mapname'] == 'scmp_007'
         assert msg['map_file_path'] == 'maps/scmp_007.zip'
         assert msg['featured_mod'] == 'faf'
+
+
+async def test_switch_protocol(loop, lobby_server):
+    proto = await connect_client(lobby_server)
+
+    await perform_login(proto, ('test', 'test_password'))
+
+    await read_until(proto, lambda msg: msg['command'] == 'game_info')
+
+    # TODO: Decide how this message should look
+    proto.send_message({
+        'command': 'use_protocol',
+        'protocol': 'UTF8Protocol'
+    })
+    await proto.drain()
+
+    msg = await read_until(proto, lambda msg: msg['command'] == 'use_protocol')
+    # TODO: Decide how the response should look
+    assert msg == {
+        'command': 'use_protocol',
+        'protocol': 'UTF8Protocol'
+    }
+
+    proto = UTF8Protocol(proto.reader, proto.writer)
+
+    proto.close()
+
+
+async def test_player_info_broadcast_after_proto_switch(loop, lobby_server):
+    p1 = await connect_client(lobby_server)
+
+    await perform_login(p1, ('test', 'test_password'))
+    await read_until(p1, lambda msg: msg['command'] == 'game_info')
+    p1.send_message({
+        'command': 'use_protocol',
+        'protocol': 'UTF8Protocol'
+    })
+    await p1.drain()
+
+    await read_until(p1, lambda msg: msg['command'] == 'use_protocol')
+    p1 = UTF8Protocol(p1.reader, p1.writer)
+
+    p2 = await connect_client(lobby_server)
+    await perform_login(p2, ('Rhiza', 'puff_the_magic_dragon'))
+
+    await read_until(
+        p2, lambda m: 'player_info' in m.values()
+        and any(map(lambda d: ('login', 'test') in d.items(), m['players']))
+    )
+
+    await read_until(
+        p1, lambda m: 'player_info' in m.values()
+        and any(map(lambda d: ('login', 'Rhiza') in d.items(), m['players']))
+    )
+    p1.close()
+    p2.close()

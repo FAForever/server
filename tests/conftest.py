@@ -12,7 +12,7 @@ from unittest import mock
 
 import pytest
 from server.api.api_accessor import ApiAccessor
-from server.config import DB_LOGIN, DB_PASSWORD, DB_PORT, DB_SERVER
+from server.config import DB_LOGIN, DB_PASSWORD, DB_PORT, DB_SERVER, TRACE
 from server.game_service import GameService
 from server.geoip_service import GeoIpService
 from server.matchmaker import MatchmakerQueue
@@ -20,7 +20,7 @@ from server.player_service import PlayerService
 from tests import CoroMock
 from trueskill import Rating
 
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger('server').setLevel(TRACE)
 
 
 def async_test(f):

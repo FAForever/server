@@ -71,7 +71,6 @@ async def read_until(proto, pred):
                 return msg
         except (KeyError, ValueError):
             logging.getLogger().info("read_until predicate raised during message: {}".format(msg))
-            pass
 
 
 async def get_session(proto):

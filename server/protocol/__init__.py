@@ -1,11 +1,13 @@
-from .qdatastreamprotocol import QDataStreamProtocol
-from .protocol import Protocol
 from .gpgnet import GpgNetClientProtocol, GpgNetServerProtocol
+from .protocol import Protocol
+from .qdatastreamprotocol import QDataStreamProtocol
+from .utf8_protocol import UTF8Protocol
 
 
 __all__ = [
-    'QDataStreamProtocol',
-    'Protocol',
     'GpgNetClientProtocol',
-    'GpgNetServerProtocol'
+    'GpgNetServerProtocol',
+    'Protocol',
+    'QDataStreamProtocol',
+    'UTF8Protocol',
 ]
