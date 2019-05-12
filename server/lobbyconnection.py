@@ -131,7 +131,6 @@ class LobbyConnection():
                 if not self.game_connection:
                     return
 
-                self._logger.debug("<<: %s", message)
                 await self.game_connection.handle_action(cmd, message.get('args', []))
                 return
 
