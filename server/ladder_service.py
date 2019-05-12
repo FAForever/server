@@ -128,7 +128,11 @@ class LadderService:
             msg = {"command": "game_launch_timeout"}
             host.lobby_connection.send(msg)
             guest.lobby_connection.send(msg)
-            return
+            # TODO: Uncomment this line once the client supports `game_launch_timeout`.
+            # Until then, returning here will cause the client to think it is
+            # searching for ladder, even though the server has already removed it
+            # from the queue.
+            # return
 
         guest.lobby_connection.launch_game(game, is_host=False, use_map=mapname)
 

@@ -34,10 +34,11 @@ async def test_start_game_timeout(ladder_service: LadderService, game_service: G
     with mock.patch('server.games.game.Game.sleep', CoroMock()):
         await ladder_service.start_game(p1, p2)
 
-    assert p1.lobby_connection.launch_game.called
-    assert not p2.lobby_connection.launch_game.called
     p1.lobby_connection.send.assert_called_once_with({"command": "game_launch_timeout"})
     p2.lobby_connection.send.assert_called_once_with({"command": "game_launch_timeout"})
+    assert p1.lobby_connection.launch_game.called
+    # TODO: Once client supports `game_launch_timeout` change this to `assert not ...`
+    assert p2.lobby_connection.launch_game.called
 
 
 def test_inform_player(ladder_service: LadderService):
