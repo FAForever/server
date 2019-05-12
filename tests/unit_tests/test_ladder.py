@@ -53,6 +53,7 @@ def test_inform_player(ladder_service: LadderService):
 async def test_start_and_cancel_search(ladder_service: LadderService):
     p1 = mock.create_autospec(Player('Dostya', id=1))
     p1.ladder_rating = (1500, 500)
+    p1.numGames = 0
 
     search = Search([p1])
 
@@ -72,6 +73,7 @@ async def test_start_and_cancel_search(ladder_service: LadderService):
 async def test_start_search_cancels_previous_search(ladder_service: LadderService):
     p1 = mock.create_autospec(Player('Dostya', id=1))
     p1.ladder_rating = (1500, 500)
+    p1.numGames = 0
 
     search1 = Search([p1])
 
@@ -95,6 +97,7 @@ async def test_start_search_cancels_previous_search(ladder_service: LadderServic
 async def test_cancel_all_searchs(ladder_service: LadderService):
     p1 = mock.create_autospec(Player('Dostya', id=1))
     p1.ladder_rating = (1500, 500)
+    p1.numGames = 0
 
     search = Search([p1])
 

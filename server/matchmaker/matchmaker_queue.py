@@ -66,16 +66,21 @@ class MatchmakerQueue:
                     del self.queue[search]
 
     def find_match(self, search: Search) -> bool:
-        self._logger.debug("Searching for matchup for %s", search.players)
+        self._logger.debug(
+            "Searching for matchup for %s (threshold: %f)",
+            search.players, search.match_threshold
+        )
+
         for other in self.queue.copy().values():
             if other == search:
                 continue
 
-            quality = search.quality_with(other)
-            threshold = search.match_threshold
-            self._logger.debug("Game quality between %s and %s: %f (threshold: %f)",
-                               search.players, other.players, quality, threshold)
-            if quality >= threshold:
+            self._logger.debug(
+                "Game quality with %s: %f (other threshold: %f)",
+                other.players, search.quality_with(other), other.match_threshold
+            )
+
+            if search.matches_with(other):
                 return self.match(search, other)
 
             return False
