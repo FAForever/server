@@ -86,6 +86,12 @@ class LadderService:
             assert len(s1.players) == 1
             assert len(s2.players) == 1
             p1, p2 = s1.players[0], s2.players[0]
+            msg = {
+                "command": "match_found",
+                "queue": "ladder1v1"
+            }
+            p1.lobby_connection.send(msg)
+            p2.lobby_connection.send(msg)
             asyncio.ensure_future(self.start_game(p1, p2))
 
     async def start_game(self, host: Player, guest: Player):

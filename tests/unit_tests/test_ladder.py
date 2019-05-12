@@ -143,10 +143,14 @@ async def test_cancel_twice(ladder_service: LadderService):
     assert searches == [search2]
 
 
-
 async def test_start_game_called_on_match(ladder_service: LadderService):
-    p1 = Player('Dostya',   id=1, ladder_rating=(2300, 64))
-    p2 = Player('QAI',      id=4, ladder_rating=(2350, 125))
+    p1 = mock.create_autospec(Player('Dostya', id=1))
+    p1.ladder_rating = (2300, 64)
+    p1.numGames = 0
+
+    p2 = mock.create_autospec(Player('QAI', id=4))
+    p2.ladder_rating = (2350, 125)
+    p2.numGames = 0
 
     ladder_service.start_game = CoroMock()
     ladder_service.inform_player = mock.Mock()
