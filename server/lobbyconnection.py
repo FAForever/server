@@ -741,7 +741,7 @@ class LobbyConnection():
 
         if state == "start":
             assert self.player is not None
-            self.player.faction = message['faction']
+            self.player.faction = str(message['faction'])
 
             if mod == "ladder1v1":
                 search = Search([self.player])
