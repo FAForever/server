@@ -83,7 +83,7 @@ class MatchmakerQueue:
             if search.matches_with(other):
                 return self.match(search, other)
 
-            return False
+        return False
 
     def push(self, search: Search):
         """ Push the given search object onto the queue """
