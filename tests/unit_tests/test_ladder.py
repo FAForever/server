@@ -112,6 +112,36 @@ async def test_cancel_all_searchs(ladder_service: LadderService):
 
     assert p1.state == PlayerState.IDLE
     assert search.is_cancelled
+    assert p1 not in ladder_service.searches['ladder1v1']
+
+
+async def test_cancel_twice(ladder_service: LadderService):
+    p1 = mock.create_autospec(Player('Dostya', id=1))
+    p1.ladder_rating = (1500, 500)
+    p1.numGames = 0
+
+    p2 = mock.create_autospec(Player('Brackman', id=1))
+    p2.ladder_rating = (2000, 50)
+    p2.numGames = 0
+
+    search = Search([p1])
+    search2 = Search([p2])
+
+    ladder_service.start_search(p1, search, 'ladder1v1')
+    ladder_service.start_search(p2, search2, 'ladder1v1')
+
+    searches = ladder_service._cancel_existing_searches(p1)
+    assert search.is_cancelled
+    assert searches == [search]
+    assert not search2.is_cancelled
+
+    searches = ladder_service._cancel_existing_searches(p1)
+    assert searches == []
+
+    searches = ladder_service._cancel_existing_searches(p2)
+    assert search2.is_cancelled
+    assert searches == [search2]
+
 
 
 async def test_start_game_called_on_match(ladder_service: LadderService):

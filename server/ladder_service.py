@@ -67,6 +67,7 @@ class LadderService:
             if search:
                 search.cancel()
                 searches.append(search)
+                del self.searches[queue_name][initiator]
         return searches
 
     def inform_player(self, player: Player):
