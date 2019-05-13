@@ -28,11 +28,12 @@ from .games import GameState, VisibilityState
 from .geoip_service import GeoIpService
 from .ice_servers.coturn import CoturnHMAC
 from .ice_servers.nts import TwilioNTS
-from .matchmaker import MatchmakerQueue, Search
+from .matchmaker import Search
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import QDataStreamProtocol
 from .types import Address
+from .ladder_service import LadderService
 
 
 class ClientError(Exception):
@@ -63,21 +64,20 @@ class LobbyConnection():
         players: PlayerService,
         nts_client: Optional[TwilioNTS],
         geoip: GeoIpService,
-        matchmaker_queue: MatchmakerQueue
+        ladder_service: LadderService
     ):
         self.geoip_service = geoip
         self.game_service = games
         self.player_service = players
         self.nts_client = nts_client
         self.coturn_generator = CoturnHMAC()
-        self.matchmaker_queue = matchmaker_queue
+        self.ladder_service = ladder_service
         self._authenticated = False
         self.player = None  # type: Player
         self.game_connection = None  # type: GameConnection
         self.peer_address = None  # type: Optional[Address]
         self.session = int(random.randrange(0, 4294967295))
         self.protocol = None
-        self.search = None
         self.user_agent = None
 
         self._attempted_connectivity_test = False
@@ -130,6 +130,7 @@ class LobbyConnection():
             if target == 'game':
                 if not self.game_connection:
                     return
+
                 await self.game_connection.handle_action(cmd, message.get('args', []))
                 return
 
@@ -291,7 +292,7 @@ class LobbyConnection():
                                     ban_fail = row[0]
                                 else:
                                     if period not in ["DAY", "WEEK", "MONTH"]:
-                                        self._logger.warn('Tried to ban player with invalid period')
+                                        self._logger.warning('Tried to ban player with invalid period')
                                         raise ClientError(f"Period '{period}' is not allowed!")
 
                                     # NOTE: Text formatting in sql string is only ok because we just checked it's value
@@ -720,16 +721,14 @@ class LobbyConnection():
             self.sendJSON(dict(command="notice", style="info", text="The host has left the game"))
 
     async def command_game_matchmaking(self, message):
-        mod = message.get('mod', 'ladder1v1')
-        state = message['state']
+        mod = str(message.get('mod', 'ladder1v1'))
+        state = str(message['state'])
 
         if self._attempted_connectivity_test:
             raise ClientError("Cannot host game. Please update your client to the newest version.")
 
         if state == "stop":
-            if self.search:
-                self._logger.info("%s stopped searching for ladder: %s", self.player, self.search)
-                self.search.cancel()
+            self.ladder_service.cancel_search(self.player)
             return
 
         async with db.engine.acquire() as conn:
@@ -740,18 +739,17 @@ class LobbyConnection():
                                    text="You are banned from the matchmaker. Contact an admin to have the reason."))
                 return
 
-        if mod == "ladder1v1":
-            if state == "start":
-                if self.search:
-                    self.search.cancel()
-                assert self.player is not None
-                self.player.faction = message['faction']
-                self.search = Search(self.player)
+        if state == "start":
+            assert self.player is not None
+            self.player.faction = str(message['faction'])
 
-                self.game_service.ladder_service.inform_player(self.player)
+            if mod == "ladder1v1":
+                search = Search([self.player])
+            else:
+                # TODO: Put player parties here
+                search = Search([self.player])
 
-                self._logger.info("%s is searching for ladder: %s", self.player, self.search)
-                asyncio.ensure_future(self.matchmaker_queue.search(self.search))
+            self.ladder_service.start_search(self.player, search, queue_name=mod)
 
     def command_coop_list(self, message):
         """ Request for coop map list"""
@@ -952,8 +950,9 @@ class LobbyConnection():
             self._logger.debug(
                 "Lost lobby connection killing game connection for player {}".format(self.game_connection.player.id))
             await self.game_connection.on_connection_lost()
-        if self.search and not self.search.done():
-            self.search.cancel()
+
+        self.ladder_service.on_connection_lost(self.player)
+
         if self.player:
             self._logger.debug("Lost lobby connection removing player {}".format(self.player.id))
             self.player_service.remove_player(self.player)

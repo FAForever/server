@@ -5,8 +5,8 @@ from unittest import mock
 
 import pytest
 from server import GameService, PlayerService, run_lobby_server
+from server.ladder_service import LadderService
 from server.protocol import QDataStreamProtocol
-from server.matchmaker import MatchmakerQueue
 
 
 @pytest.fixture
@@ -22,13 +22,18 @@ def mock_games(mock_players):
 
 
 @pytest.fixture
-def lobby_server(request, loop, player_service, game_service, geoip_service):
+def ladder_service(game_service):
+    return LadderService(game_service)
+
+
+@pytest.fixture
+def lobby_server(request, loop, player_service, game_service, geoip_service, ladder_service):
     ctx = run_lobby_server(
         address=('127.0.0.1', None),
         geoip_service=geoip_service,
         player_service=player_service,
         games=game_service,
-        matchmaker_queue=MatchmakerQueue('ladder1v1', game_service),
+        ladder_service=ladder_service,
         nts_client=None,
         loop=loop
     )
@@ -36,6 +41,7 @@ def lobby_server(request, loop, player_service, game_service, geoip_service):
 
     def fin():
         ctx.close()
+        ladder_service.shutdown_queues()
         loop.run_until_complete(ctx.wait_closed())
 
     request.addfinalizer(fin)

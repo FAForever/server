@@ -36,16 +36,11 @@ If you have a different root password, database name then the default (see [conf
 
 ## Running the tests
 
-Some of the tests require the database to be pre-populated with test data. Grab
-the latest `test-data.sql` from [FAForever/db](https://github.com/FAForever/db),
-then run something like:
+Some of the tests require the database to be pre-populated with test data. Download
+the latest `test-data.sql` from [FAForever/db](https://github.com/FAForever/db
+into the root of this project, then run:
 
-    $ docker exec -i faf-db mysql < test-data.sql
-    $ pipenv shell
-    $ scripts/run_tests_with_coverage.sh
-
-The exact docker command may vary depending on your docker version and server
-configuration.
+    $ pipenv run tests
 
 # Contributing
 

@@ -7,7 +7,6 @@ from collections import Counter, defaultdict
 from enum import Enum, unique
 from typing import Any, Dict, Optional, Tuple, Union
 
-import aiomysql
 import server.db as db
 import trueskill
 from trueskill import Rating
@@ -182,8 +181,9 @@ class Game(BaseGame):
             'AIReplacement': 'Off',
             'RestrictedCategories': 0
         }
-
         self.mods = {}
+        self._is_hosted = asyncio.Future()
+
         self._logger.debug("%s created", self)
         asyncio.get_event_loop().create_task(self.timeout_game())
 
@@ -195,6 +195,7 @@ class Game(BaseGame):
         tm = 30 if self.game_mode != 'coop' else 60
         await self.sleep(tm)
         if self.state == GameState.INITIALIZING:
+            self._is_hosted.set_exception(TimeoutError("Game setup timed out"))
             self._logger.debug("Game setup timed out.. Cancelling game")
             await self.on_game_end()
 
@@ -307,6 +308,13 @@ class Game(BaseGame):
             teams[self.get_player_option(player.id, 'Team')] += 1
 
         return teams
+
+    async def await_hosted(self):
+        return await asyncio.wait_for(self._is_hosted, None)
+
+    def set_hosted(self, value: bool=True):
+        if not self._is_hosted.done():
+            self._is_hosted.set_result(value)
 
     def outcome(self, player: Player) -> Optional[GameOutcome]:
         """
@@ -456,6 +464,7 @@ class Game(BaseGame):
         except Exception as e:  # pragma: no cover
             self._logger.exception("Error during game end: %s", e)
         finally:
+            self.set_hosted(value=False)
             self.state = GameState.ENDED
             self.game_service.mark_dirty(self)
 

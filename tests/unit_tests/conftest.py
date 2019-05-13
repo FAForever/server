@@ -1,11 +1,13 @@
 from unittest import mock
-import pytest
 
+import pytest
 from server import GameStatsService
 from server.abc.base_game import BaseGame
-from server.games import Game
+from server.game_service import GameService
 from server.gameconnection import GameConnection, GameConnectionState
+from server.games import Game
 from server.geoip_service import GeoIpService
+from server.ladder_service import LadderService
 from server.players import Player
 from tests import CoroMock
 
@@ -55,6 +57,17 @@ def game_stats_service():
     service = mock.Mock(spec=GameStatsService)
     service.process_game_stats = CoroMock()
     return service
+
+
+@pytest.fixture
+def ladder_service(request, game_service: GameService):
+    ladder_service = LadderService(game_service)
+
+    def fin():
+        ladder_service.shutdown_queues()
+
+    request.addfinalizer(fin)
+    return ladder_service
 
 
 @pytest.fixture

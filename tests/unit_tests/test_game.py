@@ -313,15 +313,6 @@ async def test_invalid_army_not_add_result(game: Game, players):
     assert 99 not in game._results
 
 
-async def test_initialized_game_not_allowed_to_end(game: Game):
-    await game.clear_data()
-    game.state = GameState.INITIALIZING
-
-    game.on_game_end()
-
-    assert game.state is GameState.INITIALIZING
-
-
 async def test_game_ends_in_mutually_agreed_draw(game: Game):
     game.state = GameState.LOBBY
     players = add_players(game, 2)

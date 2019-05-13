@@ -1,11 +1,10 @@
 import asyncio
-from collections import defaultdict
 
 import server.db as db
 from sqlalchemy import text
 
 from .abc.base_game import GameConnectionState
-from .decorators import timed, with_logger
+from .decorators import with_logger
 from .game_service import GameService
 from .games.game import Game, GameState, ValidityState, Victory
 from .player_service import PlayerService
@@ -40,7 +39,6 @@ class GameConnection(GpgNetServerProtocol):
 
         self.protocol = protocol
         self._state = state
-        self._waiters = defaultdict(list)
         self.game_service = games
         self.player_service = player_service
 
@@ -92,7 +90,7 @@ class GameConnection(GpgNetServerProtocol):
         elif state == PlayerState.JOINING:
             pass
         else:
-            self._logger.exception("Unknown PlayerState")
+            self._logger.exception("Unknown PlayerState: %s", state)
             self.abort()
 
     async def _handle_lobby_state(self):
@@ -106,6 +104,7 @@ class GameConnection(GpgNetServerProtocol):
             player_state = self.player.state
             if player_state == PlayerState.HOSTING:
                 self.send_HostGame(self.game.map_folder_name)
+                self.game.set_hosted()
             # If the player is joining, we connect him to host
             # followed by the rest of the players.
             elif player_state == PlayerState.JOINING:
@@ -122,23 +121,6 @@ class GameConnection(GpgNetServerProtocol):
                         asyncio.ensure_future(self.connect_to_peer(peer))
         except Exception as e:  # pragma: no cover
             self._logger.exception(e)
-
-    @timed(limit=0.1)
-    async def on_message_received(self, message):
-        """
-        Main entry point when reading messages
-        :param message:
-        :return:
-        """
-        try:
-            cmd_id, args = message['command'], message['args']
-            await self.handle_action(cmd_id, args)
-            if cmd_id in self._waiters:
-                for waiter in self._waiters[cmd_id]:
-                    waiter.set_result(message)
-                    self._waiters[cmd_id].remove(waiter)
-        except ValueError as ex:  # pragma: no cover
-            self._logger.error("Garbage command %s %s", ex, message)
 
     async def connect_to_host(self, peer: "GameConnection"):
         """
@@ -172,7 +154,6 @@ class GameConnection(GpgNetServerProtocol):
         :param args: command arguments
         :return: None
         """
-
         try:
             await COMMAND_HANDLERS[command](self, *args)
         except KeyError:

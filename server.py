@@ -16,13 +16,16 @@ import socket
 import server
 import server.config as config
 from server.api.api_accessor import ApiAccessor
-from server.config import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME, TWILIO_ACCOUNT_SID
+from server.config import (DB_LOGIN, DB_NAME, DB_PASSWORD, DB_PORT, DB_SERVER,
+                           TWILIO_ACCOUNT_SID)
 from server.game_service import GameService
 from server.geoip_service import GeoIpService
+from server.ice_servers.nts import TwilioNTS
+from server.ladder_service import LadderService
 from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
-from server.stats.game_stats_service import GameStatsService, EventService, AchievementService
-from server.ice_servers.nts import TwilioNTS
+from server.stats.game_stats_service import (AchievementService, EventService,
+                                             GameStatsService)
 
 if __name__ == '__main__':
     logger = logging.getLogger()
@@ -82,6 +85,7 @@ if __name__ == '__main__':
         game_stats_service = GameStatsService(event_service, achievement_service)
 
         games = GameService(players_online, game_stats_service)
+        ladder_service = LadderService(games)
 
         ctrl_server = loop.run_until_complete(server.run_control_server(loop, players_online, games))
 
@@ -91,7 +95,7 @@ if __name__ == '__main__':
             player_service=players_online,
             games=games,
             nts_client=twilio_nts,
-            matchmaker_queue=MatchmakerQueue('ladder1v1', game_service=games),
+            ladder_service=ladder_service,
             loop=loop
         )
 
@@ -100,6 +104,7 @@ if __name__ == '__main__':
 
         loop.run_until_complete(done)
         players_online.broadcast_shutdown()
+        ladder_service.shutdown_queues()
 
         # Close DB connections
         engine.close()
