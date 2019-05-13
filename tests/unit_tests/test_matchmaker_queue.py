@@ -155,8 +155,9 @@ async def test_queue_many(mocker, player_service, matchmaker_queue):
     s3 = Search([p3])
     matchmaker_queue.push(s1)
     matchmaker_queue.push(s2)
+    matchmaker_queue.push(s3)
 
-    await matchmaker_queue.search(s3)
+    matchmaker_queue.find_matches()
 
     assert not s1.is_matched
     assert s2.is_matched
