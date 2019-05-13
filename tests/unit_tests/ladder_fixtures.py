@@ -11,6 +11,7 @@ from server.players import Player
 def map_pool():
     return [(1, '', 'scmp_001'), (5, '', 'scmp_05'), (10, '', 'scmp_010'), (12, '', 'scmp_012'), (11, '', 'scmp_0011')]
 
+
 def playerMock(lobbythread, id):
     player_mock = mock.create_autospec(spec=Player(''))
     player_mock.login = "Player %s" % id
@@ -36,7 +37,3 @@ def ladder_setup(player1, player2, map_pool):
         'player2': player2,
         'map_pool': map_pool
     }
-
-@pytest.fixture()
-def ladder_service(game_service, game_stats_service):
-    return LadderService(game_service, game_stats_service)
