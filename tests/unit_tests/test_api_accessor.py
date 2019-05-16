@@ -1,16 +1,10 @@
-from server.api.api_accessor import ApiAccessor
 from server.config import API_BASE_URL
-
-
-async def test_api_accessor():
-    api_accessor = ApiAccessor()
-    with api_accessor.api_session as api:
-        assert api is None
 
 
 async def test_api_get(api_accessor):
     result = await api_accessor.api_get('test')
-    api_accessor.api_session.session.get.assert_called_once_with(
+    api_accessor.api_session.session.request.assert_called_once_with(
+        'GET',
         API_BASE_URL + 'test'
     )
 

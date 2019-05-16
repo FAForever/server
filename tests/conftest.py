@@ -240,25 +240,12 @@ def api_accessor():
             self.text = "test"
 
     class FakeSession:
-        def __init__(self, client):
-            self.request = mock.Mock(return_value=FakeRequestResponse())
-            self.get = mock.Mock(return_value=FakeRequestResponse())
-
-        def fetch_token(self, token_url, client_id, client_secret):
-            pass
-
-    class SessionManager:
         def __init__(self):
-            self.session = FakeSession(None)
-
-        def __enter__(self):
-            return self.session
-
-        def __exit__(self, *args):
-            pass
+            self.request = CoroMock(return_value=FakeRequestResponse())
+            self.fetch_token = CoroMock()
 
     api_accessor = ApiAccessor()
-    api_accessor.api_session = SessionManager()
+    api_accessor.api_session.session = FakeSession()
     return api_accessor
 
 
