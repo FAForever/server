@@ -8,7 +8,7 @@ import urllib.parse
 import urllib.request
 from typing import Optional
 
-import requests
+import aiohttp
 
 import humanize
 import pymysql
@@ -461,7 +461,9 @@ class LobbyConnection():
             'cache-control': "no-cache"
         }
 
-        response = requests.post(url, json=payload, headers=headers).json()
+        with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.post(url, json=payload, headers=headers) as resp:
+                response = await resp.json()
 
         if response.get('result', '') == 'vm':
             self._logger.debug("Using VM: %d: %s", player_id, uid_hash)
