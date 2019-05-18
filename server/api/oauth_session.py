@@ -21,16 +21,14 @@ class OAuth2Session(object):
         self.refresh_token = None
 
     async def fetch_token(self) -> None:
-        if not self.token_url[:8] == 'https://' and 'OAUTHLIB_INSECURE_TRANSPORT' not in os.environ:
+        if not self.token_url.startswith('https://') and 'OAUTHLIB_INSECURE_TRANSPORT' not in os.environ:
             raise InsecureTransportError()
         data = {
             'grant_type': 'client_credentials',
             'client_id': self.client_id,
             'client_secret': self.client_secret,
         }
-        creds = await self._make_request(
-            data=data,
-        )
+        creds = await self._make_request(data=data)
         self.update_tokens(creds)
 
     async def refresh_token(self) -> None:
