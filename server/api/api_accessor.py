@@ -35,17 +35,17 @@ class SessionManager:
             )
             await self.session.fetch_token()
             return self.session
-        except MissingTokenError:
+        except MissingTokenError:  # pragma: no cover
             self.logger.error("There was an error while connecting the API - token is missing or invalid")
-        except InsecureTransportError:
+        except InsecureTransportError:  # pragma: no cover
             self.logger.error(
                 "API (%s,%s) should be HTTPS, not HTTP. Enable OAUTHLIB_INSECURE_TRANSPORT to avoid this warning.",
                 API_BASE_URL,
                 API_TOKEN_URI
             )
-        except SSLError:
+        except SSLError:  # pragma: no cover
             self.logger.error("The certificate verification failed while connecting the API")
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             self.logger.exception(e)
 
         # Only reachable if an exception occurred
