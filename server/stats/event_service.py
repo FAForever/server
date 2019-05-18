@@ -67,7 +67,7 @@ class EventService:
             Converting the Java API data to the structure mentioned above
             """
             events_data = []
-            for event in json.loads(content)['data']:
+            for event in content['data']:
                 events_data.append(
                     dict(
                         event_id=event['attributes']['eventId'],

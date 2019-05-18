@@ -234,14 +234,9 @@ def matchmaker_queue(game_service) -> MatchmakerQueue:
 
 @pytest.fixture()
 def api_accessor():
-    class FakeRequestResponse:
-        def __init__(self):
-            self.status_code = 200
-            self.text = "test"
-
     class FakeSession:
         def __init__(self):
-            self.request = CoroMock(return_value=FakeRequestResponse())
+            self.request = CoroMock(return_value=(200, 'test'))
             self.fetch_token = CoroMock()
 
     api_accessor = ApiAccessor()

@@ -64,8 +64,7 @@ class ApiAccessor:
             achievement['achievementId'] = achievement.pop('achievement_id')
             achievement['operation'] = achievement.pop('update_type')
 
-        code, text = await self.api_patch("achievements/update", achievements_data)
-        return code, text
+        return await self.api_patch("achievements/update", achievements_data)
 
     async def update_events(self, events_data, player_id):
 
@@ -74,16 +73,13 @@ class ApiAccessor:
             event['playerId'] = player_id
             event['eventId'] = event.pop('event_id')
 
-        code, text = await self.api_patch("events/update", events_data)
-        return code, text
+        return await self.api_patch("events/update", events_data)
 
     async def api_get(self, path):
         api = await self.api_session.get_session()
-        result = await api.request('GET', API_BASE_URL + path)
-        return result.status_code, result.text
+        return await api.request('GET', API_BASE_URL + path)
 
     async def api_patch(self, path, json_data):
         api = await self.api_session.get_session()
         headers = {'Content-type': 'application/json'}
-        result = await api.request("PATCH", API_BASE_URL + path, headers=headers, json=json_data)
-        return result.status_code, result.text
+        return await api.request("PATCH", API_BASE_URL + path, headers=headers, json=json_data)

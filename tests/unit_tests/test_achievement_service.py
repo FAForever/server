@@ -1,5 +1,3 @@
-import asyncio
-import json
 from unittest.mock import Mock
 
 import pytest
@@ -53,14 +51,14 @@ async def test_api_broken(service: AchievementService):
 
 
 async def test_update_multiple(service: AchievementService):
-    content = '''
-        {"data": [
-            {"attributes": {"achievementId": "1-2-3", "state": "UNLOCKED", "newlyUnlocked": true}},
-            {"attributes": {"achievementId": "2-3-4", "state": "REVEALED", "newlyUnlocked": false}},
-            {"attributes": {"achievementId": "3-4-5", "state": "LOCKED", "steps": 2, "newlyUnlocked": false}},
-            {"attributes": {"achievementId": "4-5-6", "state": "UNLOCKED", "steps": 50, "newlyUnlocked": false}}
-        ]}
-    '''
+    content = {
+        "data": [
+            {"attributes": {"achievementId": "1-2-3", "state": "UNLOCKED", "newlyUnlocked": True}},
+            {"attributes": {"achievementId": "2-3-4", "state": "REVEALED", "newlyUnlocked": False}},
+            {"attributes": {"achievementId": "3-4-5", "state": "LOCKED", "steps": 2, "newlyUnlocked": False}},
+            {"attributes": {"achievementId": "4-5-6", "state": "UNLOCKED", "steps": 50, "newlyUnlocked": False}}
+        ]
+    }
 
     service.api_accessor.update_achievements.coro.return_value = (200, content)
 
@@ -68,7 +66,7 @@ async def test_update_multiple(service: AchievementService):
     result = await service.execute_batch_update(42, queue)
 
     achievements_data = []
-    for achievement in json.loads(content)['data']:
+    for achievement in content['data']:
         converted_achievement = dict(
             achievement_id=achievement['attributes']['achievementId'],
             current_state=achievement['attributes']['state'],

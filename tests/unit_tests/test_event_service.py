@@ -1,6 +1,4 @@
-import asyncio
-import json
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 
 import pytest
 
@@ -46,12 +44,12 @@ async def test_api_broken(service: EventService):
 
 async def test_record_multiple(service: EventService):
 
-    content = '''
-        {"data": [
+    content = {
+        "data": [
             {"attributes": {"eventId": "1-2-3", "currentCount": 1}},
             {"attributes": {"eventId": "2-3-4", "currentCount": 4}}
-        ]}
-    '''
+        ]
+    }
 
     queue = create_queue()
 
@@ -59,7 +57,7 @@ async def test_record_multiple(service: EventService):
     result = await service.execute_batch_update(42, queue)
 
     events_data = []
-    for event in json.loads(content)['data']:
+    for event in content['data']:
         converted_event = dict(
             event_id=event['attributes']['eventId'],
             count=event['attributes']['currentCount']

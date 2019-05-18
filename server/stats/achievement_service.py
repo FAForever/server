@@ -100,7 +100,7 @@ class AchievementService:
             """
             Converting the Java API data to the structure mentioned above
             """
-            api_data = json.loads(content)['data']
+            api_data = content['data']
             achievements_data = []
             for achievement in api_data:
                 converted_achievement = dict(
