@@ -305,11 +305,18 @@ class GameConnection(GpgNetServerProtocol):
         """
 
         async with db.engine.acquire() as conn:
-            await conn.execute(
-                """ INSERT INTO `teamkills` (`teamkiller`, `victim`, `game_id`, `gametime`)
+            result = await conn.execute(
+                """ INSERT INTO `moderation_report` (`reporter_id`, `game_id`, `game_incident_timecode`)
                     VALUES (%s, %s, %s, %s)""",
-                (teamkiller_id, victim_id, self.game.id, gametime)
+                (victim_id, self.game.id, gametime)
             )
+            row = await result.fetchone()
+            await conn.execute(
+                """ INSERT INTO `reported_user` (`player_id`, `report_id`,)
+                    VALUES (%s, %s)""",
+                (teamkiller_id, row["id"])
+            )
+            
 
     async def handle_ice_message(self, receiver_id, ice_msg):
         receiver_id = int(receiver_id)
