@@ -307,7 +307,7 @@ class GameConnection(GpgNetServerProtocol):
         async with db.engine.acquire() as conn:
             result = await conn.execute(
                 """ INSERT INTO `moderation_report` (`reporter_id`, `game_id`, `game_incident_timecode`)
-                    VALUES (%s, %s, %s, %s)""",
+                    VALUES (%s, %s, %s)""",
                 (victim_id, self.game.id, gametime)
             )
             row = await result.fetchone()
