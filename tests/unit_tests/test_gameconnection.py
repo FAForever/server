@@ -225,7 +225,7 @@ async def test_handle_action_TeamkillReport(game: Game, game_connection: GameCon
     await game_connection.handle_action('TeamkillReport', ['200', '2', 'Dostya', '3', 'Rhiza'])
 
     async with db_engine.acquire() as conn:
-        result = await conn.execute("select game_id from teamkills where victim=2 and teamkiller=3 and game_id=%s and gametime=200", (game.id))
+        result = await conn.execute("select game_id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=200", (game.id))
         row = await result.fetchone()
         assert game.id == row[0]
 
