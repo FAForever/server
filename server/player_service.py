@@ -68,7 +68,7 @@ class PlayerService:
                 .outerjoin(clan)
                 .outerjoin(avatars)
                 .outerjoin(avatars_list)
-            ).where(login.c.id == player.id)
+            ).where(login.c.id == player.id).where(avatars.selected)
 
             result = await conn.execute(sql)
             row = await result.fetchone()
