@@ -26,29 +26,27 @@ async def test_game_matchmaking(loop, lobby_server, mocker):
     await read_until(proto1, lambda msg: msg['command'] == 'game_info')
     await read_until(proto2, lambda msg: msg['command'] == 'game_info')
 
-    with ClientTest(loop=loop, process_nat_packets=True, proto=proto1) as client1:
-        with ClientTest(loop=loop, process_nat_packets=True, proto=proto2) as client2:
-            proto1.send_message({
-                'command': 'game_matchmaking',
-                'state': 'start',
-                'faction': 'uef'
-            })
-            await proto1.drain()
+    proto1.send_message({
+        'command': 'game_matchmaking',
+        'state': 'start',
+        'faction': 'uef'
+    })
+    await proto1.drain()
 
-            proto2.send_message({
-                'command': 'game_matchmaking',
-                'state': 'start',
-                'faction': 'uef'
-            })
-            await proto2.drain()
+    proto2.send_message({
+        'command': 'game_matchmaking',
+        'state': 'start',
+        'faction': 1
+    })
+    await proto2.drain()
 
-            # If the players did not match, this test will fail due to a timeout error
-            msg1 = await read_until(proto1, lambda msg: msg['command'] == 'game_launch')
-            msg2 = await read_until(proto2, lambda msg: msg['command'] == 'game_launch')
+    # If the players did not match, this test will fail due to a timeout error
+    msg1 = await read_until(proto1, lambda msg: msg['command'] == 'game_launch')
+    msg2 = await read_until(proto2, lambda msg: msg['command'] == 'game_launch')
 
-            assert msg1['uid'] == msg2['uid']
-            assert msg1['mod'] == 'ladder1v1'
-            assert msg2['mod'] == 'ladder1v1'
+    assert msg1['uid'] == msg2['uid']
+    assert msg1['mod'] == 'ladder1v1'
+    assert msg2['mod'] == 'ladder1v1'
 
 
 async def test_game_matchmaking_ban(loop, lobby_server, db_engine):
