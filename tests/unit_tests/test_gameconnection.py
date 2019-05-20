@@ -230,6 +230,13 @@ async def test_handle_action_TeamkillReport(game: Game, game_connection: GameCon
         assert game.id == row[0]
 
 
+async def test_handle_action_TeamkillReport_AI(game: Game, game_connection: GameConnection, db_engine):
+    # Should fail with a sql constraint error if this isn't handled correctly
+    game_connection.abort = mock.Mock()
+    await game_connection.handle_action('TeamkillHappened', ['200', 0, 'Dostya', '0', 'Rhiza'])
+    game_connection.abort.assert_not_called()
+
+
 async def test_handle_action_GameResult_victory_ends_sim(
     game: Game,
     game_connection: GameConnection

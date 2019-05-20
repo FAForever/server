@@ -304,6 +304,12 @@ class GameConnection(GpgNetServerProtocol):
             :param teamkiller_id: teamkiller id
             :param teamkiller_name: teamkiller nickname (for debug purpose only)
         """
+        victim_id = int(victim_id)
+        teamkiller_id = int(teamkiller_id)
+
+        if 0 in (victim_id, teamkiller_id):
+            self._logger.debug("Ignoring teamkill report for AI player")
+            return
 
         async with db.engine.acquire() as conn:
             await conn.execute(
@@ -486,6 +492,7 @@ COMMAND_HANDLERS = {
     "JsonStats":            GameConnection.handle_json_stats,
     "EnforceRating":        GameConnection.handle_enforce_rating,
     "TeamkillReport":       GameConnection.handle_teamkill_report,
+    "TeamkillHappened":     GameConnection.handle_teamkill_report,
     "GameEnded":            GameConnection.handle_game_ended,
     "Rehost":               GameConnection.handle_rehost,
     "Bottleneck":           GameConnection.handle_bottleneck,
