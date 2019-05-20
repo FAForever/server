@@ -1,5 +1,7 @@
 insert into login (id, login, email, password, create_time) values
-    (50,  'player_service', 'ps@example.com', SHA2('player_service', 256), '2000-01-01 00:00:00'),
+    (50,  'player_service1', 'ps1@example.com', SHA2('player_service1', 256), '2000-01-01 00:00:00'),
+    (51,  'player_service2', 'ps2@example.com', SHA2('player_service2', 256), '2000-01-01 00:00:00'),
+    (52,  'player_service3', 'ps3@example.com', SHA2('player_service3', 256), '2000-01-01 00:00:00'),
     (100, 'ladder1', 'ladder1@example.com', SHA2('ladder1', 256), '2000-01-01 00:00:00'),
     (101, 'ladder2', 'ladder2@example.com', SHA2('ladder2', 256), '2000-01-01 00:00:00'),
     (102, 'ladder_ban', 'ladder_ban@example.com', SHA2('ladder_ban', 256), '2000-01-01 00:00:00'),
@@ -12,6 +14,8 @@ insert into clan_membership (clan_id, player_id) values
 
 insert into global_rating (id, mean, deviation, numGames, is_active) values
     (50,  1200, 250, 42, 1),
+    (51,  1200, 250, 42, 1),
+    (52,  1200, 250, 42, 1),
     (100, 1500, 500, 0, 1),
     (101, 1500, 500, 0, 1),
     (102, 1500, 500, 0, 1)
@@ -19,13 +23,19 @@ insert into global_rating (id, mean, deviation, numGames, is_active) values
 
 insert into ladder1v1_rating (id, mean, deviation, numGames, is_active) values
     (50,  1300, 400, 12, 1),
+    (51,  1300, 400, 12, 1),
+    (52,  1300, 400, 12, 1),
     (100, 1500, 500, 0, 1),
     (101, 1500, 500, 0, 1),
     (102, 1500, 500, 0, 1)
 ;
 
 insert into avatars (idUser, idAvatar, selected) values
-    (50, 2, 1);
+    (50, 2, 1),
+    (51, 1, 0),
+    (51, 2, 1),
+    (52, 1, 1),
+    (52, 2, 0);
 
 delete from matchmaker_ban where id = 102 and userid = 102;
 insert into matchmaker_ban (id, userid) values (102, 102);
