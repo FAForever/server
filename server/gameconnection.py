@@ -4,6 +4,7 @@ import server.db as db
 from sqlalchemy import text
 
 from .abc.base_game import GameConnectionState
+from .config import TRACE
 from .decorators import with_logger
 from .game_service import GameService
 from .games.game import Game, GameState, ValidityState, Victory
@@ -71,7 +72,7 @@ class GameConnection(GpgNetServerProtocol):
     def send_message(self, message):
         message['target'] = "game"
 
-        self._logger.debug(">>: %s", message)
+        self._logger.log(TRACE, ">>: %s", message)
         self.protocol.send_message(message)
 
     async def _handle_idle_state(self):
