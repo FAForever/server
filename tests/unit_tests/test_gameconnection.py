@@ -225,9 +225,14 @@ async def test_handle_action_TeamkillReport(game: Game, game_connection: GameCon
     await game_connection.handle_action('TeamkillReport', ['200', '2', 'Dostya', '3', 'Rhiza'])
 
     async with db_engine.acquire() as conn:
-        result = await conn.execute("select game_id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=200", (game.id))
+        result = await conn.execute("select game_id,report_id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=200", (game.id))
         row = await result.fetchone()
-        assert game.id == row[0]
+        assert game.id == row["game_id"]
+        
+        reported_user_query = await conn.execute("select player_id from reported_user where report_id=%s", (row["game_id"]))
+        data = await reported_user_query.fetchone()
+        assert data["player_id"] == 3
+        
 
 
 async def test_handle_action_GameResult_victory_ends_sim(
