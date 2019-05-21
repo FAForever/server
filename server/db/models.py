@@ -162,7 +162,7 @@ moderation_report = Table(
 
 
 reported_user = Table(
-   'moderation_report', metadata,
+   'reported_user', metadata,
    Column('id', Integer, primary_key=True),
    Column('player_id', ForeignKey('login.id'), nullable=False),
    Column('report_id', ForeignKey('moderation_report.id'), nullable=False),
