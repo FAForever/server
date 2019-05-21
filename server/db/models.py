@@ -147,7 +147,7 @@ ladder1v1_rating = Table(
 
 moderation_report = Table(
    'moderation_report', metadata,
-   Column('id', Integer(10), primary_key=True),
+   Column('id', Integer, primary_key=True),
    Column('reporter_id', ForeignKey('login.id'), nullable=False),
    Column('report_description', Text),
    Column('game_id', ForeignKey('game_stats.id'), index=True),
@@ -163,7 +163,7 @@ moderation_report = Table(
 
 reported_user = Table(
    'moderation_report', metadata,
-   Column('id', Integer(10), primary_key=True),
+   Column('id', Integer, primary_key=True),
    Column('player_id', ForeignKey('login.id'), nullable=False),
    Column('report_id', ForeignKey('moderation_report.id'), nullable=False),
    Column('create_time',   TIMESTAMP,  nullable=False),
