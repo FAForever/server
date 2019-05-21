@@ -299,9 +299,9 @@ class GameConnection(GpgNetServerProtocol):
         """
             :param gametime: seconds of gametime when kill happened
             :param victim_id: victim id
-            :param victim_name: victim nickname (for debug purpose only)
+            :param victim_name: victim nickname
             :param teamkiller_id: teamkiller id
-            :param teamkiller_name: teamkiller nickname (for debug purpose only)
+            :param teamkiller_name: teamkiller nickname (used for debug purposes only)
         """
 
         async with db.engine.acquire() as conn:
