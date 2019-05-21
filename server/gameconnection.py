@@ -310,11 +310,11 @@ class GameConnection(GpgNetServerProtocol):
                     VALUES (%s, %s, %s, %s)""",
                 (victim_id, self.game.id, gametime, f"Auto-generated teamkill report from {victim_name}")
             )
-            row = await result.fetchone()
+            
             await conn.execute(
                 """ INSERT INTO `reported_user` (`player_id`, `report_id`)
                     VALUES (%s, %s)""",
-                (teamkiller_id, row["id"])
+                (teamkiller_id, result.lastrowid)
             )
             
 
