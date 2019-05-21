@@ -47,7 +47,17 @@ def test_inform_player(ladder_service: LadderService):
 
     ladder_service.inform_player(p1)
 
-    assert p1.lobby_connection.sendJSON.called
+    # Message is sent after the first call
+    p1.lobby_connection.sendJSON.assert_called_once()
+    ladder_service.inform_player(p1)
+    p1.lobby_connection.sendJSON.reset_mock()
+    # But not after the second
+    p1.lobby_connection.sendJSON.assert_not_called()
+    ladder_service.on_connection_lost(p1)
+    ladder_service.inform_player(p1)
+
+    # But it is called if the player relogs
+    p1.lobby_connection.sendJSON.assert_called_once()
 
 
 async def test_start_and_cancel_search(ladder_service: LadderService):
