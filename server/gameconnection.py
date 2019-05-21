@@ -312,7 +312,7 @@ class GameConnection(GpgNetServerProtocol):
             )
             row = await result.fetchone()
             await conn.execute(
-                """ INSERT INTO `reported_user` (`player_id`, `report_id`,)
+                """ INSERT INTO `reported_user` (`player_id`, `report_id`)
                     VALUES (%s, %s)""",
                 (teamkiller_id, row["id"])
             )
