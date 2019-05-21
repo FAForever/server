@@ -11,6 +11,7 @@ from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import GpgNetServerProtocol, QDataStreamProtocol
 
+from .db.models import (reported_user, moderation_report)
 
 class AuthenticationError(Exception):
     pass
@@ -303,18 +304,22 @@ class GameConnection(GpgNetServerProtocol):
             :param teamkiller_id: teamkiller id
             :param teamkiller_name: teamkiller nickname (used for debug purposes only)
         """
-
+        
         async with db.engine.acquire() as conn:
-            result = await conn.execute(
-                """ INSERT INTO `moderation_report` (`reporter_id`, `game_id`, `game_incident_timecode`, `report_description`)
-                    VALUES (%s, %s, %s, %s)""",
-                (victim_id, self.game.id, gametime, f"Auto-generated teamkill report from {victim_name}")
+            insert = moderation_report.insert().values(
+                reporter_id=victim_id, 
+                game_id=self.game.id,
+                game_incident_timecode=gametime,
+                report_description=f"Auto-generated teamkill report from {victim_name}",
             )
             
+            result = await conn.execute(insert)
+            
             await conn.execute(
-                """ INSERT INTO `reported_user` (`player_id`, `report_id`)
-                    VALUES (%s, %s)""",
-                (teamkiller_id, result.lastrowid)
+                reported_user.insert().values(
+                    player_id=teamkiller_id,
+                    report_id=result.lastrowid
+                )
             )
             
 
