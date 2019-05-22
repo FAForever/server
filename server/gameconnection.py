@@ -11,7 +11,7 @@ from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import GpgNetServerProtocol, QDataStreamProtocol
 
-from .db.models import (reported_user, moderation_report)
+from .db.models import (reported_user, moderation_report, login)
 
 class AuthenticationError(Exception):
     pass
