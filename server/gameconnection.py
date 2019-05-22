@@ -1,7 +1,7 @@
 import asyncio
 
 import server.db as db
-from sqlalchemy import text
+from sqlalchemy import text, select
 
 from .abc.base_game import GameConnectionState
 from .decorators import with_logger
