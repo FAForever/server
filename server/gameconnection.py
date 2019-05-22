@@ -302,10 +302,20 @@ class GameConnection(GpgNetServerProtocol):
             :param victim_id: victim id
             :param victim_name: victim nickname
             :param teamkiller_id: teamkiller id
-            :param teamkiller_name: teamkiller nickname (used for debug purposes only)
+            :param teamkiller_name: teamkiller nickname
         """
         
+                
         async with db.engine.acquire() as conn:
+            
+            player_id = teamkiller_id
+            """
+                Hotfix in case the game sends 0 id (happens sometimes, name still valid most often)
+            """
+            if int(player_id) <= 0:
+                query = await conn.execute(select([login.c.id]).where(login.c.login == teamkiller_name))
+                player_id=query.fetchone()[login.c.id]
+            
             insert = moderation_report.insert().values(
                 reporter_id=victim_id, 
                 game_id=self.game.id,
@@ -314,14 +324,6 @@ class GameConnection(GpgNetServerProtocol):
             )
             
             result = await conn.execute(insert)
-            
-            player_id = teamkiller_id
-            """
-                Hotfix in case the game sends 0 id (happens sometimes, name still valid most often)
-            """
-            if player_id <= 0:
-                query = await conn.execute(select([login.c.id]).where(login.c.login == teamkiller_name))
-                player_id=query.fetchone()[login.c.id]
             
             await conn.execute(
                 reported_user.insert().values(
