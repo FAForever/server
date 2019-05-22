@@ -1,19 +1,7 @@
-import asyncio
-
-from tests import CoroMock
-
-from .conftest import connect_and_sign_in, read_until
-from .testclient import ClientTest
-
-# Need to save the old sleep here otherwise the mocker recursively patches it
-aiosleep = asyncio.sleep
+from .conftest import connect_and_sign_in, read_until_command
 
 
-async def test_game_matchmaking(loop, lobby_server, mocker):
-    mocker.patch('server.ladder_service.asyncio.sleep', side_effect=lambda _: aiosleep(0.1))
-    mocker.patch('server.games.game.Game.await_hosted', CoroMock())
-
-
+async def queue_players_for_matchmaking(lobby_server):
     _, _, proto1 = await connect_and_sign_in(
         ('ladder1', 'ladder1'),
         lobby_server
@@ -23,8 +11,8 @@ async def test_game_matchmaking(loop, lobby_server, mocker):
         lobby_server
     )
 
-    await read_until(proto1, lambda msg: msg['command'] == 'game_info')
-    await read_until(proto2, lambda msg: msg['command'] == 'game_info')
+    await read_until_command(proto1, 'game_info')
+    await read_until_command(proto2, 'game_info')
 
     proto1.send_message({
         'command': 'game_matchmaking',
@@ -36,13 +24,28 @@ async def test_game_matchmaking(loop, lobby_server, mocker):
     proto2.send_message({
         'command': 'game_matchmaking',
         'state': 'start',
-        'faction': 1
+        'faction': 1  # Python client sends factions as numbers
     })
     await proto2.drain()
 
-    # If the players did not match, this test will fail due to a timeout error
-    msg1 = await read_until(proto1, lambda msg: msg['command'] == 'game_launch')
-    msg2 = await read_until(proto2, lambda msg: msg['command'] == 'game_launch')
+    # If the players did not match, this will fail due to a timeout error
+    await read_until_command(proto1, 'match_found')
+    await read_until_command(proto2, 'match_found')
+
+    return proto1, proto2
+
+
+async def test_game_matchmaking(loop, lobby_server):
+    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+
+    # The player that queued last will be the host
+    msg2 = await read_until_command(proto2, 'game_launch')
+    proto2.send_message({
+        'command': 'GameState',
+        'target': 'game',
+        'args': ['Lobby']
+    })
+    msg1 = await read_until_command(proto1, 'game_launch')
 
     assert msg1['uid'] == msg2['uid']
     assert msg1['mod'] == 'ladder1v1'
@@ -55,21 +58,20 @@ async def test_game_matchmaking_ban(loop, lobby_server, db_engine):
         lobby_server
     )
 
-    await read_until(proto, lambda msg: msg['command'] == 'game_info')
+    await read_until_command(proto, 'game_info')
 
-    with ClientTest(loop=loop, process_nat_packets=True, proto=proto) as client1:
-        proto.send_message({
-            'command': 'game_matchmaking',
-            'state': 'start',
-            'faction': 'uef'
-        })
-        await proto.drain()
+    proto.send_message({
+        'command': 'game_matchmaking',
+        'state': 'start',
+        'faction': 'uef'
+    })
+    await proto.drain()
 
-        # This may fail due to a timeout error
-        msg = await read_until(proto, lambda msg: msg['command'] == 'notice')
+    # This may fail due to a timeout error
+    msg = await read_until_command(proto, 'notice')
 
-        assert msg == {
-            'command': 'notice',
-            'style': 'error',
-            'text': 'You are banned from the matchmaker. Contact an admin to have the reason.'
-        }
+    assert msg == {
+        'command': 'notice',
+        'style': 'error',
+        'text': 'You are banned from the matchmaker. Contact an admin to have the reason.'
+    }
