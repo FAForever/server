@@ -298,6 +298,27 @@ class GameConnection(GpgNetServerProtocol):
 
     async def handle_teamkill_report(self, gametime, victim_id, victim_name, teamkiller_id, teamkiller_name):
         """
+            Sent when a player is teamkilled and clicks the 'Report' button.
+
+            :param gametime: seconds of gametime when kill happened
+            :param victim_id: victim id
+            :param victim_name: victim nickname (for debug purpose only)
+            :param teamkiller_id: teamkiller id
+            :param teamkiller_name: teamkiller nickname (for debug purpose only)
+        """
+
+        async with db.engine.acquire() as conn:
+            await conn.execute(
+                """ INSERT INTO `teamkills` (`teamkiller`, `victim`, `game_id`, `gametime`)
+                    VALUES (%s, %s, %s, %s)""",
+                (teamkiller_id, victim_id, self.game.id, gametime)
+            )
+
+    async def handle_teamkill_happened(self, gametime, victim_id, victim_name, teamkiller_id, teamkiller_name):
+        """
+            Send automatically by the game whenever a teamkill happens. Takes
+            the same parameters as TeamkillReport.
+
             :param gametime: seconds of gametime when kill happened
             :param victim_id: victim id
             :param victim_name: victim nickname (for debug purpose only)
@@ -308,7 +329,7 @@ class GameConnection(GpgNetServerProtocol):
         teamkiller_id = int(teamkiller_id)
 
         if 0 in (victim_id, teamkiller_id):
-            self._logger.debug("Ignoring teamkill report for AI player")
+            self._logger.debug("Ignoring teamkill for AI player")
             return
 
         async with db.engine.acquire() as conn:
@@ -492,7 +513,7 @@ COMMAND_HANDLERS = {
     "JsonStats":            GameConnection.handle_json_stats,
     "EnforceRating":        GameConnection.handle_enforce_rating,
     "TeamkillReport":       GameConnection.handle_teamkill_report,
-    "TeamkillHappened":     GameConnection.handle_teamkill_report,
+    "TeamkillHappened":     GameConnection.handle_teamkill_happened,
     "GameEnded":            GameConnection.handle_game_ended,
     "Rehost":               GameConnection.handle_rehost,
     "Bottleneck":           GameConnection.handle_bottleneck,
