@@ -314,7 +314,8 @@ class GameConnection(GpgNetServerProtocol):
             """
             if int(player_id) <= 0:
                 query = await conn.execute(select([login.c.id]).where(login.c.login == teamkiller_name))
-                player_id=query.fetchone()[login.c.id]
+                row = await query.fetchone()
+                player_id = row[login.c.id]
             
             insert = moderation_report.insert().values(
                 reporter_id=victim_id, 
