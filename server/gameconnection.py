@@ -315,6 +315,14 @@ class GameConnection(GpgNetServerProtocol):
             
             result = await conn.execute(insert)
             
+            player_id = teamkiller_id
+            """
+                Hotfix in case the game sends 0 id (happens sometimes, name still valid most often)
+            """
+            if player_id <= 0:
+                query = await conn.execute(select([login.c.id]).where(login.c.login == teamkiller_name))
+                player_id=query.fetchone()[login.c.id]
+            
             await conn.execute(
                 reported_user.insert().values(
                     player_id=teamkiller_id,
