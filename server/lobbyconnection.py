@@ -741,7 +741,8 @@ class LobbyConnection():
 
         if state == "start":
             assert self.player is not None
-            self.player.faction = str(message['faction'])
+            # Faction can be either the name (e.g. 'uef') or the enum value (e.g. 1)
+            self.player.faction = message['faction']
 
             if mod == "ladder1v1":
                 search = Search([self.player])
@@ -853,7 +854,7 @@ class LobbyConnection():
                 uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = (row[i] for i in range(13))
                 link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
                 thumbstr = ""
-                if icon != "":
+                if icon:
                     thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
 
                 out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],

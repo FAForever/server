@@ -4,6 +4,7 @@ import server.db as db
 from sqlalchemy import text, select
 
 from .abc.base_game import GameConnectionState
+from .config import TRACE
 from .decorators import with_logger
 from .game_service import GameService
 from .games.game import Game, GameState, ValidityState, Victory
@@ -72,7 +73,7 @@ class GameConnection(GpgNetServerProtocol):
     def send_message(self, message):
         message['target'] = "game"
 
-        self._logger.debug(">>: %s", message)
+        self._logger.log(TRACE, ">>: %s", message)
         self.protocol.send_message(message)
 
     async def _handle_idle_state(self):
@@ -298,6 +299,8 @@ class GameConnection(GpgNetServerProtocol):
 
     async def handle_teamkill_report(self, gametime, reporter_id, reporter_name, teamkiller_id, teamkiller_name):
         """
+            Sent when a player is teamkilled and clicks the 'Report' button.
+
             :param gametime: seconds of gametime when kill happened
             :param reporter_id: reporter id
             :param reporter_name: reporter nickname
@@ -363,6 +366,31 @@ class GameConnection(GpgNetServerProtocol):
                 )
             )
             
+
+    async def handle_teamkill_happened(self, gametime, victim_id, victim_name, teamkiller_id, teamkiller_name):
+        """
+            Send automatically by the game whenever a teamkill happens. Takes
+            the same parameters as TeamkillReport.
+
+            :param gametime: seconds of gametime when kill happened
+            :param victim_id: victim id
+            :param victim_name: victim nickname (for debug purpose only)
+            :param teamkiller_id: teamkiller id
+            :param teamkiller_name: teamkiller nickname (for debug purpose only)
+        """
+        victim_id = int(victim_id)
+        teamkiller_id = int(teamkiller_id)
+
+        if 0 in (victim_id, teamkiller_id):
+            self._logger.debug("Ignoring teamkill for AI player")
+            return
+
+        async with db.engine.acquire() as conn:
+            await conn.execute(
+                """ INSERT INTO `teamkills` (`teamkiller`, `victim`, `game_id`, `gametime`)
+                    VALUES (%s, %s, %s, %s)""",
+                (teamkiller_id, victim_id, self.game.id, gametime)
+            )
 
     async def handle_ice_message(self, receiver_id, ice_msg):
         receiver_id = int(receiver_id)
@@ -538,6 +566,7 @@ COMMAND_HANDLERS = {
     "JsonStats":            GameConnection.handle_json_stats,
     "EnforceRating":        GameConnection.handle_enforce_rating,
     "TeamkillReport":       GameConnection.handle_teamkill_report,
+    "TeamkillHappened":     GameConnection.handle_teamkill_happened,
     "GameEnded":            GameConnection.handle_game_ended,
     "Rehost":               GameConnection.handle_rehost,
     "Bottleneck":           GameConnection.handle_bottleneck,
