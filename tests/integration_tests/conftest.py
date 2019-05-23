@@ -80,6 +80,10 @@ async def read_until(proto, pred):
             pass
 
 
+async def read_until_command(proto, command):
+    return await read_until(proto, lambda msg: msg.get('command') == command)
+
+
 async def get_session(proto):
     proto.send_message({'command': 'ask_session', 'user_agent': 'faf-client', 'version': '0.11.16'})
     await proto.drain()

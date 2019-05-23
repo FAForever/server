@@ -6,7 +6,7 @@ import marisa_trie
 import server.db as db
 from server.decorators import with_logger
 from server.players import Player
-from sqlalchemy import select
+from sqlalchemy import and_, select
 
 from .db.models import (avatars, avatars_list, clan, clan_membership,
                         global_rating, ladder1v1_rating, login)
@@ -66,7 +66,10 @@ class PlayerService:
                 .join(ladder1v1_rating)
                 .outerjoin(clan_membership)
                 .outerjoin(clan)
-                .outerjoin(avatars)
+                .outerjoin(avatars, onclause=and_(
+                    avatars.c.idUser == login.c.id,
+                    avatars.c.selected == 1
+                ))
                 .outerjoin(avatars_list)
             ).where(login.c.id == player.id)
 

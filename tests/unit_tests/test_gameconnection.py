@@ -271,6 +271,23 @@ async def test_handle_action_TeamkillReport_invalid_offender_id_and_name(game: G
         assert report is None
 
 
+async def test_handle_action_TeamkillHappened(game: Game, game_connection: GameConnection, db_engine):
+    game.launch = CoroMock()
+    await game_connection.handle_action('TeamkillHappened', ['200', '2', 'Dostya', '3', 'Rhiza'])
+
+    async with db_engine.acquire() as conn:
+        result = await conn.execute("select game_id from teamkills where victim=2 and teamkiller=3 and game_id=%s and gametime=200", (game.id))
+        row = await result.fetchone()
+        assert game.id == row[0]
+
+
+async def test_handle_action_TeamkillHappened_AI(game: Game, game_connection: GameConnection, db_engine):
+    # Should fail with a sql constraint error if this isn't handled correctly
+    game_connection.abort = mock.Mock()
+    await game_connection.handle_action('TeamkillHappened', ['200', 0, 'Dostya', '0', 'Rhiza'])
+    game_connection.abort.assert_not_called()
+
+
 async def test_handle_action_GameResult_victory_ends_sim(
     game: Game,
     game_connection: GameConnection
