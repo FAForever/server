@@ -296,39 +296,69 @@ class GameConnection(GpgNetServerProtocol):
     async def handle_enforce_rating(self):
         self.game.enforce_rating = True
 
-    async def handle_teamkill_report(self, gametime, victim_id, victim_name, teamkiller_id, teamkiller_name):
+    async def handle_teamkill_report(self, gametime, reporter_id, reporter_name, teamkiller_id, teamkiller_name):
         """
             :param gametime: seconds of gametime when kill happened
-            :param victim_id: victim id
-            :param victim_name: victim nickname
+            :param reporter_id: reporter id
+            :param reporter_name: reporter nickname
             :param teamkiller_id: teamkiller id
-            :param teamkiller_name: teamkiller nickname
+            :param teamkiller_name: teamkiller nickname - Used as a failsafe in case ID is wrong
         """
-        
                 
         async with db.engine.acquire() as conn:
-            
-            player_id = teamkiller_id
+
             """
-                Hotfix in case the game sends 0 id (happens sometimes, name still valid most often)
+                Sometime the game sends a wrong ID - but a correct player name
+                We need to make sure the player ID is correct before pursuing
             """
-            if int(player_id) <= 0:
-                query = await conn.execute(select([login.c.id]).where(login.c.login == teamkiller_name))
-                row = await query.fetchone()
-                player_id = row[login.c.id]
-            
+
+            check = await conn.execute(select([login.c.id]).where(
+                login.c.id == teamkiller_id or
+                login.c.login == teamkiller_name
+            ))
+
+            row = await check.fetchone()
+            if not row:
+                self._logger.debug("Discarded teamkill report with unknown reported player %s[%s]",
+                                   teamkiller_id,
+                                   teamkiller_name
+                )
+                return
+
+            verified_teamkiller_id = row[login.c.id]
+
+            """
+                The reporter's ID also needs to be checked the exact same way
+                for the same reasons
+            """
+
+            check = await conn.execute(select([login.c.id]).where(
+                login.c.id == reporter_id or
+                login.c.login == reporter_name
+            ))
+
+            row = await check.fetchone()
+            if not row:
+                self._logger.debug("Discarded teamkill report with unknown reporter %s[%s]",
+                                   reporter_id,
+                                   reporter_name
+                                   )
+                return
+
+            verified_reporter_id = row[login.c.id]
+
             insert = moderation_report.insert().values(
-                reporter_id=victim_id, 
+                reporter_id=verified_reporter_id,
                 game_id=self.game.id,
                 game_incident_timecode=gametime,
-                report_description=f"Auto-generated teamkill report from {victim_name}",
+                report_description=f"Auto-generated teamkill report from {reporter_name}",
             )
             
             result = await conn.execute(insert)
             
             await conn.execute(
                 reported_user.insert().values(
-                    player_id=teamkiller_id,
+                    player_id=verified_teamkiller_id,
                     report_id=result.lastrowid
                 )
             )
