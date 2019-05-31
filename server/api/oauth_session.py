@@ -31,7 +31,7 @@ class OAuth2Session(object):
         creds = await self._make_request(data=data)
         self.update_tokens(creds)
 
-    async def refresh_token(self) -> None:
+    async def refresh_tokens(self) -> None:
         assert self.refresh_token is not None
         data = {
             'grant_type': 'refresh_token',
@@ -54,7 +54,7 @@ class OAuth2Session(object):
 
     async def _schedule_refresh(self, wait_time):
         await asyncio.sleep(wait_time)
-        await self.refresh_token()
+        await self.refresh_tokens()
 
     async def _make_request(self, data: Dict[str, str]) -> Dict[str, str]:
         async with aiohttp.ClientSession(raise_for_status=True) as session:
