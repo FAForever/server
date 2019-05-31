@@ -50,6 +50,7 @@ class SessionManager:
 
         # Only reachable if an exception occurred
         self.session = None
+        raise ConnectionError
 
 
 class ApiAccessor:
