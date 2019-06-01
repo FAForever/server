@@ -27,6 +27,7 @@ def create_queue():
 async def test_fill_queue(service: EventService):
 
     queue = []
+    service.record_event('1-2-3', 0, queue)
     service.record_event('1-2-3', 1, queue)
     service.record_event('2-3-4', 4, queue)
 
@@ -38,6 +39,12 @@ async def test_fill_queue(service: EventService):
 
 async def test_api_broken(service: EventService):
     service.api_accessor.update_events = CoroMock(return_value=(500, None))
+    result = await service.execute_batch_update(42, create_queue())
+    assert result is None
+
+
+async def test_api_broken_2(service: EventService):
+    service.api_accessor.update_events = CoroMock(side_effect=ConnectionError())
     result = await service.execute_batch_update(42, create_queue())
     assert result is None
 
