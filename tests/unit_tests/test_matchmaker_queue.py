@@ -82,6 +82,15 @@ async def test_search_no_match(mocker, loop, matchmaker_players):
     assert not s1.matches_with(s2)
 
 
+def test_search_boundaries(matchmaker_players):
+    p1, _, _, _, _, _ = matchmaker_players
+    s1 = Search([p1])
+    assert p1.ladder_rating[0] > s1.boundary_80[0]
+    assert p1.ladder_rating[0] < s1.boundary_80[1]
+    assert p1.ladder_rating[0] > s1.boundary_75[0]
+    assert p1.ladder_rating[0] < s1.boundary_75[1]
+
+
 async def test_search_await(mocker, loop, matchmaker_players):
     p1, p2, _, _, _, _ = matchmaker_players
     s1, s2 = Search([p1]), Search([p2])
