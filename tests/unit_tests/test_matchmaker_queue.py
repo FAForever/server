@@ -82,6 +82,12 @@ async def test_search_no_match(mocker, loop, matchmaker_players):
     assert not s1.matches_with(s2)
 
 
+def test_search_no_match_wrong_type(matchmaker_players):
+    p1, _, _, _, _, _ = matchmaker_players
+    s1 = Search([p1])
+    assert not s1.matches_with(42)
+
+
 def test_search_boundaries(matchmaker_players):
     p1, _, _, _, _, _ = matchmaker_players
     s1 = Search([p1])
