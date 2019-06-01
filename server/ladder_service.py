@@ -95,6 +95,7 @@ class LadderService:
             asyncio.ensure_future(self.start_game(p1, p2))
 
     async def start_game(self, host: Player, guest: Player):
+        self._logger.debug("Starting ladder game between %s and %s", host, guest)
         host.state = PlayerState.HOSTING
         guest.state = PlayerState.JOINING
 
@@ -126,6 +127,7 @@ class LadderService:
 
         mapname = map_path[5:-4]  # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
                                   # Really in the future, just send a better description
+        self._logger.debug("Starting ladder game: %s", game)
         host.lobby_connection.launch_game(game, is_host=True, use_map=mapname)
         try:
             hosted = await game.await_hosted()
@@ -140,8 +142,10 @@ class LadderService:
             # searching for ladder, even though the server has already removed it
             # from the queue.
             # return
+            self._logger.debug("Ladder game failed to launch due to a timeout")
 
         guest.lobby_connection.launch_game(game, is_host=False, use_map=mapname)
+        self._logger.debug("Ladder game launched successfully")
 
     async def choose_map(self, players: [Player]) -> MapDescription:
         maps = self.game_service.ladder_maps
