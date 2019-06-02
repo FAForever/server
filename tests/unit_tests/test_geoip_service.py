@@ -34,7 +34,7 @@ async def test_check_update(fake_geoip_service, fake_geoip_path):
     fake_geoip_service.download_geoip_db.assert_called_once_with()
 
 
-async def test_do_update(fake_geoip_service, fake_geoip_path, loop):
+async def test_do_update(fake_geoip_service, fake_geoip_path):
     # Config variables
     PORT = 8137
     server.config.GEO_IP_DATABASE_URL = 'http://localhost:{}'.format(PORT)
@@ -51,7 +51,9 @@ async def test_do_update(fake_geoip_service, fake_geoip_path, loop):
     app = web.Application()
     app.add_routes([web.get('/', file_download)])
 
-    await loop.create_server(app.make_handler(), '127.0.0.1', PORT)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    await web.TCPSite(runner, 'localhost', PORT).start()
 
     # Test geoip update
     if os.path.isfile(fake_geoip_path):
@@ -61,6 +63,8 @@ async def test_do_update(fake_geoip_service, fake_geoip_path, loop):
     assert os.path.isfile(fake_geoip_path) is True
     with open(fake_geoip_path) as f:
         assert f.read() == random_text
+
+    await runner.cleanup()
 
 
 async def test_country_on_invalid_address(geoip_service):
