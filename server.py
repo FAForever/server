@@ -30,7 +30,10 @@ from server.stats.game_stats_service import (AchievementService, EventService,
 if __name__ == '__main__':
     logger = logging.getLogger()
     stderr_handler = logging.StreamHandler()
-    stderr_handler.setFormatter(logging.Formatter('%(levelname)-8s %(name)-30s %(message)s'))
+    stderr_handler.setFormatter(logging.Formatter(
+        fmt='%(levelname)-8s %(asctime)s %(name)-30s %(message)s',
+        datefmt='%b %d  %H:%M:%S'
+    ))
     logger.addHandler(stderr_handler)
     logger.setLevel(config.LOG_LEVEL)
 
