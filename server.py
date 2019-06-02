@@ -22,7 +22,6 @@ from server.game_service import GameService
 from server.geoip_service import GeoIpService
 from server.ice_servers.nts import TwilioNTS
 from server.ladder_service import LadderService
-from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
 from server.stats.game_stats_service import (AchievementService, EventService,
                                              GameStatsService)
