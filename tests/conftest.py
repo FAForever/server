@@ -38,8 +38,6 @@ def pytest_pycollect_makeitem(collector, name, obj):
 
 
 def pytest_addoption(parser):
-    parser.addoption('--noslow', action='store_true', default=False,
-                     help="Don't run slow tests")
     parser.addoption('--aiodebug', action='store_true', default=False,
                      help='Enable asyncio debugging')
     parser.addoption('--mysql_host', action='store', default=DB_SERVER, help='mysql host to use for test database')
@@ -50,21 +48,14 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
+    )
     if config.getoption('--aiodebug'):
         logging.getLogger('quamash').setLevel(logging.DEBUG)
         logging.captureWarnings(True)
     else:
         logging.getLogger('quamash').setLevel(logging.INFO)
-
-
-def pytest_runtest_setup(item):
-    """
-    Skip tests if they are marked slow, and --noslow is given on the commandline
-    :param item:
-    :return:
-    """
-    if getattr(item.obj, 'slow', None) and item.config.getvalue('noslow'):
-        pytest.skip("slow test")
 
 
 def pytest_pyfunc_call(pyfuncitem):
