@@ -288,10 +288,10 @@ def coturn_hosts() -> Iterable:
 
 @pytest.fixture
 def coturn_keys(coturn_hosts) -> Iterable:
-    list = []
+    keys_list = []
     for host in coturn_hosts:
-        list.append(f"secret_{host}")
-    return list
+        keys_list.append(f"secret_{host}")
+    return keys_list
 
 
 @pytest.fixture
