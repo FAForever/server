@@ -60,12 +60,9 @@ async def test_twilio_nts(twilio):
     servers = await twilio.server_tokens(ttl=123456)
     twilio.client.tokens.create.assert_called_once()
     assert servers == \
-           {
+        {
             "urls": ["a","b","c"],
             "username": "d",
             "credential": "e",
             "credentialType": "f"
-           }
-
-
-
+        }
