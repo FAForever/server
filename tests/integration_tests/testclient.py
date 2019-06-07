@@ -1,8 +1,6 @@
 import asyncio
-from typing import Union
+from typing import List, Union
 from unittest import mock
-
-from typing import List
 from unittest.mock import call
 
 from server.decorators import with_logger
@@ -10,12 +8,12 @@ from server.protocol.gpgnet import GpgNetClientProtocol
 
 
 @with_logger
-class UDPClientProtocol:
+class UDPClientProtocol(asyncio.DatagramProtocol):
     def __init__(self, on_message):
         self.transport = None
         self.on_message = on_message
 
-    def connection_made(self, transport: asyncio.DatagramProtocol):
+    def connection_made(self, transport: asyncio.DatagramTransport):
         print("UDPClientProtocol listening")
         self.transport = transport
 
@@ -23,7 +21,7 @@ class UDPClientProtocol:
         self.on_message(data.decode(), addr)
 
     def connection_lost(self, exc):
-        print(exc)
+        print("UDPClientProtocol connection lost:", exc)
 
     def send_datagram(self, msg: str):
         self.transport.sendto(msg.encode())
@@ -52,7 +50,12 @@ class ClientTest(GpgNetClientProtocol):
         self._udp_transport, self._udp_protocol = (None, None)
         self._gpg_socket_pair = None
 
-    def send_gpgnet_message(self, command_id, arguments: List[Union[int, str, bool]]) -> None:
+    def send_connectivity_message(self, command_id, arguments: List[Union[int, str, bool]]):
+        self._proto.send_message({'command': command_id,
+                                  'target': 'connectivity',
+                                  'args': arguments})
+
+    def send_gpgnet_message(self, command_id, arguments: List[Union[int, str, bool]]):
         self._proto.send_message({'command': command_id,
                                   'target': 'game',
                                   'args': arguments})
@@ -60,8 +63,10 @@ class ClientTest(GpgNetClientProtocol):
     async def listen_udp(self, port=6112):
         self._logger.debug("Listening on 0.0.0.0:{}/udp".format(port))
         self._udp_transport, self._udp_protocol = \
-            await self.loop.create_datagram_endpoint(lambda: UDPClientProtocol(self.on_received_udp),
-                                                          local_addr=('0.0.0.0', port))
+            await self.loop.create_datagram_endpoint(
+                lambda: UDPClientProtocol(self.on_received_udp),
+                local_addr=('0.0.0.0', port)
+            )
 
     @asyncio.coroutine
     def connect(self, host, port):
@@ -85,7 +90,7 @@ class ClientTest(GpgNetClientProtocol):
         msg = msg[1:]
         self.udp_messages(msg, addr)
         if self.process_nat_packets:
-            self.send_gpgnet_message('ProcessNatPacket', ["{}:{}".format(*addr), msg])
+            self.send_connectivity_message('ProcessNatPacket', ["{}:{}".format(*addr), msg])
 
     def __enter__(self):
         return self

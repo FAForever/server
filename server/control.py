@@ -2,15 +2,11 @@
 Tiny local-only http server for getting stats and performing various tasks
 """
 
-import asyncio
-
-import msgpack
 import socket
 
 from aiohttp import web
 import logging
-from server import PlayerService, GameService, LobbyConnection, config
-from server.games import Game
+from server import PlayerService, GameService, config
 from json import dumps
 
 logger = logging.getLogger(__name__)

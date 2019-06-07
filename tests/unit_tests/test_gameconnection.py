@@ -2,19 +2,14 @@ import asyncio
 from unittest import mock
 
 from server import GameConnection
-from server.connectivity import ConnectivityResult, ConnectivityState
 from server.games import Game
 from server.games.game import ValidityState, Victory
 from server.players import PlayerState
 from tests import CoroMock
 
-LOCAL_PUBLIC = ConnectivityResult(addr='127.0.0.1:6112', state=ConnectivityState.PUBLIC)
-LOCAL_STUN = ConnectivityResult(addr='127.0.0.1:6112', state=ConnectivityState.STUN)
-LOCAL_PROXY = ConnectivityResult(addr=None, state=ConnectivityState.BLOCKED)
-
 
 def assert_message_sent(game_connection: GameConnection, command, args):
-    game_connection.lobby_connection.send.assert_called_with({
+    game_connection.protocol.send_message.assert_called_with({
         'command': command,
         'target': 'game',
         'args': args
@@ -36,7 +31,6 @@ async def test_handle_action_GameState_idle_adds_connection(
     players
 ):
     players.joining.game = game
-    game_connection.lobby_connection = mock.Mock()
     game_connection.player = players.hosting
     game_connection.game = game
 
@@ -231,9 +225,67 @@ async def test_handle_action_TeamkillReport(game: Game, game_connection: GameCon
     await game_connection.handle_action('TeamkillReport', ['200', '2', 'Dostya', '3', 'Rhiza'])
 
     async with db_engine.acquire() as conn:
+        result = await conn.execute("select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=200", (game.id))
+        report = await result.fetchone()
+        assert game.id == report["game_id"]
+        
+        reported_user_query = await conn.execute("select player_id from reported_user where report_id=%s", (report["id"]))
+        data = await reported_user_query.fetchone()
+        assert data["player_id"] == 3
+        
+        
+async def test_handle_action_TeamkillReport_invalid_ids(game: Game, game_connection: GameConnection, db_engine):
+    game.launch = CoroMock()
+    await game_connection.handle_action('TeamkillReport', ['230', 0, 'Dostya', 0, 'Rhiza'])
+
+    async with db_engine.acquire() as conn:
+        result = await conn.execute("select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=230", (game.id))
+        report = await result.fetchone()
+        assert game.id == report["game_id"]
+        
+        reported_user_query = await conn.execute("select player_id from reported_user where report_id=%s", (report["id"]))
+        data = await reported_user_query.fetchone()
+        assert data["player_id"] == 3
+
+
+async def test_handle_action_TeamkillReport_invalid_reporter_id_and_name(game: Game, game_connection: GameConnection, db_engine):
+    game.launch = CoroMock()
+    await game_connection.handle_action('TeamkillReport', ['250', 0, 'Askaholic', 0, 'Rhiza'])
+
+    async with db_engine.acquire() as conn:
+        result = await conn.execute("select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=250", game.id)
+        report = await result.fetchone()
+        assert report is None
+
+
+async def test_handle_action_TeamkillReport_invalid_offender_id_and_name(game: Game, game_connection: GameConnection,
+                                                                         db_engine):
+    game.launch = CoroMock()
+    await game_connection.handle_action('TeamkillReport', ['270', 0, 'Dostya', 0, 'Geosearchef'])
+
+    async with db_engine.acquire() as conn:
+        result = await conn.execute(
+            "select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=270",
+            game.id)
+        report = await result.fetchone()
+        assert report is None
+
+
+async def test_handle_action_TeamkillHappened(game: Game, game_connection: GameConnection, db_engine):
+    game.launch = CoroMock()
+    await game_connection.handle_action('TeamkillHappened', ['200', '2', 'Dostya', '3', 'Rhiza'])
+
+    async with db_engine.acquire() as conn:
         result = await conn.execute("select game_id from teamkills where victim=2 and teamkiller=3 and game_id=%s and gametime=200", (game.id))
         row = await result.fetchone()
         assert game.id == row[0]
+
+
+async def test_handle_action_TeamkillHappened_AI(game: Game, game_connection: GameConnection, db_engine):
+    # Should fail with a sql constraint error if this isn't handled correctly
+    game_connection.abort = mock.Mock()
+    await game_connection.handle_action('TeamkillHappened', ['200', 0, 'Dostya', '0', 'Rhiza'])
+    game_connection.abort.assert_not_called()
 
 
 async def test_handle_action_GameResult_victory_ends_sim(

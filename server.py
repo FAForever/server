@@ -16,20 +16,25 @@ import socket
 import server
 import server.config as config
 from server.api.api_accessor import ApiAccessor
-from server.config import DB_SERVER, DB_PORT, DB_LOGIN, DB_PASSWORD, DB_NAME
+from server.config import (DB_LOGIN, DB_NAME, DB_PASSWORD, DB_PORT, DB_SERVER,
+                           TWILIO_ACCOUNT_SID)
 from server.game_service import GameService
 from server.geoip_service import GeoIpService
-from server.matchmaker import MatchmakerQueue
-from server.natpacketserver import NatPacketServer
+from server.ice_servers.nts import TwilioNTS
+from server.ladder_service import LadderService
 from server.player_service import PlayerService
-from server.stats.game_stats_service import GameStatsService, EventService, AchievementService
+from server.stats.game_stats_service import (AchievementService, EventService,
+                                             GameStatsService)
 
 if __name__ == '__main__':
     logger = logging.getLogger()
     stderr_handler = logging.StreamHandler()
-    stderr_handler.setFormatter(logging.Formatter('%(levelname)-8s %(name)-30s %(message)s'))
+    stderr_handler.setFormatter(logging.Formatter(
+        fmt='%(levelname)-8s %(asctime)s %(name)-30s %(message)s',
+        datefmt='%b %d  %H:%M:%S'
+    ))
     logger.addHandler(stderr_handler)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(config.LOG_LEVEL)
 
     try:
         def signal_handler(signal, frame):
@@ -51,7 +56,7 @@ if __name__ == '__main__':
         signal.signal(signal.SIGTERM, signal_handler)
         signal.signal(signal.SIGINT, signal_handler)
 
-        engine_fut = asyncio.async(
+        engine_fut = asyncio.ensure_future(
             server.db.connect_engine(
                 host=DB_SERVER,
                 port=int(DB_PORT),
@@ -66,6 +71,13 @@ if __name__ == '__main__':
 
         players_online = PlayerService()
 
+        twilio_nts = None
+        if TWILIO_ACCOUNT_SID:
+            twilio_nts = TwilioNTS()
+        else:
+            logger.warning(
+                "Twilio is not set up. You must set TWILIO_ACCOUNT_SID and TWILIO_TOKEN to use the Twilio ICE servers.")
+
         api_accessor = None
         if config.USE_API:
             api_accessor = ApiAccessor()
@@ -73,29 +85,28 @@ if __name__ == '__main__':
         event_service = EventService(api_accessor)
         achievement_service = AchievementService(api_accessor)
         game_stats_service = GameStatsService(event_service, achievement_service)
-        geoip_service = GeoIpService()
-
-        natpacket_server = NatPacketServer(addresses=config.LOBBY_NAT_ADDRESSES, loop=loop)
-        loop.run_until_complete(natpacket_server.listen())
-        server.NatPacketServer.instance = natpacket_server
 
         games = GameService(players_online, game_stats_service)
-        matchmaker_queue = MatchmakerQueue('ladder1v1', players_online, games)
-        players_online.ladder_queue = matchmaker_queue
+        ladder_service = LadderService(games)
 
         ctrl_server = loop.run_until_complete(server.run_control_server(loop, players_online, games))
 
-        lobby_server = server.run_lobby_server(address=('', 8001),
-                                               geoip_service=geoip_service,
-                                               player_service=players_online,
-                                               games=games,
-                                               loop=loop)
+        lobby_server = server.run_lobby_server(
+            address=('', 8001),
+            geoip_service=GeoIpService(),
+            player_service=players_online,
+            games=games,
+            nts_client=twilio_nts,
+            ladder_service=ladder_service,
+            loop=loop
+        )
 
         for sock in lobby_server.sockets:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
 
         loop.run_until_complete(done)
         players_online.broadcast_shutdown()
+        ladder_service.shutdown_queues()
 
         # Close DB connections
         engine.close()

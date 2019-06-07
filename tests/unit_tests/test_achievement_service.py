@@ -21,7 +21,6 @@ def service(api_accessor: ApiAccessor):
     return AchievementService(api_accessor)
 
 
-@pytest.fixture()
 def create_queue():
     return [
         dict(achievement_id='1-2-3', update_type='UNLOCK'),
@@ -95,4 +94,3 @@ async def test_update_multiple(service: AchievementService):
 async def test_achievement_zero_steps_increment(service: AchievementService):
     assert service.increment(achievement_id='3-4-5', steps=2, queue=[]) is None
     assert service.set_steps_at_least(achievement_id='3-4-5', steps=2, queue=[]) is None
-

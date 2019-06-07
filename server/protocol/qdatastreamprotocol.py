@@ -1,12 +1,13 @@
 import asyncio
-
+import base64
 import json
 import struct
-import base64
 from asyncio import StreamReader, StreamWriter
+from typing import Tuple
 
 import server
 from server.decorators import with_logger
+
 from .protocol import Protocol
 
 
@@ -25,7 +26,7 @@ class QDataStreamProtocol(Protocol):
         self.writer = writer
 
     @staticmethod
-    def read_qstring(buffer, pos=0):
+    def read_qstring(buffer: bytes, pos: int=0) -> Tuple[int, str]:
         """
         Parse a serialized QString from buffer (A bytes like object) at given position
 
@@ -36,32 +37,37 @@ class QDataStreamProtocol(Protocol):
         :type buffer: bytes
         :return (int, str): (buffer_pos, message)
         """
-        assert len(buffer[pos:pos + 4]) == 4
-        (size, ) = struct.unpack('!I', buffer[pos:pos + 4])
-        if len(buffer[pos + 4:]) < size:
-            raise ValueError("Malformed QString: Claims length {} but actually {}. Entire buffer: {}"
-                             .format(size, len(buffer[pos + 4:]), base64.b64encode(buffer)))
+        chunk = buffer[pos:pos + 4]
+        rest = buffer[pos + 4:]
+        assert len(chunk) == 4
+
+        (size, ) = struct.unpack('!I', chunk)
+        if len(rest) < size:
+            raise ValueError(
+                "Malformed QString: Claims length {} but actually {}. Entire buffer: {}"
+                .format(size, len(rest), base64.b64encode(buffer)))
         return size + pos + 4, (buffer[pos + 4:pos + 4 + size]).decode('UTF-16BE')
 
     @staticmethod
-    def read_int32(buffer, pos=0):
+    def read_int32(buffer: bytes, pos: int=0) -> Tuple[int, int]:
         """
         Read a serialized 32-bit integer from the given buffer at given position
 
-        :type buffer: bytes
         :return (int, int): (buffer_pos, int)
         """
-        assert len(buffer[pos:pos + 4]) == 4
-        (num, ) = struct.unpack('!i', buffer[pos:pos + 4])
+        chunk = buffer[pos:pos + 4]
+        assert len(chunk) == 4
+
+        (num, ) = struct.unpack('!i', chunk)
         return pos + 4, num
 
     @staticmethod
-    def pack_qstring(message):
+    def pack_qstring(message: str) -> bytes:
         encoded = message.encode('UTF-16BE')
         return struct.pack('!i', len(encoded)) + encoded
 
     @staticmethod
-    def pack_block(block):
+    def pack_block(block: bytes) -> bytes:
         return struct.pack('!I', len(block)) + block
 
     @staticmethod
@@ -72,20 +78,19 @@ class QDataStreamProtocol(Protocol):
             yield msg
 
     @staticmethod
-    def pack_message(message, *args):
+    def pack_message(*args: str) -> bytes:
         """
         For sending a bunch of QStrings packed together in a 'block'
         """
-        msg = QDataStreamProtocol.pack_qstring(message)
+        msg = bytearray()
         for arg in args:
-            if isinstance(arg, str):
-                msg += QDataStreamProtocol.pack_qstring(arg)
-            else:
+            if not isinstance(arg, str):
                 raise NotImplementedError("Only string serialization is supported")
+
+            msg += QDataStreamProtocol.pack_qstring(arg)
         return QDataStreamProtocol.pack_block(msg)
 
-    @asyncio.coroutine
-    def read_message(self):
+    async def read_message(self):
         """
         Read a message from the stream
 
@@ -93,8 +98,8 @@ class QDataStreamProtocol(Protocol):
 
         :return dict: Parsed message
         """
-        (block_length, ) = struct.unpack('!I', (yield from self.reader.readexactly(4)))
-        block = yield from self.reader.readexactly(block_length)
+        (block_length, ) = struct.unpack('!I', (await self.reader.readexactly(4)))
+        block = await self.reader.readexactly(block_length)
         # FIXME: New protocol will remove the need for this
 
         pos, action = self.read_qstring(block)

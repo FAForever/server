@@ -12,15 +12,14 @@ class ServerContext:
     Base class for managing connections and holding state about them.
     """
 
-    def __init__(self, connection_factory, loop, name='Unknown server'):
+    def __init__(self, connection_factory, name='Unknown server'):
         super().__init__()
-        self.loop = loop
         self.name = name
         self._server = None
         self._connection_factory = connection_factory
         self.connections = {}
         self._transport = None
-        self._logger.debug("%s initialized with loop: %s", self, loop)
+        self._logger.debug("%s initialized", self)
         self.addr = None
 
     def __repr__(self):
@@ -28,11 +27,12 @@ class ServerContext:
 
     async def listen(self, host, port):
         self.addr = (host, port)
-        self._logger.debug("ServerContext.listen(%s,%d)", host, port)
-        self._server = await asyncio.start_server(self.client_connected,
-                                            host=host,
-                                            port=port,
-                                            loop=self.loop)
+        self._logger.debug("ServerContext.listen(%s, %s)", host, port)
+        self._server = await asyncio.start_server(
+            self.client_connected,
+            host=host,
+            port=port
+        )
         return self._server
 
     @property

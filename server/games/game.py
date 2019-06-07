@@ -7,7 +7,6 @@ from collections import Counter, defaultdict
 from enum import Enum, unique
 from typing import Any, Dict, Optional, Tuple, Union
 
-import aiomysql
 import server.db as db
 import trueskill
 from trueskill import Rating
@@ -182,8 +181,9 @@ class Game(BaseGame):
             'AIReplacement': 'Off',
             'RestrictedCategories': 0
         }
-
         self.mods = {}
+        self._is_hosted = asyncio.Future()
+
         self._logger.debug("%s created", self)
         asyncio.get_event_loop().create_task(self.timeout_game())
 
@@ -195,6 +195,7 @@ class Game(BaseGame):
         tm = 30 if self.game_mode != 'coop' else 60
         await self.sleep(tm)
         if self.state == GameState.INITIALIZING:
+            self._is_hosted.set_exception(TimeoutError("Game setup timed out"))
             self._logger.debug("Game setup timed out.. Cancelling game")
             await self.on_game_end()
 
@@ -308,6 +309,13 @@ class Game(BaseGame):
 
         return teams
 
+    async def await_hosted(self):
+        return await asyncio.wait_for(self._is_hosted, None)
+
+    def set_hosted(self, value: bool=True):
+        if not self._is_hosted.done():
+            self._is_hosted.set_result(value)
+
     def outcome(self, player: Player) -> Optional[GameOutcome]:
         """
         Determines what the game outcome was for a given player. Did the
@@ -383,7 +391,7 @@ class Game(BaseGame):
         """
         if game_connection.state != GameConnectionState.CONNECTED_TO_HOST:
             raise GameError("Invalid GameConnectionState: {}".format(game_connection.state))
-        if self.state != GameState.LOBBY:
+        if self.state != GameState.LOBBY and self.state != GameState.LIVE:
             raise GameError("Invalid GameState: {state}".format(state=self.state))
         self._logger.info("Added game connection %s", game_connection)
         self._connections[game_connection.player] = game_connection
@@ -406,7 +414,10 @@ class Game(BaseGame):
 
         self._logger.info("Removed game connection %s", game_connection)
 
-        if len(self._connections) == 0 or (self.host == game_connection.player and self.state != GameState.LIVE):
+        def host_left_lobby() -> bool:
+            return game_connection.player == self.host and self.state != GameState.LIVE
+
+        if len(self._connections) == 0 or host_left_lobby():
             await self.on_game_end()
         else:
             await self._process_pending_army_stats()
@@ -453,6 +464,7 @@ class Game(BaseGame):
         except Exception as e:  # pragma: no cover
             self._logger.exception("Error during game end: %s", e)
         finally:
+            self.set_hosted(value=False)
             self.state = GameState.ENDED
             self.game_service.mark_dirty(self)
 
@@ -881,7 +893,7 @@ class Game(BaseGame):
                     team_scores[team] += self.get_army_score(army)
                 except KeyError:
                     team_scores[team] += 0
-                    self._logger.warn("Missing game result for %s: %s", army, player)
+                    self._logger.warning("Missing game result for %s: %s", army, player)
             elif team == 1:
                 ffa_scores.append((player, self.get_army_score(army)))
         ranks = [-score for team, score in sorted(team_scores.items(), key=lambda t: t[0])]

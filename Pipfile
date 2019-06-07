@@ -1,0 +1,35 @@
+[scripts]
+tests = "bash -c 'docker exec -i faf-db mysql faf < test-data.sql && scripts/run_tests_with_coverage.sh'"
+
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+requests = "*"
+typing = "*"
+aiohttp = "==3.5.1"
+aiomysql = "*"
+aiomeasures = "*"
+docopt = "*"
+semver = "*"
+"geoip2" = "*"
+trueskill = "*"
+aiocron = "*"
+marisa-trie = "*"
+oauthlib = "*"
+requests-oauthlib = "*"
+sqlalchemy = "*"
+twilio = "*"
+humanize = "*"
+
+[dev-packages]
+pytest = "*"
+pytest-mock = "*"
+pytest-cov = "*"
+coveralls = "*"
+mock = "*"
+
+[requires]
+python_version = "3.6"

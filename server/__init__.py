@@ -8,6 +8,7 @@ Distributed under GPLv3, see license.txt
 """
 import json
 import logging
+from typing import Any, Dict, Optional
 
 import aiomeasures
 
@@ -15,7 +16,7 @@ from . import config as config
 from .games.game import GameState, VisibilityState
 from .stats.game_stats_service import GameStatsService
 from .gameconnection import GameConnection
-from .natpacketserver import NatPacketServer
+from .ice_servers.nts import TwilioNTS
 from .lobbyconnection import LobbyConnection
 from .protocol import QDataStreamProtocol
 from .servercontext import ServerContext
@@ -33,6 +34,7 @@ __copyright__ = 'Copyright (c) 2011-2015 ' + __author__
 
 
 __all__ = [
+    'GameConnection',
     'GameStatsService',
     'GameService',
     'LadderService',
@@ -44,6 +46,7 @@ __all__ = [
     'protocol'
 ]
 
+DIRTY_REPORT_INTERVAL = 1  # Seconds
 stats = None
 
 if not config.ENABLE_STATSD:
@@ -53,47 +56,41 @@ else:
     stats = aiomeasures.StatsD(config.STATSD_SERVER)
 
 
-def run_lobby_server(address: (str, int),
-                     player_service: PlayerService,
-                     games: GameService,
-                     loop,
-                     geoip_service: GeoIpService):
+def encode_message(message: str):
+    # Crazy evil encoding scheme
+    return QDataStreamProtocol.pack_message(message)
+
+
+def encode_dict(d: Dict[Any, Any]):
+    return encode_message(json.dumps(d))
+
+
+def encode_players(players):
+    return encode_dict({
+        'command': 'player_info',
+        'players': [player.to_dict() for player in players]
+    })
+
+
+def encode_queues(queues):
+    return encode_dict({
+        'command': 'matchmaker_info',
+        'queues': [queue.to_dict() for queue in queues]
+    })
+
+
+def run_lobby_server(
+    address: (str, int),
+    player_service: PlayerService,
+    games: GameService,
+    loop,
+    nts_client: Optional[TwilioNTS],
+    geoip_service: GeoIpService,
+    ladder_service: LadderService
+) -> ServerContext:
     """
     Run the lobby server
-
-    :param address: Address to listen on
-    :param player_service: Service to talk to about players
-    :param games: Service to talk to about games
-    :param loop: Event loop to use
-    :return ServerContext: A server object
     """
-    def encode_game(game):
-        # Crazy evil encoding scheme
-        return QDataStreamProtocol.pack_block(
-            QDataStreamProtocol.pack_qstring(json.dumps(game.to_dict()))
-        )
-
-    def encode_players(players):
-        return QDataStreamProtocol.pack_block(
-            QDataStreamProtocol.pack_qstring(json.dumps(
-                    {
-                        'command': 'player_info',
-                        'players': [player.to_dict() for player in players]
-                    }
-            ))
-        )
-
-    def encode_queues(queues):
-        return QDataStreamProtocol.pack_block(
-            QDataStreamProtocol.pack_qstring(
-                json.dumps(
-                    {
-                        'command': 'matchmaker_info',
-                        'queues': [queue.to_dict() for queue in queues]
-                    }
-                )
-            )
-        )
 
     def report_dirties():
         try:
@@ -116,7 +113,7 @@ def run_lobby_server(address: (str, int),
                     games.remove_game(game)
 
                 # So we're going to be broadcasting this to _somebody_...
-                message = encode_game(game)
+                message = encode_dict(game.to_dict())
 
                 # These games shouldn't be broadcast, but instead privately sent to those who are
                 # allowed to see them.
@@ -130,22 +127,24 @@ def run_lobby_server(address: (str, int),
         except Exception as e:
             logging.getLogger().exception(e)
         finally:
-            loop.call_later(1, report_dirties)
+            loop.call_later(DIRTY_REPORT_INTERVAL, report_dirties)
 
-    ping_msg = QDataStreamProtocol.pack_block(QDataStreamProtocol.pack_qstring('PING'))
+    ping_msg = encode_message('PING')
 
     def ping_broadcast():
         ctx.broadcast_raw(ping_msg)
         loop.call_later(45, ping_broadcast)
 
-    def initialize_connection():
-        return LobbyConnection(context=ctx,
-                               geoip=geoip_service,
-                               games=games,
-                               players=player_service,
-                               loop=loop)
-    ctx = ServerContext(initialize_connection, name="LobbyServer", loop=loop)
-    loop.call_later(5, report_dirties)
+    def make_connection() -> LobbyConnection:
+        return LobbyConnection(
+            geoip=geoip_service,
+            games=games,
+            nts_client=nts_client,
+            players=player_service,
+            ladder_service=ladder_service
+        )
+    ctx = ServerContext(make_connection, name="LobbyServer")
+    loop.call_later(DIRTY_REPORT_INTERVAL, report_dirties)
     loop.call_soon(ping_broadcast)
     loop.run_until_complete(ctx.listen(*address))
     return ctx

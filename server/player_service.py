@@ -1,11 +1,15 @@
 import asyncio
+from typing import Optional, Set
 
 import aiocron
 import marisa_trie
-import pymysql
 import server.db as db
 from server.decorators import with_logger
 from server.players import Player
+from sqlalchemy import and_, select
+
+from .db.models import (avatars, avatars_list, clan, clan_membership,
+                        global_rating, ladder1v1_rating, login)
 
 
 @with_logger
@@ -20,8 +24,7 @@ class PlayerService:
         self.blacklisted_email_domains = {}
         self._dirty_players = set()
 
-        self.ladder_queue = None
-        asyncio.get_event_loop().run_until_complete(asyncio.async(self.update_data()))
+        asyncio.get_event_loop().run_until_complete(asyncio.ensure_future(self.update_data()))
         self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
 
     def __len__(self):
@@ -30,17 +33,17 @@ class PlayerService:
     def __iter__(self):
         return self.players.values().__iter__()
 
-    def __getitem__(self, item) -> Player:
-        return self.players.get(item)
+    def __getitem__(self, player_id: int) -> Optional[Player]:
+        return self.players.get(player_id)
 
-    def __setitem__(self, key, value):
-        self.players[key] = value
+    def __setitem__(self, player_id: int, player: Player):
+        self.players[player_id] = player
 
     @property
-    def dirty_players(self):
+    def dirty_players(self) -> Set[Player]:
         return self._dirty_players
 
-    def mark_dirty(self, player):
+    def mark_dirty(self, player: Player):
         self._dirty_players.add(player)
 
     def clear_dirty(self):
@@ -48,54 +51,67 @@ class PlayerService:
 
     async def fetch_player_data(self, player):
         async with db.engine.acquire() as conn:
-            result = await conn.execute(
-                'SELECT mean, deviation, numGames FROM `global_rating` '
-                'WHERE id=%s', player.id)
+            sql = select([
+                avatars_list.c.url,
+                avatars_list.c.tooltip,
+                global_rating.c.mean,
+                global_rating.c.deviation,
+                global_rating.c.numGames,
+                ladder1v1_rating.c.mean,
+                ladder1v1_rating.c.deviation,
+                clan.c.tag
+            ], use_labels=True).select_from(
+                login
+                .join(global_rating)
+                .join(ladder1v1_rating)
+                .outerjoin(clan_membership)
+                .outerjoin(clan)
+                .outerjoin(avatars, onclause=and_(
+                    avatars.c.idUser == login.c.id,
+                    avatars.c.selected == 1
+                ))
+                .outerjoin(avatars_list)
+            ).where(login.c.id == player.id)
+
+            result = await conn.execute(sql)
             row = await result.fetchone()
             if not row:
-                (mean, dev, num_games) = (1500, 500, 0)
-            (mean, dev, num_games) = row[0], row[1], row[2]
-            player.global_rating = (mean, dev)
-            player.numGames = num_games
-            result = await conn.execute(
-                'SELECT mean, deviation FROM `ladder1v1_rating` '
-                'WHERE id=%s', player.id)
-            row = await result.fetchone()
-            player.ladder_rating = (row[0], row[1])
+                return
 
-            ## Clan informations
-            try:
-                result = await conn.execute(
-                    "SELECT tag "
-                    "FROM login "
-                    "JOIN clan_membership "
-                    "ON login.id = clan_membership.player_id "
-                    "JOIN clan ON clan_membership.clan_id = clan.id "
-                    "where player_id =  %s", player.id)
-                row = await result.fetchone()
-                if row:
-                    player.clan = row[0]
-            except (pymysql.ProgrammingError, pymysql.OperationalError):
-                pass
+            player.global_rating = (
+                row[global_rating.c.mean],
+                row[global_rating.c.deviation]
+            )
+            player.numGames = row[global_rating.c.numGames]
 
-    def remove_player(self, player):
+            player.ladder_rating = (
+                row[ladder1v1_rating.c.mean],
+                row[ladder1v1_rating.c.deviation]
+            )
+
+            player.clan = row.get(clan.c.tag)
+
+            url, tooltip = row.get(avatars_list.c.url), row.get(avatars_list.c.tooltip)
+            if url and tooltip:
+                player.avatar = {"url": url, "tooltip": tooltip}
+
+    def remove_player(self, player: Player):
         if player.id in self.players:
             del self.players[player.id]
 
-    def get_permission_group(self, user_id):
+    def get_permission_group(self, user_id: int) -> int:
         return self.privileged_users.get(user_id, 0)
 
-    def is_uniqueid_exempt(self, user_id):
+    def is_uniqueid_exempt(self, user_id: int) -> bool:
         return user_id in self.uniqueid_exempt
 
-    def has_blacklisted_domain(self, email):
+    def has_blacklisted_domain(self, email: str) -> bool:
         # A valid email only has one @ anyway.
         domain = email.split("@")[1]
         return domain in self.blacklisted_email_domains
 
-    def get_player(self, player_id):
-        if player_id in self.players:
-            return self.players[player_id]
+    def get_player(self, player_id: int) -> Optional[Player]:
+        return self.players.get(player_id)
 
     async def update_data(self):
         """

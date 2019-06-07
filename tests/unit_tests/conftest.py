@@ -1,11 +1,13 @@
 from unittest import mock
-import pytest
 
-from server import GameStatsService, LobbyConnection
+import pytest
+from server import GameStatsService
 from server.abc.base_game import BaseGame
-from server.games import Game
+from server.game_service import GameService
 from server.gameconnection import GameConnection, GameConnectionState
+from server.games import Game
 from server.geoip_service import GeoIpService
+from server.ladder_service import LadderService
 from server.players import Player
 from tests import CoroMock
 
@@ -18,24 +20,16 @@ def lobbythread():
 
 
 @pytest.fixture
-def game_connection(request, game, loop, player_service, players, game_service, transport):
-    from server import GameConnection, LobbyConnection
-    conn = GameConnection(loop=loop,
-                          lobby_connection=mock.create_autospec(
-                              LobbyConnection(
-                                  loop=mock.Mock(),
-                                  context=mock.Mock(),
-                                  geoip=mock.Mock(),
-                                  games=mock.Mock(),
-                                  players=mock.Mock()
-                              )
-                          ),
-                          player_service=player_service,
-                          games=game_service)
-    conn._transport = transport
-    conn.player = players.hosting
-    conn.game = game
-    conn.lobby = mock.Mock(spec=LobbyConnection)
+def game_connection(request, game, players, game_service, player_service):
+    from server import GameConnection
+    conn = GameConnection(
+        game=game,
+        player=players.hosting,
+        protocol=mock.Mock(),
+        player_service=player_service,
+        games=game_service
+    )
+
     conn.finished_sim = False
 
     def fin():
@@ -46,7 +40,11 @@ def game_connection(request, game, loop, player_service, players, game_service, 
 
 
 @pytest.fixture
-def mock_game_connection(state=GameConnectionState.INITIALIZING, player=None):
+def mock_game_connection():
+    return make_mock_game_connection()
+
+
+def make_mock_game_connection(state=GameConnectionState.INITIALIZING, player=None):
     gc = mock.create_autospec(spec=GameConnection)
     gc.state = state
     gc.player = player
@@ -62,37 +60,26 @@ def game_stats_service():
 
 
 @pytest.fixture
+def ladder_service(request, game_service: GameService):
+    ladder_service = LadderService(game_service)
+
+    def fin():
+        ladder_service.shutdown_queues()
+
+    request.addfinalizer(fin)
+    return ladder_service
+
+
+@pytest.fixture
 def geoip_service():
     service = GeoIpService()
     service.download_geoip_db = CoroMock()
     return service
 
 
-@pytest.fixture
-def connections(loop, player_service, game_service, transport, game):
-    from server import GameConnection
-
-    def make_connection(player, connectivity):
-        lc = LobbyConnection(loop)
-        lc.protocol = mock.Mock()
-        conn = GameConnection(loop=loop,
-                              lobby_connection=lc,
-                              player_service=player_service,
-                              games=game_service)
-        conn.player = player
-        conn.game = game
-        conn._transport = transport
-        conn._connectivity_state.set_result(connectivity)
-        return conn
-
-    return mock.Mock(
-        make_connection=make_connection
-    )
-
-
 def add_connected_player(game: Game, player):
     game.game_service.player_service[player.id] = player
-    gc = mock_game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=player)
+    gc = make_mock_game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=player)
     game.set_player_option(player.id, 'Army', 0)
     game.set_player_option(player.id, 'StartSpot', 0)
     game.set_player_option(player.id, 'Team', 0)
