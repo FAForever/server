@@ -19,6 +19,7 @@ from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
 from tests import CoroMock
 from trueskill import Rating
+from typing import Iterable
 
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -251,3 +252,38 @@ def achievement_service(api_accessor):
 def game_stats_service(event_service, achievement_service):
     from server.stats.game_stats_service import GameStatsService
     return GameStatsService(event_service, achievement_service)
+
+
+@pytest.fixture
+def coturn_hosts() -> Iterable:
+    return ["a", "b", "c", "d"]
+
+
+@pytest.fixture
+def coturn_keys(coturn_hosts) -> Iterable:
+    keys_list = []
+    for host in coturn_hosts:
+        keys_list.append(f"secret_{host}")
+    return keys_list
+
+
+@pytest.fixture
+def coturn_credentials() -> Iterable:
+    return [
+        "mO/6NHZaG4fwCf7mVuaWNRS7Atw=",
+        "uSjJUafCX3fEQTGK3NI+mUe6UDo=",
+        "I5BcpufNrBb4JDj80KY/7VATNis=",
+        "4wYEgoPz2MHf35Fva8NWulI3vVU="
+    ]
+
+
+@pytest.fixture
+def twilio_sid():
+    return "a"
+
+
+@pytest.fixture
+def twilio_token():
+    return "token_a"
+
+

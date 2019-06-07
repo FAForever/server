@@ -150,6 +150,7 @@ class LobbyConnection():
                  'text': ex.message}
             )
         except ClientError as ex:
+            self._logger.warning("Client error: %s", ex.message)
             self.protocol.send_message(
                 {'command': 'notice',
                  'style': 'error',
