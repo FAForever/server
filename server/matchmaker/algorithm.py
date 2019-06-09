@@ -124,10 +124,12 @@ def _rank_all(searches: List[Search]) -> Dict[Search, List[Search]]:
     it can be used as a stack with .pop().
     """
     return {
-        search: sorted(filter(
-            lambda s: s is not search,
-            _rank_partners(search, searches)
-        ), key=lambda other: search.quality_with(other))
+        search: sorted(
+            _rank_partners(
+                search, filter(lambda s: s is not search, searches)
+            ),
+            key=lambda other: search.quality_with(other)
+        )
         for search in searches
     }
 
