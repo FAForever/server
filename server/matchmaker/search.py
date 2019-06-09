@@ -1,7 +1,7 @@
 import asyncio
 import math
 import time
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from trueskill import Rating, quality
 
@@ -209,3 +209,6 @@ class Search():
 
     def __str__(self):
         return "Search({}, {}, {})".format(self.players, self.match_threshold, self.search_expansion)
+
+
+Match = Tuple[Search, Search]

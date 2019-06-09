@@ -1,10 +1,10 @@
 import heapq
 from collections import deque
 from statistics import mean
-from typing import Deque, Dict, Iterable, List, Set, Tuple
+from typing import Deque, Dict, Iterable, List, Set
 
 from .. import config
-from .search import Search
+from .search import Match, Search
 
 ################################################################################
 #                           Constants and parameters                           #
@@ -47,74 +47,79 @@ def time_until_next_pop(num_queued: int) -> int:
     return int(MAX_QUEUE_POP_TIME / (x / QUEUE_POP_TIME_SCALE_FACTOR + 1))
 
 
-def stable_marriage(searches: List[Search]) -> List[Tuple[Search, Search]]:
-    matches = _do_stable_marriage(searches)
-
-    matches_set: Set[Tuple[Search, Search]] = set()
-    for s1, s2 in matches.items():
-        if (s1, s2) in matches_set or (s2, s1) in matches_set:
-            continue
-        matches_set.add((s1, s2))
-    return list(matches_set)
+def stable_marriage(searches: List[Search]) -> List[Match]:
+    return StableMarriage(searches).find()
 
 
-def _do_stable_marriage(searches: List[Search]) -> Dict[Search, Search]:
-    ranks = _rank_all(searches)
-    matches: Dict[Search, Search] = {}
+class StableMarriage(object):
+    def __init__(self, searches: List[Search]):
+        self.searches = searches
 
-    for i in range(SM_NUM_TO_RANK):
-        # Do one round of proposals
-        if len(matches) == len(searches):
-            # Everyone found a match so we are done
-            break
+    def find(self) -> List[Match]:
+        "Perform stable matching"
+        ranks = _rank_all(self.searches)
+        self.matches: Dict[Search, Search] = {}
 
-        for search in searches:
-            if search in matches:
-                continue
+        for i in range(SM_NUM_TO_RANK):
+            # Do one round of proposals
+            if len(self.matches) == len(self.searches):
+                # Everyone found a match so we are done
+                break
 
-            try:
+            for search in self.searches:
+                if search in self.matches:
+                    continue
+
+                if not ranks[search]:
+                    # Preference list exhausted
+                    continue
+
                 preferred = ranks[search].pop()
-            except IndexError:  # Preference list exhausted
+
+                if not search.matches_with(preferred):
+                    continue
+
+                self._propose(search, preferred)
+
+        return self._remove_duplicates()
+
+    def _remove_duplicates(self) -> List[Match]:
+        matches_set: Set[Match] = set()
+        for s1, s2 in self.matches.items():
+            if (s1, s2) in matches_set or (s2, s1) in matches_set:
                 continue
+            matches_set.add((s1, s2))
+        return list(matches_set)
 
-            if not search.matches_with(preferred):
-                continue
+    def _propose(self, search: Search, preferred: Search):
+        """ An unmatched search proposes to it's preferred opponent.
 
-            _propose(matches, search, preferred)
-    return matches
+        If the opponent is not matched, they become matched. If the opponent is
+        matched, but prefers this new search to its current one, then the opponent
+        unmatches from its previous adversary and matches with the new search instead.
+        """
+        if preferred not in self.matches:
+            self._match(search, preferred)
+            return
 
+        current_match = self.matches[preferred]
+        current_quality = preferred.quality_with(current_match)
+        new_quality = search.quality_with(preferred)
 
-def _propose(matches: Dict[Search, Search], search: Search, preferred: Search):
-    """ An unmatched search proposes to it's preferred opponent.
+        if new_quality > current_quality:
+            # Found a better match
+            self._unmatch(preferred)
+            self._match(search, preferred)
 
-    If the opponent is not matched, they become matched. If the opponent is
-    matched, but prefers this new search to its current one, then the opponent
-    unmatches from its previous adversary and matches with the new search instead.
-    """
-    if preferred not in matches:
-        _match(matches, search, preferred)
-        return
+    def _match(self, s1: Search, s2: Search):
+        self.matches[s1] = s2
+        self.matches[s2] = s1
 
-    current_match = matches[preferred]
-    current_quality = preferred.quality_with(current_match)
-    new_quality = search.quality_with(preferred)
-
-    if new_quality > current_quality:
-        # Found a better match
-        _unmatch(matches, preferred)
-        _match(matches, search, preferred)
-
-
-def _match(matches: Dict[Search, Search], s1: Search, s2: Search):
-    matches[s1] = s2
-    matches[s2] = s1
-
-
-def _unmatch(matches: Dict[Search, Search], s1: Search):
-    s2 = matches[s1]
-    assert matches[s2] == s1
-    del matches[s1]
-    del matches[s2]
+    def _unmatch(self, s1: Search):
+        s2 = self.matches[s1]
+        assert self.matches[s2] == s1
+        del self.matches[s1]
+        del self.matches[s2]
 
 
 def _rank_all(searches: List[Search]) -> Dict[Search, List[Search]]:
