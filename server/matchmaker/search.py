@@ -97,14 +97,34 @@ class Search():
         return rounded_mu - 100, rounded_mu + 100
 
     @property
-    def search_expansion(self):
+    def search_expansion(self) -> float:
         """
-        Defines how much to expand the search range of game quality due to waiting time
+        Defines how much to expand the search range of game quality due to waiting
+        time.
+
+        The graph of this function over time looks essentially like this:
+                           END (x)-> ___ <- MAX (y)
+                                    /
+                                ___/ <- START (x)
+        The search threshold will not expand until a certain time START has been
+        reached. Then it will expand linearly with time until time END, at which
+        point it will have reached it's maximum value and will not expand
+        further.
         """
-        return 0.25 * min(1 / ((time.time() - self.start_time) / 300), 1)
+        elapsed = time.time() - self.start_time
+        MAX = 0.25
+        START = 60 * 5
+        END = 60 * 60
+
+        if elapsed < START:
+            return 0.0
+        if elapsed > END:
+            return MAX
+
+        return (MAX / (END - START)) * (elapsed - START)
 
     @property
-    def match_threshold(self):
+    def match_threshold(self) -> float:
         """
         Defines the threshold for game quality
 
@@ -119,7 +139,7 @@ class Search():
                     thresholds.append(max(q - self.search_expansion, 0))
         return min(thresholds)
 
-    def quality_with(self, other: 'Search'):
+    def quality_with(self, other: 'Search') -> float:
         assert all(other.raw_ratings)
         assert other.players
 

@@ -2,10 +2,10 @@ import asyncio
 import random
 from collections import deque
 from concurrent.futures import CancelledError, TimeoutError
-from unittest.mock import Mock
 
 import pytest
 import server.config as config
+from mock import Mock
 from server.matchmaker import MatchmakerQueue, Search
 from server.players import Player
 
@@ -89,12 +89,28 @@ def test_search_no_match_wrong_type(matchmaker_players):
 
 
 def test_search_boundaries(matchmaker_players):
-    p1, _, _, _, _, _ = matchmaker_players
+    p1 = matchmaker_players[0]
     s1 = Search([p1])
     assert p1.ladder_rating[0] > s1.boundary_80[0]
     assert p1.ladder_rating[0] < s1.boundary_80[1]
     assert p1.ladder_rating[0] > s1.boundary_75[0]
     assert p1.ladder_rating[0] < s1.boundary_75[1]
+
+
+def test_search_expansion(matchmaker_players, mocker):
+    p1 = matchmaker_players[0]
+    mocker.patch('time.time', return_value=0)
+    s1 = Search([p1])
+
+    assert s1.search_expansion == 0.0
+    mocker.patch('time.time', return_value=500)
+    assert s1.search_expansion > 0.0
+
+    # Make sure that the expansion stops at some point
+    mocker.patch('time.time', return_value=500_000)
+    e1 = s1.search_expansion
+    mocker.patch('time.time', return_value=500_300)
+    assert e1 == s1.search_expansion
 
 
 async def test_search_await(mocker, loop, matchmaker_players):
