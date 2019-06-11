@@ -95,7 +95,10 @@ class LadderService:
                 p2.lobby_connection.send(msg)
                 asyncio.ensure_future(self.start_game(p1, p2))
             except Exception as e:
-                self._logger.exception("Error processing match: %s", e)
+                self._logger.exception(
+                    "Error processing match between searches %s, and %s: %s",
+                    s1, s2, e
+                )
 
     async def start_game(self, host: Player, guest: Player):
         self._logger.debug("Starting ladder game between %s and %s", host, guest)
