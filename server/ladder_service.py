@@ -83,16 +83,19 @@ class LadderService:
 
     async def handle_queue_matches(self):
         async for s1, s2 in self.queues["ladder1v1"].iter_matches():
-            assert len(s1.players) == 1
-            assert len(s2.players) == 1
-            p1, p2 = s1.players[0], s2.players[0]
-            msg = {
-                "command": "match_found",
-                "queue": "ladder1v1"
-            }
-            p1.lobby_connection.send(msg)
-            p2.lobby_connection.send(msg)
-            asyncio.ensure_future(self.start_game(p1, p2))
+            try:
+                assert len(s1.players) == 1
+                assert len(s2.players) == 1
+                p1, p2 = s1.players[0], s2.players[0]
+                msg = {
+                    "command": "match_found",
+                    "queue": "ladder1v1"
+                }
+                p1.lobby_connection.send(msg)
+                p2.lobby_connection.send(msg)
+                asyncio.ensure_future(self.start_game(p1, p2))
+            except Exception as e:
+                self._logger.exception("Error processing match: %s", e)
 
     async def start_game(self, host: Player, guest: Player):
         self._logger.debug("Starting ladder game between %s and %s", host, guest)
