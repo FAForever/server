@@ -1,8 +1,8 @@
-import asyncio
 from unittest import mock
 from unittest.mock import Mock
 
 import pytest
+from aiohttp import web
 from server import GameState, VisibilityState
 from server.db.models import ban, friends_and_foes
 from server.game_service import GameService
@@ -91,6 +91,32 @@ def lobbyconnection(loop, mock_protocol, mock_games, mock_players, mock_player, 
     lc.player_service.fetch_player_data = CoroMock()
     lc.peer_address = Address('127.0.0.1', 1234)
     return lc
+
+
+@pytest.fixture
+def policy_server(loop):
+    host = 'localhost'
+    port = 6080
+
+    app = web.Application()
+    routes = web.RouteTableDef()
+
+    @routes.post('/verify')
+    async def token(request):
+        return web.json_response({'result': 'honest'})
+
+    app.add_routes(routes)
+
+    runner = web.AppRunner(app)
+
+    async def start_app():
+        await runner.setup()
+        site = web.TCPSite(runner, host, port)
+        await site.start()
+
+    loop.run_until_complete(start_app())
+    yield (host, port)
+    loop.run_until_complete(runner.cleanup())
 
 
 def test_command_game_host_creates_game(lobbyconnection,
@@ -655,3 +681,13 @@ async def test_connection_lost(lobbyconnection):
 
     lobbyconnection.ladder_service.on_connection_lost.assert_called_once_with(lobbyconnection.player)
     lobbyconnection.player_service.remove_player.assert_called_once_with(lobbyconnection.player)
+
+
+async def test_check_policy_conformity(lobbyconnection, policy_server):
+    host, port = policy_server
+    with mock.patch(
+        'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
+        f'http://{host}:{port}'
+    ):
+        honest = await lobbyconnection.check_policy_conformity(1, "hash", session=100)
+        assert honest is True
