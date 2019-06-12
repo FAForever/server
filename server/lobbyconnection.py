@@ -462,7 +462,7 @@ class LobbyConnection():
             'cache-control': "no-cache"
         }
 
-        with aiohttp.ClientSession(raise_for_status=True) as session:
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
             async with session.post(url, json=payload, headers=headers) as resp:
                 response = await resp.json()
 
