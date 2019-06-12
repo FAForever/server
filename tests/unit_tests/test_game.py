@@ -4,7 +4,6 @@ from typing import Any, List, Tuple
 from unittest import mock
 
 import pytest
-from mock import patch
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import CoopGame, CustomGame
 from server.games.game import (Game, GameError, GameOutcome, GameState,
@@ -498,7 +497,6 @@ async def test_to_dict(game, create_player):
         "title": game.sanitize_name(game.name),
         "state": 'playing',
         "featured_mod": game.game_mode,
-        "featured_mod_versions": game.getGamemodVersion(),
         "sim_mods": game.mods,
         "mapname": game.map_folder_name,
         "map_file_path": game.map_file_path,
