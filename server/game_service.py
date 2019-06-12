@@ -38,10 +38,6 @@ class GameService:
         # The set of active games
         self.games: Dict[int, Game] = dict()
 
-        # Cached versions for files by game_mode ( featured mod name )
-        # For use by the patcher
-        self.game_mode_versions = dict()
-
         # Synchronously initialise the game-id counter and static-ish-data.
         loop = asyncio.get_event_loop()
         loop.run_until_complete(asyncio.ensure_future(self.initialise_game_counter()))
@@ -92,24 +88,6 @@ class GameService:
                 "FROM ladder_map "
                 "INNER JOIN table_map ON table_map.id = ladder_map.idmap")
             self.ladder_maps = [(row[0], row[1], row[2]) async for row in result]
-
-            for mod in self.featured_mods.values():
-                self._logger.debug("Loading featuredMod %s", mod.name)
-                if mod.name == 'ladder1v1':
-                    continue
-                self.game_mode_versions[mod.name] = {}
-                t = "updates_{}".format(mod.name)
-                tfiles = t + "_files"
-                result = await conn.execute(
-                    "SELECT %s.fileId, MAX(%s.version) "
-                    "FROM %s LEFT JOIN %s ON %s.fileId = %s.id "
-                    "GROUP BY %s.fileId" % (tfiles, tfiles, tfiles, t, tfiles, t, tfiles))
-
-                async for row in result:
-                    fileId, version = row[0], row[1]
-                    self.game_mode_versions[mod.name][fileId] = version
-            # meh
-            self.game_mode_versions['ladder1v1'] = self.game_mode_versions['faf']
 
     @property
     def dirty_games(self):
