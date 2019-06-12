@@ -322,45 +322,6 @@ class LobbyConnection():
                     if ban_fail:
                         raise ClientError("Kicked the player, but he was already banned!")
 
-            elif action == "requestavatars":
-                async with db.engine.acquire() as conn:
-                    result = await conn.execute("SELECT url, tooltip FROM `avatars_list`")
-
-                    data = {"command": "admin", "avatarlist": []}
-                    async for row in result:
-                        data['avatarlist'].append({
-                            "url": row["url"],
-                            "tooltip": row["tooltip"]
-                        })
-
-                    self.sendJSON(data)
-
-            elif action == "remove_avatar":
-                idavatar = message["idavatar"]
-                iduser = message["iduser"]
-                async with db.engine.acquire() as conn:
-                    await conn.execute("DELETE FROM `avatars` "
-                                              "WHERE `idUser` = %s "
-                                              "AND `idAvatar` = %s", (iduser, idavatar))
-
-            elif action == "add_avatar":
-                who = message['user']
-                avatar = message['avatar']
-
-                async with db.engine.acquire() as conn:
-                    if avatar is None:
-                        await conn.execute(
-                            "DELETE FROM `avatars` "
-                            "WHERE `idUser` = "
-                            "(SELECT `id` FROM `login` WHERE `login`.`login` = %s)", (who, ))
-                    else:
-                        await conn.execute(
-                            "INSERT INTO `avatars`(`idUser`, `idAvatar`) "
-                            "VALUES ((SELECT id FROM login WHERE login.login = %s),"
-                            "(SELECT id FROM avatars_list WHERE avatars_list.url = %s)) "
-                            "ON DUPLICATE KEY UPDATE `idAvatar` = (SELECT id FROM avatars_list WHERE avatars_list.url = %s)",
-                            (who, avatar, avatar))
-
             elif action == "broadcast":
                 for player in self.player_service:
                     try:
