@@ -37,9 +37,6 @@ insert into avatars (idUser, idAvatar, selected) values
     (52, 1, 1),
     (52, 2, 0);
 
-delete from matchmaker_ban where id = 102 and userid = 102;
-insert into matchmaker_ban (id, userid) values (102, 102);
-
 delete from ban where player_id = 200;
 
 insert into game_stats (id, startTime, gameType, gameMod, host, mapId, gameName, validity) values
