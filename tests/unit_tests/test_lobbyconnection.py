@@ -10,7 +10,7 @@ from server.games import CustomGame, Game
 from server.geoip_service import GeoIpService
 from server.ice_servers.nts import TwilioNTS
 from server.ladder_service import LadderService
-from server.lobbyconnection import LobbyConnection
+from server.lobbyconnection import ClientError, LobbyConnection
 from server.player_service import PlayerService
 from server.players import Player, PlayerState
 from server.protocol import QDataStreamProtocol
@@ -103,7 +103,8 @@ def policy_server(loop):
 
     @routes.post('/verify')
     async def token(request):
-        return web.json_response({'result': 'honest'})
+        data = await request.json()
+        return web.json_response({'result': data.get('uid_hash')})
 
     app.add_routes(routes)
 
@@ -689,5 +690,45 @@ async def test_check_policy_conformity(lobbyconnection, policy_server):
         'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
         f'http://{host}:{port}'
     ):
-        honest = await lobbyconnection.check_policy_conformity(1, "hash", session=100)
+        honest = await lobbyconnection.check_policy_conformity(1, "honest", session=100)
         assert honest is True
+
+
+async def test_check_policy_conformity_fraudulent(lobbyconnection, policy_server, db_engine):
+    host, port = policy_server
+    with mock.patch(
+        'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
+        f'http://{host}:{port}'
+    ):
+        # 42 is not a valid player ID which should cause a SQL constraint error
+        lobbyconnection.abort = mock.Mock()
+        with pytest.raises(ClientError):
+            await lobbyconnection.check_policy_conformity(42, "fraudulent", session=100)
+
+        lobbyconnection.abort = mock.Mock()
+        player_id = 200
+        honest = await lobbyconnection.check_policy_conformity(player_id, "fraudulent", session=100)
+        assert honest is False
+        lobbyconnection.abort.assert_called_once()
+
+        # Check that the user has a ban entry in the database
+        async with db_engine.acquire() as conn:
+            result = await conn.execute(select([ban.c.reason]).where(
+                ban.c.player_id == player_id
+            ))
+            rows = await result.fetchall()
+            assert rows is not None
+            assert rows[-1][ban.c.reason] == "Auto-banned because of fraudulent login attempt"
+
+
+async def test_check_policy_conformity_fatal(lobbyconnection, policy_server):
+    host, port = policy_server
+    with mock.patch(
+        'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
+        f'http://{host}:{port}'
+    ):
+        for result in ('vm', 'already_associated', 'fraudulent'):
+            lobbyconnection.abort = mock.Mock()
+            honest = await lobbyconnection.check_policy_conformity(1, result, session=100)
+            assert honest is False
+            lobbyconnection.abort.assert_called_once()
