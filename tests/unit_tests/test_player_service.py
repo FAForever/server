@@ -81,7 +81,6 @@ async def test_update_data(player_service):
     assert player_service.get_permission_group(1) == 2
     assert player_service.is_uniqueid_exempt(1) is True
     assert player_service.client_version_info == ('0.10.125', 'some-installer.msi')
-    assert player_service.has_blacklisted_domain("example@spam.org") is True
 
 
 def test_broadcast_shutdown(player_service):
