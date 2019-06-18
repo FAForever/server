@@ -67,7 +67,9 @@ def test_mark_dirty(player_service):
     player = Mock()
     player_service[0] = player
 
+    # Marking the same player as dirty multiple times should not matter
     player_service.mark_dirty(player)
+    assert player_service.dirty_players == {player}
     player_service.mark_dirty(player)
     assert player_service.dirty_players == {player}
 
