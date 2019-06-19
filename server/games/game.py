@@ -796,6 +796,9 @@ class Game(BaseGame):
                 options['StartSpot'],
                 mean, dev, 0, -1
             ))
+        if not query_args:
+            self._logger.warning("No player options available!")
+            return
 
         async with db.engine.acquire() as conn:
             await conn.execute(query_str, query_args)
