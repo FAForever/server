@@ -2,7 +2,6 @@ import asyncio
 from typing import Optional, Set
 
 import aiocron
-import marisa_trie
 import server.db as db
 from server.decorators import with_logger
 from server.players import Player
@@ -21,7 +20,6 @@ class PlayerService:
         self.privileged_users = {}
         self.uniqueid_exempt = {}
         self.client_version_info = ('0.0.0', None)
-        self.blacklisted_email_domains = {}
         self._dirty_players = set()
 
         asyncio.get_event_loop().run_until_complete(asyncio.ensure_future(self.update_data()))
@@ -105,11 +103,6 @@ class PlayerService:
     def is_uniqueid_exempt(self, user_id: int) -> bool:
         return user_id in self.uniqueid_exempt
 
-    def has_blacklisted_domain(self, email: str) -> bool:
-        # A valid email only has one @ anyway.
-        domain = email.split("@")[1]
-        return domain in self.blacklisted_email_domains
-
     def get_player(self, player_id: int) -> Optional[Player]:
         return self.players.get(player_id)
 
@@ -134,13 +127,6 @@ class PlayerService:
             row = await result.fetchone()
             if row is not None:
                 self.client_version_info = (row[0], row[1])
-
-            # Blacklisted email domains (we don't like disposable email)
-            result = await conn.execute("SELECT domain FROM email_domain_blacklist")
-            # Get list of reversed blacklisted domains (so we can (pre)suffix-match incoming emails
-            # in sublinear time)
-            rows = await result.fetchall()
-            self.blacklisted_email_domains = marisa_trie.Trie(map(lambda x: x[0], rows))
 
     def broadcast_shutdown(self):
         for player in self:
