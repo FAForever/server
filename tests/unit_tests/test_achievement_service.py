@@ -1,10 +1,7 @@
-import asyncio
-import json
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 
 import pytest
-
-from server.api.api_accessor import ApiAccessor
+from server.api.api_accessor import ApiAccessor, SessionManager
 from server.stats.achievement_service import AchievementService
 from tests import CoroMock
 
@@ -12,7 +9,8 @@ from tests import CoroMock
 @pytest.fixture()
 def api_accessor():
     m = Mock(spec=ApiAccessor)
-    m.update_achievements = CoroMock()
+    m.update_achievements = CoroMock(return_value=(200, MagicMock()))
+    m.api_session = SessionManager()
     return m
 
 
@@ -52,15 +50,22 @@ async def test_api_broken(service: AchievementService):
     assert result is None
 
 
+async def test_api_broken_2(service: AchievementService):
+    queue = create_queue()
+    service.api_accessor.update_achievements = CoroMock(side_effect=ConnectionError())
+    result = await service.execute_batch_update(42, queue)
+    assert result is None
+
+
 async def test_update_multiple(service: AchievementService):
-    content = '''
-        {"data": [
-            {"attributes": {"achievementId": "1-2-3", "state": "UNLOCKED", "newlyUnlocked": true}},
-            {"attributes": {"achievementId": "2-3-4", "state": "REVEALED", "newlyUnlocked": false}},
-            {"attributes": {"achievementId": "3-4-5", "state": "LOCKED", "steps": 2, "newlyUnlocked": false}},
-            {"attributes": {"achievementId": "4-5-6", "state": "UNLOCKED", "steps": 50, "newlyUnlocked": false}}
-        ]}
-    '''
+    content = {
+        "data": [
+            {"attributes": {"achievementId": "1-2-3", "state": "UNLOCKED", "newlyUnlocked": True}},
+            {"attributes": {"achievementId": "2-3-4", "state": "REVEALED", "newlyUnlocked": False}},
+            {"attributes": {"achievementId": "3-4-5", "state": "LOCKED", "steps": 2, "newlyUnlocked": False}},
+            {"attributes": {"achievementId": "4-5-6", "state": "UNLOCKED", "steps": 50, "newlyUnlocked": False}}
+        ]
+    }
 
     service.api_accessor.update_achievements.coro.return_value = (200, content)
 
@@ -68,7 +73,7 @@ async def test_update_multiple(service: AchievementService):
     result = await service.execute_batch_update(42, queue)
 
     achievements_data = []
-    for achievement in json.loads(content)['data']:
+    for achievement in content['data']:
         converted_achievement = dict(
             achievement_id=achievement['attributes']['achievementId'],
             current_state=achievement['attributes']['state'],
@@ -86,4 +91,6 @@ async def test_update_multiple(service: AchievementService):
 
 async def test_achievement_zero_steps_increment(service: AchievementService):
     assert service.increment(achievement_id='3-4-5', steps=2, queue=[]) is None
+    assert service.increment(achievement_id='3-4-5', steps=0, queue=[]) is None
     assert service.set_steps_at_least(achievement_id='3-4-5', steps=2, queue=[]) is None
+    assert service.set_steps_at_least(achievement_id='3-4-5', steps=0, queue=[]) is None
