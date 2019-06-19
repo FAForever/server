@@ -7,7 +7,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-requests = "*"
 typing = "*"
 aiohttp = "==3.5.1"
 aiomysql = "*"
