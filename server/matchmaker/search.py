@@ -3,10 +3,11 @@ import math
 import time
 from typing import List, Optional
 
-import server.config as config
-from server.decorators import with_logger
-from server.players import Player
 from trueskill import Rating, quality
+
+from .. import config
+from ..decorators import with_logger
+from ..players import Player
 
 
 @with_logger
@@ -112,9 +113,9 @@ class Search():
         further.
         """
         elapsed = time.time() - self.start_time
-        MAX = 0.25
-        START = 60 * 5
-        END = 60 * 60
+        MAX = config.LADDER_SEARCH_EXPANSION_MAX
+        START = config.LADDER_SEARCH_EXPANSION_START
+        END = config.LADDER_SEARCH_EXPANSION_END
 
         if elapsed < START:
             return 0.0
