@@ -637,7 +637,7 @@ class LobbyConnection():
                     avatar = {"url": row["url"], "tooltip": row["tooltip"]}
                     avatarList.append(avatar)
 
-                if len(avatarList) > 0:
+                if avatarList:
                     self.sendJSON({"command": "avatar", "avatarlist": avatarList})
 
         elif action == "select":

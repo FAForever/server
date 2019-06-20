@@ -3,10 +3,11 @@ import math
 import time
 from typing import List, Optional
 
-import server.config as config
-from server.decorators import with_logger
-from server.players import Player
 from trueskill import Rating, quality
+
+from .. import config
+from ..decorators import with_logger
+from ..players import Player
 
 
 @with_logger
@@ -97,14 +98,34 @@ class Search():
         return rounded_mu - 100, rounded_mu + 100
 
     @property
-    def search_expansion(self):
+    def search_expansion(self) -> float:
         """
-        Defines how much to expand the search range of game quality due to waiting time
+        Defines how much to expand the search range of game quality due to waiting
+        time.
+
+        The graph of this function over time looks essentially like this:
+                           END (x)-> ___ <- MAX (y)
+                                    /
+                                ___/ <- START (x)
+        The search threshold will not expand until a certain time START has been
+        reached. Then it will expand linearly with time until time END, at which
+        point it will have reached it's maximum value and will not expand
+        further.
         """
-        return 0.25 * min(1 / ((time.time() - self.start_time) / 300), 1)
+        elapsed = time.time() - self.start_time
+        MAX = config.LADDER_SEARCH_EXPANSION_MAX
+        START = config.LADDER_SEARCH_EXPANSION_START
+        END = config.LADDER_SEARCH_EXPANSION_END
+
+        if elapsed < START:
+            return 0.0
+        if elapsed > END:
+            return MAX
+
+        return (MAX / (END - START)) * (elapsed - START)
 
     @property
-    def match_threshold(self):
+    def match_threshold(self) -> float:
         """
         Defines the threshold for game quality
 
@@ -119,7 +140,7 @@ class Search():
                     thresholds.append(max(q - self.search_expansion, 0))
         return min(thresholds)
 
-    def quality_with(self, other: 'Search'):
+    def quality_with(self, other: 'Search') -> float:
         assert all(other.raw_ratings)
         assert other.players
 
