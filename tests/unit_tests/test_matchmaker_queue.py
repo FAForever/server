@@ -3,16 +3,16 @@ import random
 from collections import deque
 from concurrent.futures import CancelledError, TimeoutError
 
+import mock
 import pytest
 import server.config as config
-from mock import Mock
 from server.matchmaker import MatchmakerQueue, Search
 from server.players import Player
 
 
 @pytest.fixture
 def matchmaker_queue(game_service):
-    return MatchmakerQueue('test_queue', game_service=Mock())
+    return MatchmakerQueue('test_queue', game_service=mock.Mock())
 
 
 @pytest.fixture
@@ -121,6 +121,22 @@ async def test_search_await(mocker, loop, matchmaker_players):
     s1.match(s2)
     await asyncio.wait_for(await_coro, 1)
     assert await_coro.done()
+
+
+def test_queue_time_until_next_pop(matchmaker_queue):
+    q1 = matchmaker_queue
+    q2 = MatchmakerQueue('test_queue_2', game_service=mock.Mock())
+
+    assert q1.time_until_next_pop() == config.QUEUE_POP_TIME_MAX
+    q1.queue = [None] * 5
+    a1 = q1.time_until_next_pop()
+    assert a1 < config.QUEUE_POP_TIME_MAX
+    a2 = q1.time_until_next_pop()
+    # Should be strictly less because of the moving average
+    assert a2 < a1
+
+    # Make sure that queue moving averages are claculated independently
+    assert q2.time_until_next_pop() == config.QUEUE_POP_TIME_MAX
 
 
 async def test_queue_matches(matchmaker_queue):

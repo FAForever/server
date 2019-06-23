@@ -1,13 +1,16 @@
 import asyncio
 from collections import OrderedDict, deque
 from concurrent.futures import CancelledError
+from statistics import mean
 from time import time
+from typing import Deque, Dict
 
 import server
-from server.decorators import with_logger
 
-from .algorithm import time_until_next_pop, MAX_QUEUE_POP_TIME, stable_marriage
-from .search import Search
+from .. import config
+from ..decorators import with_logger
+from .algorithm import stable_marriage
+from .search import Match, Search
 
 
 @with_logger
@@ -19,9 +22,10 @@ class MatchmakerQueue:
     ):
         self.game_service = game_service
         self.queue_name = queue_name
-        self.rating_prop = 'ladder_rating'
-        self.queue = OrderedDict()
-        self._matches = deque()
+
+        self.queue: Dict[Search, Search] = OrderedDict()
+        self._matches: Deque[Match] = deque()
+        self.last_queue_amounts: Deque[int] = deque()
         self._is_running = True
         self._last_queue_pop = time()
         asyncio.ensure_future(self.queue_pop_timer())
@@ -39,12 +43,12 @@ class MatchmakerQueue:
             # Yield the next available match to the caller
             yield self._matches.popleft()
 
-    async def queue_pop_timer(self):
+    async def queue_pop_timer(self) -> None:
         """ Periodically tries to match all Searches in the queue. The amount
         of time until next queue 'pop' is determined by the number of players
         in the queue.
         """
-        next_pop = MAX_QUEUE_POP_TIME
+        next_pop = config.QUEUE_POP_TIME_MAX
         while self._is_running:
             time_elapsed = time() - self._last_queue_pop
             time_remaining = next_pop - time_elapsed
@@ -52,7 +56,7 @@ class MatchmakerQueue:
                 await asyncio.sleep(time_remaining)
 
             self._last_queue_pop = time()
-            next_pop = time_until_next_pop(num_queued=len(self))
+            next_pop = self.time_until_next_pop()
 
             self.find_matches()
 
@@ -61,7 +65,26 @@ class MatchmakerQueue:
 
             self.game_service.mark_dirty(self)
 
-    async def search(self, search: Search):
+    def time_until_next_pop(self) -> int:
+        """ Calculate how long we should wait for the next queue to pop based
+        on a moving average of the amount of people in the queue.
+
+        Uses a simple inverse relationship. See
+
+        https://www.desmos.com/calculator/v3tdrjbqub
+
+        for an exploration of possible functions.
+        """
+        num_queued = len(self)
+        self.last_queue_amounts.append(num_queued)
+        if len(self.last_queue_amounts) > config.QUEUE_POP_TIME_MOVING_AVG_SIZE:
+            self.last_queue_amounts.popleft()
+
+        x = mean(self.last_queue_amounts)
+        # Essentially y = max_time / (x+1) with a scale factor
+        return int(config.QUEUE_POP_TIME_MAX / (x / config.QUEUE_POP_TIME_SCALE_FACTOR + 1))
+
+    async def search(self, search: Search) -> None:
         """
         Search for a match.
 
@@ -85,7 +108,7 @@ class MatchmakerQueue:
                 if search in self.queue:
                     del self.queue[search]
 
-    def find_matches(self):
+    def find_matches(self) -> None:
         self._logger.debug("Searching for matches: %s", self.queue_name)
 
         # Call self.match on all matches and filter out the ones that were canceled

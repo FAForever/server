@@ -12,16 +12,6 @@ def p(mean: int, deviation: int, num_games: int=config.NEWBIE_MIN_GAMES+1, name=
     return player
 
 
-@mock.patch('server.matchmaker.algorithm.QUEUE_TIME_MOVING_AVG_SIZE', 2)
-def test_time_until_next_pop():
-    assert algorithm.time_until_next_pop(0) == algorithm.MAX_QUEUE_POP_TIME
-    a1 = algorithm.time_until_next_pop(5)
-    assert a1 < algorithm.MAX_QUEUE_POP_TIME
-    a2 = algorithm.time_until_next_pop(5)
-    # Should be strictly less because of the moving average
-    assert a2 < a1
-
-
 def test_rank_all():
     s1 = Search([p(1500, 500, num_games=0)])
     s2 = Search([p(1500, 400, num_games=20)])

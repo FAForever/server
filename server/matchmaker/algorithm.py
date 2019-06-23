@@ -1,22 +1,12 @@
 import heapq
 from collections import deque
-from statistics import mean
 from typing import Deque, Dict, Iterable, List, Set
 
-from .. import config
 from .search import Match, Search
 
 ################################################################################
 #                           Constants and parameters                           #
 ################################################################################
-
-# The maximum amount of time (in seconds) to wait if no one is searching.
-MAX_QUEUE_POP_TIME = config.MAX_QUEUE_POP_TIME
-# The number of searches in the queue required for the queue time to be cut in
-# half. See https://www.desmos.com/calculator/v3tdrjbqub.
-QUEUE_POP_TIME_SCALE_FACTOR = 20
-# How many previous queue sizes to consider
-QUEUE_TIME_MOVING_AVG_SIZE = 5
 
 # Number of candidates for matching
 SM_NUM_TO_RANK = 5
@@ -26,25 +16,6 @@ SM_NUM_TO_RANK = 5
 ################################################################################
 
 last_queue_amounts: Deque[int] = deque()
-
-
-def time_until_next_pop(num_queued: int) -> int:
-    """ Calculate how long we should wait for the next queue to pop based
-    on a moving average of the amount of people in the queue.
-
-    Uses a simple inverse relationship. See
-
-    https://www.desmos.com/calculator/v3tdrjbqub
-
-    for an exploration of possible functions.
-    """
-    last_queue_amounts.append(num_queued)
-    if len(last_queue_amounts) > QUEUE_TIME_MOVING_AVG_SIZE:
-        last_queue_amounts.popleft()
-
-    x = mean(last_queue_amounts)
-    # Essentially y = max_time / (x+1) with a scale factor
-    return int(MAX_QUEUE_POP_TIME / (x / QUEUE_POP_TIME_SCALE_FACTOR + 1))
 
 
 def stable_marriage(searches: List[Search]) -> List[Match]:

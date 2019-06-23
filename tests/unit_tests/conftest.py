@@ -61,7 +61,7 @@ def game_stats_service():
 
 @pytest.fixture
 def ladder_service(request, mocker, game_service: GameService):
-    mocker.patch('server.matchmaker.matchmaker_queue.MAX_QUEUE_POP_TIME', 1)
+    mocker.patch('server.matchmaker.matchmaker_queue.config.QUEUE_POP_TIME_MAX', 1)
 
     ladder_service = LadderService(game_service)
 
