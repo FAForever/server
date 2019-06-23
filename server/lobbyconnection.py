@@ -797,7 +797,7 @@ class LobbyConnection():
                     try:
                         link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
                         thumbstr = ""
-                        if icon != "":
+                        if icon:
                             thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
 
                         out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
