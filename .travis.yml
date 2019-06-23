@@ -23,7 +23,7 @@ before_install:
   - python -m pip install pipenv
 
 install:
-  - pipenv install --dev
+  - pipenv install --ignore-pipfile --dev
   - cp faf-server.example.pem faf-server.pem
   - docker build -t faf-python-server .
 
