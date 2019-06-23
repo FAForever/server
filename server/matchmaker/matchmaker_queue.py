@@ -52,8 +52,7 @@ class MatchmakerQueue:
         while self._is_running:
             time_elapsed = time() - self._last_queue_pop
             time_remaining = next_pop - time_elapsed
-            if time_remaining > 0:
-                await asyncio.sleep(time_remaining)
+            await asyncio.sleep(time_remaining)
 
             self._last_queue_pop = time()
             next_pop = self.time_until_next_pop()
