@@ -2,6 +2,7 @@ import heapq
 from collections import deque
 from typing import Deque, Dict, Iterable, List, Set
 
+from ..decorators import with_logger
 from .search import Match, Search
 
 ################################################################################
@@ -22,6 +23,7 @@ def stable_marriage(searches: List[Search]) -> List[Match]:
     return StableMarriage(searches).find()
 
 
+@with_logger
 class StableMarriage(object):
     def __init__(self, searches: List[Search]):
         self.searches = searches
@@ -32,6 +34,7 @@ class StableMarriage(object):
         self.matches: Dict[Search, Search] = {}
 
         for i in range(SM_NUM_TO_RANK):
+            self._logger.debug("Round %i currently %i matches", i, len(self.matches) // 2)
             # Do one round of proposals
             if len(self.matches) == len(self.searches):
                 # Everyone found a match so we are done
@@ -47,6 +50,11 @@ class StableMarriage(object):
 
                 preferred = ranks[search].pop()
 
+                self._logger.debug(
+                    "Quality between %s and %s: %f thresholds: [%f, %f]",
+                    search, preferred, search.quality_with(preferred),
+                    search.match_threshold, preferred.match_threshold
+                )
                 if not search.matches_with(preferred):
                     continue
 
@@ -83,11 +91,13 @@ class StableMarriage(object):
             self._match(search, preferred)
 
     def _match(self, s1: Search, s2: Search):
+        self._logger.debug("Matching %s and %s", s1, s2)
         self.matches[s1] = s2
         self.matches[s2] = s1
 
     def _unmatch(self, s1: Search):
         s2 = self.matches[s1]
+        self._logger.debug("Unmatching %s and %s", s1, s2)
         assert self.matches[s2] == s1
         del self.matches[s1]
         del self.matches[s2]

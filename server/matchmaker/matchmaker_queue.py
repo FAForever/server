@@ -52,6 +52,7 @@ class MatchmakerQueue:
         while self._is_running:
             time_elapsed = time() - self._last_queue_pop
             time_remaining = next_pop - time_elapsed
+            self._logger.info("Next %s wave happening in %is", self.queue_name, time_remaining)
             await asyncio.sleep(time_remaining)
 
             self._last_queue_pop = time()
@@ -80,6 +81,7 @@ class MatchmakerQueue:
             self.last_queue_amounts.popleft()
 
         x = mean(self.last_queue_amounts)
+        self._logger.debug("Moving average of %s queue size: %f", self.queue_name, x)
         # Essentially y = max_time / (x+1) with a scale factor
         return int(config.QUEUE_POP_TIME_MAX / (x / config.QUEUE_POP_TIME_SCALE_FACTOR + 1))
 
@@ -108,7 +110,7 @@ class MatchmakerQueue:
                     del self.queue[search]
 
     def find_matches(self) -> None:
-        self._logger.debug("Searching for matches: %s", self.queue_name)
+        self._logger.info("Searching for matches: %s", self.queue_name)
 
         # Call self.match on all matches and filter out the ones that were canceled
         new_matches = filter(
