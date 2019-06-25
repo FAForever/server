@@ -83,18 +83,25 @@ class LadderService:
 
     async def handle_queue_matches(self):
         async for s1, s2 in self.queues["ladder1v1"].iter_matches():
-            assert len(s1.players) == 1
-            assert len(s2.players) == 1
-            p1, p2 = s1.players[0], s2.players[0]
-            msg = {
-                "command": "match_found",
-                "queue": "ladder1v1"
-            }
-            p1.lobby_connection.send(msg)
-            p2.lobby_connection.send(msg)
-            asyncio.ensure_future(self.start_game(p1, p2))
+            try:
+                assert len(s1.players) == 1
+                assert len(s2.players) == 1
+                p1, p2 = s1.players[0], s2.players[0]
+                msg = {
+                    "command": "match_found",
+                    "queue": "ladder1v1"
+                }
+                p1.lobby_connection.send(msg)
+                p2.lobby_connection.send(msg)
+                asyncio.ensure_future(self.start_game(p1, p2))
+            except Exception as e:
+                self._logger.exception(
+                    "Error processing match between searches %s, and %s: %s",
+                    s1, s2, e
+                )
 
     async def start_game(self, host: Player, guest: Player):
+        self._logger.debug("Starting ladder game between %s and %s", host, guest)
         host.state = PlayerState.HOSTING
         guest.state = PlayerState.JOINING
 
@@ -126,6 +133,7 @@ class LadderService:
 
         mapname = map_path[5:-4]  # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
                                   # Really in the future, just send a better description
+        self._logger.debug("Starting ladder game: %s", game)
         host.lobby_connection.launch_game(game, is_host=True, use_map=mapname)
         try:
             hosted = await game.await_hosted()
@@ -140,8 +148,10 @@ class LadderService:
             # searching for ladder, even though the server has already removed it
             # from the queue.
             # return
+            self._logger.debug("Ladder game failed to launch due to a timeout")
 
         guest.lobby_connection.launch_game(game, is_host=False, use_map=mapname)
+        self._logger.debug("Ladder game launched successfully")
 
     async def choose_map(self, players: [Player]) -> MapDescription:
         maps = self.game_service.ladder_maps

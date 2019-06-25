@@ -8,7 +8,7 @@ import urllib.parse
 import urllib.request
 from typing import Optional
 
-import requests
+import aiohttp
 
 import humanize
 import pymysql
@@ -150,6 +150,7 @@ class LobbyConnection():
                  'text': ex.message}
             )
         except ClientError as ex:
+            self._logger.warning("Client error: %s", ex.message)
             self.protocol.send_message(
                 {'command': 'notice',
                  'style': 'error',
@@ -321,45 +322,6 @@ class LobbyConnection():
                     if ban_fail:
                         raise ClientError("Kicked the player, but he was already banned!")
 
-            elif action == "requestavatars":
-                async with db.engine.acquire() as conn:
-                    result = await conn.execute("SELECT url, tooltip FROM `avatars_list`")
-
-                    data = {"command": "admin", "avatarlist": []}
-                    async for row in result:
-                        data['avatarlist'].append({
-                            "url": row["url"],
-                            "tooltip": row["tooltip"]
-                        })
-
-                    self.sendJSON(data)
-
-            elif action == "remove_avatar":
-                idavatar = message["idavatar"]
-                iduser = message["iduser"]
-                async with db.engine.acquire() as conn:
-                    await conn.execute("DELETE FROM `avatars` "
-                                              "WHERE `idUser` = %s "
-                                              "AND `idAvatar` = %s", (iduser, idavatar))
-
-            elif action == "add_avatar":
-                who = message['user']
-                avatar = message['avatar']
-
-                async with db.engine.acquire() as conn:
-                    if avatar is None:
-                        await conn.execute(
-                            "DELETE FROM `avatars` "
-                            "WHERE `idUser` = "
-                            "(SELECT `id` FROM `login` WHERE `login`.`login` = %s)", (who, ))
-                    else:
-                        await conn.execute(
-                            "INSERT INTO `avatars`(`idUser`, `idAvatar`) "
-                            "VALUES ((SELECT id FROM login WHERE login.login = %s),"
-                            "(SELECT id FROM avatars_list WHERE avatars_list.url = %s)) "
-                            "ON DUPLICATE KEY UPDATE `idAvatar` = (SELECT id FROM avatars_list WHERE avatars_list.url = %s)",
-                            (who, avatar, avatar))
-
             elif action == "broadcast":
                 for player in self.player_service:
                     try:
@@ -461,7 +423,9 @@ class LobbyConnection():
             'cache-control': "no-cache"
         }
 
-        response = requests.post(url, json=payload, headers=headers).json()
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.post(url, json=payload, headers=headers) as resp:
+                response = await resp.json()
 
         if response.get('result', '') == 'vm':
             self._logger.debug("Using VM: %d: %s", player_id, uid_hash)
@@ -490,7 +454,7 @@ class LobbyConnection():
                               "a false positive.",
                               fatal=True)
 
-            with await db.engine.acquire() as conn:
+            async with await db.engine.acquire() as conn:
                 try:
                     await conn.execute(
                         "INSERT INTO ban (player_id, author_id, reason, level) VALUES (%s, %s, %s, 'GLOBAL')",
@@ -673,7 +637,7 @@ class LobbyConnection():
                     avatar = {"url": row["url"], "tooltip": row["tooltip"]}
                     avatarList.append(avatar)
 
-                if len(avatarList) > 0:
+                if avatarList:
                     self.sendJSON({"command": "avatar", "avatarlist": avatarList})
 
         elif action == "select":

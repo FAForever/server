@@ -1,7 +1,8 @@
 import pytest
 from server import VisibilityState
 
-from .conftest import connect_client, perform_login, read_until, connect_and_sign_in
+from .conftest import (connect_and_sign_in, connect_client, perform_login,
+                       read_until, read_until_command)
 from .testclient import ClientTest
 
 TEST_ADDRESS = ('127.0.0.1', None)
@@ -43,6 +44,31 @@ async def test_server_valid_login(loop, lobby_server):
                    'login': 'test'}
     lobby_server.close()
     proto.close()
+    await lobby_server.wait_closed()
+
+
+async def test_server_double_login(loop, lobby_server):
+    proto = await connect_client(lobby_server)
+    await perform_login(proto, ('test', 'test_password'))
+    msg = await proto.read_message()
+    msg['command'] == 'welcome'
+
+    # Sign in again with a new protocol object
+    proto2 = await connect_client(lobby_server)
+    await perform_login(proto2, ('test', 'test_password'))
+    msg = await proto2.read_message()
+    msg['command'] == 'welcome'
+
+    msg = await read_until_command(proto, 'notice')
+    assert msg == {
+        'command': 'notice',
+        'style': 'error',
+        'text': 'You have been signed out because you signed in elsewhere.'
+    }
+
+    lobby_server.close()
+    proto.close()
+    proto2.close()
     await lobby_server.wait_closed()
 
 

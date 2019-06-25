@@ -7,7 +7,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-requests = "*"
 typing = "*"
 aiohttp = "==3.5.1"
 aiomysql = "*"
@@ -17,7 +16,6 @@ semver = "*"
 "geoip2" = "*"
 trueskill = "*"
 aiocron = "*"
-marisa-trie = "*"
 oauthlib = "*"
 requests-oauthlib = "*"
 sqlalchemy = "*"
