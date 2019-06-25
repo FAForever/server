@@ -498,7 +498,7 @@ async def test_command_admin_closelobby_with_ban_bad_period(mocker, lobbyconnect
     assert len(bans) == 0
 
 
-async def test_command_admin_closelobby_with_ban_duration(mocker, lobbyconnection, db_engine):
+async def test_command_admin_closelobby_with_ban_injection(mocker, lobbyconnection, db_engine):
     proto = mocker.patch.object(lobbyconnection, 'protocol')
     player = mocker.patch.object(lobbyconnection, 'player')
     player.admin = True
