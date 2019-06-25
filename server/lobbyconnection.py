@@ -14,7 +14,7 @@ import pymysql
 import semver
 import server
 from server.db import FAFDatabase
-from sqlalchemy import and_, func, text
+from sqlalchemy import and_, func, select, text
 
 from . import config
 from .abc.base_game import GameConnectionState
@@ -710,6 +710,24 @@ class LobbyConnection():
 
         if self._attempted_connectivity_test:
             raise ClientError("Cannot join game. Please update your client to the newest version.")
+
+        async with db.engine.acquire() as conn:
+            now = datetime.now()
+
+            result = await conn.execute(
+                select([ban.c.reason, ban.c.expires_at]).where(
+                    ban.c.player_id == self.player.id and ban.c.expires_at < now
+                ))
+
+            data = await result.fetchone()
+
+            if data is not None:
+                self._logger.debug('Rejected game join from banned user: %s, %s, %s',
+                                   self.player.id, self.player.login, self.session)
+                raise ClientError(
+                    "You are banned from FAF for {}.\n Reason :\n {}"
+                        .format(humanize.naturaldelta(data[ban.c.expires_at] - now),
+                        data[ban.c.reason]), recoverable=False)
 
         uuid = int(message['uid'])
         password = message.get('password', None)
