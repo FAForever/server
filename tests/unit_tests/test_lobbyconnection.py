@@ -15,7 +15,7 @@ from server.player_service import PlayerService
 from server.players import Player, PlayerState
 from server.protocol import QDataStreamProtocol
 from server.types import Address
-from sqlalchemy import and_, select, text, delete
+from sqlalchemy import and_, select, text
 from tests import CoroMock
 
 
@@ -437,9 +437,7 @@ async def test_command_admin_closelobby_with_ban_duration_no_period(mocker, lobb
     lobbyconnection.player_service = {1: player, banme.id: banme}
     lobbyconnection._authenticated = True
 
-    """
-    Clearing database of previous unwanted bans
-    """
+    #Clearing database of previous unwanted bans
     async with db_engine.acquire() as conn:
         await conn.execute(ban.delete().where(ban.c.player_id == banme.id))
 

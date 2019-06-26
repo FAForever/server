@@ -284,8 +284,6 @@ class LobbyConnection():
                         duration = int(message['ban'].get('duration', 1))
                         period = message['ban'].get('period', 'SECOND').upper()
 
-
-
                         self._logger.warning('Administrative action: %s closed client for %s with %s ban (Reason: %s)', self.player, player, duration, reason)
                         async with db.engine.acquire() as conn:
                             try:
@@ -295,15 +293,9 @@ class LobbyConnection():
                                 if row:
                                     ban_fail = row[0]
                                 else:
-                                    if period not in ["DAY", "WEEK", "MONTH", "SECOND"]:
+                                    if period not in [ "SECOND", "DAY", "WEEK", "MONTH"]:
                                         self._logger.warning('Tried to ban player with invalid period')
                                         raise ClientError(f"Period '{period}' is not allowed!")
-
-                                    self._logger.warning(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                                    self._logger.warning(func.date_add(
-                                                func.now(),
-                                                text(f"interval :1000 {period}")
-                                            ))
 
                                     # NOTE: Text formatting in sql string is only ok because we just checked it's value
                                     await conn.execute(
