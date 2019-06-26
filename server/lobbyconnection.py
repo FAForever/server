@@ -1,11 +1,11 @@
 import asyncio
-import datetime
 import hashlib
 import html
 import json
 import random
 import urllib.parse
 import urllib.request
+from datetime import datetime
 from typing import Optional
 
 import aiohttp
@@ -369,9 +369,12 @@ class LobbyConnection():
             "login.password as password,"
             "login.steamid as steamid,"
             "login.create_time as create_time,"
+            "lobby_ban.reason as reason,"
+            "lobby_ban.expires_at as expires_at "
             "FROM login "
+            "LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser "
             "WHERE login=%s "
-            "ORDER BY expires_at DESC", (login.lower(), ))
+            "ORDER BY expires_at DESC", login)
 
         auth_error_message = "Login not found or password incorrect. They are case sensitive."
         row = await result.fetchone()
@@ -379,15 +382,17 @@ class LobbyConnection():
             server.stats.incr('user.logins', tags={'status': 'failure'})
             raise AuthenticationError(auth_error_message)
 
-        player_id, real_username, dbPassword, steamid, create_time = (row[i] for i in range(7))
+        player_id, real_username, dbPassword, steamid, create_time, ban_reason, ban_expiry = (row[i] for i in range(7))
+
+        now = datetime.now()
+        if ban_reason is not None and now < ban_expiry:
+            await self.send_ban_message_and_abort(ban_expiry, ban_reason);
 
         if dbPassword != password:
             server.stats.incr('user.logins', tags={'status': 'failure'})
             raise AuthenticationError(auth_error_message)
 
-        now = datetime.datetime.now()
-
-        await self.abort_connection_if_banned();
+        now = datetime.now()
 
         # New accounts are prevented from playing if they didn't link to steam
 
@@ -966,22 +971,24 @@ class LobbyConnection():
             self.player_service.remove_player(self.player)
 
     async def abort_connection_if_banned(self):
-        async with db.engine.acquire() as conn:
+        async with self._db.engine.acquire() as conn:
             now = datetime.now()
-
             result = await conn.execute(
                 select([ban.c.reason, ban.c.expires_at]).where(
                     ban.c.player_id == self.player.id and ban.c.expires_at < now
                 ))
 
             data = await result.fetchone()
+            ban_expiry = data[ban.c.expires_at]
 
-            if data is not None:
-                self._logger.debug('Rejected command from banned user: %s, %s, %s',
+            if data is not None and now < ban_expiry:
+                self._logger.debug('Aborting connection of banned user: %s, %s, %s',
                                    self.player.id, self.player.login, self.session)
-                ban_time = ban_expiry - now
-                ban_time_text = (f"for {humanize.naturaldelta(ban_time)}"
-                                 if ban_time.days < 365 * 100 else "forever")
-                raise ClientError((f"You are banned from FAF {ban_time_text}.\n "
-                                   f"Reason :\n "
-                                   f"{ban_reason}"), recoverable=False)
+                self.send_ban_message_and_abort(ban_expiry - now, data[ban.c.reason])
+
+    def send_ban_message_and_abort(self, ban_time, reason):
+        ban_time_text = (f"for {humanize.naturaldelta(ban_time)}"
+                         if ban_time.days < 365 * 100 else "forever")
+        raise ClientError((f"You are banned from FAF {ban_time_text}.\n "
+                           f"Reason :\n "
+                           f"{reason}"), recoverable=False)

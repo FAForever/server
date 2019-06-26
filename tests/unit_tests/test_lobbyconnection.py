@@ -272,9 +272,11 @@ async def test_command_game_join_game_not_found(lobbyconnection,
 
 async def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
                                                                mock_games,
-                                                               test_game_info_invalid):
+                                                               test_game_info_invalid,
+                                                               players):
     lobbyconnection.send = mock.Mock()
     mock_games.create_game = mock.Mock()
+    lobbyconnection.player = players.hosting
     await lobbyconnection.command_game_host(test_game_info_invalid)
     assert mock_games.create_game.mock_calls == []
     lobbyconnection.send.assert_called_once_with(
