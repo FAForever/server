@@ -401,7 +401,8 @@ class LobbyConnection():
                 "You are using an unofficial client version! "
                 "Some features might not work as expected. "
                 "If you experience any problems please download the latest "
-                f"version of the official client from {config.WWW_URL}"
+                "version of the official client from "
+                f'<a href="{config.WWW_URL}">{config.WWW_URL}</a>'
             )
 
         if not version or not self.user_agent:
