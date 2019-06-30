@@ -64,3 +64,10 @@ insert into game_player_stats (gameId, playerId, AI, faction, color, team, place
 delete from friends_and_foes where user_id = 1 and subject_id = 2;
 insert into friends_and_foes (user_id, subject_id, status) values
     (2, 1, 'FRIEND');
+
+
+insert into `mod` (id, display_name, author) values
+    (100, 'Mod without icon', 'askaholic');
+
+insert into mod_version (mod_id, uid, version, description, type, filename, icon) VALUES
+        (100, 'FFF', 1, 'The best version so far', 'UI', 'noicon.zip', null);
