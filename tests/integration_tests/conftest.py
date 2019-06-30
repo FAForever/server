@@ -92,7 +92,7 @@ async def read_until_command(proto: QDataStreamProtocol, command: str) -> Dict[s
 async def get_session(proto):
     proto.send_message({'command': 'ask_session', 'user_agent': 'faf-client', 'version': '0.11.16'})
     await proto.drain()
-    msg = await proto.read_message()
+    msg = await read_until_command(proto, 'session')
 
     return msg['session']
 
