@@ -385,14 +385,25 @@ class LobbyConnection():
 
     def check_version(self, message):
         versionDB, updateFile = self.player_service.client_version_info
-        update_msg = dict(command="update",
-                          update=updateFile,
-                          new_version=versionDB)
+        update_msg = {
+            'command': 'update',
+            'update': updateFile,
+            'new_version': versionDB
+        }
 
         self.user_agent = message.get('user_agent')
         version = message.get('version')
         server.stats.gauge('user.agents.None', -1, delta=True)
         server.stats.gauge('user.agents.{}'.format(self.user_agent), 1, delta=True)
+
+        if not self.user_agent or 'downlords-faf-client' not in self.user_agent:
+            self.send_warning(
+                "You are using an unofficial client version! "
+                "Some features might not work as expected. "
+                "If you experience any problems please download the latest "
+                "version of the official client from "
+                f'<a href="{config.WWW_URL}">{config.WWW_URL}</a>'
+            )
 
         if not version or not self.user_agent:
             update_msg['command'] = 'welcome'
@@ -789,7 +800,7 @@ class LobbyConnection():
                     try:
                         link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
                         thumbstr = ""
-                        if icon != "":
+                        if icon:
                             thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
 
                         out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
