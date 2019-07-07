@@ -1,6 +1,7 @@
 import asyncio
 from collections import OrderedDict, deque
 from concurrent.futures import CancelledError
+from datetime import datetime
 from statistics import mean
 from time import time
 from typing import Deque, Dict
@@ -28,6 +29,7 @@ class MatchmakerQueue:
         self.last_queue_amounts: Deque[int] = deque()
         self._is_running = True
         self._last_queue_pop = time()
+        self.next_queue_pop = self._last_queue_pop + config.QUEUE_POP_TIME_MAX
         asyncio.ensure_future(self.queue_pop_timer())
         self._logger.debug("MatchmakerQueue initialized for %s", queue_name)
 
@@ -48,15 +50,13 @@ class MatchmakerQueue:
         of time until next queue 'pop' is determined by the number of players
         in the queue.
         """
-        next_pop = config.QUEUE_POP_TIME_MAX
         while self._is_running:
-            time_elapsed = time() - self._last_queue_pop
-            time_remaining = next_pop - time_elapsed
+            time_remaining = self.next_queue_pop - time()
             self._logger.info("Next %s wave happening in %is", self.queue_name, time_remaining)
             await asyncio.sleep(time_remaining)
 
             self._last_queue_pop = time()
-            next_pop = self.time_until_next_pop()
+            self.next_queue_pop = self._last_queue_pop + self.time_until_next_pop()
 
             self.find_matches()
 
@@ -155,6 +155,7 @@ class MatchmakerQueue:
         """
         return {
             'queue_name': self.queue_name,
+            'queue_pop_time': datetime.fromtimestamp(self.next_queue_pop).isoformat(),
             'boundary_80s': [search.boundary_80 for search in self.queue.values()],
             'boundary_75s': [search.boundary_75 for search in self.queue.values()]
         }
