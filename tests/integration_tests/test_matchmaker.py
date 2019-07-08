@@ -75,7 +75,7 @@ async def test_matchmaker_info_message(lobby_server, mocker):
         'queues': [
             {
                 'queue_name': 'ladder1v1',
-                'queue_pop_time': '2019-07-01T09:53:21',
+                'queue_pop_time': '2019-07-01T16:53:21+00:00',
                 'boundary_80s': [],
                 'boundary_75s': []
             }

@@ -1,7 +1,7 @@
 import asyncio
 from collections import OrderedDict, deque
 from concurrent.futures import CancelledError
-from datetime import datetime
+from datetime import datetime, timezone
 from statistics import mean
 from time import time
 from typing import Deque, Dict
@@ -155,7 +155,7 @@ class MatchmakerQueue:
         """
         return {
             'queue_name': self.queue_name,
-            'queue_pop_time': datetime.fromtimestamp(self.next_queue_pop).isoformat(),
+            'queue_pop_time': datetime.fromtimestamp(self.next_queue_pop, timezone.utc).isoformat(),
             'boundary_80s': [search.boundary_80 for search in self.queue.values()],
             'boundary_75s': [search.boundary_75 for search in self.queue.values()]
         }
