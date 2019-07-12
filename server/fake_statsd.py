@@ -17,7 +17,7 @@ class DummyConnection:
     def timing(self, a, b, tags=None):
         pass
 
-    def gauge(self, a, b, delta=False, tags=None):
+    def gauge(self, a, b, delta=False):
         pass
 
     def incr(self, a):
