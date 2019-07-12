@@ -53,12 +53,21 @@ class MatchmakerQueue:
         while self._is_running:
             time_remaining = self.next_queue_pop - time()
             self._logger.info("Next %s wave happening in %is", self.queue_name, time_remaining)
+            server.stats.timing("matchmaker.queue.pop", int(time_remaining), tags={'queue_name': self.queue_name})
             await asyncio.sleep(time_remaining)
+            server.stats.gauge("matchmaker.queue.players", len(self), tags={'queue_name': self.queue_name})
 
             self._last_queue_pop = time()
             self.next_queue_pop = self._last_queue_pop + self.time_until_next_pop()
 
             self.find_matches()
+            server.stats.gauge("matchmaker.queue.matches", len(self._matches), tags={'queue_name': self.queue_name})
+            if self._matches:
+                server.stats.gauge(
+                    "matchmaker.queue.quality",
+                    mean(map(lambda m: m[0].quality_with(m[1]), self._matches)),
+                    tags={'queue_name': self.queue_name}
+                )
 
             # Any searches in the queue at this point were unable to find a
             # match this round and will have higher priority next round.
