@@ -706,14 +706,6 @@ class LobbyConnection():
             self.ladder_service.cancel_search(self.player)
             return
 
-        async with db.engine.acquire() as conn:
-            result = await conn.execute("SELECT id FROM matchmaker_ban WHERE `userid` = %s", (self.player.id))
-            row = await result.fetchone()
-            if row:
-                self.sendJSON(dict(command="notice", style="error",
-                                   text="You are banned from the matchmaker. Contact an admin to have the reason."))
-                return
-
         if state == "start":
             assert self.player is not None
             # Faction can be either the name (e.g. 'uef') or the enum value (e.g. 1)

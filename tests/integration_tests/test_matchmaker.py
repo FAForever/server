@@ -81,28 +81,3 @@ async def test_matchmaker_info_message(lobby_server, mocker):
             }
         ]
     }
-
-
-async def test_game_matchmaking_ban(loop, lobby_server, db_engine):
-    _, _, proto = await connect_and_sign_in(
-        ('ladder_ban', 'ladder_ban'),
-        lobby_server
-    )
-
-    await read_until_command(proto, 'game_info')
-
-    proto.send_message({
-        'command': 'game_matchmaking',
-        'state': 'start',
-        'faction': 'uef'
-    })
-    await proto.drain()
-
-    # This may fail due to a timeout error
-    msg = await read_until_command(proto, 'notice')
-
-    assert msg == {
-        'command': 'notice',
-        'style': 'error',
-        'text': 'You are banned from the matchmaker. Contact an admin to have the reason.'
-    }
