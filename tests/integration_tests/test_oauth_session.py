@@ -101,7 +101,7 @@ async def test_auto_refresh(oauth2_session):
 
     oauth2_session.token = 'something_else'
     # Wait for the auto refresh
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(0.5)
     assert oauth2_session.token == 'the_token'
 
 
