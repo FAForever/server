@@ -8,7 +8,7 @@ name = "pypi"
 
 [packages]
 typing = "*"
-aiohttp = "==3.5.1"
+aiohttp = "*"
 aiomysql = "*"
 aiomeasures = "*"
 docopt = "*"

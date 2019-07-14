@@ -1,4 +1,11 @@
+import asyncio
+
+from server import config
+
 from .conftest import connect_and_sign_in, read_until_command
+
+# Need to save the old sleep here otherwise the mocker recursively patches it
+aiosleep = asyncio.sleep
 
 
 async def queue_players_for_matchmaking(lobby_server):
@@ -35,7 +42,8 @@ async def queue_players_for_matchmaking(lobby_server):
     return proto1, proto2
 
 
-async def test_game_matchmaking(loop, lobby_server):
+async def test_game_matchmaking(loop, lobby_server, mocker):
+    mocker.patch('asyncio.sleep', side_effect=lambda _: aiosleep(0.1))
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
 
     # The player that queued last will be the host
@@ -52,26 +60,24 @@ async def test_game_matchmaking(loop, lobby_server):
     assert msg2['mod'] == 'ladder1v1'
 
 
-async def test_game_matchmaking_ban(loop, lobby_server, db_engine):
+async def test_matchmaker_info_message(lobby_server, mocker):
+    mocker.patch('server.matchmaker.matchmaker_queue.time', return_value=1_562_000_000)
+    mocker.patch('server.matchmaker.matchmaker_queue.config.QUEUE_POP_TIME_MAX', return_value=1)
+
     _, _, proto = await connect_and_sign_in(
-        ('ladder_ban', 'ladder_ban'),
+        ('ladder1', 'ladder1'),
         lobby_server
     )
-
-    await read_until_command(proto, 'game_info')
-
-    proto.send_message({
-        'command': 'game_matchmaking',
-        'state': 'start',
-        'faction': 'uef'
-    })
-    await proto.drain()
-
-    # This may fail due to a timeout error
-    msg = await read_until_command(proto, 'notice')
+    msg = await read_until_command(proto, 'matchmaker_info')
 
     assert msg == {
-        'command': 'notice',
-        'style': 'error',
-        'text': 'You are banned from the matchmaker. Contact an admin to have the reason.'
+        'command': 'matchmaker_info',
+        'queues': [
+            {
+                'queue_name': 'ladder1v1',
+                'queue_pop_time': '2019-07-01T16:53:21+00:00',
+                'boundary_80s': [],
+                'boundary_75s': []
+            }
+        ]
     }
