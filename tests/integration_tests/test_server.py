@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from server import VisibilityState
 
@@ -102,6 +104,29 @@ async def test_player_info_broadcast(loop, lobby_server):
     )
     p1.close()
     p2.close()
+
+
+@pytest.mark.slow
+async def test_info_broadcast_authenticated(loop, lobby_server):
+    proto1 = await connect_client(lobby_server)
+    proto2 = await connect_client(lobby_server)
+    proto3 = await connect_client(lobby_server)
+
+    await perform_login(proto1, ('test', 'test_password'))
+    await perform_login(proto2, ('Rhiza', 'puff_the_magic_dragon'))
+    proto1.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "mod": "ladder1v1",
+        "faction": "uef"
+    })
+    await proto1.drain()
+    # Will timeout if the message is never received
+    await read_until_command(proto2, "matchmaker_info")
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(proto3.read_message(), 0.2)
+        # Unauthenticated connections should not receive the message
+        assert False
 
 
 @pytest.mark.slow
