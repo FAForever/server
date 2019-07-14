@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest import mock
 from unittest.mock import Mock
 
@@ -500,7 +501,7 @@ async def test_command_admin_closelobby_with_ban_duration_no_period(mocker, lobb
         bans = [row['expires_at'] async for row in result]
 
     assert len(bans) == 1
-    assert bans[0].timestamp() == 3600*24 + 1000
+    assert bans[0] == datetime.utcfromtimestamp(3600*24 + 1000)
 
 
 async def test_command_admin_closelobby_with_ban_bad_period(mocker, lobbyconnection, db_engine):
