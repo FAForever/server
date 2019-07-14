@@ -282,7 +282,8 @@ class LobbyConnection():
                     if 'ban' in message:
                         reason = message['ban'].get('reason', 'Unspecified')
                         duration = int(message['ban'].get('duration', 1))
-                        period = message['ban'].get('period', 'DAY').upper()
+                        period = message['ban'].get('period', 'SECOND').upper()
+
                         self._logger.warning('Administrative action: %s closed client for %s with %s ban (Reason: %s)', self.player, player, duration, reason)
                         async with db.engine.acquire() as conn:
                             try:
@@ -292,7 +293,7 @@ class LobbyConnection():
                                 if row:
                                     ban_fail = row[0]
                                 else:
-                                    if period not in ["DAY", "WEEK", "MONTH"]:
+                                    if period not in ["SECOND", "DAY", "WEEK", "MONTH"]:
                                         self._logger.warning('Tried to ban player with invalid period')
                                         raise ClientError(f"Period '{period}' is not allowed!")
 
@@ -310,6 +311,7 @@ class LobbyConnection():
                                         ),
                                         duration=duration
                                     )
+
                             except pymysql.MySQLError as e:
                                 raise ClientError('Your ban attempt upset the database: {}'.format(e))
                     else:

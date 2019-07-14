@@ -1,12 +1,9 @@
 FROM python:3.6-slim
 
-# Apt-install mysql client and cleanup temporary files afterwards
-# Need pkg-config for building lupa v1.4
+# Apt-install c++ build tools and cleanup temporary files afterwards
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
-        mysql-client \
-        git vim \
-        build-essential liblua5.2-dev pkg-config && \
+        build-essential && \
     apt-get clean
 RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
