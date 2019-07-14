@@ -28,7 +28,7 @@ Check if the container is running with
 
     docker ps
 
-If you cannot find `faf-server`in the list, run `docker run` without `-d` to see what happen.
+If you cannot find `faf-server` in the list, run `docker run` without `-d` to see what happens.
 
 If you have a different root password, database name then the default (see [config.py](https://github.com/FAForever/server/blob/develop/server/config.py#L43)), you must pass it over the environment parameter of docker, e.g.
 
@@ -80,7 +80,7 @@ With a few message-types (`UPLOAD_MOD`, `UPLOAD_MAP`), there are more fields.
 
 * `{command: modvault, type: start}`: show the last 100 mods
 * `{command: modvault, type: like, uid: <uid>}`: check if user liked the mod, otherwise increase the like counter
-* `{command: modvault, type: download, uid: <uid>}`: notify server about an download (for download counter), does not start the download
+* `{command: modvault, type: download, uid: <uid>}`: notify server about a download (for download counter), does not start the download
 * `{command: modvault, type: addcomment}`: not implemented
 
 ##### Social
@@ -100,7 +100,7 @@ Can be combined !, e.g. `{command: social, teaminvite: <...>, friends: <..>}`
 
 ##### Misc
 
-* [deprecated] `{command: ask_session}`: response with an welcome command and an valid session (can be delayed)
+* [deprecated] `{command: ask_session}`: response with a welcome command and a valid session (can be delayed)
 * `{command: fa_state, state: <on|...>}`: notify the server if the game has launched or closed
 * `{command: quit_team}`: Leave a team
 * `{command: accept_team_proposal, leader: <leader_name>}`: Accept Team Invitation
