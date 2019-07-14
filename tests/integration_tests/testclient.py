@@ -39,6 +39,7 @@ class ClientTest(GpgNetClientProtocol):
     through the GpgClientProtocol, and being able to
     send/receive out-of-band UDP messages.
     """
+
     def __init__(self, loop, process_nat_packets=True, proto=None):
         super(ClientTest, self).__init__()
         self.process_nat_packets = process_nat_packets
@@ -113,4 +114,4 @@ class ClientTest(GpgNetClientProtocol):
 
     def send_udp_natpacket(self, msg, host, port):
         self._logger.debug("Sending UDP: {}:{}>>{}".format(host, port, msg))
-        self._udp_protocol.sendto('\x08'+msg, (host, port))
+        self._udp_protocol.sendto('\x08' + msg, (host, port))

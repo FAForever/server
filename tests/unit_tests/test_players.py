@@ -50,6 +50,7 @@ def test_weak_references():
     for prop in weak_properties:
         assert getattr(p, prop) is None
 
+
 def test_unlink_weakref():
     p = Player(login='Test')
     mock_game = mock.Mock()
@@ -57,6 +58,7 @@ def test_unlink_weakref():
     assert p.game == mock_game
     del p.game
     assert p.game is None
+
 
 def test_serialize():
     p = Player(id=42,
@@ -66,10 +68,10 @@ def test_serialize():
                clan='TOAST',
                numGames=542)
     assert p.to_dict() == {
-                    "id": 42,
-                    "login": 'Something',
-                    "global_rating": (1234, 68),
-                    "ladder_rating": (1500, 230),
-                    "number_of_games": 542,
-                    "clan": 'TOAST'
+        "id": 42,
+        "login": 'Something',
+        "global_rating": (1234, 68),
+        "ladder_rating": (1500, 230),
+        "number_of_games": 542,
+        "clan": 'TOAST'
     }

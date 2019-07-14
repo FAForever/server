@@ -105,12 +105,12 @@ def add_connected_players(game: BaseGame, players):
     game.host = players[0]
 
 
-def add_players(gameobj: BaseGame, n: int, team: int=None):
+def add_players(gameobj: BaseGame, n: int, team: int = None):
     game = gameobj
     current = len(game.players)
     players = []
-    for i in range(current, current+n):
-        players.append(Player(id=i+1, login='Player '+str(i+1), global_rating=(1500, 500)))
+    for i in range(current, current + n):
+        players.append(Player(id=i + 1, login='Player ' + str(i + 1), global_rating=(1500, 500)))
 
     add_connected_players(game, players)
 

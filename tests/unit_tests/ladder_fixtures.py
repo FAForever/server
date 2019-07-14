@@ -1,6 +1,5 @@
 from unittest import mock
 
-
 import pytest
 
 from server import LadderService

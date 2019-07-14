@@ -134,14 +134,14 @@ class Game(BaseGame):
     init_mode = InitMode.NORMAL_LOBBY
 
     def __init__(
-        self,
-        id_: int,
-        game_service: "GameService",
-        game_stats_service: "GameStatsService",
-        host: Optional[Player]=None,
-        name: str='None',
-        map_: str='SCMP_007',
-        game_mode: str='faf'
+            self,
+            id_: int,
+            game_service: "GameService",
+            game_stats_service: "GameStatsService",
+            host: Optional[Player] = None,
+            name: str = 'None',
+            map_: str = 'SCMP_007',
+            game_mode: str = 'faf'
     ):
         super().__init__()
         self._results = {}
@@ -271,12 +271,12 @@ class Game(BaseGame):
     @property
     def is_even(self) -> bool:
         teams = self.team_count()
-        if 1 in teams: # someone is in ffa team, all teams need to have 1 player
+        if 1 in teams:  # someone is in ffa team, all teams need to have 1 player
             c = 1
             teams.pop(1)
         else:
             n = len(teams)
-            if n <= 1: # 0 teams are considered even, single team not
+            if n <= 1:  # 0 teams are considered even, single team not
                 return n == 0
 
             # all teams needs to have same count as the first
@@ -312,7 +312,7 @@ class Game(BaseGame):
     async def await_hosted(self):
         return await asyncio.wait_for(self._is_hosted, None)
 
-    def set_hosted(self, value: bool=True):
+    def set_hosted(self, value: bool = True):
         if not self._is_hosted.done():
             self._is_hosted.set_result(value)
 
@@ -449,7 +449,7 @@ class Game(BaseGame):
                     await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
                     return
 
-                if time.time() - self.launched_at > 4*60 and self.is_mutually_agreed_draw:
+                if time.time() - self.launched_at > 4 * 60 and self.is_mutually_agreed_draw:
                     self._logger.info("Game is a mutual draw")
                     await self.mark_invalid(ValidityState.MUTUAL_DRAW)
                     return
@@ -569,8 +569,8 @@ class Game(BaseGame):
         else:
             await conn.execute(
                 "UPDATE " + table + " "
-                "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1 "
-                "WHERE id = %s", (new_rating.mu, new_rating.sigma, player.id))
+                                    "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1 "
+                                    "WHERE id = %s", (new_rating.mu, new_rating.sigma, player.id))
 
     def set_player_option(self, player_id: int, key: str, value: Any):
         """
@@ -941,7 +941,7 @@ class Game(BaseGame):
                 team: [player.login for player in self.players
                        if self.get_player_option(player.id, 'Team') == team]
                 for team in self.teams
-                }
+            }
         }
 
     @property

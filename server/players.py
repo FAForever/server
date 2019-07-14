@@ -21,18 +21,19 @@ class Player(BasePlayer):
     In the context of a game, the Game object holds game-specific
     information about players.
     """
+
     def __init__(
-        self,
-        login: str = None,
-        session: int = 0,
-        ip=None,
-        id: int = 0,
-        global_rating=None,
-        ladder_rating=None,
-        clan=None,
-        numGames: int = 0,
-        permissionGroup: int = 0,
-        lobby_connection: "LobbyConnection" = None
+            self,
+            login: str = None,
+            session: int = 0,
+            ip=None,
+            id: int = 0,
+            global_rating=None,
+            ladder_rating=None,
+            clan=None,
+            numGames: int = 0,
+            permissionGroup: int = 0,
+            lobby_connection: "LobbyConnection" = None
     ):
         super().__init__(id, login)
 
@@ -47,7 +48,7 @@ class Player(BasePlayer):
         self.global_rating = global_rating
         self.ladder_rating = ladder_rating
 
-        #social
+        # social
         self.avatar = None
         self.clan = clan
         self.country = None
@@ -125,9 +126,11 @@ class Player(BasePlayer):
         Return a dictionary representing this player object
         :return:
         """
+
         def filter_none(t):
             _, v = t
             return v is not None
+
         return dict(filter(filter_none, (
             ('id', self.id),
             ('login', self.login),

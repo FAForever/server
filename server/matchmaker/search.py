@@ -17,10 +17,10 @@ class Search():
     """
 
     def __init__(
-        self,
-        players: List[Player],
-        start_time: Optional[float]=None,
-        rating_prop: str='ladder_rating'
+            self,
+            players: List[Player],
+            start_time: Optional[float] = None,
+            rating_prop: str = 'ladder_rating'
     ):
         """
         Default ctor for a search
@@ -82,7 +82,7 @@ class Search():
         """
         # TODO: Figure out what do do with these boundaries
         mu, _ = self.ratings[0]  # Takes the rating of the first player, only works for 1v1
-        rounded_mu = int(math.ceil(mu/10)*10)
+        rounded_mu = int(math.ceil(mu / 10) * 10)
         return rounded_mu - 200, rounded_mu + 200
 
     @property
@@ -94,7 +94,7 @@ class Search():
         """
         # TODO: Figure out what do do with these boundaries
         mu, _ = self.ratings[0]  # Takes the rating of the first player, only works for 1v1
-        rounded_mu = int(math.ceil(mu/10)*10)
+        rounded_mu = int(math.ceil(mu / 10) * 10)
         return rounded_mu - 100, rounded_mu + 100
 
     @property
@@ -184,12 +184,13 @@ class Search():
             if numgames <= config.NEWBIE_MIN_GAMES:
                 mean, dev = raw_rating
                 adjusted_mean = self.adjusted_rating(player)
-                self._logger.info('Adjusted mean rating for {player} with {numgames} games from {mean} to {adjusted_mean}'.format(
-                    player=player,
-                    numgames=numgames,
-                    mean=mean,
-                    adjusted_mean=adjusted_mean
-                ))
+                self._logger.info(
+                    'Adjusted mean rating for {player} with {numgames} games from {mean} to {adjusted_mean}'.format(
+                        player=player,
+                        numgames=numgames,
+                        mean=mean,
+                        adjusted_mean=adjusted_mean
+                    ))
         self._match.set_result(other)
 
     async def await_match(self):

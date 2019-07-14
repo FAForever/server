@@ -77,7 +77,7 @@ async def test_rate_game(laddergame: LadderGame, db_engine):
     player_2_old_mean = players[1].ladder_rating[0]
 
     await laddergame.launch()
-    laddergame.launched_at = time.time() - 60*20
+    laddergame.launched_at = time.time() - 60 * 20
     await laddergame.add_result(0, 0, 'victory', 5)
     await laddergame.add_result(0, 1, 'defeat', -5)
     await laddergame.on_game_end()
@@ -87,7 +87,9 @@ async def test_rate_game(laddergame: LadderGame, db_engine):
     assert players[1].ladder_rating[0] < player_2_old_mean
 
     async with db_engine.acquire() as conn:
-        result = await conn.execute("SELECT mean, deviation, after_mean, after_deviation FROM game_player_stats WHERE gameid = %s", laddergame.id)
+        result = await conn.execute(
+            "SELECT mean, deviation, after_mean, after_deviation FROM game_player_stats WHERE gameid = %s",
+            laddergame.id)
         rows = list(await result.fetchall())
 
     assert rows[0]['mean'] == 1500
@@ -120,7 +122,7 @@ async def test_persist_rating_victory(laddergame: LadderGame, db_engine):
         result_before = await result.fetchall()
 
     await laddergame.launch()
-    laddergame.launched_at = time.time() - 60*20
+    laddergame.launched_at = time.time() - 60 * 20
     await laddergame.add_result(0, 0, 'victory', 5)
     await laddergame.add_result(0, 1, 'defeat', -5)
     await laddergame.on_game_end()

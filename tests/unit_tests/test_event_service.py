@@ -25,7 +25,6 @@ def create_queue():
 
 
 async def test_fill_queue(service: EventService):
-
     queue = []
     service.record_event('1-2-3', 0, queue)
     service.record_event('1-2-3', 1, queue)
@@ -50,7 +49,6 @@ async def test_api_broken_2(service: EventService):
 
 
 async def test_record_multiple(service: EventService):
-
     content = {
         "data": [
             {"attributes": {"eventId": "1-2-3", "currentCount": 1}},

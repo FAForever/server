@@ -35,7 +35,7 @@ API_BASE_URL = os.getenv("API_BASE_URL", "http://api.test.faforever.com/")
 USE_API = os.getenv("USE_API", 'true').lower() == 'true'
 
 FAF_POLICY_SERVER_BASE_URL = os.getenv("FAF_POLICY_SERVER_BASE_URL", "http://faf-policy-server")
-FORCE_STEAM_LINK_AFTER_DATE = int(os.getenv('FORCE_STEAM_LINK_AFTER_DATE', 1536105599)) # 5 september 2018 by default
+FORCE_STEAM_LINK_AFTER_DATE = int(os.getenv('FORCE_STEAM_LINK_AFTER_DATE', 1536105599))  # 5 september 2018 by default
 FORCE_STEAM_LINK = os.getenv('FORCE_STEAM_LINK', 'false').lower() == 'true'
 
 NEWBIE_BASE_MEAN = int(os.getenv('NEWBIE_BASE_MEAN', 500))
@@ -43,7 +43,7 @@ NEWBIE_MIN_GAMES = int(os.getenv('NEWBIE_MIN_GAMES', 10))
 
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
 TWILIO_TOKEN = os.getenv("TWILIO_TOKEN", "")
-TWILIO_TTL = os.getenv("TWILIO_TTL", 3600*24)
+TWILIO_TTL = os.getenv("TWILIO_TTL", 3600 * 24)
 
 COTURN_HOSTS = os.getenv('COTURN_HOSTS', "").split(',')
 COTURN_KEYS = os.getenv('COTURN_KEYS', "").split(',')

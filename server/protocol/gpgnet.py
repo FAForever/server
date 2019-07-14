@@ -1,6 +1,5 @@
 from abc import ABCMeta, abstractmethod
 
-
 from typing import List, Union
 from server.abc.base_game import InitMode
 
@@ -9,6 +8,7 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
     """
     Defines an interface for the server side GPGNet protocol
     """
+
     # TODO: Do we need to remove port parameters here?
     def send_CreateLobby(self, init_mode: InitMode, port: int, login: str, uid: int, natTraversalProvider: int):
         """

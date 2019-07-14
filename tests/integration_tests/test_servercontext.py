@@ -23,6 +23,7 @@ def mock_server(loop):
         @asyncio.coroutine
         def on_message_received(self, msg):
             pass
+
     mock_server = MockServer()
     mock_server.on_connection_lost = mock.Mock()
     return mock_server
@@ -34,6 +35,7 @@ def mock_context(loop, request, mock_server):
 
     def fin():
         ctx.close()
+
     request.addfinalizer(fin)
     return loop.run_until_complete(ctx.listen('127.0.0.1', None))
 

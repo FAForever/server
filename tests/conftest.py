@@ -30,6 +30,7 @@ def async_test(f):
         future = coro(*args, **kwargs)
         loop = asyncio.get_event_loop()
         loop.run_until_complete(future)
+
     return wrapper
 
 
@@ -45,7 +46,7 @@ def pytest_addoption(parser):
     parser.addoption('--mysql_username', action='store', default=DB_LOGIN, help='mysql username to use for test database')
     parser.addoption('--mysql_password', action='store', default=DB_PASSWORD, help='mysql password to use for test database')
     parser.addoption('--mysql_database', action='store', default='faf_test', help='mysql database to use for tests')
-    parser.addoption('--mysql_port',     action='store', default=int(DB_PORT), help='mysql port to use for tests')
+    parser.addoption('--mysql_port', action='store', default=int(DB_PORT), help='mysql port to use for tests')
 
 
 def pytest_configure(config):
@@ -110,7 +111,9 @@ def db_engine(request, loop):
 
     def opt(val):
         return request.config.getoption(val)
-    host, user, pw, db, port = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt('--mysql_database'), opt('--mysql_port')
+
+    host, user, pw, db, port = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt(
+        '--mysql_database'), opt('--mysql_port')
     engine_fut = asyncio.ensure_future(
         server.db.connect_engine(
             loop=loop,
@@ -126,6 +129,7 @@ def db_engine(request, loop):
     def fin():
         engine.close()
         loop.run_until_complete(engine.wait_closed())
+
     request.addfinalizer(fin)
 
     return engine
@@ -182,7 +186,8 @@ def make_game(uid, players):
 def create_player():
     from server.players import Player, PlayerState
 
-    def make(login='', id=0, port=6112, state=PlayerState.HOSTING, ip='127.0.0.1', global_rating=Rating(1500, 250), ladder_rating=Rating(1500, 250)):
+    def make(login='', id=0, port=6112, state=PlayerState.HOSTING, ip='127.0.0.1', global_rating=Rating(1500, 250),
+             ladder_rating=Rating(1500, 250)):
         p = mock.create_autospec(spec=Player(login))
         p.global_rating = global_rating
         p.ladder_rating = ladder_rating
@@ -191,6 +196,7 @@ def create_player():
         p.id = id
         p.login = login
         return p
+
     return make
 
 
@@ -285,5 +291,3 @@ def twilio_sid():
 @pytest.fixture
 def twilio_token():
     return "token_a"
-
-

@@ -86,7 +86,7 @@ async def test_update_multiple(service: AchievementService):
 
     assert result == achievements_data
 
-    service.api_accessor.update_achievements.assert_called_once_with(queue,42)
+    service.api_accessor.update_achievements.assert_called_once_with(queue, 42)
 
 
 async def test_achievement_zero_steps_increment(service: AchievementService):

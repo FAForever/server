@@ -16,6 +16,7 @@ class QDataStreamProtocol(Protocol):
     """
     Implements the legacy QDataStream-based encoding scheme
     """
+
     def __init__(self, reader: StreamReader, writer: StreamWriter):
         """
         Initialize the protocol
@@ -26,7 +27,7 @@ class QDataStreamProtocol(Protocol):
         self.writer = writer
 
     @staticmethod
-    def read_qstring(buffer: bytes, pos: int=0) -> Tuple[int, str]:
+    def read_qstring(buffer: bytes, pos: int = 0) -> Tuple[int, str]:
         """
         Parse a serialized QString from buffer (A bytes like object) at given position
 
@@ -41,15 +42,15 @@ class QDataStreamProtocol(Protocol):
         rest = buffer[pos + 4:]
         assert len(chunk) == 4
 
-        (size, ) = struct.unpack('!I', chunk)
+        (size,) = struct.unpack('!I', chunk)
         if len(rest) < size:
             raise ValueError(
                 "Malformed QString: Claims length {} but actually {}. Entire buffer: {}"
-                .format(size, len(rest), base64.b64encode(buffer)))
+                    .format(size, len(rest), base64.b64encode(buffer)))
         return size + pos + 4, (buffer[pos + 4:pos + 4 + size]).decode('UTF-16BE')
 
     @staticmethod
-    def read_int32(buffer: bytes, pos: int=0) -> Tuple[int, int]:
+    def read_int32(buffer: bytes, pos: int = 0) -> Tuple[int, int]:
         """
         Read a serialized 32-bit integer from the given buffer at given position
 
@@ -58,7 +59,7 @@ class QDataStreamProtocol(Protocol):
         chunk = buffer[pos:pos + 4]
         assert len(chunk) == 4
 
-        (num, ) = struct.unpack('!i', chunk)
+        (num,) = struct.unpack('!i', chunk)
         return pos + 4, num
 
     @staticmethod
@@ -98,7 +99,7 @@ class QDataStreamProtocol(Protocol):
 
         :return dict: Parsed message
         """
-        (block_length, ) = struct.unpack('!I', (await self.reader.readexactly(4)))
+        (block_length,) = struct.unpack('!I', (await self.reader.readexactly(4)))
         block = await self.reader.readexactly(block_length)
         # FIXME: New protocol will remove the need for this
 

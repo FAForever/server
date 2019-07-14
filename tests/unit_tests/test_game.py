@@ -103,7 +103,7 @@ async def test_ffa_not_rated(game):
     await game.launch()
     await game.add_result(0, 1, 'VICTORY', 5)
 
-    game.launched_at = time.time() - 60*20 # seconds
+    game.launched_at = time.time() - 60 * 20  # seconds
 
     await game.on_game_end()
     assert game.validity == ValidityState.FFA_NOT_RANKED
@@ -116,7 +116,7 @@ async def test_multi_team_not_rated(game):
     add_players(game, 2, team=3)
     await game.launch()
     await game.add_result(0, 1, 'VICTORY', 5)
-    game.launched_at = time.time() - 60*20 # seconds
+    game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_end()
     assert game.validity == ValidityState.MULTI_TEAM
 
@@ -128,7 +128,7 @@ async def test_has_ai_players_not_rated(game):
     game.AIs = {'IA Tech': {'Faction': 5, 'Color': 1, 'Team': 2, 'StartSpot': 2}, 'Oum-Ashavoh (IA Tech)': {'Army': 3}}
     await game.launch()
     await game.add_result(0, 1, 'VICTORY', 5)
-    game.launched_at = time.time() - 60*20 # seconds
+    game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_end()
     assert game.validity == ValidityState.HAS_AI_PLAYERS
 
@@ -141,7 +141,7 @@ async def test_uneven_teams_not_rated(game):
     await game.launch()
     await game.add_result(0, 1, 'VICTORY', 5)
 
-    game.launched_at = time.time() - 60*20 # seconds
+    game.launched_at = time.time() - 60 * 20  # seconds
 
     await game.on_game_end()
     assert game.validity == ValidityState.UNEVEN_TEAMS_NOT_RANKED
@@ -153,9 +153,9 @@ async def test_single_team_not_rated(game):
     add_players(game, n_players, team=2)
 
     await game.launch()
-    game.launched_at = time.time()-60*20
+    game.launched_at = time.time() - 60 * 20
     for i in range(n_players):
-        await game.add_result(0, i+1, 'victory', 5)
+        await game.add_result(0, i + 1, 'victory', 5)
     await game.on_game_end()
 
     assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
@@ -317,7 +317,7 @@ async def test_game_ends_in_mutually_agreed_draw(game: Game):
     players = add_players(game, 2)
 
     await game.launch()
-    game.launched_at = time.time()-60*60
+    game.launched_at = time.time() - 60 * 60
 
     await game.add_result(players[0], 0, 'mutual_draw', 0)
     await game.add_result(players[1], 1, 'mutual_draw', 0)
@@ -331,7 +331,7 @@ async def test_game_not_ends_in_unilatery_agreed_draw(game: Game, players):
     add_players(game, 2)
 
     await game.launch()
-    game.launched_at = time.time()-60*60
+    game.launched_at = time.time() - 60 * 60
 
     await game.add_result(players.hosting, 0, 'mutual_draw', 0)
     await game.add_result(players.joining, 1, 'victory', 10)
@@ -414,7 +414,6 @@ async def test_compute_rating_balanced_teamgame(game: Game, create_player):
 
 
 async def test_game_get_army_result_takes_most_reported_result(game):
-
     game.state = GameState.LOBBY
     players = add_players(game, 1)
     await game.add_result(0, 0, 'defeat', 0)
@@ -467,7 +466,7 @@ async def test_name_sanitization(game):
     except UnicodeDecodeError:
         pass
 
-    assert(game.name == "_Aâé~<1000")
+    assert (game.name == "_Aâé~<1000")
 
 
 async def test_to_dict(game, create_player):
@@ -535,7 +534,7 @@ async def test_persist_results_not_called_with_no_results(game):
     add_players(game, 2, team=2)
     add_players(game, 2, team=3)
     game.persist_results = CoroMock()
-    game.launched_at = time.time() - 60*20
+    game.launched_at = time.time() - 60 * 20
 
     await game.launch()
     await game.on_game_end()
@@ -646,7 +645,7 @@ async def test_partial_stats_not_affecting_rating_persistence(custom_game, event
     old_mean = players[0].global_rating[0]
 
     await game.launch()
-    game.launched_at = time.time()-60*60
+    game.launched_at = time.time() - 60 * 60
     await game.add_result(0, 0, 'victory', 10)
     await game.add_result(0, 1, 'defeat', -10)
     await game.report_army_stats({'stats': {'Player 1': {}}})

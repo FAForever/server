@@ -16,6 +16,7 @@ class TwilioNTS():
 
     Creates new twilio NTS tokens
     """
+
     def __init__(self, sid=TWILIO_ACCOUNT_SID, token=TWILIO_TOKEN):
         """
         Constructor

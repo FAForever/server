@@ -485,7 +485,7 @@ async def test_command_admin_closelobby_with_ban_duration_no_period(mocker, lobb
         'user_id': banme.id,
         'ban': {
             'reason': 'Unit test - ban duration',
-            'duration': 3600*24
+            'duration': 3600 * 24
         }
     })
 
@@ -501,7 +501,7 @@ async def test_command_admin_closelobby_with_ban_duration_no_period(mocker, lobb
         bans = [row['expires_at'] async for row in result]
 
     assert len(bans) == 1
-    assert bans[0] == datetime.utcfromtimestamp(3600*24 + 1000)
+    assert bans[0] == datetime.utcfromtimestamp(3600 * 24 + 1000)
 
 
 async def test_command_admin_closelobby_with_ban_bad_period(mocker, lobbyconnection, db_engine):
@@ -626,7 +626,8 @@ async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection, moc
 
     protocol.send_message.assert_any_call({
         "command": "avatar",
-        "avatarlist": [{'url': 'http://content.faforever.com/faf/avatars/qai2.png', 'tooltip': 'QAI'}, {'url': 'http://content.faforever.com/faf/avatars/UEF.png', 'tooltip': 'UEF'}]
+        "avatarlist": [{'url': 'http://content.faforever.com/faf/avatars/qai2.png', 'tooltip': 'QAI'},
+                       {'url': 'http://content.faforever.com/faf/avatars/UEF.png', 'tooltip': 'UEF'}]
     })
 
 
@@ -714,7 +715,8 @@ async def test_broadcast(lobbyconnection: LobbyConnection, mocker):
     tuna.lobby_connection.send_warning.assert_called_with("This is a test message")
 
 
-async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnection: LobbyConnection, mocker, mock_player):
+async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnection: LobbyConnection, mocker,
+                                                                   mock_player):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
     lobbyconnection.player = mock_player
     lobbyconnection.player.game_connection = None
@@ -732,8 +734,10 @@ async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnecti
 
 
 @pytest.mark.parametrize("game_state", [GameState.INITIALIZING, GameState.ENDED])
-async def test_game_connection_not_restored_if_game_state_prohibits(lobbyconnection: LobbyConnection, game_service: GameService,
-                                                                    game_stats_service, game_state, mock_player, mocker):
+async def test_game_connection_not_restored_if_game_state_prohibits(lobbyconnection: LobbyConnection,
+                                                                    game_service: GameService,
+                                                                    game_stats_service, game_state, mock_player,
+                                                                    mocker):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
     lobbyconnection.player = mock_player
     lobbyconnection.player.game_connection = None
@@ -801,8 +805,8 @@ async def test_connection_lost(lobbyconnection):
 async def test_check_policy_conformity(lobbyconnection, policy_server):
     host, port = policy_server
     with mock.patch(
-        'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
-        f'http://{host}:{port}'
+            'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
+            f'http://{host}:{port}'
     ):
         honest = await lobbyconnection.check_policy_conformity(1, "honest", session=100)
         assert honest is True
@@ -811,8 +815,8 @@ async def test_check_policy_conformity(lobbyconnection, policy_server):
 async def test_check_policy_conformity_fraudulent(lobbyconnection, policy_server, db_engine):
     host, port = policy_server
     with mock.patch(
-        'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
-        f'http://{host}:{port}'
+            'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
+            f'http://{host}:{port}'
     ):
         # 42 is not a valid player ID which should cause a SQL constraint error
         lobbyconnection.abort = mock.Mock()
@@ -838,8 +842,8 @@ async def test_check_policy_conformity_fraudulent(lobbyconnection, policy_server
 async def test_check_policy_conformity_fatal(lobbyconnection, policy_server):
     host, port = policy_server
     with mock.patch(
-        'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
-        f'http://{host}:{port}'
+            'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
+            f'http://{host}:{port}'
     ):
         for result in ('vm', 'already_associated', 'fraudulent'):
             lobbyconnection.abort = mock.Mock()

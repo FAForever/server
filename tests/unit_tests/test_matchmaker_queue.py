@@ -161,9 +161,9 @@ async def test_shutdown_matchmaker(matchmaker_queue):
 
 
 async def test_queue_many(mocker, player_service, matchmaker_queue):
-    p1, p2, p3 = Player('Dostya', id=1, ladder_rating=(2200, 150), numGames=(config.NEWBIE_MIN_GAMES+1)), \
-                 Player('Brackman', id=2, ladder_rating=(1500, 150), numGames=(config.NEWBIE_MIN_GAMES+1)), \
-                 Player('Zoidberg', id=3, ladder_rating=(1500, 125), numGames=(config.NEWBIE_MIN_GAMES+1))
+    p1, p2, p3 = Player('Dostya', id=1, ladder_rating=(2200, 150), numGames=(config.NEWBIE_MIN_GAMES + 1)), \
+                 Player('Brackman', id=2, ladder_rating=(1500, 150), numGames=(config.NEWBIE_MIN_GAMES + 1)), \
+                 Player('Zoidberg', id=3, ladder_rating=(1500, 125), numGames=(config.NEWBIE_MIN_GAMES + 1))
 
     player_service.players = {p1.id: p1, p2.id: p2, p3.id: p3}
     s1 = Search([p1])
@@ -181,15 +181,16 @@ async def test_queue_many(mocker, player_service, matchmaker_queue):
 
 
 async def test_queue_race(mocker, player_service, matchmaker_queue):
-    p1, p2, p3 = Player('Dostya', id=1, ladder_rating=(2300, 150), numGames=(config.NEWBIE_MIN_GAMES+1)), \
-                 Player('Brackman', id=2, ladder_rating=(2200, 150), numGames=(config.NEWBIE_MIN_GAMES+1)), \
-                 Player('Zoidberg', id=3, ladder_rating=(2300, 125), numGames=(config.NEWBIE_MIN_GAMES+1))
+    p1, p2, p3 = Player('Dostya', id=1, ladder_rating=(2300, 150), numGames=(config.NEWBIE_MIN_GAMES + 1)), \
+                 Player('Brackman', id=2, ladder_rating=(2200, 150), numGames=(config.NEWBIE_MIN_GAMES + 1)), \
+                 Player('Zoidberg', id=3, ladder_rating=(2300, 125), numGames=(config.NEWBIE_MIN_GAMES + 1))
 
     player_service.players = {p1.id: p1, p2.id: p2, p3.id: p3}
 
     async def find_matches():
         await asyncio.sleep(0.01)
         matchmaker_queue.find_matches()
+
     try:
         await asyncio.gather(
             asyncio.wait_for(matchmaker_queue.search(Search([p1])), 0.1),
@@ -233,6 +234,7 @@ async def test_queue_mid_cancel(mocker, player_service, matchmaker_queue, matchm
     async def find_matches():
         await asyncio.sleep(0.01)
         matchmaker_queue.find_matches()
+
     try:
         await asyncio.gather(
             asyncio.wait_for(matchmaker_queue.search(s3), 0.1),

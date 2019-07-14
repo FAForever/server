@@ -60,15 +60,15 @@ class PlayerService:
                 clan.c.tag
             ], use_labels=True).select_from(
                 login
-                .join(global_rating)
-                .join(ladder1v1_rating)
-                .outerjoin(clan_membership)
-                .outerjoin(clan)
-                .outerjoin(avatars, onclause=and_(
+                    .join(global_rating)
+                    .join(ladder1v1_rating)
+                    .outerjoin(clan_membership)
+                    .outerjoin(clan)
+                    .outerjoin(avatars, onclause=and_(
                     avatars.c.idUser == login.c.id,
                     avatars.c.selected == 1
                 ))
-                .outerjoin(avatars_list)
+                    .outerjoin(avatars_list)
             ).where(login.c.id == player.id)
 
             result = await conn.execute(sql)

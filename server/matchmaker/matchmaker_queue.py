@@ -17,9 +17,9 @@ from .search import Match, Search
 @with_logger
 class MatchmakerQueue:
     def __init__(
-        self,
-        queue_name: str,
-        game_service: "GameService"
+            self,
+            queue_name: str,
+            game_service: "GameService"
     ):
         self.game_service = game_service
         self.queue_name = queue_name

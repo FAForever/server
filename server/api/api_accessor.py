@@ -12,6 +12,8 @@ from .oauth_session import OAuth2Session
 """
 Uncomment the following line if your API uses HTTP instead of HTTPS
 """
+
+
 # os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 
@@ -19,6 +21,7 @@ class SessionManager:
     """
     Garantor for API access
     """
+
     def __init__(self):
         self.session = None  # Instance of session
         self.logger = logging.getLogger()

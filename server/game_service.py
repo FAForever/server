@@ -16,6 +16,7 @@ class GameService:
     """
     Utility class for maintaining lifecycle of games
     """
+
     def __init__(self, player_service, game_stats_service):
         self._dirty_games = set()
         self._dirty_queues = set()
@@ -67,7 +68,8 @@ class GameService:
         time we need, but which can in principle change over time.
         """
         async with db.engine.acquire() as conn:
-            result = await conn.execute("SELECT `id`, `gamemod`, `name`, description, publish, `order` FROM game_featuredMods")
+            result = await conn.execute(
+                "SELECT `id`, `gamemod`, `name`, description, publish, `order` FROM game_featuredMods")
 
             async for row in result:
                 mod_id, name, full_name, description, publish, order = (row[i] for i in range(6))
@@ -113,13 +115,13 @@ class GameService:
         return self.game_id_counter
 
     def create_game(
-        self,
-        game_mode: str,
-        visibility=VisibilityState.PUBLIC,
-        host: Optional[Player]=None,
-        name: Optional[str]=None,
-        mapname: Optional[str]=None,
-        password: Optional[str]=None
+            self,
+            game_mode: str,
+            visibility=VisibilityState.PUBLIC,
+            host: Optional[Player] = None,
+            name: Optional[str] = None,
+            mapname: Optional[str] = None,
+            password: Optional[str] = None
     ):
         """
         Main entrypoint for creating new games

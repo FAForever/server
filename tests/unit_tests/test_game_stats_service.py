@@ -63,7 +63,6 @@ def unit_stats():
 
 
 async def test_process_game_stats(game_stats_service, event_service, achievement_service, player, game):
-
     with open("tests/data/game_stats_full_example.json", "r") as stats_file:
         stats = stats_file.read()
 
@@ -205,7 +204,8 @@ def test_category_stats_won_more_naval(game_stats_service, player, achievement_s
     assert len(achievement_service.mock_calls) == 3
 
 
-def test_category_stats_won_more_naval_and_one_experimental(game_stats_service, player, achievement_service, unit_stats):
+def test_category_stats_won_more_naval_and_one_experimental(game_stats_service, player, achievement_service,
+                                                            unit_stats):
     unit_stats['air']['built'] = 2
     unit_stats['land']['built'] = 1
     unit_stats['naval']['built'] = 3
@@ -221,7 +221,8 @@ def test_category_stats_won_more_naval_and_one_experimental(game_stats_service, 
     assert len(achievement_service.mock_calls) == 4
 
 
-def test_category_stats_won_more_naval_and_three_experimentals(game_stats_service, player, achievement_service, unit_stats):
+def test_category_stats_won_more_naval_and_three_experimentals(game_stats_service, player, achievement_service,
+                                                               unit_stats):
     unit_stats['air']['built'] = 2
     unit_stats['land']['built'] = 1
     unit_stats['naval']['built'] = 3
@@ -437,7 +438,9 @@ def test_top_score_8_players(game_stats_service, achievement_service):
     achievement_service.increment.assert_any_call(ACH_UNBEATABLE, 1, [])
     assert len(achievement_service.mock_calls) == 2
 
-async def test_process_game_stats_abort_processing_if_no_army_result(game_stats_service, game, player, achievement_service, event_service):
+
+async def test_process_game_stats_abort_processing_if_no_army_result(game_stats_service, game, player,
+                                                                     achievement_service, event_service):
     with open("tests/data/game_stats_full_example.json", "r") as stats_file:
         stats = stats_file.read()
 

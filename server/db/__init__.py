@@ -12,8 +12,8 @@ def set_engine(engine_):
 
 
 async def connect_engine(
-    loop, host='localhost', port=3306, user='root', password='', db='faf_test',
-    minsize=1, maxsize=1, echo=True
+        loop, host='localhost', port=3306, user='root', password='', db='faf_test',
+        minsize=1, maxsize=1, echo=True
 ):
     engine = await create_engine(
         host=host,

@@ -14,6 +14,7 @@ from .protocol import GpgNetServerProtocol, QDataStreamProtocol
 
 from .db.models import (reported_user, moderation_report, login)
 
+
 class AuthenticationError(Exception):
     pass
 
@@ -25,13 +26,13 @@ class GameConnection(GpgNetServerProtocol):
     """
 
     def __init__(
-        self,
-        game: Game,
-        player: Player,
-        protocol: QDataStreamProtocol,
-        player_service: PlayerService,
-        games: GameService,
-        state: GameConnectionState = GameConnectionState.INITIALIZING
+            self,
+            game: Game,
+            player: Player,
+            protocol: QDataStreamProtocol,
+            player_service: PlayerService,
+            games: GameService,
+            state: GameConnectionState = GameConnectionState.INITIALIZING
     ):
         """
         Construct a new GameConnection
@@ -307,7 +308,7 @@ class GameConnection(GpgNetServerProtocol):
             :param teamkiller_id: teamkiller id
             :param teamkiller_name: teamkiller nickname - Used as a failsafe in case ID is wrong
         """
-                
+
         async with db.engine.acquire() as conn:
 
             """
@@ -325,7 +326,7 @@ class GameConnection(GpgNetServerProtocol):
                 self._logger.debug("Discarded teamkill report with unknown reported player %s[%s]",
                                    teamkiller_id,
                                    teamkiller_name
-                )
+                                   )
                 return
 
             verified_teamkiller_id = row[login.c.id]
@@ -356,16 +357,15 @@ class GameConnection(GpgNetServerProtocol):
                 game_incident_timecode=gametime,
                 report_description=f"Auto-generated teamkill report from {reporter_name}",
             )
-            
+
             result = await conn.execute(insert)
-            
+
             await conn.execute(
                 reported_user.insert().values(
                     player_id=verified_teamkiller_id,
                     report_id=result.lastrowid
                 )
             )
-            
 
     async def handle_teamkill_happened(self, gametime, victim_id, victim_name, teamkiller_id, teamkiller_name):
         """
@@ -504,7 +504,7 @@ class GameConnection(GpgNetServerProtocol):
         if self.game:
             self.game_service.mark_dirty(self.game)
 
-    def abort(self, log_message: str=''):
+    def abort(self, log_message: str = ''):
         """
         Abort the connection
 

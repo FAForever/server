@@ -22,6 +22,7 @@ class LadderService:
     Service responsible for managing the 1v1 ladder. Does matchmaking, updates statistics, and
     launches the games.
     """
+
     def __init__(self, games_service: GameService):
         self._informed_players: Set[Player] = set()
         self.game_service = games_service
@@ -76,10 +77,13 @@ class LadderService:
             mean, deviation = player.ladder_rating
 
             if deviation > 490:
-                player.lobby_connection.sendJSON(dict(command="notice", style="info", text="<i>Welcome to the matchmaker</i><br><br><b>Until you've played enough games for the system to learn your skill level, you'll be matched randomly.</b><br>Afterwards, you'll be more reliably matched up with people of your skill level: so don't worry if your first few games are uneven. This will improve as you play!</b>"))
+                player.lobby_connection.sendJSON(dict(command="notice", style="info",
+                                                      text="<i>Welcome to the matchmaker</i><br><br><b>Until you've played enough games for the system to learn your skill level, you'll be matched randomly.</b><br>Afterwards, you'll be more reliably matched up with people of your skill level: so don't worry if your first few games are uneven. This will improve as you play!</b>"))
             elif deviation > 250:
                 progress = (500.0 - deviation) / 2.5
-                player.lobby_connection.sendJSON(dict(command="notice", style="info", text="The system is still learning you. <b><br><br>The learning phase is " + str(progress)+"% complete<b>"))
+                player.lobby_connection.sendJSON(dict(command="notice", style="info",
+                                                      text="The system is still learning you. <b><br><br>The learning phase is " + str(
+                                                          progress) + "% complete<b>"))
 
     async def handle_queue_matches(self):
         async for s1, s2 in self.queues["ladder1v1"].iter_matches():
@@ -132,7 +136,7 @@ class LadderService:
         game.set_player_option(guest.id, 'Team', 1)
 
         mapname = map_path[5:-4]  # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
-                                  # Really in the future, just send a better description
+        # Really in the future, just send a better description
         self._logger.debug("Starting ladder game: %s", game)
         host.lobby_connection.launch_game(game, is_host=True, use_map=mapname)
         try:

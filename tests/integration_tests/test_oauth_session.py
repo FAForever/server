@@ -39,7 +39,7 @@ def oauth2_server(loop):
 
     async def client_credentials(data):
         if data.get('client_id') != 'the_client_id' or \
-           data.get('client_secret') != 'the_client_secret':
+                data.get('client_secret') != 'the_client_secret':
             return web.Response(status=401, headers={'WWW-Authenticate': 'Git gud'})
         return web.json_response({
             'access_token': 'the_token',
@@ -49,8 +49,8 @@ def oauth2_server(loop):
 
     async def refresh_token(data):
         if data.get('client_id') != 'the_client_id' or \
-           data.get('client_secret') != 'the_client_secret' or \
-           data.get('refresh_token') != 'the_refresh_token':
+                data.get('client_secret') != 'the_client_secret' or \
+                data.get('refresh_token') != 'the_refresh_token':
             return web.Response(status=401, headers={'WWW-Authenticate': 'Git gud'})
         return web.json_response({
             'access_token': 'the_token',

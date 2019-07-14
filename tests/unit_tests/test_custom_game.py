@@ -28,10 +28,11 @@ async def test_rate_game_early_abort_no_enforce(game_service, game_stats_service
     await custom_game.launch()
     await custom_game.add_result(0, 1, 'VICTORY', 5)
 
-    custom_game.launched_at = time.time() - 60 # seconds
+    custom_game.launched_at = time.time() - 60  # seconds
 
     await custom_game.on_game_end()
     assert custom_game.validity == ValidityState.TOO_SHORT
+
 
 async def test_rate_game_early_abort_with_enforce(game_service, game_stats_service, custom_game):
     custom_game.state = GameState.LOBBY
@@ -64,7 +65,7 @@ async def test_rate_game_late_abort_no_enforce(game_service, game_stats_service,
     await custom_game.launch()
     await custom_game.add_result(0, 1, 'VICTORY', 5)
 
-    custom_game.launched_at = time.time() - 600 # seconds
+    custom_game.launched_at = time.time() - 600  # seconds
 
     await custom_game.on_game_end()
     assert custom_game.validity == ValidityState.VALID
@@ -79,7 +80,7 @@ async def test_global_rating_higher_after_custom_game_win(custom_game: CustomGam
     old_mean = players[0].global_rating[0]
 
     await game.launch()
-    game.launched_at = time.time() - 60*20 # seconds
+    game.launched_at = time.time() - 60 * 20  # seconds
     await game.add_result(0, 0, 'victory', 5)
     await game.add_result(0, 1, 'defeat', -5)
     await game.on_game_end()

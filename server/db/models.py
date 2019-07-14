@@ -160,7 +160,6 @@ moderation_report = Table(
    Column('update_time',   TIMESTAMP,  nullable=False)
 )
 
-
 reported_user = Table(
    'reported_user', metadata,
    Column('id', Integer, primary_key=True),

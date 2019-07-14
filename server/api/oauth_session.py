@@ -9,10 +9,10 @@ from oauthlib.oauth2.rfc6749.errors import (InsecureTransportError,
 
 class OAuth2Session(object):
     def __init__(
-        self,
-        client_id,
-        client_secret: str,
-        token_url: str,
+            self,
+            client_id,
+            client_secret: str,
+            token_url: str,
     ) -> None:
         self.client_id = client_id
         self.client_secret = client_secret

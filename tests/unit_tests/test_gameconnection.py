@@ -26,9 +26,9 @@ def test_abort(game_connection: GameConnection, game: Game, players):
 
 
 async def test_handle_action_GameState_idle_adds_connection(
-    game: Game,
-    game_connection: GameConnection,
-    players
+        game: Game,
+        game_connection: GameConnection,
+        players
 ):
     players.joining.game = game
     game_connection.player = players.hosting
@@ -40,8 +40,8 @@ async def test_handle_action_GameState_idle_adds_connection(
 
 
 async def test_handle_action_GameState_idle_non_searching_player_aborts(
-    game_connection: GameConnection,
-    players
+        game_connection: GameConnection,
+        players
 ):
     game_connection.player = players.hosting
     game_connection.lobby = mock.Mock()
@@ -54,10 +54,10 @@ async def test_handle_action_GameState_idle_non_searching_player_aborts(
 
 
 async def test_handle_action_GameState_lobby_sends_HostGame(
-    game: Game,
-    game_connection: GameConnection,
-    loop,
-    players
+        game: Game,
+        game_connection: GameConnection,
+        loop,
+        players
 ):
     game_connection.player = players.hosting
     game.map_file_path = 'maps/some_map.zip'
@@ -71,9 +71,9 @@ async def test_handle_action_GameState_lobby_sends_HostGame(
 
 
 async def test_handle_action_GameState_lobby_calls_ConnectToHost(
-    game: Game,
-    game_connection: GameConnection,
-    players
+        game: Game,
+        game_connection: GameConnection,
+        players
 ):
     game_connection.send_message = mock.MagicMock()
     game_connection.connect_to_host = CoroMock()
@@ -91,9 +91,9 @@ async def test_handle_action_GameState_lobby_calls_ConnectToHost(
 
 
 async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
-    game: Game,
-    game_connection: GameConnection,
-    players
+        game: Game,
+        game_connection: GameConnection,
+        players
 ):
     game_connection.send_message = mock.MagicMock()
     game_connection.connect_to_host = CoroMock()
@@ -115,9 +115,9 @@ async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
 
 
 async def test_handle_action_GameState_launching_calls_launch(
-    game: Game,
-    game_connection: GameConnection,
-    players
+        game: Game,
+        game_connection: GameConnection,
+        players
 ):
     game_connection.player = players.hosting
     game_connection.game = game
@@ -129,7 +129,7 @@ async def test_handle_action_GameState_launching_calls_launch(
 
 
 async def test_handle_action_GameState_ended_calls_on_connection_lost(
-    game_connection: GameConnection
+        game_connection: GameConnection
 ):
     game_connection.on_connection_lost = CoroMock()
     await game_connection.handle_action('GameState', ['Ended'])
@@ -159,9 +159,9 @@ async def test_handle_action_GameMods_activated(game: Game, game_connection: Gam
 
 
 async def test_handle_action_GameMods_post_launch_updates_played_cache(
-    game: Game,
-    game_connection: GameConnection,
-    db_engine
+        game: Game,
+        game_connection: GameConnection,
+        db_engine
 ):
     game.launch = CoroMock()
     game.remove_game_connection = CoroMock()
@@ -170,7 +170,8 @@ async def test_handle_action_GameMods_post_launch_updates_played_cache(
     await game_connection.handle_action('GameState', ['Launching'])
 
     async with db_engine.acquire() as conn:
-        result = await conn.execute("select `played` from table_mod where uid=%s", ('EA040F8E-857A-4566-9879-0D37420A5B9D', ))
+        result = await conn.execute("select `played` from table_mod where uid=%s",
+                                    ('EA040F8E-857A-4566-9879-0D37420A5B9D',))
         row = await result.fetchone()
         assert 2 == row[0]
 
@@ -225,35 +226,44 @@ async def test_handle_action_TeamkillReport(game: Game, game_connection: GameCon
     await game_connection.handle_action('TeamkillReport', ['200', '2', 'Dostya', '3', 'Rhiza'])
 
     async with db_engine.acquire() as conn:
-        result = await conn.execute("select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=200", (game.id))
+        result = await conn.execute(
+            "select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=200",
+            (game.id))
         report = await result.fetchone()
         assert game.id == report["game_id"]
-        
-        reported_user_query = await conn.execute("select player_id from reported_user where report_id=%s", (report["id"]))
+
+        reported_user_query = await conn.execute("select player_id from reported_user where report_id=%s",
+                                                 (report["id"]))
         data = await reported_user_query.fetchone()
         assert data["player_id"] == 3
-        
-        
+
+
 async def test_handle_action_TeamkillReport_invalid_ids(game: Game, game_connection: GameConnection, db_engine):
     game.launch = CoroMock()
     await game_connection.handle_action('TeamkillReport', ['230', 0, 'Dostya', 0, 'Rhiza'])
 
     async with db_engine.acquire() as conn:
-        result = await conn.execute("select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=230", (game.id))
+        result = await conn.execute(
+            "select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=230",
+            (game.id))
         report = await result.fetchone()
         assert game.id == report["game_id"]
-        
-        reported_user_query = await conn.execute("select player_id from reported_user where report_id=%s", (report["id"]))
+
+        reported_user_query = await conn.execute("select player_id from reported_user where report_id=%s",
+                                                 (report["id"]))
         data = await reported_user_query.fetchone()
         assert data["player_id"] == 3
 
 
-async def test_handle_action_TeamkillReport_invalid_reporter_id_and_name(game: Game, game_connection: GameConnection, db_engine):
+async def test_handle_action_TeamkillReport_invalid_reporter_id_and_name(game: Game, game_connection: GameConnection,
+                                                                         db_engine):
     game.launch = CoroMock()
     await game_connection.handle_action('TeamkillReport', ['250', 0, 'Askaholic', 0, 'Rhiza'])
 
     async with db_engine.acquire() as conn:
-        result = await conn.execute("select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=250", game.id)
+        result = await conn.execute(
+            "select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=250",
+            game.id)
         report = await result.fetchone()
         assert report is None
 
@@ -276,7 +286,8 @@ async def test_handle_action_TeamkillHappened(game: Game, game_connection: GameC
     await game_connection.handle_action('TeamkillHappened', ['200', '2', 'Dostya', '3', 'Rhiza'])
 
     async with db_engine.acquire() as conn:
-        result = await conn.execute("select game_id from teamkills where victim=2 and teamkiller=3 and game_id=%s and gametime=200", (game.id))
+        result = await conn.execute(
+            "select game_id from teamkills where victim=2 and teamkiller=3 and game_id=%s and gametime=200", (game.id))
         row = await result.fetchone()
         assert game.id == row[0]
 
@@ -289,8 +300,8 @@ async def test_handle_action_TeamkillHappened_AI(game: Game, game_connection: Ga
 
 
 async def test_handle_action_GameResult_victory_ends_sim(
-    game: Game,
-    game_connection: GameConnection
+        game: Game,
+        game_connection: GameConnection
 ):
     game_connection.connect_to_host = CoroMock()
     await game_connection.handle_action('GameResult', [0, 'victory'])
@@ -300,8 +311,8 @@ async def test_handle_action_GameResult_victory_ends_sim(
 
 
 async def test_handle_action_GameResult_draw_ends_sim(
-    game: Game,
-    game_connection: GameConnection
+        game: Game,
+        game_connection: GameConnection
 ):
     game_connection.connect_to_host = CoroMock()
     await game_connection.handle_action('GameResult', [0, 'draw'])

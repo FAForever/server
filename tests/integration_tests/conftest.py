@@ -58,7 +58,7 @@ async def connect_client(server) -> QDataStreamProtocol:
 
 
 async def perform_login(
-    proto: QDataStreamProtocol, credentials: Tuple[str, str]
+        proto: QDataStreamProtocol, credentials: Tuple[str, str]
 ) -> None:
     login, pw = credentials
     pw_hash = hashlib.sha256(pw.encode('utf-8'))
@@ -74,7 +74,7 @@ async def perform_login(
 
 
 async def read_until(
-    proto: QDataStreamProtocol, pred: Callable[[Dict[str, Any]], bool]
+        proto: QDataStreamProtocol, pred: Callable[[Dict[str, Any]], bool]
 ) -> Dict[str, Any]:
     while True:
         msg = await proto.read_message()

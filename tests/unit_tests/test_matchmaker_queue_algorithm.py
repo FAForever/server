@@ -3,7 +3,7 @@ from server import config
 from server.matchmaker import Search, algorithm
 
 
-def p(mean: int, deviation: int, num_games: int=config.NEWBIE_MIN_GAMES+1, name=None):
+def p(mean: int, deviation: int, num_games: int = config.NEWBIE_MIN_GAMES + 1, name=None):
     " Make a player with the given ratings"
     player = mock.Mock()
     player.ladder_rating = (mean, deviation)

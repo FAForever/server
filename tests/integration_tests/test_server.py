@@ -98,7 +98,7 @@ async def test_player_info_broadcast(loop, lobby_server):
 
     await read_until(
         p2, lambda m: 'player_info' in m.values()
-        and any(map(lambda d: ('login', 'test') in d.items(), m['players']))
+                      and any(map(lambda d: ('login', 'test') in d.items(), m['players']))
     )
     p1.close()
     p2.close()
