@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest import mock
 from unittest.mock import Mock
 
@@ -15,7 +16,7 @@ from server.player_service import PlayerService
 from server.players import Player, PlayerState
 from server.protocol import QDataStreamProtocol
 from server.types import Address
-from sqlalchemy import and_, select
+from sqlalchemy import and_, select, text
 from tests import CoroMock
 
 
@@ -425,7 +426,120 @@ async def test_command_admin_closelobby_with_ban(mocker, lobbyconnection, db_eng
     assert bans[0] == 'Unit test'
 
 
+async def test_command_admin_closelobby_with_ban_but_already_banned(mocker, lobbyconnection, db_engine):
+    mocker.patch.object(lobbyconnection, 'protocol')
+    player = mocker.patch.object(lobbyconnection, 'player')
+    player.login = 'Sheeo'
+    player.id = 1
+    player.admin = True
+    banme = mock.Mock()
+    banme.id = 200
+    lobbyconnection.player_service = {1: player, banme.id: banme}
+    lobbyconnection._authenticated = True
+
+    async with db_engine.acquire() as conn:
+        result = await conn.execute(select([ban.c.id]).where(ban.c.player_id == banme.id))
+        previous_ban = await result.fetchone()
+
+    assert previous_ban is not None
+
+    await lobbyconnection.on_message_received({
+        'command': 'admin',
+        'action': 'closelobby',
+        'user_id': banme.id,
+        'ban': {
+            'reason': 'Unit test - already banned',
+            'duration': 1000
+        }
+    })
+
+    async with db_engine.acquire() as conn:
+        result = await conn.execute(select([ban.c.id]).where(ban.c.player_id == banme.id))
+
+        bans = [row['id'] async for row in result]
+
+    assert len(bans) == 1
+    assert bans[0] == previous_ban["id"]
+
+
+async def test_command_admin_closelobby_with_ban_duration_no_period(mocker, lobbyconnection, db_engine):
+    mocker.patch.object(lobbyconnection, 'protocol')
+    config = mocker.patch('server.lobbyconnection.config')
+    player = mocker.patch.object(lobbyconnection, 'player')
+    player.login = 'Sheeo'
+    player.id = 1
+    player.admin = True
+    banme = mock.Mock()
+    banme.id = 200
+    lobbyconnection.player_service = {1: player, banme.id: banme}
+    lobbyconnection._authenticated = True
+
+    # Clearing database of previous unwanted bans
+    async with db_engine.acquire() as conn:
+        await conn.execute(ban.delete().where(ban.c.player_id == banme.id))
+
+    mocker.patch('server.lobbyconnection.func.now', return_value=text('FROM_UNIXTIME(1000)'))
+    await lobbyconnection.on_message_received({
+        'command': 'admin',
+        'action': 'closelobby',
+        'user_id': banme.id,
+        'ban': {
+            'reason': 'Unit test - ban duration',
+            'duration': 3600*24
+        }
+    })
+
+    banme.lobby_connection.kick.assert_any_call(
+        message=("You were kicked from FAF by an administrator (Sheeo). "
+                 "Please refer to our rules for the lobby/game here {rule_link}."
+                 .format(rule_link=config.RULE_LINK))
+    )
+
+    async with db_engine.acquire() as conn:
+        result = await conn.execute(select([ban.c.expires_at]).where(ban.c.player_id == banme.id))
+
+        bans = [row['expires_at'] async for row in result]
+
+    assert len(bans) == 1
+    assert bans[0] == datetime.utcfromtimestamp(3600*24 + 1000)
+
+
 async def test_command_admin_closelobby_with_ban_bad_period(mocker, lobbyconnection, db_engine):
+    proto = mocker.patch.object(lobbyconnection, 'protocol')
+    player = mocker.patch.object(lobbyconnection, 'player')
+    player.admin = True
+    banme = mock.Mock()
+    banme.id = 1
+    lobbyconnection.player_service = {1: player, banme.id: banme}
+    lobbyconnection._authenticated = True
+
+    await lobbyconnection.on_message_received({
+        'command': 'admin',
+        'action': 'closelobby',
+        'user_id': banme.id,
+        'ban': {
+            'reason': 'Unit test',
+            'duration': 2,
+            'period': ') injected!'
+        }
+    })
+
+    banme.lobbyconnection.kick.assert_not_called()
+    proto.send_message.assert_called_once_with({
+        'command': 'notice',
+        'style': 'error',
+        'text': "Period ') INJECTED!' is not allowed!"
+    })
+
+    async with db_engine.acquire() as conn:
+        result = await conn.execute(select([ban]).where(ban.c.player_id == banme.id))
+
+        bans = [row['reason'] async for row in result]
+
+    assert len(bans) == 0
+
+
+async def test_command_admin_closelobby_with_ban_injection(mocker, lobbyconnection, db_engine):
     proto = mocker.patch.object(lobbyconnection, 'protocol')
     player = mocker.patch.object(lobbyconnection, 'player')
     player.admin = True

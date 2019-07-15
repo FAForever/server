@@ -14,6 +14,9 @@ class DummyConnection:
         def __exit__(self, a, b, c):
             pass
 
+    def timing(self, a, b, tags=None):
+        pass
+
     def gauge(self, a, b, delta=False):
         pass
 

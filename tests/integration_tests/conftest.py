@@ -23,7 +23,8 @@ def mock_games(mock_players):
 
 
 @pytest.fixture
-def ladder_service(game_service):
+def ladder_service(mocker, game_service):
+    mocker.patch('server.matchmaker.matchmaker_queue.config.QUEUE_POP_TIME_MAX', 1)
     return LadderService(game_service)
 
 
