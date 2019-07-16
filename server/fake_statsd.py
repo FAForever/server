@@ -20,7 +20,7 @@ class DummyConnection:
     def gauge(self, a, b, delta=False):
         pass
 
-    def incr(self, a):
+    def incr(self, a, tags=None):
         pass
 
     class unit:
