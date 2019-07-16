@@ -505,20 +505,7 @@ class LobbyConnection():
                 if not conforms_policy:
                     return
 
-            # Update the user's IRC registration (why the fuck is this here?!)
-            m = hashlib.md5()
-            m.update(password.encode())
-            passwordmd5 = m.hexdigest()
-            m = hashlib.md5()
-            # Since the password is hashed on the client, what we get at this point is really
-            # md5(md5(sha256(password))). This is entirely insane.
-            m.update(passwordmd5.encode())
-            irc_pass = "md5:" + str(m.hexdigest())
-
-            try:
-                await conn.execute("UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s", (irc_pass, login))
-            except (pymysql.OperationalError, pymysql.ProgrammingError):
-                self._logger.error("Failure updating NickServ password for %s", login)
+            await self.update_irc_password(conn, login, password)
 
         permission_group = self.player_service.get_permission_group(player_id)
         self.player = Player(
@@ -552,19 +539,16 @@ class LobbyConnection():
         self.sendJSON({
             "command": "welcome",
             "me": self.player.to_dict(),
-
             # For backwards compatibility for old clients. For now.
             "id": self.player.id,
             "login": login
         })
 
         # Tell player about everybody online. This must happen after "welcome".
-        self.sendJSON(
-            {
-                "command": "player_info",
-                "players": [player.to_dict() for player in self.player_service]
-            }
-        )
+        self.sendJSON({
+            "command": "player_info",
+            "players": [player.to_dict() for player in self.player_service]
+        })
 
         # Tell everyone else online about us. This must happen after all the player_info messages.
         # This ensures that no other client will perform an operation that interacts with the
@@ -597,11 +581,33 @@ class LobbyConnection():
         if self.player.clan is not None:
             channels.append("#%s_clan" % self.player.clan)
 
-        json_to_send = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
-        self.sendJSON(json_to_send)
+        self.sendJSON({
+            "command": "social",
+            "autojoin": channels,  # FIXME: Why are there two of these?
+            "channels": channels,
+            "friends": sorted(self.player.friends),
+            "foes": sorted(self.player.foes),
+            "power": permission_group
+        })
 
         self.send_mod_list()
         self.send_game_list()
+
+    async def update_irc_password(self, conn, login, password):
+        # Update the user's IRC registration (why the fuck is this here?!)
+        m = hashlib.md5()
+        m.update(password.encode())
+        passwordmd5 = m.hexdigest()
+        m = hashlib.md5()
+        # Since the password is hashed on the client, what we get at this point is really
+        # md5(md5(sha256(password))). This is entirely insane.
+        m.update(passwordmd5.encode())
+        irc_pass = "md5:" + str(m.hexdigest())
+
+        try:
+            await conn.execute("UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s", (irc_pass, login))
+        except (pymysql.OperationalError, pymysql.ProgrammingError):
+            self._logger.error("Failure updating NickServ password for %s", login)
 
     def command_restore_game_session(self, message):
         game_id = int(message.get('game_id'))
