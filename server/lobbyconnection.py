@@ -92,7 +92,7 @@ class LobbyConnection():
     def on_connection_made(self, protocol: QDataStreamProtocol, peername: Address):
         self.protocol = protocol
         self.peer_address = peername
-        server.stats.incr("server.connections")
+        server.stats.incr('server.connections')
 
     def abort(self, logspam=""):
         if self.player:
@@ -108,10 +108,12 @@ class LobbyConnection():
         if self.player:
             self.player_service.remove_player(self.player)
             self.player = None
+        server.stats.incr('server.connections.aborted')
 
     def ensure_authenticated(self, cmd):
         if not self._authenticated:
             if cmd not in ['hello', 'ask_session', 'create_account', 'ping', 'pong', 'Bottleneck']:  # Bottleneck is sent by the game during reconnect
+                server.stats.incr('server.received_messages.unauthenticated', tags={"command": cmd})
                 self.abort("Message invalid for unauthenticated connection: %s" % cmd)
                 return False
         return True
