@@ -20,6 +20,7 @@ oauthlib = "*"
 sqlalchemy = "*"
 twilio = "*"
 humanize = "*"
+pyjwt = "*"
 
 [dev-packages]
 pytest = "*"
