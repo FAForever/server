@@ -11,6 +11,8 @@ async def test_fetch_player_data(player_service):
     assert player.ladder_rating == (1300, 400)
     assert player.clan == '123'
     assert player.avatar == {'url': 'http://content.faforever.com/faf/avatars/UEF.png', 'tooltip': 'UEF'}
+    assert player.friends == {1, 51}
+    assert player.foes == {52}
 
 
 async def test_fetch_player_data_multiple_avatar(player_service):

@@ -8,7 +8,8 @@ from server.players import Player
 from sqlalchemy import and_, select
 
 from .db.models import (avatars, avatars_list, clan, clan_membership,
-                        global_rating, ladder1v1_rating, login)
+                        friends_and_foes, global_rating, ladder1v1_rating,
+                        login)
 
 
 @with_logger
@@ -92,6 +93,20 @@ class PlayerService:
             url, tooltip = row.get(avatars_list.c.url), row.get(avatars_list.c.tooltip)
             if url and tooltip:
                 player.avatar = {"url": url, "tooltip": tooltip}
+
+            result = await conn.execute(select([
+                friends_and_foes.c.subject_id, friends_and_foes.c.status
+            ]).where(friends_and_foes.c.user_id == player.id))
+
+            player.friends = set()
+            player.foes = set()
+            async for row in result:
+                status = row[friends_and_foes.c.status]
+                target_id = row[friends_and_foes.c.subject_id]
+                if status == "FRIEND":
+                    player.friends.add(target_id)
+                else:
+                    player.foes.add(target_id)
 
     def remove_player(self, player: Player):
         if player.id in self.players:

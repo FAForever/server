@@ -557,23 +557,6 @@ class LobbyConnection():
         # query it.
         self.player_service.mark_dirty(self.player)
 
-        friends = []
-        foes = []
-        async with db.engine.acquire() as conn:
-            result = await conn.execute(
-                "SELECT `subject_id`, `status` "
-                "FROM friends_and_foes WHERE user_id = %s", (self.player.id,))
-
-            async for row in result:
-                target_id, status = row["subject_id"], row["status"]
-                if status == "FRIEND":
-                    friends.append(target_id)
-                else:
-                    foes.append(target_id)
-
-        self.player.friends = set(friends)
-        self.player.foes = set(foes)
-
         channels = []
         if self.player.mod:
             channels.append("#moderators")

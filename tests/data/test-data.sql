@@ -60,7 +60,10 @@ insert into game_player_stats (gameId, playerId, AI, faction, color, team, place
 
 delete from friends_and_foes where user_id = 1 and subject_id = 2;
 insert into friends_and_foes (user_id, subject_id, status) values
-    (2, 1, 'FRIEND');
+    (2, 1, 'FRIEND'),
+    (50, 1, 'FRIEND'),
+    (50, 51, 'FRIEND'),
+    (50, 52, 'FOE');
 
 
 insert into `mod` (id, display_name, author) values
