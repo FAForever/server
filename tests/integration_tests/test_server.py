@@ -29,10 +29,20 @@ async def test_server_deprecated_client(lobby_server):
 
 async def test_server_invalid_login(loop, lobby_server):
     proto = await connect_client(lobby_server)
+    # Try a user that doesn't exist
     await perform_login(proto, ('Cat', 'epic'))
+    auth_failed_msg = {
+        'command': 'authentication_failed',
+        'text': 'Login not found or password incorrect. They are case sensitive.'
+    }
     msg = await proto.read_message()
-    assert msg == {'command': 'authentication_failed',
-                   'text': 'Login not found or password incorrect. They are case sensitive.'}
+    assert msg == auth_failed_msg
+
+    # Try a user that exists, but use the wrong password
+    await perform_login(proto, ('test', 'epic'))
+    msg = await proto.read_message()
+    assert msg == auth_failed_msg
+
     proto.close()
 
 

@@ -92,7 +92,7 @@ class LobbyConnection():
     def on_connection_made(self, protocol: QDataStreamProtocol, peername: Address):
         self.protocol = protocol
         self.peer_address = peername
-        server.stats.incr("server.connections")
+        server.stats.incr('server.connections')
 
     def abort(self, logspam=""):
         if self.player:
@@ -108,10 +108,12 @@ class LobbyConnection():
         if self.player:
             self.player_service.remove_player(self.player)
             self.player = None
+        server.stats.incr('server.connections.aborted')
 
     def ensure_authenticated(self, cmd):
         if not self._authenticated:
             if cmd not in ['hello', 'ask_session', 'create_account', 'ping', 'pong', 'Bottleneck']:  # Bottleneck is sent by the game during reconnect
+                server.stats.incr('server.received_messages.unauthenticated', tags={"command": cmd})
                 self.abort("Message invalid for unauthenticated connection: %s" % cmd)
                 return False
         return True
@@ -360,11 +362,13 @@ class LobbyConnection():
         auth_error_message = "Login not found or password incorrect. They are case sensitive."
         row = await result.fetchone()
         if not row:
+            server.stats.incr('user.logins', tags={'status': 'failure'})
             raise AuthenticationError(auth_error_message)
 
         player_id, real_username, dbPassword, steamid, create_time, ban_reason, ban_expiry = (row[i] for i in range(7))
 
         if dbPassword != password:
+            server.stats.incr('user.logins', tags={'status': 'failure'})
             raise AuthenticationError(auth_error_message)
 
         now = datetime.datetime.now()
@@ -485,7 +489,7 @@ class LobbyConnection():
 
         async with db.engine.acquire() as conn:
             player_id, login, steamid = await self.check_user_login(conn, login, password)
-            server.stats.incr('user.logins')
+            server.stats.incr('user.logins', tags={'status': 'success'})
             server.stats.gauge('users.online', len(self.player_service))
 
             await conn.execute(
@@ -760,7 +764,7 @@ class LobbyConnection():
             password=password
         )
         self.launch_game(game, is_host=True)
-        server.stats.incr('game.hosted')
+        server.stats.incr('game.hosted', tags={'game_mode': game_mode})
 
     def launch_game(self, game, is_host=False, use_map=None):
         # TODO: Fix setting up a ridiculous amount of cyclic pointers here
