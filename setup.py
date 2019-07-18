@@ -13,5 +13,7 @@ setup(
     author=server.__author__,
     author_email=server.__contact__,
     description='Lobby/game server project',
-    include_package_data=True
+    include_package_data=True, install_requires=['trueskill', 'aiohttp', 'aiocron', 'sqlalchemy', 'geoip2', 'maxminddb',
+                                                 'humanize', 'pymysql', 'semver', 'twilio', 'oauthlib', 'aiomeasures',
+                                                 'pytest', 'mock', 'docopt', 'aiomysql']
 )
