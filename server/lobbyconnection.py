@@ -525,8 +525,8 @@ class LobbyConnection():
             login=str(login),
             session=self.session,
             ip=self.peer_address.host,
-            id=player_id,
-            permissionGroup=permission_group,
+            player_id=player_id,
+            permission_group=permission_group,
             lobby_connection=self
         )
 

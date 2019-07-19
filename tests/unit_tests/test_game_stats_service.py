@@ -32,7 +32,7 @@ def game_stats_service(event_service, achievement_service):
 
 @pytest.fixture()
 def player():
-    player = Player(login="TestUser", id=42)
+    player = Player(login="TestUser", player_id=42)
     player._lobby_connection = MagicMock(spec=LobbyConnection)
     return player
 

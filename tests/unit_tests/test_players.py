@@ -59,12 +59,12 @@ def test_unlink_weakref():
     assert p.game is None
 
 def test_serialize():
-    p = Player(id=42,
+    p = Player(player_id=42,
                login='Something',
                global_rating=(1234, 68),
                ladder_rating=(1500, 230),
                clan='TOAST',
-               numGames=542)
+               num_games=542)
     assert p.to_dict() == {
                     "id": 42,
                     "login": 'Something',
