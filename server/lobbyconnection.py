@@ -118,7 +118,7 @@ class LobbyConnection():
 
     def ensure_authenticated(self, cmd):
         if not self._authenticated:
-            if cmd not in ['hello', 'ask_session', 'create_account', 'ping', 'pong', 'Bottleneck']:  # Bottleneck is sent by the game during reconnect
+            if cmd not in ['auth', 'hello', 'ask_session', 'create_account', 'ping', 'pong', 'Bottleneck']:  # Bottleneck is sent by the game during reconnect
                 server.stats.incr('server.received_messages.unauthenticated', tags={"command": cmd})
                 self.abort("Message invalid for unauthenticated connection: %s" % cmd)
                 return False

@@ -30,6 +30,7 @@ DB_NAME = os.getenv("FAF_DB_NAME", "faf")
 
 API_CLIENT_ID = os.getenv("API_CLIENT_ID", "client_id")
 API_CLIENT_SECRET = os.getenv("API_CLIENT_SECRET", "banana")
+API_JWT_PUBLIC_KEY = os.getenv("API_JWT_PUBLIC_KEY")
 API_TOKEN_URI = os.getenv("API_TOKEN_URI", "http://api.test.faforever.com/oauth/token")
 API_BASE_URL = os.getenv("API_BASE_URL", "http://api.test.faforever.com/")
 USE_API = os.getenv("USE_API", 'true').lower() == 'true'

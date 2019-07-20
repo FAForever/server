@@ -1,5 +1,9 @@
+from time import time
+
+import jwt
 import pytest
 from server import VisibilityState
+from tests import API_PRIV_KEY, API_PUB_KEY
 
 from .conftest import (connect_and_sign_in, connect_client, perform_login,
                        read_until, read_until_command)
@@ -69,6 +73,47 @@ async def test_server_valid_login(loop, lobby_server):
                           'number_of_games': 5},
                    'id': 1,
                    'login': 'test'}
+    lobby_server.close()
+    proto.close()
+    await lobby_server.wait_closed()
+
+
+async def test_server_valid_login_with_token(mocker, lobby_server):
+    mocker.patch('server.auth.mod.pub_key', API_PUB_KEY)
+    proto = await connect_client(lobby_server)
+    proto.send_message({
+        'command': 'auth',
+        'version': '1.0.0-dev',
+        'user_agent': 'faf-client',
+        'token': jwt.encode({
+          "user_id": 1,
+          "user_name": "test",
+          "scope": [],
+          "exp": int(time() + 10),
+          "authorities": [],
+          "non_locked": True,
+          "jti": "",
+          "client_id": ""
+        }, API_PRIV_KEY, algorithm='RS256').decode(),
+        'unique_id': 'some_id'
+    })
+    await proto.drain()
+
+    msg = await proto.read_message()
+    assert msg == {
+        'command': 'welcome',
+        'me': {
+            'clan': '678',
+            'country': '',
+            'global_rating': [2000.0, 125.0],
+            'id': 1,
+            'ladder_rating': [2000.0, 125.0],
+            'login': 'test',
+            'number_of_games': 5
+        },
+        'id': 1,
+        'login': 'test'
+    }
     lobby_server.close()
     proto.close()
     await lobby_server.wait_closed()
