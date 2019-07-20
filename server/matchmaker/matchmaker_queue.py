@@ -75,7 +75,7 @@ class MatchmakerQueue:
 
             self.game_service.mark_dirty(self)
 
-    def time_until_next_pop(self) -> int:
+    def time_until_next_pop(self) -> float:
         """ Calculate how long we should wait for the next queue to pop based
         on a moving average of the amount of people in the queue.
 
@@ -93,7 +93,7 @@ class MatchmakerQueue:
         x = mean(self.last_queue_amounts)
         self._logger.debug("Moving average of %s queue size: %f", self.queue_name, x)
         # Essentially y = max_time / (x+1) with a scale factor
-        return int(config.QUEUE_POP_TIME_MAX / (x / config.QUEUE_POP_TIME_SCALE_FACTOR + 1))
+        return config.QUEUE_POP_TIME_MAX / (x / config.QUEUE_POP_TIME_SCALE_FACTOR + 1)
 
     async def search(self, search: Search) -> None:
         """

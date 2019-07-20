@@ -1,7 +1,5 @@
 import asyncio
 
-from server import config
-
 from .conftest import connect_and_sign_in, read_until_command
 
 # Need to save the old sleep here otherwise the mocker recursively patches it
@@ -62,7 +60,7 @@ async def test_game_matchmaking(loop, lobby_server, mocker):
 
 async def test_matchmaker_info_message(lobby_server, mocker):
     mocker.patch('server.matchmaker.matchmaker_queue.time', return_value=1_562_000_000)
-    mocker.patch('server.matchmaker.matchmaker_queue.config.QUEUE_POP_TIME_MAX', return_value=1)
+    mocker.patch('server.matchmaker.matchmaker_queue.config.QUEUE_POP_TIME_MAX', 1)
 
     _, _, proto = await connect_and_sign_in(
         ('ladder1', 'ladder1'),
