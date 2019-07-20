@@ -4,59 +4,48 @@ import hashlib
 import html
 import json
 import random
+import re
 import urllib.parse
 import urllib.request
 from typing import Optional
 
 import aiohttp
-
 import humanize
 import pymysql
 import semver
 import server
 import server.db as db
-from sqlalchemy import and_, func, text
+from sqlalchemy import and_, func, text, select
 
 from . import config
 from .abc.base_game import GameConnectionState
+from .auth import mod as auth_mod
 from .config import FAF_POLICY_SERVER_BASE_URL, TRACE, TWILIO_TTL
 from .db.models import ban, friends_and_foes
+from .db.models import login as t_login
 from .decorators import timed, with_logger
+from .exceptions import AuthenticationError, ClientError
 from .game_service import GameService
 from .gameconnection import GameConnection
 from .games import GameState, VisibilityState
 from .geoip_service import GeoIpService
 from .ice_servers.coturn import CoturnHMAC
 from .ice_servers.nts import TwilioNTS
+from .ladder_service import LadderService
 from .matchmaker import Search
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import QDataStreamProtocol
 from .types import Address
-from .ladder_service import LadderService
-
-
-class ClientError(Exception):
-    """
-    Represents a ClientError
-
-    If recoverable is False, it is expected that the
-    connection be terminated immediately.
-    """
-    def __init__(self, message, recoverable=True, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.message = message
-        self.recoverable = recoverable
-
-
-class AuthenticationError(Exception):
-    def __init__(self, message, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.message = message
 
 
 @with_logger
 class LobbyConnection():
+
+    # Lazy loaded when __init__ is run
+    COMMAND_HANDLERS = {}
+    MODULES = [auth_mod]
+
     @timed()
     def __init__(
         self,
@@ -66,6 +55,9 @@ class LobbyConnection():
         geoip: GeoIpService,
         ladder_service: LadderService
     ):
+        if not self.COMMAND_HANDLERS:
+            self._load_command_handlers()
+
         self.geoip_service = geoip
         self.game_service = games
         self.player_service = players
@@ -87,6 +79,20 @@ class LobbyConnection():
     @property
     def authenticated(self):
         return self._authenticated
+
+    def _load_command_handlers(self):
+        R = re.compile(r"^command_([a-z_]+)$")
+        for meth in dir(self):
+            m = re.match(R, meth)
+            if not m:
+                continue
+
+            command = m.group(1)
+
+            self.COMMAND_HANDLERS[command] = getattr(LobbyConnection, meth)
+
+        for module in self.MODULES:
+            self.COMMAND_HANDLERS.update(module.command_handlers)
 
     @asyncio.coroutine
     def on_connection_made(self, protocol: QDataStreamProtocol, peername: Address):
@@ -141,23 +147,26 @@ class LobbyConnection():
                 raise ClientError("Your client version is no longer supported. Please update to the newest version: https://faforever.com")
                 return
 
-            handler = getattr(self, 'command_{}'.format(cmd))
+            handler = self.COMMAND_HANDLERS.get(cmd)
+            if not handler:
+                raise Exception(f"Invalid command {cmd}")
             if asyncio.iscoroutinefunction(handler):
-                await handler(message)
+                await handler(self, message)
             else:
-                handler(message)
+                handler(self, message)
         except AuthenticationError as ex:
-            self.protocol.send_message(
-                {'command': 'authentication_failed',
-                 'text': ex.message}
-            )
+            server.stats.incr('user.logins', tags={'status': 'failure'})
+            self.protocol.send_message({
+                'command': 'authentication_failed',
+                'text': ex.message
+            })
         except ClientError as ex:
             self._logger.warning("Client error: %s", ex.message)
-            self.protocol.send_message(
-                {'command': 'notice',
-                 'style': 'error',
-                 'text': ex.message}
-            )
+            self.protocol.send_message({
+                'command': 'notice',
+                'style': 'error',
+                'text': ex.message
+            })
             if not ex.recoverable:
                 self.abort(ex.message)
         except (KeyError, ValueError) as ex:
@@ -344,11 +353,10 @@ class LobbyConnection():
                     if player:
                         player.lobby_connection.sendJSON(dict(command="social", autojoin=[channel]))
 
-    async def check_user_login(self, conn, login, password):
+    async def check_user_login(self, conn, login, password) -> int:
         # TODO: Hash passwords server-side so the hashing actually *does* something.
         result = await conn.execute(
             "SELECT login.id as id,"
-            "login.login as username,"
             "login.password as password,"
             "login.steamid as steamid,"
             "login.create_time as create_time,"
@@ -362,32 +370,34 @@ class LobbyConnection():
         auth_error_message = "Login not found or password incorrect. They are case sensitive."
         row = await result.fetchone()
         if not row:
-            server.stats.incr('user.logins', tags={'status': 'failure'})
             raise AuthenticationError(auth_error_message)
 
-        player_id, real_username, dbPassword, steamid, create_time, ban_reason, ban_expiry = (row[i] for i in range(7))
+        player_id, dbPassword, steamid, create_time, ban_reason, ban_expiry = (row[i] for i in range(6))
 
         if dbPassword != password:
-            server.stats.incr('user.logins', tags={'status': 'failure'})
             raise AuthenticationError(auth_error_message)
 
         now = datetime.datetime.now()
 
         if ban_reason is not None and now < ban_expiry:
             self._logger.debug('Rejected login from banned user: %s, %s, %s', player_id, login, self.session)
+            server.stats.incr('user.logins', tags={'status': 'failure', 'reason': 'ban'})
             raise ClientError("You are banned from FAF for {}.\n Reason :\n {}".format(humanize.naturaldelta(ban_expiry-now), ban_reason), recoverable=False)
 
         # New accounts are prevented from playing if they didn't link to steam
 
         if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() > config.FORCE_STEAM_LINK_AFTER_DATE:
             self._logger.debug('Rejected login from new user: %s, %s, %s', player_id, login, self.session)
+            server.stats.incr('user.logins', tags={'status': 'failure', 'reason': 'steam_link'})
+            steamlink_url = config.WWW_URL + '/account/link'
             raise ClientError(
-                "Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on <a href='{steamlink_url}'>{steamlink_url}</a>.".format(steamlink_url=config.WWW_URL + '/account/link'),
-                recoverable=False)
+                "Unfortunately, you must currently link your account to Steam "
+                "in order to play Forged Alliance Forever. You can do so on "
+                f"<a href='{steamlink_url}'>{steamlink_url}</a>.",
+                recoverable=False
+            )
 
-        self._logger.debug("Login from: %s, %s, %s", player_id, login, self.session)
-
-        return player_id, real_username, steamid
+        return player_id
 
     def check_version(self, message):
         versionDB, updateFile = self.player_service.client_version_info
@@ -488,9 +498,25 @@ class LobbyConnection():
         password = message['password']
 
         async with db.engine.acquire() as conn:
-            player_id, login, steamid = await self.check_user_login(conn, login, password)
-            server.stats.incr('user.logins', tags={'status': 'success'})
-            server.stats.gauge('users.online', len(self.player_service))
+            player_id = await self.check_user_login(conn, login, password)
+
+        await self.on_player_login(player_id, message)
+
+    async def on_player_login(self, player_id: int, message):
+        async with db.engine.acquire() as conn:
+            result = await conn.execute(
+                select([t_login.c.login, t_login.c.password, t_login.c.steamid])
+                .where(t_login.c.id == player_id)
+            )
+            row = await result.fetchone()
+            assert row, "Inconsistent system state. Player should have been \
+                         validated, but was not found in the database!"
+
+            login = row[t_login.c.login]
+            password = row[t_login.c.password]
+            steamid = row[t_login.c.steamid]
+
+            self._logger.debug("Login from: %s, %s, %s", player_id, login, self.session)
 
             await conn.execute(
                 "UPDATE login SET ip = %(ip)s, user_agent = %(user_agent)s, last_login = NOW() WHERE id = %(player_id)s",
@@ -501,8 +527,13 @@ class LobbyConnection():
                 })
 
             if not self.player_service.is_uniqueid_exempt(player_id) and steamid is None:
-                conforms_policy = await self.check_policy_conformity(player_id, message['unique_id'], self.session)
+                conforms_policy = await self.check_policy_conformity(
+                    player_id, message['unique_id'], self.session
+                )
                 if not conforms_policy:
+                    server.stats.incr('user.logins', tags={
+                        'status': 'failure', 'reason': 'unique_id'
+                    })
                     return
 
             await self.update_irc_password(conn, login, password)
@@ -575,6 +606,8 @@ class LobbyConnection():
 
         self.send_mod_list()
         self.send_game_list()
+        server.stats.incr('user.logins', tags={'status': 'success'})
+        server.stats.gauge('users.online', len(self.player_service))
 
     async def update_irc_password(self, conn, login, password):
         # Update the user's IRC registration (why the fuck is this here?!)
