@@ -8,6 +8,7 @@ these should be put in the ``conftest.py'' relative to it.
 
 import asyncio
 import logging
+from typing import Iterable
 from unittest import mock
 
 import pytest
@@ -19,7 +20,6 @@ from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
 from tests import CoroMock
 from trueskill import Rating
-from typing import Iterable
 
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -89,17 +89,6 @@ def loop(request):
 
 
 @pytest.fixture
-def sqlquery():
-    query = mock.MagicMock()
-    query.exec_ = lambda: 0
-    query.size = lambda: 0
-    query.lastInsertId = lambda: 1
-    query.prepare = mock.MagicMock()
-    query.addBindValue = lambda v: None
-    return query
-
-
-@pytest.fixture
 def mock_db_engine(loop, db_engine):
     return db_engine
 
@@ -139,11 +128,6 @@ def test_data(db_engine, loop):
                 await conn.execute(f.read())
 
     loop.run_until_complete(load_data())
-
-
-@pytest.fixture
-def transport():
-    return mock.Mock(spec=asyncio.Transport)
 
 
 @pytest.fixture
@@ -285,5 +269,3 @@ def twilio_sid():
 @pytest.fixture
 def twilio_token():
     return "token_a"
-
-
