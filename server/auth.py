@@ -12,7 +12,7 @@ class AuthModule(Module):
     def __init__(self) -> None:
         super(AuthModule, self).__init__()
 
-        if not API_JWT_PUBLIC_KEY:
+        if not API_JWT_PUBLIC_KEY:  # pragma: no cover
             raise RuntimeError("API_JWT_PUBLIC_KEY must be set to use token authentication!")
         self.pub_key = API_JWT_PUBLIC_KEY
 

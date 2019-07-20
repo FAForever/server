@@ -64,23 +64,26 @@ async def test_server_valid_login(loop, lobby_server):
     proto = await connect_client(lobby_server)
     await perform_login(proto, ('test', 'test_password'))
     msg = await proto.read_message()
-    assert msg == {'command': 'welcome',
-                   'me': {'clan': '678',
-                          'country': '',
-                          'global_rating': [2000.0, 125.0],
-                          'id': 1,
-                          'ladder_rating': [2000.0, 125.0],
-                          'login': 'test',
-                          'number_of_games': 5},
-                   'id': 1,
-                   'login': 'test'}
+    assert msg == {
+        'command': 'welcome',
+        'me': {
+            'clan': '678',
+            'country': '',
+            'global_rating': [2000.0, 125.0],
+            'id': 1,
+            'ladder_rating': [2000.0, 125.0],
+            'login': 'test',
+            'number_of_games': 5
+        },
+        'id': 1,
+        'login': 'test'
+    }
     lobby_server.close()
     proto.close()
     await lobby_server.wait_closed()
 
 
-async def test_server_valid_login_with_token(mocker, lobby_server):
-    mocker.patch('server.auth.mod.pub_key', API_PUB_KEY)
+async def test_server_valid_login_with_token(lobby_server):
     proto = await connect_client(lobby_server)
     proto.send_message({
         'command': 'auth',
@@ -114,6 +117,56 @@ async def test_server_valid_login_with_token(mocker, lobby_server):
         },
         'id': 1,
         'login': 'test'
+    }
+    lobby_server.close()
+    proto.close()
+    await lobby_server.wait_closed()
+
+
+async def test_server_login_expired_token(lobby_server):
+    proto = await connect_client(lobby_server)
+    proto.send_message({
+        'command': 'auth',
+        'version': '1.0.0-dev',
+        'user_agent': 'faf-client',
+        'token': jwt.encode({
+            "user_id": 1,
+            "user_name": "test",
+            "exp": int(time() - 10)
+        }, API_PRIV_KEY, algorithm='RS256').decode(),
+        'unique_id': 'some_id'
+    })
+    await proto.drain()
+
+    msg = await proto.read_message()
+    assert msg == {
+        'command': 'authentication_failed',
+        'text': 'Token signature was invalid'
+    }
+    lobby_server.close()
+    proto.close()
+    await lobby_server.wait_closed()
+
+
+async def test_server_login_malformed_token(lobby_server):
+    """This scenario could only happen if the API somehow signed a token that
+    was missing critical data"""
+    proto = await connect_client(lobby_server)
+    proto.send_message({
+        'command': 'auth',
+        'version': '1.0.0-dev',
+        'user_agent': 'faf-client',
+        'token': jwt.encode(
+            {"exp": int(time() + 10)}, API_PRIV_KEY, algorithm='RS256'
+        ).decode(),
+        'unique_id': 'some_id'
+    })
+    await proto.drain()
+
+    msg = await proto.read_message()
+    assert msg == {
+        'command': 'authentication_failed',
+        'text': 'Token signature was invalid'
     }
     lobby_server.close()
     proto.close()
