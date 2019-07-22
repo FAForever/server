@@ -3,8 +3,14 @@ from jwt import InvalidTokenError
 
 from .config import API_JWT_PUBLIC_KEY
 from .core import Module
-from .exceptions import AuthenticationError
 from .decorators import with_logger
+from .exceptions import AuthenticationError
+
+
+def is_key(s: str):
+    if s.startswith("-----BEGIN") or s.startswith("ssh-rsa"):
+        return True
+    return False
 
 
 @with_logger
@@ -16,7 +22,10 @@ class AuthModule(Module):
 
         self.pub_key = API_JWT_PUBLIC_KEY
 
-        if API_JWT_PUBLIC_KEY and self.KEY_HEADER not in API_JWT_PUBLIC_KEY:
+        if not API_JWT_PUBLIC_KEY:
+            return
+
+        if not is_key(API_JWT_PUBLIC_KEY):
             with open(API_JWT_PUBLIC_KEY) as f:
                 self.pub_key = f.read()
 
@@ -26,6 +35,7 @@ mod = AuthModule()
 if mod.pub_key:
     @mod.route("auth")
     async def handle_auth(conn, message):
+        assert mod.pub_key
         token = message["token"]
         try:
             token = jwt.decode(token, mod.pub_key, algorithms="RS256")
@@ -33,7 +43,14 @@ if mod.pub_key:
         except (InvalidTokenError, KeyError):
             raise AuthenticationError("Token signature was invalid")
 
+
         await conn.on_player_login(user_id, message)
 else:  # pragma: no cover
     # Would need to set up tox in order to test this
     mod._logger.info("API_JWT_PUBLIC_KEY not set. Token authentication will be unavailable")
+
+
+def is_key(s: str):
+    if s.startswith("-----BEGIN") or s.startswith("ssh-rsa"):
+        return True
+    return False
