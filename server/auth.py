@@ -1,3 +1,6 @@
+import os
+from base64 import b64encode
+
 import jwt
 from jwt import InvalidTokenError
 
@@ -43,14 +46,12 @@ if mod.pub_key:
         except (InvalidTokenError, KeyError):
             raise AuthenticationError("Token signature was invalid")
 
-
-        await conn.on_player_login(user_id, message)
+        new_irc_password = b64encode(os.urandom(30)).decode()
+        conn.send({
+            "command": "irc_password",
+            "password": new_irc_password
+        })
+        await conn.on_player_login(user_id, new_irc_password, message)
 else:  # pragma: no cover
     # Would need to set up tox in order to test this
     mod._logger.info("API_JWT_PUBLIC_KEY not set. Token authentication will be unavailable")
-
-
-def is_key(s: str):
-    if s.startswith("-----BEGIN") or s.startswith("ssh-rsa"):
-        return True
-    return False

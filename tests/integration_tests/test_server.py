@@ -4,7 +4,7 @@ from time import time
 import jwt
 import pytest
 from server import VisibilityState
-from tests import API_PRIV_KEY, API_PUB_KEY
+from tests import API_PRIV_KEY
 
 from .conftest import (connect_and_sign_in, connect_client, perform_login,
                        read_until, read_until_command)
@@ -103,6 +103,8 @@ async def test_server_valid_login_with_token(lobby_server):
     })
     await proto.drain()
 
+    msg = await proto.read_message()
+    assert msg['command'] == 'irc_password'
     msg = await proto.read_message()
     assert msg == {
         'command': 'welcome',

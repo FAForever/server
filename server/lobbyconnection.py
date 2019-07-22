@@ -397,7 +397,7 @@ class LobbyConnection():
                 recoverable=False
             )
 
-        return player_id
+        return player_id, password
 
     def check_version(self, message):
         versionDB, updateFile = self.player_service.client_version_info
@@ -498,14 +498,14 @@ class LobbyConnection():
         password = message['password']
 
         async with db.engine.acquire() as conn:
-            player_id = await self.check_user_login(conn, login, password)
+            player_id, password = await self.check_user_login(conn, login, password)
 
-        await self.on_player_login(player_id, message)
+        await self.on_player_login(player_id, password, message)
 
-    async def on_player_login(self, player_id: int, message):
+    async def on_player_login(self, player_id: int, password: str, message):
         async with db.engine.acquire() as conn:
             result = await conn.execute(
-                select([t_login.c.login, t_login.c.password, t_login.c.steamid])
+                select([t_login.c.login, t_login.c.steamid])
                 .where(t_login.c.id == player_id)
             )
             row = await result.fetchone()
@@ -513,7 +513,6 @@ class LobbyConnection():
                          validated, but was not found in the database!"
 
             login = row[t_login.c.login]
-            password = row[t_login.c.password]
             steamid = row[t_login.c.steamid]
 
             self._logger.debug("Login from: %s, %s, %s", player_id, login, self.session)
