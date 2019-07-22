@@ -172,7 +172,7 @@ class LobbyConnection():
         except (KeyError, ValueError) as ex:
             self._logger.exception(ex)
             self.abort("Garbage command: {}".format(message))
-        except Exception as ex:  # pragma: no cover
+        except Exception as ex:
             self.protocol.send_message({'command': 'invalid'})
             self._logger.exception(ex)
             self.abort("Error processing command")
@@ -183,8 +183,7 @@ class LobbyConnection():
     def command_pong(self, msg):
         pass
 
-    @asyncio.coroutine
-    def command_create_account(self, message):
+    async def command_create_account(self, message):
         raise ClientError("FAF no longer supports direct registration. Please use the website to register.", recoverable=True)
 
     async def send_coop_maps(self):

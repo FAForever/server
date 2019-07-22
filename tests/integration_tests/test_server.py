@@ -200,6 +200,16 @@ async def test_server_double_login(loop, lobby_server):
     await lobby_server.wait_closed()
 
 
+async def test_server_invalid_command(lobby_server):
+    proto = await connect_client(lobby_server)
+    await perform_login(proto, ('test', 'test_password'))
+    proto.send_message({'command': 'this_is_an_invalid_command'})
+    await proto.drain()
+    msg = await read_until_command(proto, 'invalid')
+
+    assert msg == {'command': 'invalid'}
+
+
 async def test_player_info_broadcast(loop, lobby_server):
     p1 = await connect_client(lobby_server)
     p2 = await connect_client(lobby_server)
@@ -238,30 +248,42 @@ async def test_info_broadcast_authenticated(loop, lobby_server):
         assert False
 
 
-@pytest.mark.slow
-async def test_public_host(loop, lobby_server, player_service):
-    # TODO: This test can't fail, why is it here?
-    player_id, session, proto = await connect_and_sign_in(
+async def test_non_ice_client(lobby_server):
+    _, _, proto = await connect_and_sign_in(
         ('test', 'test_password'),
         lobby_server
     )
 
     await read_until(proto, lambda msg: msg['command'] == 'game_info')
 
-    with ClientTest(loop=loop, process_nat_packets=True, proto=proto) as client:
-        proto.send_message({
-            'command': 'game_host',
-            'mod': 'faf',
-            'visibility': VisibilityState.to_string(VisibilityState.PUBLIC)
-        })
-        await proto.drain()
+    proto.send_message({
+        'command': 'InitiateTest',
+        'target': 'connectivity'
+    })
+    await proto.drain()
+    msg = await proto.read_message()
 
-        client.send_GameState(['Idle'])
-        client.send_GameState(['Lobby'])
-        await client._proto.writer.drain()
+    assert msg == {
+        'command': 'notice',
+        'style': 'error',
+        'text': 'Your client version is no longer supported. Please update to the newest version: https://faforever.com'
+    }
 
 
-@pytest.mark.slow
+async def test_registration_deprecated(lobby_server):
+    proto = await connect_client(lobby_server)
+    
+    proto.send_message({'command': 'create_account'})
+    await proto.drain()
+    msg = await proto.read_message()
+
+    assert msg == {
+        'command': 'notice',
+        'style': 'error',
+        'text': 'FAF no longer supports direct registration. Please use the website to register.'
+    }
+
+
 async def test_host_missing_fields(loop, lobby_server, player_service):
     player_id, session, proto = await connect_and_sign_in(
         ('test', 'test_password'),
@@ -270,18 +292,17 @@ async def test_host_missing_fields(loop, lobby_server, player_service):
 
     await read_until(proto, lambda msg: msg['command'] == 'game_info')
 
-    with ClientTest(loop=loop, process_nat_packets=True, proto=proto) as client:
-        proto.send_message({
-            'command': 'game_host',
-            'mod': '',
-            'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
-            'title': ''
-        })
-        await proto.drain()
+    proto.send_message({
+        'command': 'game_host',
+        'mod': '',
+        'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
+        'title': ''
+    })
+    await proto.drain()
 
-        msg = await read_until(proto, lambda msg: msg['command'] == 'game_info')
+    msg = await read_until(proto, lambda msg: msg['command'] == 'game_info')
 
-        assert msg['title'] == 'test&#x27;s game'
-        assert msg['mapname'] == 'scmp_007'
-        assert msg['map_file_path'] == 'maps/scmp_007.zip'
-        assert msg['featured_mod'] == 'faf'
+    assert msg['title'] == 'test&#x27;s game'
+    assert msg['mapname'] == 'scmp_007'
+    assert msg['map_file_path'] == 'maps/scmp_007.zip'
+    assert msg['featured_mod'] == 'faf'

@@ -25,10 +25,7 @@ class AuthModule(Module):
 
         self.pub_key = API_JWT_PUBLIC_KEY
 
-        if not API_JWT_PUBLIC_KEY:
-            return
-
-        if not is_key(API_JWT_PUBLIC_KEY):
+        if API_JWT_PUBLIC_KEY and not is_key(API_JWT_PUBLIC_KEY):  # pragma: no cover
             with open(API_JWT_PUBLIC_KEY) as f:
                 self.pub_key = f.read()
 
