@@ -43,9 +43,8 @@ class Search:
         # This ensures that new players get matched broadly to
         # give the system a chance at placing them
         self._deviation_quality = {
-            450: 0.4,
-            350: 0.6,
-            300: 0.7,
+            350: 0.4,
+            300: 0.6,
             250: 0.75,
             0: 0.8
         }
