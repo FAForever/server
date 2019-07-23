@@ -3,16 +3,16 @@ import random
 from collections import deque
 from concurrent.futures import CancelledError, TimeoutError
 
+import mock
 import pytest
 import server.config as config
-from mock import Mock
 from server.matchmaker import MatchmakerQueue, Search
 from server.players import Player
 
 
 @pytest.fixture
 def matchmaker_queue(game_service):
-    return MatchmakerQueue('test_queue', game_service=Mock())
+    return MatchmakerQueue('test_queue', game_service=mock.Mock())
 
 
 @pytest.fixture
@@ -123,6 +123,22 @@ async def test_search_await(mocker, loop, matchmaker_players):
     assert await_coro.done()
 
 
+def test_queue_time_until_next_pop(matchmaker_queue):
+    q1 = matchmaker_queue
+    q2 = MatchmakerQueue('test_queue_2', game_service=mock.Mock())
+
+    assert q1.time_until_next_pop() == config.QUEUE_POP_TIME_MAX
+    q1.queue = [None] * 5
+    a1 = q1.time_until_next_pop()
+    assert a1 < config.QUEUE_POP_TIME_MAX
+    a2 = q1.time_until_next_pop()
+    # Should be strictly less because of the moving average
+    assert a2 < a1
+
+    # Make sure that queue moving averages are claculated independently
+    assert q2.time_until_next_pop() == config.QUEUE_POP_TIME_MAX
+
+
 async def test_queue_matches(matchmaker_queue):
     matches = [random.randrange(0, 1 << 20) for _ in range(20)]
     matchmaker_queue._matches = deque(matches)
@@ -155,8 +171,9 @@ async def test_queue_many(mocker, player_service, matchmaker_queue):
     s3 = Search([p3])
     matchmaker_queue.push(s1)
     matchmaker_queue.push(s2)
+    matchmaker_queue.push(s3)
 
-    await matchmaker_queue.search(s3)
+    matchmaker_queue.find_matches()
 
     assert not s1.is_matched
     assert s2.is_matched
@@ -170,11 +187,15 @@ async def test_queue_race(mocker, player_service, matchmaker_queue):
 
     player_service.players = {p1.id: p1, p2.id: p2, p3.id: p3}
 
+    async def find_matches():
+        await asyncio.sleep(0.01)
+        matchmaker_queue.find_matches()
     try:
         await asyncio.gather(
             asyncio.wait_for(matchmaker_queue.search(Search([p1])), 0.1),
             asyncio.wait_for(matchmaker_queue.search(Search([p2])), 0.1),
-            asyncio.wait_for(matchmaker_queue.search(Search([p3])), 0.1)
+            asyncio.wait_for(matchmaker_queue.search(Search([p3])), 0.1),
+            asyncio.ensure_future(find_matches())
         )
     except (TimeoutError, CancelledError):
         pass
@@ -208,8 +229,15 @@ async def test_queue_mid_cancel(mocker, player_service, matchmaker_queue, matchm
     asyncio.ensure_future(matchmaker_queue.search(s1))
     asyncio.ensure_future(matchmaker_queue.search(s2))
     s1.cancel()
+
+    async def find_matches():
+        await asyncio.sleep(0.01)
+        matchmaker_queue.find_matches()
     try:
-        await asyncio.wait_for(matchmaker_queue.search(s3), 0.1)
+        await asyncio.gather(
+            asyncio.wait_for(matchmaker_queue.search(s3), 0.1),
+            asyncio.ensure_future(find_matches())
+        )
     except CancelledError:
         pass
 

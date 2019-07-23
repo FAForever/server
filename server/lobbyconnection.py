@@ -92,7 +92,7 @@ class LobbyConnection():
     def on_connection_made(self, protocol: QDataStreamProtocol, peername: Address):
         self.protocol = protocol
         self.peer_address = peername
-        server.stats.incr("server.connections")
+        server.stats.incr('server.connections')
 
     def abort(self, logspam=""):
         if self.player:
@@ -108,10 +108,12 @@ class LobbyConnection():
         if self.player:
             self.player_service.remove_player(self.player)
             self.player = None
+        server.stats.incr('server.connections.aborted')
 
     def ensure_authenticated(self, cmd):
         if not self._authenticated:
             if cmd not in ['hello', 'ask_session', 'create_account', 'ping', 'pong', 'Bottleneck']:  # Bottleneck is sent by the game during reconnect
+                server.stats.incr('server.received_messages.unauthenticated', tags={"command": cmd})
                 self.abort("Message invalid for unauthenticated connection: %s" % cmd)
                 return False
         return True
@@ -282,7 +284,8 @@ class LobbyConnection():
                     if 'ban' in message:
                         reason = message['ban'].get('reason', 'Unspecified')
                         duration = int(message['ban'].get('duration', 1))
-                        period = message['ban'].get('period', 'DAY').upper()
+                        period = message['ban'].get('period', 'SECOND').upper()
+
                         self._logger.warning('Administrative action: %s closed client for %s with %s ban (Reason: %s)', self.player, player, duration, reason)
                         async with db.engine.acquire() as conn:
                             try:
@@ -292,7 +295,7 @@ class LobbyConnection():
                                 if row:
                                     ban_fail = row[0]
                                 else:
-                                    if period not in ["DAY", "WEEK", "MONTH"]:
+                                    if period not in ["SECOND", "DAY", "WEEK", "MONTH"]:
                                         self._logger.warning('Tried to ban player with invalid period')
                                         raise ClientError(f"Period '{period}' is not allowed!")
 
@@ -310,6 +313,7 @@ class LobbyConnection():
                                         ),
                                         duration=duration
                                     )
+
                             except pymysql.MySQLError as e:
                                 raise ClientError('Your ban attempt upset the database: {}'.format(e))
                     else:
@@ -358,11 +362,13 @@ class LobbyConnection():
         auth_error_message = "Login not found or password incorrect. They are case sensitive."
         row = await result.fetchone()
         if not row:
+            server.stats.incr('user.logins', tags={'status': 'failure'})
             raise AuthenticationError(auth_error_message)
 
         player_id, real_username, dbPassword, steamid, create_time, ban_reason, ban_expiry = (row[i] for i in range(7))
 
         if dbPassword != password:
+            server.stats.incr('user.logins', tags={'status': 'failure'})
             raise AuthenticationError(auth_error_message)
 
         now = datetime.datetime.now()
@@ -385,14 +391,25 @@ class LobbyConnection():
 
     def check_version(self, message):
         versionDB, updateFile = self.player_service.client_version_info
-        update_msg = dict(command="update",
-                          update=updateFile,
-                          new_version=versionDB)
+        update_msg = {
+            'command': 'update',
+            'update': updateFile,
+            'new_version': versionDB
+        }
 
         self.user_agent = message.get('user_agent')
         version = message.get('version')
         server.stats.gauge('user.agents.None', -1, delta=True)
         server.stats.gauge('user.agents.{}'.format(self.user_agent), 1, delta=True)
+
+        if not self.user_agent or 'downlords-faf-client' not in self.user_agent:
+            self.send_warning(
+                "You are using an unofficial client version! "
+                "Some features might not work as expected. "
+                "If you experience any problems please download the latest "
+                "version of the official client from "
+                f'<a href="{config.WWW_URL}">{config.WWW_URL}</a>'
+            )
 
         if not version or not self.user_agent:
             update_msg['command'] = 'welcome'
@@ -472,7 +489,7 @@ class LobbyConnection():
 
         async with db.engine.acquire() as conn:
             player_id, login, steamid = await self.check_user_login(conn, login, password)
-            server.stats.incr('user.logins')
+            server.stats.incr('user.logins', tags={'status': 'success'})
             server.stats.gauge('users.online', len(self.player_service))
 
             await conn.execute(
@@ -695,14 +712,6 @@ class LobbyConnection():
             self.ladder_service.cancel_search(self.player)
             return
 
-        async with db.engine.acquire() as conn:
-            result = await conn.execute("SELECT id FROM matchmaker_ban WHERE `userid` = %s", (self.player.id))
-            row = await result.fetchone()
-            if row:
-                self.sendJSON(dict(command="notice", style="error",
-                                   text="You are banned from the matchmaker. Contact an admin to have the reason."))
-                return
-
         if state == "start":
             assert self.player is not None
             # Faction can be either the name (e.g. 'uef') or the enum value (e.g. 1)
@@ -755,7 +764,7 @@ class LobbyConnection():
             password=password
         )
         self.launch_game(game, is_host=True)
-        server.stats.incr('game.hosted')
+        server.stats.incr('game.hosted', tags={'game_mode': game_mode})
 
     def launch_game(self, game, is_host=False, use_map=None):
         # TODO: Fix setting up a ridiculous amount of cyclic pointers here
@@ -797,7 +806,7 @@ class LobbyConnection():
                     try:
                         link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
                         thumbstr = ""
-                        if icon != "":
+                        if icon:
                             thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
 
                         out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
