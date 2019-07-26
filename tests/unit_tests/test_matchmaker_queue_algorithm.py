@@ -3,19 +3,19 @@ from server import config
 from server.matchmaker import Search, algorithm
 
 
-def p(mean: int, deviation: int, num_games: int=config.NEWBIE_MIN_GAMES+1, name=None):
-    " Make a player with the given ratings"
+def p(mean: int, deviation: int, ladder_games: int = config.NEWBIE_MIN_GAMES+1, name=None):
+    """Make a player with the given ratings"""
     player = mock.Mock()
     player.ladder_rating = (mean, deviation)
-    player.numGames = num_games
-    player.__repr__ = lambda self: name or f"p({self.ladder_rating}, {self.numGames})"
+    player.ladder_games = ladder_games
+    player.__repr__ = lambda self: name or f"p({self.ladder_rating}, {self.ladder_games})"
     return player
 
 
 def test_rank_all():
-    s1 = Search([p(1500, 500, num_games=0)])
-    s2 = Search([p(1500, 400, num_games=20)])
-    s3 = Search([p(2000, 300, num_games=50)])
+    s1 = Search([p(1500, 500, ladder_games=0)])
+    s2 = Search([p(1500, 400, ladder_games=20)])
+    s3 = Search([p(2000, 300, ladder_games=50)])
     searches = [s1, s2, s3]
 
     ranks = algorithm._rank_all(searches)

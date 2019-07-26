@@ -9,8 +9,8 @@ from tests import CoroMock
 
 
 async def test_start_game(ladder_service: LadderService, game_service: GameService):
-    p1 = mock.create_autospec(Player('Dostya', id=1))
-    p2 = mock.create_autospec(Player('Rhiza', id=2))
+    p1 = mock.create_autospec(Player('Dostya', player_id=1))
+    p2 = mock.create_autospec(Player('Rhiza', player_id=2))
 
     p1.id = 1
     p2.id = 2
@@ -24,8 +24,8 @@ async def test_start_game(ladder_service: LadderService, game_service: GameServi
 
 
 async def test_start_game_timeout(ladder_service: LadderService, game_service: GameService):
-    p1 = mock.create_autospec(Player('Dostya', id=1))
-    p2 = mock.create_autospec(Player('Rhiza', id=2))
+    p1 = mock.create_autospec(Player('Dostya', player_id=1))
+    p2 = mock.create_autospec(Player('Rhiza', player_id=2))
 
     p1.id = 1
     p2.id = 2
@@ -42,7 +42,7 @@ async def test_start_game_timeout(ladder_service: LadderService, game_service: G
 
 
 def test_inform_player(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', id=1))
+    p1 = mock.create_autospec(Player('Dostya', player_id=1))
     p1.ladder_rating = (1500, 500)
 
     ladder_service.inform_player(p1)
@@ -61,9 +61,9 @@ def test_inform_player(ladder_service: LadderService):
 
 
 async def test_start_and_cancel_search(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', id=1))
+    p1 = mock.create_autospec(Player('Dostya', player_id=1))
     p1.ladder_rating = (1500, 500)
-    p1.numGames = 0
+    p1.ladder_games = 0
 
     search = Search([p1])
 
@@ -81,9 +81,9 @@ async def test_start_and_cancel_search(ladder_service: LadderService):
 
 
 async def test_start_search_cancels_previous_search(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', id=1))
+    p1 = mock.create_autospec(Player('Dostya', player_id=1))
     p1.ladder_rating = (1500, 500)
-    p1.numGames = 0
+    p1.ladder_games = 0
 
     search1 = Search([p1])
 
@@ -104,10 +104,10 @@ async def test_start_search_cancels_previous_search(ladder_service: LadderServic
     assert ladder_service.queues['ladder1v1'].queue[search2]
 
 
-async def test_cancel_all_searchs(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', id=1))
+async def test_cancel_all_searches(ladder_service: LadderService):
+    p1 = mock.create_autospec(Player('Dostya', player_id=1))
     p1.ladder_rating = (1500, 500)
-    p1.numGames = 0
+    p1.ladder_games = 0
 
     search = Search([p1])
 
@@ -126,13 +126,13 @@ async def test_cancel_all_searchs(ladder_service: LadderService):
 
 
 async def test_cancel_twice(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', id=1))
+    p1 = mock.create_autospec(Player('Dostya', player_id=1))
     p1.ladder_rating = (1500, 500)
-    p1.numGames = 0
+    p1.ladder_games = 0
 
-    p2 = mock.create_autospec(Player('Brackman', id=1))
+    p2 = mock.create_autospec(Player('Brackman', player_id=1))
     p2.ladder_rating = (2000, 50)
-    p2.numGames = 0
+    p2.ladder_games = 0
 
     search = Search([p1])
     search2 = Search([p2])
@@ -154,13 +154,13 @@ async def test_cancel_twice(ladder_service: LadderService):
 
 
 async def test_start_game_called_on_match(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', id=1))
+    p1 = mock.create_autospec(Player('Dostya', player_id=1))
     p1.ladder_rating = (2300, 64)
-    p1.numGames = 0
+    p1.ladder_games = 0
 
-    p2 = mock.create_autospec(Player('QAI', id=4))
+    p2 = mock.create_autospec(Player('QAI', player_id=4))
     p2.ladder_rating = (2350, 125)
-    p2.numGames = 0
+    p2.ladder_games = 0
 
     ladder_service.start_game = CoroMock()
     ladder_service.inform_player = mock.Mock()
