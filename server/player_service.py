@@ -48,7 +48,8 @@ class PlayerService:
     def clear_dirty(self):
         self._dirty_players = set()
 
-    async def fetch_player_data(self, player):
+    @staticmethod
+    async def fetch_player_data(player):
         async with db.engine.acquire() as conn:
             sql = select([
                 avatars_list.c.url,
@@ -58,6 +59,7 @@ class PlayerService:
                 global_rating.c.numGames,
                 ladder1v1_rating.c.mean,
                 ladder1v1_rating.c.deviation,
+                ladder1v1_rating.c.numGames,
                 clan.c.tag
             ], use_labels=True).select_from(
                 login
@@ -87,6 +89,7 @@ class PlayerService:
                 row[ladder1v1_rating.c.mean],
                 row[ladder1v1_rating.c.deviation]
             )
+            player.ladder_games = row[ladder1v1_rating.c.numGames]
 
             player.clan = row.get(clan.c.tag)
 

@@ -37,7 +37,7 @@ if __name__ == '__main__':
     logger.setLevel(config.LOG_LEVEL)
 
     try:
-        def signal_handler(signal, frame):
+        def signal_handler():
             logger.info("Received signal, shutting down")
             if not done.done():
                 done.set_result(0)

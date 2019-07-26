@@ -17,21 +17,21 @@ def matchmaker_queue(game_service):
 
 @pytest.fixture
 def matchmaker_players():
-    return Player('Dostya',   id=1, ladder_rating=(2300, 64), numGames=(config.NEWBIE_MIN_GAMES+1)), \
-           Player('Brackman', id=2, ladder_rating=(1200, 72), numGames=(config.NEWBIE_MIN_GAMES+1)), \
-           Player('Zoidberg', id=3, ladder_rating=(1300, 175), numGames=(config.NEWBIE_MIN_GAMES+1)), \
-           Player('QAI',      id=4, ladder_rating=(2350, 125), numGames=(config.NEWBIE_MIN_GAMES+1)), \
-           Player('Rhiza',    id=5, ladder_rating=(1200, 175), numGames=(config.NEWBIE_MIN_GAMES+1)), \
-           Player('Newbie',   id=6, ladder_rating=(1200, 175), numGames=(config.NEWBIE_MIN_GAMES-1))
+    return Player('Dostya', player_id=1, ladder_rating=(2300, 64), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           Player('Brackman', player_id=2, ladder_rating=(1200, 72), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           Player('Zoidberg', player_id=3, ladder_rating=(1300, 175), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           Player('QAI', player_id=4, ladder_rating=(2350, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           Player('Rhiza', player_id=5, ladder_rating=(1200, 175), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           Player('Newbie', player_id=6, ladder_rating=(1200, 175), ladder_games=(config.NEWBIE_MIN_GAMES - 1))
 
 
 @pytest.fixture
 def matchmaker_players_all_match():
-    return Player('Dostya',   id=1, ladder_rating=(1500, 50), numGames=(config.NEWBIE_MIN_GAMES+1)), \
-           Player('Brackman', id=2, ladder_rating=(1500, 50), numGames=(config.NEWBIE_MIN_GAMES+1)), \
-           Player('Zoidberg', id=3, ladder_rating=(1500, 50), numGames=(config.NEWBIE_MIN_GAMES+1)), \
-           Player('QAI',      id=4, ladder_rating=(1500, 50), numGames=(config.NEWBIE_MIN_GAMES+1)), \
-           Player('Rhiza',    id=5, ladder_rating=(1500, 50), numGames=(config.NEWBIE_MIN_GAMES+1))
+    return Player('Dostya', player_id=1, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           Player('Brackman', player_id=2, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           Player('Zoidberg', player_id=3, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           Player('QAI', player_id=4, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           Player('Rhiza', player_id=5, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
 
 
 def test_newbie_min_games(mocker, loop, matchmaker_players):
@@ -161,9 +161,9 @@ async def test_shutdown_matchmaker(matchmaker_queue):
 
 
 async def test_queue_many(mocker, player_service, matchmaker_queue):
-    p1, p2, p3 = Player('Dostya', id=1, ladder_rating=(2200, 150), numGames=(config.NEWBIE_MIN_GAMES+1)), \
-                 Player('Brackman', id=2, ladder_rating=(1500, 150), numGames=(config.NEWBIE_MIN_GAMES+1)), \
-                 Player('Zoidberg', id=3, ladder_rating=(1500, 125), numGames=(config.NEWBIE_MIN_GAMES+1))
+    p1, p2, p3 = Player('Dostya', player_id=1, ladder_rating=(2200, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+                 Player('Brackman', player_id=2, ladder_rating=(1500, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+                 Player('Zoidberg', player_id=3, ladder_rating=(1500, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
 
     player_service.players = {p1.id: p1, p2.id: p2, p3.id: p3}
     s1 = Search([p1])
@@ -181,9 +181,9 @@ async def test_queue_many(mocker, player_service, matchmaker_queue):
 
 
 async def test_queue_race(mocker, player_service, matchmaker_queue):
-    p1, p2, p3 = Player('Dostya', id=1, ladder_rating=(2300, 150), numGames=(config.NEWBIE_MIN_GAMES+1)), \
-                 Player('Brackman', id=2, ladder_rating=(2200, 150), numGames=(config.NEWBIE_MIN_GAMES+1)), \
-                 Player('Zoidberg', id=3, ladder_rating=(2300, 125), numGames=(config.NEWBIE_MIN_GAMES+1))
+    p1, p2, p3 = Player('Dostya', player_id=1, ladder_rating=(2300, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+                 Player('Brackman', player_id=2, ladder_rating=(2200, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+                 Player('Zoidberg', player_id=3, ladder_rating=(2300, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
 
     player_service.players = {p1.id: p1, p2.id: p2, p3.id: p3}
 
