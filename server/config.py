@@ -64,8 +64,9 @@ LADDER_SEARCH_EXPANSION_MAX = float(os.getenv('LADDER_SEARCH_EXPANSION_MAX', 0.2
 
 # The maximum amount of time (in seconds) to wait if no one is searching.
 QUEUE_POP_TIME_MAX = int(os.getenv('QUEUE_POP_TIME_MAX', 60 * 3))
-# The number of searches in the queue required for the queue time to be cut in
-# half. See https://www.desmos.com/calculator/v3tdrjbqub.
-QUEUE_POP_TIME_SCALE_FACTOR = int(os.getenv('QUEUE_POP_TIME_SCALE_FACTOR', 20))
+# The number of players we would like to have in the queue when it pops. The
+# queue pop time will be adjusted based on the current rate of players queuing
+# to try and hit this number.
+QUEUE_POP_DESIRED_PLAYERS = int(os.getenv('QUEUE_POP_DESIRED_PLAYERS', 8))
 # How many previous queue sizes to consider
 QUEUE_POP_TIME_MOVING_AVG_SIZE = int(os.getenv('QUEUE_POP_TIME_MOVING_AVG_SIZE', 5))

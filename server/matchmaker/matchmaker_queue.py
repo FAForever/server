@@ -27,6 +27,7 @@ class MatchmakerQueue:
         self.queue: Dict[Search, Search] = OrderedDict()
         self._matches: Deque[Match] = deque()
         self.last_queue_amounts: Deque[int] = deque()
+        self.last_queue_times: Deque[float] = deque()
         self._is_running = True
         self._last_queue_pop = time()
         self.next_queue_pop = self._last_queue_pop + config.QUEUE_POP_TIME_MAX
@@ -58,7 +59,7 @@ class MatchmakerQueue:
             server.stats.gauge(f"matchmaker.queue.{self.queue_name}.players", len(self))
 
             self._last_queue_pop = time()
-            self.next_queue_pop = self._last_queue_pop + self.time_until_next_pop()
+            self.next_queue_pop = self._last_queue_pop + self.time_until_next_pop(len(self), time_remaining)
 
             self.find_matches()
             server.stats.gauge(f"matchmaker.queue.{self.queue_name}.matches", len(self._matches))
@@ -75,7 +76,7 @@ class MatchmakerQueue:
 
             self.game_service.mark_dirty(self)
 
-    def time_until_next_pop(self) -> float:
+    def time_until_next_pop(self, num_queued: int, time_queued: float) -> float:
         """ Calculate how long we should wait for the next queue to pop based
         on a moving average of the amount of people in the queue.
 
@@ -85,15 +86,34 @@ class MatchmakerQueue:
 
         for an exploration of possible functions.
         """
-        num_queued = len(self)
         self.last_queue_amounts.append(num_queued)
         if len(self.last_queue_amounts) > config.QUEUE_POP_TIME_MOVING_AVG_SIZE:
             self.last_queue_amounts.popleft()
 
-        x = mean(self.last_queue_amounts)
-        self._logger.debug("Moving average of %s queue size: %f", self.queue_name, x)
-        # Essentially y = max_time / (x+1) with a scale factor
-        return config.QUEUE_POP_TIME_MAX / (x / config.QUEUE_POP_TIME_SCALE_FACTOR + 1)
+        self.last_queue_times.append(time_queued)
+        if len(self.last_queue_times) > config.QUEUE_POP_TIME_MOVING_AVG_SIZE:
+            self.last_queue_times.popleft()
+
+        total_players = sum(self.last_queue_amounts)
+        if total_players < 1:
+            return config.QUEUE_POP_TIME_MAX
+
+        total_times = sum(self.last_queue_times)
+        if total_times:
+            self._logger.debug(
+                "Queue rate for %s: %f/s", self.queue_name,
+                total_players / total_times
+            )
+        # Obtained by solving $ NUM_PLAYERS = rate * time $ for time.
+        next_pop_time = config.QUEUE_POP_DESIRED_PLAYERS * total_times / total_players
+        if next_pop_time > config.QUEUE_POP_TIME_MAX:
+            self._logger.warning(
+                "Required time (%.2fs) for %s is larger than max pop time (%ds). "
+                "Consider increasing the max pop time",
+                next_pop_time, self.queue_name, config.QUEUE_POP_TIME_MAX
+            )
+            return config.QUEUE_POP_TIME_MAX
+        return next_pop_time
 
     async def search(self, search: Search) -> None:
         """

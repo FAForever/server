@@ -127,16 +127,24 @@ def test_queue_time_until_next_pop(matchmaker_queue):
     q1 = matchmaker_queue
     q2 = MatchmakerQueue('test_queue_2', game_service=mock.Mock())
 
-    assert q1.time_until_next_pop() == config.QUEUE_POP_TIME_MAX
-    q1.queue = [None] * 5
-    a1 = q1.time_until_next_pop()
-    assert a1 < config.QUEUE_POP_TIME_MAX
-    a2 = q1.time_until_next_pop()
-    # Should be strictly less because of the moving average
+    assert q1.time_until_next_pop(0, 0) == config.QUEUE_POP_TIME_MAX
+    # If the desired number of players is not reached within the maximum waiting
+    # time, then the next round must wait for the maximum allowed time as well.
+    a1 = q1.time_until_next_pop(
+        num_queued=config.QUEUE_POP_DESIRED_PLAYERS - 1,
+        time_queued=config.QUEUE_POP_TIME_MAX
+    )
+    assert a1 == config.QUEUE_POP_TIME_MAX
+
+    # If there are more players than expected, the time should drop
+    a2 = q1.time_until_next_pop(
+        num_queued=config.QUEUE_POP_DESIRED_PLAYERS * 2,
+        time_queued=config.QUEUE_POP_TIME_MAX
+    )
     assert a2 < a1
 
     # Make sure that queue moving averages are claculated independently
-    assert q2.time_until_next_pop() == config.QUEUE_POP_TIME_MAX
+    assert q2.time_until_next_pop(0, 0) == config.QUEUE_POP_TIME_MAX
 
 
 async def test_queue_matches(matchmaker_queue):
