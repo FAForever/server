@@ -48,7 +48,7 @@ def test_game_info_invalid():
 
 @pytest.fixture
 def mock_player():
-    return mock.create_autospec(Player(login='Dummy', id=42))
+    return mock.create_autospec(Player(login='Dummy', player_id=42))
 
 
 @pytest.fixture

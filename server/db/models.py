@@ -71,7 +71,7 @@ game_featuredMods = Table(
     'game_featuredMods', metadata,
     Column('id',            Integer,    primary_key=True),
     Column('gamemod',       String,     unique=True),
-    Column('descripiton',   Text,       nullable=False),
+    Column('description',   Text,       nullable=False),
     Column('name',          String,     nullable=False),
     Column('publish',       Boolean,    nullable=False, server_default='f'),
     Column('order',         Integer,    nullable=False, server_default='0'),

@@ -266,8 +266,8 @@ async def test_game_marked_dirty_when_timed_out(game: Game):
 async def test_clear_slot(game: Game, mock_game_connection: GameConnection):
     game.state = GameState.LOBBY
     players = [
-        Player(id=1, login='Dostya', global_rating=(1500, 500)),
-        Player(id=2, login='Rhiza', global_rating=(1500, 500))
+        Player(player_id=1, login='Dostya', global_rating=(1500, 500)),
+        Player(player_id=2, login='Rhiza', global_rating=(1500, 500))
     ]
     add_connected_players(game, players)
     game.set_ai_option('rush', 'StartSpot', 3)
@@ -519,7 +519,7 @@ async def test_persist_results_not_called_with_one_player(game):
 
     game.state = GameState.LOBBY
     players = [
-        Player(id=1, login='Dostya', global_rating=(1500, 500))
+        Player(player_id=1, login='Dostya', global_rating=(1500, 500))
     ]
     add_connected_players(game, players)
     await game.launch()
@@ -660,7 +660,7 @@ async def test_players_exclude_observers(game: Game):
     game.state = GameState.LOBBY
     players = add_players(game, 2)
 
-    obs = Player(id=3, login='Zoidberg', global_rating=(1500, 500))
+    obs = Player(player_id=3, login='Zoidberg', global_rating=(1500, 500))
 
     game.game_service.player_service[obs.id] = obs
     gc = make_mock_game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=obs)

@@ -30,7 +30,7 @@ class BaseGame:
     @abstractmethod
     def init_mode(self):
         """
-        The intialization mode to use for the Game
+        The initialization mode to use for the Game
         :rtype InitMode
         :return:
         """

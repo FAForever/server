@@ -11,7 +11,7 @@ from ..players import Player
 
 
 @with_logger
-class Search():
+class Search:
     """
     Represents the state of a users search for a match.
     """
@@ -25,7 +25,7 @@ class Search():
         """
         Default ctor for a search
 
-        :param player: player to use for searching
+        :param players: player to use for searching
         :param start_time: optional start time for the search
         :param rating_prop: 'ladder_rating' or 'global_rating'
         :return: the search object
@@ -43,28 +43,28 @@ class Search():
         # This ensures that new players get matched broadly to
         # give the system a chance at placing them
         self._deviation_quality = {
-            450: 0.4,
-            350: 0.6,
-            300: 0.7,
+            350: 0.4,
+            300: 0.6,
             250: 0.75,
             0: 0.8
         }
 
-    def adjusted_rating(self, player: Player):
+    @staticmethod
+    def adjusted_rating(player: Player):
         """
         Returns an adjusted mean with a simple linear interpolation between current mean and a specified base mean
         """
         mean, dev = player.ladder_rating
-        adjusted_mean = ((config.NEWBIE_MIN_GAMES - player.numGames) * config.NEWBIE_BASE_MEAN
-                         + player.numGames * mean) / config.NEWBIE_MIN_GAMES
-        return (adjusted_mean, dev)
+        adjusted_mean = ((config.NEWBIE_MIN_GAMES - player.ladder_games) * config.NEWBIE_BASE_MEAN
+                         + player.ladder_games * mean) / config.NEWBIE_MIN_GAMES
+        return adjusted_mean, dev
 
     @property
     def ratings(self):
         ratings = []
         for player, rating in zip(self.players, self.raw_ratings):
             # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
-            if player.numGames <= config.NEWBIE_MIN_GAMES and self.rating_prop == 'ladder_rating':
+            if player.ladder_games <= config.NEWBIE_MIN_GAMES and self.rating_prop == 'ladder_rating':
                 rating = self.adjusted_rating(player)
             ratings.append(rating)
         return ratings
@@ -80,9 +80,9 @@ class Search():
 
         These are the mean, rounded to nearest 10, +/- 200, assuming sigma <= 100
         """
-        # TODO: Figure out what do do with these boundaries
+        # TODO: Figure out what to do with these boundaries
         mu, _ = self.ratings[0]  # Takes the rating of the first player, only works for 1v1
-        rounded_mu = int(math.ceil(mu/10)*10)
+        rounded_mu = int(math.ceil(mu / 10) * 10)
         return rounded_mu - 200, rounded_mu + 200
 
     @property
@@ -92,9 +92,9 @@ class Search():
 
         These are the mean, rounded to nearest 10, +/- 100, assuming sigma <= 200
         """
-        # TODO: Figure out what do do with these boundaries
+        # TODO: Figure out what to do with these boundaries
         mu, _ = self.ratings[0]  # Takes the rating of the first player, only works for 1v1
-        rounded_mu = int(math.ceil(mu/10)*10)
+        rounded_mu = int(math.ceil(mu / 10) * 10)
         return rounded_mu - 100, rounded_mu + 100
 
     @property
@@ -174,19 +174,19 @@ class Search():
     def match(self, other: 'Search'):
         """
         Mark as matched with given opponent
-        :param opponent:
+        :param other:
         :return:
         """
         self._logger.info("Matched %s with %s", self.players, other.players)
 
         for player, raw_rating in zip(self.players, self.raw_ratings):
-            numgames = player.numGames
-            if numgames <= config.NEWBIE_MIN_GAMES:
+            ladder_games = player.ladder_games
+            if ladder_games <= config.NEWBIE_MIN_GAMES:
                 mean, dev = raw_rating
                 adjusted_mean = self.adjusted_rating(player)
-                self._logger.info('Adjusted mean rating for {player} with {numgames} games from {mean} to {adjusted_mean}'.format(
+                self._logger.info('Adjusted mean rating for {player} with {ladder_games} games from {mean} to {adjusted_mean}'.format(
                     player=player,
-                    numgames=numgames,
+                    ladder_games=ladder_games,
                     mean=mean,
                     adjusted_mean=adjusted_mean
                 ))
