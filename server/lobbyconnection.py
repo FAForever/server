@@ -15,14 +15,13 @@ import pymysql
 import semver
 import server
 import server.db as db
-from sqlalchemy import and_, select
+from sqlalchemy import select
 
 from . import config
 from .abc.base_game import GameConnectionState
-from .admin import mod as admin_mod
-from .auth import mod as auth_mod
+from .admin import mod as mod_admin
+from .auth import mod as mod_auth
 from .config import FAF_POLICY_SERVER_BASE_URL, TRACE, TWILIO_TTL
-from .db.models import friends_and_foes
 from .db.models import login as t_login
 from .decorators import timed, with_logger
 from .exceptions import AuthenticationError, ClientError
@@ -37,6 +36,7 @@ from .matchmaker import Search
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import QDataStreamProtocol
+from .social import mod as mod_social
 from .types import Address
 
 
@@ -45,7 +45,7 @@ class LobbyConnection():
 
     # Lazy loaded when __init__ is run
     COMMAND_HANDLERS = {}
-    MODULES = [auth_mod, admin_mod]
+    MODULES = [mod_admin, mod_auth, mod_social]
 
     @timed()
     def __init__(
@@ -228,38 +228,6 @@ class LobbyConnection():
             'command': 'game_info',
             'games': [game.to_dict() for game in self.game_service.open_games]
         })
-
-    async def command_social_remove(self, message):
-        if "friend" in message:
-            subject_id = message["friend"]
-        elif "foe" in message:
-            subject_id = message["foe"]
-        else:
-            self.abort("No-op social_remove.")
-            return
-
-        async with db.engine.acquire() as conn:
-            await conn.execute(friends_and_foes.delete().where(and_(
-                friends_and_foes.c.user_id == self.player.id,
-                friends_and_foes.c.subject_id == subject_id
-            )))
-
-    async def command_social_add(self, message):
-        if "friend" in message:
-            status = "FRIEND"
-            subject_id = message["friend"]
-        elif "foe" in message:
-            status = "FOE"
-            subject_id = message["foe"]
-        else:
-            return
-
-        async with db.engine.acquire() as conn:
-            await conn.execute(friends_and_foes.insert().values(
-                user_id=self.player.id,
-                status=status,
-                subject_id=subject_id,
-            ))
 
     def kick(self, message=None):
         self.sendJSON({"command": "notice", "style": "kick"})
@@ -576,38 +544,6 @@ class LobbyConnection():
                 "command": "session",
                 "session": self.session
             })
-
-    async def command_avatar(self, message):
-        action = message['action']
-
-        if action == "list_avatar":
-            avatarList = []
-
-            async with db.engine.acquire() as conn:
-                result = await conn.execute(
-                    "SELECT url, tooltip FROM `avatars` "
-                    "LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = %s", (self.player.id,))
-
-                async for row in result:
-                    avatar = {"url": row["url"], "tooltip": row["tooltip"]}
-                    avatarList.append(avatar)
-
-                if avatarList:
-                    self.sendJSON({"command": "avatar", "avatarlist": avatarList})
-
-        elif action == "select":
-            avatar = message['avatar']
-
-            async with db.engine.acquire() as conn:
-                await conn.execute(
-                    "UPDATE `avatars` SET `selected` = 0 WHERE `idUser` = %s", (self.player.id, ))
-                if avatar is not None:
-                    await conn.execute(
-                        "UPDATE `avatars` SET `selected` = 1 WHERE `idAvatar` ="
-                        "(SELECT id FROM avatars_list WHERE avatars_list.url = %s) and "
-                        "`idUser` = %s", (avatar, self.player.id))
-        else:
-            raise KeyError('invalid action')
 
     @timed
     def command_game_join(self, message):

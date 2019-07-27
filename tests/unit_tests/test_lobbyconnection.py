@@ -620,8 +620,10 @@ async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection, moc
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
     lobbyconnection.player = mock_player
     lobbyconnection.player.id = 2  # Dostya test user
+    lobbyconnection._authenticated = True
 
-    await lobbyconnection.command_avatar({
+    await lobbyconnection.on_message_received({
+        'command': 'avatar',
         'action': 'list_avatar'
     })
 
