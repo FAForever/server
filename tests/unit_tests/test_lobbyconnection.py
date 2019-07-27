@@ -367,15 +367,16 @@ async def test_send_coop_maps(mocker, lobbyconnection):
 async def test_command_admin_closelobby(mocker, lobbyconnection):
     mocker.patch.object(lobbyconnection, 'protocol')
     mocker.patch.object(lobbyconnection, '_logger')
-    config = mocker.patch('server.lobbyconnection.config')
+    config = mocker.patch('server.admin.config')
     player = mocker.patch.object(lobbyconnection, 'player')
     player.login = 'Sheeo'
     player.admin = True
     tuna = mock.Mock()
     tuna.id = 55
     lobbyconnection.player_service = {1: player, 55: tuna}
+    lobbyconnection._authenticated = True
 
-    await lobbyconnection.command_admin({
+    await lobbyconnection.on_message_received({
         'command': 'admin',
         'action': 'closelobby',
         'user_id': 55
@@ -390,7 +391,7 @@ async def test_command_admin_closelobby(mocker, lobbyconnection):
 
 async def test_command_admin_closelobby_with_ban(mocker, lobbyconnection, db_engine):
     mocker.patch.object(lobbyconnection, 'protocol')
-    config = mocker.patch('server.lobbyconnection.config')
+    config = mocker.patch('server.admin.config')
     player = mocker.patch.object(lobbyconnection, 'player')
     player.login = 'Sheeo'
     player.id = 1
@@ -464,7 +465,7 @@ async def test_command_admin_closelobby_with_ban_but_already_banned(mocker, lobb
 
 async def test_command_admin_closelobby_with_ban_duration_no_period(mocker, lobbyconnection, db_engine):
     mocker.patch.object(lobbyconnection, 'protocol')
-    config = mocker.patch('server.lobbyconnection.config')
+    config = mocker.patch('server.admin.config')
     player = mocker.patch.object(lobbyconnection, 'player')
     player.login = 'Sheeo'
     player.id = 1
@@ -478,7 +479,7 @@ async def test_command_admin_closelobby_with_ban_duration_no_period(mocker, lobb
     async with db_engine.acquire() as conn:
         await conn.execute(ban.delete().where(ban.c.player_id == banme.id))
 
-    mocker.patch('server.lobbyconnection.func.now', return_value=text('FROM_UNIXTIME(1000)'))
+    mocker.patch('server.admin.func.now', return_value=text('FROM_UNIXTIME(1000)'))
     await lobbyconnection.on_message_received({
         'command': 'admin',
         'action': 'closelobby',
@@ -577,7 +578,7 @@ async def test_command_admin_closelobby_with_ban_injection(mocker, lobbyconnecti
 async def test_command_admin_closeFA(mocker, lobbyconnection):
     mocker.patch.object(lobbyconnection, 'protocol')
     mocker.patch.object(lobbyconnection, '_logger')
-    config = mocker.patch('server.lobbyconnection.config')
+    config = mocker.patch('server.admin.config')
     player = mocker.patch.object(lobbyconnection, 'player')
     player.login = 'Sheeo'
     player.admin = True
@@ -703,8 +704,9 @@ async def test_broadcast(lobbyconnection: LobbyConnection, mocker):
     tuna = mock.Mock()
     tuna.id = 55
     lobbyconnection.player_service = [player, tuna]
+    lobbyconnection._authenticated = True
 
-    await lobbyconnection.command_admin({
+    await lobbyconnection.on_message_received({
         'command': 'admin',
         'action': 'broadcast',
         'message': "This is a test message"

@@ -15,13 +15,14 @@ import pymysql
 import semver
 import server
 import server.db as db
-from sqlalchemy import and_, func, text, select
+from sqlalchemy import and_, select
 
 from . import config
 from .abc.base_game import GameConnectionState
+from .admin import mod as admin_mod
 from .auth import mod as auth_mod
 from .config import FAF_POLICY_SERVER_BASE_URL, TRACE, TWILIO_TTL
-from .db.models import ban, friends_and_foes
+from .db.models import friends_and_foes
 from .db.models import login as t_login
 from .decorators import timed, with_logger
 from .exceptions import AuthenticationError, ClientError
@@ -44,7 +45,7 @@ class LobbyConnection():
 
     # Lazy loaded when __init__ is run
     COMMAND_HANDLERS = {}
-    MODULES = [auth_mod]
+    MODULES = [auth_mod, admin_mod]
 
     @timed()
     def __init__(
@@ -261,96 +262,13 @@ class LobbyConnection():
             ))
 
     def kick(self, message=None):
-        self.sendJSON(dict(command="notice", style="kick"))
+        self.sendJSON({"command": "notice", "style": "kick"})
         if message:
-            self.sendJSON(dict(command="notice", style="info",
-                                                  text=message))
+            self.sendJSON({"command": "notice", "style": "info", "text": "message"})
         self.abort()
 
     def send_updated_achievements(self, updated_achievements):
         self.sendJSON(dict(command="updated_achievements", updated_achievements=updated_achievements))
-
-    async def command_admin(self, message):
-        action = message['action']
-
-        if self.player.admin:
-            if action == "closeFA":
-                player = self.player_service[message['user_id']]
-                if player:
-                    self._logger.warning('Administrative action: %s closed game for %s', self.player, player)
-                    player.lobby_connection.sendJSON(dict(command="notice", style="kill"))
-                    player.lobby_connection.sendJSON(dict(command="notice", style="info",
-                                       text=("Your game was closed by an administrator ({admin_name}). "
-                                             "Please refer to our rules for the lobby/game here {rule_link}."
-                                       .format(admin_name=self.player.login,
-                                               rule_link=config.RULE_LINK))))
-
-            elif action == "closelobby":
-                player = self.player_service[message['user_id']]
-                ban_fail = None
-                if player:
-                    if 'ban' in message:
-                        reason = message['ban'].get('reason', 'Unspecified')
-                        duration = int(message['ban'].get('duration', 1))
-                        period = message['ban'].get('period', 'SECOND').upper()
-
-                        self._logger.warning('Administrative action: %s closed client for %s with %s ban (Reason: %s)', self.player, player, duration, reason)
-                        async with db.engine.acquire() as conn:
-                            try:
-                                result = await conn.execute("SELECT reason from lobby_ban WHERE idUser=%s AND expires_at > NOW()", (message['user_id']))
-
-                                row = await result.fetchone()
-                                if row:
-                                    ban_fail = row[0]
-                                else:
-                                    if period not in ["SECOND", "DAY", "WEEK", "MONTH"]:
-                                        self._logger.warning('Tried to ban player with invalid period')
-                                        raise ClientError(f"Period '{period}' is not allowed!")
-
-                                    # NOTE: Text formatting in sql string is only ok because we just checked it's value
-                                    await conn.execute(
-                                        ban.insert().values(
-                                            player_id=player.id,
-                                            author_id=self.player.id,
-                                            reason=reason,
-                                            expires_at=func.date_add(
-                                                func.now(),
-                                                text(f"interval :duration {period}")
-                                            ),
-                                            level='GLOBAL'
-                                        ),
-                                        duration=duration
-                                    )
-
-                            except pymysql.MySQLError as e:
-                                raise ClientError('Your ban attempt upset the database: {}'.format(e))
-                    else:
-                        self._logger.warning('Administrative action: %s closed client for %s', self.player, player)
-                    player.lobby_connection.kick(
-                        message=("You were kicked from FAF by an administrator ({admin_name}). "
-                         "Please refer to our rules for the lobby/game here {rule_link}."
-                          .format(admin_name=self.player.login,
-                                  rule_link=config.RULE_LINK)))
-                    if ban_fail:
-                        raise ClientError("Kicked the player, but he was already banned!")
-
-            elif action == "broadcast":
-                for player in self.player_service:
-                    try:
-                        if player.lobby_connection:
-                            player.lobby_connection.send_warning(message.get('message'))
-                    except Exception as ex:
-                        self._logger.debug("Could not send broadcast message to %s: %s".format(player, ex))
-
-        elif self.player.mod:
-            if action == "join_channel":
-                user_ids = message['user_ids']
-                channel = message['channel']
-
-                for user_id in user_ids:
-                    player = self.player_service[message[user_id]]
-                    if player:
-                        player.lobby_connection.sendJSON(dict(command="social", autojoin=[channel]))
 
     async def check_user_login(self, conn, login, password) -> int:
         # TODO: Hash passwords server-side so the hashing actually *does* something.
