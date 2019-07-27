@@ -153,12 +153,17 @@ class QDataStreamProtocol(Protocol):
         self.writer.close()
 
     def send_message(self, message: dict):
-        self.writer.write(self.pack_message(json.dumps(message)))
+        self.writer.write(
+            self.pack_message(json.dumps(message, separators=(',', ':')))
+        )
         server.stats.incr('server.sent_messages')
 
     def send_messages(self, messages):
         server.stats.incr('server.sent_messages')
-        payload = [self.pack_message(json.dumps(msg)) for msg in messages]
+        payload = [
+            self.pack_message(json.dumps(msg, separators=(',', ':')))
+            for msg in messages
+        ]
         self.writer.writelines(payload)
 
     def send_raw(self, data):

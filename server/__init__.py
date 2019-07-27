@@ -62,7 +62,7 @@ def encode_message(message: str):
 
 
 def encode_dict(d: Dict[Any, Any]):
-    return encode_message(json.dumps(d))
+    return encode_message(json.dumps(d, separators=(',', ':')))
 
 
 def encode_players(players):
