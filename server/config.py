@@ -62,8 +62,8 @@ LADDER_SEARCH_EXPANSION_START = int(os.getenv('LADDER_SEARCH_EXPANSION_START', 6
 LADDER_SEARCH_EXPANSION_END = int(os.getenv('LADDER_SEARCH_EXPANSION_END', 60 * 20))
 LADDER_SEARCH_EXPANSION_MAX = float(os.getenv('LADDER_SEARCH_EXPANSION_MAX', 0.25))
 
-# The maximum amount of time (in seconds) to wait if no one is searching.
-QUEUE_POP_TIME_MAX = int(os.getenv('QUEUE_POP_TIME_MAX', 60 * 3))
+# The maximum amount of time (in seconds) to wait between pops.
+QUEUE_POP_TIME_MAX = int(os.getenv('QUEUE_POP_TIME_MAX', 60 * 5))
 # The number of players we would like to have in the queue when it pops. The
 # queue pop time will be adjusted based on the current rate of players queuing
 # to try and hit this number.
