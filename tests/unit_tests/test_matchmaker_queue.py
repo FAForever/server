@@ -6,7 +6,7 @@ from concurrent.futures import CancelledError, TimeoutError
 import mock
 import pytest
 import server.config as config
-from server.matchmaker import MatchmakerQueue, Search
+from server.matchmaker import MatchmakerQueue, PopTimer, Search
 from server.players import Player
 
 
@@ -124,27 +124,27 @@ async def test_search_await(mocker, loop, matchmaker_players):
 
 
 def test_queue_time_until_next_pop(matchmaker_queue):
-    q1 = matchmaker_queue
-    q2 = MatchmakerQueue('test_queue_2', game_service=mock.Mock())
+    t1 = PopTimer("test_1")
+    t2 = PopTimer("test_2")
 
-    assert q1.time_until_next_pop(0, 0) == config.QUEUE_POP_TIME_MAX
+    assert t1.time_until_next_pop(0, 0) == config.QUEUE_POP_TIME_MAX
     # If the desired number of players is not reached within the maximum waiting
     # time, then the next round must wait for the maximum allowed time as well.
-    a1 = q1.time_until_next_pop(
+    a1 = t1.time_until_next_pop(
         num_queued=config.QUEUE_POP_DESIRED_PLAYERS - 1,
         time_queued=config.QUEUE_POP_TIME_MAX
     )
     assert a1 == config.QUEUE_POP_TIME_MAX
 
     # If there are more players than expected, the time should drop
-    a2 = q1.time_until_next_pop(
+    a2 = t1.time_until_next_pop(
         num_queued=config.QUEUE_POP_DESIRED_PLAYERS * 2,
         time_queued=config.QUEUE_POP_TIME_MAX
     )
     assert a2 < a1
 
-    # Make sure that queue moving averages are claculated independently
-    assert q2.time_until_next_pop(0, 0) == config.QUEUE_POP_TIME_MAX
+    # Make sure that queue moving averages are calculated independently
+    assert t2.time_until_next_pop(0, 0) == config.QUEUE_POP_TIME_MAX
 
 
 async def test_queue_matches(matchmaker_queue):
