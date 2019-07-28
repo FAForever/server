@@ -18,8 +18,6 @@ def is_key(s: str):
 
 @with_logger
 class AuthModule(Module):
-    KEY_HEADER = "-----BEGIN PUBLIC KEY-----"
-
     def __init__(self) -> None:
         super(AuthModule, self).__init__()
 
