@@ -634,10 +634,7 @@ class LobbyConnection():
     @timed
     def command_ask_session(self, message):
         if self.check_version(message):
-            self.sendJSON({
-                "command": "session",
-                "session": self.session
-            })
+            self.sendJSON({"command": "session", "session": self.session})
 
     async def command_avatar(self, message):
         action = message['action']
