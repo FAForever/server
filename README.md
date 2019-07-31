@@ -93,16 +93,12 @@ With most carrying a footer containing:
 * `{command: modvault, type: start}`: show the last 100 mods
 * `{command: modvault, type: like, uid: <uid>}`: check if user liked the mod, otherwise increase the like counter
 * `{command: modvault, type: download, uid: <uid>}`: notify server about a download (for download counter), does not start the download
-* `{command: modvault, type: addcomment}`: not implemented
 
 ##### Social
-Can be combined !, e.g. `{command: social, teaminvite: <...>, friends: <..>}`
-* `{command: social, teaminvite: <player_name>}`: Invite a Player to a Team
-* `{command: social, friends: <list of ALL friends>}`: Update the friends on the db
-* `{command: social, foes: <list of ALL foes>}`: Update the foe (muted players) on the db
+* `{command: social_add, friend|foe: <player_id>}`: Add a friend or foe
+* `{command: social_remove, friend|foe: <player_id>}`: Remove a friend or foe
 
 ##### Avatar
-* `{command: avatar, action: upload_avatar, name: <avatar_name>, file: <file_content>, description: <desc>}`: Admin Command to upload an avatar
 * `{command: avatar, action: list_avatar}`: Send a list of available avatars
 * `{command: avatar, action: select, avatar: <avatar_url>}`: Select a valid avatar for the player
 
@@ -113,12 +109,9 @@ Can be combined !, e.g. `{command: social, teaminvite: <...>, friends: <..>}`
 ##### Misc
 
 * [deprecated] `{command: ask_session}`: response with a welcome command and a valid session (can be delayed)
-* `{command: fa_state, state: <on|...>}`: notify the server if the game has launched or closed
-* `{command: quit_team}`: Leave a team
-* `{command: accept_team_proposal, leader: <leader_name>}`: Accept Team Invitation
-* `{command: hello, version: <...>, login: <...>, password: <...>, unique_id: <...>, (session: <...>)}`: Accept Team Invitation
+* `{command: hello, version: <...>, login: <...>, password: <...>, unique_id: <...>, (session: <...>)}`: Log in to the server
 
-##  Stream
+##  Stream (Deprecated)
 
 The stream API is deprecated, but currently the following message types are supported:
 
