@@ -15,6 +15,7 @@ import socket
 
 import server
 import server.config as config
+from docopt import docopt
 from server.api.api_accessor import ApiAccessor
 from server.config import (DB_LOGIN, DB_NAME, DB_PASSWORD, DB_PORT, DB_SERVER,
                            TWILIO_ACCOUNT_SID)
@@ -27,6 +28,8 @@ from server.stats.game_stats_service import (AchievementService, EventService,
                                              GameStatsService)
 
 if __name__ == '__main__':
+    args = docopt(__doc__, version='FAF Server')
+
     logger = logging.getLogger()
     stderr_handler = logging.StreamHandler()
     stderr_handler.setFormatter(logging.Formatter(
@@ -37,17 +40,13 @@ if __name__ == '__main__':
     logger.setLevel(config.LOG_LEVEL)
 
     try:
-        def signal_handler():
-            logger.info("Received signal, shutting down")
-            if not done.done():
-                done.set_result(0)
-
         loop = asyncio.get_event_loop()
         done = asyncio.Future()
 
-        from docopt import docopt
-
-        args = docopt(__doc__, version='FAF Server')
+        def signal_handler(_sig, _frame):
+            logger.info("Received signal, shutting down")
+            if not done.done():
+                done.set_result(0)
 
         if config.ENABLE_STATSD:
             logger.info("Using StatsD server: ".format(config.STATSD_SERVER))
