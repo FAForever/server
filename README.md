@@ -34,14 +34,6 @@ If you have a different root password, database name then the default (see [conf
 
     docker run --link faf-db:db -p 8001:8001 -p 30351:30351 -e FAF_DB_PASSWORD=<wanted_password> -e FAF_DB_NAME=<db_name> faf-server
 
-## Running the tests
-
-Some of the tests require the database to be pre-populated with test data. Download
-the latest `test-data.sql` from [FAForever/db](https://github.com/FAForever/db
-into the root of this project, then run:
-
-    $ pipenv run tests
-
 # Contributing
 
 To contribute, please fork this repository and make pull requests to the develop branch.
@@ -52,6 +44,28 @@ Use the normal git conventions for commit messages, with the following rules:
  - For non-trivial commits, always include a commit message body, describing the change in detail
  - If there are related issues, reference them in the commit message footer
 
+## Setting up for development
+
+First make sure you have an instance of `faf-db` running as described in the
+installation section. Then install the dependencies to a virtual environment
+using pipenv:
+
+    $ pipenv install --dev
+
+You can start the server in development mode with:
+
+    $ pipenv run server
+
+**Note** *The pipenv scripts are not meant for production deployment. For
+deployment use `faf-stack`*
+
+## Running the tests
+
+Some of the tests require the database to be pre-populated with test data. Download
+the latest `test-data.sql` from [FAForever/db](https://github.com/FAForever/db
+into the root of this project, then run:
+
+   $ pipenv run tests
 
 # License
 

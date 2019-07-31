@@ -1,4 +1,5 @@
 [scripts]
+server = "env LOG_LEVEL=TRACE python server.py"
 tests = "scripts/pipenv_run_tests.sh"
 
 [[source]]
