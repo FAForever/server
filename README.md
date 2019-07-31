@@ -86,8 +86,6 @@ With most carrying a footer containing:
     LOGIN: QString
     SESSION: QString
 
-With a few message-types (`UPLOAD_MOD`, `UPLOAD_MAP`), there are more fields.
-
 ## Incoming Packages
 
 ##### Mod Vault
@@ -126,5 +124,3 @@ The stream API is deprecated, but currently the following message types are supp
 
 * `PING`: response with a `PONG`
 * `PONG`: internal state changed to ponged
-* `UPLOAD_MOD, login, session, zipmap, infos, size, fileDaatas`: Upload a mod
-* `UPLOAD_MAP, login, session, zipmap, infos, size, fileDatas`: Upload a map
