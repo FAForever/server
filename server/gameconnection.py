@@ -14,9 +14,6 @@ from .protocol import GpgNetServerProtocol, QDataStreamProtocol
 
 from .db.models import (reported_user, moderation_report, login)
 
-class AuthenticationError(Exception):
-    pass
-
 
 @with_logger
 class GameConnection(GpgNetServerProtocol):
@@ -165,9 +162,6 @@ class GameConnection(GpgNetServerProtocol):
             )
         except (TypeError, ValueError) as e:
             self._logger.exception("Bad command arguments: %s", e)
-        except AuthenticationError as e:
-            self._logger.exception("Authentication error: %s", e)
-            self.abort()
         except Exception as e:  # pragma: no cover
             self._logger.exception(e)
             self._logger.exception("Something awful happened in a game thread!")
@@ -307,7 +301,7 @@ class GameConnection(GpgNetServerProtocol):
             :param teamkiller_id: teamkiller id
             :param teamkiller_name: teamkiller nickname - Used as a failsafe in case ID is wrong
         """
-                
+
         async with db.engine.acquire() as conn:
 
             """
@@ -356,16 +350,16 @@ class GameConnection(GpgNetServerProtocol):
                 game_incident_timecode=gametime,
                 report_description=f"Auto-generated teamkill report from {reporter_name}",
             )
-            
+
             result = await conn.execute(insert)
-            
+
             await conn.execute(
                 reported_user.insert().values(
                     player_id=verified_teamkiller_id,
                     report_id=result.lastrowid
                 )
             )
-            
+
 
     async def handle_teamkill_happened(self, gametime, victim_id, victim_name, teamkiller_id, teamkiller_name):
         """
