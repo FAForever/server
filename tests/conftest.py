@@ -8,6 +8,7 @@ these should be put in the ``conftest.py'' relative to it.
 
 import asyncio
 import logging
+from typing import Iterable
 from unittest import mock
 
 import pytest
@@ -19,7 +20,6 @@ from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
 from tests import CoroMock
 from trueskill import Rating
-from typing import Iterable
 
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -182,11 +182,10 @@ def make_game(uid, players):
 def create_player():
     from server.players import Player, PlayerState
 
-    def make(login='', id=0, port=6112, state=PlayerState.HOSTING, ip='127.0.0.1', global_rating=Rating(1500, 250), ladder_rating=Rating(1500, 250)):
+    def make(login='', id=0, port=6112, state=PlayerState.HOSTING, global_rating=Rating(1500, 250), ladder_rating=Rating(1500, 250)):
         p = mock.create_autospec(spec=Player(login))
         p.global_rating = global_rating
         p.ladder_rating = ladder_rating
-        p.ip = ip
         p.state = state
         p.id = id
         p.login = login
@@ -285,5 +284,3 @@ def twilio_sid():
 @pytest.fixture
 def twilio_token():
     return "token_a"
-
-

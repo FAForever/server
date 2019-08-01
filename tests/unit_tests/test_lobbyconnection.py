@@ -126,7 +126,6 @@ def test_command_game_host_creates_game(lobbyconnection,
                                         test_game_info,
                                         players):
     lobbyconnection.player = players.hosting
-    players.hosting.in_game = False
     lobbyconnection.protocol = mock.Mock()
     lobbyconnection.command_game_host(test_game_info)
     expected_call = {
@@ -166,7 +165,6 @@ def test_command_game_host_creates_correct_game(
     lobbyconnection.game_service = game_service
     lobbyconnection.launch_game = mock.Mock()
 
-    players.hosting.in_game = False
     lobbyconnection.protocol = mock.Mock()
     lobbyconnection.command_game_host(test_game_info)
     args_list = lobbyconnection.launch_game.call_args_list
@@ -190,7 +188,6 @@ def test_command_game_join_calls_join_game(mocker,
     game.id = 42
     game_service.games[42] = game
     lobbyconnection.player = players.hosting
-    players.hosting.in_game = False
     test_game_info['uid'] = 42
 
     lobbyconnection.command_game_join(test_game_info)
@@ -218,7 +215,6 @@ def test_command_game_join_uid_as_str(mocker,
     game.id = 42
     game_service.games[42] = game
     lobbyconnection.player = players.hosting
-    players.hosting.in_game = False
     test_game_info['uid'] = '42'  # Pass in uid as string
 
     lobbyconnection.command_game_join(test_game_info)
@@ -245,7 +241,6 @@ def test_command_game_join_without_password(lobbyconnection,
     game.id = 42
     game_service.games[42] = game
     lobbyconnection.player = players.hosting
-    players.hosting.in_game = False
     test_game_info['uid'] = 42
     del test_game_info['password']
 
@@ -261,7 +256,6 @@ def test_command_game_join_game_not_found(lobbyconnection,
     lobbyconnection.sendJSON = mock.Mock()
     lobbyconnection.game_service = game_service
     lobbyconnection.player = players.hosting
-    players.hosting.in_game = False
     test_game_info['uid'] = 42
 
     lobbyconnection.command_game_join(test_game_info)

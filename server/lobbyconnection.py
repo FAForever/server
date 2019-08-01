@@ -9,7 +9,6 @@ import urllib.request
 from typing import Optional
 
 import aiohttp
-
 import humanize
 import pymysql
 import semver
@@ -28,12 +27,12 @@ from .games import GameState, VisibilityState
 from .geoip_service import GeoIpService
 from .ice_servers.coturn import CoturnHMAC
 from .ice_servers.nts import TwilioNTS
+from .ladder_service import LadderService
 from .matchmaker import Search
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import QDataStreamProtocol
 from .types import Address
-from .ladder_service import LadderService
 
 
 class ClientError(Exception):
@@ -524,7 +523,6 @@ class LobbyConnection():
         self.player = Player(
             login=str(login),
             session=self.session,
-            ip=self.peer_address.host,
             player_id=player_id,
             permission_group=permission_group,
             lobby_connection=self
