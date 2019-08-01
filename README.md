@@ -6,7 +6,6 @@ master|develop
  ------------ | -------------
 [![Build Status](https://travis-ci.org/FAForever/server.svg?branch=master)](https://travis-ci.org/FAForever/server) | [![Build Status](https://travis-ci.org/FAForever/server.svg?branch=develop)](https://travis-ci.org/FAForever/server)
 [![Coveralls Status](https://img.shields.io/coveralls/FAForever/server/master.svg)](https://coveralls.io/github/FAForever/server) | [![Coveralls Status](https://img.shields.io/coveralls/FAForever/server/develop.svg)](https://coveralls.io/github/FAForever/server)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/FAForever/server/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/FAForever/server/?branch=master) | [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/FAForever/server/badges/quality-score.png?b=develop)](https://scrutinizer-ci.com/g/FAForever/server/?branch=develop)
 
 ## Installation
 
@@ -65,7 +64,13 @@ Some of the tests require the database to be pre-populated with test data. Downl
 the latest `test-data.sql` from [FAForever/db](https://github.com/FAForever/db
 into the root of this project, then run:
 
-   $ pipenv run tests
+    $ pipenv run tests
+
+## Other tools
+
+You can check for possible unused code with `vulture` by running:
+
+    $ pipenv run vulture
 
 # License
 
