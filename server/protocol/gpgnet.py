@@ -1,26 +1,11 @@
 from abc import ABCMeta, abstractmethod
-
-
 from typing import List, Union
-from server.abc.base_game import InitMode
 
 
 class GpgNetServerProtocol(metaclass=ABCMeta):
     """
     Defines an interface for the server side GPGNet protocol
     """
-    # TODO: Do we need to remove port parameters here?
-    def send_CreateLobby(self, init_mode: InitMode, port: int, login: str, uid: int, natTraversalProvider: int):
-        """
-        Tells the client to create a new LobbyComm instance and have it listen on the given port number
-        :type init_mode: Whether to use ranked or ladder mode for the in game lobby
-        :type port: The port number for the client to listen on
-        :type login: The username of the player
-        :type uid: The identifier of the player
-        :type natTraversalProvider: A number representing the nat-traversal-provider, typically 1
-        """
-        self.send_gpgnet_message('CreateLobby', [int(init_mode.value), port, login, uid, natTraversalProvider])
-
     def send_ConnectToPeer(self, player_name: str, player_uid: int, offer: bool):
         """
         Tells a client that has a listening LobbyComm instance to connect to the given peer
@@ -52,13 +37,6 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
         :return:
         """
         self.send_gpgnet_message('DisconnectFromPeer', [id])
-
-    def send_Ping(self):
-        """
-        Heartbeat pinging used between the FAF client and server
-        :return:
-        """
-        self.send_gpgnet_message('ping', [])
 
     def send_gpgnet_message(self, command_id, arguments):
         message = {"command": command_id, "args": arguments}

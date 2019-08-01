@@ -138,7 +138,6 @@ class LobbyConnection():
             if target == 'connectivity' and message.get('command') == 'InitiateTest':
                 self._attempted_connectivity_test = True
                 raise ClientError("Your client version is no longer supported. Please update to the newest version: https://faforever.com")
-                return
 
             handler = getattr(self, 'command_{}'.format(cmd))
             if asyncio.iscoroutinefunction(handler):
