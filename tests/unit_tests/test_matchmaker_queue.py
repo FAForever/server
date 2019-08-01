@@ -123,7 +123,7 @@ async def test_search_await(mocker, loop, matchmaker_players):
     assert await_coro.done()
 
 
-def test_queue_time_until_next_pop(matchmaker_queue):
+def test_queue_time_until_next_pop():
     t1 = PopTimer("test_1")
     t2 = PopTimer("test_2")
 
@@ -145,6 +145,22 @@ def test_queue_time_until_next_pop(matchmaker_queue):
 
     # Make sure that queue moving averages are calculated independently
     assert t2.time_until_next_pop(0, 0) == config.QUEUE_POP_TIME_MAX
+
+
+def test_queue_pop_time_moving_average_size():
+    t1 = PopTimer("test_1")
+
+    for _ in range(100):
+        t1.time_until_next_pop(100, 1)
+
+    # The rate should be extremely high, meaning the pop time should be low
+    assert t1.time_until_next_pop(100, 1) < 1
+
+    for _ in range(config.QUEUE_POP_TIME_MOVING_AVG_SIZE):
+        t1.time_until_next_pop(0, 100)
+
+    # The rate should be extremely low, meaning the pop time should be high
+    assert t1.time_until_next_pop(0, 100) == config.QUEUE_POP_TIME_MAX
 
 
 async def test_queue_matches(matchmaker_queue):

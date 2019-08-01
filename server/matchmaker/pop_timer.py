@@ -1,7 +1,7 @@
 import asyncio
 from collections import deque
 from time import time
-from typing import Callable, Deque, TypeVar
+from typing import Callable, Deque
 
 import server
 
@@ -13,8 +13,8 @@ from ..decorators import with_logger
 class PopTimer(object):
     def __init__(self, queue_name: str):
         self.queue_name = queue_name
-        self.last_queue_amounts: Deque[int] = deque()
-        self.last_queue_times: Deque[float] = deque()
+        self.last_queue_amounts: Deque[int] = deque(maxlen=config.QUEUE_POP_TIME_MOVING_AVG_SIZE)
+        self.last_queue_times: Deque[float] = deque(maxlen=config.QUEUE_POP_TIME_MOVING_AVG_SIZE)
 
         self._last_queue_pop = time()
         # Optimistically schedule first pop for half of the max pop time
@@ -43,11 +43,11 @@ class PopTimer(object):
         """ Calculate how long we should wait for the next queue to pop based
         on the current rate of ladder queues
         """
-        update_deque(self.last_queue_amounts, num_queued)
-        update_deque(self.last_queue_times, time_queued)
+        self.last_queue_amounts.append(num_queued)
+        self.last_queue_times.append(time_queued)
 
         total_players = sum(self.last_queue_amounts)
-        if total_players < 1:
+        if total_players == 0:
             return config.QUEUE_POP_TIME_MAX
 
         total_times = sum(self.last_queue_times)
@@ -66,14 +66,3 @@ class PopTimer(object):
             )
             return config.QUEUE_POP_TIME_MAX
         return next_pop_time
-
-
-T = TypeVar("T")
-
-
-def update_deque(d: Deque[T], value: T) -> None:
-    """ Appends the new value, and pops the oldest value off the front if the
-    deque has reached its maximum size. """
-    d.append(value)
-    if len(d) > config.QUEUE_POP_TIME_MOVING_AVG_SIZE:
-        d.popleft()
