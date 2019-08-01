@@ -54,7 +54,7 @@ using pipenv:
 
 You can start the server in development mode with:
 
-    $ pipenv run server
+    $ pipenv run devserver
 
 **Note** *The pipenv scripts are not meant for production deployment. For
 deployment use `faf-stack`*
