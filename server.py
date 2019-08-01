@@ -17,25 +17,29 @@ import server
 import server.config as config
 from docopt import docopt
 from server.api.api_accessor import ApiAccessor
-from server.config import (DB_LOGIN, DB_NAME, DB_PASSWORD, DB_PORT, DB_SERVER,
-                           TWILIO_ACCOUNT_SID)
+from server.config import (
+    DB_LOGIN, DB_NAME, DB_PASSWORD, DB_PORT, DB_SERVER, TWILIO_ACCOUNT_SID
+)
 from server.game_service import GameService
 from server.geoip_service import GeoIpService
 from server.ice_servers.nts import TwilioNTS
 from server.ladder_service import LadderService
 from server.player_service import PlayerService
-from server.stats.game_stats_service import (AchievementService, EventService,
-                                             GameStatsService)
+from server.stats.game_stats_service import (
+    AchievementService, EventService, GameStatsService
+)
 
 if __name__ == '__main__':
     args = docopt(__doc__, version='FAF Server')
 
     logger = logging.getLogger()
     stderr_handler = logging.StreamHandler()
-    stderr_handler.setFormatter(logging.Formatter(
-        fmt='%(levelname)-8s %(asctime)s %(name)-30s %(message)s',
-        datefmt='%b %d  %H:%M:%S'
-    ))
+    stderr_handler.setFormatter(
+        logging.Formatter(
+            fmt='%(levelname)-8s %(asctime)s %(name)-30s %(message)s',
+            datefmt='%b %d  %H:%M:%S'
+        )
+    )
     logger.addHandler(stderr_handler)
     logger.setLevel(config.LOG_LEVEL)
 
@@ -75,7 +79,8 @@ if __name__ == '__main__':
             twilio_nts = TwilioNTS()
         else:
             logger.warning(
-                "Twilio is not set up. You must set TWILIO_ACCOUNT_SID and TWILIO_TOKEN to use the Twilio ICE servers.")
+                "Twilio is not set up. You must set TWILIO_ACCOUNT_SID and TWILIO_TOKEN to use the Twilio ICE servers."
+            )
 
         api_accessor = None
         if config.USE_API:
@@ -83,12 +88,16 @@ if __name__ == '__main__':
 
         event_service = EventService(api_accessor)
         achievement_service = AchievementService(api_accessor)
-        game_stats_service = GameStatsService(event_service, achievement_service)
+        game_stats_service = GameStatsService(
+            event_service, achievement_service
+        )
 
         games = GameService(players_online, game_stats_service)
         ladder_service = LadderService(games)
 
-        ctrl_server = loop.run_until_complete(server.run_control_server(loop, players_online, games))
+        ctrl_server = loop.run_until_complete(
+            server.run_control_server(loop, players_online, games)
+        )
 
         lobby_server = server.run_lobby_server(
             address=('', 8001),
