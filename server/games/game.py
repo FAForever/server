@@ -14,6 +14,8 @@ from trueskill import Rating
 from ..abc.base_game import BaseGame, GameConnectionState, InitMode
 from ..players import Player, PlayerState
 
+FFA_TEAM = 1
+
 
 @unique
 class GameState(Enum):
@@ -253,7 +255,7 @@ class Game(BaseGame):
         teams = set()
         for player in self.players:
             team = self.get_player_option(player.id, 'Team')
-            if team != 1:
+            if team != FFA_TEAM:
                 if team in teams:
                     return False
                 teams.add(team)
@@ -271,7 +273,7 @@ class Game(BaseGame):
     @property
     def is_even(self) -> bool:
         teams = self.team_count()
-        if 1 in teams: # someone is in ffa team, all teams need to have 1 player
+        if FFA_TEAM in teams: # someone is in ffa team, all teams need to have 1 player
             c = 1
             teams.pop(1)
         else:
@@ -550,7 +552,9 @@ class Game(BaseGame):
                     "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
                     "WHERE gameId = %s AND playerId = %s",
                     (new_rating.mu, new_rating.sigma, self.id, player.id))
-                if rating != 'ladder':
+                if rating == 'ladder':
+                    player.ladder_games += 1
+                else:
                     player.numGames += 1
 
                 await self._update_rating_table(conn, rating_table, player, new_rating)
@@ -886,7 +890,9 @@ class Game(BaseGame):
                 continue
             if not team:
                 raise GameError("Missing team for player id: {}".format(player.id))
-            if team != 1:
+            if team == FFA_TEAM:
+                ffa_scores.append((player, self.get_army_score(army)))
+            else:
                 if team not in team_scores:
                     team_scores[team] = 0
                 try:
@@ -894,8 +900,6 @@ class Game(BaseGame):
                 except KeyError:
                     team_scores[team] += 0
                     self._logger.warning("Missing game result for %s: %s", army, player)
-            elif team == 1:
-                ffa_scores.append((player, self.get_army_score(army)))
         ranks = [-score for team, score in sorted(team_scores.items(), key=lambda t: t[0])]
         rating_groups = []
         for team in sorted(self.teams):
