@@ -8,7 +8,7 @@ from .matchmaker_queue import MatchmakerQueue
 from .search import Search
 
 
-__all__ = [
+__all__ = (
     'MatchmakerQueue',
     'Search'
-]
+)
