@@ -1,7 +1,8 @@
 import weakref
 from enum import Enum, unique
 
-from .abc.base_player import BasePlayer
+from trueskill import Rating
+from .factions import Faction
 
 
 @unique
@@ -13,7 +14,7 @@ class PlayerState(Enum):
     SEARCHING_LADDER = 5,
 
 
-class Player(BasePlayer):
+class Player:
     """
     Standard player object used for representing signed-in players.
 
@@ -26,23 +27,22 @@ class Player(BasePlayer):
         login: str = None,
         session: int = 0,
         player_id: int = 0,
-        global_rating=None,
-        ladder_rating=None,
+        global_rating=(1500, 500),
+        ladder_rating=(1500, 500),
         clan=None,
         num_games: int = 0,
         ladder_games: int = 0,
         permission_group: int = 0,
         lobby_connection: "LobbyConnection" = None
     ):
-        super().__init__(player_id, login)
+        self._faction = 0
+
+        self.id = player_id
+        self.login = login
 
         # The player_id of the user in the `login` table of the database.
         self.session = session
 
-        if global_rating is None:
-            global_rating = (1500, 500)
-        if ladder_rating is None:
-            ladder_rating = (1500, 500)
         self.global_rating = global_rating
         self.ladder_rating = ladder_rating
 
@@ -70,6 +70,39 @@ class Player(BasePlayer):
 
         self._game = lambda: None
         self._game_connection = lambda: None
+
+    @property
+    def global_rating(self):
+        return self._global_rating
+
+    @global_rating.setter
+    def global_rating(self, value: Rating):
+        if isinstance(value, Rating):
+            self._global_rating = (value.mu, value.sigma)
+        else:
+            self._global_rating = value
+
+    @property
+    def ladder_rating(self):
+        return self._ladder_rating
+
+    @ladder_rating.setter
+    def ladder_rating(self, value: Rating):
+        if isinstance(value, Rating):
+            self._ladder_rating = (value.mu, value.sigma)
+        else:
+            self._ladder_rating = value
+
+    @property
+    def faction(self):
+        return self._faction
+
+    @faction.setter
+    def faction(self, value):
+        if isinstance(value, str):
+            self._faction = Faction.from_string(value)
+        else:
+            self._faction = value
 
     @property
     def lobby_connection(self) -> "LobbyConnection":
@@ -150,7 +183,7 @@ class Player(BasePlayer):
         return self.id
 
     def __eq__(self, other):
-        if not isinstance(other, BasePlayer):
+        if not isinstance(other, Player):
             return False
         else:
             return self.id == other.id
