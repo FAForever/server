@@ -179,27 +179,24 @@ def make_game(uid, players):
 
 
 @pytest.fixture
-def create_player():
+def player_factory():
     from server.players import Player, PlayerState
 
-    def make(login='', id=0, port=6112, state=PlayerState.HOSTING, global_rating=Rating(1500, 250), ladder_rating=Rating(1500, 250)):
-        p = mock.create_autospec(spec=Player(login))
-        p.global_rating = global_rating
-        p.ladder_rating = ladder_rating
+    def make(state=PlayerState.IDLE, **kwargs):
+        p = Player(**kwargs)
         p.state = state
-        p.id = id
-        p.login = login
         return p
+
     return make
 
 
 @pytest.fixture
-def players(create_player):
+def players(player_factory):
     from server.players import PlayerState
     return mock.Mock(
-        hosting=create_player(login='Paula_Bean', id=1, port=6112, state=PlayerState.HOSTING),
-        peer=create_player(login='That_Guy', id=2, port=6112, state=PlayerState.JOINING),
-        joining=create_player(login='James_Kirk', id=3, port=6112, state=PlayerState.JOINING)
+        hosting=player_factory(login='Paula_Bean', player_id=1, state=PlayerState.HOSTING),
+        peer=player_factory(login='That_Guy', player_id=2, state=PlayerState.JOINING),
+        joining=player_factory(login='James_Kirk', player_id=3, state=PlayerState.JOINING)
     )
 
 

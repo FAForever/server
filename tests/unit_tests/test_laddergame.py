@@ -4,7 +4,6 @@ import time
 from sqlalchemy import text
 from server.games import LadderGame
 from server.games.game import GameState, ValidityState
-from tests.unit_tests.conftest import add_players
 from tests.unit_tests.test_game import add_connected_players
 
 
@@ -63,14 +62,14 @@ async def test_is_winner_on_draw(laddergame, players):
     assert laddergame.is_winner(players.joining) is False
 
 
-async def test_rate_game(laddergame: LadderGame, db_engine):
+async def test_rate_game(laddergame: LadderGame, db_engine, game_add_players):
     async with db_engine.acquire() as conn:
         # TODO remove as soon as we have isolated tests (transactions)
         await conn.execute("DELETE FROM game_player_stats WHERE gameId = %s", laddergame.id)
         await conn.execute("DELETE FROM game_stats WHERE id = %s", laddergame.id)
 
     laddergame.state = GameState.LOBBY
-    players = add_players(laddergame, 2)
+    players = game_add_players(laddergame, 2)
     laddergame.set_player_option(players[0].id, 'Team', 1)
     laddergame.set_player_option(players[1].id, 'Team', 2)
     player_1_old_mean = players[0].ladder_rating[0]
@@ -101,14 +100,15 @@ async def test_rate_game(laddergame: LadderGame, db_engine):
     assert rows[1]['after_deviation'] < rows[0]['deviation']
 
 
-async def test_persist_rating_victory(laddergame: LadderGame, db_engine):
+async def test_persist_rating_victory(laddergame: LadderGame, db_engine,
+                                      game_add_players):
     async with db_engine.acquire() as conn:
         # TODO remove as soon as we have isolated tests (transactions)
         await conn.execute("DELETE FROM game_player_stats WHERE gameId = %s", laddergame.id)
         await conn.execute("DELETE FROM game_stats WHERE id = %s", laddergame.id)
 
     laddergame.state = GameState.LOBBY
-    players = add_players(laddergame, 2)
+    players = game_add_players(laddergame, 2)
     laddergame.set_player_option(players[0].id, 'Team', 1)
     laddergame.set_player_option(players[1].id, 'Team', 2)
 

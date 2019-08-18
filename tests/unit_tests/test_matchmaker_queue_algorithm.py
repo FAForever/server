@@ -1,18 +1,19 @@
-import mock
+import pytest
 from server import config
 from server.matchmaker import Search, algorithm
 
 
-def p(mean: int, deviation: int, ladder_games: int = config.NEWBIE_MIN_GAMES+1, name=None):
-    """Make a player with the given ratings"""
-    player = mock.Mock()
-    player.ladder_rating = (mean, deviation)
-    player.ladder_games = ladder_games
-    player.__repr__ = lambda self: name or f"p({self.ladder_rating}, {self.ladder_games})"
-    return player
+@pytest.fixture
+def p(player_factory):
+    def make(mean: int, deviation: int, ladder_games: int=config.NEWBIE_MIN_GAMES+1, name=None):
+        """Make a player with the given ratings"""
+        player = player_factory(ladder_rating=(mean, deviation))
+        player.ladder_games = ladder_games
+        return player
+    return make
 
 
-def test_rank_all():
+def test_rank_all(p):
     s1 = Search([p(1500, 64, ladder_games=20)])
     s2 = Search([p(1500, 63, ladder_games=20)])
     s3 = Search([p(1600, 75, ladder_games=50)])
@@ -27,7 +28,7 @@ def test_rank_all():
     }
 
 
-def test_rank_all_will_not_include_matches_below_threshold_quality():
+def test_rank_all_will_not_include_matches_below_threshold_quality(p):
     s1 = Search([p(1500, 500)])
     s2 = Search([p(2000, 300)])
     searches = [s1, s2]
@@ -40,7 +41,7 @@ def test_rank_all_will_not_include_matches_below_threshold_quality():
     }
 
 
-def test_stable_marriage():
+def test_stable_marriage(p):
     s1 = Search([p(2300, 64, name='p1')])
     s2 = Search([p(1200, 72, name='p2')])
     s3 = Search([p(1300, 175, name='p3')])
@@ -56,7 +57,7 @@ def test_stable_marriage():
     assert (s2, s5) in matches
     assert (s3, s6) in matches
 
-def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_different_mean():
+def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_different_mean(p):
     new1 = Search([p(1500, 500, name='new1', ladder_games=1)])
     new2 = Search([p(1400, 500, name='new2', ladder_games=2)])
     old1 = Search([p(2300, 75, name='old1', ladder_games=100)])
@@ -70,7 +71,7 @@ def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_differ
     assert (old1, old2) in matches
 
 
-def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_same_mean():
+def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_same_mean(p):
     # Assumes that both new players initialized with mean 1500 will be matched
     # as if they had mean 500
     new1 = Search([p(1500, 500, name='new1', ladder_games=0)])
@@ -86,7 +87,7 @@ def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_same_m
     assert (old1, old2) in matches or (old2, old1) in matches
 
 
-def test_stable_marriage_better_than_greedy():
+def test_stable_marriage_better_than_greedy(p):
     s1 = Search([p(2300, 64, name='p1')])
     s2 = Search([p(2000, 64, name='p2')])
     s3 = Search([p(2100, 64, name='p3')])
@@ -110,7 +111,7 @@ def test_stable_marriage_better_than_greedy():
     assert (s6, s4) in matches  # quality: 0.82
 
 
-def test_stable_marriage_unmatch():
+def test_stable_marriage_unmatch(p):
     s1 = Search([p(503, 64, name='p1')])
     s2 = Search([p(504, 64, name='p2')])
     s3 = Search([p(504, 64, name='p3')])

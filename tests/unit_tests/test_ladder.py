@@ -4,16 +4,20 @@ from unittest import mock
 import pytest
 from server import GameService, LadderService
 from server.matchmaker import Search
-from server.players import Player, PlayerState
+from server.players import PlayerState
 from tests import CoroMock
 
 
-async def test_start_game(ladder_service: LadderService, game_service: GameService):
-    p1 = mock.create_autospec(Player('Dostya', player_id=1))
-    p2 = mock.create_autospec(Player('Rhiza', player_id=2))
+async def test_start_game(ladder_service: LadderService, game_service:
+                          GameService, player_factory):
+    p1 = player_factory('Dostya', player_id=1)
+    p2 = player_factory('Rhiza', player_id=2)
 
-    p1.id = 1
-    p2.id = 2
+    mock_lc1 = mock.Mock()
+    mock_lc2 = mock.Mock()
+    p1.lobby_connection = mock_lc1
+    p2.lobby_connection = mock_lc2
+
     game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
 
     with mock.patch('server.games.game.Game.await_hosted', CoroMock()):
@@ -23,12 +27,16 @@ async def test_start_game(ladder_service: LadderService, game_service: GameServi
     assert p2.lobby_connection.launch_game.called
 
 
-async def test_start_game_timeout(ladder_service: LadderService, game_service: GameService):
-    p1 = mock.create_autospec(Player('Dostya', player_id=1))
-    p2 = mock.create_autospec(Player('Rhiza', player_id=2))
+async def test_start_game_timeout(ladder_service: LadderService, game_service:
+                                  GameService, player_factory):
+    p1 = player_factory('Dostya', player_id=1)
+    p2 = player_factory('Rhiza', player_id=2)
 
-    p1.id = 1
-    p2.id = 2
+    mock_lc1 = mock.Mock()
+    mock_lc2 = mock.Mock()
+    p1.lobby_connection = mock_lc1
+    p2.lobby_connection = mock_lc2
+
     game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
 
     with mock.patch('server.games.game.Game.sleep', CoroMock()):
@@ -41,9 +49,11 @@ async def test_start_game_timeout(ladder_service: LadderService, game_service: G
     assert p2.lobby_connection.launch_game.called
 
 
-def test_inform_player(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', player_id=1))
-    p1.ladder_rating = (1500, 500)
+def test_inform_player(ladder_service: LadderService, player_factory):
+    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
+
+    mock_lc = mock.Mock()
+    p1.lobby_connection = mock_lc
 
     ladder_service.inform_player(p1)
 
@@ -60,10 +70,13 @@ def test_inform_player(ladder_service: LadderService):
     p1.lobby_connection.send.assert_called_once()
 
 
-async def test_start_and_cancel_search(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', player_id=1))
-    p1.ladder_rating = (1500, 500)
+async def test_start_and_cancel_search(ladder_service: LadderService,
+                                       player_factory):
+    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
     p1.ladder_games = 0
+
+    mock_lc = mock.Mock()
+    p1.lobby_connection = mock_lc
 
     search = Search([p1])
 
@@ -80,10 +93,13 @@ async def test_start_and_cancel_search(ladder_service: LadderService):
     assert search.is_cancelled
 
 
-async def test_start_search_cancels_previous_search(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', player_id=1))
-    p1.ladder_rating = (1500, 500)
+async def test_start_search_cancels_previous_search(
+        ladder_service: LadderService, player_factory):
+    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
     p1.ladder_games = 0
+
+    mock_lc = mock.Mock()
+    p1.lobby_connection = mock_lc
 
     search1 = Search([p1])
 
@@ -104,10 +120,13 @@ async def test_start_search_cancels_previous_search(ladder_service: LadderServic
     assert ladder_service.queues['ladder1v1'].queue[search2]
 
 
-async def test_cancel_all_searches(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', player_id=1))
-    p1.ladder_rating = (1500, 500)
+async def test_cancel_all_searches(ladder_service: LadderService,
+                                   player_factory):
+    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
     p1.ladder_games = 0
+
+    mock_lc = mock.Mock()
+    p1.lobby_connection = mock_lc
 
     search = Search([p1])
 
@@ -125,14 +144,17 @@ async def test_cancel_all_searches(ladder_service: LadderService):
     assert p1 not in ladder_service.searches['ladder1v1']
 
 
-async def test_cancel_twice(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', player_id=1))
-    p1.ladder_rating = (1500, 500)
+async def test_cancel_twice(ladder_service: LadderService, player_factory):
+    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
     p1.ladder_games = 0
 
-    p2 = mock.create_autospec(Player('Brackman', player_id=1))
-    p2.ladder_rating = (2000, 50)
+    p2 = player_factory('Brackman', player_id=2, ladder_rating=(2000, 500))
     p2.ladder_games = 0
+
+    mock_lc1 = mock.Mock()
+    mock_lc2 = mock.Mock()
+    p1.lobby_connection = mock_lc1
+    p2.lobby_connection = mock_lc2
 
     search = Search([p1])
     search2 = Search([p2])
@@ -153,14 +175,18 @@ async def test_cancel_twice(ladder_service: LadderService):
     assert searches == [search2]
 
 
-async def test_start_game_called_on_match(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', player_id=1))
-    p1.ladder_rating = (2300, 64)
+async def test_start_game_called_on_match(ladder_service: LadderService,
+                                          player_factory):
+    p1 = player_factory('Dostya', player_id=1, ladder_rating=(2300, 64))
     p1.ladder_games = 0
 
-    p2 = mock.create_autospec(Player('QAI', player_id=4))
-    p2.ladder_rating = (2350, 125)
+    p2 = player_factory('QAI', player_id=2, ladder_rating=(2350, 125))
     p2.ladder_games = 0
+
+    mock_lc1 = mock.Mock()
+    mock_lc2 = mock.Mock()
+    p1.lobby_connection = mock_lc1
+    p2.lobby_connection = mock_lc2
 
     ladder_service.start_game = CoroMock()
     ladder_service.inform_player = mock.Mock()

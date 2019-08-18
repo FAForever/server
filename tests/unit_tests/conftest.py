@@ -105,17 +105,23 @@ def add_connected_players(game: BaseGame, players):
     game.host = players[0]
 
 
-def add_players(gameobj: BaseGame, n: int, team: int=None):
-    game = gameobj
-    current = len(game.players)
-    players = []
-    for i in range(current, current+n):
-        players.append(Player(player_id=i + 1, login=f'Player {i + 1}', global_rating=(1500, 500)))
+@pytest.fixture
+def game_add_players(player_factory):
+    def add(gameobj: BaseGame, n: int, team: int=None):
+        game = gameobj
+        current = len(game.players)
+        players = []
+        for i in range(current, current+n):
+            p = player_factory(player_id=i+1, login=f'Player {i + 1}',
+                               global_rating=(1500, 500))
+            players.append(p)
 
-    add_connected_players(game, players)
+        add_connected_players(game, players)
 
-    if team is not None:
-        for p in players:
-            game.set_player_option(p.id, 'Team', team)
+        if team is not None:
+            for p in players:
+                game.set_player_option(p.id, 'Team', team)
 
-    return players
+        return players
+
+    return add

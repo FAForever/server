@@ -105,13 +105,15 @@ async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
     game.host = players.hosting
     game.map_file_path = 'maps/some_map.zip'
     game.map_folder_name = 'some_map'
-    game.connections = [players.peer.game_connection]
+    peer_conn = mock.Mock()
+    players.peer.game_connection = peer_conn
+    game.connections = [peer_conn]
 
     await game_connection.handle_action('GameState', ['Lobby'])
     # Give the connection coro time to run
     await asyncio.sleep(0.1)
 
-    game_connection.connect_to_peer.assert_called_with(players.peer.game_connection)
+    game_connection.connect_to_peer.assert_called_with(peer_conn)
 
 
 async def test_handle_action_GameState_launching_calls_launch(

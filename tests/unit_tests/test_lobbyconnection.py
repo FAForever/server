@@ -47,8 +47,8 @@ def test_game_info_invalid():
 
 
 @pytest.fixture
-def mock_player():
-    return mock.create_autospec(Player(login='Dummy', player_id=42))
+def mock_player(player_factory):
+    return player_factory(login='Dummy', player_id=42)
 
 
 @pytest.fixture
@@ -140,10 +140,10 @@ def test_command_game_host_creates_game(lobbyconnection,
         .assert_called_with(**expected_call)
 
 
-def test_launch_game(lobbyconnection, game, create_player):
+def test_launch_game(lobbyconnection, game, player_factory):
     old_game_conn = mock.Mock()
 
-    lobbyconnection.player = create_player()
+    lobbyconnection.player = player_factory()
     lobbyconnection.game_connection = old_game_conn
     lobbyconnection.send = mock.Mock()
     lobbyconnection.launch_game(game)
@@ -711,7 +711,7 @@ async def test_broadcast(lobbyconnection: LobbyConnection, mocker):
 async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnection: LobbyConnection, mocker, mock_player):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
     lobbyconnection.player = mock_player
-    lobbyconnection.player.game_connection = None
+    del lobbyconnection.player.game_connection
     lobbyconnection.player.state = PlayerState.IDLE
     lobbyconnection.command_restore_game_session({'game_id': 123})
 
@@ -730,7 +730,7 @@ async def test_game_connection_not_restored_if_game_state_prohibits(lobbyconnect
                                                                     game_stats_service, game_state, mock_player, mocker):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
     lobbyconnection.player = mock_player
-    lobbyconnection.player.game_connection = None
+    del lobbyconnection.player.game_connection
     lobbyconnection.player.state = PlayerState.IDLE
     lobbyconnection.game_service = game_service
     game = mock.create_autospec(Game(42, game_service, game_stats_service))
@@ -756,7 +756,7 @@ async def test_game_connection_not_restored_if_game_state_prohibits(lobbyconnect
 async def test_game_connection_restored_if_game_exists(lobbyconnection: LobbyConnection, game_service: GameService,
                                                        game_stats_service, game_state, mock_player):
     lobbyconnection.player = mock_player
-    lobbyconnection.player.game_connection = None
+    del lobbyconnection.player.game_connection
     lobbyconnection.player.state = PlayerState.IDLE
     lobbyconnection.game_service = game_service
     game = mock.create_autospec(Game(42, game_service, game_stats_service))
