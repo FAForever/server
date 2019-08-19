@@ -7,7 +7,6 @@ from typing import Deque, Dict
 
 import server
 
-from .. import config
 from ..decorators import with_logger
 from .algorithm import stable_marriage
 from .pop_timer import PopTimer
@@ -50,7 +49,7 @@ class MatchmakerQueue:
         in the queue.
         """
         while self._is_running:
-            await self.timer.next_pop(lambda: len(self))
+            await self.timer.next_pop(lambda: len(self.queue))
 
             self.find_matches()
             server.stats.gauge(f"matchmaker.queue.{self.queue_name}.matches", len(self._matches))
@@ -127,9 +126,6 @@ class MatchmakerQueue:
 
     def shutdown(self):
         self._is_running = False
-
-    def __len__(self):
-        return self.queue.__len__()
 
     def to_dict(self):
         """

@@ -224,7 +224,7 @@ async def test_queue_race(mocker, player_service, matchmaker_queue):
     except (TimeoutError, CancelledError):
         pass
 
-    assert len(matchmaker_queue) == 0
+    assert len(matchmaker_queue.queue) == 0
 
 
 async def test_queue_cancel(mocker, player_service, matchmaker_queue, matchmaker_players):
@@ -268,4 +268,4 @@ async def test_queue_mid_cancel(mocker, player_service, matchmaker_queue, matchm
     assert not s1.is_matched
     assert s2.is_matched
     assert s3.is_matched
-    assert len(matchmaker_queue) == 0
+    assert len(matchmaker_queue.queue) == 0
