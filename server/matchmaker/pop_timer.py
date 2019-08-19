@@ -21,9 +21,13 @@ class PopTimer(object):
     The timer will adjust the pop times in an attempt to maintain a fixed queue
     size on each pop. So generally, the more people are in the queue, the
     shorter the time will be.
+
+    The player queue rate is based on a moving average over the last few pops.
+    The exact size can be set in config.
     """
     def __init__(self, queue_name: str):
         self.queue_name = queue_name
+        # Set up deque's for calculating a moving average
         self.last_queue_amounts: Deque[int] = deque(maxlen=config.QUEUE_POP_TIME_MOVING_AVG_SIZE)
         self.last_queue_times: Deque[float] = deque(maxlen=config.QUEUE_POP_TIME_MOVING_AVG_SIZE)
 
@@ -54,6 +58,7 @@ class PopTimer(object):
         """ Calculate how long we should wait for the next queue to pop based
         on the current rate of ladder queues
         """
+        # Calculate moving average of player queue rate
         self.last_queue_amounts.append(num_queued)
         self.last_queue_times.append(time_queued)
 
@@ -67,6 +72,7 @@ class PopTimer(object):
                 "Queue rate for %s: %f/s", self.queue_name,
                 total_players / total_times
             )
+
         # Obtained by solving $ NUM_PLAYERS = rate * time $ for time.
         next_pop_time = config.QUEUE_POP_DESIRED_PLAYERS * total_times / total_players
         if next_pop_time > config.QUEUE_POP_TIME_MAX:
