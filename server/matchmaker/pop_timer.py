@@ -11,6 +11,17 @@ from ..decorators import with_logger
 
 @with_logger
 class PopTimer(object):
+    """ Calculates when the next pop should happen based on the rate of players
+    queuing.
+
+        timer = PopTimer("some_queue")
+        # Pauses the coroutine until the next queue pop
+        await timer.next_pop(lambda: 5)
+
+    The timer will adjust the pop times in an attempt to maintain a fixed queue
+    size on each pop. So generally, the more people are in the queue, the
+    shorter the time will be.
+    """
     def __init__(self, queue_name: str):
         self.queue_name = queue_name
         self.last_queue_amounts: Deque[int] = deque(maxlen=config.QUEUE_POP_TIME_MOVING_AVG_SIZE)
