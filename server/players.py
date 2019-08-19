@@ -125,12 +125,16 @@ class Player(BasePlayer):
 
         return dict(
             filter(
-                filter_none,
-                (('id', self.id), ('login', self.login),
-                 ('global_rating', self.global_rating),
-                 ('ladder_rating', self.ladder_rating),
-                 ('number_of_games', self.numGames), ('avatar', self.avatar),
-                 ('country', self.country), ('clan', self.clan))
+                filter_none, (
+                    ('id', self.id),
+                    ('login', self.login),
+                    ('global_rating', self.global_rating),
+                    ('ladder_rating', self.ladder_rating),
+                    ('number_of_games', self.numGames),
+                    ('avatar', self.avatar),
+                    ('country', self.country),
+                    ('clan', self.clan),
+                )
             )
         )
 

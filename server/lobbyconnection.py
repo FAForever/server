@@ -270,12 +270,19 @@ class LobbyConnection():
                 player = self.player_service[message['user_id']]
                 if player:
                     self._logger.warning('Administrative action: %s closed game for %s', self.player, player)
-                    player.lobby_connection.send(dict(command="notice", style="kill"))
-                    player.lobby_connection.send(dict(command="notice", style="info",
-                                       text=("Your game was closed by an administrator ({admin_name}). "
-                                             "Please refer to our rules for the lobby/game here {rule_link}."
-                                       .format(admin_name=self.player.login,
-                                               rule_link=config.RULE_LINK))))
+                    player.lobby_connection.send({
+                        "command": "notice",
+                        "style": "kill"
+                    })
+                    player.lobby_connection.send({
+                        "command": "notice",
+                        "style": "info",
+                        "text": (
+                            "Your game was closed by an administrator "
+                            f"({self.player.login}). Please refer to our "
+                            f"rules for the lobby/game here {config.RULE_LINK}."
+                        )
+                    })
 
             elif action == "closelobby":
                 player = self.player_service[message['user_id']]
@@ -342,7 +349,10 @@ class LobbyConnection():
                 for user_id in user_ids:
                     player = self.player_service[message[user_id]]
                     if player:
-                        player.lobby_connection.send(dict(command="social", autojoin=[channel]))
+                        player.lobby_connection.send({
+                            "command": "social",
+                            "autojoin": [channel]
+                        })
 
     async def check_user_login(self, conn, login, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.
@@ -434,7 +444,11 @@ class LobbyConnection():
 
     async def check_policy_conformity(self, player_id, uid_hash, session):
         url = FAF_POLICY_SERVER_BASE_URL + '/verify'
-        payload = dict(player_id=player_id, uid_hash=uid_hash, session=session)
+        payload = {
+            "player_id": player_id,
+            "uid_hash": uid_hash,
+            "session": session
+        }
         headers = {
             'content-type': "application/json",
             'cache-control': "no-cache"
@@ -446,9 +460,16 @@ class LobbyConnection():
 
         if response.get('result', '') == 'vm':
             self._logger.debug("Using VM: %d: %s", player_id, uid_hash)
-            self.send(dict(command="notice", style="error",
-                               text="You need to link your account to Steam in order to use FAF in a virtual machine. "
-                                    "Please contact an admin or moderator on the forums if you feel this is a false positive."))
+            self.send({
+                "command": "notice",
+                "style": "error",
+                "text": (
+                    "You need to link your account to Steam in order to use "
+                    "FAF in a virtual machine. Please contact an admin or "
+                    "moderator on the forums if you feel this is a false "
+                    "positive."
+                )
+            })
             self.send_warning("Your computer seems to be a virtual machine.<br><br>In order to "
                               "log in from a VM, you have to link your account to Steam: <a href='" +
                               config.WWW_URL + "/account/link'>" +
@@ -685,17 +706,29 @@ class LobbyConnection():
             game = self.game_service[uuid]
             if not game or game.state != GameState.LOBBY:
                 self._logger.debug("Game not in lobby state: %s", game)
-                self.send(dict(command="notice", style="info", text="The game you are trying to join is not ready."))
+                self.send({
+                    "command": "notice",
+                    "style": "info",
+                    "text": "The game you are trying to join is not ready."
+                })
                 return
 
             if game.password != password:
-                self.send(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
+                self.send({
+                    "command": "notice",
+                    "style": "info",
+                    "text": "Bad password (it's case sensitive)"
+                })
                 return
 
             self.launch_game(game, is_host=False)
 
         except KeyError:
-            self.send(dict(command="notice", style="info", text="The host has left the game"))
+            self.send({
+                "command": "notice",
+                "style": "info",
+                "text": "The host has left the game"
+            })
 
     async def command_game_matchmaking(self, message):
         mod = str(message.get('mod', 'ladder1v1'))
@@ -743,7 +776,11 @@ class LobbyConnection():
         try:
             title.encode('ascii')
         except UnicodeEncodeError:
-            self.send(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
+            self.send({
+                "command": "notice",
+                "style": "error",
+                "text": "Non-ascii characters in game name detected."
+            })
             return
 
         mod = message.get('mod') or 'faf'
