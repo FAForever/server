@@ -213,7 +213,7 @@ class LobbyConnection():
 
     @timed()
     def send_game_list(self):
-        self.sendJSON({
+        self.send({
             'command': 'game_info',
             'games': [game.to_dict() for game in self.game_service.open_games]
         })
@@ -251,14 +251,16 @@ class LobbyConnection():
             ))
 
     def kick(self, message=None):
-        self.sendJSON(dict(command="notice", style="kick"))
+        self.send({"command": "notice", "style": "kick"})
         if message:
-            self.sendJSON(dict(command="notice", style="info",
-                                                  text=message))
+            self.send({"command": "notice", "style": "info", "text": message})
         self.abort()
 
     def send_updated_achievements(self, updated_achievements):
-        self.sendJSON(dict(command="updated_achievements", updated_achievements=updated_achievements))
+        self.send({
+            "command": "updated_achievements",
+            "updated_achievements": updated_achievements
+        })
 
     async def command_admin(self, message):
         action = message['action']
@@ -268,8 +270,8 @@ class LobbyConnection():
                 player = self.player_service[message['user_id']]
                 if player:
                     self._logger.warning('Administrative action: %s closed game for %s', self.player, player)
-                    player.lobby_connection.sendJSON(dict(command="notice", style="kill"))
-                    player.lobby_connection.sendJSON(dict(command="notice", style="info",
+                    player.lobby_connection.send(dict(command="notice", style="kill"))
+                    player.lobby_connection.send(dict(command="notice", style="info",
                                        text=("Your game was closed by an administrator ({admin_name}). "
                                              "Please refer to our rules for the lobby/game here {rule_link}."
                                        .format(admin_name=self.player.login,
@@ -340,7 +342,7 @@ class LobbyConnection():
                 for user_id in user_ids:
                     player = self.player_service[message[user_id]]
                     if player:
-                        player.lobby_connection.sendJSON(dict(command="social", autojoin=[channel]))
+                        player.lobby_connection.send(dict(command="social", autojoin=[channel]))
 
     async def check_user_login(self, conn, login, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.
@@ -412,7 +414,7 @@ class LobbyConnection():
         if not version or not self.user_agent:
             update_msg['command'] = 'welcome'
             # For compatibility with 0.10.x updating mechanism
-            self.sendJSON(update_msg)
+            self.send(update_msg)
             return False
 
         # Check their client is reporting the right version number.
@@ -423,10 +425,10 @@ class LobbyConnection():
                 if "+" in version:
                     version = version.split('+')[0]
                 if semver.compare(versionDB, version) > 0:
-                    self.sendJSON(update_msg)
+                    self.send(update_msg)
                     return False
             except ValueError:
-                self.sendJSON(update_msg)
+                self.send(update_msg)
                 return False
         return True
 
@@ -444,7 +446,7 @@ class LobbyConnection():
 
         if response.get('result', '') == 'vm':
             self._logger.debug("Using VM: %d: %s", player_id, uid_hash)
-            self.sendJSON(dict(command="notice", style="error",
+            self.send(dict(command="notice", style="error",
                                text="You need to link your account to Steam in order to use FAF in a virtual machine. "
                                     "Please contact an admin or moderator on the forums if you feel this is a false positive."))
             self.send_warning("Your computer seems to be a virtual machine.<br><br>In order to "
@@ -546,7 +548,7 @@ class LobbyConnection():
         self.player.country = self.geoip_service.country(self.peer_address.host)
 
         # Send the player their own player info.
-        self.sendJSON({
+        self.send({
             "command": "welcome",
             "me": self.player.to_dict(),
 
@@ -556,7 +558,7 @@ class LobbyConnection():
         })
 
         # Tell player about everybody online. This must happen after "welcome".
-        self.sendJSON(
+        self.send(
             {
                 "command": "player_info",
                 "players": [player.to_dict() for player in self.player_service]
@@ -595,7 +597,7 @@ class LobbyConnection():
             channels.append("#%s_clan" % self.player.clan)
 
         json_to_send = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
-        self.sendJSON(json_to_send)
+        self.send(json_to_send)
 
         self.send_mod_list()
         self.send_game_list()
@@ -631,7 +633,7 @@ class LobbyConnection():
     @timed
     def command_ask_session(self, message):
         if self.check_version(message):
-            self.sendJSON({"command": "session", "session": self.session})
+            self.send({"command": "session", "session": self.session})
 
     async def command_avatar(self, message):
         action = message['action']
@@ -649,7 +651,7 @@ class LobbyConnection():
                     avatarList.append(avatar)
 
                 if avatarList:
-                    self.sendJSON({"command": "avatar", "avatarlist": avatarList})
+                    self.send({"command": "avatar", "avatarlist": avatarList})
 
         elif action == "select":
             avatar = message['avatar']
@@ -683,17 +685,17 @@ class LobbyConnection():
             game = self.game_service[uuid]
             if not game or game.state != GameState.LOBBY:
                 self._logger.debug("Game not in lobby state: %s", game)
-                self.sendJSON(dict(command="notice", style="info", text="The game you are trying to join is not ready."))
+                self.send(dict(command="notice", style="info", text="The game you are trying to join is not ready."))
                 return
 
             if game.password != password:
-                self.sendJSON(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
+                self.send(dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
                 return
 
             self.launch_game(game, is_host=False)
 
         except KeyError:
-            self.sendJSON(dict(command="notice", style="info", text="The host has left the game"))
+            self.send(dict(command="notice", style="info", text="The host has left the game"))
 
     async def command_game_matchmaking(self, message):
         mod = str(message.get('mod', 'ladder1v1'))
@@ -741,7 +743,7 @@ class LobbyConnection():
         try:
             title.encode('ascii')
         except UnicodeEncodeError:
-            self.sendJSON(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
+            self.send(dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
             return
 
         mod = message.get('mod') or 'faf'
@@ -786,7 +788,7 @@ class LobbyConnection():
         }
         if use_map:
             cmd['mapname'] = use_map
-        self.sendJSON(cmd)
+        self.send(cmd)
 
     async def command_modvault(self, message):
         type = message["type"]
@@ -807,7 +809,7 @@ class LobbyConnection():
                                    comments=[], description=description, played=played, likes=likes,
                                    downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
                                    ui=ui)
-                        self.sendJSON(out)
+                        self.send(out)
                     except:
                         self._logger.error("Error handling table_mod row (uid: {})".format(uid), exc_info=True)
                         pass
@@ -845,7 +847,7 @@ class LobbyConnection():
                         "JOIN mod_version v ON v.mod_id = s.mod_id "
                         "SET s.likes = s.likes + 1, likers=%s WHERE v.uid = %s",
                         json.dumps(likers), uid)
-                    self.sendJSON(out)
+                    self.send(out)
 
             elif type == "download":
                 uid = message["uid"]
@@ -870,7 +872,7 @@ class LobbyConnection():
         if self.nts_client:
             ice_servers = ice_servers + await self.nts_client.server_tokens(ttl=ttl)
 
-        self.sendJSON({
+        self.send({
             'command': 'ice_servers',
             'ice_servers': ice_servers,
             'ttl': ttl
@@ -885,7 +887,7 @@ class LobbyConnection():
                       and not attempt to reconnect.
         :return: None
         """
-        self.sendJSON({'command': 'notice',
+        self.send({'command': 'notice',
                        'style': 'info' if not fatal else 'error',
                        'text': message})
         if fatal:
@@ -902,12 +904,6 @@ class LobbyConnection():
 
     async def drain(self):
         await self.protocol.drain()
-
-    def sendJSON(self, data_dictionary):
-        """
-        Deprecated alias for send
-        """
-        self.send(data_dictionary)
 
     async def on_connection_lost(self):
         async def nopdrain(message):

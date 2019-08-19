@@ -145,7 +145,7 @@ def test_launch_game(lobbyconnection, game, create_player):
 
     lobbyconnection.player = create_player()
     lobbyconnection.game_connection = old_game_conn
-    lobbyconnection.sendJSON = mock.Mock()
+    lobbyconnection.send = mock.Mock()
     lobbyconnection.launch_game(game)
 
     # Verify all side effects of launch_game here
@@ -156,7 +156,7 @@ def test_launch_game(lobbyconnection, game, create_player):
     assert lobbyconnection.player.game_connection == lobbyconnection.game_connection
     assert lobbyconnection.game_connection.player == lobbyconnection.player
     assert lobbyconnection.player.state == PlayerState.JOINING
-    lobbyconnection.sendJSON.assert_called_once()
+    lobbyconnection.send.assert_called_once()
 
 
 def test_command_game_host_creates_correct_game(
@@ -232,7 +232,7 @@ def test_command_game_join_without_password(lobbyconnection,
                                             test_game_info,
                                             players,
                                             game_stats_service):
-    lobbyconnection.sendJSON = mock.Mock()
+    lobbyconnection.send = mock.Mock()
     lobbyconnection.game_service = game_service
     game = mock.create_autospec(Game(42, game_service, game_stats_service))
     game.state = GameState.LOBBY
@@ -245,7 +245,7 @@ def test_command_game_join_without_password(lobbyconnection,
     del test_game_info['password']
 
     lobbyconnection.command_game_join(test_game_info)
-    lobbyconnection.sendJSON.assert_called_once_with(
+    lobbyconnection.send.assert_called_once_with(
         dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
 
 
@@ -253,24 +253,24 @@ def test_command_game_join_game_not_found(lobbyconnection,
                                           game_service,
                                           test_game_info,
                                           players):
-    lobbyconnection.sendJSON = mock.Mock()
+    lobbyconnection.send = mock.Mock()
     lobbyconnection.game_service = game_service
     lobbyconnection.player = players.hosting
     test_game_info['uid'] = 42
 
     lobbyconnection.command_game_join(test_game_info)
-    lobbyconnection.sendJSON.assert_called_once_with(
+    lobbyconnection.send.assert_called_once_with(
         dict(command="notice", style="info", text="The host has left the game"))
 
 
 def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
                                                          mock_games,
                                                          test_game_info_invalid):
-    lobbyconnection.sendJSON = mock.Mock()
+    lobbyconnection.send = mock.Mock()
     mock_games.create_game = mock.Mock()
     lobbyconnection.command_game_host(test_game_info_invalid)
     assert mock_games.create_game.mock_calls == []
-    lobbyconnection.sendJSON.assert_called_once_with(
+    lobbyconnection.send.assert_called_once_with(
         dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
 
 
@@ -587,7 +587,7 @@ async def test_command_admin_closeFA(mocker, lobbyconnection):
         'user_id': 55
     })
 
-    tuna.lobby_connection.sendJSON.assert_any_call(dict(
+    tuna.lobby_connection.send.assert_any_call(dict(
         command='notice',
         style='info',
         text=("Your game was closed by an administrator (Sheeo). "
