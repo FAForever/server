@@ -63,6 +63,9 @@ async def test_process_game_stats(game_stats_service, event_service, achievement
     with open("tests/data/game_stats_full_example.json", "r") as stats_file:
         stats = stats_file.read()
 
+    mock_lconn = Mock()
+    player.lobby_connection = mock_lconn
+
     await game_stats_service.process_game_stats(player, game, stats)
 
     event_service.record_event.assert_any_call(ev.EVENT_LOST_ACUS, 0, [])
@@ -131,6 +134,7 @@ async def test_process_game_stats(game_stats_service, event_service, achievement
     assert len(event_service.mock_calls) == 19
     assert achievement_service.execute_batch_update.called
     assert event_service.execute_batch_update.called
+    assert mock_lconn.send_updated_achievements.called
 
 
 async def test_process_game_stats_single_player(game_stats_service, player, game, achievement_service, event_service):
