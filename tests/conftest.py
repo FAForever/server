@@ -18,8 +18,9 @@ from server.game_service import GameService
 from server.geoip_service import GeoIpService
 from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
+from server.rating import RatingType
+
 from tests import CoroMock
-from trueskill import Rating
 
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -182,8 +183,15 @@ def make_game(uid, players):
 def player_factory():
     from server.players import Player, PlayerState
 
-    def make(state=PlayerState.IDLE, **kwargs):
-        p = Player(**kwargs)
+    def make(state=PlayerState.IDLE, global_rating=None, ladder_rating=None,
+             **kwargs):
+        ratings = {
+            RatingType.GLOBAL: global_rating,
+            RatingType.LADDER_1V1: ladder_rating,
+        }
+        ratings = {k: v for k, v in ratings.items() if v is not None}
+
+        p = Player(ratings=ratings, **kwargs)
         p.state = state
         return p
 

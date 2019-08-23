@@ -5,6 +5,7 @@ import aiocron
 import server.db as db
 from server.decorators import with_logger
 from server.players import Player
+from server.rating import RatingType
 from sqlalchemy import and_, select
 
 from .db.models import (
@@ -84,13 +85,15 @@ class PlayerService:
             if not row:
                 return
 
-            player.global_rating = (
-                row[global_rating.c.mean], row[global_rating.c.deviation]
+            player.ratings[RatingType.GLOBAL] = (
+                row[global_rating.c.mean],
+                row[global_rating.c.deviation]
             )
             player.numGames = row[global_rating.c.numGames]
 
-            player.ladder_rating = (
-                row[ladder1v1_rating.c.mean], row[ladder1v1_rating.c.deviation]
+            player.ratings[RatingType.LADDER_1V1] = (
+                row[ladder1v1_rating.c.mean],
+                row[ladder1v1_rating.c.deviation]
             )
             player.ladder_games = row[ladder1v1_rating.c.numGames]
 

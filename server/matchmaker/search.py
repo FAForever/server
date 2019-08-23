@@ -8,6 +8,7 @@ from trueskill import Rating, quality
 from .. import config
 from ..decorators import with_logger
 from ..players import Player
+from server.rating import RatingType
 
 
 @with_logger
@@ -20,22 +21,22 @@ class Search:
         self,
         players: List[Player],
         start_time: Optional[float]=None,
-        rating_prop: str='ladder_rating'
+        rating_type: RatingType=RatingType.LADDER_1V1
     ):
         """
         Default ctor for a search
 
         :param players: player to use for searching
         :param start_time: optional start time for the search
-        :param rating_prop: 'ladder_rating' or 'global_rating'
+        :param rating_type: rating type
         :return: the search object
         """
         assert isinstance(players, list)
         for player in players:
-            assert getattr(player, rating_prop) is not None
+            assert player.ratings[rating_type] is not None
 
         self.players = players
-        self.rating_prop = rating_prop
+        self.rating_type = rating_type
         self.start_time = start_time or time.time()
         self._match = asyncio.Future()
 
@@ -44,7 +45,7 @@ class Search:
         """
         Returns an adjusted mean with a simple linear interpolation between current mean and a specified base mean
         """
-        mean, dev = player.ladder_rating
+        mean, dev = player.ratings[RatingType.LADDER_1V1]
         adjusted_mean = ((config.NEWBIE_MIN_GAMES - player.ladder_games) * config.NEWBIE_BASE_MEAN
                          + player.ladder_games * mean) / config.NEWBIE_MIN_GAMES
         return adjusted_mean, dev
@@ -54,38 +55,34 @@ class Search:
         ratings = []
         for player, rating in zip(self.players, self.raw_ratings):
             # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
-            if player.ladder_games <= config.NEWBIE_MIN_GAMES and self.rating_prop == 'ladder_rating':
+            if (player.ladder_games <= config.NEWBIE_MIN_GAMES
+                    and self.rating_type is RatingType.LADDER_1V1):
                 rating = self.adjusted_rating(player)
             ratings.append(rating)
         return ratings
 
     @property
     def raw_ratings(self):
-        return [getattr(player, self.rating_prop) for player in self.players]
+        return [player.ratings[self.rating_type] for player in self.players]
+
+    def _nearby_rating_range(self, delta):
+        """
+        Returns 'boundary' mu values for player matching. Adjust delta for
+        different game qualities.
+        """
+        mu, _ = self.ratings[0]  # Takes the rating of the first player, only works for 1v1
+        rounded_mu = int(math.ceil(mu / 10) * 10) # Round to 10
+        return rounded_mu - delta, rounded_mu + delta
 
     @property
     def boundary_80(self):
-        """
-        Returns 'boundary' mu values for achieving roughly 80% quality
-
-        These are the mean, rounded to nearest 10, +/- 200, assuming sigma <= 100
-        """
-        # TODO: Figure out what to do with these boundaries
-        mu, _ = self.ratings[0]  # Takes the rating of the first player, only works for 1v1
-        rounded_mu = int(math.ceil(mu / 10) * 10)
-        return rounded_mu - 200, rounded_mu + 200
+        """ Achieves roughly 80% quality. """
+        return self._nearby_rating_range(200)
 
     @property
     def boundary_75(self):
-        """
-        Returns 'boundary' mu values for achieving roughly 75% quality
-
-        These are the mean, rounded to nearest 10, +/- 100, assuming sigma <= 200
-        """
-        # TODO: Figure out what to do with these boundaries
-        mu, _ = self.ratings[0]  # Takes the rating of the first player, only works for 1v1
-        rounded_mu = int(math.ceil(mu / 10) * 10)
-        return rounded_mu - 100, rounded_mu + 100
+        """ Achieves roughly 75% quality. FIXME - why is it MORE restrictive??? """
+        return self._nearby_rating_range(100)
 
     @property
     def search_expansion(self) -> float:

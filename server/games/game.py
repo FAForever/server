@@ -13,6 +13,7 @@ from trueskill import Rating
 
 from ..abc.base_game import BaseGame, GameConnectionState, InitMode
 from ..players import Player, PlayerState
+from server.rating import RatingType
 
 FFA_TEAM = 1
 
@@ -528,7 +529,7 @@ class Game(BaseGame):
                 "DELETE FROM game_stats "
                 "WHERE id=%s", (self.id,))
 
-    async def persist_rating_change_stats(self, rating_groups, rating='global'):
+    async def persist_rating_change_stats(self, rating_groups, rating=RatingType.GLOBAL):
         """
         Persist computed ratings to the respective players' selected rating
         :param rating_groups: of the form returned by Game.compute_rating
@@ -541,30 +542,31 @@ class Game(BaseGame):
             for player, new_rating in team.items()
         }
 
-        rating_table = '{}_rating'.format('ladder1v1' if rating == 'ladder' else rating)
-
         async with db.engine.acquire() as conn:
             for player, new_rating in new_ratings.items():
-                self._logger.debug("New %s rating for %s: %s", rating, player, new_rating)
-                setattr(player, '{}_rating'.format(rating), new_rating)
+                self._logger.debug(f"New %s rating for %s: %s", rating.value, player, new_rating)
+                player.ratings[rating] = new_rating
                 await conn.execute(
                     "UPDATE game_player_stats "
                     "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
                     "WHERE gameId = %s AND playerId = %s",
                     (new_rating.mu, new_rating.sigma, self.id, player.id))
-                if rating == 'ladder':
+                if rating is RatingType.LADDER_1V1:
                     player.ladder_games += 1
                 else:
                     player.numGames += 1
 
-                await self._update_rating_table(conn, rating_table, player, new_rating)
+                await self._update_rating_table(conn, rating, player, new_rating)
 
                 self.game_service.player_service.mark_dirty(player)
 
-    async def _update_rating_table(self, conn, table: str, player: Player, new_rating):
+    async def _update_rating_table(self, conn, rating: RatingType,
+                                   player: Player, new_rating):
         # If we are updating the ladder1v1_rating table then we also need to update
         # the `winGames` column which doesn't exist on the global_rating table
-        if table == 'ladder1v1_rating':
+        table = f'{rating.value}_rating'
+
+        if rating is RatingType.LADDER_1V1:
             is_victory = self.outcome(player) == GameOutcome.VICTORY
             await conn.execute(
                 "UPDATE ladder1v1_rating "
@@ -787,9 +789,9 @@ class Game(BaseGame):
                 continue
 
             if self.game_mode == 'ladder1v1':
-                mean, dev = player.ladder_rating
+                mean, dev = player.ratings[RatingType.LADDER_1V1]
             else:
-                mean, dev = player.global_rating
+                mean, dev = player.ratings[RatingType.GLOBAL]
 
             query_args.append((
                 self.id,
@@ -870,10 +872,10 @@ class Game(BaseGame):
         outcome = most_reported_result[0]
         return outcome
 
-    def compute_rating(self, rating='global'):
+    def compute_rating(self, rating=RatingType.GLOBAL):
         """
         Compute new ratings
-        :param rating: 'global' or 'ladder'
+        :param rating: Rating type
         :return: rating groups of the form:
         >>> p1,p2,p3,p4 = Player()
         >>> [{p1: p1.rating, p2: p2.rating}, {p3: p3.rating, p4: p4.rating}]
@@ -904,11 +906,11 @@ class Game(BaseGame):
         rating_groups = []
         for team in sorted(self.teams):
             if team != 1:
-                rating_groups += [{player: Rating(*getattr(player, '{}_rating'.format(rating)))
+                rating_groups += [{player: Rating(*player.ratings[rating])
                                    for player in self.players if
                                    self.get_player_option(player.id, 'Team') == team}]
         for player, score in sorted(ffa_scores, key=lambda x: self.get_player_option(x[0].id, 'Army')):
-            rating_groups += [{player: Rating(*getattr(player, '{}_rating'.format(rating)))}]
+            rating_groups += [{player: Rating(*player.ratings[rating])}]
             ranks.append(-score)
         self._logger.debug("Rating groups: %s", rating_groups)
         self._logger.debug("Ranks: %s", ranks)

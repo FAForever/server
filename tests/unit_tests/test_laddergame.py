@@ -5,6 +5,7 @@ from sqlalchemy import text
 from server.games import LadderGame
 from server.games.game import GameState, ValidityState
 from tests.unit_tests.test_game import add_connected_players
+from server.rating import RatingType
 
 
 @pytest.fixture()
@@ -72,8 +73,8 @@ async def test_rate_game(laddergame: LadderGame, db_engine, game_add_players):
     players = game_add_players(laddergame, 2)
     laddergame.set_player_option(players[0].id, 'Team', 1)
     laddergame.set_player_option(players[1].id, 'Team', 2)
-    player_1_old_mean = players[0].ladder_rating[0]
-    player_2_old_mean = players[1].ladder_rating[0]
+    player_1_old_mean = players[0].ratings[RatingType.LADDER_1V1][0]
+    player_2_old_mean = players[1].ratings[RatingType.LADDER_1V1][0]
 
     await laddergame.launch()
     laddergame.launched_at = time.time() - 60*20
@@ -82,8 +83,8 @@ async def test_rate_game(laddergame: LadderGame, db_engine, game_add_players):
     await laddergame.on_game_end()
 
     assert laddergame.validity is ValidityState.VALID
-    assert players[0].ladder_rating[0] > player_1_old_mean
-    assert players[1].ladder_rating[0] < player_2_old_mean
+    assert players[0].ratings[RatingType.LADDER_1V1][0] > player_1_old_mean
+    assert players[1].ratings[RatingType.LADDER_1V1][0] < player_2_old_mean
 
     async with db_engine.acquire() as conn:
         result = await conn.execute("SELECT mean, deviation, after_mean, after_deviation FROM game_player_stats WHERE gameid = %s", laddergame.id)

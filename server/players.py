@@ -1,7 +1,7 @@
 import weakref
 from enum import Enum, unique
 
-from trueskill import Rating
+from server.rating import RatingType, PlayerRatings
 from .factions import Faction
 
 
@@ -27,8 +27,7 @@ class Player:
         login: str = None,
         session: int = 0,
         player_id: int = 0,
-        global_rating=(1500, 500),
-        ladder_rating=(1500, 500),
+        ratings=None,
         clan=None,
         num_games: int = 0,
         ladder_games: int = 0,
@@ -43,8 +42,9 @@ class Player:
         # The player_id of the user in the `login` table of the database.
         self.session = session
 
-        self.global_rating = global_rating
-        self.ladder_rating = ladder_rating
+        self.ratings = PlayerRatings(default=(1500, 500))
+        if ratings is not None:
+            self.ratings.update(ratings)
 
         # social
         self.avatar = None
@@ -72,28 +72,6 @@ class Player:
         self._game_connection = lambda: None
 
     @property
-    def global_rating(self):
-        return self._global_rating
-
-    @global_rating.setter
-    def global_rating(self, value: Rating):
-        if isinstance(value, Rating):
-            self._global_rating = (value.mu, value.sigma)
-        else:
-            self._global_rating = value
-
-    @property
-    def ladder_rating(self):
-        return self._ladder_rating
-
-    @ladder_rating.setter
-    def ladder_rating(self, value: Rating):
-        if isinstance(value, Rating):
-            self._ladder_rating = (value.mu, value.sigma)
-        else:
-            self._ladder_rating = value
-
-    @property
     def faction(self):
         return self._faction
 
@@ -118,7 +96,8 @@ class Player:
     @property
     def game(self):
         """
-        Weak reference to the Game object that this player wants to join or is currently in
+        Weak reference to the Game object that this player wants to join or is
+        currently in
         """
         return self._game()
 
@@ -161,8 +140,8 @@ class Player:
                 filter_none, (
                     ('id', self.id),
                     ('login', self.login),
-                    ('global_rating', self.global_rating),
-                    ('ladder_rating', self.ladder_rating),
+                    ('global_rating', self.ratings[RatingType.GLOBAL]),
+                    ('ladder_rating', self.ratings[RatingType.LADDER_1V1]),
                     ('number_of_games', self.numGames),
                     ('avatar', self.avatar),
                     ('country', self.country),
@@ -172,9 +151,9 @@ class Player:
         )
 
     def __str__(self):
-        return "Player({}, {}, {}, {})".format(
-            self.login, self.id, self.global_rating, self.ladder_rating
-        )
+        return (f"Player({self.login}, {self.id}, "
+                f"{self.ratings[RatingType.GLOBAL]}, "
+                f"{self.ratings[RatingType.LADDER_1V1]})")
 
     def __repr__(self):
         return self.__str__()

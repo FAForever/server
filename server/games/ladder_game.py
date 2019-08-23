@@ -4,6 +4,7 @@ from server.abc.base_game import InitMode
 from server.players import Player
 
 from .game import Game, GameOutcome, ValidityState
+from server.rating import RatingType
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +20,8 @@ class LadderGame(Game):
 
     async def rate_game(self):
         if self.validity == ValidityState.VALID:
-            new_ratings = self.compute_rating(rating='ladder')
-            await self.persist_rating_change_stats(new_ratings, rating='ladder')
+            new_ratings = self.compute_rating(RatingType.LADDER_1V1)
+            await self.persist_rating_change_stats(new_ratings, RatingType.LADDER_1V1)
 
     def is_winner(self, player: Player):
         return self.outcome(player) == GameOutcome.VICTORY

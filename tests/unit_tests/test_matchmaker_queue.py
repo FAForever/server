@@ -7,6 +7,7 @@ import mock
 import pytest
 import server.config as config
 from server.matchmaker import MatchmakerQueue, PopTimer, Search
+from server.rating import RatingType
 
 
 @pytest.fixture
@@ -36,7 +37,7 @@ def matchmaker_players_all_match(player_factory):
 def test_newbie_min_games(matchmaker_players):
     p1, _, _, _, _, p6 = matchmaker_players
     s1, s6 = Search([p1]), Search([p6])
-    assert s1.ratings[0] == p1.ladder_rating and s6.ratings[0] != p6.ladder_rating
+    assert s1.ratings[0] == p1.ratings[RatingType.LADDER_1V1] and s6.ratings[0] != p6.ratings[RatingType.LADDER_1V1]
 
 
 def test_search_threshold(matchmaker_players):
@@ -122,10 +123,10 @@ def test_search_no_match_wrong_type(matchmaker_players):
 def test_search_boundaries(matchmaker_players):
     p1 = matchmaker_players[0]
     s1 = Search([p1])
-    assert p1.ladder_rating[0] > s1.boundary_80[0]
-    assert p1.ladder_rating[0] < s1.boundary_80[1]
-    assert p1.ladder_rating[0] > s1.boundary_75[0]
-    assert p1.ladder_rating[0] < s1.boundary_75[1]
+    assert p1.ratings[RatingType.LADDER_1V1][0] > s1.boundary_80[0]
+    assert p1.ratings[RatingType.LADDER_1V1][0] < s1.boundary_80[1]
+    assert p1.ratings[RatingType.LADDER_1V1][0] > s1.boundary_75[0]
+    assert p1.ratings[RatingType.LADDER_1V1][0] < s1.boundary_75[1]
 
 
 def test_search_expansion(matchmaker_players, mocker):

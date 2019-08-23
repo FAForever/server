@@ -8,6 +8,7 @@ from server.gameconnection import GameConnection, GameConnectionState
 from server.games import CoopGame, CustomGame
 from server.games.game import (Game, GameError, GameOutcome, GameState,
                                ValidityState, Victory, VisibilityState)
+from server.rating import RatingType
 from tests import CoroMock
 from tests.unit_tests.conftest import (add_connected_player,
                                        add_connected_players,
@@ -358,8 +359,8 @@ async def test_compute_rating_computes_global_ratings(game: Game, players):
     await game.clear_data()
 
     game.state = GameState.LOBBY
-    players.hosting.global_rating = Rating(1500, 250)
-    players.joining.global_rating = Rating(1500, 250)
+    players.hosting.ratings[RatingType.GLOBAL] = Rating(1500, 250)
+    players.joining.ratings[RatingType.GLOBAL] = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
     await game.add_result(players.hosting, 0, 'victory', 1)
@@ -375,15 +376,15 @@ async def test_compute_rating_computes_ladder_ratings(game: Game, players):
     await game.clear_data()
 
     game.state = GameState.LOBBY
-    players.hosting.ladder_rating = Rating(1500, 250)
-    players.joining.ladder_rating = Rating(1500, 250)
+    players.hosting.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
+    players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
     await game.add_result(players.hosting, 0, 'victory', 1)
     await game.add_result(players.joining, 1, 'defeat', 0)
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 1)
-    groups = game.compute_rating(rating='ladder')
+    groups = game.compute_rating(rating=RatingType.LADDER_1V1)
     assert players.hosting in groups[0]
     assert players.joining in groups[1]
 
@@ -411,7 +412,7 @@ async def test_compute_rating_balanced_teamgame(game: Game, player_factory):
     for team in result:
         for player, new_rating in team.items():
             assert player in game.players
-            assert new_rating != Rating(*player.global_rating)
+            assert new_rating != Rating(*player.ratings[RatingType.GLOBAL])
 
 
 async def test_game_get_army_result_takes_most_reported_result(game,
@@ -651,7 +652,7 @@ async def test_partial_stats_not_affecting_rating_persistence(
     players = game_add_players(game, 2)
     game.set_player_option(players[0].id, 'Team', 2)
     game.set_player_option(players[1].id, 'Team', 3)
-    old_mean = players[0].global_rating[0]
+    old_mean = players[0].ratings[RatingType.GLOBAL][0]
 
     await game.launch()
     game.launched_at = time.time()-60*60
@@ -661,7 +662,7 @@ async def test_partial_stats_not_affecting_rating_persistence(
     await game.on_game_end()
 
     assert game.validity is ValidityState.VALID
-    assert players[0].global_rating[0] > old_mean
+    assert players[0].ratings[RatingType.GLOBAL][0] > old_mean
 
 
 async def test_players_exclude_observers(game: Game, game_add_players,
@@ -688,8 +689,8 @@ async def test_game_outcomes(game: Game, players):
     await game.clear_data()
 
     game.state = GameState.LOBBY
-    players.hosting.ladder_rating = Rating(1500, 250)
-    players.joining.ladder_rating = Rating(1500, 250)
+    players.hosting.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
+    players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
     await game.add_result(players.hosting, 0, 'victory', 1)
@@ -707,8 +708,8 @@ async def test_game_outcomes_no_results(game: Game, players):
     await game.clear_data()
 
     game.state = GameState.LOBBY
-    players.hosting.ladder_rating = Rating(1500, 250)
-    players.joining.ladder_rating = Rating(1500, 250)
+    players.hosting.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
+    players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
     game.set_player_option(players.hosting.id, 'Team', 1)
@@ -724,8 +725,8 @@ async def test_game_outcomes_conflicting(game: Game, players):
     await game.clear_data()
 
     game.state = GameState.LOBBY
-    players.hosting.ladder_rating = Rating(1500, 250)
-    players.joining.ladder_rating = Rating(1500, 250)
+    players.hosting.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
+    players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
     await game.add_result(players.hosting, 0, 'victory', 1)

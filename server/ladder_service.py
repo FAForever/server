@@ -12,6 +12,7 @@ from .decorators import with_logger
 from .game_service import GameService
 from .matchmaker import MatchmakerQueue, Search
 from .players import Player, PlayerState
+from server.rating import RatingType
 
 MapDescription = NamedTuple('Map', [("id", int), ("name", str), ("path", str)])
 
@@ -78,7 +79,7 @@ class LadderService:
     def inform_player(self, player: Player):
         if player not in self._informed_players:
             self._informed_players.add(player)
-            mean, deviation = player.ladder_rating
+            mean, deviation = player.ratings[RatingType.LADDER_1V1]
 
             if deviation > 490:
                 player.lobby_connection.send({

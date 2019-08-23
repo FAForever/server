@@ -1,13 +1,14 @@
 from mock import Mock
+from server.rating import RatingType
 
 
 async def test_fetch_player_data(player_factory, player_service):
     player = player_factory(player_id=50)
 
     await player_service.fetch_player_data(player)
-    assert player.global_rating == (1200, 250)
+    assert player.ratings[RatingType.GLOBAL] == (1200, 250)
     assert player.numGames == 42
-    assert player.ladder_rating == (1300, 400)
+    assert player.ratings[RatingType.LADDER_1V1] == (1300, 400)
     assert player.clan == '123'
     assert player.avatar == {'url': 'http://content.faforever.com/faf/avatars/UEF.png', 'tooltip': 'UEF'}
 
@@ -27,10 +28,10 @@ async def test_fetch_player_data_no_avatar_or_clan(player_factory, player_servic
     player = player_factory(player_id=100)
 
     await player_service.fetch_player_data(player)
-    assert player.global_rating == (1500, 500)
+    assert player.ratings[RatingType.GLOBAL] == (1500, 500)
     assert player.numGames == 0
-    assert player.ladder_rating == (1500, 500)
-    player.clan is None
+    assert player.ratings[RatingType.LADDER_1V1] == (1500, 500)
+    assert player.clan is None
     assert player.avatar is None
 
 
