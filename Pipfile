@@ -30,6 +30,7 @@ pytest-cov = "*"
 coveralls = "*"
 mock = "*"
 vulture = "*"
+asynctest = "*"
 
 [requires]
 python_version = "3.6"
