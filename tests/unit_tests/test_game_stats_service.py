@@ -6,20 +6,20 @@ from server.games import Game
 from server.stats import achievement_service as ach
 from server.stats import event_service as ev
 from server.stats.game_stats_service import GameStatsService
-from tests import CoroMock
+from asynctest import CoroutineMock
 
 
 @pytest.fixture()
 def event_service():
     m = Mock(spec=ev.EventService)
-    m.execute_batch_update = CoroMock()
+    m.execute_batch_update = CoroutineMock()
     return m
 
 
 @pytest.fixture()
 def achievement_service():
     m = Mock(spec=ach.AchievementService)
-    m.execute_batch_update = CoroMock()
+    m.execute_batch_update = CoroutineMock()
     return m
 
 
@@ -130,8 +130,8 @@ async def test_process_game_stats(game_stats_service, event_service, achievement
     achievement_service.execute_batch_update.assert_called_once_with(42, [])
 
     # In decent mock frameworks, there exists a "assert_no_more_interactions"
-    assert len(achievement_service.mock_calls) == 38
-    assert len(event_service.mock_calls) == 19
+    assert len(achievement_service.mock_calls) == 39
+    assert len(event_service.mock_calls) == 20
     assert achievement_service.execute_batch_update.called
     assert event_service.execute_batch_update.called
     assert mock_lconn.send_updated_achievements.called

@@ -9,7 +9,7 @@ from server.games import Game
 from server.geoip_service import GeoIpService
 from server.ladder_service import LadderService
 from server.players import Player
-from tests import CoroMock
+from asynctest import CoroutineMock
 
 
 @pytest.fixture
@@ -55,7 +55,8 @@ def make_mock_game_connection(state=GameConnectionState.INITIALIZING, player=Non
 @pytest.fixture
 def game_stats_service():
     service = mock.Mock(spec=GameStatsService)
-    service.process_game_stats = CoroMock()
+    service.process_game_stats = CoroutineMock()
+    service.reset_mock()
     return service
 
 
@@ -75,7 +76,7 @@ def ladder_service(request, mocker, game_service: GameService):
 @pytest.fixture
 def geoip_service():
     service = GeoIpService()
-    service.download_geoip_db = CoroMock()
+    service.download_geoip_db = CoroutineMock()
     return service
 
 

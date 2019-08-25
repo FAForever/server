@@ -17,7 +17,7 @@ from server.players import Player, PlayerState
 from server.protocol import QDataStreamProtocol
 from server.types import Address
 from sqlalchemy import and_, select, text
-from tests import CoroMock
+from asynctest import CoroutineMock
 
 
 @pytest.fixture()
@@ -89,7 +89,7 @@ def lobbyconnection(loop, mock_protocol, mock_games, mock_players, mock_player, 
     lc.player = mock_player
     lc.protocol = mock_protocol
     lc.player_service.get_permission_group.return_value = 0
-    lc.player_service.fetch_player_data = CoroMock()
+    lc.player_service.fetch_player_data = CoroutineMock()
     lc.peer_address = Address('127.0.0.1', 1234)
     return lc
 
@@ -598,7 +598,7 @@ async def test_command_admin_closeFA(mocker, lobbyconnection):
 
 async def test_game_subscription(lobbyconnection: LobbyConnection):
     game = Mock()
-    game.handle_action = CoroMock()
+    game.handle_action = CoroutineMock()
     lobbyconnection.game_connection = game
     lobbyconnection.ensure_authenticated = lambda _: True
 

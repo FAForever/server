@@ -3,13 +3,13 @@ from unittest.mock import Mock, MagicMock
 import pytest
 from server.api.api_accessor import ApiAccessor, SessionManager
 from server.stats.achievement_service import AchievementService
-from tests import CoroMock
+from asynctest import CoroutineMock
 
 
 @pytest.fixture()
 def api_accessor():
     m = Mock(spec=ApiAccessor)
-    m.update_achievements = CoroMock(return_value=(200, MagicMock()))
+    m.update_achievements = CoroutineMock(return_value=(200, MagicMock()))
     m.api_session = SessionManager()
     return m
 
@@ -45,14 +45,14 @@ async def test_fill_queue(service: AchievementService):
 
 async def test_api_broken(service: AchievementService):
     queue = create_queue()
-    service.api_accessor.update_achievements = CoroMock(return_value=(500, None))
+    service.api_accessor.update_achievements = CoroutineMock(return_value=(500, None))
     result = await service.execute_batch_update(42, queue)
     assert result is None
 
 
 async def test_api_broken_2(service: AchievementService):
     queue = create_queue()
-    service.api_accessor.update_achievements = CoroMock(side_effect=ConnectionError())
+    service.api_accessor.update_achievements = CoroutineMock(side_effect=ConnectionError())
     result = await service.execute_batch_update(42, queue)
     assert result is None
 
@@ -67,7 +67,7 @@ async def test_update_multiple(service: AchievementService):
         ]
     }
 
-    service.api_accessor.update_achievements.coro.return_value = (200, content)
+    service.api_accessor.update_achievements.return_value = (200, content)
 
     queue = create_queue()
     result = await service.execute_batch_update(42, queue)

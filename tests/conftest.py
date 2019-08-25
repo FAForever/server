@@ -20,7 +20,7 @@ from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
 from server.rating import RatingType
 
-from tests import CoroMock
+from asynctest import CoroutineMock
 
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -168,7 +168,7 @@ def make_game(uid, players):
     from server.abc.base_game import InitMode
     mock_parent = mock.Mock()
     game = mock.create_autospec(spec=Game(uid, mock_parent, mock.Mock()))
-    game.remove_game_connection = CoroMock()
+    game.remove_game_connection = CoroutineMock()
     players.hosting.getGame = mock.Mock(return_value=game)
     players.joining.getGame = mock.Mock(return_value=game)
     players.peer.getGame = mock.Mock(return_value=game)
@@ -232,8 +232,8 @@ def matchmaker_queue(game_service) -> MatchmakerQueue:
 def api_accessor():
     class FakeSession:
         def __init__(self):
-            self.request = CoroMock(return_value=(200, 'test'))
-            self.fetch_token = CoroMock()
+            self.request = CoroutineMock(return_value=(200, 'test'))
+            self.fetch_token = CoroutineMock()
 
     api_accessor = ApiAccessor()
     api_accessor.api_session.session = FakeSession()

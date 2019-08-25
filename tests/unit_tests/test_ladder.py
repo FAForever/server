@@ -5,7 +5,7 @@ import pytest
 from server import GameService, LadderService
 from server.matchmaker import Search
 from server.players import PlayerState
-from tests import CoroMock
+from asynctest import CoroutineMock
 
 
 async def test_start_game(ladder_service: LadderService, game_service:
@@ -20,7 +20,7 @@ async def test_start_game(ladder_service: LadderService, game_service:
 
     game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
 
-    with mock.patch('server.games.game.Game.await_hosted', CoroMock()):
+    with mock.patch('server.games.game.Game.await_hosted', CoroutineMock()):
         await ladder_service.start_game(p1, p2)
 
     assert p1.lobby_connection.launch_game.called
@@ -39,7 +39,7 @@ async def test_start_game_timeout(ladder_service: LadderService, game_service:
 
     game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
 
-    with mock.patch('server.games.game.Game.sleep', CoroMock()):
+    with mock.patch('server.games.game.Game.sleep', CoroutineMock()):
         await ladder_service.start_game(p1, p2)
 
     p1.lobby_connection.send.assert_called_once_with({"command": "game_launch_timeout"})
@@ -188,7 +188,7 @@ async def test_start_game_called_on_match(ladder_service: LadderService,
     p1.lobby_connection = mock_lc1
     p2.lobby_connection = mock_lc2
 
-    ladder_service.start_game = CoroMock()
+    ladder_service.start_game = CoroutineMock()
     ladder_service.inform_player = mock.Mock()
 
     ladder_service.start_search(p1, Search([p1]), 'ladder1v1')
@@ -201,7 +201,7 @@ async def test_start_game_called_on_match(ladder_service: LadderService,
 
 
 async def test_choose_map(ladder_service: LadderService):
-    ladder_service.get_ladder_history = CoroMock(
+    ladder_service.get_ladder_history = CoroutineMock(
         return_value=[1, 2, 3]
     )
 
@@ -220,7 +220,7 @@ async def test_choose_map(ladder_service: LadderService):
 
 
 async def test_choose_map_all_maps_played(ladder_service: LadderService):
-    ladder_service.get_ladder_history = CoroMock(
+    ladder_service.get_ladder_history = CoroutineMock(
         return_value=[1, 2, 3]
     )
 

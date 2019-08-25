@@ -9,7 +9,7 @@ from server.games import CoopGame, CustomGame
 from server.games.game import (Game, GameError, GameOutcome, GameState,
                                ValidityState, Victory, VisibilityState)
 from server.rating import RatingType
-from tests import CoroMock
+from asynctest import CoroutineMock
 from tests.unit_tests.conftest import (add_connected_player,
                                        add_connected_players,
                                        make_mock_game_connection)
@@ -218,7 +218,7 @@ async def test_remove_game_connection(game: Game, players, mock_game_connection)
 async def test_game_end_when_no_more_connections(game: Game, mock_game_connection):
     game.state = GameState.LOBBY
 
-    game.on_game_end = CoroMock()
+    game.on_game_end = CoroutineMock()
     mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
     game.add_game_connection(mock_game_connection)
     await game.remove_game_connection(mock_game_connection)
@@ -257,7 +257,7 @@ async def test_game_sim_ends_when_connections_ended_sim(game: Game, players):
 
 async def test_game_marked_dirty_when_timed_out(game: Game):
     game.state = GameState.INITIALIZING
-    game.sleep = CoroMock()
+    game.sleep = CoroutineMock()
     await game.timeout_game()
     assert game.state == GameState.ENDED
     assert game in game.game_service.dirty_games
@@ -433,7 +433,7 @@ async def test_game_get_army_result_takes_most_reported_result(game,
 
 
 async def test_on_game_end_does_not_call_rate_game_for_single_player(game):
-    game.rate_game = CoroMock()
+    game.rate_game = CoroutineMock()
     game.state = GameState.LIVE
     game.launched_at = time.time()
 
@@ -445,7 +445,7 @@ async def test_on_game_end_does_not_call_rate_game_for_single_player(game):
 async def test_on_game_end_calls_rate_game_with_two_players(game,
                                                             game_add_players):
     await game.clear_data()
-    game.rate_game = CoroMock()
+    game.rate_game = CoroutineMock()
     game.state = GameState.LOBBY
     game_add_players(game, 2)
 
@@ -520,7 +520,7 @@ async def test_to_dict(game, player_factory):
 async def test_persist_results_not_called_with_one_player(game,
                                                           player_factory):
     await game.clear_data()
-    game.persist_results = CoroMock()
+    game.persist_results = CoroutineMock()
 
     game.state = GameState.LOBBY
     players = [
@@ -540,7 +540,7 @@ async def test_persist_results_not_called_with_no_results(game,
     game.state = GameState.LOBBY
     game_add_players(game, 2, team=2)
     game_add_players(game, 2, team=3)
-    game.persist_results = CoroMock()
+    game.persist_results = CoroutineMock()
     game.launched_at = time.time() - 60*20
 
     await game.launch()

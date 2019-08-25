@@ -1,12 +1,12 @@
 from mock import Mock
 from server.api.api_accessor import SessionManager
 from server.config import API_BASE_URL
-from tests import CoroMock
+from asynctest import CoroutineMock
 
 
 async def test_session_manager(mocker):
     class MockSession(Mock):
-        fetch_token = CoroMock()
+        fetch_token = CoroutineMock()
 
     manager = SessionManager()
     mocker.patch('server.api.api_accessor.OAuth2Session', MockSession)
