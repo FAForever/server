@@ -11,7 +11,7 @@ import server.db as db
 import trueskill
 from trueskill import Rating
 
-from ..abc.base_game import BaseGame, GameConnectionState, InitMode
+from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
 from server.rating import RatingType
 
@@ -130,9 +130,13 @@ class GameError(Exception):
     pass
 
 
-class Game(BaseGame):
+class Game:
     """
     Object that lasts for the lifetime of a game on FAF.
+    """
+
+    """
+    The initialization mode to use for the Game.
     """
     init_mode = InitMode.NORMAL_LOBBY
 
@@ -245,6 +249,16 @@ class Game(BaseGame):
 
     @property
     def teams(self):
+        """
+        A dictionary of lists representing teams
+
+        It is of the form:
+        >>> {
+        >>>     1: [Player(1), Player(2)],
+        >>>     2: [Player(3), Player(4)]
+        >>> }
+        :return:
+        """
         return frozenset({self.get_player_option(player.id, 'Team')
                           for player in self.players})
 
@@ -470,6 +484,9 @@ class Game(BaseGame):
             self.set_hosted(value=False)
             self.state = GameState.ENDED
             self.game_service.mark_dirty(self)
+
+    async def rate_game(self):
+        pass
 
     async def load_results(self):
         """

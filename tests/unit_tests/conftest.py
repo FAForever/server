@@ -2,13 +2,11 @@ from unittest import mock
 
 import pytest
 from server import GameStatsService
-from server.abc.base_game import BaseGame
 from server.game_service import GameService
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import Game
 from server.geoip_service import GeoIpService
 from server.ladder_service import LadderService
-from server.players import Player
 from asynctest import CoroutineMock
 
 
@@ -92,7 +90,7 @@ def add_connected_player(game: Game, player):
     return gc
 
 
-def add_connected_players(game: BaseGame, players):
+def add_connected_players(game: Game, players):
     """
     Utility to add players with army and StartSpot indexed by a list
     """
@@ -108,7 +106,7 @@ def add_connected_players(game: BaseGame, players):
 
 @pytest.fixture
 def game_add_players(player_factory):
-    def add(gameobj: BaseGame, n: int, team: int=None):
+    def add(gameobj: Game, n: int, team: int=None):
         game = gameobj
         current = len(game.players)
         players = []
