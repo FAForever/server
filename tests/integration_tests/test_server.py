@@ -53,7 +53,7 @@ async def test_server_ban(loop, lobby_server):
     assert msg == {
         'command': 'notice',
         'style': 'error',
-        'text': 'You are banned from FAF for 981 years.\n Reason :\n Test permanent ban'}
+        'text': 'You are banned from FAF for 980 years.\n Reason :\n Test permanent ban'}
     proto.close()
 
 
