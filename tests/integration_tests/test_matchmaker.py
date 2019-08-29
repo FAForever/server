@@ -66,6 +66,9 @@ async def test_matchmaker_info_message(lobby_server, mocker):
         ('ladder1', 'ladder1'),
         lobby_server
     )
+    # Because the mocking hasn't taken effect on the first message we need to
+    # wait for the second message
+    msg = await read_until_command(proto, 'matchmaker_info')
     msg = await read_until_command(proto, 'matchmaker_info')
 
     assert msg == {

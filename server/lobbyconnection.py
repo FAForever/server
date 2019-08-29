@@ -209,6 +209,14 @@ class LobbyConnection():
                 maps.append(json_to_send)
 
         self.protocol.send_messages(maps)
+]
+    async def send_matchmaker_info(self):
+        self.send({
+            'command': 'matchmaker_info',
+            'queues': [queue.to_dict() for queue in self.ladder_service.queues.values()]
+        })
+
+        await self.protocol.drain()
 
     @timed()
     def send_game_list(self):
@@ -625,6 +633,7 @@ class LobbyConnection():
         json_to_send = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
         self.send(json_to_send)
 
+        await self.send_matchmaker_info()
         self.send_game_list()
 
     def command_restore_game_session(self, message):
