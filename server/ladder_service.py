@@ -5,7 +5,7 @@ from typing import Dict, List, NamedTuple, Set
 
 from sqlalchemy import and_, func, select, text
 
-from . import db
+from server.db import FAFDatabase
 from .config import LADDER_ANTI_REPETITION_LIMIT
 from .db.models import game_featuredMods, game_player_stats, game_stats
 from .decorators import with_logger
@@ -20,11 +20,11 @@ MapDescription = NamedTuple('Map', [("id", int), ("name", str), ("path", str)])
 @with_logger
 class LadderService:
     """
-    Service responsible for managing the 1v1 ladder. Does matchmaking, updates statistics, and
-    launches the games.
+    Service responsible for managing the 1v1 ladder. Does matchmaking, updates
+    statistics, and launches the games.
     """
-
-    def __init__(self, games_service: GameService):
+    def __init__(self, database: FAFDatabase, games_service: GameService):
+        self._db = database
         self._informed_players: Set[Player] = set()
         self.game_service = games_service
 
@@ -208,7 +208,7 @@ class LadderService:
             return randomized_maps[0]
 
     async def get_ladder_history(self, player: Player, limit=3) -> List[int]:
-        async with db.engine.acquire() as conn:
+        async with self._db.engine.acquire() as conn:
             query = select([
                 game_stats.c.mapId,
             ]).select_from(

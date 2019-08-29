@@ -19,6 +19,7 @@ from server.geoip_service import GeoIpService
 from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
 from server.rating import RatingType
+from server.db import FAFDatabase
 
 from asynctest import CoroutineMock
 
@@ -101,20 +102,20 @@ def sqlquery():
 
 
 @pytest.fixture
-def mock_db_engine(loop, db_engine):
-    return db_engine
+def mock_database(loop, database):
+    return database
 
 
 @pytest.fixture(scope='session', autouse=True)
-def db_engine(request, loop):
-    import server
+def database(request, loop):
 
     def opt(val):
         return request.config.getoption(val)
     host, user, pw, db, port = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt('--mysql_database'), opt('--mysql_port')
-    engine_fut = asyncio.ensure_future(
-        server.db.connect_engine(
-            loop=loop,
+    fdb = FAFDatabase(loop)
+
+    db_fut = asyncio.ensure_future(
+        fdb.connect(
             host=host,
             user=user,
             password=pw or None,
@@ -122,21 +123,20 @@ def db_engine(request, loop):
             db=db
         )
     )
-    engine = loop.run_until_complete(engine_fut)
+    loop.run_until_complete(db_fut)
 
     def fin():
-        engine.close()
-        loop.run_until_complete(engine.wait_closed())
+        loop.run_until_complete(fdb.close())
     request.addfinalizer(fin)
 
-    return engine
+    return fdb
 
 
 @pytest.fixture(scope='session', autouse=True)
-def test_data(db_engine, loop):
+def test_data(database, loop):
     async def load_data():
         with open('tests/data/test-data.sql') as f:
-            async with db_engine.acquire() as conn:
+            async with database.engine.acquire() as conn:
                 await conn.execute(f.read())
 
     loop.run_until_complete(load_data())
@@ -148,26 +148,26 @@ def transport():
 
 
 @pytest.fixture
-def game(players):
-    return make_game(1, players)
+def game(database, players):
+    return make_game(database, 1, players)
 
 
 GAME_UID = 1
 
 
 @pytest.fixture
-def ugame(players):
+def ugame(database, players):
     global GAME_UID
-    game = make_game(GAME_UID, players)
+    game = make_game(database, GAME_UID, players)
     GAME_UID += 1
     return game
 
 
-def make_game(uid, players):
+def make_game(database, uid, players):
     from server.games import Game
     from server.abc.base_game import InitMode
     mock_parent = mock.Mock()
-    game = mock.create_autospec(spec=Game(uid, mock_parent, mock.Mock()))
+    game = mock.create_autospec(spec=Game(uid, database, mock_parent, mock.Mock()))
     game.remove_game_connection = CoroutineMock()
     players.hosting.getGame = mock.Mock(return_value=game)
     players.joining.getGame = mock.Mock(return_value=game)
@@ -209,13 +209,13 @@ def players(player_factory):
 
 
 @pytest.fixture
-def player_service(loop, players):
-    return PlayerService()
+def player_service(loop, players, database):
+    return PlayerService(database)
 
 
 @pytest.fixture
-def game_service(player_service, game_stats_service):
-    return GameService(player_service, game_stats_service)
+def game_service(database, player_service, game_stats_service):
+    return GameService(database, player_service, game_stats_service)
 
 
 @pytest.fixture

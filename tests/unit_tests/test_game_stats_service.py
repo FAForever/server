@@ -34,8 +34,8 @@ def player(player_factory):
 
 
 @pytest.fixture()
-def game(game_stats_service, player):
-    game = Game(1, Mock(), game_stats_service)
+def game(database, game_stats_service, player):
+    game = Game(1, database, Mock(), game_stats_service)
     game._player_options[player.id] = {'Army': 1}
     game._results = {1: [('', 'victory', '')]}
     return game

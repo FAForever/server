@@ -11,27 +11,28 @@ from server.protocol import QDataStreamProtocol
 
 
 @pytest.fixture
-def mock_players():
-    m = mock.create_autospec(PlayerService())
+def mock_players(database):
+    m = mock.create_autospec(PlayerService(database))
     m.client_version_info = (0, None)
     return m
 
 
 @pytest.fixture
 def mock_games(mock_players):
-    return mock.create_autospec(GameService(mock_players))
+    return mock.create_autospec(GameService(database, mock_players))
 
 
 @pytest.fixture
-def ladder_service(mocker, game_service):
+def ladder_service(mocker, database, game_service):
     mocker.patch('server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX', 1)
-    return LadderService(game_service)
+    return LadderService(database, game_service)
 
 
 @pytest.fixture
-def lobby_server(request, loop, player_service, game_service, geoip_service, ladder_service):
+def lobby_server(request, loop, database, player_service, game_service, geoip_service, ladder_service):
     ctx = run_lobby_server(
         address=('127.0.0.1', None),
+        database=database,
         geoip_service=geoip_service,
         player_service=player_service,
         games=game_service,

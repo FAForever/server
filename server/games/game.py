@@ -7,7 +7,6 @@ from collections import Counter, defaultdict
 from enum import Enum, unique
 from typing import Any, Dict, Optional, Tuple, Union
 
-import server.db as db
 import trueskill
 from trueskill import Rating
 
@@ -143,6 +142,7 @@ class Game:
     def __init__(
         self,
         id_: int,
+        database: "FAFDatabase",
         game_service: "GameService",
         game_stats_service: "GameStatsService",
         host: Optional[Player]=None,
@@ -151,6 +151,7 @@ class Game:
         game_mode: str='faf'
     ):
         super().__init__()
+        self._db = database
         self._results = {}
         self._army_stats = None
         self._players_with_unsent_army_stats = []
@@ -447,7 +448,7 @@ class Game:
         if len([conn for conn in self._connections.values() if not conn.finished_sim]) > 0:
             return
         self.ended = True
-        async with db.engine.acquire() as conn:
+        async with self._db.engine.acquire() as conn:
             await conn.execute(
                 "UPDATE game_stats "
                 "SET endTime = NOW() "
@@ -494,7 +495,7 @@ class Game:
         :return:
         """
         self._results = {}
-        async with db.engine.acquire() as conn:
+        async with self._db.engine.acquire() as conn:
             result = await conn.execute(
                 "SELECT `playerId`, `place`, `score` "
                 "FROM `game_player_stats` "
@@ -526,7 +527,7 @@ class Game:
                 # Default to -1 if there is no result
                 scores[player] = -1
 
-        async with db.engine.acquire() as conn:
+        async with self._db.engine.acquire() as conn:
             rows = []
             for player, score in scores.items():
                 self._logger.info("Score for player %s: %s", player, score)
@@ -538,7 +539,7 @@ class Game:
                 "WHERE `gameId`=%s AND `playerId`=%s", rows)
 
     async def clear_data(self):
-        async with db.engine.acquire() as conn:
+        async with self._db.engine.acquire() as conn:
             await conn.execute(
                 "DELETE FROM game_player_stats "
                 "WHERE gameId=%s", (self.id,))
@@ -559,7 +560,7 @@ class Game:
             for player, new_rating in team.items()
         }
 
-        async with db.engine.acquire() as conn:
+        async with self._db.engine.acquire() as conn:
             for player, new_rating in new_ratings.items():
                 self._logger.debug(f"New %s rating for %s: %s", rating.value, player, new_rating)
                 player.ratings[rating] = new_rating
@@ -754,7 +755,7 @@ class Game:
         """
         assert self.host is not None
 
-        async with db.engine.acquire() as conn:
+        async with self._db.engine.acquire() as conn:
             # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
             # so, and grab the map id at the same time.
             result = await conn.execute(
@@ -823,7 +824,7 @@ class Game:
             self._logger.warning("No player options available!")
             return
 
-        async with db.engine.acquire() as conn:
+        async with self._db.engine.acquire() as conn:
             await conn.execute(query_str, query_args)
 
     def sanitize_name(self, name: str) -> str:
@@ -845,7 +846,7 @@ class Game:
 
         # Currently, we can only end up here if a game desynced or was a custom game that terminated
         # too quickly.
-        async with db.engine.acquire() as conn:
+        async with self._db.engine.acquire() as conn:
             await conn.execute(
                 "UPDATE game_stats SET validity = %s "
                 "WHERE id = %s", (new_validity_state.value, self.id))

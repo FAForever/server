@@ -17,22 +17,22 @@ from trueskill import Rating
 
 
 @pytest.yield_fixture
-def game(loop, game_service, game_stats_service):
-    game = Game(42, game_service, game_stats_service)
+def game(loop, database, game_service, game_stats_service):
+    game = Game(42, database, game_service, game_stats_service)
     yield game
     loop.run_until_complete(game.clear_data())
 
 
 @pytest.yield_fixture
-def coop_game(loop, game_service, game_stats_service):
-    game = CoopGame(42, game_service, game_stats_service)
+def coop_game(loop, database, game_service, game_stats_service):
+    game = CoopGame(42, database, game_service, game_stats_service)
     yield game
     loop.run_until_complete(game.clear_data())
 
 
 @pytest.yield_fixture
-def custom_game(loop, game_service, game_stats_service):
-    game = CustomGame(42, game_service, game_stats_service)
+def custom_game(loop, database, game_service, game_stats_service):
+    game = CustomGame(42, database, game_service, game_stats_service)
     yield game
     loop.run_until_complete(game.clear_data())
 
@@ -42,11 +42,11 @@ def test_initialization(game: Game):
     assert game.enforce_rating is False
 
 
-def test_instance_logging(game_stats_service):
+def test_instance_logging(database, game_stats_service):
     logger = logging.getLogger('{}.5'.format(Game.__qualname__))
     logger.debug = mock.Mock()
     mock_parent = mock.Mock()
-    game = Game(5, mock_parent, game_stats_service)
+    game = Game(5, database, mock_parent, game_stats_service)
     logger.debug.assert_called_with("%s created", game)
 
 
@@ -620,11 +620,11 @@ async def test_get_army_score_conflicting_results_tied(game, game_add_players):
 
 def test_equality(game):
     assert game == game
-    assert game != Game(5, mock.Mock(), mock.Mock())
+    assert game != Game(5, mock.Mock(), mock.Mock(), mock.Mock())
 
 
 def test_hashing(game):
-    assert {game: 1, Game(game.id, mock.Mock(), mock.Mock()): 1} == {game: 1}
+    assert {game: 1, Game(game.id, mock.Mock(), mock.Mock(), mock.Mock()): 1} == {game: 1}
 
 
 async def test_report_army_stats_sends_stats_for_defeated_player(game: Game,

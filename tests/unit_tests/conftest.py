@@ -18,9 +18,10 @@ def lobbythread():
 
 
 @pytest.fixture
-def game_connection(request, game, players, game_service, player_service):
+def game_connection(request, database, game, players, game_service, player_service):
     from server import GameConnection
     conn = GameConnection(
+        database=database,
         game=game,
         player=players.hosting,
         protocol=mock.Mock(),
@@ -59,10 +60,10 @@ def game_stats_service():
 
 
 @pytest.fixture
-def ladder_service(request, mocker, game_service: GameService):
+def ladder_service(request, mocker, database, game_service: GameService):
     mocker.patch('server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX', 1)
 
-    ladder_service = LadderService(game_service)
+    ladder_service = LadderService(database, game_service)
 
     def fin():
         ladder_service.shutdown_queues()

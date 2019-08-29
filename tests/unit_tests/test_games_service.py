@@ -5,8 +5,8 @@ from server.players import PlayerState
 
 
 @pytest.fixture
-def game_service(players, game_stats_service):
-    return GameService(players, game_stats_service)
+def game_service(database, players, game_stats_service):
+    return GameService(database, players, game_stats_service)
 
 
 def test_initialization(game_service):

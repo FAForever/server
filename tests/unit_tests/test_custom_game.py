@@ -8,8 +8,8 @@ from server.rating import RatingType
 
 
 @pytest.yield_fixture
-def custom_game(loop, game_service, game_stats_service):
-    game = CustomGame(42, game_service, game_stats_service)
+def custom_game(loop, database, game_service, game_stats_service):
+    game = CustomGame(42, database, game_service, game_stats_service)
     yield game
     loop.run_until_complete(game.clear_data())
 

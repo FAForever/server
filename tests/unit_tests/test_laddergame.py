@@ -9,8 +9,8 @@ from server.rating import RatingType
 
 
 @pytest.fixture()
-def laddergame(game_service, game_stats_service):
-    return LadderGame(465312, game_service, game_stats_service)
+def laddergame(database, game_service, game_stats_service):
+    return LadderGame(465312, database, game_service, game_stats_service)
 
 
 async def test_results_ranked_by_victory(laddergame, players):
@@ -63,8 +63,8 @@ async def test_is_winner_on_draw(laddergame, players):
     assert laddergame.is_winner(players.joining) is False
 
 
-async def test_rate_game(laddergame: LadderGame, db_engine, game_add_players):
-    async with db_engine.acquire() as conn:
+async def test_rate_game(laddergame: LadderGame, database, game_add_players):
+    async with database.engine.acquire() as conn:
         # TODO remove as soon as we have isolated tests (transactions)
         await conn.execute("DELETE FROM game_player_stats WHERE gameId = %s", laddergame.id)
         await conn.execute("DELETE FROM game_stats WHERE id = %s", laddergame.id)
@@ -86,7 +86,7 @@ async def test_rate_game(laddergame: LadderGame, db_engine, game_add_players):
     assert players[0].ratings[RatingType.LADDER_1V1][0] > player_1_old_mean
     assert players[1].ratings[RatingType.LADDER_1V1][0] < player_2_old_mean
 
-    async with db_engine.acquire() as conn:
+    async with database.engine.acquire() as conn:
         result = await conn.execute("SELECT mean, deviation, after_mean, after_deviation FROM game_player_stats WHERE gameid = %s", laddergame.id)
         rows = list(await result.fetchall())
 
@@ -101,9 +101,9 @@ async def test_rate_game(laddergame: LadderGame, db_engine, game_add_players):
     assert rows[1]['after_deviation'] < rows[0]['deviation']
 
 
-async def test_persist_rating_victory(laddergame: LadderGame, db_engine,
+async def test_persist_rating_victory(laddergame: LadderGame, database,
                                       game_add_players):
-    async with db_engine.acquire() as conn:
+    async with database.engine.acquire() as conn:
         # TODO remove as soon as we have isolated tests (transactions)
         await conn.execute("DELETE FROM game_player_stats WHERE gameId = %s", laddergame.id)
         await conn.execute("DELETE FROM game_stats WHERE id = %s", laddergame.id)
@@ -113,7 +113,7 @@ async def test_persist_rating_victory(laddergame: LadderGame, db_engine,
     laddergame.set_player_option(players[0].id, 'Team', 1)
     laddergame.set_player_option(players[1].id, 'Team', 2)
 
-    async with db_engine.acquire() as conn:
+    async with database.engine.acquire() as conn:
         result = await conn.execute(
             text("SELECT id, numGames, winGames FROM ladder1v1_rating WHERE id in :ids ORDER BY id"),
             ids=tuple([players[0].id, players[1].id])
@@ -128,7 +128,7 @@ async def test_persist_rating_victory(laddergame: LadderGame, db_engine,
 
     assert laddergame.validity is ValidityState.VALID
 
-    async with db_engine.acquire() as conn:
+    async with database.engine.acquire() as conn:
         result = await conn.execute(
             text("SELECT id, numGames, winGames FROM ladder1v1_rating WHERE id in :ids ORDER BY id"),
             ids=tuple([players[0].id, players[1].id])

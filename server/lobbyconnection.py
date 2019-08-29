@@ -13,7 +13,7 @@ import humanize
 import pymysql
 import semver
 import server
-import server.db as db
+from server.db import FAFDatabase
 from sqlalchemy import and_, func, text
 
 from . import config
@@ -59,12 +59,14 @@ class LobbyConnection():
     @timed()
     def __init__(
         self,
+        database: FAFDatabase,
         games: GameService,
         players: PlayerService,
         nts_client: Optional[TwilioNTS],
         geoip: GeoIpService,
         ladder_service: LadderService
     ):
+        self._db = database
         self.geoip_service = geoip
         self.game_service = games
         self.player_service = players
@@ -177,7 +179,7 @@ class LobbyConnection():
         raise ClientError("FAF no longer supports direct registration. Please use the website to register.", recoverable=True)
 
     async def send_coop_maps(self):
-        async with db.engine.acquire() as conn:
+        async with self._db.engine.acquire() as conn:
             result = await conn.execute("SELECT name, description, filename, type, id FROM `coop_map`")
 
             maps = []
@@ -227,7 +229,7 @@ class LobbyConnection():
             self.abort("No-op social_remove.")
             return
 
-        async with db.engine.acquire() as conn:
+        async with self._db.engine.acquire() as conn:
             await conn.execute(friends_and_foes.delete().where(and_(
                 friends_and_foes.c.user_id == self.player.id,
                 friends_and_foes.c.subject_id == subject_id
@@ -243,7 +245,7 @@ class LobbyConnection():
         else:
             return
 
-        async with db.engine.acquire() as conn:
+        async with self._db.engine.acquire() as conn:
             await conn.execute(friends_and_foes.insert().values(
                 user_id=self.player.id,
                 status=status,
@@ -294,7 +296,7 @@ class LobbyConnection():
                         period = message['ban'].get('period', 'SECOND').upper()
 
                         self._logger.warning('Administrative action: %s closed client for %s with %s ban (Reason: %s)', self.player, player, duration, reason)
-                        async with db.engine.acquire() as conn:
+                        async with self._db.engine.acquire() as conn:
                             try:
                                 result = await conn.execute("SELECT reason from lobby_ban WHERE idUser=%s AND expires_at > NOW()", (message['user_id']))
 
@@ -498,7 +500,7 @@ class LobbyConnection():
                               "a false positive.",
                               fatal=True)
 
-            async with await db.engine.acquire() as conn:
+            async with self._db.engine.acquire() as conn:
                 try:
                     await conn.execute(
                         "INSERT INTO ban (player_id, author_id, reason, level) VALUES (%s, %s, %s, 'GLOBAL')",
@@ -514,7 +516,7 @@ class LobbyConnection():
         login = message['login'].strip()
         password = message['password']
 
-        async with db.engine.acquire() as conn:
+        async with self._db.engine.acquire() as conn:
             player_id, login, steamid = await self.check_user_login(conn, login, password)
             server.stats.incr('user.logins', tags={'status': 'success'})
             server.stats.gauge('users.online', len(self.player_service))
@@ -601,7 +603,7 @@ class LobbyConnection():
 
         friends = []
         foes = []
-        async with db.engine.acquire() as conn:
+        async with self._db.engine.acquire() as conn:
             result = await conn.execute(
                 "SELECT `subject_id`, `status` "
                 "FROM friends_and_foes WHERE user_id = %s", (self.player.id,))
@@ -644,6 +646,7 @@ class LobbyConnection():
 
         self._logger.debug("Restoring game session of player %s to game %s", self.player, game)
         self.game_connection = GameConnection(
+            database=self._db,
             game=game,
             player=self.player,
             protocol=self.protocol,
@@ -668,7 +671,7 @@ class LobbyConnection():
         if action == "list_avatar":
             avatarList = []
 
-            async with db.engine.acquire() as conn:
+            async with self._db.engine.acquire() as conn:
                 result = await conn.execute(
                     "SELECT url, tooltip FROM `avatars` "
                     "LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = %s", (self.player.id,))
@@ -683,7 +686,7 @@ class LobbyConnection():
         elif action == "select":
             avatar = message['avatar']
 
-            async with db.engine.acquire() as conn:
+            async with self._db.engine.acquire() as conn:
                 await conn.execute(
                     "UPDATE `avatars` SET `selected` = 0 WHERE `idUser` = %s", (self.player.id, ))
                 if avatar is not None:
@@ -814,6 +817,7 @@ class LobbyConnection():
             game.host = self.player
 
         self.game_connection = GameConnection(
+            database=self._db,
             game=game,
             player=self.player,
             protocol=self.protocol,
@@ -836,7 +840,7 @@ class LobbyConnection():
     async def command_modvault(self, message):
         type = message["type"]
 
-        async with db.engine.acquire() as conn:
+        async with self._db.engine.acquire() as conn:
             if type == "start":
                 result = await conn.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon FROM table_mod ORDER BY likes DESC LIMIT 100")
 

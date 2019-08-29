@@ -2,7 +2,7 @@ import asyncio
 from typing import Optional, Set
 
 import aiocron
-import server.db as db
+from server.db import FAFDatabase
 from server.decorators import with_logger
 from server.players import Player
 from server.rating import RatingType
@@ -16,7 +16,8 @@ from .db.models import (
 
 @with_logger
 class PlayerService:
-    def __init__(self):
+    def __init__(self, database: FAFDatabase):
+        self._db = database
         self.players = dict()
 
         # Static-ish data fields.
@@ -54,9 +55,8 @@ class PlayerService:
     def clear_dirty(self):
         self._dirty_players = set()
 
-    @staticmethod
-    async def fetch_player_data(player):
-        async with db.engine.acquire() as conn:
+    async def fetch_player_data(self, player):
+        async with self._db.engine.acquire() as conn:
             sql = select([
                 avatars_list.c.url,
                 avatars_list.c.tooltip,
@@ -123,7 +123,7 @@ class PlayerService:
         Update rarely-changing data, such as the admin list and the list of users exempt from the
         uniqueid check.
         """
-        async with db.engine.acquire() as conn:
+        async with self._db.engine.acquire() as conn:
             # Admins/mods
             result = await conn.execute(
                 "SELECT `user_id`, `group` FROM lobby_admin"

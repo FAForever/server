@@ -163,7 +163,7 @@ async def test_handle_action_GameMods_activated(game: Game, game_connection: Gam
 async def test_handle_action_GameMods_post_launch_updates_played_cache(
     game: Game,
     game_connection: GameConnection,
-    db_engine
+    database
 ):
     game.launch = CoroutineMock()
     game.remove_game_connection = CoroutineMock()
@@ -171,7 +171,7 @@ async def test_handle_action_GameMods_post_launch_updates_played_cache(
     await game_connection.handle_action('GameMods', ['uids', 'foo bar EA040F8E-857A-4566-9879-0D37420A5B9D'])
     await game_connection.handle_action('GameState', ['Launching'])
 
-    async with db_engine.acquire() as conn:
+    async with database.engine.acquire() as conn:
         result = await conn.execute("select `played` from table_mod where uid=%s", ('EA040F8E-857A-4566-9879-0D37420A5B9D', ))
         row = await result.fetchone()
         assert 2 == row[0]
@@ -222,11 +222,11 @@ async def test_handle_action_EnforceRating(game: Game, game_connection: GameConn
     assert game.enforce_rating is True
 
 
-async def test_handle_action_TeamkillReport(game: Game, game_connection: GameConnection, db_engine):
+async def test_handle_action_TeamkillReport(game: Game, game_connection: GameConnection, database):
     game.launch = CoroutineMock()
     await game_connection.handle_action('TeamkillReport', ['200', '2', 'Dostya', '3', 'Rhiza'])
 
-    async with db_engine.acquire() as conn:
+    async with database.engine.acquire() as conn:
         result = await conn.execute("select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=200", (game.id))
         report = await result.fetchone()
         assert game.id == report["game_id"]
@@ -236,11 +236,11 @@ async def test_handle_action_TeamkillReport(game: Game, game_connection: GameCon
         assert data["player_id"] == 3
         
         
-async def test_handle_action_TeamkillReport_invalid_ids(game: Game, game_connection: GameConnection, db_engine):
+async def test_handle_action_TeamkillReport_invalid_ids(game: Game, game_connection: GameConnection, database):
     game.launch = CoroutineMock()
     await game_connection.handle_action('TeamkillReport', ['230', 0, 'Dostya', 0, 'Rhiza'])
 
-    async with db_engine.acquire() as conn:
+    async with database.engine.acquire() as conn:
         result = await conn.execute("select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=230", (game.id))
         report = await result.fetchone()
         assert game.id == report["game_id"]
@@ -250,22 +250,22 @@ async def test_handle_action_TeamkillReport_invalid_ids(game: Game, game_connect
         assert data["player_id"] == 3
 
 
-async def test_handle_action_TeamkillReport_invalid_reporter_id_and_name(game: Game, game_connection: GameConnection, db_engine):
+async def test_handle_action_TeamkillReport_invalid_reporter_id_and_name(game: Game, game_connection: GameConnection, database):
     game.launch = CoroutineMock()
     await game_connection.handle_action('TeamkillReport', ['250', 0, 'Askaholic', 0, 'Rhiza'])
 
-    async with db_engine.acquire() as conn:
+    async with database.engine.acquire() as conn:
         result = await conn.execute("select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=250", game.id)
         report = await result.fetchone()
         assert report is None
 
 
 async def test_handle_action_TeamkillReport_invalid_offender_id_and_name(game: Game, game_connection: GameConnection,
-                                                                         db_engine):
+                                                                         database):
     game.launch = CoroutineMock()
     await game_connection.handle_action('TeamkillReport', ['270', 0, 'Dostya', 0, 'Geosearchef'])
 
-    async with db_engine.acquire() as conn:
+    async with database.engine.acquire() as conn:
         result = await conn.execute(
             "select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=270",
             game.id)
@@ -273,17 +273,17 @@ async def test_handle_action_TeamkillReport_invalid_offender_id_and_name(game: G
         assert report is None
 
 
-async def test_handle_action_TeamkillHappened(game: Game, game_connection: GameConnection, db_engine):
+async def test_handle_action_TeamkillHappened(game: Game, game_connection: GameConnection, database):
     game.launch = CoroutineMock()
     await game_connection.handle_action('TeamkillHappened', ['200', '2', 'Dostya', '3', 'Rhiza'])
 
-    async with db_engine.acquire() as conn:
+    async with database.engine.acquire() as conn:
         result = await conn.execute("select game_id from teamkills where victim=2 and teamkiller=3 and game_id=%s and gametime=200", (game.id))
         row = await result.fetchone()
         assert game.id == row[0]
 
 
-async def test_handle_action_TeamkillHappened_AI(game: Game, game_connection: GameConnection, db_engine):
+async def test_handle_action_TeamkillHappened_AI(game: Game, game_connection: GameConnection, database):
     # Should fail with a sql constraint error if this isn't handled correctly
     game_connection.abort = mock.Mock()
     await game_connection.handle_action('TeamkillHappened', ['200', 0, 'Dostya', '0', 'Rhiza'])
@@ -312,7 +312,7 @@ async def test_handle_action_GameResult_draw_ends_sim(
     assert game.check_sim_end.called
 
 
-async def test_handle_action_OperationComplete(ugame: Game, game_connection: GameConnection, db_engine):
+async def test_handle_action_OperationComplete(ugame: Game, game_connection: GameConnection, database):
     """
         Sends an OperationComplete action to handle action and verifies that
     the `coop_leaderboard` table is updated accordingly.
@@ -328,7 +328,7 @@ async def test_handle_action_OperationComplete(ugame: Game, game_connection: Gam
     time_taken = '09:08:07.654321'
     await game_connection.handle_action('OperationComplete', ['1', secondary, time_taken])
 
-    async with db_engine.acquire() as conn:
+    async with database.engine.acquire() as conn:
         result = await conn.execute(
             "SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
             (ugame.id))
@@ -338,7 +338,7 @@ async def test_handle_action_OperationComplete(ugame: Game, game_connection: Gam
     assert (secondary, ugame.id) == (row[0], row[1])
 
 
-async def test_handle_action_OperationComplete_invalid(ugame: Game, game_connection: GameConnection, db_engine):
+async def test_handle_action_OperationComplete_invalid(ugame: Game, game_connection: GameConnection, database):
     """
         Sends an OperationComplete action to handle action and verifies that
     the `coop_leaderboard` table is updated accordingly.
@@ -354,7 +354,7 @@ async def test_handle_action_OperationComplete_invalid(ugame: Game, game_connect
     time_taken = '09:08:07.654321'
     await game_connection.handle_action('OperationComplete', ['1', secondary, time_taken])
 
-    async with db_engine.acquire() as conn:
+    async with database.engine.acquire() as conn:
         result = await conn.execute(
             "SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
             (ugame.id))

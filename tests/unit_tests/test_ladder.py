@@ -242,11 +242,11 @@ async def test_choose_map_raises_on_empty_map_pool(ladder_service: LadderService
         await ladder_service.choose_map([])
 
 
-async def test_get_ladder_history(ladder_service: LadderService, players, db_engine):
+async def test_get_ladder_history(ladder_service: LadderService, players, database):
     history = await ladder_service.get_ladder_history(players.hosting, limit=1)
     assert history == [6]
 
 
-async def test_get_ladder_history_many_maps(ladder_service: LadderService, players, db_engine):
+async def test_get_ladder_history_many_maps(ladder_service: LadderService, players, database):
     history = await ladder_service.get_ladder_history(players.hosting, limit=4)
     assert history == [6, 5, 4, 3]
