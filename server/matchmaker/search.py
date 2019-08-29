@@ -39,16 +39,6 @@ class Search:
         self.start_time = start_time or time.time()
         self._match = asyncio.Future()
 
-        # A map from 'deviation above' to 'minimum game quality required'
-        # This ensures that new players get matched broadly to
-        # give the system a chance at placing them
-        self._deviation_quality = {
-            350: 0.4,
-            300: 0.6,
-            250: 0.75,
-            0: 0.8
-        }
-
     @staticmethod
     def adjusted_rating(player: Player):
         """
@@ -128,17 +118,15 @@ class Search:
     def match_threshold(self) -> float:
         """
         Defines the threshold for game quality
+        The base minimum quality is determined as 80% of the quality of a game
+        against a copy of yourself.
+        This is decreased by self.search_expansion if search is to be expanded.
 
         :return:
         """
-        thresholds = []
-        for rating in self.ratings:
-            _, deviation = rating
 
-            for d, q in self._deviation_quality.items():
-                if deviation >= d:
-                    thresholds.append(max(q - self.search_expansion, 0))
-        return min(thresholds)
+        quality_of_game_against_yourself = self.quality_with(self)
+        return max(0.8 * quality_of_game_against_yourself - self.search_expansion, 0)
 
     def quality_with(self, other: 'Search') -> float:
         assert all(other.raw_ratings)

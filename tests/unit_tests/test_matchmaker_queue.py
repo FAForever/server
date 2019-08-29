@@ -46,6 +46,18 @@ def test_search_threshold(mocker, loop, matchmaker_players):
     assert s.match_threshold >= 0
 
 
+def test_search_threshold_of_old_players_is_high(mocker, loop):
+    old_player = Player('experienced_player', player_id=1, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+    s = Search([old_player])
+    assert s.match_threshold >= 0.6
+
+
+def test_search_threshold_of_new_players_is_low(mocker, loop):
+    new_player = Player('new_player', player_id=1, ladder_rating=(1500, 500), ladder_games=1)
+    s = Search([new_player])
+    assert s.match_threshold <= 0.4
+
+
 def test_search_quality_equivalence(mocker, loop, matchmaker_players):
     p1, _, _, p4, _, _ = matchmaker_players
     s1, s4 = Search([p1]), Search([p4])
@@ -62,6 +74,12 @@ async def test_search_match(mocker, loop, matchmaker_players):
     p1, _, _, p4, _, _ = matchmaker_players
     s1, s4 = Search([p1]), Search([p4])
     assert s1.matches_with(s4)
+
+
+def test_search_threshold_low_enough_to_play_yourself(mocker, loop, matchmaker_players):
+    for player in matchmaker_players:
+        s = Search([player])
+        assert s.matches_with(s)
 
 
 async def test_search_team_match(matchmaker_players):
