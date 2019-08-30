@@ -56,7 +56,7 @@ def test_stable_marriage():
     assert (s2, s5) in matches
     assert (s3, s6) in matches
 
-def test_stable_marriage_matches_new_players_with_new_and_old_with_old():
+def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_different_mean():
     new1 = Search([p(1500, 500, name='new1', ladder_games=1)])
     new2 = Search([p(1400, 500, name='new2', ladder_games=2)])
     old1 = Search([p(2300, 75, name='old1', ladder_games=100)])
@@ -68,6 +68,22 @@ def test_stable_marriage_matches_new_players_with_new_and_old_with_old():
 
     assert (new1, new2) in matches
     assert (old1, old2) in matches
+
+
+def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_same_mean():
+    # Assumes that both new players initialized with mean 1500 will be matched
+    # as if they had mean 500
+    new1 = Search([p(1500, 500, name='new1', ladder_games=0)])
+    new2 = Search([p(1500, 500, name='new2', ladder_games=0)])
+    old1 = Search([p(500, 75, name='old1', ladder_games=100)])
+    old2 = Search([p(500, 75, name='old2', ladder_games=100)])
+
+    searches = [new1, new2, old1, old2]
+
+    matches = algorithm.stable_marriage(searches)
+
+    assert (new1, new2) in matches or (new2, new1) in matches
+    assert (old1, old2) in matches or (old2, old1) in matches
 
 
 def test_stable_marriage_better_than_greedy():
