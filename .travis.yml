@@ -13,7 +13,7 @@ before_install:
   - sudo /etc/init.d/mysql stop
   - git clone https://github.com/FAForever/faf-stack.git faf-stack
       && pushd faf-stack
-      && git checkout 8e9e3bd
+      && git checkout v19.8.12
       && cp -r config.template config
       && ./scripts/init-db.sh
       && wget https://raw.githubusercontent.com/FAForever/db/$(grep -oP 'faforever/faf-db-migrations:\K(.*)$' ./docker-compose.yml)/test-data.sql

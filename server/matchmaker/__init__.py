@@ -9,8 +9,8 @@ from .pop_timer import PopTimer
 from .search import Search
 
 
-__all__ = [
+__all__ = (
     'MatchmakerQueue',
     'PopTimer',
     'Search'
-]
+)

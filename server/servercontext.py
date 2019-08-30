@@ -18,15 +18,12 @@ class ServerContext:
         self._server = None
         self._connection_factory = connection_factory
         self.connections = {}
-        self._transport = None
         self._logger.debug("%s initialized", self)
-        self.addr = None
 
     def __repr__(self):
         return "ServerContext({})".format(self.name)
 
     async def listen(self, host, port):
-        self.addr = (host, port)
         self._logger.debug("ServerContext.listen(%s, %s)", host, port)
         self._server = await asyncio.start_server(
             self.client_connected,

@@ -103,23 +103,8 @@ class QDataStreamProtocol(Protocol):
         # FIXME: New protocol will remove the need for this
 
         pos, action = self.read_qstring(block)
-        if action in ['UPLOAD_MAP', 'UPLOAD_MOD']:
-            pos, _ = self.read_qstring(block, pos)  # login
-            pos, _ = self.read_qstring(block, pos)  # session
-            pos, name = self.read_qstring(block, pos)
-            pos, info = self.read_qstring(block, pos)
-            pos, size = self.read_int32(block, pos)
-            data = block[pos:size]
-            return {
-                'command': action.lower(),
-                'name': name,
-                'info': json.loads(info),
-                'data': data
-            }
-        elif action in ['PING', 'PONG']:
-            return {
-                'command': action.lower()
-            }
+        if action in ['PING', 'PONG']:
+            return {'command': action.lower()}
         else:
             message = json.loads(action)
             try:
