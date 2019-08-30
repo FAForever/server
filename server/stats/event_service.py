@@ -69,12 +69,10 @@ class EventService:
             """
             events_data = []
             for event in content['data']:
-                events_data.append(
-                    dict(
-                        event_id=event['attributes']['eventId'],
-                        count=event['attributes']['currentCount']
-                    )
-                )
+                events_data.append({
+                    "event_id": event['attributes']['eventId'],
+                    "count": event['attributes']['currentCount']
+                })
 
             return events_data
 
@@ -91,4 +89,4 @@ class EventService:
         if count == 0:
             return
 
-        queue.append(dict(event_id=event_id, count=count))
+        queue.append({"event_id": event_id, "count": count})

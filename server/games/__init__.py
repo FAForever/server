@@ -7,7 +7,7 @@ from .ladder_game import LadderGame
 
 FeaturedMod = namedtuple('FeaturedMod', 'id name full_name description publish order')
 
-__all__ = [
+__all__ = (
     'CoopGame',
     'CustomGame',
     'Game',
@@ -15,4 +15,4 @@ __all__ = [
     'LadderGame',
     'FeaturedMod',
     'VisibilityState'
-]
+)

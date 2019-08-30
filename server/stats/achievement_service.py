@@ -106,11 +106,11 @@ class AchievementService:
             api_data = content['data']
             achievements_data = []
             for achievement in api_data:
-                converted_achievement = dict(
-                    achievement_id=achievement['attributes']['achievementId'],
-                    current_state=achievement['attributes']['state'],
-                    newly_unlocked=achievement['attributes']['newlyUnlocked']
-                )
+                converted_achievement = {
+                    "achievement_id": achievement['attributes']['achievementId'],
+                    "current_state": achievement['attributes']['state'],
+                    "newly_unlocked": achievement['attributes']['newlyUnlocked']
+                }
                 if 'steps' in achievement['attributes']:
                     converted_achievement['current_steps'] = achievement['attributes']['steps']
 
@@ -126,7 +126,10 @@ class AchievementService:
         :param achievement_id: the achievement to unlock
         :param queue: the queue to put this update into so it can be batch executed later
         """
-        queue.append(dict(achievement_id=achievement_id, update_type='UNLOCK'))
+        queue.append({
+            "achievement_id": achievement_id,
+            "update_type": "UNLOCK"
+        })
 
     def reveal(self, achievement_id, queue):
         """
@@ -135,7 +138,10 @@ class AchievementService:
         :param achievement_id: the achievement to unlock
         :param queue: the queue to put this update into so it can be batch executed later
         """
-        queue.append(dict(achievement_id=achievement_id, update_type='REVEAL'))
+        queue.append({
+            "achievement_id": achievement_id,
+            "update_type": "REVEAL"
+        })
 
     def increment(self, achievement_id, steps, queue):
         """
@@ -148,7 +154,11 @@ class AchievementService:
         if steps == 0:
             return
 
-        queue.append(dict(achievement_id=achievement_id, update_type='INCREMENT', steps=steps))
+        queue.append({
+            "achievement_id": achievement_id,
+            "update_type": "INCREMENT",
+            "steps": steps
+        })
 
     def set_steps_at_least(self, achievement_id, steps, queue):
         """
@@ -161,4 +171,8 @@ class AchievementService:
         if steps == 0:
             return
 
-        queue.append(dict(achievement_id=achievement_id, update_type='SET_STEPS_AT_LEAST', steps=steps))
+        queue.append({
+            "achievement_id": achievement_id,
+            "update_type": "SET_STEPS_AT_LEAST",
+            "steps": steps
+        })

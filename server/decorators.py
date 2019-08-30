@@ -21,6 +21,7 @@ def _timed_decorator(f, logger=_logger, limit=0.2):
         if elapsed >= limit:
             logger.warn("%s took %s s to finish" % (f.__name__, str(elapsed)))
         return result
+
     return wrapper
 
 

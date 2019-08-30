@@ -1,6 +1,5 @@
 import heapq
-from collections import deque
-from typing import Deque, Dict, Iterable, List, Set
+from typing import Dict, Iterable, List, Set
 
 from ..decorators import with_logger
 from .search import Match, Search
@@ -15,8 +14,6 @@ SM_NUM_TO_RANK = 5
 ################################################################################
 #                                Implementation                                #
 ################################################################################
-
-last_queue_amounts: Deque[int] = deque()
 
 
 def stable_marriage(searches: List[Search]) -> List[Match]:

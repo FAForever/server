@@ -1,5 +1,7 @@
 [scripts]
+devserver = "env LOG_LEVEL=TRACE python server.py"
 tests = "scripts/pipenv_run_tests.sh"
+vulture = "vulture server.py server/ --sort-by-size"
 
 [[source]]
 url = "https://pypi.org/simple"
@@ -27,6 +29,7 @@ pytest-mock = "*"
 pytest-cov = "*"
 coveralls = "*"
 mock = "*"
+vulture = "*"
 
 [requires]
 python_version = "3.6"

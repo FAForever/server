@@ -1,6 +1,5 @@
 import weakref
-
-from enum import unique, Enum
+from enum import Enum, unique
 
 from .abc.base_player import BasePlayer
 
@@ -21,11 +20,11 @@ class Player(BasePlayer):
     In the context of a game, the Game object holds game-specific
     information about players.
     """
+
     def __init__(
         self,
         login: str = None,
         session: int = 0,
-        ip=None,
         player_id: int = 0,
         global_rating=None,
         ladder_rating=None,
@@ -39,7 +38,6 @@ class Player(BasePlayer):
 
         # The player_id of the user in the `login` table of the database.
         self.session = session
-        self.ip = ip
 
         if global_rating is None:
             global_rating = (1500, 500)
@@ -56,8 +54,6 @@ class Player(BasePlayer):
         self.friends = set()
         self.foes = set()
 
-        self.league = None
-
         self.admin = permission_group >= 2
         self.mod = permission_group >= 1
 
@@ -66,7 +62,6 @@ class Player(BasePlayer):
 
         self.state = PlayerState.IDLE
 
-        self.expandLadder = 0
         self.faction = 1
 
         self._lobby_connection = lambda: None
@@ -118,31 +113,35 @@ class Player(BasePlayer):
     def game_connection(self):
         self._game_connection = lambda: None
 
-    @property
-    def in_game(self):
-        return self.game is not None
-
     def to_dict(self):
         """
         Return a dictionary representing this player object
         :return:
         """
+
         def filter_none(t):
             _, v = t
             return v is not None
-        return dict(filter(filter_none, (
-            ('id', self.id),
-            ('login', self.login),
-            ('global_rating', self.global_rating),
-            ('ladder_rating', self.ladder_rating),
-            ('number_of_games', self.numGames),
-            ('avatar', self.avatar),
-            ('country', self.country),
-            ('clan', self.clan)
-        )))
+
+        return dict(
+            filter(
+                filter_none, (
+                    ('id', self.id),
+                    ('login', self.login),
+                    ('global_rating', self.global_rating),
+                    ('ladder_rating', self.ladder_rating),
+                    ('number_of_games', self.numGames),
+                    ('avatar', self.avatar),
+                    ('country', self.country),
+                    ('clan', self.clan),
+                )
+            )
+        )
 
     def __str__(self):
-        return "Player({}, {}, {}, {})".format(self.login, self.id, self.global_rating, self.ladder_rating)
+        return "Player({}, {}, {}, {})".format(
+            self.login, self.id, self.global_rating, self.ladder_rating
+        )
 
     def __repr__(self):
         return self.__str__()

@@ -33,7 +33,7 @@ __license__ = 'GPLv3'
 __copyright__ = 'Copyright (c) 2011-2015 ' + __author__
 
 
-__all__ = [
+__all__ = (
     'GameConnection',
     'GameStatsService',
     'GameService',
@@ -44,7 +44,7 @@ __all__ = [
     'control',
     'abc',
     'protocol'
-]
+)
 
 DIRTY_REPORT_INTERVAL = 1  # Seconds
 stats = None

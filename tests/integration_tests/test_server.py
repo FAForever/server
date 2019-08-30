@@ -3,8 +3,10 @@ import asyncio
 import pytest
 from server import VisibilityState
 
-from .conftest import (connect_and_sign_in, connect_client, perform_login,
-                       read_until, read_until_command)
+from .conftest import (
+    connect_and_sign_in, connect_client, perform_login, read_until,
+    read_until_command
+)
 from .testclient import ClientTest
 
 TEST_ADDRESS = ('127.0.0.1', None)
