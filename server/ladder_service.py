@@ -29,8 +29,7 @@ class LadderService:
 
         # Hardcoded here until it needs to be dynamic
         self.queues = {
-            'ladder1v1':
-            MatchmakerQueue('ladder1v1', game_service=games_service)
+            'ladder1v1': MatchmakerQueue('ladder1v1', games_service)
         }
 
         self.searches: Dict[str, Dict[Player, Search]] = defaultdict(dict)
@@ -155,9 +154,8 @@ class LadderService:
         game.set_player_option(host.id, 'Team', 1)
         game.set_player_option(guest.id, 'Team', 1)
 
-        mapname = map_path[
-            5:-4
-        ]    # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
+        mapname = map_path[5:-4]
+        # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
         # Really in the future, just send a better description
         self._logger.debug("Starting ladder game: %s", game)
         host.lobby_connection.launch_game(game, is_host=True, use_map=mapname)
