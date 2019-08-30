@@ -59,8 +59,8 @@ async def test_game_matchmaking(loop, lobby_server, mocker):
 
 
 async def test_matchmaker_info_message(lobby_server, mocker):
-    mocker.patch('server.matchmaker.matchmaker_queue.time', return_value=1_562_000_000)
-    mocker.patch('server.matchmaker.matchmaker_queue.config.QUEUE_POP_TIME_MAX', 1)
+    mocker.patch('server.matchmaker.pop_timer.time', return_value=1_562_000_000)
+    mocker.patch('server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX', 1)
 
     _, _, proto = await connect_and_sign_in(
         ('ladder1', 'ladder1'),
