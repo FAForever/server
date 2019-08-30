@@ -121,5 +121,11 @@ def _rank_all(searches: List[Search]) -> Dict[Search, List[Search]]:
 
 
 def _rank_partners(search: Search, others: Iterable[Search]) -> List[Search]:
-    matchable_others = [other for other in others if search.matches_with(other)]
-    return heapq.nlargest(SM_NUM_TO_RANK, matchable_others, key=lambda other: search.quality_with(other))
+    return heapq.nlargest(
+        SM_NUM_TO_RANK, 
+        filter(
+            lambda other: search.matches_with(other),
+            others
+        ), 
+        key=lambda other: search.quality_with(other)
+    )
