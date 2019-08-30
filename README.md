@@ -6,7 +6,6 @@ master|develop
  ------------ | -------------
 [![Build Status](https://travis-ci.org/FAForever/server.svg?branch=master)](https://travis-ci.org/FAForever/server) | [![Build Status](https://travis-ci.org/FAForever/server.svg?branch=develop)](https://travis-ci.org/FAForever/server)
 [![Coveralls Status](https://img.shields.io/coveralls/FAForever/server/master.svg)](https://coveralls.io/github/FAForever/server) | [![Coveralls Status](https://img.shields.io/coveralls/FAForever/server/develop.svg)](https://coveralls.io/github/FAForever/server)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/FAForever/server/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/FAForever/server/?branch=master) | [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/FAForever/server/badges/quality-score.png?b=develop)](https://scrutinizer-ci.com/g/FAForever/server/?branch=develop)
 
 ## Installation
 
@@ -34,14 +33,6 @@ If you have a different root password, database name then the default (see [conf
 
     docker run --link faf-db:db -p 8001:8001 -p 30351:30351 -e FAF_DB_PASSWORD=<wanted_password> -e FAF_DB_NAME=<db_name> faf-server
 
-## Running the tests
-
-Some of the tests require the database to be pre-populated with test data. Download
-the latest `test-data.sql` from [FAForever/db](https://github.com/FAForever/db
-into the root of this project, then run:
-
-    $ pipenv run tests
-
 # Contributing
 
 To contribute, please fork this repository and make pull requests to the develop branch.
@@ -52,6 +43,34 @@ Use the normal git conventions for commit messages, with the following rules:
  - For non-trivial commits, always include a commit message body, describing the change in detail
  - If there are related issues, reference them in the commit message footer
 
+## Setting up for development
+
+First make sure you have an instance of `faf-db` running as described in the
+installation section. Then install the dependencies to a virtual environment
+using pipenv:
+
+    $ pipenv install --dev
+
+You can start the server in development mode with:
+
+    $ pipenv run devserver
+
+**Note** *The pipenv scripts are not meant for production deployment. For
+deployment use `faf-stack`*
+
+## Running the tests
+
+Some of the tests require the database to be pre-populated with test data. Download
+the latest `test-data.sql` from [FAForever/db](https://github.com/FAForever/db
+into the root of this project, then run:
+
+    $ pipenv run tests
+
+## Other tools
+
+You can check for possible unused code with `vulture` by running:
+
+    $ pipenv run vulture
 
 # License
 
@@ -72,8 +91,6 @@ With most carrying a footer containing:
     LOGIN: QString
     SESSION: QString
 
-With a few message-types (`UPLOAD_MOD`, `UPLOAD_MAP`), there are more fields.
-
 ## Incoming Packages
 
 ##### Mod Vault
@@ -81,16 +98,12 @@ With a few message-types (`UPLOAD_MOD`, `UPLOAD_MAP`), there are more fields.
 * `{command: modvault, type: start}`: show the last 100 mods
 * `{command: modvault, type: like, uid: <uid>}`: check if user liked the mod, otherwise increase the like counter
 * `{command: modvault, type: download, uid: <uid>}`: notify server about a download (for download counter), does not start the download
-* `{command: modvault, type: addcomment}`: not implemented
 
 ##### Social
-Can be combined !, e.g. `{command: social, teaminvite: <...>, friends: <..>}`
-* `{command: social, teaminvite: <player_name>}`: Invite a Player to a Team
-* `{command: social, friends: <list of ALL friends>}`: Update the friends on the db
-* `{command: social, foes: <list of ALL foes>}`: Update the foe (muted players) on the db
+* `{command: social_add, friend|foe: <player_id>}`: Add a friend or foe
+* `{command: social_remove, friend|foe: <player_id>}`: Remove a friend or foe
 
 ##### Avatar
-* `{command: avatar, action: upload_avatar, name: <avatar_name>, file: <file_content>, description: <desc>}`: Admin Command to upload an avatar
 * `{command: avatar, action: list_avatar}`: Send a list of available avatars
 * `{command: avatar, action: select, avatar: <avatar_url>}`: Select a valid avatar for the player
 
@@ -101,16 +114,11 @@ Can be combined !, e.g. `{command: social, teaminvite: <...>, friends: <..>}`
 ##### Misc
 
 * [deprecated] `{command: ask_session}`: response with a welcome command and a valid session (can be delayed)
-* `{command: fa_state, state: <on|...>}`: notify the server if the game has launched or closed
-* `{command: quit_team}`: Leave a team
-* `{command: accept_team_proposal, leader: <leader_name>}`: Accept Team Invitation
-* `{command: hello, version: <...>, login: <...>, password: <...>, unique_id: <...>, (session: <...>)}`: Accept Team Invitation
+* `{command: hello, version: <...>, login: <...>, password: <...>, unique_id: <...>, (session: <...>)}`: Log in to the server
 
-##  Stream
+##  Stream (Deprecated)
 
 The stream API is deprecated, but currently the following message types are supported:
 
 * `PING`: response with a `PONG`
 * `PONG`: internal state changed to ponged
-* `UPLOAD_MOD, login, session, zipmap, infos, size, fileDaatas`: Upload a mod
-* `UPLOAD_MAP, login, session, zipmap, infos, size, fileDatas`: Upload a map

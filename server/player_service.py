@@ -7,8 +7,10 @@ from server.decorators import with_logger
 from server.players import Player
 from sqlalchemy import and_, select
 
-from .db.models import (avatars, avatars_list, clan, clan_membership,
-                        global_rating, ladder1v1_rating, login)
+from .db.models import (
+    avatars, avatars_list, clan, clan_membership, global_rating,
+    ladder1v1_rating, login
+)
 
 
 @with_logger
@@ -22,8 +24,12 @@ class PlayerService:
         self.client_version_info = ('0.0.0', None)
         self._dirty_players = set()
 
-        asyncio.get_event_loop().run_until_complete(asyncio.ensure_future(self.update_data()))
-        self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
+        asyncio.get_event_loop().run_until_complete(
+            asyncio.ensure_future(self.update_data())
+        )
+        self._update_cron = aiocron.crontab(
+            '*/10 * * * *', func=self.update_data
+        )
 
     def __len__(self):
         return len(self.players)
@@ -71,7 +77,7 @@ class PlayerService:
                     avatars.c.selected == 1
                 ))
                 .outerjoin(avatars_list)
-            ).where(login.c.id == player.id)
+            ).where(login.c.id == player.id)  # yapf: disable
 
             result = await conn.execute(sql)
             row = await result.fetchone()
@@ -79,20 +85,20 @@ class PlayerService:
                 return
 
             player.global_rating = (
-                row[global_rating.c.mean],
-                row[global_rating.c.deviation]
+                row[global_rating.c.mean], row[global_rating.c.deviation]
             )
             player.numGames = row[global_rating.c.numGames]
 
             player.ladder_rating = (
-                row[ladder1v1_rating.c.mean],
-                row[ladder1v1_rating.c.deviation]
+                row[ladder1v1_rating.c.mean], row[ladder1v1_rating.c.deviation]
             )
             player.ladder_games = row[ladder1v1_rating.c.numGames]
 
             player.clan = row.get(clan.c.tag)
 
-            url, tooltip = row.get(avatars_list.c.url), row.get(avatars_list.c.tooltip)
+            url, tooltip = (
+                row.get(avatars_list.c.url), row.get(avatars_list.c.tooltip)
+            )
             if url and tooltip:
                 player.avatar = {"url": url, "tooltip": tooltip}
 
@@ -116,17 +122,23 @@ class PlayerService:
         """
         async with db.engine.acquire() as conn:
             # Admins/mods
-            result = await conn.execute("SELECT `user_id`, `group` FROM lobby_admin")
+            result = await conn.execute(
+                "SELECT `user_id`, `group` FROM lobby_admin"
+            )
             rows = await result.fetchall()
-            self.privileged_users = dict(map(lambda r: (r[0], r[1]), rows))
+            self.privileged_users = {r["user_id"]: r["group"] for r in rows}
 
             # UniqueID-exempt users.
-            result = await conn.execute("SELECT `user_id` FROM uniqueid_exempt")
+            result = await conn.execute(
+                "SELECT `user_id` FROM uniqueid_exempt"
+            )
             rows = await result.fetchall()
             self.uniqueid_exempt = frozenset(map(lambda x: x[0], rows))
 
             # Client version number
-            result = await conn.execute("SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1")
+            result = await conn.execute(
+                "SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1"
+            )
             row = await result.fetchone()
             if row is not None:
                 self.client_version_info = (row[0], row[1])
@@ -139,6 +151,9 @@ class PlayerService:
                         "The server has been shut down for maintenance, "
                         "but should be back online soon. "
                         "If you experience any problems, please restart your client. "
-                        "<br/><br/>We apologize for this interruption.")
+                        "<br/><br/>We apologize for this interruption."
+                    )
             except Exception as ex:
-                self._logger.debug("Could not send shutdown message to %s: %s".format(player, ex))
+                self._logger.debug(
+                    "Could not send shutdown message to %s: %s", player, ex
+                )
