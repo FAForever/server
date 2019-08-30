@@ -1,5 +1,6 @@
 import asyncio
 import pytest
+from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until_command
 
@@ -43,8 +44,8 @@ async def queue_players_for_matchmaking(lobby_server):
     return proto1, proto2
 
 
-async def test_game_matchmaking(loop, lobby_server, mocker):
-    mocker.patch('asyncio.sleep', side_effect=lambda _: aiosleep(0.1))
+@fast_forward(1000)
+async def test_game_matchmaking(lobby_server):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
 
     # The player that queued last will be the host

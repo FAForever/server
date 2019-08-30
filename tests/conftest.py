@@ -20,6 +20,7 @@ from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
 from server.rating import RatingType
 from server.db import FAFDatabase
+from tests.utils import EventLoopClockAdvancer
 
 from asynctest import CoroutineMock
 
