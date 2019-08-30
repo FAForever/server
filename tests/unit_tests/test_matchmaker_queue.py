@@ -46,15 +46,29 @@ def test_search_threshold(mocker, loop, matchmaker_players):
     assert s.match_threshold >= 0
 
 
-def test_search_threshold_of_old_players_is_high(mocker, loop):
+def test_search_threshold_of_single_old_players_is_high(mocker, loop):
     old_player = Player('experienced_player', player_id=1, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
     s = Search([old_player])
     assert s.match_threshold >= 0.6
 
 
-def test_search_threshold_of_new_players_is_low(mocker, loop):
+def test_search_threshold_of_team_old_players_is_high(mocker, loop):
+    old_player = Player('experienced_player', player_id=1, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+    another_old_player = Player('another experienced_player', player_id=2, ladder_rating=(1600, 60), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+    s = Search([old_player, another_old_player])
+    assert s.match_threshold >= 0.6
+
+
+def test_search_threshold_of_single_new_players_is_low(mocker, loop):
     new_player = Player('new_player', player_id=1, ladder_rating=(1500, 500), ladder_games=1)
     s = Search([new_player])
+    assert s.match_threshold <= 0.4
+
+
+def test_search_threshold_of_team_new_players_is_low(mocker, loop):
+    new_player = Player('new_player', player_id=1, ladder_rating=(1500, 500), ladder_games=1)
+    another_new_player = Player('another_new_player', player_id=2, ladder_rating=(1450, 450), ladder_games=1)
+    s = Search([new_player, another_new_player])
     assert s.match_threshold <= 0.4
 
 
