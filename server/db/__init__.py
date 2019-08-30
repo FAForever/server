@@ -11,7 +11,6 @@ class FAFDatabase:
                       echo=True):
         if self.engine is not None:
             raise ValueError("DB is already connected!")
-
         self.engine = await create_engine(
             host=host,
             port=port,

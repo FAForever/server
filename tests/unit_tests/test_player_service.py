@@ -1,5 +1,8 @@
 from mock import Mock
+import pytest
 from server.rating import RatingType
+
+pytestmark = pytest.mark.asyncio
 
 
 async def test_fetch_player_data(player_factory, player_service):
@@ -41,7 +44,7 @@ async def test_fetch_player_data_non_existent(player_factory, player_service):
     await player_service.fetch_player_data(player)
 
 
-def test_magic_methods(player_factory, player_service):
+async def test_magic_methods(player_factory, player_service):
     player = player_factory(player_id=0)
     player_service[0] = player
 
@@ -58,7 +61,7 @@ def test_magic_methods(player_factory, player_service):
     assert player_service.get_player(0) is None
 
 
-def test_mark_dirty(player_factory, player_service):
+async def test_mark_dirty(player_factory, player_service):
     player = player_factory()
     player_service[0] = player
 
@@ -80,7 +83,7 @@ async def test_update_data(player_factory, player_service):
     assert player_service.client_version_info == ('0.10.125', 'some-installer.msi')
 
 
-def test_broadcast_shutdown(player_factory, player_service):
+async def test_broadcast_shutdown(player_factory, player_service):
     player = player_factory()
     lconn = Mock()
     player.lobby_connection = lconn
@@ -91,7 +94,7 @@ def test_broadcast_shutdown(player_factory, player_service):
     player.lobby_connection.send_warning.assert_called_once()
 
 
-def test_broadcast_shutdown_error(player_factory, player_service):
+async def test_broadcast_shutdown_error(player_factory, player_service):
     player = player_factory()
     lconn = Mock()
     lconn.send_warning.side_effect = ValueError

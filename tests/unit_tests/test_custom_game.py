@@ -6,6 +6,8 @@ from server.games.game import GameState, ValidityState
 from tests.unit_tests.conftest import add_connected_players
 from server.rating import RatingType
 
+pytestmark = pytest.mark.asyncio
+
 
 @pytest.yield_fixture
 def custom_game(loop, database, game_service, game_stats_service):

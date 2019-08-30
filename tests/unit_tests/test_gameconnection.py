@@ -1,11 +1,15 @@
 import asyncio
 from unittest import mock
+import pytest
+import asynctest
 
 from server import GameConnection
 from server.games import Game
 from server.games.game import ValidityState, Victory
 from server.players import PlayerState
 from asynctest import CoroutineMock
+
+pytestmark = pytest.mark.asyncio
 
 
 def assert_message_sent(game_connection: GameConnection, command, args):
@@ -16,7 +20,7 @@ def assert_message_sent(game_connection: GameConnection, command, args):
     })
 
 
-def test_abort(game_connection: GameConnection, game: Game, players):
+async def test_abort(game_connection: GameConnection, game: Game, players):
     game_connection.player = players.hosting
     game_connection.game = game
 

@@ -8,6 +8,8 @@ from server.stats import event_service as ev
 from server.stats.game_stats_service import GameStatsService
 from asynctest import CoroutineMock
 
+pytestmark = pytest.mark.asyncio
+
 
 @pytest.fixture()
 def event_service():
@@ -166,7 +168,7 @@ async def test_process_game_won_ladder1v1(game_stats_service, player, game, achi
     achievement_service.unlock.assert_any_call(ach.ACH_FIRST_SUCCESS, [])
 
 
-def test_category_stats_won_more_air(game_stats_service, player, achievement_service, unit_stats):
+async def test_category_stats_won_more_air(game_stats_service, player, achievement_service, unit_stats):
     unit_stats['air']['built'] = 3
     unit_stats['land']['built'] = 2
     unit_stats['naval']['built'] = 1
@@ -179,7 +181,7 @@ def test_category_stats_won_more_air(game_stats_service, player, achievement_ser
     assert len(achievement_service.mock_calls) == 3
 
 
-def test_category_stats_won_more_land(game_stats_service, player, achievement_service, unit_stats):
+async def test_category_stats_won_more_land(game_stats_service, player, achievement_service, unit_stats):
     unit_stats['air']['built'] = 2
     unit_stats['land']['built'] = 3
     unit_stats['naval']['built'] = 1
@@ -192,7 +194,7 @@ def test_category_stats_won_more_land(game_stats_service, player, achievement_se
     assert len(achievement_service.mock_calls) == 3
 
 
-def test_category_stats_won_more_naval(game_stats_service, player, achievement_service, unit_stats):
+async def test_category_stats_won_more_naval(game_stats_service, player, achievement_service, unit_stats):
     unit_stats['air']['built'] = 2
     unit_stats['land']['built'] = 1
     unit_stats['naval']['built'] = 3
@@ -205,7 +207,7 @@ def test_category_stats_won_more_naval(game_stats_service, player, achievement_s
     assert len(achievement_service.mock_calls) == 3
 
 
-def test_category_stats_won_more_naval_and_one_experimental(game_stats_service, player, achievement_service, unit_stats):
+async def test_category_stats_won_more_naval_and_one_experimental(game_stats_service, player, achievement_service, unit_stats):
     unit_stats['air']['built'] = 2
     unit_stats['land']['built'] = 1
     unit_stats['naval']['built'] = 3
@@ -221,7 +223,7 @@ def test_category_stats_won_more_naval_and_one_experimental(game_stats_service, 
     assert len(achievement_service.mock_calls) == 4
 
 
-def test_category_stats_won_more_naval_and_three_experimentals(game_stats_service, player, achievement_service, unit_stats):
+async def test_category_stats_won_more_naval_and_three_experimentals(game_stats_service, player, achievement_service, unit_stats):
     unit_stats['air']['built'] = 2
     unit_stats['land']['built'] = 1
     unit_stats['naval']['built'] = 3
@@ -240,7 +242,7 @@ def test_category_stats_won_more_naval_and_three_experimentals(game_stats_servic
     assert len(achievement_service.mock_calls) == 7
 
 
-def test_faction_played_aeon_survived(game_stats_service, player, achievement_service, event_service):
+async def test_faction_played_aeon_survived(game_stats_service, player, achievement_service, event_service):
     game_stats_service._faction_played(Faction.aeon, True, [], [])
 
     event_service.record_event.assert_any_call(ev.EVENT_AEON_PLAYS, 1, [])
@@ -252,14 +254,14 @@ def test_faction_played_aeon_survived(game_stats_service, player, achievement_se
     assert len(achievement_service.mock_calls) == 3
 
 
-def test_faction_played_aeon_died(game_stats_service, player, event_service):
+async def test_faction_played_aeon_died(game_stats_service, player, event_service):
     game_stats_service._faction_played(Faction.aeon, False, [], [])
 
     event_service.record_event.assert_called_once_with(ev.EVENT_AEON_PLAYS, 1, [])
     assert len(event_service.mock_calls) == 1
 
 
-def test_faction_played_cybran_survived(game_stats_service, player, achievement_service, event_service):
+async def test_faction_played_cybran_survived(game_stats_service, player, achievement_service, event_service):
     game_stats_service._faction_played(Faction.cybran, True, [], [])
 
     event_service.record_event.assert_any_call(ev.EVENT_CYBRAN_PLAYS, 1, [])
@@ -271,14 +273,14 @@ def test_faction_played_cybran_survived(game_stats_service, player, achievement_
     assert len(achievement_service.mock_calls) == 3
 
 
-def test_faction_played_cybran_died(game_stats_service, player, event_service):
+async def test_faction_played_cybran_died(game_stats_service, player, event_service):
     game_stats_service._faction_played(Faction.cybran, False, [], [])
 
     event_service.record_event.assert_called_once_with(ev.EVENT_CYBRAN_PLAYS, 1, [])
     assert len(event_service.mock_calls) == 1
 
 
-def test_faction_played_uef_survived(game_stats_service, player, achievement_service, event_service):
+async def test_faction_played_uef_survived(game_stats_service, player, achievement_service, event_service):
     game_stats_service._faction_played(Faction.uef, True, [], [])
 
     event_service.record_event.assert_any_call(ev.EVENT_UEF_PLAYS, 1, [])
@@ -290,14 +292,14 @@ def test_faction_played_uef_survived(game_stats_service, player, achievement_ser
     assert len(achievement_service.mock_calls) == 3
 
 
-def test_faction_played_uef_died(game_stats_service, player, event_service):
+async def test_faction_played_uef_died(game_stats_service, player, event_service):
     game_stats_service._faction_played(Faction.uef, False, [], [])
 
     event_service.record_event.assert_called_once_with(ev.EVENT_UEF_PLAYS, 1, [])
     assert len(event_service.mock_calls) == 1
 
 
-def test_faction_played_seraphim_survived(game_stats_service, player, achievement_service, event_service):
+async def test_faction_played_seraphim_survived(game_stats_service, player, achievement_service, event_service):
     game_stats_service._faction_played(Faction.seraphim, True, [], [])
 
     event_service.record_event.assert_any_call(ev.EVENT_SERAPHIM_PLAYS, 1, [])
@@ -309,7 +311,7 @@ def test_faction_played_seraphim_survived(game_stats_service, player, achievemen
     assert len(achievement_service.mock_calls) == 3
 
 
-def test_faction_played_seraphim_died(game_stats_service, player, achievement_service, event_service):
+async def test_faction_played_seraphim_died(game_stats_service, player, achievement_service, event_service):
     game_stats_service._faction_played(Faction.seraphim, False, [], [])
 
     event_service.record_event.assert_called_once_with(ev.EVENT_SERAPHIM_PLAYS, 1, [])
@@ -317,7 +319,7 @@ def test_faction_played_seraphim_died(game_stats_service, player, achievement_se
     assert len(achievement_service.mock_calls) == 0
 
 
-def test_killed_acus_one_and_survived(game_stats_service, achievement_service, event_service, unit_stats):
+async def test_killed_acus_one_and_survived(game_stats_service, achievement_service, event_service, unit_stats):
     unit_stats['cdr']['kills'] = 1
     game_stats_service._killed_acus(unit_stats, True, [])
 
@@ -326,7 +328,7 @@ def test_killed_acus_one_and_survived(game_stats_service, achievement_service, e
     assert len(event_service.mock_calls) == 0
 
 
-def test_killed_acus_three_and_survived(game_stats_service, achievement_service, event_service, unit_stats):
+async def test_killed_acus_three_and_survived(game_stats_service, achievement_service, event_service, unit_stats):
     unit_stats['cdr']['kills'] = 3
     game_stats_service._killed_acus(unit_stats, True, [])
 
@@ -336,7 +338,7 @@ def test_killed_acus_three_and_survived(game_stats_service, achievement_service,
     assert len(event_service.mock_calls) == 0
 
 
-def test_killed_acus_one_and_died(game_stats_service, player, achievement_service, event_service, unit_stats):
+async def test_killed_acus_one_and_died(game_stats_service, player, achievement_service, event_service, unit_stats):
     unit_stats['cdr']['kills'] = 1
     unit_stats['cdr']['lost'] = 1
     game_stats_service._killed_acus(unit_stats, False, [])
@@ -346,96 +348,97 @@ def test_killed_acus_one_and_died(game_stats_service, player, achievement_servic
     assert len(event_service.mock_calls) == 0
 
 
-def test_built_salvations_one_and_died(game_stats_service, player, achievement_service, event_service):
+async def test_built_salvations_one_and_died(game_stats_service, player, achievement_service, event_service):
     game_stats_service._built_salvations(1, False, [])
     assert len(achievement_service.mock_calls) == 0
     assert len(event_service.mock_calls) == 0
 
 
-def test_built_salvations_one_and_survived(game_stats_service, player, achievement_service, event_service):
+async def test_built_salvations_one_and_survived(game_stats_service, player, achievement_service, event_service):
     game_stats_service._built_salvations(1, True, [])
     achievement_service.unlock.assert_called_once_with(ach.ACH_RAINMAKER, [])
     assert len(event_service.mock_calls) == 0
 
 
-def test_built_yolona_oss_one_and_died(game_stats_service, player, achievement_service, event_service):
+async def test_built_yolona_oss_one_and_died(game_stats_service, player, achievement_service, event_service):
     game_stats_service._built_yolona_oss(1, False, [])
     assert len(achievement_service.mock_calls) == 0
     assert len(event_service.mock_calls) == 0
 
 
-def test_built_yolona_oss_one_and_survived(game_stats_service, player, achievement_service, event_service):
+async def test_built_yolona_oss_one_and_survived(game_stats_service, player, achievement_service, event_service):
     game_stats_service._built_yolona_oss(1, True, [])
     achievement_service.unlock.assert_called_once_with(ach.ACH_NUCLEAR_WAR, [])
     assert len(event_service.mock_calls) == 0
 
 
-def test_built_paragons_one_and_died(game_stats_service, player, achievement_service, event_service):
+async def test_built_paragons_one_and_died(game_stats_service, player, achievement_service, event_service):
     game_stats_service._built_paragons(1, False, [])
     assert len(achievement_service.mock_calls) == 0
     assert len(event_service.mock_calls) == 0
 
 
-def test_built_paragons_one_and_survived(game_stats_service, player, achievement_service, event_service):
+async def test_built_paragons_one_and_survived(game_stats_service, player, achievement_service, event_service):
     game_stats_service._built_paragons(1, True, [])
     achievement_service.unlock.assert_called_once_with(ach.ACH_SO_MUCH_RESOURCES, [])
     assert len(event_service.mock_calls) == 0
 
 
-def test_built_scathis_one_and_died(game_stats_service, player, achievement_service, event_service):
+async def test_built_scathis_one_and_died(game_stats_service, player, achievement_service, event_service):
     game_stats_service._built_scathis(1, False, [])
     assert len(achievement_service.mock_calls) == 0
     assert len(event_service.mock_calls) == 0
 
 
-def test_built_scathis_one_and_survived(game_stats_service, player, achievement_service, event_service):
+async def test_built_scathis_one_and_survived(game_stats_service, player, achievement_service, event_service):
     game_stats_service._built_scathis(1, True, [])
     achievement_service.unlock.assert_called_once_with(ach.ACH_MAKE_IT_HAIL, [])
     assert len(event_service.mock_calls) == 0
 
 
-def test_built_mavors_one_and_died(game_stats_service, player, achievement_service, event_service):
+async def test_built_mavors_one_and_died(game_stats_service, player, achievement_service, event_service):
     game_stats_service._built_mavors(1, False, [])
     assert len(achievement_service.mock_calls) == 0
     assert len(event_service.mock_calls) == 0
 
 
-def test_built_mavors_one_and_survived(game_stats_service, player, achievement_service, event_service):
+async def test_built_mavors_one_and_survived(game_stats_service, player, achievement_service, event_service):
     game_stats_service._built_mavors(1, True, [])
     achievement_service.unlock.assert_called_once_with(ach.ACH_I_HAVE_A_CANON, [])
     assert len(event_service.mock_calls) == 0
 
 
-def test_lowest_acu_health_zero_died(game_stats_service, player, achievement_service, event_service):
+async def test_lowest_acu_health_zero_died(game_stats_service, player, achievement_service, event_service):
     game_stats_service._lowest_acu_health(0, False, [])
     assert len(achievement_service.mock_calls) == 0
     assert len(event_service.mock_calls) == 0
 
 
-def test_lowest_acu_health_499_survived(game_stats_service, player, achievement_service, event_service):
+async def test_lowest_acu_health_499_survived(game_stats_service, player, achievement_service, event_service):
     game_stats_service._lowest_acu_health(499, True, [])
     achievement_service.unlock.assert_called_once_with(ach.ACH_THAT_WAS_CLOSE, [])
     assert len(event_service.mock_calls) == 0
 
 
-def test_lowest_acu_health_500_survived(game_stats_service, player, achievement_service, event_service):
+async def test_lowest_acu_health_500_survived(game_stats_service, player, achievement_service, event_service):
     game_stats_service._lowest_acu_health(500, True, [])
     assert len(achievement_service.mock_calls) == 0
     assert len(event_service.mock_calls) == 0
 
 
-def test_top_score_7_players(game_stats_service, achievement_service):
+async def test_top_score_7_players(game_stats_service, achievement_service):
     game_stats_service._highscore(True, 7, [])
 
     assert len(achievement_service.mock_calls) == 0
 
 
-def test_top_score_8_players(game_stats_service, achievement_service):
+async def test_top_score_8_players(game_stats_service, achievement_service):
     game_stats_service._highscore(True, 8, [])
 
     achievement_service.unlock.assert_any_call(ach.ACH_TOP_SCORE, [])
     achievement_service.increment.assert_any_call(ach.ACH_UNBEATABLE, 1, [])
     assert len(achievement_service.mock_calls) == 2
+
 
 async def test_process_game_stats_abort_processing_if_no_army_result(game_stats_service, game, player, achievement_service, event_service):
     with open("tests/data/game_stats_full_example.json", "r") as stats_file:

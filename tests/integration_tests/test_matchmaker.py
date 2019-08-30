@@ -1,6 +1,9 @@
 import asyncio
+import pytest
 
 from .conftest import connect_and_sign_in, read_until_command
+
+pytestmark = pytest.mark.asyncio
 
 # Need to save the old sleep here otherwise the mocker recursively patches it
 aiosleep = asyncio.sleep

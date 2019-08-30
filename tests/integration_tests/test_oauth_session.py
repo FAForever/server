@@ -8,6 +8,9 @@ from oauthlib.oauth2.rfc6749.errors import MissingTokenError
 from server.api.oauth_session import OAuth2Session
 
 
+pytestmark = pytest.mark.asyncio
+
+
 @pytest.fixture
 def oauth2_session(oauth2_server):
     (host, port) = oauth2_server

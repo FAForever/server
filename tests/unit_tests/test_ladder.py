@@ -7,6 +7,8 @@ from server.matchmaker import Search
 from server.players import PlayerState
 from asynctest import CoroutineMock
 
+pytestmark = pytest.mark.asyncio
+
 
 async def test_start_game(ladder_service: LadderService, game_service:
                           GameService, player_factory):
@@ -49,7 +51,7 @@ async def test_start_game_timeout(ladder_service: LadderService, game_service:
     assert p2.lobby_connection.launch_game.called
 
 
-def test_inform_player(ladder_service: LadderService, player_factory):
+async def test_inform_player(ladder_service: LadderService, player_factory):
     p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
 
     mock_lc = mock.Mock()

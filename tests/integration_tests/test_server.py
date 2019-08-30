@@ -9,6 +9,7 @@ from .conftest import (
 )
 from .testclient import ClientTest
 
+pytestmark = pytest.mark.asyncio
 TEST_ADDRESS = ('127.0.0.1', None)
 
 

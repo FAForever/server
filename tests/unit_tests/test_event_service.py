@@ -6,6 +6,8 @@ from server.api.api_accessor import ApiAccessor
 from server.stats.event_service import EventService
 from asynctest import CoroutineMock
 
+pytestmark = pytest.mark.asyncio
+
 
 @pytest.fixture()
 def api_accessor():

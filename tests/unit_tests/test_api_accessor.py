@@ -2,6 +2,9 @@ from mock import Mock
 from server.api.api_accessor import SessionManager
 from server.config import API_BASE_URL
 from asynctest import CoroutineMock
+import pytest
+
+pytestmark = pytest.mark.asyncio
 
 
 async def test_session_manager(mocker):

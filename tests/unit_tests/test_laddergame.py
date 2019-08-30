@@ -7,6 +7,8 @@ from server.games.game import GameState, ValidityState
 from tests.unit_tests.test_game import add_connected_players
 from server.rating import RatingType
 
+pytestmark = pytest.mark.asyncio
+
 
 @pytest.fixture()
 def laddergame(database, game_service, game_stats_service):

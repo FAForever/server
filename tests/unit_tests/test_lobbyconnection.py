@@ -19,6 +19,8 @@ from server.types import Address
 from sqlalchemy import and_, select, text
 from asynctest import CoroutineMock
 
+pytestmark = pytest.mark.asyncio
+
 
 @pytest.fixture()
 def test_game_info():
@@ -122,10 +124,10 @@ def policy_server(loop):
     loop.run_until_complete(runner.cleanup())
 
 
-def test_command_game_host_creates_game(lobbyconnection,
-                                        mock_games,
-                                        test_game_info,
-                                        players):
+async def test_command_game_host_creates_game(lobbyconnection,
+                                              mock_games,
+                                              test_game_info,
+                                              players):
     lobbyconnection.player = players.hosting
     lobbyconnection.protocol = mock.Mock()
     lobbyconnection.command_game_host(test_game_info)
@@ -141,7 +143,7 @@ def test_command_game_host_creates_game(lobbyconnection,
         .assert_called_with(**expected_call)
 
 
-def test_launch_game(lobbyconnection, game, player_factory):
+async def test_launch_game(lobbyconnection, game, player_factory):
     old_game_conn = mock.Mock()
 
     lobbyconnection.player = player_factory()
@@ -160,7 +162,7 @@ def test_launch_game(lobbyconnection, game, player_factory):
     lobbyconnection.send.assert_called_once()
 
 
-def test_command_game_host_creates_correct_game(
+async def test_command_game_host_creates_correct_game(
         lobbyconnection, game_service, test_game_info, players):
     lobbyconnection.player = players.hosting
     lobbyconnection.game_service = game_service
@@ -174,13 +176,13 @@ def test_command_game_host_creates_correct_game(
     assert isinstance(args[0], CustomGame)
 
 
-def test_command_game_join_calls_join_game(mocker,
-                                           database,
-                                           lobbyconnection,
-                                           game_service,
-                                           test_game_info,
-                                           players,
-                                           game_stats_service):
+async def test_command_game_join_calls_join_game(mocker,
+                                                 database,
+                                                 lobbyconnection,
+                                                 game_service,
+                                                 test_game_info,
+                                                 players,
+                                                 game_stats_service):
     lobbyconnection.game_service = game_service
     mock_protocol = mocker.patch.object(lobbyconnection, 'protocol')
     game = mock.create_autospec(Game(42, database, game_service, game_stats_service))
@@ -202,13 +204,13 @@ def test_command_game_join_calls_join_game(mocker,
     mock_protocol.send_message.assert_called_with(expected_reply)
 
 
-def test_command_game_join_uid_as_str(mocker,
-                                      database,
-                                      lobbyconnection,
-                                      game_service,
-                                      test_game_info,
-                                      players,
-                                      game_stats_service):
+async def test_command_game_join_uid_as_str(mocker,
+                                            database,
+                                            lobbyconnection,
+                                            game_service,
+                                            test_game_info,
+                                            players,
+                                            game_stats_service):
     lobbyconnection.game_service = game_service
     mock_protocol = mocker.patch.object(lobbyconnection, 'protocol')
     game = mock.create_autospec(Game(42, database, game_service, game_stats_service))
@@ -230,12 +232,12 @@ def test_command_game_join_uid_as_str(mocker,
     mock_protocol.send_message.assert_called_with(expected_reply)
 
 
-def test_command_game_join_without_password(lobbyconnection,
-                                            database,
-                                            game_service,
-                                            test_game_info,
-                                            players,
-                                            game_stats_service):
+async def test_command_game_join_without_password(lobbyconnection,
+                                                  database,
+                                                  game_service,
+                                                  test_game_info,
+                                                  players,
+                                                  game_stats_service):
     lobbyconnection.send = mock.Mock()
     lobbyconnection.game_service = game_service
     game = mock.create_autospec(Game(42, database, game_service, game_stats_service))
@@ -253,10 +255,10 @@ def test_command_game_join_without_password(lobbyconnection,
         dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
 
 
-def test_command_game_join_game_not_found(lobbyconnection,
-                                          game_service,
-                                          test_game_info,
-                                          players):
+async def test_command_game_join_game_not_found(lobbyconnection,
+                                                game_service,
+                                                test_game_info,
+                                                players):
     lobbyconnection.send = mock.Mock()
     lobbyconnection.game_service = game_service
     lobbyconnection.player = players.hosting
@@ -267,9 +269,9 @@ def test_command_game_join_game_not_found(lobbyconnection,
         dict(command="notice", style="info", text="The host has left the game"))
 
 
-def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
-                                                         mock_games,
-                                                         test_game_info_invalid):
+async def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
+                                                               mock_games,
+                                                               test_game_info_invalid):
     lobbyconnection.send = mock.Mock()
     mock_games.create_game = mock.Mock()
     lobbyconnection.command_game_host(test_game_info_invalid)
@@ -278,7 +280,7 @@ def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
         dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
 
 
-def test_abort(loop, mocker, lobbyconnection):
+async def test_abort(loop, mocker, lobbyconnection):
     proto = mocker.patch.object(lobbyconnection, 'protocol')
 
     lobbyconnection.abort()
@@ -286,7 +288,7 @@ def test_abort(loop, mocker, lobbyconnection):
     proto.writer.close.assert_any_call()
 
 
-def test_send_game_list(mocker, database, lobbyconnection, game_stats_service):
+async def test_send_game_list(mocker, database, lobbyconnection, game_stats_service):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
     games = mocker.patch.object(lobbyconnection, 'game_service')  # type: GameService
     game1, game2 = mock.create_autospec(Game(42, database, mock.Mock(), game_stats_service)), \
@@ -300,7 +302,7 @@ def test_send_game_list(mocker, database, lobbyconnection, game_stats_service):
                                            'games': [game1.to_dict(), game2.to_dict()]})
 
 
-def test_send_mod_list(mocker, lobbyconnection, mock_games):
+async def test_send_mod_list(mocker, lobbyconnection, mock_games):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
 
     lobbyconnection.send_mod_list()
@@ -730,8 +732,9 @@ async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnecti
 
 
 @pytest.mark.parametrize("game_state", [GameState.INITIALIZING, GameState.ENDED])
-async def test_game_connection_not_restored_if_game_state_prohibits(database, lobbyconnection: LobbyConnection, game_service: GameService,
-                                                                    game_stats_service, game_state, mock_player, mocker):
+async def test_game_connection_not_restored_if_game_state_prohibits(lobbyconnection: LobbyConnection, game_service: GameService,
+                                                                    game_stats_service, game_state, mock_player, mocker,
+                                                                    database):
     protocol = mocker.patch.object(lobbyconnection, 'protocol')
     lobbyconnection.player = mock_player
     del lobbyconnection.player.game_connection
@@ -757,8 +760,8 @@ async def test_game_connection_not_restored_if_game_state_prohibits(database, lo
 
 
 @pytest.mark.parametrize("game_state", [GameState.LIVE, GameState.LOBBY])
-async def test_game_connection_restored_if_game_exists(database, lobbyconnection: LobbyConnection, game_service: GameService,
-                                                       game_stats_service, game_state, mock_player):
+async def test_game_connection_restored_if_game_exists(lobbyconnection: LobbyConnection, game_service: GameService,
+                                                       game_stats_service, game_state, mock_player, database):
     lobbyconnection.player = mock_player
     del lobbyconnection.player.game_connection
     lobbyconnection.player.state = PlayerState.IDLE
@@ -776,7 +779,7 @@ async def test_game_connection_restored_if_game_exists(database, lobbyconnection
     assert lobbyconnection.player.state == PlayerState.PLAYING
 
 
-async def test_command_game_matchmaking(lobbyconnection, mock_player, database):
+async def test_command_game_matchmaking(lobbyconnection, mock_player):
     lobbyconnection.player = mock_player
     lobbyconnection.player.id = 1
     lobbyconnection._authenticated = True

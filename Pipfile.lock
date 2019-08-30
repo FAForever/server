@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "713c97f84fd15b51007b0b8e72ecc7fdb91ec51873fcb954f34e43b3fd052bf3"
+            "sha256": "3b4b7816516f9398bdeb6cd515319149b7b2022d382b20f61ffa8abc231b8881"
         },
         "host-environment-markers": {
             "implementation_name": "cpython",
@@ -220,6 +220,7 @@
         },
         "importlib-metadata": {
             "hashes": [],
+            "markers": "python_version < '3.8'",
             "version": "==0.19"
         },
         "mock": {
@@ -249,6 +250,10 @@
         "pytest": {
             "hashes": [],
             "version": "==5.1.2"
+        },
+        "pytest-asyncio": {
+            "hashes": [],
+            "version": "==0.10.0"
         },
         "pytest-cov": {
             "hashes": [],

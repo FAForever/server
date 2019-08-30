@@ -26,20 +26,6 @@ from asynctest import CoroutineMock
 logging.getLogger().setLevel(logging.DEBUG)
 
 
-def async_test(f):
-    def wrapper(*args, **kwargs):
-        coro = asyncio.coroutine(f)
-        future = coro(*args, **kwargs)
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(future)
-    return wrapper
-
-
-def pytest_pycollect_makeitem(collector, name, obj):
-    if name.startswith('test_') and asyncio.iscoroutinefunction(obj):
-        return list(collector._genfunctions(name, obj))
-
-
 def pytest_addoption(parser):
     parser.addoption('--aiodebug', action='store_true', default=False,
                      help='Enable asyncio debugging')
@@ -54,40 +40,13 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
     )
-    if config.getoption('--aiodebug'):
-        logging.getLogger('quamash').setLevel(logging.DEBUG)
-        logging.captureWarnings(True)
-    else:
-        logging.getLogger('quamash').setLevel(logging.INFO)
 
 
-def pytest_pyfunc_call(pyfuncitem):
-    testfn = pyfuncitem.obj
-
-    if not asyncio.iscoroutinefunction(testfn):
-        return
-
-    funcargs = pyfuncitem.funcargs
-    testargs = {}
-    for arg in pyfuncitem._fixtureinfo.argnames:
-        testargs[arg] = funcargs[arg]
-    loop = testargs.get('loop', asyncio.get_event_loop())
-    loop.set_debug(True)
-    coro = asyncio.wait_for(testfn(**testargs), 5)
-
-    try:
-        loop.run_until_complete(coro)
-    except RuntimeError as err:
-        logging.error(err)
-        raise err
-    return True
-
-
-@pytest.fixture(scope='session', autouse=True)
-def loop(request):
+@pytest.fixture
+def loop(event_loop):
     import server
     server.stats = mock.MagicMock()
-    return asyncio.get_event_loop()
+    return event_loop
 
 
 @pytest.fixture
@@ -102,19 +61,27 @@ def sqlquery():
 
 
 @pytest.fixture
-def mock_database(loop, database):
+def mock_database(database):
     return database
 
 
-@pytest.fixture(scope='session', autouse=True)
-def database(request, loop):
+@pytest.fixture
+def database(request, event_loop):
+    return _database(request, event_loop)
 
+
+@pytest.fixture(scope='session', autouse=True)
+def global_database(request):
+    return _database(request, asyncio.get_event_loop())
+
+
+def _database(request, loop):
     def opt(val):
         return request.config.getoption(val)
     host, user, pw, db, port = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt('--mysql_database'), opt('--mysql_port')
     fdb = FAFDatabase(loop)
 
-    db_fut = asyncio.ensure_future(
+    db_fut = loop.create_task(
         fdb.connect(
             host=host,
             user=user,
@@ -133,13 +100,13 @@ def database(request, loop):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def test_data(database, loop):
+def test_data(global_database):
     async def load_data():
         with open('tests/data/test-data.sql') as f:
-            async with database.engine.acquire() as conn:
+            async with global_database.engine.acquire() as conn:
                 await conn.execute(f.read())
 
-    loop.run_until_complete(load_data())
+    asyncio.get_event_loop().run_until_complete(load_data())
 
 
 @pytest.fixture
@@ -209,12 +176,12 @@ def players(player_factory):
 
 
 @pytest.fixture
-def player_service(loop, players, database):
+def player_service(event_loop, database):
     return PlayerService(database)
 
 
 @pytest.fixture
-def game_service(database, player_service, game_stats_service):
+def game_service(event_loop, database, player_service, game_stats_service):
     return GameService(database, player_service, game_stats_service)
 
 

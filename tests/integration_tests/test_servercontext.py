@@ -7,6 +7,9 @@ from server.protocol import QDataStreamProtocol
 from server import fake_statsd
 
 
+pytestmark = pytest.mark.asyncio
+
+
 @pytest.fixture
 def mock_server(loop):
     class MockServer:
@@ -48,7 +51,7 @@ async def test_serverside_abort(mock_context, mock_server):
     mock_server.on_connection_lost.assert_any_call()
 
 
-def test_server_fake_statsd():
+async def test_server_fake_statsd():
     dummy = fake_statsd.DummyConnection()
     # Verify that no exceptions are raised
     with dummy.timer('a'):

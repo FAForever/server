@@ -15,6 +15,8 @@ from tests.unit_tests.conftest import (add_connected_player,
                                        make_mock_game_connection)
 from trueskill import Rating
 
+pytestmark = pytest.mark.asyncio
+
 
 @pytest.yield_fixture
 def game(loop, database, game_service, game_stats_service):
@@ -37,12 +39,12 @@ def custom_game(loop, database, game_service, game_stats_service):
     loop.run_until_complete(game.clear_data())
 
 
-def test_initialization(game: Game):
+async def test_initialization(game: Game):
     assert game.state == GameState.INITIALIZING
     assert game.enforce_rating is False
 
 
-def test_instance_logging(database, game_stats_service):
+async def test_instance_logging(database, game_stats_service):
     logger = logging.getLogger('{}.5'.format(Game.__qualname__))
     logger.debug = mock.Mock()
     mock_parent = mock.Mock()
@@ -161,7 +163,7 @@ async def test_single_team_not_rated(game, game_add_players):
     assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
 
-def test_set_player_option(game, players, mock_game_connection):
+async def test_set_player_option(game, players, mock_game_connection):
     game.state = GameState.LOBBY
     mock_game_connection.player = players.hosting
     mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
@@ -174,11 +176,11 @@ def test_set_player_option(game, players, mock_game_connection):
     game.get_player_option(players.hosting.id, 'StartSpot') == 1
 
 
-def test_invalid_get_player_option_key(game: Game, players):
+async def test_invalid_get_player_option_key(game: Game, players):
     assert game.get_player_option(players.hosting.id, -1) is None
 
 
-def test_add_game_connection(game: Game, players, mock_game_connection):
+async def test_add_game_connection(game: Game, players, mock_game_connection):
     game.state = GameState.LOBBY
     mock_game_connection.player = players.hosting
     mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
@@ -186,7 +188,7 @@ def test_add_game_connection(game: Game, players, mock_game_connection):
     assert players.hosting in game.players
 
 
-def test_add_game_connection_throws_if_not_connected_to_host(game: Game, players, mock_game_connection):
+async def test_add_game_connection_throws_if_not_connected_to_host(game: Game, players, mock_game_connection):
     game.state = GameState.LOBBY
     mock_game_connection.player = players.hosting
     mock_game_connection.state = GameConnectionState.INITIALIZED
@@ -196,7 +198,7 @@ def test_add_game_connection_throws_if_not_connected_to_host(game: Game, players
     assert players.hosting not in game.players
 
 
-def test_add_game_connection_throws_if_not_lobby_state(game: Game, players, mock_game_connection):
+async def test_add_game_connection_throws_if_not_lobby_state(game: Game, players, mock_game_connection):
     game.state = GameState.INITIALIZING
     mock_game_connection.player = players.hosting
     mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
@@ -299,7 +301,7 @@ async def test_game_launch_freezes_players(game: Game, players):
     assert game.players == {players.hosting, players.joining}
 
 
-def test_game_teams_represents_active_teams(game: Game, players):
+async def test_game_teams_represents_active_teams(game: Game, players):
     game.state = GameState.LOBBY
     add_connected_players(game, [players.hosting, players.joining])
     game.set_player_option(players.hosting.id, 'Team', 1)
@@ -618,12 +620,12 @@ async def test_get_army_score_conflicting_results_tied(game, game_add_players):
     assert game.get_army_score(1) == 123
 
 
-def test_equality(game):
+async def test_equality(game):
     assert game == game
     assert game != Game(5, mock.Mock(), mock.Mock(), mock.Mock())
 
 
-def test_hashing(game):
+async def test_hashing(game):
     assert {game: 1, Game(game.id, mock.Mock(), mock.Mock(), mock.Mock()): 1} == {game: 1}
 
 
@@ -742,7 +744,7 @@ async def test_game_outcomes_conflicting(game: Game, players):
     assert guest_outcome is None
 
 
-def test_victory_conditions():
+async def test_victory_conditions():
     conds = [("demoralization", Victory.DEMORALIZATION),
              ("domination", Victory.DOMINATION),
              ("eradication", Victory.ERADICATION),
@@ -752,7 +754,7 @@ def test_victory_conditions():
         assert Victory.from_gpgnet_string(string_value) == enum_value
 
 
-def test_visibility_states():
+async def test_visibility_states():
     states = [("public", VisibilityState.PUBLIC),
               ("friends", VisibilityState.FRIENDS)]
 
@@ -761,7 +763,7 @@ def test_visibility_states():
                 VisibilityState.to_string(enum_value) == string_value)
 
 
-def test_is_even(game: Game, game_add_players):
+async def test_is_even(game: Game, game_add_players):
     game.state = GameState.LOBBY
     game_add_players(game, 4, team=2)
     game_add_players(game, 4, team=3)
@@ -769,20 +771,20 @@ def test_is_even(game: Game, game_add_players):
     assert game.is_even
 
 
-def test_is_even_no_players(game: Game):
+async def test_is_even_no_players(game: Game):
     game.state = GameState.LOBBY
 
     assert game.is_even
 
 
-def test_is_even_single_player(game: Game, game_add_players):
+async def test_is_even_single_player(game: Game, game_add_players):
     game.state = GameState.LOBBY
     game_add_players(game, 2, team=2)
 
     assert not game.is_even
 
 
-def test_is_even_ffa(game: Game, game_add_players):
+async def test_is_even_ffa(game: Game, game_add_players):
     game.state = GameState.LOBBY
     # Team 1 is the special "-" team
     game_add_players(game, 5, team=1)
