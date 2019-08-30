@@ -253,3 +253,29 @@ def test_matchmaker(p):
     assert {newbie_force_matched, pro_alone} in match_sets
     for match_pair in match_pairs:
         assert top_player not in match_pair
+
+def test_stable_marriage_will_not_match_low_quality_games(p):
+    s1 = Search([p(100, 64, name='p1')])
+    s2 = Search([p(2000, 64, name='p2')])
+
+    searches = [s1, s2]
+
+    matches = algorithm.make_matches(searches)
+
+    assert (s1, s2) not in matches
+    assert (s2, s1) not in matches
+
+def test_stable_marriage_communicates_failed_attempts(p):
+    s1 = Search([p(100, 64, name='p1')])
+    s2 = Search([p(2000, 64, name='p2')])
+
+    searches = [s1, s2]
+
+    assert s1._failed_matching_attempts == 0
+    assert s2._failed_matching_attempts == 0
+
+    matches = algorithm.make_matches(searches)
+
+    # These searches should not have been matched
+    assert s1._failed_matching_attempts == 1
+    assert s2._failed_matching_attempts == 1
