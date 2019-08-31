@@ -29,6 +29,9 @@ async def test_create_game(players, game_service):
     assert game in game_service.dirty_games
     assert isinstance(game, CustomGame)
 
+    game_service.remove_game(game)
+    assert game not in game_service.games
+
 
 async def test_all_games(players, game_service):
     game = game_service.create_game(
