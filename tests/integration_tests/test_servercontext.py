@@ -1,4 +1,5 @@
 import asyncio
+from asynctest import exhaust_callbacks
 import pytest
 from unittest import mock
 
@@ -41,12 +42,12 @@ def mock_context(loop, request, mock_server):
     return loop.run_until_complete(ctx.listen('127.0.0.1', None))
 
 
-async def test_serverside_abort(mock_context, mock_server):
+async def test_serverside_abort(event_loop, mock_context, mock_server):
     (reader, writer) = await asyncio.open_connection(*mock_context.sockets[0].getsockname())
     proto = QDataStreamProtocol(reader, writer)
     proto.send_message({"some_junk": True})
     await writer.drain()
-    await asyncio.sleep(0.1)
+    await exhaust_callbacks(event_loop)
 
     mock_server.on_connection_lost.assert_any_call()
 

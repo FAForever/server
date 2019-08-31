@@ -1,11 +1,13 @@
 import asyncio
 from unittest import mock
+from asynctest import exhaust_callbacks
 
 import pytest
 from server import GameService, LadderService
 from server.matchmaker import Search
 from server.players import PlayerState
 from asynctest import CoroutineMock
+from tests.utils import fast_forward
 
 pytestmark = pytest.mark.asyncio
 
@@ -29,6 +31,7 @@ async def test_start_game(ladder_service: LadderService, game_service:
     assert p2.lobby_connection.launch_game.called
 
 
+@fast_forward(120)
 async def test_start_game_timeout(ladder_service: LadderService, game_service:
                                   GameService, player_factory):
     p1 = player_factory('Dostya', player_id=1)
@@ -41,8 +44,7 @@ async def test_start_game_timeout(ladder_service: LadderService, game_service:
 
     game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
 
-    with mock.patch('server.games.game.Game.sleep', CoroutineMock()):
-        await ladder_service.start_game(p1, p2)
+    await ladder_service.start_game(p1, p2)
 
     p1.lobby_connection.send.assert_called_once_with({"command": "game_launch_timeout"})
     p2.lobby_connection.send.assert_called_once_with({"command": "game_launch_timeout"})
@@ -73,7 +75,7 @@ async def test_inform_player(ladder_service: LadderService, player_factory):
 
 
 async def test_start_and_cancel_search(ladder_service: LadderService,
-                                       player_factory):
+                                       player_factory, event_loop):
     p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
     p1.ladder_games = 0
 
@@ -83,7 +85,7 @@ async def test_start_and_cancel_search(ladder_service: LadderService,
     search = Search([p1])
 
     ladder_service.start_search(p1, search, 'ladder1v1')
-    await asyncio.sleep(0)  # Give the other coro a chance to run
+    await exhaust_callbacks(event_loop)
 
     assert p1.state == PlayerState.SEARCHING_LADDER
     assert ladder_service.queues['ladder1v1'].queue[search]
@@ -96,7 +98,7 @@ async def test_start_and_cancel_search(ladder_service: LadderService,
 
 
 async def test_start_search_cancels_previous_search(
-        ladder_service: LadderService, player_factory):
+        ladder_service: LadderService, player_factory, event_loop):
     p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
     p1.ladder_games = 0
 
@@ -106,7 +108,7 @@ async def test_start_search_cancels_previous_search(
     search1 = Search([p1])
 
     ladder_service.start_search(p1, search1, 'ladder1v1')
-    await asyncio.sleep(0)  # Give the other coro a chance to run
+    await exhaust_callbacks(event_loop)
 
     assert p1.state == PlayerState.SEARCHING_LADDER
     assert ladder_service.queues['ladder1v1'].queue[search1]
@@ -114,7 +116,7 @@ async def test_start_search_cancels_previous_search(
     search2 = Search([p1])
 
     ladder_service.start_search(p1, search2, 'ladder1v1')
-    await asyncio.sleep(0)  # Give the other coro a chance to run
+    await exhaust_callbacks(event_loop)
 
     assert p1.state == PlayerState.SEARCHING_LADDER
     assert search1.is_cancelled
@@ -123,7 +125,7 @@ async def test_start_search_cancels_previous_search(
 
 
 async def test_cancel_all_searches(ladder_service: LadderService,
-                                   player_factory):
+                                   player_factory, event_loop):
     p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
     p1.ladder_games = 0
 
@@ -133,7 +135,7 @@ async def test_cancel_all_searches(ladder_service: LadderService,
     search = Search([p1])
 
     ladder_service.start_search(p1, search, 'ladder1v1')
-    await asyncio.sleep(0)  # Give the other coro a chance to run
+    await exhaust_callbacks(event_loop)
 
     assert p1.state == PlayerState.SEARCHING_LADDER
     assert ladder_service.queues['ladder1v1'].queue[search]
@@ -177,6 +179,7 @@ async def test_cancel_twice(ladder_service: LadderService, player_factory):
     assert searches == [search2]
 
 
+@fast_forward(5)
 async def test_start_game_called_on_match(ladder_service: LadderService,
                                           player_factory):
     p1 = player_factory('Dostya', player_id=1, ladder_rating=(2300, 64))

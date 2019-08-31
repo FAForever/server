@@ -13,6 +13,7 @@ from asynctest import CoroutineMock
 from tests.unit_tests.conftest import (add_connected_player,
                                        add_connected_players,
                                        make_mock_game_connection)
+from tests.utils import fast_forward
 from trueskill import Rating
 
 pytestmark = pytest.mark.asyncio
@@ -257,9 +258,9 @@ async def test_game_sim_ends_when_connections_ended_sim(game: Game, players):
     assert game.ended
 
 
+@fast_forward(90)
 async def test_game_marked_dirty_when_timed_out(game: Game):
     game.state = GameState.INITIALIZING
-    game.sleep = CoroutineMock()
     await game.timeout_game()
     assert game.state == GameState.ENDED
     assert game in game.game_service.dirty_games

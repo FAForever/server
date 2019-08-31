@@ -7,7 +7,6 @@ from aiohttp.client_exceptions import ClientResponseError
 from oauthlib.oauth2.rfc6749.errors import MissingTokenError
 from server.api.oauth_session import OAuth2Session
 
-
 pytestmark = pytest.mark.asyncio
 
 

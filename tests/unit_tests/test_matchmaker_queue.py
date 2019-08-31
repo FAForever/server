@@ -8,6 +8,7 @@ import pytest
 import server.config as config
 from server.matchmaker import MatchmakerQueue, PopTimer, Search
 from server.rating import RatingType
+from tests.utils import fast_forward
 
 pytestmark = pytest.mark.asyncio
 
@@ -197,6 +198,7 @@ async def test_queue_pop_time_moving_average_size():
     assert t1.time_until_next_pop(0, 100) == config.QUEUE_POP_TIME_MAX
 
 
+@fast_forward(3)
 async def test_queue_matches(matchmaker_queue):
     matches = [random.randrange(0, 1 << 20) for _ in range(20)]
     matchmaker_queue._matches = deque(matches)

@@ -1,13 +1,9 @@
-import asyncio
 import pytest
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until_command
 
 pytestmark = pytest.mark.asyncio
-
-# Need to save the old sleep here otherwise the mocker recursively patches it
-aiosleep = asyncio.sleep
 
 
 async def queue_players_for_matchmaking(lobby_server):
@@ -62,9 +58,9 @@ async def test_game_matchmaking(lobby_server):
     assert msg2['mod'] == 'ladder1v1'
 
 
+@fast_forward(1000)
 async def test_matchmaker_info_message(lobby_server, mocker):
     mocker.patch('server.matchmaker.pop_timer.time', return_value=1_562_000_000)
-    mocker.patch('server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX', 1)
 
     _, _, proto = await connect_and_sign_in(
         ('ladder1', 'ladder1'),

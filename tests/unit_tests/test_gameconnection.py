@@ -7,7 +7,7 @@ from server import GameConnection
 from server.games import Game
 from server.games.game import ValidityState, Victory
 from server.players import PlayerState
-from asynctest import CoroutineMock
+from asynctest import CoroutineMock, exhaust_callbacks
 
 pytestmark = pytest.mark.asyncio
 
@@ -60,7 +60,7 @@ async def test_handle_action_GameState_idle_non_searching_player_aborts(
 async def test_handle_action_GameState_lobby_sends_HostGame(
     game: Game,
     game_connection: GameConnection,
-    loop,
+    event_loop,
     players
 ):
     game_connection.player = players.hosting
@@ -68,8 +68,7 @@ async def test_handle_action_GameState_lobby_sends_HostGame(
     game.map_folder_name = 'some_map'
 
     await game_connection.handle_action('GameState', ['Lobby'])
-    # Give the connection coro time to run
-    await asyncio.sleep(0.1)
+    await exhaust_callbacks(event_loop)
 
     assert_message_sent(game_connection, 'HostGame', [game.map_folder_name])
 
@@ -77,6 +76,7 @@ async def test_handle_action_GameState_lobby_sends_HostGame(
 async def test_handle_action_GameState_lobby_calls_ConnectToHost(
     game: Game,
     game_connection: GameConnection,
+    event_loop,
     players
 ):
     game_connection.send_message = mock.MagicMock()
@@ -88,8 +88,7 @@ async def test_handle_action_GameState_lobby_calls_ConnectToHost(
     game.map_folder_name = 'some_map'
 
     await game_connection.handle_action('GameState', ['Lobby'])
-    # Give the connection coro time to run
-    await asyncio.sleep(0.1)
+    await exhaust_callbacks(event_loop)
 
     game_connection.connect_to_host.assert_called_with(players.hosting.game_connection)
 
@@ -97,6 +96,7 @@ async def test_handle_action_GameState_lobby_calls_ConnectToHost(
 async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
     game: Game,
     game_connection: GameConnection,
+    event_loop,
     players
 ):
     game_connection.send_message = mock.MagicMock()
@@ -114,8 +114,7 @@ async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
     game.connections = [peer_conn]
 
     await game_connection.handle_action('GameState', ['Lobby'])
-    # Give the connection coro time to run
-    await asyncio.sleep(0.1)
+    await exhaust_callbacks(event_loop)
 
     game_connection.connect_to_peer.assert_called_with(peer_conn)
 

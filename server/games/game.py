@@ -195,13 +195,10 @@ class Game:
         self._logger.debug("%s created", self)
         asyncio.get_event_loop().create_task(self.timeout_game())
 
-    async def sleep(self, n):
-        return await asyncio.sleep(n)
-
     async def timeout_game(self):
         # coop takes longer to set up
         tm = 30 if self.game_mode != 'coop' else 60
-        await self.sleep(tm)
+        await asyncio.sleep(tm)
         if self.state == GameState.INITIALIZING:
             self._is_hosted.set_exception(TimeoutError("Game setup timed out"))
             self._logger.debug("Game setup timed out.. Cancelling game")
