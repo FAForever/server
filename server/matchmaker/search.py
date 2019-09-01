@@ -51,14 +51,14 @@ class Search:
 
     @staticmethod
     def is_ladder_newbie(player: Player) -> bool:
-        return (
-            player.ladder_games <= config.NEWBIE_MIN_GAMES
-            and
-            self.rating_prop == 'ladder_rating'
-        )
+        return player.ladder_games <= config.NEWBIE_MIN_GAMES
 
-    def is_single_newbie(self) -> bool:
-        return len(self.players) == 1 and self.is_ladder_newbie(self.players[0])
+    def is_single_ladder_newbie(self) -> bool:
+        return (
+            len(self.players) == 1 
+            and self.is_ladder_newbie(self.players[0])
+            and self.rating_prop == 'ladder_rating'
+        )
 
     @property
     def ratings(self):

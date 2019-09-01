@@ -49,11 +49,11 @@ def test_is_single_newbie(matchmaker_players):
     two_pros = Search([pro, pro])
     two_mixed = Search([newbie, pro])
 
-    assert single_newbie.is_single_newbie()
-    assert single_pro.is_single_newbie() == False
-    assert two_newbies.is_single_newbie() == False
-    assert two_pros.is_single_newbie() == False
-    assert two_mixed.is_single_newbie() == False
+    assert single_newbie.is_single_ladder_newbie()
+    assert single_pro.is_single_ladder_newbie() == False
+    assert two_newbies.is_single_ladder_newbie() == False
+    assert two_pros.is_single_ladder_newbie() == False
+    assert two_mixed.is_single_ladder_newbie() == False
 
 
 def test_newbies_have_adjusted_rating(matchmaker_players):
