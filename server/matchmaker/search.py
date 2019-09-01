@@ -49,12 +49,23 @@ class Search:
                          + player.ladder_games * mean) / config.NEWBIE_MIN_GAMES
         return adjusted_mean, dev
 
+    @staticmethod
+    def is_ladder_newbie(player: Player) -> bool:
+        return (
+            player.ladder_games <= config.NEWBIE_MIN_GAMES
+            and
+            self.rating_prop == 'ladder_rating'
+        )
+
+    def is_single_newbie(self) -> bool:
+        return len(self.players) == 1 and self.is_ladder_newbie(self.players[0])
+
     @property
     def ratings(self):
         ratings = []
         for player, rating in zip(self.players, self.raw_ratings):
             # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
-            if player.ladder_games <= config.NEWBIE_MIN_GAMES and self.rating_prop == 'ladder_rating':
+            if self.is_ladder_newbie(player):
                 rating = self.adjusted_rating(player)
             ratings.append(rating)
         return ratings
@@ -168,13 +179,12 @@ class Search:
         self._logger.info("Matched %s with %s", self.players, other.players)
 
         for player, raw_rating in zip(self.players, self.raw_ratings):
-            ladder_games = player.ladder_games
-            if ladder_games <= config.NEWBIE_MIN_GAMES:
+            if self.is_ladder_newbie(player):
                 mean, dev = raw_rating
                 adjusted_mean = self.adjusted_rating(player)
                 self._logger.info('Adjusted mean rating for {player} with {ladder_games} games from {mean} to {adjusted_mean}'.format(
                     player=player,
-                    ladder_games=ladder_games,
+                    ladder_games=player.ladder_games,
                     mean=mean,
                     adjusted_mean=adjusted_mean
                 ))
