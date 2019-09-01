@@ -63,10 +63,10 @@ class StableMarriage(object):
 
     def _forcefully_match_unmatched_newbies(self):
         unmatched_newbies = [
-            search in self.searches 
+            search for search in self.searches 
             if search.is_single_ladder_newbie()
             and not search in self.matches
-        ]
+        ] 
 
         while 2 <= len(unmatched_newbies):
             newbie1 = unmatched_newbies.pop()
