@@ -57,7 +57,33 @@ class StableMarriage(object):
 
                 self._propose(search, preferred)
 
+        self._forcefully_match_unmatched_newbies()
+
         return self._remove_duplicates()
+
+    def _forcefully_match_unmatched_newbies(self):
+        unmatched_newbies = [
+            search in self.searches 
+            if search.is_single_ladder_newbie()
+            and not search in self.matches
+        ]
+
+        while 2 <= len(unmatched_newbies):
+            newbie1 = unmatched_newbies.pop()
+            newbie2 = unmatched_newbies.pop()
+            self._match(newbie1, newbie2)
+
+        if len(unmatched_newbies) == 1:
+            newbie = unmatched_newbies[0]
+            opponent = next(
+                (search for search in  self.searches
+                if search != newbie
+                and not search in self.matches),
+                None
+            )
+            if opponent is not None:
+                self._match(newbie, opponent)
+
 
     def _remove_duplicates(self) -> List[Match]:
         matches_set: Set[Match] = set()
