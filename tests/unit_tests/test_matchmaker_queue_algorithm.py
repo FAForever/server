@@ -148,9 +148,9 @@ def test_unmatched_newbies_forcefully_match_pros()
 
 
 def test_odd_number_of_unmatched_newbies()
-    newbie1 = Search([p(0, 500, ladder_games=9)])
-    newbie2 = Search([p(2500, 500, ladder_games=9)])
-    newbie3 = Search([p(5500, 500, ladder_games=9)])
+    newbie1 = Search([p(-250, 500, ladder_games=9)])
+    newbie2 = Search([p(750, 500, ladder_games=9)])
+    newbie3 = Search([p(1500, 500, ladder_games=9)])
     pro = Search([p(2500, 10, ladder_games=100)])
 
     searches = [newbie1, pro, newbie2]
