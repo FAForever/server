@@ -147,6 +147,29 @@ def test_unmatched_newbies_forcefully_match_pros()
     assert (newbie, pro) in matches or (pro, newbie) in matches
 
 
+def test_unmatched_newbies_do_not_forcefully_match_teams():
+    newbie = Search([p(1500, 500, ladder_games=0)])
+    team = Search([p(1500, 100), p(1500, 100)])
+
+    searches = [newbie, team]
+    matches = algorithm.stable_marriage(searches)
+
+    assert len(matches) == 0
+
+
+def team_unmatched_newbies_do_not_forcefully_match_pros():
+    newbie_team = Search([
+        p(1500, 500, ladder_games=0),
+        p(1500, 500, ladder_games=0)
+    ])
+    pro = Search([p(2500, 10, ladder_games=100)])
+
+    searches = [newbie_team, pro]
+    matches = algorithm.stable_marriage(searches)
+
+    assert len(matches) == 0
+
+
 def test_odd_number_of_unmatched_newbies()
     newbie1 = Search([p(-250, 500, ladder_games=9)])
     newbie2 = Search([p(750, 500, ladder_games=9)])
