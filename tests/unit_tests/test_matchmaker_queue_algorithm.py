@@ -149,9 +149,9 @@ def test_unmatched_newbies_forcefully_match_pros():
 
 def test_unmatched_newbies_do_notforcefully_match_top_players():
     newbie = Search([p(1500, 500, ladder_games=0)])
-    pro = Search([p(2500, 10, ladder_games=100)])
+    top_player = Search([p(2500, 10, ladder_games=100)])
 
-    searches = [newbie, pro]
+    searches = [newbie, top_player]
     matches = algorithm.stable_marriage(searches)
 
     assert len(matches) == 0
