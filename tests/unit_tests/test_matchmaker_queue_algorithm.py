@@ -170,7 +170,7 @@ def team_unmatched_newbies_do_not_forcefully_match_pros():
     assert len(matches) == 0
 
 
-def test_odd_number_of_unmatched_newbies()
+def test_odd_number_of_unmatched_newbies():
     newbie1 = Search([p(-250, 500, ladder_games=9)])
     newbie2 = Search([p(750, 500, ladder_games=9)])
     newbie3 = Search([p(1500, 500, ladder_games=9)])
