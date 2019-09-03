@@ -63,12 +63,12 @@ class StableMarriage(object):
 
     def _forcefully_match_unmatched_newbies(self):
         unmatched_newbies = [
-            search in self.searches 
+            search for search in self.searches 
             if search.is_single_ladder_newbie()
             and not search in self.matches
-        ]
+        ] 
 
-        while 2 <= len(unmatched_newbies):
+        while len(unmatched_newbies) >= 2:
             newbie1 = unmatched_newbies.pop()
             newbie2 = unmatched_newbies.pop()
             self._match(newbie1, newbie2)
@@ -77,7 +77,7 @@ class StableMarriage(object):
             newbie = unmatched_newbies[0]
             default_if_no_available_opponent = None
             opponent = next(
-                (search for search in  self.searches
+                (search for search in self.searches
                 if search != newbie
                 and not search in self.matches
                 and search.is_single_party()),
