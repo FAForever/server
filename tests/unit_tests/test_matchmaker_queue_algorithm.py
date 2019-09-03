@@ -138,7 +138,7 @@ def test_newbies_are_forcefully_matched_with_newbies():
 
 
 def test_unmatched_newbies_forcefully_match_pros():
-    newbie = Search([p(0, 500, ladder_games=0)])
+    newbie = Search([p(1500, 500, ladder_games=0)])
     pro = Search([p(2500, 10, ladder_games=100)])
 
     searches = [newbie, pro]

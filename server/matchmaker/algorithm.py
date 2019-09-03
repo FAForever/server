@@ -68,7 +68,7 @@ class StableMarriage(object):
             and not search in self.matches
         ] 
 
-        while 2 <= len(unmatched_newbies):
+        while len(unmatched_newbies) >= 2:
             newbie1 = unmatched_newbies.pop()
             newbie2 = unmatched_newbies.pop()
             self._match(newbie1, newbie2)
@@ -76,7 +76,7 @@ class StableMarriage(object):
         if len(unmatched_newbies) == 1:
             newbie = unmatched_newbies[0]
             opponent = next(
-                (search for search in  self.searches
+                (search for search in self.searches
                 if search != newbie
                 and not search in self.matches),
                 None

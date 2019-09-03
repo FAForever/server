@@ -36,7 +36,7 @@ def matchmaker_players_all_match():
 
 def test_is_ladder_newbie(matchmaker_players):
     pro, _, _, _, _, newbie = matchmaker_players
-    assert Search.is_ladder_newbie(pro) == False
+    assert Search.is_ladder_newbie(pro) is False
     assert Search.is_ladder_newbie(newbie)
 
 
