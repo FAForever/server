@@ -79,7 +79,8 @@ class StableMarriage(object):
             opponent = next(
                 (search for search in  self.searches
                 if search != newbie
-                and not search in self.matches),
+                and not search in self.matches
+                and search.is_single_party()),
                 default_if_no_available_opponent
             )
             if opponent is not default_if_no_available_opponent:
