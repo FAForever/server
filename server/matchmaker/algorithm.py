@@ -75,12 +75,16 @@ class StableMarriage(object):
 
         if len(unmatched_newbies) == 1:
             newbie = unmatched_newbies[0]
+
             default_if_no_available_opponent = None
+
             opponent = next(
                 (search for search in self.searches
                 if search != newbie
                 and not search in self.matches
-                and search.is_single_party()),
+                and search.is_single_party()
+                and search.has_no_top_player()
+                ),
                 default_if_no_available_opponent
             )
             if opponent is not default_if_no_available_opponent:

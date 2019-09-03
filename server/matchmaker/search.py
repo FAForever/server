@@ -66,6 +66,11 @@ class Search:
             and self.is_ladder_search()
         )
 
+    def has_no_top_player(self) -> bool:
+        max_rating = max(map(lambda rating_tuple: rating_tuple[0], self.ratings))
+        return max_rating < config.TOP_PLAYER_MIN_RATING
+
+
     @property
     def ratings(self):
         ratings = []

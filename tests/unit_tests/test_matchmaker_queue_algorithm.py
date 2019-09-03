@@ -128,8 +128,8 @@ def test_stable_marriage_unmatch():
 
 def test_newbies_are_forcefully_matched_with_newbies():
     newbie1 = Search([p(0, 500, ladder_games=9)])
-    newbie2 = Search([p(2500, 500, ladder_games=9)])
-    pro = Search([p(2500, 10, ladder_games=100)])
+    newbie2 = Search([p(1500, 500, ladder_games=9)])
+    pro = Search([p(1800, 10, ladder_games=100)])
 
     searches = [newbie1, pro, newbie2]
     matches = algorithm.stable_marriage(searches)
@@ -139,12 +139,22 @@ def test_newbies_are_forcefully_matched_with_newbies():
 
 def test_unmatched_newbies_forcefully_match_pros():
     newbie = Search([p(1500, 500, ladder_games=0)])
+    pro = Search([p(1800, 10, ladder_games=100)])
+
+    searches = [newbie, pro]
+    matches = algorithm.stable_marriage(searches)
+
+    assert len(matches) == 1
+
+
+def test_unmatched_newbies_do_notforcefully_match_top_players():
+    newbie = Search([p(1500, 500, ladder_games=0)])
     pro = Search([p(2500, 10, ladder_games=100)])
 
     searches = [newbie, pro]
     matches = algorithm.stable_marriage(searches)
 
-    assert (newbie, pro) in matches or (pro, newbie) in matches
+    assert len(matches) == 0
 
 
 def test_unmatched_newbies_do_not_forcefully_match_teams():
@@ -157,12 +167,12 @@ def test_unmatched_newbies_do_not_forcefully_match_teams():
     assert len(matches) == 0
 
 
-def team_unmatched_newbies_do_not_forcefully_match_pros():
+def unmatched_newbie_teams_do_not_forcefully_match_pros():
     newbie_team = Search([
         p(1500, 500, ladder_games=0),
         p(1500, 500, ladder_games=0)
     ])
-    pro = Search([p(2500, 10, ladder_games=100)])
+    pro = Search([p(1800, 10, ladder_games=100)])
 
     searches = [newbie_team, pro]
     matches = algorithm.stable_marriage(searches)
@@ -174,7 +184,7 @@ def test_odd_number_of_unmatched_newbies():
     newbie1 = Search([p(-250, 500, ladder_games=9)])
     newbie2 = Search([p(750, 500, ladder_games=9)])
     newbie3 = Search([p(1500, 500, ladder_games=9)])
-    pro = Search([p(2500, 10, ladder_games=100)])
+    pro = Search([p(1800, 10, ladder_games=100)])
 
     searches = [newbie1, pro, newbie2, newbie3]
     matches = algorithm.stable_marriage(searches)
