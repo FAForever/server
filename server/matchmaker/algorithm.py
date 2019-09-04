@@ -26,7 +26,9 @@ class StableMarriage(object):
         self.searches = searches
 
     def find(self) -> List[Match]:
-        "Perform stable matching"
+        """Perform SM_NUM_TO_RANK runs of the stable matching algorithm. 
+        Assumes that _rank_all only returns edges whose matches are acceptable
+        to both parties."""
         ranks = _rank_all(self.searches)
         self.matches: Dict[Search, Search] = {}
 
@@ -52,8 +54,6 @@ class StableMarriage(object):
                     search, preferred, search.quality_with(preferred),
                     search.match_threshold, preferred.match_threshold
                 )
-                if not search.matches_with(preferred):
-                    continue
 
                 self._propose(search, preferred)
 
@@ -118,4 +118,11 @@ def _rank_all(searches: List[Search]) -> Dict[Search, List[Search]]:
 
 
 def _rank_partners(search: Search, others: Iterable[Search]) -> List[Search]:
-    return heapq.nlargest(SM_NUM_TO_RANK, others, key=lambda other: search.quality_with(other))
+    return heapq.nlargest(
+        SM_NUM_TO_RANK, 
+        filter(
+            lambda other: search.matches_with(other),
+            others
+        ), 
+        key=lambda other: search.quality_with(other)
+    )

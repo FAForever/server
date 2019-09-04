@@ -34,34 +34,66 @@ def matchmaker_players_all_match():
            Player('Rhiza', player_id=5, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
 
 
-def test_newbie_min_games(mocker, loop, matchmaker_players):
+def test_newbie_min_games(matchmaker_players):
     p1, _, _, _, _, p6 = matchmaker_players
     s1, s6 = Search([p1]), Search([p6])
     assert s1.ratings[0] == p1.ladder_rating and s6.ratings[0] != p6.ladder_rating
 
 
-def test_search_threshold(mocker, loop, matchmaker_players):
+def test_search_threshold(matchmaker_players):
     s = Search([matchmaker_players[0]])
     assert s.match_threshold <= 1
     assert s.match_threshold >= 0
 
 
-def test_search_quality_equivalence(mocker, loop, matchmaker_players):
+def test_search_threshold_of_single_old_players_is_high():
+    old_player = Player('experienced_player', player_id=1, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+    s = Search([old_player])
+    assert s.match_threshold >= 0.6
+
+
+def test_search_threshold_of_team_old_players_is_high():
+    old_player = Player('experienced_player', player_id=1, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+    another_old_player = Player('another experienced_player', player_id=2, ladder_rating=(1600, 60), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+    s = Search([old_player, another_old_player])
+    assert s.match_threshold >= 0.6
+
+
+def test_search_threshold_of_single_new_players_is_low():
+    new_player = Player('new_player', player_id=1, ladder_rating=(1500, 500), ladder_games=1)
+    s = Search([new_player])
+    assert s.match_threshold <= 0.4
+
+
+def test_search_threshold_of_team_new_players_is_low():
+    new_player = Player('new_player', player_id=1, ladder_rating=(1500, 500), ladder_games=1)
+    another_new_player = Player('another_new_player', player_id=2, ladder_rating=(1450, 450), ladder_games=1)
+    s = Search([new_player, another_new_player])
+    assert s.match_threshold <= 0.4
+
+
+def test_search_quality_equivalence(matchmaker_players):
     p1, _, _, p4, _, _ = matchmaker_players
     s1, s4 = Search([p1]), Search([p4])
     assert s1.quality_with(s4) == s4.quality_with(s1)
 
 
-def test_search_quality(mocker, loop, matchmaker_players):
+def test_search_quality(matchmaker_players):
     p1, _, p3, _, p5, p6 = matchmaker_players
     s1, s3, s5, s6 = Search([p1]), Search([p3]), Search([p5]), Search([p6])
     assert s3.quality_with(s5) > 0.7 and s1.quality_with(s6) < 0.2
 
 
-async def test_search_match(mocker, loop, matchmaker_players):
+async def test_search_match(matchmaker_players):
     p1, _, _, p4, _, _ = matchmaker_players
     s1, s4 = Search([p1]), Search([p4])
     assert s1.matches_with(s4)
+
+
+def test_search_threshold_low_enough_to_play_yourself(matchmaker_players):
+    for player in matchmaker_players:
+        s = Search([player])
+        assert s.matches_with(s)
 
 
 async def test_search_team_match(matchmaker_players):
@@ -76,7 +108,7 @@ async def test_search_team_not_match(matchmaker_players):
     assert not s1.matches_with(s4)
 
 
-async def test_search_no_match(mocker, loop, matchmaker_players):
+async def test_search_no_match(matchmaker_players):
     p1, p2, _, _, _, _ = matchmaker_players
     s1, s2 = Search([p1]), Search([p2])
     assert not s1.matches_with(s2)
@@ -113,7 +145,7 @@ def test_search_expansion(matchmaker_players, mocker):
     assert e1 == s1.search_expansion
 
 
-async def test_search_await(mocker, loop, matchmaker_players):
+async def test_search_await(matchmaker_players):
     p1, p2, _, _, _, _ = matchmaker_players
     s1, s2 = Search([p1]), Search([p2])
     assert not s1.matches_with(s2)
@@ -184,7 +216,7 @@ async def test_shutdown_matchmaker(matchmaker_queue):
         assert False
 
 
-async def test_queue_many(mocker, player_service, matchmaker_queue):
+async def test_queue_many(player_service, matchmaker_queue):
     p1, p2, p3 = Player('Dostya', player_id=1, ladder_rating=(2200, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
                  Player('Brackman', player_id=2, ladder_rating=(1500, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
                  Player('Zoidberg', player_id=3, ladder_rating=(1500, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
@@ -204,7 +236,7 @@ async def test_queue_many(mocker, player_service, matchmaker_queue):
     assert s3.is_matched
 
 
-async def test_queue_race(mocker, player_service, matchmaker_queue):
+async def test_queue_race(player_service, matchmaker_queue):
     p1, p2, p3 = Player('Dostya', player_id=1, ladder_rating=(2300, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
                  Player('Brackman', player_id=2, ladder_rating=(2200, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
                  Player('Zoidberg', player_id=3, ladder_rating=(2300, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
@@ -227,7 +259,7 @@ async def test_queue_race(mocker, player_service, matchmaker_queue):
     assert len(matchmaker_queue.queue) == 0
 
 
-async def test_queue_cancel(mocker, player_service, matchmaker_queue, matchmaker_players):
+async def test_queue_cancel(player_service, matchmaker_queue, matchmaker_players):
     # Turn list of players into map from ids to players.
     player_service.players = dict(map(lambda x: (x.id, x), list(matchmaker_players)))
 
@@ -243,7 +275,7 @@ async def test_queue_cancel(mocker, player_service, matchmaker_queue, matchmaker
     assert not s2.is_matched
 
 
-async def test_queue_mid_cancel(mocker, player_service, matchmaker_queue, matchmaker_players_all_match):
+async def test_queue_mid_cancel(player_service, matchmaker_queue, matchmaker_players_all_match):
     # Turn list of players into map from ids to players.
     player_service.players = dict(map(lambda x: (x.id, x), list(matchmaker_players_all_match)))
     p0, p1, p2, p3, _ = matchmaker_players_all_match
