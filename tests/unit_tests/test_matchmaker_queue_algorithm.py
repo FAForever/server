@@ -119,8 +119,6 @@ def test_stable_marriage_unmatch():
     searches = [s1, s2, s3, s4]
 
     matches = algorithm.stable_marriage(searches)
-    for m1, m2 in matches:
-        print(m1, m2, m1.quality_with(m2))
 
     assert (s1, s4) in matches  # quality: 0.96622
     assert (s2, s3) in matches  # quality: 0.96623
