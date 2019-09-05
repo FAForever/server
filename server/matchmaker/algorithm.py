@@ -138,7 +138,7 @@ class Matchmaker(object):
         self.matches.update(StableMarriage(self.searches).find())
 
         remaining_searches = [
-                search for search in self.searches 
+            search for search in self.searches 
                 if search not in self.matches
         ]
         self.matches.update(RandomlyMatchNewbies(remaining_searches).find())
@@ -180,17 +180,17 @@ class _MatchingGraph:
         def is_possible_match(other: Search) -> bool:
             quality_log_string = (
                 f"Quality between {search} and {other}: {search.quality_with(other)}"
-                + f" thresholds: [{search.match_threshold}, {other.match_threshold}]."
+                f" thresholds: [{search.match_threshold}, {other.match_threshold}]."
             )
 
             if search.matches_with(other):
                 _MatchingGraph._logger.debug(
-                    quality_log_string + f" Will be considered during matchmaking."
+                    f"{quality_log_string} Will be considered during matchmaking."
                 )
                 return True
             else:
                 _MatchingGraph._logger.debug(
-                    quality_log_string + f" Will be discarded."
+                    f"{quality_log_string} Will be discarded."
                 )
                 return False
 
