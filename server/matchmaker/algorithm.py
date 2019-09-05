@@ -132,6 +132,7 @@ class StableMarriage(object):
         del self.matches[s2]
 
 
+@with_logger
 class _MatchingGraph:
     @staticmethod
     def build_sparse(searches: List[Search]) -> Dict[Search, List[Search]]:
@@ -155,9 +156,20 @@ class _MatchingGraph:
     @staticmethod
     def _get_top_matches(search: Search, others: Iterable[Search]) -> List[Search]:
         def is_possible_match(other: Search) -> bool:
+            quality_log_string = (
+                f"Quality between {search} and {other}: {search.quality_with(other)}"
+                + f" thresholds: [{search.match_threshold}, {other.match_threshold}]."
+            )
+
             if search.matches_with(other):
+                _MatchingGraph._logger.debug(
+                    quality_log_string + f" Will be considered during matchmaking."
+                )
                 return True
             else:
+                _MatchingGraph._logger.debug(
+                    quality_log_string + f" Will be discarded."
+                )
                 return False
 
         return heapq.nlargest(
