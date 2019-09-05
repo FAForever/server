@@ -16,21 +16,35 @@ SM_NUM_TO_RANK = 5
 ################################################################################
 
 
-def stable_marriage(searches: List[Search]) -> List[Match]:
-    return StableMarriage(searches).find()
-
+def make_matches(searches: List[Search]) -> List[Match]:
+    return Matchmaker(searches).find()
 
 @with_logger
-class StableMarriage(object):
+class MatchmakingPolicy(object):
     def __init__(self, searches: List[Search]):
         self.searches = searches
+        self.matches: Dict[Search, Search] = {}
 
-    def find(self) -> List[Match]:
+    def _match(self, s1: Search, s2: Search):
+        self._logger.debug("Matching %s and %s", s1, s2)
+        self.matches[s1] = s2
+        self.matches[s2] = s1
+
+    def _unmatch(self, s1: Search):
+        s2 = self.matches[s1]
+        self._logger.debug("Unmatching %s and %s", s1, s2)
+        assert self.matches[s2] == s1
+        del self.matches[s1]
+        del self.matches[s2]
+
+
+class StableMarriage(MatchmakingPolicy):
+    def find(self) -> Dict[Search, Search]:
         """Perform SM_NUM_TO_RANK runs of the stable matching algorithm. 
         Assumes that _rank_all only returns edges whose matches are acceptable
         to both parties."""
         ranks = _rank_all(self.searches)
-        self.matches: Dict[Search, Search] = {}
+        self.matches.clear()
 
         for i in range(SM_NUM_TO_RANK):
             self._logger.debug("Round %i currently %i matches", i, len(self.matches) // 2)
@@ -57,11 +71,33 @@ class StableMarriage(object):
 
                 self._propose(search, preferred)
 
-        self._forcefully_match_unmatched_newbies()
+        return self.matches
 
-        return self._remove_duplicates()
+    def _propose(self, search: Search, preferred: Search):
+        """ An unmatched search proposes to it's preferred opponent.
 
-    def _forcefully_match_unmatched_newbies(self):
+        If the opponent is not matched, they become matched. If the opponent is
+        matched, but prefers this new search to its current one, then the opponent
+        unmatches from its previous adversary and matches with the new search instead.
+        """
+        if preferred not in self.matches:
+            self._match(search, preferred)
+            return
+
+        current_match = self.matches[preferred]
+        current_quality = preferred.quality_with(current_match)
+        new_quality = search.quality_with(preferred)
+
+        if new_quality > current_quality:
+            # Found a better match
+            self._unmatch(preferred)
+            self._match(search, preferred)
+
+
+class RandomlyMatchNewbies(MatchmakingPolicy):
+    def find(self) -> Dict[Search, Search]:
+        self.matches.clear()
+
         unmatched_newbies = [
             search for search in self.searches 
             if search.is_single_ladder_newbie()
@@ -90,6 +126,24 @@ class StableMarriage(object):
             if opponent is not default_if_no_available_opponent:
                 self._match(newbie, opponent)
 
+        return self.matches
+
+
+class Matchmaker(object):
+    def __init__(self, searches: List[Search]):
+        self.searches = searches
+        self.matches: Dict[Search, Search] = {}
+
+    def find(self) -> List[Match]:
+        self.matches.update(StableMarriage(self.searches).find())
+
+        remaining_searches = [
+                search for search in self.searches 
+                if search not in self.matches
+        ]
+        self.matches.update(RandomlyMatchNewbies(remaining_searches).find())
+
+        return self._remove_duplicates()
 
     def _remove_duplicates(self) -> List[Match]:
         matches_set: Set[Match] = set()
@@ -98,38 +152,6 @@ class StableMarriage(object):
                 continue
             matches_set.add((s1, s2))
         return list(matches_set)
-
-    def _propose(self, search: Search, preferred: Search):
-        """ An unmatched search proposes to it's preferred opponent.
-
-        If the opponent is not matched, they become matched. If the opponent is
-        matched, but prefers this new search to its current one, then the opponent
-        unmatches from its previous adversary and matches with the new search instead.
-        """
-        if preferred not in self.matches:
-            self._match(search, preferred)
-            return
-
-        current_match = self.matches[preferred]
-        current_quality = preferred.quality_with(current_match)
-        new_quality = search.quality_with(preferred)
-
-        if new_quality > current_quality:
-            # Found a better match
-            self._unmatch(preferred)
-            self._match(search, preferred)
-
-    def _match(self, s1: Search, s2: Search):
-        self._logger.debug("Matching %s and %s", s1, s2)
-        self.matches[s1] = s2
-        self.matches[s2] = s1
-
-    def _unmatch(self, s1: Search):
-        s2 = self.matches[s1]
-        self._logger.debug("Unmatching %s and %s", s1, s2)
-        assert self.matches[s2] == s1
-        del self.matches[s1]
-        del self.matches[s2]
 
 
 def _rank_all(searches: List[Search]) -> Dict[Search, List[Search]]:
