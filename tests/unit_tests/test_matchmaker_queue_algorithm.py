@@ -162,7 +162,7 @@ def test_random_newbie_matching_is_symmetric():
 def test_newbies_are_forcefully_matched_with_newbies():
     newbie1 = Search([p(0, 500, ladder_games=9)])
     newbie2 = Search([p(1500, 500, ladder_games=9)])
-    pro = Search([p(1800, 10, ladder_games=100)])
+    pro = Search([p(1500, 10, ladder_games=100)])
 
     searches = [newbie1, pro, newbie2]
     matches = algorithm.RandomlyMatchNewbies(searches).find()
@@ -173,7 +173,7 @@ def test_newbies_are_forcefully_matched_with_newbies():
 
 def test_unmatched_newbies_forcefully_match_pros():
     newbie = Search([p(1500, 500, ladder_games=0)])
-    pro = Search([p(1800, 10, ladder_games=100)])
+    pro = Search([p(1400, 10, ladder_games=100)])
 
     searches = [newbie, pro]
     matches = algorithm.RandomlyMatchNewbies(searches).find()
@@ -218,7 +218,7 @@ def test_odd_number_of_unmatched_newbies():
     newbie1 = Search([p(-250, 500, ladder_games=9)])
     newbie2 = Search([p(750, 500, ladder_games=9)])
     newbie3 = Search([p(1500, 500, ladder_games=9)])
-    pro = Search([p(1800, 10, ladder_games=100)])
+    pro = Search([p(1500, 10, ladder_games=100)])
 
     searches = [newbie1, pro, newbie2, newbie3]
     matches = algorithm.RandomlyMatchNewbies(searches).find()
@@ -232,7 +232,7 @@ def test_matchmaker():
 
     pro_that_matches1 = Search([p(1800, 60, ladder_games=101)])
     pro_that_matches2 = Search([p(1750, 50, ladder_games=100)])
-    pro_alone = Search([p(1600, 50, ladder_games=100)])
+    pro_alone = Search([p(1550, 50, ladder_games=100)])
 
     top_player = Search([p(2100, 50, ladder_games=200)])
 
