@@ -8,7 +8,7 @@ from typing import Deque, Dict
 import server
 
 from ..decorators import with_logger
-from .algorithm import stable_marriage
+from .algorithm import make_matches
 from .pop_timer import PopTimer
 from .search import Match, Search
 
@@ -96,7 +96,7 @@ class MatchmakerQueue:
         # Call self.match on all matches and filter out the ones that were canceled
         new_matches = filter(
             lambda m: self.match(m[0], m[1]),
-            stable_marriage(self.queue.values())
+            make_matches(self.queue.values())
         )
         self._matches.extend(new_matches)
 
