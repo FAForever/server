@@ -12,13 +12,13 @@ def p(mean: int, deviation: int, ladder_games: int = config.NEWBIE_MIN_GAMES+1, 
     return player
 
 
-def test_rank_all():
+def test_build_sparse_matching_graph():
     s1 = Search([p(1500, 64, ladder_games=20)])
     s2 = Search([p(1500, 63, ladder_games=20)])
     s3 = Search([p(1600, 75, ladder_games=50)])
     searches = [s1, s2, s3]
 
-    ranks = algorithm._rank_all(searches)
+    ranks = algorithm._build_sparse_matching_graph(searches)
 
     assert ranks == {
         s1: [s3, s2],
@@ -27,12 +27,12 @@ def test_rank_all():
     }
 
 
-def test_rank_all_will_not_include_matches_below_threshold_quality():
+def test_match_graph_will_not_include_matches_below_threshold_quality():
     s1 = Search([p(1500, 500)])
     s2 = Search([p(2000, 300)])
     searches = [s1, s2]
 
-    ranks = algorithm._rank_all(searches)
+    ranks = algorithm._build_sparse_matching_graph(searches)
 
     assert ranks == {
         s1: [],
