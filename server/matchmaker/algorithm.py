@@ -19,6 +19,7 @@ SM_NUM_TO_RANK = 5
 def make_matches(searches: List[Search]) -> List[Match]:
     return Matchmaker(searches).find()
 
+
 @with_logger
 class MatchmakingPolicy(object):
     def __init__(self, searches: List[Search]):
@@ -47,7 +48,10 @@ class StableMarriage(MatchmakingPolicy):
         self.matches.clear()
 
         for i in range(SM_NUM_TO_RANK):
-            self._logger.debug("Round %i currently %i matches", i, len(self.matches) // 2)
+            self._logger.debug(
+                "Round %i currently %i matches", i,
+                len(self.matches) // 2
+            )
             # Do one round of proposals
             if len(self.matches) == len(self.searches):
                 # Everyone found a match so we are done
@@ -99,10 +103,9 @@ class RandomlyMatchNewbies(MatchmakingPolicy):
         self.matches.clear()
 
         unmatched_newbies = [
-            search for search in self.searches 
-            if search.is_single_ladder_newbie()
-            and not search in self.matches
-        ] 
+            search for search in self.searches
+            if search.is_single_ladder_newbie() and not search in self.matches
+        ]
 
         while len(unmatched_newbies) >= 2:
             newbie1 = unmatched_newbies.pop()
@@ -114,15 +117,11 @@ class RandomlyMatchNewbies(MatchmakingPolicy):
 
             default_if_no_available_opponent = None
 
-            opponent = next(
-                (search for search in self.searches
-                if search != newbie
-                and not search in self.matches
-                and search.is_single_party()
-                and search.has_no_top_player()
-                ),
-                default_if_no_available_opponent
-            )
+            opponent = next((
+                search for search in self.searches
+                if search != newbie and not search in self.matches
+                and search.is_single_party() and search.has_no_top_player()
+            ), default_if_no_available_opponent)
             if opponent is not default_if_no_available_opponent:
                 self._match(newbie, opponent)
 
@@ -138,8 +137,7 @@ class Matchmaker(object):
         self.matches.update(StableMarriage(self.searches).find())
 
         remaining_searches = [
-            search for search in self.searches 
-                if search not in self.matches
+            search for search in self.searches if search not in self.matches
         ]
         self.matches.update(RandomlyMatchNewbies(remaining_searches).find())
 
@@ -174,7 +172,6 @@ class _MatchingGraph:
             for search in searches
         }
 
-
     @staticmethod
     def _get_top_matches(search: Search, others: Iterable[Search]) -> List[Search]:
         def is_possible_match(other: Search) -> bool:
@@ -195,10 +192,7 @@ class _MatchingGraph:
                 return False
 
         return heapq.nlargest(
-            SM_NUM_TO_RANK, 
-            filter(
-                is_possible_match,
-                others
-            ), 
+            SM_NUM_TO_RANK,
+            filter(is_possible_match, others),
             key=lambda other: search.quality_with(other)
         )
