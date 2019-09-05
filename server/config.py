@@ -40,7 +40,7 @@ FORCE_STEAM_LINK = os.getenv('FORCE_STEAM_LINK', 'false').lower() == 'true'
 
 NEWBIE_BASE_MEAN = int(os.getenv('NEWBIE_BASE_MEAN', 500))
 NEWBIE_MIN_GAMES = int(os.getenv('NEWBIE_MIN_GAMES', 10))
-TOP_PLAYER_MIN_RATING = int(os.getenv('TOP_PLAYER_MIN_RATING', 2000))
+TOP_PLAYER_MIN_RATING = int(os.getenv('TOP_PLAYER_MIN_RATING', 1600))
 
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
 TWILIO_TOKEN = os.getenv("TWILIO_TOKEN", "")
