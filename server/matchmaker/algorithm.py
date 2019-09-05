@@ -27,9 +27,9 @@ class StableMarriage(object):
 
     def find(self) -> List[Match]:
         """Perform SM_NUM_TO_RANK runs of the stable matching algorithm. 
-        Assumes that _build_sparse_matching_graph only returns edges whose matches are acceptable
+        Assumes that _MatchingGraph.build_sparse() only returns edges whose matches are acceptable
         to both parties."""
-        ranks = _build_sparse_matching_graph(self.searches)
+        ranks = _MatchingGraph.build_sparse(self.searches)
         self.matches: Dict[Search, Search] = {}
 
         for i in range(SM_NUM_TO_RANK):
@@ -132,36 +132,39 @@ class StableMarriage(object):
         del self.matches[s2]
 
 
-def _build_sparse_matching_graph(searches: List[Search]) -> Dict[Search, List[Search]]:
-    """ A graph in adjacency list representation, whose nodes are the searches
-    and whose edges are the top few possible matchings for each node.
+class _MatchingGraph:
+    @staticmethod
+    def build_sparse(searches: List[Search]) -> Dict[Search, List[Search]]:
+        """ A graph in adjacency list representation, whose nodes are the searches
+        and whose edges are the top few possible matchings for each node.
 
-    Note that the highest quality searches come at the end of the list so that
-    it can be used as a stack with .pop().
-    """
-    return {
-        search: sorted(
-            _get_top_matches(
-                search, filter(lambda s: s is not search, searches)
-            ),
+        Note that the highest quality searches come at the end of the list so that
+        it can be used as a stack with .pop().
+        """
+        return {
+            search: sorted(
+                _MatchingGraph._get_top_matches(
+                    search, filter(lambda s: s is not search, searches)
+                ),
+                key=lambda other: search.quality_with(other)
+            )
+            for search in searches
+        }
+
+
+    @staticmethod
+    def _get_top_matches(search: Search, others: Iterable[Search]) -> List[Search]:
+        def is_possible_match(other: Search) -> bool:
+            if search.matches_with(other):
+                return True
+            else:
+                return False
+
+        return heapq.nlargest(
+            SM_NUM_TO_RANK, 
+            filter(
+                is_possible_match,
+                others
+            ), 
             key=lambda other: search.quality_with(other)
         )
-        for search in searches
-    }
-
-
-def _get_top_matches(search: Search, others: Iterable[Search]) -> List[Search]:
-    def is_possible_match(other: Search) -> bool:
-        if search.matches_with(other):
-            return True
-        else:
-            return False
-
-    return heapq.nlargest(
-        SM_NUM_TO_RANK, 
-        filter(
-            is_possible_match,
-            others
-        ), 
-        key=lambda other: search.quality_with(other)
-    )

@@ -18,7 +18,7 @@ def test_build_sparse_matching_graph():
     s3 = Search([p(1600, 75, ladder_games=50)])
     searches = [s1, s2, s3]
 
-    ranks = algorithm._build_sparse_matching_graph(searches)
+    ranks = algorithm._MatchingGraph.build_sparse(searches)
 
     assert ranks == {
         s1: [s3, s2],
@@ -32,7 +32,7 @@ def test_match_graph_will_not_include_matches_below_threshold_quality():
     s2 = Search([p(2000, 300)])
     searches = [s1, s2]
 
-    ranks = algorithm._build_sparse_matching_graph(searches)
+    ranks = algorithm._MatchingGraph.build_sparse(searches)
 
     assert ranks == {
         s1: [],
