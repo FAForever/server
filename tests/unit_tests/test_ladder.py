@@ -76,8 +76,7 @@ async def test_inform_player(ladder_service: LadderService, player_factory):
 
 async def test_start_and_cancel_search(ladder_service: LadderService,
                                        player_factory, event_loop):
-    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
-    p1.ladder_games = 0
+    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500), ladder_games=0)
 
     mock_lc = mock.Mock()
     p1.lobby_connection = mock_lc
@@ -99,8 +98,7 @@ async def test_start_and_cancel_search(ladder_service: LadderService,
 
 async def test_start_search_cancels_previous_search(
         ladder_service: LadderService, player_factory, event_loop):
-    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
-    p1.ladder_games = 0
+    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500), ladder_games=0)
 
     mock_lc = mock.Mock()
     p1.lobby_connection = mock_lc
@@ -126,8 +124,7 @@ async def test_start_search_cancels_previous_search(
 
 async def test_cancel_all_searches(ladder_service: LadderService,
                                    player_factory, event_loop):
-    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
-    p1.ladder_games = 0
+    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500), ladder_games=0)
 
     mock_lc = mock.Mock()
     p1.lobby_connection = mock_lc
@@ -149,11 +146,8 @@ async def test_cancel_all_searches(ladder_service: LadderService,
 
 
 async def test_cancel_twice(ladder_service: LadderService, player_factory):
-    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
-    p1.ladder_games = 0
-
-    p2 = player_factory('Brackman', player_id=2, ladder_rating=(2000, 500))
-    p2.ladder_games = 0
+    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500), ladder_games=0)
+    p2 = player_factory('Brackman', player_id=2, ladder_rating=(2000, 500), ladder_games=0)
 
     mock_lc1 = mock.Mock()
     mock_lc2 = mock.Mock()
@@ -182,11 +176,8 @@ async def test_cancel_twice(ladder_service: LadderService, player_factory):
 @fast_forward(5)
 async def test_start_game_called_on_match(ladder_service: LadderService,
                                           player_factory):
-    p1 = player_factory('Dostya', player_id=1, ladder_rating=(2300, 64))
-    p1.ladder_games = 0
-
-    p2 = player_factory('QAI', player_id=2, ladder_rating=(2350, 125))
-    p2.ladder_games = 0
+    p1 = player_factory('Dostya', player_id=1, ladder_rating=(2300, 64), ladder_games=0)
+    p2 = player_factory('QAI', player_id=2, ladder_rating=(2350, 125), ladder_games=0)
 
     mock_lc1 = mock.Mock()
     mock_lc2 = mock.Mock()

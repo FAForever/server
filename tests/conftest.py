@@ -145,14 +145,18 @@ def player_factory():
     from server.players import Player, PlayerState
 
     def make(state=PlayerState.IDLE, global_rating=None, ladder_rating=None,
-             **kwargs):
-        ratings = {
+             numGames=0, ladder_games=0, **kwargs):
+        ratings = {k: v for k, v in {
             RatingType.GLOBAL: global_rating,
             RatingType.LADDER_1V1: ladder_rating,
-        }
-        ratings = {k: v for k, v in ratings.items() if v is not None}
+        }.items() if v is not None}
 
-        p = Player(ratings=ratings, **kwargs)
+        games = {k: v for k, v in {
+            RatingType.GLOBAL: numGames,
+            RatingType.LADDER_1V1: ladder_games
+        }.items() if v is not None}
+
+        p = Player(ratings=ratings, game_count=games, **kwargs)
         p.state = state
         return p
 

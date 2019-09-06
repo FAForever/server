@@ -559,10 +559,7 @@ class Game:
                     "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
                     "WHERE gameId = %s AND playerId = %s",
                     (new_rating.mu, new_rating.sigma, self.id, player.id))
-                if rating is RatingType.LADDER_1V1:
-                    player.ladder_games += 1
-                else:
-                    player.numGames += 1
+                player.game_count[rating] += 1
 
                 await self._update_rating_table(conn, rating, player, new_rating)
 

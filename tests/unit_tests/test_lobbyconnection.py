@@ -15,6 +15,7 @@ from server.lobbyconnection import ClientError, LobbyConnection
 from server.player_service import PlayerService
 from server.players import Player, PlayerState
 from server.protocol import QDataStreamProtocol
+from server.rating import RatingType
 from server.types import Address
 from sqlalchemy import and_, select, text
 from asynctest import CoroutineMock
@@ -199,7 +200,7 @@ async def test_command_game_join_calls_join_game(mocker,
         'command': 'game_launch',
         'mod': 'faf',
         'uid': 42,
-        'args': ['/numgames {}'.format(players.hosting.numGames)]
+        'args': ['/numgames {}'.format(players.hosting.game_count[RatingType.GLOBAL])]
     }
     mock_protocol.send_message.assert_called_with(expected_reply)
 
@@ -227,7 +228,7 @@ async def test_command_game_join_uid_as_str(mocker,
         'command': 'game_launch',
         'mod': 'faf',
         'uid': 42,
-        'args': ['/numgames {}'.format(players.hosting.numGames)]
+        'args': ['/numgames {}'.format(players.hosting.game_count[RatingType.GLOBAL])]
     }
     mock_protocol.send_message.assert_called_with(expected_reply)
 

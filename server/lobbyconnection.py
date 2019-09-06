@@ -32,6 +32,7 @@ from .matchmaker import Search
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import QDataStreamProtocol
+from .rating import RatingType
 from .types import Address
 
 
@@ -831,7 +832,7 @@ class LobbyConnection():
             "command": "game_launch",
             "mod": game.game_mode,
             "uid": game.id,
-            "args": ["/numgames " + str(self.player.numGames)]
+            "args": ["/numgames " + str(self.player.game_count[RatingType.GLOBAL])]
         }
         if use_map:
             cmd['mapname'] = use_map

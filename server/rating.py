@@ -10,8 +10,7 @@ class RatingType(Enum):
     LADDER_1V1 = "ladder1v1"
 
 
-# Only used to coerce rating type.
-class PlayerRatings(MutableMapping):
+class RatingTypeMap(MutableMapping):
     def __init__(self, default):
         MutableMapping.__init__(self)
         self._back = {}
@@ -23,11 +22,7 @@ class PlayerRatings(MutableMapping):
         return self._back[key]
 
     def __setitem__(self, key: RatingType, value):
-        if isinstance(value, Rating):
-            val = (value.mu, value.sigma)
-        else:
-            val = value
-        self._back[key] = val
+        self._back[key] = value
 
     def __delitem__(self, key: RatingType):
         del self._back[key]
@@ -37,3 +32,13 @@ class PlayerRatings(MutableMapping):
 
     def __len__(self):
         return len(self._back)
+
+
+# Only used to coerce rating type.
+class PlayerRatings(RatingTypeMap):
+    def __setitem__(self, key: RatingType, value):
+        if isinstance(value, Rating):
+            val = (value.mu, value.sigma)
+        else:
+            val = value
+        self._back[key] = val

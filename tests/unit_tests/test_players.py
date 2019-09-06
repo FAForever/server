@@ -69,7 +69,7 @@ def test_serialize():
                    RatingType.LADDER_1V1: (1500, 230),
                },
                clan='TOAST',
-               num_games=542)
+               game_count={RatingType.GLOBAL: 542})
     assert p.to_dict() == {
                     "id": 42,
                     "login": 'Something',

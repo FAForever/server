@@ -89,13 +89,13 @@ class PlayerService:
                 row[global_rating.c.mean],
                 row[global_rating.c.deviation]
             )
-            player.numGames = row[global_rating.c.numGames]
+            player.game_count[RatingType.GLOBAL] = row[global_rating.c.numGames]
 
             player.ratings[RatingType.LADDER_1V1] = (
                 row[ladder1v1_rating.c.mean],
                 row[ladder1v1_rating.c.deviation]
             )
-            player.ladder_games = row[ladder1v1_rating.c.numGames]
+            player.game_count[RatingType.LADDER_1V1] = row[ladder1v1_rating.c.numGames]
 
             player.clan = row.get(clan.c.tag)
 

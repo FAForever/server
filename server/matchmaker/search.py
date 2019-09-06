@@ -46,13 +46,13 @@ class Search:
         Returns an adjusted mean with a simple linear interpolation between current mean and a specified base mean
         """
         mean, dev = player.ratings[RatingType.LADDER_1V1]
-        adjusted_mean = ((config.NEWBIE_MIN_GAMES - player.ladder_games) * config.NEWBIE_BASE_MEAN
-                         + player.ladder_games * mean) / config.NEWBIE_MIN_GAMES
+        adjusted_mean = ((config.NEWBIE_MIN_GAMES - player.game_count[RatingType.LADDER_1V1]) * config.NEWBIE_BASE_MEAN
+                         + player.game_count[RatingType.LADDER_1V1] * mean) / config.NEWBIE_MIN_GAMES
         return adjusted_mean, dev
 
     @staticmethod
     def _is_ladder_newbie(player: Player) -> bool:
-        return player.ladder_games <= config.NEWBIE_MIN_GAMES
+        return player.game_count[RatingType.LADDER_1V1] <= config.NEWBIE_MIN_GAMES
 
     def is_ladder1v1_search(self) -> bool:
         return self.rating_type is RatingType.LADDER_1V1
@@ -191,7 +191,7 @@ class Search:
                 adjusted_mean = self.adjusted_rating(player)
                 self._logger.info('Adjusted mean rating for {player} with {ladder_games} games from {mean} to {adjusted_mean}'.format(
                     player=player,
-                    ladder_games=player.ladder_games,
+                    ladder_games=player.game_count[RatingType.LADDER_1V1],
                     mean=mean,
                     adjusted_mean=adjusted_mean
                 ))

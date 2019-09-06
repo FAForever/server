@@ -7,9 +7,8 @@ from server.matchmaker import Search, algorithm
 def p(player_factory):
     def make(mean: int, deviation: int, ladder_games: int=config.NEWBIE_MIN_GAMES+1, name=None):
         """Make a player with the given ratings"""
-        player = player_factory(ladder_rating=(mean, deviation))
-        player.ladder_games = ladder_games
-        return player
+        return player_factory(ladder_rating=(mean, deviation),
+                              ladder_games=ladder_games)
     return make
 
 
