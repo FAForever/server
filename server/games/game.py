@@ -248,14 +248,7 @@ class Game:
     @property
     def teams(self):
         """
-        A dictionary of lists representing teams
-
-        It is of the form:
-        >>> {
-        >>>     1: [Player(1), Player(2)],
-        >>>     2: [Player(3), Player(4)]
-        >>> }
-        :return:
+        A set of all teams of this game's players.
         """
         return frozenset({self.get_player_option(player.id, 'Team')
                           for player in self.players})
