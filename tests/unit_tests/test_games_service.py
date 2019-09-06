@@ -3,17 +3,19 @@ from server.game_service import GameService
 from server.games import CustomGame, Game, LadderGame, VisibilityState
 from server.players import PlayerState
 
+pytestmark = pytest.mark.asyncio
+
 
 @pytest.fixture
-def game_service(players, game_stats_service):
-    return GameService(players, game_stats_service)
+def game_service(database, players, game_stats_service):
+    return GameService(database, players, game_stats_service)
 
 
-def test_initialization(game_service):
+async def test_initialization(game_service):
     assert len(game_service.dirty_games) == 0
 
 
-def test_create_game(players, game_service):
+async def test_create_game(players, game_service):
     players.hosting.state = PlayerState.IDLE
     game = game_service.create_game(
         visibility=VisibilityState.PUBLIC,
@@ -27,8 +29,11 @@ def test_create_game(players, game_service):
     assert game in game_service.dirty_games
     assert isinstance(game, CustomGame)
 
+    game_service.remove_game(game)
+    assert game not in game_service.games
 
-def test_all_games(players, game_service):
+
+async def test_all_games(players, game_service):
     game = game_service.create_game(
         visibility=VisibilityState.PUBLIC,
         game_mode='faf',
@@ -41,7 +46,7 @@ def test_all_games(players, game_service):
     assert isinstance(game, CustomGame)
 
 
-def test_create_game_ladder1v1(players, game_service):
+async def test_create_game_ladder1v1(players, game_service):
     game = game_service.create_game(
         game_mode='ladder1v1',
         host=players.hosting,
@@ -53,7 +58,7 @@ def test_create_game_ladder1v1(players, game_service):
     assert game.game_mode == 'ladder1v1'
 
 
-def test_create_game_other_gamemode(players, game_service):
+async def test_create_game_other_gamemode(players, game_service):
     game = game_service.create_game(
         visibility=VisibilityState.PUBLIC,
         game_mode='labwars',

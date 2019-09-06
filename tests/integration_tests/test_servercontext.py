@@ -1,4 +1,5 @@
 import asyncio
+from asynctest import exhaust_callbacks
 import pytest
 from unittest import mock
 
@@ -7,8 +8,11 @@ from server.protocol import QDataStreamProtocol
 from server import fake_statsd
 
 
+pytestmark = pytest.mark.asyncio
+
+
 @pytest.fixture
-def mock_server(loop):
+def mock_server(event_loop):
     class MockServer:
         def __init__(self):
             self.protocol, self.peername, self.user_agent = None, None, None
@@ -29,26 +33,26 @@ def mock_server(loop):
 
 
 @pytest.fixture
-def mock_context(loop, request, mock_server):
+def mock_context(event_loop, request, mock_server):
     ctx = ServerContext(lambda: mock_server, name='TestServer')
 
     def fin():
         ctx.close()
     request.addfinalizer(fin)
-    return loop.run_until_complete(ctx.listen('127.0.0.1', None))
+    return event_loop.run_until_complete(ctx.listen('127.0.0.1', None))
 
 
-async def test_serverside_abort(mock_context, mock_server):
+async def test_serverside_abort(event_loop, mock_context, mock_server):
     (reader, writer) = await asyncio.open_connection(*mock_context.sockets[0].getsockname())
     proto = QDataStreamProtocol(reader, writer)
     proto.send_message({"some_junk": True})
     await writer.drain()
-    await asyncio.sleep(0.1)
+    await exhaust_callbacks(event_loop)
 
     mock_server.on_connection_lost.assert_any_call()
 
 
-def test_server_fake_statsd():
+async def test_server_fake_statsd():
     dummy = fake_statsd.DummyConnection()
     # Verify that no exceptions are raised
     with dummy.timer('a'):

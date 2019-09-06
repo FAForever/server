@@ -27,9 +27,11 @@ humanize = "*"
 pytest = "*"
 pytest-mock = "*"
 pytest-cov = "*"
+pytest-asyncio = "*"
 coveralls = "*"
 mock = "*"
 vulture = "*"
+asynctest = "*"
 
 [requires]
 python_version = "3.6"

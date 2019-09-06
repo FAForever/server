@@ -59,20 +59,20 @@ if __name__ == '__main__':
         signal.signal(signal.SIGTERM, signal_handler)
         signal.signal(signal.SIGINT, signal_handler)
 
-        engine_fut = asyncio.ensure_future(
-            server.db.connect_engine(
+        database = server.db.FAFDatabase(loop)
+        db_fut = asyncio.ensure_future(
+            database.connect(
                 host=DB_SERVER,
                 port=int(DB_PORT),
                 user=DB_LOGIN,
                 password=DB_PASSWORD,
                 maxsize=10,
                 db=DB_NAME,
-                loop=loop
             )
         )
-        engine = loop.run_until_complete(engine_fut)
+        loop.run_until_complete(db_fut)
 
-        players_online = PlayerService()
+        players_online = PlayerService(database)
 
         twilio_nts = None
         if TWILIO_ACCOUNT_SID:
@@ -92,8 +92,8 @@ if __name__ == '__main__':
             event_service, achievement_service
         )
 
-        games = GameService(players_online, game_stats_service)
-        ladder_service = LadderService(games)
+        games = GameService(database, players_online, game_stats_service)
+        ladder_service = LadderService(database, games)
 
         ctrl_server = loop.run_until_complete(
             server.run_control_server(loop, players_online, games)
@@ -101,6 +101,7 @@ if __name__ == '__main__':
 
         lobby_server = server.run_lobby_server(
             address=('', 8001),
+            database=database,
             geoip_service=GeoIpService(),
             player_service=players_online,
             games=games,
@@ -117,8 +118,7 @@ if __name__ == '__main__':
         ladder_service.shutdown_queues()
 
         # Close DB connections
-        engine.close()
-        loop.run_until_complete(engine.wait_closed())
+        loop.run_until_complete(database.close())
 
         loop.close()
 

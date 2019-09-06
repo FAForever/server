@@ -4,6 +4,7 @@ from oauthlib.oauth2.rfc6749.errors import (InsecureTransportError,
 from server.api.oauth_session import OAuth2Session
 
 
+@pytest.mark.asyncio
 async def test_error_conditions():
     oauth_session = OAuth2Session(
         client_id="client_id",
