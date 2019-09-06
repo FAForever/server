@@ -20,24 +20,24 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest.yield_fixture
-def game(loop, database, game_service, game_stats_service):
+def game(event_loop, database, game_service, game_stats_service):
     game = Game(42, database, game_service, game_stats_service)
     yield game
-    loop.run_until_complete(game.clear_data())
+    event_loop.run_until_complete(game.clear_data())
 
 
 @pytest.yield_fixture
-def coop_game(loop, database, game_service, game_stats_service):
+def coop_game(event_loop, database, game_service, game_stats_service):
     game = CoopGame(42, database, game_service, game_stats_service)
     yield game
-    loop.run_until_complete(game.clear_data())
+    event_loop.run_until_complete(game.clear_data())
 
 
 @pytest.yield_fixture
-def custom_game(loop, database, game_service, game_stats_service):
+def custom_game(event_loop, database, game_service, game_stats_service):
     game = CustomGame(42, database, game_service, game_stats_service)
     yield game
-    loop.run_until_complete(game.clear_data())
+    event_loop.run_until_complete(game.clear_data())
 
 
 async def test_initialization(game: Game):

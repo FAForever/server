@@ -18,7 +18,7 @@ def mock_players(database):
 
 
 @pytest.fixture
-def mock_games(mock_players):
+def mock_games(database, mock_players):
     return mock.create_autospec(GameService(database, mock_players))
 
 
@@ -29,7 +29,8 @@ def ladder_service(mocker, database, game_service):
 
 
 @pytest.fixture
-def lobby_server(request, loop, database, player_service, game_service, geoip_service, ladder_service):
+def lobby_server(request, event_loop, database, player_service, game_service,
+                 geoip_service, ladder_service):
     ctx = run_lobby_server(
         address=('127.0.0.1', None),
         database=database,
@@ -38,14 +39,14 @@ def lobby_server(request, loop, database, player_service, game_service, geoip_se
         games=game_service,
         ladder_service=ladder_service,
         nts_client=None,
-        loop=loop
+        loop=event_loop
     )
     player_service.is_uniqueid_exempt = lambda id: True
 
     def fin():
         ctx.close()
         ladder_service.shutdown_queues()
-        loop.run_until_complete(ctx.wait_closed())
+        event_loop.run_until_complete(ctx.wait_closed())
 
     request.addfinalizer(fin)
 

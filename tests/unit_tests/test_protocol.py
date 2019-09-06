@@ -11,8 +11,8 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
-def reader(loop):
-    return StreamReader(loop=loop)
+def reader(event_loop):
+    return StreamReader(loop=event_loop)
 
 @pytest.fixture
 def writer():

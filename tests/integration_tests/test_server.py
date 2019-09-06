@@ -30,7 +30,7 @@ async def test_server_deprecated_client(lobby_server):
     assert msg['command'] == 'notice'
 
 
-async def test_server_invalid_login(loop, lobby_server):
+async def test_server_invalid_login(lobby_server):
     proto = await connect_client(lobby_server)
     # Try a user that doesn't exist
     await perform_login(proto, ('Cat', 'epic'))
@@ -49,7 +49,7 @@ async def test_server_invalid_login(loop, lobby_server):
     proto.close()
 
 
-async def test_server_ban(loop, lobby_server):
+async def test_server_ban(lobby_server):
     proto = await connect_client(lobby_server)
     await perform_login(proto, ('Dostya', 'vodka'))
     msg = await proto.read_message()
@@ -60,7 +60,7 @@ async def test_server_ban(loop, lobby_server):
     proto.close()
 
 
-async def test_server_valid_login(loop, lobby_server):
+async def test_server_valid_login(lobby_server):
     proto = await connect_client(lobby_server)
     await perform_login(proto, ('test', 'test_password'))
     msg = await proto.read_message()
@@ -79,7 +79,7 @@ async def test_server_valid_login(loop, lobby_server):
     await lobby_server.wait_closed()
 
 
-async def test_server_double_login(loop, lobby_server):
+async def test_server_double_login(lobby_server):
     proto = await connect_client(lobby_server)
     await perform_login(proto, ('test', 'test_password'))
     msg = await proto.read_message()
@@ -104,7 +104,7 @@ async def test_server_double_login(loop, lobby_server):
     await lobby_server.wait_closed()
 
 
-async def test_player_info_broadcast(loop, lobby_server):
+async def test_player_info_broadcast(lobby_server):
     p1 = await connect_client(lobby_server)
     p2 = await connect_client(lobby_server)
 
@@ -120,7 +120,7 @@ async def test_player_info_broadcast(loop, lobby_server):
 
 
 @pytest.mark.slow
-async def test_info_broadcast_authenticated(loop, lobby_server):
+async def test_info_broadcast_authenticated(lobby_server):
     proto1 = await connect_client(lobby_server)
     proto2 = await connect_client(lobby_server)
     proto3 = await connect_client(lobby_server)
@@ -143,7 +143,7 @@ async def test_info_broadcast_authenticated(loop, lobby_server):
 
 
 @pytest.mark.slow
-async def test_public_host(loop, lobby_server, player_service):
+async def test_public_host(event_loop, lobby_server, player_service):
     # TODO: This test can't fail, why is it here?
     player_id, session, proto = await connect_and_sign_in(
         ('test', 'test_password'),
@@ -152,7 +152,7 @@ async def test_public_host(loop, lobby_server, player_service):
 
     await read_until(proto, lambda msg: msg['command'] == 'game_info')
 
-    with ClientTest(loop=loop, process_nat_packets=True, proto=proto) as client:
+    with ClientTest(loop=event_loop, process_nat_packets=True, proto=proto) as client:
         proto.send_message({
             'command': 'game_host',
             'mod': 'faf',
@@ -166,7 +166,7 @@ async def test_public_host(loop, lobby_server, player_service):
 
 
 @pytest.mark.slow
-async def test_host_missing_fields(loop, lobby_server, player_service):
+async def test_host_missing_fields(event_loop, lobby_server, player_service):
     player_id, session, proto = await connect_and_sign_in(
         ('test', 'test_password'),
         lobby_server
@@ -174,7 +174,7 @@ async def test_host_missing_fields(loop, lobby_server, player_service):
 
     await read_until(proto, lambda msg: msg['command'] == 'game_info')
 
-    with ClientTest(loop=loop, process_nat_packets=True, proto=proto) as client:
+    with ClientTest(loop=event_loop, process_nat_packets=True, proto=proto) as client:
         proto.send_message({
             'command': 'game_host',
             'mod': '',

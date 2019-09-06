@@ -79,7 +79,7 @@ def mock_geoip():
 
 
 @pytest.fixture
-def lobbyconnection(loop, database, mock_protocol, mock_games, mock_players, mock_player, mock_geoip):
+def lobbyconnection(event_loop, database, mock_protocol, mock_games, mock_players, mock_player, mock_geoip):
     lc = LobbyConnection(
         database=database,
         geoip=mock_geoip,
@@ -98,7 +98,7 @@ def lobbyconnection(loop, database, mock_protocol, mock_games, mock_players, moc
 
 
 @pytest.fixture
-def policy_server(loop):
+def policy_server(event_loop):
     host = 'localhost'
     port = 6080
 
@@ -119,9 +119,9 @@ def policy_server(loop):
         site = web.TCPSite(runner, host, port)
         await site.start()
 
-    loop.run_until_complete(start_app())
+    event_loop.run_until_complete(start_app())
     yield (host, port)
-    loop.run_until_complete(runner.cleanup())
+    event_loop.run_until_complete(runner.cleanup())
 
 
 async def test_command_game_host_creates_game(lobbyconnection,
@@ -280,7 +280,7 @@ async def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
         dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
 
 
-async def test_abort(loop, mocker, lobbyconnection):
+async def test_abort(mocker, lobbyconnection):
     proto = mocker.patch.object(lobbyconnection, 'protocol')
 
     lobbyconnection.abort()

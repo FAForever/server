@@ -37,13 +37,13 @@ def matchmaker_players_all_match(player_factory):
            player_factory('Rhiza', player_id=5, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
 
 
-async def test_newbie_min_games(loop, matchmaker_players):
+async def test_newbie_min_games(matchmaker_players):
     p1, _, _, _, _, p6 = matchmaker_players
     s1, s6 = Search([p1]), Search([p6])
     assert s1.ratings[0] == p1.ratings[RatingType.LADDER_1V1] and s6.ratings[0] != p6.ratings[RatingType.LADDER_1V1]
 
 
-async def test_search_threshold(loop, matchmaker_players):
+async def test_search_threshold(matchmaker_players):
     s = Search([matchmaker_players[0]])
     assert s.match_threshold <= 1
     assert s.match_threshold >= 0

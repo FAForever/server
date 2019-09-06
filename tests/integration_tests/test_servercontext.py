@@ -12,7 +12,7 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
-def mock_server(loop):
+def mock_server(event_loop):
     class MockServer:
         def __init__(self):
             self.protocol, self.peername, self.user_agent = None, None, None
@@ -33,13 +33,13 @@ def mock_server(loop):
 
 
 @pytest.fixture
-def mock_context(loop, request, mock_server):
+def mock_context(event_loop, request, mock_server):
     ctx = ServerContext(lambda: mock_server, name='TestServer')
 
     def fin():
         ctx.close()
     request.addfinalizer(fin)
-    return loop.run_until_complete(ctx.listen('127.0.0.1', None))
+    return event_loop.run_until_complete(ctx.listen('127.0.0.1', None))
 
 
 async def test_serverside_abort(event_loop, mock_context, mock_server):

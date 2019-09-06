@@ -24,7 +24,7 @@ def oauth2_session(oauth2_server):
 
 
 @pytest.fixture
-def oauth2_server(loop):
+def oauth2_server(event_loop):
     host = 'localhost'
     port = 8080
 
@@ -75,9 +75,9 @@ def oauth2_server(loop):
         site = web.TCPSite(runner, host, port)
         await site.start()
 
-    loop.run_until_complete(start_app())
+    event_loop.run_until_complete(start_app())
     yield (host, port)
-    loop.run_until_complete(runner.cleanup())
+    event_loop.run_until_complete(runner.cleanup())
 
 
 async def test_fetch_token(oauth2_session):

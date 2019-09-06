@@ -44,13 +44,6 @@ def pytest_configure(config):
 
 
 @pytest.fixture
-def loop(event_loop):
-    import server
-    server.stats = mock.MagicMock()
-    return event_loop
-
-
-@pytest.fixture
 def sqlquery():
     query = mock.MagicMock()
     query.exec_ = lambda: 0
@@ -76,13 +69,13 @@ def global_database(request):
     return _database(request, asyncio.get_event_loop())
 
 
-def _database(request, loop):
+def _database(request, event_loop):
     def opt(val):
         return request.config.getoption(val)
     host, user, pw, db, port = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt('--mysql_database'), opt('--mysql_port')
-    fdb = FAFDatabase(loop)
+    fdb = FAFDatabase(event_loop)
 
-    db_fut = loop.create_task(
+    db_fut = event_loop.create_task(
         fdb.connect(
             host=host,
             user=user,
@@ -91,10 +84,10 @@ def _database(request, loop):
             db=db
         )
     )
-    loop.run_until_complete(db_fut)
+    event_loop.run_until_complete(db_fut)
 
     def fin():
-        loop.run_until_complete(fdb.close())
+        event_loop.run_until_complete(fdb.close())
     request.addfinalizer(fin)
 
     return fdb
@@ -177,12 +170,12 @@ def players(player_factory):
 
 
 @pytest.fixture
-def player_service(event_loop, database):
+def player_service(database):
     return PlayerService(database)
 
 
 @pytest.fixture
-def game_service(event_loop, database, player_service, game_stats_service):
+def game_service(database, player_service, game_stats_service):
     return GameService(database, player_service, game_stats_service)
 
 
