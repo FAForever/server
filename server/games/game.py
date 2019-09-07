@@ -150,7 +150,6 @@ class Game:
         map_: str='SCMP_007',
         game_mode: str='faf'
     ):
-        super().__init__()
         self._db = database
         self._results = {}
         self._army_stats = None
