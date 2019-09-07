@@ -12,6 +12,7 @@ from typing import Any, Dict, Optional
 
 import aiomeasures
 
+from server.db import FAFDatabase
 from . import config as config
 from .games.game import GameState, VisibilityState
 from .stats.game_stats_service import GameStatsService
@@ -81,6 +82,7 @@ def encode_queues(queues):
 
 def run_lobby_server(
     address: (str, int),
+    database: FAFDatabase,
     player_service: PlayerService,
     games: GameService,
     loop,
@@ -137,6 +139,7 @@ def run_lobby_server(
 
     def make_connection() -> LobbyConnection:
         return LobbyConnection(
+            database=database,
             geoip=geoip_service,
             games=games,
             nts_client=nts_client,

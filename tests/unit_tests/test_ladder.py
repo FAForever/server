@@ -1,38 +1,50 @@
 import asyncio
 from unittest import mock
+from asynctest import exhaust_callbacks
 
 import pytest
 from server import GameService, LadderService
 from server.matchmaker import Search
-from server.players import Player, PlayerState
-from tests import CoroMock
+from server.players import PlayerState
+from asynctest import CoroutineMock
+from tests.utils import fast_forward
+
+pytestmark = pytest.mark.asyncio
 
 
-async def test_start_game(ladder_service: LadderService, game_service: GameService):
-    p1 = mock.create_autospec(Player('Dostya', player_id=1))
-    p2 = mock.create_autospec(Player('Rhiza', player_id=2))
+async def test_start_game(ladder_service: LadderService, game_service:
+                          GameService, player_factory):
+    p1 = player_factory('Dostya', player_id=1)
+    p2 = player_factory('Rhiza', player_id=2)
 
-    p1.id = 1
-    p2.id = 2
+    mock_lc1 = mock.Mock()
+    mock_lc2 = mock.Mock()
+    p1.lobby_connection = mock_lc1
+    p2.lobby_connection = mock_lc2
+
     game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
 
-    with mock.patch('server.games.game.Game.await_hosted', CoroMock()):
+    with mock.patch('server.games.game.Game.await_hosted', CoroutineMock()):
         await ladder_service.start_game(p1, p2)
 
     assert p1.lobby_connection.launch_game.called
     assert p2.lobby_connection.launch_game.called
 
 
-async def test_start_game_timeout(ladder_service: LadderService, game_service: GameService):
-    p1 = mock.create_autospec(Player('Dostya', player_id=1))
-    p2 = mock.create_autospec(Player('Rhiza', player_id=2))
+@fast_forward(120)
+async def test_start_game_timeout(ladder_service: LadderService, game_service:
+                                  GameService, player_factory):
+    p1 = player_factory('Dostya', player_id=1)
+    p2 = player_factory('Rhiza', player_id=2)
 
-    p1.id = 1
-    p2.id = 2
+    mock_lc1 = mock.Mock()
+    mock_lc2 = mock.Mock()
+    p1.lobby_connection = mock_lc1
+    p2.lobby_connection = mock_lc2
+
     game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
 
-    with mock.patch('server.games.game.Game.sleep', CoroMock()):
-        await ladder_service.start_game(p1, p2)
+    await ladder_service.start_game(p1, p2)
 
     p1.lobby_connection.send.assert_called_once_with({"command": "game_launch_timeout"})
     p2.lobby_connection.send.assert_called_once_with({"command": "game_launch_timeout"})
@@ -41,9 +53,11 @@ async def test_start_game_timeout(ladder_service: LadderService, game_service: G
     assert p2.lobby_connection.launch_game.called
 
 
-def test_inform_player(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', player_id=1))
-    p1.ladder_rating = (1500, 500)
+async def test_inform_player(ladder_service: LadderService, player_factory):
+    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
+
+    mock_lc = mock.Mock()
+    p1.lobby_connection = mock_lc
 
     ladder_service.inform_player(p1)
 
@@ -60,15 +74,18 @@ def test_inform_player(ladder_service: LadderService):
     p1.lobby_connection.send.assert_called_once()
 
 
-async def test_start_and_cancel_search(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', player_id=1))
-    p1.ladder_rating = (1500, 500)
+async def test_start_and_cancel_search(ladder_service: LadderService,
+                                       player_factory, event_loop):
+    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
     p1.ladder_games = 0
+
+    mock_lc = mock.Mock()
+    p1.lobby_connection = mock_lc
 
     search = Search([p1])
 
     ladder_service.start_search(p1, search, 'ladder1v1')
-    await asyncio.sleep(0)  # Give the other coro a chance to run
+    await exhaust_callbacks(event_loop)
 
     assert p1.state == PlayerState.SEARCHING_LADDER
     assert ladder_service.queues['ladder1v1'].queue[search]
@@ -80,15 +97,18 @@ async def test_start_and_cancel_search(ladder_service: LadderService):
     assert search.is_cancelled
 
 
-async def test_start_search_cancels_previous_search(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', player_id=1))
-    p1.ladder_rating = (1500, 500)
+async def test_start_search_cancels_previous_search(
+        ladder_service: LadderService, player_factory, event_loop):
+    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
     p1.ladder_games = 0
+
+    mock_lc = mock.Mock()
+    p1.lobby_connection = mock_lc
 
     search1 = Search([p1])
 
     ladder_service.start_search(p1, search1, 'ladder1v1')
-    await asyncio.sleep(0)  # Give the other coro a chance to run
+    await exhaust_callbacks(event_loop)
 
     assert p1.state == PlayerState.SEARCHING_LADDER
     assert ladder_service.queues['ladder1v1'].queue[search1]
@@ -96,7 +116,7 @@ async def test_start_search_cancels_previous_search(ladder_service: LadderServic
     search2 = Search([p1])
 
     ladder_service.start_search(p1, search2, 'ladder1v1')
-    await asyncio.sleep(0)  # Give the other coro a chance to run
+    await exhaust_callbacks(event_loop)
 
     assert p1.state == PlayerState.SEARCHING_LADDER
     assert search1.is_cancelled
@@ -104,15 +124,18 @@ async def test_start_search_cancels_previous_search(ladder_service: LadderServic
     assert ladder_service.queues['ladder1v1'].queue[search2]
 
 
-async def test_cancel_all_searches(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', player_id=1))
-    p1.ladder_rating = (1500, 500)
+async def test_cancel_all_searches(ladder_service: LadderService,
+                                   player_factory, event_loop):
+    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
     p1.ladder_games = 0
+
+    mock_lc = mock.Mock()
+    p1.lobby_connection = mock_lc
 
     search = Search([p1])
 
     ladder_service.start_search(p1, search, 'ladder1v1')
-    await asyncio.sleep(0)  # Give the other coro a chance to run
+    await exhaust_callbacks(event_loop)
 
     assert p1.state == PlayerState.SEARCHING_LADDER
     assert ladder_service.queues['ladder1v1'].queue[search]
@@ -125,14 +148,17 @@ async def test_cancel_all_searches(ladder_service: LadderService):
     assert p1 not in ladder_service.searches['ladder1v1']
 
 
-async def test_cancel_twice(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', player_id=1))
-    p1.ladder_rating = (1500, 500)
+async def test_cancel_twice(ladder_service: LadderService, player_factory):
+    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
     p1.ladder_games = 0
 
-    p2 = mock.create_autospec(Player('Brackman', player_id=1))
-    p2.ladder_rating = (2000, 50)
+    p2 = player_factory('Brackman', player_id=2, ladder_rating=(2000, 500))
     p2.ladder_games = 0
+
+    mock_lc1 = mock.Mock()
+    mock_lc2 = mock.Mock()
+    p1.lobby_connection = mock_lc1
+    p2.lobby_connection = mock_lc2
 
     search = Search([p1])
     search2 = Search([p2])
@@ -153,16 +179,21 @@ async def test_cancel_twice(ladder_service: LadderService):
     assert searches == [search2]
 
 
-async def test_start_game_called_on_match(ladder_service: LadderService):
-    p1 = mock.create_autospec(Player('Dostya', player_id=1))
-    p1.ladder_rating = (2300, 64)
+@fast_forward(5)
+async def test_start_game_called_on_match(ladder_service: LadderService,
+                                          player_factory):
+    p1 = player_factory('Dostya', player_id=1, ladder_rating=(2300, 64))
     p1.ladder_games = 0
 
-    p2 = mock.create_autospec(Player('QAI', player_id=4))
-    p2.ladder_rating = (2350, 125)
+    p2 = player_factory('QAI', player_id=2, ladder_rating=(2350, 125))
     p2.ladder_games = 0
 
-    ladder_service.start_game = CoroMock()
+    mock_lc1 = mock.Mock()
+    mock_lc2 = mock.Mock()
+    p1.lobby_connection = mock_lc1
+    p2.lobby_connection = mock_lc2
+
+    ladder_service.start_game = CoroutineMock()
     ladder_service.inform_player = mock.Mock()
 
     ladder_service.start_search(p1, Search([p1]), 'ladder1v1')
@@ -175,7 +206,7 @@ async def test_start_game_called_on_match(ladder_service: LadderService):
 
 
 async def test_choose_map(ladder_service: LadderService):
-    ladder_service.get_ladder_history = CoroMock(
+    ladder_service.get_ladder_history = CoroutineMock(
         return_value=[1, 2, 3]
     )
 
@@ -194,7 +225,7 @@ async def test_choose_map(ladder_service: LadderService):
 
 
 async def test_choose_map_all_maps_played(ladder_service: LadderService):
-    ladder_service.get_ladder_history = CoroMock(
+    ladder_service.get_ladder_history = CoroutineMock(
         return_value=[1, 2, 3]
     )
 
@@ -216,11 +247,11 @@ async def test_choose_map_raises_on_empty_map_pool(ladder_service: LadderService
         await ladder_service.choose_map([])
 
 
-async def test_get_ladder_history(ladder_service: LadderService, players, db_engine):
+async def test_get_ladder_history(ladder_service: LadderService, players, database):
     history = await ladder_service.get_ladder_history(players.hosting, limit=1)
     assert history == [6]
 
 
-async def test_get_ladder_history_many_maps(ladder_service: LadderService, players, db_engine):
+async def test_get_ladder_history_many_maps(ladder_service: LadderService, players, database):
     history = await ladder_service.get_ladder_history(players.hosting, limit=4)
     assert history == [6, 5, 4, 3]

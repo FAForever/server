@@ -3,19 +3,20 @@ from unittest import mock
 
 from server.factions import Faction
 from server.players import Player
+from server.rating import RatingType
 from trueskill import Rating
 
 
 def test_ratings():
     p = Player('Schroedinger')
-    p.global_rating = (1500, 20)
-    assert p.global_rating == (1500, 20)
-    p.global_rating = Rating(1700, 20)
-    assert p.global_rating == (1700, 20)
-    p.ladder_rating = (1200, 20)
-    assert p.ladder_rating == (1200, 20)
-    p.ladder_rating = Rating(1200, 20)
-    assert p.ladder_rating == (1200, 20)
+    p.ratings[RatingType.GLOBAL] = (1500, 20)
+    assert p.ratings[RatingType.GLOBAL] == (1500, 20)
+    p.ratings[RatingType.GLOBAL] = Rating(1700, 20)
+    assert p.ratings[RatingType.GLOBAL] == (1700, 20)
+    p.ratings[RatingType.LADDER_1V1] = (1200, 20)
+    assert p.ratings[RatingType.LADDER_1V1] == (1200, 20)
+    p.ratings[RatingType.LADDER_1V1] = Rating(1200, 20)
+    assert p.ratings[RatingType.LADDER_1V1] == (1200, 20)
 
 
 def test_faction():
@@ -50,6 +51,7 @@ def test_weak_references():
     for prop in weak_properties:
         assert getattr(p, prop) is None
 
+
 def test_unlink_weakref():
     p = Player(login='Test')
     mock_game = mock.Mock()
@@ -58,11 +60,14 @@ def test_unlink_weakref():
     del p.game
     assert p.game is None
 
+
 def test_serialize():
     p = Player(player_id=42,
                login='Something',
-               global_rating=(1234, 68),
-               ladder_rating=(1500, 230),
+               ratings={
+                   RatingType.GLOBAL: (1234, 68),
+                   RatingType.LADDER_1V1: (1500, 230),
+               },
                clan='TOAST',
                num_games=542)
     assert p.to_dict() == {

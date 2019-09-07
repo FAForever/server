@@ -9,6 +9,8 @@ import server.config
 from aiohttp import web
 from server.geoip_service import GeoIpService
 
+pytestmark = pytest.mark.asyncio
+
 
 @pytest.fixture
 def fake_geoip_path(geoip_service) -> str:

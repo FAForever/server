@@ -1,18 +1,19 @@
-import mock
+import pytest
 from server import config
 from server.matchmaker import Search, algorithm
 
 
-def p(mean: int, deviation: int, ladder_games: int = config.NEWBIE_MIN_GAMES+1, name=None):
-    """Make a player with the given ratings"""
-    player = mock.Mock()
-    player.ladder_rating = (mean, deviation)
-    player.ladder_games = ladder_games
-    player.__repr__ = lambda self: name or f"p({self.ladder_rating}, {self.ladder_games})"
-    return player
+@pytest.fixture
+def p(player_factory):
+    def make(mean: int, deviation: int, ladder_games: int=config.NEWBIE_MIN_GAMES+1, name=None):
+        """Make a player with the given ratings"""
+        player = player_factory(ladder_rating=(mean, deviation))
+        player.ladder_games = ladder_games
+        return player
+    return make
 
 
-def test_build_sparse_matching_graph():
+def test_build_sparse_matching_graph(p):
     s1 = Search([p(1500, 64, ladder_games=20)])
     s2 = Search([p(1500, 63, ladder_games=20)])
     s3 = Search([p(1600, 75, ladder_games=50)])
@@ -27,7 +28,7 @@ def test_build_sparse_matching_graph():
     }
 
 
-def test_match_graph_will_not_include_matches_below_threshold_quality():
+def test_match_graph_will_not_include_matches_below_threshold_quality(p):
     s1 = Search([p(1500, 500)])
     s2 = Search([p(2000, 300)])
     searches = [s1, s2]
@@ -40,7 +41,7 @@ def test_match_graph_will_not_include_matches_below_threshold_quality():
     }
 
 
-def test_stable_marriage_produces_symmetric_matchings():
+def test_stable_marriage_produces_symmetric_matchings(p):
     s1 = Search([p(2300, 64, name='p1')])
     s2 = Search([p(1200, 72, name='p2')])
     s3 = Search([p(1300, 175, name='p3')])
@@ -58,7 +59,7 @@ def test_stable_marriage_produces_symmetric_matchings():
 
 
 
-def test_stable_marriage():
+def test_stable_marriage(p):
     s1 = Search([p(2300, 64, name='p1')])
     s2 = Search([p(1200, 72, name='p2')])
     s3 = Search([p(1300, 175, name='p3')])
@@ -75,7 +76,7 @@ def test_stable_marriage():
     assert matches[s3] == s6
 
 
-def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_different_mean():
+def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_different_mean(p):
     new1 = Search([p(1500, 500, name='new1', ladder_games=1)])
     new2 = Search([p(1400, 500, name='new2', ladder_games=2)])
     old1 = Search([p(2300, 75, name='old1', ladder_games=100)])
@@ -89,7 +90,7 @@ def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_differ
     assert matches[old1] == old2
 
 
-def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_same_mean():
+def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_same_mean(p):
     # Assumes that both new players initialized with mean 1500 will be matched
     # as if they had mean 500
     new1 = Search([p(1500, 500, name='new1', ladder_games=0)])
@@ -105,7 +106,7 @@ def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_same_m
     assert matches[old1] == old2
 
 
-def test_stable_marriage_better_than_greedy():
+def test_stable_marriage_better_than_greedy(p):
     s1 = Search([p(2300, 64, name='p1')])
     s2 = Search([p(2000, 64, name='p2')])
     s3 = Search([p(2100, 64, name='p3')])
@@ -129,7 +130,7 @@ def test_stable_marriage_better_than_greedy():
     assert matches[s4] == s6 # quality: 0.82
 
 
-def test_stable_marriage_unmatch():
+def test_stable_marriage_unmatch(p):
     s1 = Search([p(503, 64, name='p1')])
     s2 = Search([p(504, 64, name='p2')])
     s3 = Search([p(504, 64, name='p3')])
@@ -143,7 +144,7 @@ def test_stable_marriage_unmatch():
     assert matches[s2] == s3  # quality: 0.96623
 
 
-def test_random_newbie_matching_is_symmetric():
+def test_random_newbie_matching_is_symmetric(p):
     s1 = Search([p(1000, 500, name='p1', ladder_games=5)])
     s2 = Search([p(1200, 500, name='p2', ladder_games=5)])
     s3 = Search([p(900, 500, name='p3', ladder_games=5)])
@@ -159,7 +160,7 @@ def test_random_newbie_matching_is_symmetric():
         assert matches[opponent] == search
 
 
-def test_newbies_are_forcefully_matched_with_newbies():
+def test_newbies_are_forcefully_matched_with_newbies(p):
     newbie1 = Search([p(0, 500, ladder_games=9)])
     newbie2 = Search([p(1500, 500, ladder_games=9)])
     pro = Search([p(1500, 10, ladder_games=100)])
@@ -171,7 +172,7 @@ def test_newbies_are_forcefully_matched_with_newbies():
     assert matches[newbie2] == newbie1
 
 
-def test_unmatched_newbies_forcefully_match_pros():
+def test_unmatched_newbies_forcefully_match_pros(p):
     newbie = Search([p(1500, 500, ladder_games=0)])
     pro = Search([p(1400, 10, ladder_games=100)])
 
@@ -181,7 +182,7 @@ def test_unmatched_newbies_forcefully_match_pros():
     assert len(matches) == 2
 
 
-def test_unmatched_newbies_do_notforcefully_match_top_players():
+def test_unmatched_newbies_do_notforcefully_match_top_players(p):
     newbie = Search([p(1500, 500, ladder_games=0)])
     top_player = Search([p(2500, 10, ladder_games=100)])
 
@@ -191,7 +192,7 @@ def test_unmatched_newbies_do_notforcefully_match_top_players():
     assert len(matches) == 0
 
 
-def test_unmatched_newbies_do_not_forcefully_match_teams():
+def test_unmatched_newbies_do_not_forcefully_match_teams(p):
     newbie = Search([p(1500, 500, ladder_games=0)])
     team = Search([p(1500, 100), p(1500, 100)])
 
@@ -201,7 +202,7 @@ def test_unmatched_newbies_do_not_forcefully_match_teams():
     assert len(matches) == 0
 
 
-def unmatched_newbie_teams_do_not_forcefully_match_pros():
+def unmatched_newbie_teams_do_not_forcefully_match_pros(p):
     newbie_team = Search([
         p(1500, 500, ladder_games=0),
         p(1500, 500, ladder_games=0)
@@ -214,7 +215,7 @@ def unmatched_newbie_teams_do_not_forcefully_match_pros():
     assert len(matches) == 0
 
 
-def test_odd_number_of_unmatched_newbies():
+def test_odd_number_of_unmatched_newbies(p):
     newbie1 = Search([p(-250, 500, ladder_games=9)])
     newbie2 = Search([p(750, 500, ladder_games=9)])
     newbie3 = Search([p(1500, 500, ladder_games=9)])
@@ -225,7 +226,7 @@ def test_odd_number_of_unmatched_newbies():
 
     assert len(matches) == 4
 
-def test_matchmaker():
+def test_matchmaker(p):
     newbie_that_matches1 = Search([p(1450, 500, ladder_games=1)])
     newbie_that_matches2 = Search([p(1550, 500, ladder_games=1)])
     newbie_force_matched = Search([p(200, 400, ladder_games=9)])

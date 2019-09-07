@@ -1,32 +1,33 @@
 from aiomysql.sa import create_engine
 
-engine = None
 
+class FAFDatabase:
+    def __init__(self, loop):
+        self._loop = loop
+        self.engine = None
 
-def set_engine(engine_):
-    """
-    Set the globally used engine to the given argument
-    """
-    global engine
-    engine = engine_
+    async def connect(self, host='localhost', port=3306, user='root',
+                      password='', db='faf_test', minsize=1, maxsize=1,
+                      echo=True):
+        if self.engine is not None:
+            raise ValueError("DB is already connected!")
+        self.engine = await create_engine(
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            db=db,
+            autocommit=True,
+            loop=self._loop,
+            minsize=minsize,
+            maxsize=maxsize,
+            echo=echo
+        )
 
+    async def close(self):
+        if self.engine is None:
+            return
 
-async def connect_engine(
-    loop, host='localhost', port=3306, user='root', password='', db='faf_test',
-    minsize=1, maxsize=1, echo=True
-):
-    engine = await create_engine(
-        host=host,
-        port=port,
-        user=user,
-        password=password,
-        db=db,
-        autocommit=True,
-        loop=loop,
-        minsize=minsize,
-        maxsize=maxsize,
-        echo=echo
-    )
-
-    set_engine(engine)
-    return engine
+        self.engine.close()
+        await self.engine.wait_closed()
+        self.engine = None

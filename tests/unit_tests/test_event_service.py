@@ -4,7 +4,9 @@ import pytest
 
 from server.api.api_accessor import ApiAccessor
 from server.stats.event_service import EventService
-from tests import CoroMock
+from asynctest import CoroutineMock
+
+pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture()
@@ -38,13 +40,13 @@ async def test_fill_queue(service: EventService):
 
 
 async def test_api_broken(service: EventService):
-    service.api_accessor.update_events = CoroMock(return_value=(500, None))
+    service.api_accessor.update_events = CoroutineMock(return_value=(500, None))
     result = await service.execute_batch_update(42, create_queue())
     assert result is None
 
 
 async def test_api_broken_2(service: EventService):
-    service.api_accessor.update_events = CoroMock(side_effect=ConnectionError())
+    service.api_accessor.update_events = CoroutineMock(side_effect=ConnectionError())
     result = await service.execute_batch_update(42, create_queue())
     assert result is None
 
@@ -60,7 +62,7 @@ async def test_record_multiple(service: EventService):
 
     queue = create_queue()
 
-    service.api_accessor.update_events = CoroMock(return_value=(200, content))
+    service.api_accessor.update_events = CoroutineMock(return_value=(200, content))
     result = await service.execute_batch_update(42, queue)
 
     events_data = []
