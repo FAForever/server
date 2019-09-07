@@ -11,7 +11,6 @@ name = "pypi"
 [packages]
 typing = "*"
 aiohttp = "*"
-aiomysql = "*"
 aiomeasures = "*"
 docopt = "*"
 semver = "*"
@@ -22,6 +21,7 @@ oauthlib = "*"
 sqlalchemy = "*"
 twilio = "*"
 humanize = "*"
+aiomysql = {editable = true, git = "https://github.com/aio-libs/aiomysql"}
 
 [dev-packages]
 pytest = "*"
