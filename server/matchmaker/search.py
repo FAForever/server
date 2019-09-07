@@ -77,7 +77,7 @@ class Search:
         ratings = []
         for player, rating in zip(self.players, self.raw_ratings):
             # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
-            if self._is_single_ladder_newbie(player):
+            if self._is_ladder_newbie(player):
                 rating = self.adjusted_rating(player)
             ratings.append(rating)
         return ratings

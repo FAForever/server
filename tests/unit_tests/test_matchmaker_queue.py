@@ -37,13 +37,13 @@ def matchmaker_players_all_match(player_factory):
            player_factory('Rhiza', player_id=5, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
 
 
-def test_is_ladder_newbie(matchmaker_players):
+async def test_is_ladder_newbie(matchmaker_players):
     pro, _, _, _, _, newbie = matchmaker_players
     assert Search._is_ladder_newbie(pro) is False
     assert Search._is_ladder_newbie(newbie)
 
 
-def test_is_single_newbie(matchmaker_players):
+async def test_is_single_newbie(matchmaker_players):
     pro, _, _, _, _, newbie = matchmaker_players
 
     single_newbie = Search([newbie])
@@ -62,8 +62,8 @@ def test_is_single_newbie(matchmaker_players):
 async def test_newbies_have_adjusted_rating(matchmaker_players):
     pro, _, _, _, _, newbie = matchmaker_players
     s1, s6 = Search([pro]), Search([newbie])
-    assert s1.ratings[0] == s1.ratings[RatingType.LADDER_1V1]
-    assert s6.ratings[0] != p6.ratings[RatingType.LADDER_1V1]
+    assert s1.ratings[0] == pro.ratings[RatingType.LADDER_1V1]
+    assert s6.ratings[0] != newbie.ratings[RatingType.LADDER_1V1]
 
 
 async def test_search_threshold(matchmaker_players):
