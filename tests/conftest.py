@@ -97,7 +97,7 @@ def _database(request, event_loop):
 def test_data(global_database):
     async def load_data():
         with open('tests/data/test-data.sql') as f:
-            async with global_database.engine.acquire() as conn:
+            async with global_database.acquire() as conn:
                 await conn.execute(f.read())
 
     asyncio.get_event_loop().run_until_complete(load_data())

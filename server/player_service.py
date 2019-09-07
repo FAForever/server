@@ -56,7 +56,7 @@ class PlayerService:
         self._dirty_players = set()
 
     async def fetch_player_data(self, player):
-        async with self._db.engine.acquire() as conn:
+        async with self._db.acquire() as conn:
             sql = select([
                 avatars_list.c.url,
                 avatars_list.c.tooltip,
@@ -123,7 +123,7 @@ class PlayerService:
         Update rarely-changing data, such as the admin list and the list of users exempt from the
         uniqueid check.
         """
-        async with self._db.engine.acquire() as conn:
+        async with self._db.acquire() as conn:
             # Admins/mods
             result = await conn.execute(
                 "SELECT `user_id`, `group` FROM lobby_admin"

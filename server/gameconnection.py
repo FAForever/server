@@ -213,7 +213,7 @@ class GameConnection(GpgNetServerProtocol):
         elif mode == "uids":
             uids = str(args).split()
             self.game.mods = {uid: "Unknown sim mod" for uid in uids}
-            async with self._db.engine.acquire() as conn:
+            async with self._db.acquire() as conn:
                 result = await conn.execute(
                     text("SELECT `uid`, `name` from `table_mod` WHERE `uid` in :ids"),
                     ids=tuple(uids))
@@ -269,7 +269,7 @@ class GameConnection(GpgNetServerProtocol):
             return
 
         secondary, delta = int(secondary), str(delta)
-        async with self._db.engine.acquire() as conn:
+        async with self._db.acquire() as conn:
             # FIXME: Resolve used map earlier than this
             result = await conn.execute(
                 "SELECT `id` FROM `coop_map` WHERE `filename` = %s",
@@ -304,7 +304,7 @@ class GameConnection(GpgNetServerProtocol):
             :param teamkiller_name: teamkiller nickname - Used as a failsafe in case ID is wrong
         """
                 
-        async with self._db.engine.acquire() as conn:
+        async with self._db.acquire() as conn:
             """
                 Sometime the game sends a wrong ID - but a correct player name
                 We need to make sure the player ID is correct before pursuing
@@ -380,7 +380,7 @@ class GameConnection(GpgNetServerProtocol):
             self._logger.debug("Ignoring teamkill for AI player")
             return
 
-        async with self._db.engine.acquire() as conn:
+        async with self._db.acquire() as conn:
             await conn.execute(
                 """ INSERT INTO `teamkills` (`teamkiller`, `victim`, `game_id`, `gametime`)
                     VALUES (%s, %s, %s, %s)""",
@@ -436,7 +436,7 @@ class GameConnection(GpgNetServerProtocol):
             await self.game.launch()
 
             if len(self.game.mods.keys()) > 0:
-                async with self._db.engine.acquire() as conn:
+                async with self._db.acquire() as conn:
                     uids = list(self.game.mods.keys())
                     await conn.execute(text(
                         """ UPDATE mod_stats s JOIN mod_version v ON v.mod_id = s.mod_id
