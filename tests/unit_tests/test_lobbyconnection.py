@@ -438,6 +438,17 @@ async def test_command_admin_closelobby_with_ban_but_already_banned(mocker, lobb
     lobbyconnection.player_service = {1: player, banme.id: banme}
     lobbyconnection._authenticated = True
 
+    await lobbyconnection.on_message_received({
+        'command': 'admin',
+        'action': 'closelobby',
+        'user_id': banme.id,
+        'ban': {
+            'reason': 'Unit test',
+            'duration': 2,
+            'period': 'DAY'
+        }
+    })
+
     async with database.acquire() as conn:
         result = await conn.execute(select([ban.c.id]).where(ban.c.player_id == banme.id))
         previous_ban = await result.fetchone()

@@ -20,7 +20,7 @@ from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
 from server.rating import RatingType
 from server.db import FAFDatabase
-from tests.utils import EventLoopClockAdvancer
+from tests.utils import MockDatabase
 
 from asynctest import CoroutineMock
 
@@ -61,19 +61,19 @@ def mock_database(database):
 
 @pytest.fixture
 def database(request, event_loop):
-    return _database(request, event_loop)
+    return _database(request, event_loop, True)
 
 
 @pytest.fixture(scope='session', autouse=True)
 def global_database(request):
-    return _database(request, asyncio.get_event_loop())
+    return _database(request, asyncio.get_event_loop(), False)
 
 
-def _database(request, event_loop):
+def _database(request, event_loop, is_local):
     def opt(val):
         return request.config.getoption(val)
     host, user, pw, db, port = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt('--mysql_database'), opt('--mysql_port')
-    fdb = FAFDatabase(event_loop)
+    fdb = FAFDatabase(event_loop) if not is_local else MockDatabase(event_loop)
 
     db_fut = event_loop.create_task(
         fdb.connect(
