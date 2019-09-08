@@ -23,21 +23,18 @@ pytestmark = pytest.mark.asyncio
 def game(event_loop, database, game_service, game_stats_service):
     game = Game(42, database, game_service, game_stats_service)
     yield game
-    event_loop.run_until_complete(game.clear_data())
 
 
 @pytest.yield_fixture
 def coop_game(event_loop, database, game_service, game_stats_service):
     game = CoopGame(42, database, game_service, game_stats_service)
     yield game
-    event_loop.run_until_complete(game.clear_data())
 
 
 @pytest.yield_fixture
 def custom_game(event_loop, database, game_service, game_stats_service):
     game = CustomGame(42, database, game_service, game_stats_service)
     yield game
-    event_loop.run_until_complete(game.clear_data())
 
 
 async def test_initialization(game: Game):
@@ -230,7 +227,6 @@ async def test_game_end_when_no_more_connections(game: Game, mock_game_connectio
 
 
 async def test_game_sim_ends_when_no_more_connections(game: Game, players):
-    await game.clear_data()
     game.state = GameState.LOBBY
     host_conn = add_connected_player(game, players.hosting)
     join_conn = add_connected_player(game, players.joining)
@@ -244,7 +240,6 @@ async def test_game_sim_ends_when_no_more_connections(game: Game, players):
 
 
 async def test_game_sim_ends_when_connections_ended_sim(game: Game, players):
-    await game.clear_data()
     game.state = GameState.LOBBY
     host_conn = add_connected_player(game, players.hosting)
     join_conn = add_connected_player(game, players.joining)
@@ -287,7 +282,6 @@ async def test_clear_slot(game: Game, mock_game_connection: GameConnection,
 
 
 async def test_game_launch_freezes_players(game: Game, players):
-    await game.clear_data()
     game.state = GameState.LOBBY
     host_conn = add_connected_player(game, players.hosting)
     game.host = players.hosting
@@ -346,7 +340,6 @@ async def test_game_not_ends_in_unilatery_agreed_draw(game: Game, players,
 
 
 async def test_game_is_invalid_due_to_desyncs(game: Game, players):
-    await game.clear_data()
     game.state = GameState.LOBBY
     add_connected_players(game, [players.hosting, players.joining])
     game.host = players.hosting
@@ -359,8 +352,6 @@ async def test_game_is_invalid_due_to_desyncs(game: Game, players):
 
 
 async def test_compute_rating_computes_global_ratings(game: Game, players):
-    await game.clear_data()
-
     game.state = GameState.LOBBY
     players.hosting.ratings[RatingType.GLOBAL] = Rating(1500, 250)
     players.joining.ratings[RatingType.GLOBAL] = Rating(1500, 250)
@@ -376,8 +367,6 @@ async def test_compute_rating_computes_global_ratings(game: Game, players):
 
 
 async def test_compute_rating_computes_ladder_ratings(game: Game, players):
-    await game.clear_data()
-
     game.state = GameState.LOBBY
     players.hosting.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
@@ -393,8 +382,6 @@ async def test_compute_rating_computes_ladder_ratings(game: Game, players):
 
 
 async def test_compute_rating_balanced_teamgame(game: Game, player_factory):
-    await game.clear_data()
-
     game.state = GameState.LOBBY
     players = [
         (player_factory(**info), result, team) for info, result, team in [
@@ -447,7 +434,6 @@ async def test_on_game_end_does_not_call_rate_game_for_single_player(game):
 
 async def test_on_game_end_calls_rate_game_with_two_players(game,
                                                             game_add_players):
-    await game.clear_data()
     game.rate_game = CoroutineMock()
     game.state = GameState.LOBBY
     game_add_players(game, 2)
@@ -466,7 +452,6 @@ async def test_on_game_end_calls_rate_game_with_two_players(game,
 
 
 async def test_name_sanitization(game):
-    await game.clear_data()
     game.state = GameState.LOBBY
     game.name = game.sanitize_name("卓☻иAâé~<1000")
     try:
@@ -478,8 +463,6 @@ async def test_name_sanitization(game):
 
 
 async def test_to_dict(game, player_factory):
-    await game.clear_data()
-
     game.state = GameState.LOBBY
     players = [
         (player_factory(**info), result, team) for info, result, team in [
@@ -522,7 +505,6 @@ async def test_to_dict(game, player_factory):
 
 async def test_persist_results_not_called_with_one_player(game,
                                                           player_factory):
-    await game.clear_data()
     game.persist_results = CoroutineMock()
 
     game.state = GameState.LOBBY
@@ -556,7 +538,6 @@ async def test_persist_results_not_called_with_no_results(game,
 
 
 async def test_persist_results_called_with_two_players(game, game_add_players):
-    await game.clear_data()
     game.state = GameState.LOBBY
     game_add_players(game, 2)
     await game.launch()
@@ -572,7 +553,6 @@ async def test_persist_results_called_with_two_players(game, game_add_players):
 
 
 async def test_persist_results_called_for_unranked(game, game_add_players):
-    await game.clear_data()
     game.state = GameState.LOBBY
     game_add_players(game, 2)
     await game.launch()
@@ -689,8 +669,6 @@ async def test_players_exclude_observers(game: Game, game_add_players,
 
 
 async def test_game_outcomes(game: Game, players):
-    await game.clear_data()
-
     game.state = GameState.LOBBY
     players.hosting.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
@@ -708,8 +686,6 @@ async def test_game_outcomes(game: Game, players):
 
 
 async def test_game_outcomes_no_results(game: Game, players):
-    await game.clear_data()
-
     game.state = GameState.LOBBY
     players.hosting.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
@@ -725,8 +701,6 @@ async def test_game_outcomes_no_results(game: Game, players):
 
 
 async def test_game_outcomes_conflicting(game: Game, players):
-    await game.clear_data()
-
     game.state = GameState.LOBBY
     players.hosting.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)

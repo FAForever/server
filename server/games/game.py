@@ -527,15 +527,6 @@ class Game:
                 "SET `score`=%s, `scoreTime`=NOW() "
                 "WHERE `gameId`=%s AND `playerId`=%s", rows)
 
-    async def clear_data(self):
-        async with self._db.acquire() as conn:
-            await conn.execute(
-                "DELETE FROM game_player_stats "
-                "WHERE gameId=%s", (self.id,))
-            await conn.execute(
-                "DELETE FROM game_stats "
-                "WHERE id=%s", (self.id,))
-
     async def persist_rating_change_stats(self, rating_groups, rating=RatingType.GLOBAL):
         """
         Persist computed ratings to the respective players' selected rating
