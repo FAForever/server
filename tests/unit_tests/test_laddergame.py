@@ -66,11 +66,6 @@ async def test_is_winner_on_draw(laddergame, players):
 
 
 async def test_rate_game(laddergame: LadderGame, database, game_add_players):
-    async with database.acquire() as conn:
-        # TODO remove as soon as we have isolated tests (transactions)
-        await conn.execute("DELETE FROM game_player_stats WHERE gameId = %s", laddergame.id)
-        await conn.execute("DELETE FROM game_stats WHERE id = %s", laddergame.id)
-
     laddergame.state = GameState.LOBBY
     players = game_add_players(laddergame, 2)
     laddergame.set_player_option(players[0].id, 'Team', 1)
@@ -105,11 +100,6 @@ async def test_rate_game(laddergame: LadderGame, database, game_add_players):
 
 async def test_persist_rating_victory(laddergame: LadderGame, database,
                                       game_add_players):
-    async with database.acquire() as conn:
-        # TODO remove as soon as we have isolated tests (transactions)
-        await conn.execute("DELETE FROM game_player_stats WHERE gameId = %s", laddergame.id)
-        await conn.execute("DELETE FROM game_stats WHERE id = %s", laddergame.id)
-
     laddergame.state = GameState.LOBBY
     players = game_add_players(laddergame, 2)
     laddergame.set_player_option(players[0].id, 'Team', 1)

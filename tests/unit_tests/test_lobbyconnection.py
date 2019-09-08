@@ -486,10 +486,6 @@ async def test_command_admin_closelobby_with_ban_duration_no_period(mocker, lobb
     lobbyconnection.player_service = {1: player, banme.id: banme}
     lobbyconnection._authenticated = True
 
-    # Clearing database of previous unwanted bans
-    async with database.acquire() as conn:
-        await conn.execute(ban.delete().where(ban.c.player_id == banme.id))
-
     mocker.patch('server.lobbyconnection.func.now', return_value=text('FROM_UNIXTIME(1000)'))
     await lobbyconnection.on_message_received({
         'command': 'admin',
