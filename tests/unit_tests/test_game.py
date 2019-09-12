@@ -6,8 +6,9 @@ from unittest import mock
 import pytest
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import CoopGame, CustomGame
-from server.games.game import (Game, GameError, GameOutcome, GameState,
-                               ValidityState, Victory, VisibilityState)
+from server.games.game import (Game, GameError, GameState, ValidityState,
+                               Victory, VisibilityState)
+from server.games.game_results import GameOutcome
 from server.rating import RatingType
 from asynctest import CoroutineMock
 from tests.unit_tests.conftest import (add_connected_player,
@@ -414,12 +415,12 @@ async def test_game_get_army_result_takes_most_reported_result(game,
     await game.add_result(0, 0, 'defeat', 0)
     await game.add_result(0, 0, 'victory', 0)
 
-    assert game.get_army_result(players[0]) == 'defeat'
+    assert game.get_army_result(players[0]) == GameOutcome.DEFEAT
 
     await game.add_result(0, 0, 'victory', 0)
     await game.add_result(0, 0, 'victory', 0)
 
-    assert game.get_army_result(players[0]) == 'victory'
+    assert game.get_army_result(players[0]) == GameOutcome.VICTORY
 
 
 async def test_on_game_end_does_not_call_rate_game_for_single_player(game):
@@ -696,8 +697,8 @@ async def test_game_outcomes_no_results(game: Game, players):
 
     host_outcome = game.outcome(players.hosting)
     guest_outcome = game.outcome(players.joining)
-    assert host_outcome is None
-    assert guest_outcome is None
+    assert host_outcome is GameOutcome.UNKNOWN
+    assert guest_outcome is GameOutcome.UNKNOWN
 
 
 async def test_game_outcomes_conflicting(game: Game, players):
@@ -715,8 +716,8 @@ async def test_game_outcomes_conflicting(game: Game, players):
 
     host_outcome = game.outcome(players.hosting)
     guest_outcome = game.outcome(players.joining)
-    assert host_outcome is None
-    assert guest_outcome is None
+    assert host_outcome is GameOutcome.UNKNOWN
+    assert guest_outcome is GameOutcome.UNKNOWN
 
 
 async def test_victory_conditions():

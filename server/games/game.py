@@ -13,6 +13,7 @@ from trueskill import Rating
 from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
 from server.rating import RatingType
+from server.games.game_results import GameOutcome, GameResult, GameResults
 
 FFA_TEAM = 1
 
@@ -103,28 +104,6 @@ class ValidityState(Enum):
     OTHER_UNRANK = 24
 
 
-@unique
-class GameOutcome(Enum):
-    VICTORY = 1
-    DEFEAT = 2
-    DRAW = 3
-    MUTUAL_DRAW = 4
-
-    @staticmethod
-    def from_string(value: str) -> Optional["GameOutcome"]:
-        """
-        :param value: The string to convert from
-
-        :return: VisibilityState or None if the string is not valid
-        """
-        return {
-            "victory": GameOutcome.VICTORY,
-            "defeat": GameOutcome.DEFEAT,
-            "draw": GameOutcome.DRAW,
-            "mutual_draw": GameOutcome.MUTUAL_DRAW
-        }.get(value)
-
-
 class GameError(Exception):
     pass
 
@@ -151,7 +130,7 @@ class Game:
         game_mode: str='faf'
     ):
         self._db = database
-        self._results = {}
+        self._results = GameResults()
         self._army_stats = None
         self._players_with_unsent_army_stats = []
         self._game_stats_service = game_stats_service
@@ -210,17 +189,7 @@ class Game:
 
     @property
     def is_mutually_agreed_draw(self) -> bool:
-        # Don't count non-reported games as mutual draws
-        if not len(self._results):
-            return False
-        for army in self.armies:
-            if army in self._results:
-                for result in self._results[army]:
-                    if result[1] != 'mutual_draw':
-                        return False
-            else:
-                return False
-        return True
+        return self._results.is_mutually_agreed_draw(self.armies)
 
     @property
     def players(self):
@@ -323,7 +292,7 @@ class Game:
         if not self._is_hosted.done():
             self._is_hosted.set_result(value)
 
-    def outcome(self, player: Player) -> Optional[GameOutcome]:
+    def outcome(self, player: Player) -> GameOutcome:
         """
         Determines what the game outcome was for a given player. Did the
         player win, lose, draw?
@@ -332,20 +301,9 @@ class Game:
         :return: GameOutcome or None if the outcome could not be determined
         """
         army = self.get_player_option(player.id, 'Army')
-        if army not in self._results:
-            return None
-
-        outcomes = set()
-        for result in self._results[army]:
-            outcomes.add(GameOutcome.from_string(result[1]))
-
-        # If there was exactly 1 outcome then return it
-        if len(outcomes) == 1:
-            return outcomes.pop()
-
-        # If there were no outcomes, or the outcomes do not agree then we can't
-        # determine the outcome
-        return None
+        if army is None:
+            return GameOutcome.UNKNOWN
+        return self._results.outcome(army)
 
     async def add_result(self, reporter: Union[Player, int], army: int, result_type: str, score: int):
         """
@@ -356,15 +314,19 @@ class Game:
         :param score: an arbitrary number assigned with the result
         :return:
         """
+
+        if isinstance(reporter, Player):
+            reporter = reporter.id
+
         if army not in self.armies:
             self._logger.debug(
-                "Ignoring results for unknown army %s: %s %s reported by: %s", army, result_type, score, reporter)
+                "Ignoring results for unknown army %s: %s %s reported by: %s",
+                army, result_type, score, reporter)
             return
 
-        if army not in self._results:
-            self._results[army] = []
+        result = GameResult(reporter, army, GameOutcome.from_message(result_type), score)
+        self._results.add(result)
         self._logger.info("%s reported result for army %s: %s %s", reporter, army, result_type, score)
-        self._results[army].append((reporter, result_type.lower(), score))
 
         await self._process_pending_army_stats()
 
@@ -375,7 +337,7 @@ class Game:
                 continue
 
             for result in self._results[army]:
-                if result[1] in ['defeat', 'victory', 'draw', 'mutual_draw']:
+                if result.outcome is not GameOutcome.UNKNOWN:
                     await self._process_army_stats_for_player(player)
                     break
 
@@ -461,7 +423,7 @@ class Game:
                     await self.mark_invalid(ValidityState.MUTUAL_DRAW)
                     return
 
-                if len(self._results) == 0:
+                if not self._results:
                     await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
                     return
 
@@ -483,18 +445,7 @@ class Game:
         Load results from the database
         :return:
         """
-        self._results = {}
-        async with self._db.acquire() as conn:
-            result = await conn.execute(
-                "SELECT `playerId`, `place`, `score` "
-                "FROM `game_player_stats` "
-                "WHERE `gameId`=%s", (self.id,))
-
-            async for row in result:
-                player_id, startspot, score = row[0], row[1], row[2]
-                # FIXME: Assertion about startspot == army
-                # FIXME: Reporter not retained in database
-                await self.add_result(0, startspot, 'score', score)
+        self._results = await GameResults.from_db(self._db, self.id)
 
     async def persist_results(self):
         """
@@ -562,7 +513,7 @@ class Game:
         table = f'{rating.value}_rating'
 
         if rating is RatingType.LADDER_1V1:
-            is_victory = self.outcome(player) == GameOutcome.VICTORY
+            is_victory = self.outcome(player) is GameOutcome.VICTORY
             await conn.execute(
                 "UPDATE ladder1v1_rating "
                 "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1, winGames = winGames + %s "
@@ -829,43 +780,14 @@ class Game:
                 "WHERE id = %s", (new_validity_state.value, self.id))
 
     def get_army_score(self, army):
-        """
-        Since we log multiple results from multiple sources, we have to pick one.
-
-        On conflict we try to pick the most frequently reported score. If there
-        are multiple scores with the same number of reports, we pick the greater
-        score.
-
-        TODO: Flag games with conflicting scores for manual review.
-        :param army index of army
-        :raise KeyError
-        :return:
-        """
-        scores: Dict[int, int] = Counter(
-            map(lambda res: res[2], self._results.get(army, []))
-        )
-
-        # There were no results
-        if not scores:
-            return 0
-
-        # All scores agreed
-        if len(scores) == 1:
-            return scores.popitem()[0]
-
-        # Return the highest score with the most votes
-        self._logger.info("Conflicting scores (%s) reported for game %s", scores, self)
-        score, _votes = max(scores.items(), key=lambda kv: kv[::-1])
-        return score
+        return self._results.score(army, self.id)
 
     def get_army_result(self, player):
-        results = self._results.get(self.get_player_option(player.id, 'Army'))
-        if not results:
+        army = self.get_player_option(player.id, 'Army')
+        if army is None:
             return None
 
-        most_reported_result = Counter(i[1] for i in results).most_common(1)[0]
-        outcome = most_reported_result[0]
-        return outcome
+        return self._results.result(army)
 
     def compute_rating(self, rating=RatingType.GLOBAL):
         """
