@@ -37,10 +37,33 @@ def matchmaker_players_all_match(player_factory):
            player_factory('Rhiza', player_id=5, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
 
 
-async def test_newbie_min_games(matchmaker_players):
-    p1, _, _, _, _, p6 = matchmaker_players
-    s1, s6 = Search([p1]), Search([p6])
-    assert s1.ratings[0] == p1.ratings[RatingType.LADDER_1V1] and s6.ratings[0] != p6.ratings[RatingType.LADDER_1V1]
+async def test_is_ladder_newbie(matchmaker_players):
+    pro, _, _, _, _, newbie = matchmaker_players
+    assert Search._is_ladder_newbie(pro) is False
+    assert Search._is_ladder_newbie(newbie)
+
+
+async def test_is_single_newbie(matchmaker_players):
+    pro, _, _, _, _, newbie = matchmaker_players
+
+    single_newbie = Search([newbie])
+    single_pro = Search([pro])
+    two_newbies = Search([newbie, newbie])
+    two_pros = Search([pro, pro])
+    two_mixed = Search([newbie, pro])
+
+    assert single_newbie.is_single_ladder_newbie()
+    assert single_pro.is_single_ladder_newbie() is False
+    assert two_newbies.is_single_ladder_newbie() == False
+    assert two_pros.is_single_ladder_newbie() == False
+    assert two_mixed.is_single_ladder_newbie() == False
+
+
+async def test_newbies_have_adjusted_rating(matchmaker_players):
+    pro, _, _, _, _, newbie = matchmaker_players
+    s1, s6 = Search([pro]), Search([newbie])
+    assert s1.ratings[0] == pro.ratings[RatingType.LADDER_1V1]
+    assert s6.ratings[0] != newbie.ratings[RatingType.LADDER_1V1]
 
 
 async def test_search_threshold(matchmaker_players):

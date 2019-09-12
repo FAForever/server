@@ -50,13 +50,34 @@ class Search:
                          + player.ladder_games * mean) / config.NEWBIE_MIN_GAMES
         return adjusted_mean, dev
 
+    @staticmethod
+    def _is_ladder_newbie(player: Player) -> bool:
+        return player.ladder_games <= config.NEWBIE_MIN_GAMES
+
+    def is_ladder1v1_search(self) -> bool:
+        return self.rating_type is RatingType.LADDER_1V1
+
+    def is_single_party(self) -> bool:
+        return len(self.players) == 1
+
+    def is_single_ladder_newbie(self) -> bool:
+        return (
+            self.is_single_party()
+            and self._is_ladder_newbie(self.players[0])
+            and self.is_ladder1v1_search()
+        )
+
+    def has_no_top_player(self) -> bool:
+        max_rating = max(map(lambda rating_tuple: rating_tuple[0], self.ratings))
+        return max_rating < config.TOP_PLAYER_MIN_RATING
+
+
     @property
     def ratings(self):
         ratings = []
         for player, rating in zip(self.players, self.raw_ratings):
             # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
-            if (player.ladder_games <= config.NEWBIE_MIN_GAMES
-                    and self.rating_type is RatingType.LADDER_1V1):
+            if self._is_ladder_newbie(player):
                 rating = self.adjusted_rating(player)
             ratings.append(rating)
         return ratings
@@ -165,13 +186,12 @@ class Search:
         self._logger.info("Matched %s with %s", self.players, other.players)
 
         for player, raw_rating in zip(self.players, self.raw_ratings):
-            ladder_games = player.ladder_games
-            if ladder_games <= config.NEWBIE_MIN_GAMES:
+            if self._is_ladder_newbie(player):
                 mean, dev = raw_rating
                 adjusted_mean = self.adjusted_rating(player)
                 self._logger.info('Adjusted mean rating for {player} with {ladder_games} games from {mean} to {adjusted_mean}'.format(
                     player=player,
-                    ladder_games=ladder_games,
+                    ladder_games=player.ladder_games,
                     mean=mean,
                     adjusted_mean=adjusted_mean
                 ))
@@ -194,6 +214,5 @@ class Search:
 
     def __str__(self):
         return "Search({}, {}, {})".format(self.players, self.match_threshold, self.search_expansion)
-
 
 Match = Tuple[Search, Search]
