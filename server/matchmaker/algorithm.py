@@ -49,7 +49,7 @@ class StableMarriage(MatchmakingPolicy):
 
         for i in range(SM_NUM_TO_RANK):
             self._logger.debug(
-                "Round %i currently %i matches", i,
+                "Round %i of stable marriage, currently %i matches", i,
                 len(self.matches) // 2
             )
             # Do one round of proposals
@@ -182,12 +182,12 @@ class _MatchingGraph:
 
             if search.matches_with(other):
                 _MatchingGraph._logger.debug(
-                    f"{quality_log_string} Will be considered during matchmaking."
+                    f"{quality_log_string} Will be considered during stable marriage."
                 )
                 return True
             else:
                 _MatchingGraph._logger.debug(
-                    f"{quality_log_string} Will be discarded."
+                    f"{quality_log_string} Will be discarded for stable marriage."
                 )
                 return False
 
