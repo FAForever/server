@@ -27,13 +27,13 @@ class MatchmakingPolicy(object):
         self.matches: Dict[Search, Search] = {}
 
     def _match(self, s1: Search, s2: Search):
-        self._logger.debug("Matching %s and %s", s1, s2)
+        self._logger.debug(f"Matching %s and %s ({self.__class__})", s1, s2)
         self.matches[s1] = s2
         self.matches[s2] = s1
 
     def _unmatch(self, s1: Search):
         s2 = self.matches[s1]
-        self._logger.debug("Unmatching %s and %s", s1, s2)
+        self._logger.debug(f"Unmatching %s and %s ({self.__class__})", s1, s2)
         assert self.matches[s2] == s1
         del self.matches[s1]
         del self.matches[s2]
@@ -128,17 +128,20 @@ class RandomlyMatchNewbies(MatchmakingPolicy):
         return self.matches
 
 
+@with_logger
 class Matchmaker(object):
     def __init__(self, searches: List[Search]):
         self.searches = searches
         self.matches: Dict[Search, Search] = {}
 
     def find(self) -> List[Match]:
+        self._logger.debug("Matching with stable marriage...")
         self.matches.update(StableMarriage(self.searches).find())
 
         remaining_searches = [
             search for search in self.searches if search not in self.matches
         ]
+        self._logger.debug("Matching randomly for remaining newbies...")
         self.matches.update(RandomlyMatchNewbies(remaining_searches).find())
 
         return self._remove_duplicates()
