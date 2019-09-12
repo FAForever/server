@@ -7,6 +7,7 @@ from server.gameconnection import GameConnection, GameConnectionState
 from server.games import Game
 from server.geoip_service import GeoIpService
 from server.ladder_service import LadderService
+import asynctest
 from asynctest import CoroutineMock
 
 
@@ -44,7 +45,7 @@ def mock_game_connection():
 
 
 def make_mock_game_connection(state=GameConnectionState.INITIALIZING, player=None):
-    gc = mock.create_autospec(spec=GameConnection)
+    gc = asynctest.create_autospec(spec=GameConnection)
     gc.state = state
     gc.player = player
     gc.finished_sim = False

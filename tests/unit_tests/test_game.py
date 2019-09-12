@@ -306,7 +306,7 @@ async def test_game_teams_represents_active_teams(game: Game, players):
 
 
 async def test_invalid_army_not_add_result(game: Game, players):
-    await game.add_result(players.hosting, 99, "win", 10)
+    await game.add_result(players.hosting.id, 99, "win", 10)
 
     assert 99 not in game._results
 
@@ -318,8 +318,8 @@ async def test_game_ends_in_mutually_agreed_draw(game: Game, game_add_players):
     await game.launch()
     game.launched_at = time.time()-60*60
 
-    await game.add_result(players[0], 0, 'mutual_draw', 0)
-    await game.add_result(players[1], 1, 'mutual_draw', 0)
+    await game.add_result(players[0].id, 0, 'mutual_draw', 0)
+    await game.add_result(players[1].id, 1, 'mutual_draw', 0)
     await game.on_game_end()
 
     assert game.validity is ValidityState.MUTUAL_DRAW
@@ -333,8 +333,8 @@ async def test_game_not_ends_in_unilatery_agreed_draw(game: Game, players,
     await game.launch()
     game.launched_at = time.time()-60*60
 
-    await game.add_result(players.hosting, 0, 'mutual_draw', 0)
-    await game.add_result(players.joining, 1, 'victory', 10)
+    await game.add_result(players.hosting.id, 0, 'mutual_draw', 0)
+    await game.add_result(players.joining.id, 1, 'victory', 10)
     await game.on_game_end()
 
     assert game.validity is not ValidityState.MUTUAL_DRAW
@@ -358,8 +358,8 @@ async def test_compute_rating_computes_global_ratings(game: Game, players):
     players.joining.ratings[RatingType.GLOBAL] = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
-    await game.add_result(players.hosting, 0, 'victory', 1)
-    await game.add_result(players.joining, 1, 'defeat', 0)
+    await game.add_result(players.hosting.id, 0, 'victory', 1)
+    await game.add_result(players.joining.id, 1, 'defeat', 0)
     game.set_player_option(players.hosting.id, 'Team', 2)
     game.set_player_option(players.joining.id, 'Team', 3)
     groups = game.compute_rating()
@@ -373,8 +373,8 @@ async def test_compute_rating_computes_ladder_ratings(game: Game, players):
     players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
-    await game.add_result(players.hosting, 0, 'victory', 1)
-    await game.add_result(players.joining, 1, 'defeat', 0)
+    await game.add_result(players.hosting.id, 0, 'victory', 1)
+    await game.add_result(players.joining.id, 1, 'defeat', 0)
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 1)
     groups = game.compute_rating(rating=RatingType.LADDER_1V1)
@@ -675,8 +675,8 @@ async def test_game_outcomes(game: Game, players):
     players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
-    await game.add_result(players.hosting, 0, 'victory', 1)
-    await game.add_result(players.joining, 1, 'defeat', 0)
+    await game.add_result(players.hosting.id, 0, 'victory', 1)
+    await game.add_result(players.joining.id, 1, 'defeat', 0)
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 1)
 
@@ -707,10 +707,10 @@ async def test_game_outcomes_conflicting(game: Game, players):
     players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
-    await game.add_result(players.hosting, 0, 'victory', 1)
-    await game.add_result(players.joining, 1, 'victory', 0)
-    await game.add_result(players.hosting, 0, 'defeat', 1)
-    await game.add_result(players.joining, 1, 'defeat', 0)
+    await game.add_result(players.hosting.id, 0, 'victory', 1)
+    await game.add_result(players.joining.id, 1, 'victory', 0)
+    await game.add_result(players.hosting.id, 0, 'defeat', 1)
+    await game.add_result(players.joining.id, 1, 'defeat', 0)
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 1)
 
