@@ -292,19 +292,6 @@ class Game:
         if not self._is_hosted.done():
             self._is_hosted.set_result(value)
 
-    def outcome(self, player: Player) -> GameOutcome:
-        """
-        Determines what the game outcome was for a given player. Did the
-        player win, lose, draw?
-
-        :param player: The player who's perspective we want
-        :return: GameOutcome or None if the outcome could not be determined
-        """
-        army = self.get_player_option(player.id, 'Army')
-        if army is None:
-            return GameOutcome.UNKNOWN
-        return self._results.outcome(army)
-
     async def add_result(self, reporter: int, army: int, result_type: str, score: int):
         """
         As computed by the game.
@@ -509,7 +496,7 @@ class Game:
         table = f'{rating.value}_rating'
 
         if rating is RatingType.LADDER_1V1:
-            is_victory = self.outcome(player) is GameOutcome.VICTORY
+            is_victory = self.get_army_result(player) is GameOutcome.VICTORY
             await conn.execute(
                 "UPDATE ladder1v1_rating "
                 "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1, winGames = winGames + %s "
@@ -781,9 +768,9 @@ class Game:
     def get_army_result(self, player):
         army = self.get_player_option(player.id, 'Army')
         if army is None:
-            return None
+            return GameOutcome.UNKNOWN
 
-        return self._results.result(army)
+        return self._results.outcome(army)
 
     def compute_rating(self, rating=RatingType.GLOBAL):
         """

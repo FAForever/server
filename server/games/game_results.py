@@ -71,13 +71,16 @@ class GameResults(Mapping):
 
     def outcome(self, army: int) -> GameOutcome:
         """
-        Determines what the game outcome was for a given army. Did the
-        army win, lose, draw?
+        Determines what the game outcome was for a given army. Returns the
+        outcome all players agree on, excluding players that reported an
+        unknown outcome. Reports unknown outcome if players disagree.
         """
         if army not in self:
             return GameOutcome.UNKNOWN
 
-        outcomes = set(r.outcome for r in self[army])
+        outcomes = set(r.outcome for r in self[army]
+                       if r.outcome is not GameOutcome.UNKNOWN)
+
         if len(outcomes) == 1:
             return outcomes.pop()
         else:
@@ -112,19 +115,6 @@ class GameResults(Mapping):
             return 1
         else:
             return 0
-
-    def result(self, army: int):
-        """
-        Return most frequently reported outcome.
-        FIXME: this is almost the same as 'outcome' method. Determine why and
-        fix it.
-        """
-        if army not in self:
-            return GameOutcome.UNKNOWN
-
-        most_common = Counter(i.outcome for i in self[army]).most_common(1)[0]
-        outcome = most_common[0]
-        return outcome
 
     # FIXME: Should we gather such methods in one class, or place them near
     # corresponding types?
