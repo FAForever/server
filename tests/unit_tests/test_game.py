@@ -411,6 +411,46 @@ async def test_compute_rating_balanced_teamgame(game: Game, player_factory):
             assert player in game.players
             assert new_rating != Rating(*player.ratings[RatingType.GLOBAL])
 
+@pytest.mark.xfail
+async def test_compute_rating_sum_of_scores_edge_case(game: Game, player_factory):
+    """
+    For certain scores, compute_rating was determining the winner incorrectly,
+    see issue <https://github.com/FAForever/server/issues/485>.
+    """
+    game.state = GameState.LOBBY
+    win_team = 2
+    lose_team = 3
+    players = [
+        (player_factory(**info), score, team) for info, score, team in [
+            (dict(login="1", player_id=1, global_rating=Rating(1500, 200)),   1, lose_team),
+            (dict(login="2", player_id=2, global_rating=Rating(1500, 200)),   1, lose_team),
+            (dict(login="3", player_id=3, global_rating=Rating(1500, 200)),   1, lose_team),
+            (dict(login="4", player_id=4, global_rating=Rating(1500, 200)), -10, lose_team),
+            (dict(login="5", player_id=5, global_rating=Rating(1500, 200)),  10, win_team),
+            (dict(login="6", player_id=6, global_rating=Rating(1500, 200)), -10, win_team),
+            (dict(login="7", player_id=7, global_rating=Rating(1500, 200)), -10, win_team),
+            (dict(login="8", player_id=8, global_rating=Rating(1500, 200)),   2, win_team),
+        ]
+    ]
+    add_connected_players(game, [player for player, _, _ in players])
+    for player, _, team in players:
+        game.set_player_option(player.id, 'Team', team)
+        game.set_player_option(player.id, 'Army', player.id - 1)
+    await game.launch()
+
+    for player, result, team in players:
+        outcome = 'victory' if team is win_team else 'defeat'
+        await game.add_result(player, player.id - 1, outcome, result)
+
+    result = game.compute_rating()
+    for team in result:
+        for player, new_rating in team.items():
+            old_rating = Rating(*player.ratings[RatingType.GLOBAL])
+            if team is win_team:
+                assert new_rating > old_rating
+            else:
+                assert new_rating < old_rating
+
 
 async def test_game_get_army_result_ignores_unknown_results(game,
                                                             game_add_players):
