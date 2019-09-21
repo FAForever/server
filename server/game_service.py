@@ -46,7 +46,7 @@ class GameService:
         self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
 
     async def initialise_game_counter(self):
-        async with self._db.engine.acquire() as conn:
+        async with self._db.acquire() as conn:
             # InnoDB, unusually, doesn't allow insertion of values greater than the next expected
             # value into an auto_increment field. We'd like to do that, because we no longer insert
             # games into the database when they don't start, so game ids aren't contiguous (as
@@ -67,7 +67,7 @@ class GameService:
         Loads from the database the mostly-constant things that it doesn't make sense to query every
         time we need, but which can in principle change over time.
         """
-        async with self._db.engine.acquire() as conn:
+        async with self._db.acquire() as conn:
             result = await conn.execute("SELECT `id`, `gamemod`, `name`, description, publish, `order` FROM game_featuredMods")
 
             async for row in result:

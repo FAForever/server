@@ -10,7 +10,7 @@ async def test_fetch_player_data(player_factory, player_service):
 
     await player_service.fetch_player_data(player)
     assert player.ratings[RatingType.GLOBAL] == (1200, 250)
-    assert player.numGames == 42
+    assert player.game_count[RatingType.GLOBAL] == 42
     assert player.ratings[RatingType.LADDER_1V1] == (1300, 400)
     assert player.clan == '123'
     assert player.avatar == {'url': 'http://content.faforever.com/faf/avatars/UEF.png', 'tooltip': 'UEF'}
@@ -32,7 +32,7 @@ async def test_fetch_player_data_no_avatar_or_clan(player_factory, player_servic
 
     await player_service.fetch_player_data(player)
     assert player.ratings[RatingType.GLOBAL] == (1500, 500)
-    assert player.numGames == 0
+    assert player.game_count[RatingType.GLOBAL] == 0
     assert player.ratings[RatingType.LADDER_1V1] == (1500, 500)
     assert player.clan is None
     assert player.avatar is None

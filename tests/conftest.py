@@ -20,7 +20,7 @@ from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
 from server.rating import RatingType
 from server.db import FAFDatabase
-from tests.utils import EventLoopClockAdvancer
+from tests.utils import MockDatabase
 
 from asynctest import CoroutineMock
 
@@ -61,19 +61,19 @@ def mock_database(database):
 
 @pytest.fixture
 def database(request, event_loop):
-    return _database(request, event_loop)
+    return _database(request, event_loop, True)
 
 
 @pytest.fixture(scope='session', autouse=True)
 def global_database(request):
-    return _database(request, asyncio.get_event_loop())
+    return _database(request, asyncio.get_event_loop(), False)
 
 
-def _database(request, event_loop):
+def _database(request, event_loop, is_local):
     def opt(val):
         return request.config.getoption(val)
     host, user, pw, db, port = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt('--mysql_database'), opt('--mysql_port')
-    fdb = FAFDatabase(event_loop)
+    fdb = FAFDatabase(event_loop) if not is_local else MockDatabase(event_loop)
 
     db_fut = event_loop.create_task(
         fdb.connect(
@@ -97,7 +97,7 @@ def _database(request, event_loop):
 def test_data(global_database):
     async def load_data():
         with open('tests/data/test-data.sql') as f:
-            async with global_database.engine.acquire() as conn:
+            async with global_database.acquire() as conn:
                 await conn.execute(f.read())
 
     asyncio.get_event_loop().run_until_complete(load_data())
@@ -145,14 +145,18 @@ def player_factory():
     from server.players import Player, PlayerState
 
     def make(state=PlayerState.IDLE, global_rating=None, ladder_rating=None,
-             **kwargs):
-        ratings = {
+             numGames=0, ladder_games=0, **kwargs):
+        ratings = {k: v for k, v in {
             RatingType.GLOBAL: global_rating,
             RatingType.LADDER_1V1: ladder_rating,
-        }
-        ratings = {k: v for k, v in ratings.items() if v is not None}
+        }.items() if v is not None}
 
-        p = Player(ratings=ratings, **kwargs)
+        games = {k: v for k, v in {
+            RatingType.GLOBAL: numGames,
+            RatingType.LADDER_1V1: ladder_games
+        }.items() if v is not None}
+
+        p = Player(ratings=ratings, game_count=games, **kwargs)
         p.state = state
         return p
 

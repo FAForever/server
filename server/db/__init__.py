@@ -24,6 +24,9 @@ class FAFDatabase:
             echo=echo
         )
 
+    def acquire(self):
+        return self.engine.acquire()
+
     async def close(self):
         if self.engine is None:
             return

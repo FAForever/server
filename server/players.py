@@ -1,7 +1,7 @@
 import weakref
 from enum import Enum, unique
 
-from server.rating import RatingType, PlayerRatings
+from server.rating import RatingType, RatingTypeMap, PlayerRatings
 from .factions import Faction
 
 
@@ -29,8 +29,7 @@ class Player:
         player_id: int = 0,
         ratings=None,
         clan=None,
-        num_games: int = 0,
-        ladder_games: int = 0,
+        game_count=None,
         permission_group: int = 0,
         lobby_connection: "LobbyConnection" = None
     ):
@@ -46,6 +45,10 @@ class Player:
         if ratings is not None:
             self.ratings.update(ratings)
 
+        self.game_count = RatingTypeMap(0)
+        if game_count is not None:
+            self.game_count.update(game_count)
+
         # social
         self.avatar = None
         self.clan = clan
@@ -56,9 +59,6 @@ class Player:
 
         self.admin = permission_group >= 2
         self.mod = permission_group >= 1
-
-        self.numGames = num_games
-        self.ladder_games = ladder_games
 
         self.state = PlayerState.IDLE
 
@@ -142,7 +142,7 @@ class Player:
                     ('login', self.login),
                     ('global_rating', self.ratings[RatingType.GLOBAL]),
                     ('ladder_rating', self.ratings[RatingType.LADDER_1V1]),
-                    ('number_of_games', self.numGames),
+                    ('number_of_games', self.game_count[RatingType.GLOBAL]),
                     ('avatar', self.avatar),
                     ('country', self.country),
                     ('clan', self.clan),

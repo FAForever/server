@@ -15,6 +15,7 @@ from server.lobbyconnection import ClientError, LobbyConnection
 from server.player_service import PlayerService
 from server.players import Player, PlayerState
 from server.protocol import QDataStreamProtocol
+from server.rating import RatingType
 from server.types import Address
 from sqlalchemy import and_, select, text
 from asynctest import CoroutineMock
@@ -199,7 +200,7 @@ async def test_command_game_join_calls_join_game(mocker,
         'command': 'game_launch',
         'mod': 'faf',
         'uid': 42,
-        'args': ['/numgames {}'.format(players.hosting.numGames)]
+        'args': ['/numgames {}'.format(players.hosting.game_count[RatingType.GLOBAL])]
     }
     mock_protocol.send_message.assert_called_with(expected_reply)
 
@@ -227,7 +228,7 @@ async def test_command_game_join_uid_as_str(mocker,
         'command': 'game_launch',
         'mod': 'faf',
         'uid': 42,
-        'args': ['/numgames {}'.format(players.hosting.numGames)]
+        'args': ['/numgames {}'.format(players.hosting.game_count[RatingType.GLOBAL])]
     }
     mock_protocol.send_message.assert_called_with(expected_reply)
 
@@ -417,7 +418,7 @@ async def test_command_admin_closelobby_with_ban(mocker, lobbyconnection, databa
                  .format(rule_link=config.RULE_LINK))
     )
 
-    async with database.engine.acquire() as conn:
+    async with database.acquire() as conn:
         result = await conn.execute(select([ban]).where(ban.c.player_id == banme.id))
 
         bans = [row['reason'] async for row in result]
@@ -437,7 +438,18 @@ async def test_command_admin_closelobby_with_ban_but_already_banned(mocker, lobb
     lobbyconnection.player_service = {1: player, banme.id: banme}
     lobbyconnection._authenticated = True
 
-    async with database.engine.acquire() as conn:
+    await lobbyconnection.on_message_received({
+        'command': 'admin',
+        'action': 'closelobby',
+        'user_id': banme.id,
+        'ban': {
+            'reason': 'Unit test',
+            'duration': 2,
+            'period': 'DAY'
+        }
+    })
+
+    async with database.acquire() as conn:
         result = await conn.execute(select([ban.c.id]).where(ban.c.player_id == banme.id))
         previous_ban = await result.fetchone()
 
@@ -453,7 +465,7 @@ async def test_command_admin_closelobby_with_ban_but_already_banned(mocker, lobb
         }
     })
 
-    async with database.engine.acquire() as conn:
+    async with database.acquire() as conn:
         result = await conn.execute(select([ban.c.id]).where(ban.c.player_id == banme.id))
 
         bans = [row['id'] async for row in result]
@@ -474,10 +486,6 @@ async def test_command_admin_closelobby_with_ban_duration_no_period(mocker, lobb
     lobbyconnection.player_service = {1: player, banme.id: banme}
     lobbyconnection._authenticated = True
 
-    # Clearing database of previous unwanted bans
-    async with database.engine.acquire() as conn:
-        await conn.execute(ban.delete().where(ban.c.player_id == banme.id))
-
     mocker.patch('server.lobbyconnection.func.now', return_value=text('FROM_UNIXTIME(1000)'))
     await lobbyconnection.on_message_received({
         'command': 'admin',
@@ -495,7 +503,7 @@ async def test_command_admin_closelobby_with_ban_duration_no_period(mocker, lobb
                  .format(rule_link=config.RULE_LINK))
     )
 
-    async with database.engine.acquire() as conn:
+    async with database.acquire() as conn:
         result = await conn.execute(select([ban.c.expires_at]).where(ban.c.player_id == banme.id))
 
         bans = [row['expires_at'] async for row in result]
@@ -531,7 +539,7 @@ async def test_command_admin_closelobby_with_ban_bad_period(mocker, lobbyconnect
         'text': "Period ') INJECTED!' is not allowed!"
     })
 
-    async with database.engine.acquire() as conn:
+    async with database.acquire() as conn:
         result = await conn.execute(select([ban]).where(ban.c.player_id == banme.id))
 
         bans = [row['reason'] async for row in result]
@@ -566,7 +574,7 @@ async def test_command_admin_closelobby_with_ban_injection(mocker, lobbyconnecti
         'text': "Period ') INJECTED!' is not allowed!"
     })
 
-    async with database.engine.acquire() as conn:
+    async with database.acquire() as conn:
         result = await conn.execute(select([ban]).where(ban.c.player_id == banme.id))
 
         bans = [row['reason'] async for row in result]
@@ -641,14 +649,14 @@ async def test_command_avatar_select(mocker, database, lobbyconnection: LobbyCon
         'avatar': "http://content.faforever.com/faf/avatars/qai2.png"
     })
 
-    async with database.engine.acquire() as conn:
+    async with database.acquire() as conn:
         result = await conn.execute("SELECT selected from avatars where idUser=2")
         row = await result.fetchone()
         assert row[0] == 1
 
 
 async def get_friends(player_id, database):
-    async with database.engine.acquire() as conn:
+    async with database.acquire() as conn:
         result = await conn.execute(
             select([friends_and_foes.c.subject_id]).where(
                 and_(
@@ -827,7 +835,7 @@ async def test_check_policy_conformity_fraudulent(lobbyconnection, policy_server
         lobbyconnection.abort.assert_called_once()
 
         # Check that the user has a ban entry in the database
-        async with database.engine.acquire() as conn:
+        async with database.acquire() as conn:
             result = await conn.execute(select([ban.c.reason]).where(
                 ban.c.player_id == player_id
             ))

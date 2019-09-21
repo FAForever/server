@@ -13,7 +13,6 @@ pytestmark = pytest.mark.asyncio
 def custom_game(event_loop, database, game_service, game_stats_service):
     game = CustomGame(42, database, game_service, game_stats_service)
     yield game
-    event_loop.run_until_complete(game.clear_data())
 
 
 async def test_rate_game_early_abort_no_enforce(

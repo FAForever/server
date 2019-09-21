@@ -208,7 +208,7 @@ class LadderService:
             return randomized_maps[0]
 
     async def get_ladder_history(self, player: Player, limit=3) -> List[int]:
-        async with self._db.engine.acquire() as conn:
+        async with self._db.acquire() as conn:
             query = select([
                 game_stats.c.mapId,
             ]).select_from(

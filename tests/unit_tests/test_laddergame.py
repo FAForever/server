@@ -66,11 +66,6 @@ async def test_is_winner_on_draw(laddergame, players):
 
 
 async def test_rate_game(laddergame: LadderGame, database, game_add_players):
-    async with database.engine.acquire() as conn:
-        # TODO remove as soon as we have isolated tests (transactions)
-        await conn.execute("DELETE FROM game_player_stats WHERE gameId = %s", laddergame.id)
-        await conn.execute("DELETE FROM game_stats WHERE id = %s", laddergame.id)
-
     laddergame.state = GameState.LOBBY
     players = game_add_players(laddergame, 2)
     laddergame.set_player_option(players[0].id, 'Team', 1)
@@ -88,7 +83,7 @@ async def test_rate_game(laddergame: LadderGame, database, game_add_players):
     assert players[0].ratings[RatingType.LADDER_1V1][0] > player_1_old_mean
     assert players[1].ratings[RatingType.LADDER_1V1][0] < player_2_old_mean
 
-    async with database.engine.acquire() as conn:
+    async with database.acquire() as conn:
         result = await conn.execute("SELECT mean, deviation, after_mean, after_deviation FROM game_player_stats WHERE gameid = %s", laddergame.id)
         rows = list(await result.fetchall())
 
@@ -105,17 +100,12 @@ async def test_rate_game(laddergame: LadderGame, database, game_add_players):
 
 async def test_persist_rating_victory(laddergame: LadderGame, database,
                                       game_add_players):
-    async with database.engine.acquire() as conn:
-        # TODO remove as soon as we have isolated tests (transactions)
-        await conn.execute("DELETE FROM game_player_stats WHERE gameId = %s", laddergame.id)
-        await conn.execute("DELETE FROM game_stats WHERE id = %s", laddergame.id)
-
     laddergame.state = GameState.LOBBY
     players = game_add_players(laddergame, 2)
     laddergame.set_player_option(players[0].id, 'Team', 1)
     laddergame.set_player_option(players[1].id, 'Team', 2)
 
-    async with database.engine.acquire() as conn:
+    async with database.acquire() as conn:
         result = await conn.execute(
             text("SELECT id, numGames, winGames FROM ladder1v1_rating WHERE id in :ids ORDER BY id"),
             ids=tuple([players[0].id, players[1].id])
@@ -130,7 +120,7 @@ async def test_persist_rating_victory(laddergame: LadderGame, database,
 
     assert laddergame.validity is ValidityState.VALID
 
-    async with database.engine.acquire() as conn:
+    async with database.acquire() as conn:
         result = await conn.execute(
             text("SELECT id, numGames, winGames FROM ladder1v1_rating WHERE id in :ids ORDER BY id"),
             ids=tuple([players[0].id, players[1].id])
