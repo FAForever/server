@@ -71,3 +71,6 @@ QUEUE_POP_TIME_MAX = int(os.getenv('QUEUE_POP_TIME_MAX', 60 * 3))
 QUEUE_POP_DESIRED_PLAYERS = int(os.getenv('QUEUE_POP_DESIRED_PLAYERS', 8))
 # How many previous queue sizes to consider
 QUEUE_POP_TIME_MOVING_AVG_SIZE = int(os.getenv('QUEUE_POP_TIME_MOVING_AVG_SIZE', 5))
+
+#team id that players in FFA mode are assigned to
+FFA_TEAM = int(os.getenv('FFA_TEAM', 1))

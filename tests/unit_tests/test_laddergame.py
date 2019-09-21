@@ -68,8 +68,8 @@ async def test_is_winner_on_draw(laddergame, players):
 async def test_rate_game(laddergame: LadderGame, database, game_add_players):
     laddergame.state = GameState.LOBBY
     players = game_add_players(laddergame, 2)
-    laddergame.set_player_option(players[0].id, 'Team', 1)
-    laddergame.set_player_option(players[1].id, 'Team', 2)
+    laddergame.set_player_option(players[0].id, 'Team', 2)
+    laddergame.set_player_option(players[1].id, 'Team', 3)
     player_1_old_mean = players[0].ratings[RatingType.LADDER_1V1][0]
     player_2_old_mean = players[1].ratings[RatingType.LADDER_1V1][0]
 
@@ -102,8 +102,8 @@ async def test_persist_rating_victory(laddergame: LadderGame, database,
                                       game_add_players):
     laddergame.state = GameState.LOBBY
     players = game_add_players(laddergame, 2)
-    laddergame.set_player_option(players[0].id, 'Team', 1)
-    laddergame.set_player_option(players[1].id, 'Team', 2)
+    laddergame.set_player_option(players[0].id, 'Team', 2)
+    laddergame.set_player_option(players[1].id, 'Team', 3)
 
     async with database.acquire() as conn:
         result = await conn.execute(

@@ -6,8 +6,9 @@ from unittest import mock
 import pytest
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import CoopGame, CustomGame
-from server.games.game import (Game, GameError, GameRatingError, GameState, ValidityState,
+from server.games.game import (Game, GameError, GameState, ValidityState,
                                Victory, VisibilityState)
+from server.games.game_rater import GameRatingError
 from server.games.game_results import GameOutcome
 from server.rating import RatingType
 from asynctest import CoroutineMock
@@ -579,7 +580,6 @@ async def test_compute_rating_does_not_rate_double_defeat(game: Game, player_fac
         game.compute_rating()
 
 
-@pytest.mark.xfail
 async def test_compute_rating_works_with_partially_unknown_results(game: Game, player_factory):
     game.state = GameState.LOBBY
     players = [

@@ -78,8 +78,8 @@ async def test_global_rating_higher_after_custom_game_win(
     game = custom_game
     game.state = GameState.LOBBY
     players = game_add_players(game, 2)
-    game.set_player_option(players[0].id, 'Team', 1)
-    game.set_player_option(players[1].id, 'Team', 2)
+    game.set_player_option(players[0].id, 'Team', 2)
+    game.set_player_option(players[1].id, 'Team', 3)
     old_mean = players[0].ratings[RatingType.GLOBAL][0]
 
     await game.launch()
