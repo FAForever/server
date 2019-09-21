@@ -6,7 +6,7 @@ from unittest import mock
 import pytest
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import CoopGame, CustomGame
-from server.games.game import (Game, GameError, GameState, ValidityState,
+from server.games.game import (Game, GameError, GameRatingError, GameState, ValidityState,
                                Victory, VisibilityState)
 from server.games.game_results import GameOutcome
 from server.rating import RatingType
@@ -106,21 +106,28 @@ async def check_game_settings(game: Game, settings: List[Tuple[str, Any, Validit
 async def test_ffa_not_rated(game, game_add_players):
     game.state = GameState.LOBBY
     game_add_players(game, 5, team=1)
-
     await game.launch()
     await game.add_result(0, 1, 'VICTORY', 5)
-
     game.launched_at = time.time() - 60*20 # seconds
-
     await game.on_game_end()
     assert game.validity == ValidityState.FFA_NOT_RANKED
 
 
-async def test_multi_team_not_rated(game, game_add_players):
+async def test_two_player_ffa_is_rated(game, game_add_players):
     game.state = GameState.LOBBY
     game_add_players(game, 2, team=1)
+    await game.launch()
+    await game.add_result(0, 1, 'VICTORY', 5)
+    game.launched_at = time.time() - 60*20 # seconds
+    await game.on_game_end()
+    assert game.validity == ValidityState.VALID
+
+
+async def test_multi_team_not_rated(game, game_add_players):
+    game.state = GameState.LOBBY
     game_add_players(game, 2, team=2)
     game_add_players(game, 2, team=3)
+    game_add_players(game, 2, team=4)
     await game.launch()
     await game.add_result(0, 1, 'VICTORY', 5)
     game.launched_at = time.time() - 60*20 # seconds
@@ -130,8 +137,8 @@ async def test_multi_team_not_rated(game, game_add_players):
 
 async def test_has_ai_players_not_rated(game, game_add_players):
     game.state = GameState.LOBBY
-    game_add_players(game, 2, team=1)
     game_add_players(game, 2, team=2)
+    game_add_players(game, 2, team=3)
     game.AIs = {'IA Tech': {'Faction': 5, 'Color': 1, 'Team': 2, 'StartSpot': 2}, 'Oum-Ashavoh (IA Tech)': {'Army': 3}}
     await game.launch()
     await game.add_result(0, 1, 'VICTORY', 5)
@@ -144,12 +151,9 @@ async def test_uneven_teams_not_rated(game, game_add_players):
     game.state = GameState.LOBBY
     game_add_players(game, 2, team=2)
     game_add_players(game, 3, team=3)
-
     await game.launch()
     await game.add_result(0, 1, 'VICTORY', 5)
-
     game.launched_at = time.time() - 60*20 # seconds
-
     await game.on_game_end()
     assert game.validity == ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
@@ -158,13 +162,11 @@ async def test_single_team_not_rated(game, game_add_players):
     n_players = 4
     game.state = GameState.LOBBY
     game_add_players(game, n_players, team=2)
-
     await game.launch()
     game.launched_at = time.time()-60*20
     for i in range(n_players):
         await game.add_result(0, i+1, 'victory', 5)
     await game.on_game_end()
-
     assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
 
@@ -392,10 +394,10 @@ async def test_compute_rating_balanced_teamgame(game: Game, player_factory):
     game.state = GameState.LOBBY
     players = [
         (player_factory(**info), result, team) for info, result, team in [
-            (dict(login='Paula_Bean', player_id=1, global_rating=Rating(1500, 250.7)), 0, 1),
-            (dict(login='Some_Guy', player_id=2, global_rating=Rating(1700, 120.1)), 0, 1),
-            (dict(login='Some_Other_Guy', player_id=3, global_rating=Rating(1200, 72.02)), 0, 2),
-            (dict(login='That_Person', player_id=4, global_rating=Rating(1200, 72.02)), 0, 2),
+            (dict(login='Paula_Bean', player_id=1, global_rating=Rating(1500, 250.7)), 0, 2),
+            (dict(login='Some_Guy', player_id=2, global_rating=Rating(1700, 120.1)), 0, 2),
+            (dict(login='Some_Other_Guy', player_id=3, global_rating=Rating(1200, 72.02)), 0, 3),
+            (dict(login='That_Person', player_id=4, global_rating=Rating(1200, 72.02)), 0, 3),
         ]
     ]
     add_connected_players(game, [player for player, _, _ in players])
@@ -403,15 +405,14 @@ async def test_compute_rating_balanced_teamgame(game: Game, player_factory):
         game.set_player_option(player.id, 'Team', team)
         game.set_player_option(player.id, 'Army', player.id - 1)
     await game.launch()
-    for player, result, _ in players:
-        await game.add_result(player, player.id - 1, 'score', result)
+    for player, result, team in players:
+        await game.add_result(player, player.id - 1, 'victory' if team is 2 else 'defeat', result)
     result = game.compute_rating()
     for team in result:
         for player, new_rating in team.items():
             assert player in game.players
             assert new_rating != Rating(*player.ratings[RatingType.GLOBAL])
 
-@pytest.mark.xfail
 async def test_compute_rating_sum_of_scores_edge_case(game: Game, player_factory):
     """
     For certain scores, compute_rating was determining the winner incorrectly,
@@ -446,10 +447,180 @@ async def test_compute_rating_sum_of_scores_edge_case(game: Game, player_factory
     for team in result:
         for player, new_rating in team.items():
             old_rating = Rating(*player.ratings[RatingType.GLOBAL])
-            if team is win_team:
+            if player.id > 4: # `team` index in result might not coincide with `team` index in players
                 assert new_rating > old_rating
             else:
                 assert new_rating < old_rating
+
+async def test_compute_rating_two_player_FFA(game: Game, player_factory):
+    game.state = GameState.LOBBY
+    players = [
+        (player_factory(**info), result, team) for info, result, team in [
+            (dict(login='Paula_Bean', player_id=1, global_rating=Rating(1500, 250.7)), 0, 1),
+            (dict(login='Some_Guy', player_id=2, global_rating=Rating(1700, 120.1)), 0, 1),
+        ]
+    ]
+    add_connected_players(game, [player for player, _, _ in players])
+    for player, _, team in players:
+        game.set_player_option(player.id, 'Team', team)
+        game.set_player_option(player.id, 'Army', player.id - 1)
+    await game.launch()
+
+    for player, result, _ in players:
+        outcome = 'victory' if player.id is 1 else 'defeat'
+        await game.add_result(player, player.id - 1, outcome, result)
+    result = game.compute_rating()
+    for team in result:
+        for player, new_rating in team.items():
+            old_rating = Rating(*player.ratings[RatingType.GLOBAL])
+            assert (new_rating > old_rating) is (player.id is 1)
+
+
+async def test_compute_rating_does_not_rate_multi_team(game: Game, player_factory):
+    game.state = GameState.LOBBY
+    players = [
+        (player_factory(**info), result, team) for info, result, team in [
+            (dict(login='Paula_Bean', player_id=1, global_rating=Rating(1500, 250.7)), 10, 2),
+            (dict(login='Some_Guy', player_id=2, global_rating=Rating(1700, 120.1)), 0, 3),
+            (dict(login='Some_Other_Guy', player_id=3, global_rating=Rating(1200, 72.02)), 0, 4),
+        ]
+    ]
+    add_connected_players(game, [player for player, _, _ in players])
+    for player, _, team in players:
+        game.set_player_option(player.id, 'Team', team)
+        game.set_player_option(player.id, 'Army', player.id - 1)
+    await game.launch()
+
+    for player, result, _ in players:
+        outcome = 'victory' if result is 10 else 'defeat'
+        await game.add_result(player, player.id - 1, outcome, result)
+    with pytest.raises(GameRatingError):
+        game.compute_rating()
+
+async def test_compute_rating_does_not_rate_multi_FFA(game: Game, player_factory):
+    game.state = GameState.LOBBY
+    players = [
+        (player_factory(**info), result, team) for info, result, team in [
+            (dict(login='Paula_Bean', player_id=1, global_rating=Rating(1500, 250.7)), 10, 1),
+            (dict(login='Some_Guy', player_id=2, global_rating=Rating(1700, 120.1)), 0, 1),
+            (dict(login='Some_Other_Guy', player_id=3, global_rating=Rating(1200, 72.02)), 0, 1),
+        ]
+    ]
+    add_connected_players(game, [player for player, _, _ in players])
+    for player, _, team in players:
+        game.set_player_option(player.id, 'Team', team)
+        game.set_player_option(player.id, 'Army', player.id - 1)
+    await game.launch()
+
+    for player, result, _ in players:
+        outcome = 'victory' if result is 10 else 'defeat'
+        await game.add_result(player, player.id - 1, outcome, result)
+    with pytest.raises(GameRatingError):
+        game.compute_rating()
+
+
+async def test_compute_rating_does_not_rate_double_win(game: Game, player_factory):
+    game.state = GameState.LOBBY
+    players = [
+        (player_factory(**info), result, team) for info, result, team in [
+            (dict(login='Paula_Bean', player_id=1, global_rating=Rating(1500, 250.7)), 10, 2),
+            (dict(login='Some_Guy', player_id=2, global_rating=Rating(1700, 120.1)), 0, 3),
+        ]
+    ]
+    add_connected_players(game, [player for player, _, _ in players])
+    for player, _, team in players:
+        game.set_player_option(player.id, 'Team', team)
+        game.set_player_option(player.id, 'Army', player.id - 1)
+    await game.launch()
+
+    for player, result, _ in players:
+        await game.add_result(player, player.id - 1, 'victory', result)
+    with pytest.raises(GameRatingError):
+        game.compute_rating()
+
+
+async def test_compute_rating_does_not_rate_double_defeat(game: Game, player_factory):
+    game.state = GameState.LOBBY
+    players = [
+        (player_factory(**info), result, team) for info, result, team in [
+            (dict(login='Paula_Bean', player_id=1, global_rating=Rating(1500, 250.7)), 10, 2),
+            (dict(login='Some_Guy', player_id=2, global_rating=Rating(1700, 120.1)), 0, 3),
+        ]
+    ]
+    add_connected_players(game, [player for player, _, _ in players])
+    for player, _, team in players:
+        game.set_player_option(player.id, 'Team', team)
+        game.set_player_option(player.id, 'Army', player.id - 1)
+    await game.launch()
+
+    for player, result, _ in players:
+        await game.add_result(player, player.id - 1, 'defeat', result)
+    with pytest.raises(GameRatingError):
+        game.compute_rating()
+
+
+async def test_compute_rating_does_not_rate_double_defeat(game: Game, player_factory):
+    game.state = GameState.LOBBY
+    players = [
+        (player_factory(**info), result, team) for info, result, team in [
+            (dict(login='Paula_Bean', player_id=1, global_rating=Rating(1500, 250.7)), 10, 2),
+            (dict(login='Some_Guy', player_id=2, global_rating=Rating(1700, 120.1)), 0, 3),
+        ]
+    ]
+    add_connected_players(game, [player for player, _, _ in players])
+    for player, _, team in players:
+        game.set_player_option(player.id, 'Team', team)
+        game.set_player_option(player.id, 'Army', player.id - 1)
+    await game.launch()
+
+    for player, result, _ in players:
+        await game.add_result(player, player.id - 1, 'defeat', result)
+    with pytest.raises(GameRatingError):
+        game.compute_rating()
+
+
+@pytest.mark.xfail
+async def test_compute_rating_works_with_partially_unknown_results(game: Game, player_factory):
+    game.state = GameState.LOBBY
+    players = [
+        (player_factory(**info), result, team) for info, result, team in [
+            (dict(login='Paula_Bean', player_id=1, global_rating=Rating(1500, 250.7)), 10, 2),
+            (dict(login='Some_Guy', player_id=2, global_rating=Rating(1700, 120.1)), 0, 2),
+            (dict(login='Some_Other_Guy', player_id=3, global_rating=Rating(1200, 72.02)), -10, 3),
+            (dict(login='That_Person', player_id=4, global_rating=Rating(1200, 72.02)), 0, 3),
+        ]
+    ]
+    add_connected_players(game, [player for player, _, _ in players])
+    for player, _, team in players:
+        game.set_player_option(player.id, 'Team', team)
+        game.set_player_option(player.id, 'Army', player.id - 1)
+    await game.launch()
+
+    for player, result, _ in players:
+        outcome = 'victory' if result is 10 else 'unknown'
+        await game.add_result(player, player.id - 1, outcome, result)
+    result = game.compute_rating()
+    for team in result:
+        for player, new_rating in team.items():
+            assert new_rating != Rating(*player.ratings[RatingType.GLOBAL])
+
+# FIXME - discuss correct get_army_result behaviour
+@pytest.mark.skip
+async def test_game_get_army_result_takes_most_reported_result(game,
+                                                               game_add_players):
+
+    game.state = GameState.LOBBY
+    players = game_add_players(game, 1)
+    await game.add_result(0, 0, 'defeat', 0)
+    await game.add_result(0, 0, 'defeat', 0)
+    await game.add_result(0, 0, 'victory', 0)
+
+    assert game.get_army_result(players[0]) == GameOutcome.DEFEAT
+
+    await game.add_result(0, 0, 'victory', 0)
+    await game.add_result(0, 0, 'victory', 0)
+
+    assert game.get_army_result(players[0]) == GameOutcome.VICTORY
 
 
 async def test_game_get_army_result_ignores_unknown_results(game,

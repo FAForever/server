@@ -107,6 +107,9 @@ class ValidityState(Enum):
 class GameError(Exception):
     pass
 
+class GameRatingError(GameError):
+    pass
+
 
 class Game:
     """
@@ -226,15 +229,7 @@ class Game:
         if len(self.players) < 3:
             return False
 
-        teams = set()
-        for player in self.players:
-            team = self.get_player_option(player.id, 'Team')
-            if team != FFA_TEAM:
-                if team in teams:
-                    return False
-                teams.add(team)
-
-        return True
+        return FFA_TEAM in self.teams
 
     @property
     def is_multi_team(self) -> bool:
@@ -264,10 +259,22 @@ class Game:
 
         return True
 
+    @property
+    def players_by_team(self):
+        """
+        Returns a dictionary with team ids as keys and a list of players belonging to the team as values.
+        Note that all FFA players will be grouped together in FFA_TEAM.
+        """
+        teams = defaultdict(list)
+        for player in self.players:
+            teams[self.get_player_option(player.id, 'Team')].append(player)
+
+        return teams
+
     def team_count(self):
         """
-        Returns a dictionary containing team ids and their respective number of
-        players.
+        Returns a dictionary containing team ids and their respective number of players.
+        Note that all FFA players will be grouped together in FFA_TEAM.
         Example:
             Team 1 has 2 players
             Team 2 has 3 players
@@ -279,11 +286,7 @@ class Game:
                 3: 1
             }
         """
-        teams = defaultdict(int)
-        for player in self.players:
-            teams[self.get_player_option(player.id, 'Team')] += 1
-
-        return teams
+        return {team: len(player_list) for team, player_list in self.players_by_team.items()}
 
     async def await_hosted(self):
         return await asyncio.wait_for(self._is_hosted, None)
@@ -777,33 +780,87 @@ class Game:
         >>> [{p1: p1.rating, p2: p2.rating}, {p3: p3.rating, p4: p4.rating}]
         """
         assert self.state == GameState.LIVE or self.state == GameState.ENDED
-        team_scores = {}
-        ffa_scores = []
-        for player in sorted(self.players,
-                             key=lambda p: self.get_player_option(p.id, 'Army') or -1):
-            team = self.get_player_option(player.id, 'Team')
-            army = self.get_player_option(player.id, 'Army')
-            if army < 0:
-                self._logger.debug("Skipping %s", player)
-                continue
-            if not team:
-                raise GameError("Missing team for player id: {}".format(player.id))
-            if team == FFA_TEAM:
-                ffa_scores.append((player, self.get_army_score(army)))
+
+        def get_team(player: Player) -> int:
+            return self.get_player_option(player.id, 'Team')
+
+        if None in self.teams:
+            raise GameError("Missing team for at least one player. (player, team): {}".format(
+                [(player, get_team(player)) for player in self.players],
+            ))
+
+        if FFA_TEAM in self.teams:
+            if len(self.players) is 2:
+                rating_groups = [
+                    {player: Rating(*player.ratings[rating])}
+                    for player in self.players
+                ]
             else:
-                if team not in team_scores:
-                    team_scores[team] = 0
-                team_scores[team] += self.get_army_score(army)
-        ranks = [-score for team, score in sorted(team_scores.items(), key=lambda t: t[0])]
-        rating_groups = []
-        for team in sorted(self.teams):
-            if team != 1:
-                rating_groups += [{player: Rating(*player.ratings[rating])
-                                   for player in self.players if
-                                   self.get_player_option(player.id, 'Team') == team}]
-        for player, score in sorted(ffa_scores, key=lambda x: self.get_player_option(x[0].id, 'Army')):
-            rating_groups += [{player: Rating(*player.ratings[rating])}]
-            ranks.append(-score)
+                raise GameRatingError(
+                    "Attempted to rate FFA game with other than two players: (player, team): {}".format(
+                        [(player, get_team(player)) for player in self.players],
+                    )
+                )
+        elif len(self.teams) is 2:
+            rating_groups = [
+                {player: Rating(*player.ratings[rating]) for player in team}
+                for _, team in self.players_by_team.items()
+            ]
+        else:
+            raise GameRatingError(
+                "Attempted to rate non-FFA game with other than two teams: (player, team): {}".format(
+                    [(player, get_team(player)) for player in self.players],
+                )
+            )
+
+        outcome_sets = [
+            set( self.get_army_result(player) for player in team )
+            for team in rating_groups
+        ]
+        for outcome_set in outcome_sets:
+            if len(outcome_set) != 1 or GameOutcome.UNKNOWN in outcome_set:
+                raise GameRatingError(
+                    "Attempted to rate game with inconsistent reported outcomes. (player, team, outcome): {}".format(
+                        [
+                            (player,
+                            get_team(player),
+                            self.get_army_result(player))
+                            for player in self.players
+                        ]
+                    )
+                )
+
+        team1_outcome = outcome_sets[0].pop()
+        team2_outcome = outcome_sets[1].pop()
+
+        reported_same_result_but_not_draw = (
+            (team1_outcome is team2_outcome)
+            and
+            (team1_outcome not in [GameOutcome.DRAW, GameOutcome.MUTUAL_DRAW])
+        )
+        onesided_draw = (
+            (team1_outcome is not team2_outcome)
+            and
+            ({team1_outcome, team2_outcome} != {GameOutcome.VICTORY, GameOutcome.DEFEAT})
+        )
+
+        if reported_same_result_but_not_draw or onesided_draw:
+            raise GameRatingError(
+                "Attempted to rate game with inconsistent reported outcomes. (player, team, outcome): {}".format(
+                    [
+                        (player,
+                         get_team(player),
+                         self.get_army_result(player))
+                        for player in self.players
+                    ]
+                )
+            )
+
+        ranks = [
+            1 if team1_outcome is GameOutcome.DEFEAT else 0,
+            1 if team2_outcome is GameOutcome.DEFEAT else 0,
+        ]
+
         self._logger.debug("Rating groups: %s", rating_groups)
         self._logger.debug("Ranks: %s", ranks)
         return trueskill.rate(rating_groups, ranks)
