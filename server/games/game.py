@@ -112,7 +112,6 @@ class Game:
     """
     Object that lasts for the lifetime of a game on FAF.
     """
-
     """
     The initialization mode to use for the Game.
     """
@@ -124,10 +123,10 @@ class Game:
         database: "FAFDatabase",
         game_service: "GameService",
         game_stats_service: "GameStatsService",
-        host: Optional[Player]=None,
-        name: str='None',
-        map_: str='SCMP_007',
-        game_mode: str='faf'
+        host: Optional[Player] = None,
+        name: str = 'None',
+        map_: str = 'SCMP_007',
+        game_mode: str = 'faf'
     ):
         self._db = database
         self._results = GameResults(id_)
@@ -138,7 +137,9 @@ class Game:
         self._player_options: Dict[int, Dict[str, Any]] = defaultdict(dict)
         self.launched_at = None
         self.ended = False
-        self._logger = logging.getLogger("{}.{}".format(self.__class__.__qualname__, id_))
+        self._logger = logging.getLogger(
+            "{}.{}".format(self.__class__.__qualname__, id_)
+        )
         self.id = id_
         self.visibility = VisibilityState.PUBLIC
         self.max_players = 12
@@ -184,8 +185,10 @@ class Game:
 
     @property
     def armies(self):
-        return frozenset({self.get_player_option(player.id, 'Army')
-                          for player in self.players})
+        return frozenset({
+            self.get_player_option(player.id, 'Army')
+            for player in self.players
+        })
 
     @property
     def is_mutually_agreed_draw(self) -> bool:
@@ -205,9 +208,12 @@ class Game:
         if self.state == GameState.LOBBY:
             return frozenset(self._connections.keys())
         else:
-            return frozenset({player for player in self._players
-                              if self.get_player_option(player.id, 'Army') is not None
-                              and self.get_player_option(player.id, 'Army') >= 0})
+            return frozenset({
+                player
+                for player in self._players
+                if self.get_player_option(player.id, 'Army') is not None
+                and self.get_player_option(player.id, 'Army') >= 0
+            })
 
     @property
     def connections(self):
@@ -218,8 +224,10 @@ class Game:
         """
         A set of all teams of this game's players.
         """
-        return frozenset({self.get_player_option(player.id, 'Team')
-                          for player in self.players})
+        return frozenset({
+            self.get_player_option(player.id, 'Team')
+            for player in self.players
+        })
 
     @property
     def is_ffa(self) -> bool:
@@ -239,12 +247,12 @@ class Game:
     @property
     def is_even(self) -> bool:
         teams = self.team_count()
-        if FFA_TEAM in teams: # someone is in ffa team, all teams need to have 1 player
+        if FFA_TEAM in teams:    # someone is in ffa team, all teams need to have 1 player
             c = 1
             teams.pop(1)
         else:
             n = len(teams)
-            if n <= 1: # 0 teams are considered even, single team not
+            if n <= 1:    # 0 teams are considered even, single team not
                 return n == 0
 
             # all teams needs to have same count as the first
@@ -283,16 +291,21 @@ class Game:
                 3: 1
             }
         """
-        return {team: len(player_list) for team, player_list in self.players_by_team.items()}
+        return {
+            team: len(player_list)
+            for team, player_list in self.players_by_team.items()
+        }
 
     async def await_hosted(self):
         return await asyncio.wait_for(self._is_hosted, None)
 
-    def set_hosted(self, value: bool=True):
+    def set_hosted(self, value: bool = True):
         if not self._is_hosted.done():
             self._is_hosted.set_result(value)
 
-    async def add_result(self, reporter: int, army: int, result_type: str, score: int):
+    async def add_result(
+        self, reporter: int, army: int, result_type: str, score: int
+    ):
         """
         As computed by the game.
         :param reporter: player ID
@@ -304,12 +317,18 @@ class Game:
         if army not in self.armies:
             self._logger.debug(
                 "Ignoring results for unknown army %s: %s %s reported by: %s",
-                army, result_type, score, reporter)
+                army, result_type, score, reporter
+            )
             return
 
-        result = GameResult(reporter, army, GameOutcome.from_message(result_type), score)
+        result = GameResult(
+            reporter, army, GameOutcome.from_message(result_type), score
+        )
         self._results.add(result)
-        self._logger.info("%s reported result for army %s: %s %s", reporter, army, result_type, score)
+        self._logger.info(
+            "%s reported result for army %s: %s %s", reporter, army,
+            result_type, score
+        )
 
         await self._process_pending_army_stats()
 
@@ -326,14 +345,22 @@ class Game:
 
     async def _process_army_stats_for_player(self, player):
         try:
-            if self._army_stats is None or self.gameOptions["CheatsEnabled"] != "false":
+            if (
+                self._army_stats is None
+                or self.gameOptions["CheatsEnabled"] != "false"
+            ):
                 return
 
             self._players_with_unsent_army_stats.remove(player)
-            await self._game_stats_service.process_game_stats(player, self, self._army_stats)
+            await self._game_stats_service.process_game_stats(
+                player, self, self._army_stats
+            )
         except Exception as e:
             # Never let an error in processing army stats cascade
-            self._logger.exception("Army stats could not be processed from player %s in game %s", player, self)
+            self._logger.exception(
+                "Army stats could not be processed from player %s in game %s",
+                player, self
+            )
 
     def add_game_connection(self, game_connection):
         """
@@ -342,9 +369,13 @@ class Game:
         :return:
         """
         if game_connection.state != GameConnectionState.CONNECTED_TO_HOST:
-            raise GameError("Invalid GameConnectionState: {}".format(game_connection.state))
+            raise GameError(
+                f"Invalid GameConnectionState: {game_connection.state}"
+            )
         if self.state != GameState.LOBBY and self.state != GameState.LIVE:
-            raise GameError("Invalid GameState: {state}".format(state=self.state))
+            raise GameError(
+                "Invalid GameState: {state}".format(state=self.state)
+            )
         self._logger.info("Added game connection %s", game_connection)
         self._connections[game_connection.player] = game_connection
 
@@ -379,14 +410,18 @@ class Game:
             return
         if self.state != GameState.LIVE:
             return
-        if len([conn for conn in self._connections.values() if not conn.finished_sim]) > 0:
+        if len([
+            conn
+            for conn in self._connections.values() if not conn.finished_sim
+        ]) > 0:
             return
         self.ended = True
         async with self._db.acquire() as conn:
             await conn.execute(
                 "UPDATE game_stats "
                 "SET endTime = NOW() "
-                "WHERE id = %s", (self.id,))
+                "WHERE id = %s", (self.id, )
+            )
 
     async def on_game_end(self):
         try:
@@ -401,7 +436,8 @@ class Game:
                     await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
                     return
 
-                if time.time() - self.launched_at > 4*60 and self.is_mutually_agreed_draw:
+                if time.time(
+                ) - self.launched_at > 4 * 60 and self.is_mutually_agreed_draw:
                     self._logger.info("Game is a mutual draw")
                     await self.mark_invalid(ValidityState.MUTUAL_DRAW)
                     return
@@ -413,7 +449,7 @@ class Game:
                 await self.persist_results()
                 await self.rate_game()
                 await self._process_pending_army_stats()
-        except Exception as e:  # pragma: no cover
+        except Exception as e:    # pragma: no cover
             self._logger.exception("Error during game end: %s", e)
         finally:
             self.set_hosted(value=False)
@@ -444,7 +480,9 @@ class Game:
             army = self.get_player_option(player.id, 'Army')
             score = self.get_army_score(army)
             scores[player] = score
-            self._logger.info('Result for army %s, player: %s: %s', army, player, score)
+            self._logger.info(
+                'Result for army %s, player: %s: %s', army, player, score
+            )
 
         async with self._db.acquire() as conn:
             rows = []
@@ -455,9 +493,12 @@ class Game:
             await conn.execute(
                 "UPDATE game_player_stats "
                 "SET `score`=%s, `scoreTime`=NOW() "
-                "WHERE `gameId`=%s AND `playerId`=%s", rows)
+                "WHERE `gameId`=%s AND `playerId`=%s", rows
+            )
 
-    async def persist_rating_change_stats(self, rating_groups, rating=RatingType.GLOBAL):
+    async def persist_rating_change_stats(
+        self, rating_groups, rating=RatingType.GLOBAL
+    ):
         """
         Persist computed ratings to the respective players' selected rating
         :param rating_groups: of the form returned by Game.compute_rating
@@ -466,27 +507,33 @@ class Game:
         self._logger.info("Saving rating change stats")
         new_ratings = {
             player: new_rating
-            for team in rating_groups
-            for player, new_rating in team.items()
+            for team in rating_groups for player, new_rating in team.items()
         }
 
         async with self._db.acquire() as conn:
             for player, new_rating in new_ratings.items():
-                self._logger.debug(f"New %s rating for %s: %s", rating.value, player, new_rating)
+                self._logger.debug(
+                    "New %s rating for %s: %s", rating.value, player,
+                    new_rating
+                )
                 player.ratings[rating] = new_rating
                 await conn.execute(
                     "UPDATE game_player_stats "
                     "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
                     "WHERE gameId = %s AND playerId = %s",
-                    (new_rating.mu, new_rating.sigma, self.id, player.id))
+                    (new_rating.mu, new_rating.sigma, self.id, player.id)
+                )
                 player.game_count[rating] += 1
 
-                await self._update_rating_table(conn, rating, player, new_rating)
+                await self._update_rating_table(
+                    conn, rating, player, new_rating
+                )
 
                 self.game_service.player_service.mark_dirty(player)
 
-    async def _update_rating_table(self, conn, rating: RatingType,
-                                   player: Player, new_rating):
+    async def _update_rating_table(
+        self, conn, rating: RatingType, player: Player, new_rating
+    ):
         # If we are updating the ladder1v1_rating table then we also need to update
         # the `winGames` column which doesn't exist on the global_rating table
         table = f'{rating.value}_rating'
@@ -496,12 +543,17 @@ class Game:
             await conn.execute(
                 "UPDATE ladder1v1_rating "
                 "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1, winGames = winGames + %s "
-                "WHERE id = %s", (new_rating.mu, new_rating.sigma, 1 if is_victory else 0, player.id))
+                "WHERE id = %s", (
+                    new_rating.mu, new_rating.sigma, 1 if is_victory else 0,
+                    player.id
+                )
+            )
         else:
             await conn.execute(
                 "UPDATE " + table + " "
                 "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1 "
-                "WHERE id = %s", (new_rating.mu, new_rating.sigma, player.id))
+                "WHERE id = %s", (new_rating.mu, new_rating.sigma, player.id)
+            )
 
     def set_player_option(self, player_id: int, key: str, value: Any):
         """
@@ -592,8 +644,9 @@ class Game:
         elif self.game_mode == 'coop':
             await self._validate_coop_game_settings()
 
-    async def _validate_game_options(self,
-                                     valid_options: Dict[str, Tuple[Any, ValidityState]]) -> bool:
+    async def _validate_game_options(
+        self, valid_options: Dict[str, Tuple[Any, ValidityState]]
+    ) -> bool:
         for key, value in self.gameOptions.items():
             if key in valid_options:
                 (valid_value, validity_state) = valid_options[key]
@@ -608,7 +661,8 @@ class Game:
         """
 
         valid_options = {
-            "Victory": (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
+            "Victory":
+            (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
             "TeamSpawn": ("fixed", ValidityState.SPAWN_NOT_FIXED),
             "RevealedCivilians": ("No", ValidityState.CIVILIANS_REVEALED),
             "Difficulty": (3, ValidityState.WRONG_DIFFICULTY),
@@ -629,7 +683,8 @@ class Game:
             return
 
         valid_options = {
-            "Victory": (Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION)
+            "Victory":
+            (Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION)
         }
         await self._validate_game_options(valid_options)
 
@@ -667,13 +722,16 @@ class Game:
             # so, and grab the map id at the same time.
             result = await conn.execute(
                 "SELECT id, ranked FROM map_version "
-                "WHERE lower(filename) = lower(%s)", (self.map_file_path,))
+                "WHERE lower(filename) = lower(%s)", (self.map_file_path, )
+            )
             row = await result.fetchone()
 
             if row:
                 self.map_id = row['id']
 
-            if (not row or not row['ranked']) and self.validity is ValidityState.VALID:
+            if (
+                not row or not row['ranked']
+            ) and self.validity is ValidityState.VALID:
                 await self.mark_invalid(ValidityState.BAD_MAP)
 
             modId = self.game_service.featured_mods[self.game_mode].id
@@ -684,15 +742,9 @@ class Game:
 
             await conn.execute(
                 "INSERT INTO game_stats(id, gameType, gameMod, `host`, mapId, gameName, validity)"
-                "VALUES(%s, %s, %s, %s, %s, %s, %s)",
-                (
-                    self.id,
-                    str(self.gameOptions.get('Victory').value),
-                    modId,
-                    self.host.id,
-                    self.map_id,
-                    self.name,
-                    self.validity.value
+                "VALUES(%s, %s, %s, %s, %s, %s, %s)", (
+                    self.id, str(self.gameOptions.get('Victory').value), modId,
+                    self.host.id, self.map_id, self.name, self.validity.value
                 )
             )
 
@@ -703,12 +755,19 @@ class Game:
 
         query_args = []
         for player in self.players:
-            player_option = functools.partial(self.get_player_option, player.id)
-            options = {key: player_option(key)
-                       for key in ['Team', 'StartSpot', 'Color', 'Faction']}
+            player_option = functools.partial(
+                self.get_player_option, player.id
+            )
+            options = {
+                key: player_option(key)
+                for key in ['Team', 'StartSpot', 'Color', 'Faction']
+            }
 
             def is_observer() -> bool:
-                return options.get('Team', -1) < 0 or options.get('StartSpot', 0) < 0
+                return (
+                    options.get('Team', -1) < 0
+                    or options.get('StartSpot', 0) < 0
+                )
 
             if is_observer():
                 continue
@@ -719,13 +778,8 @@ class Game:
                 mean, dev = player.ratings[RatingType.GLOBAL]
 
             query_args.append((
-                self.id,
-                str(player.id),
-                options['Faction'],
-                options['Color'],
-                options['Team'],
-                options['StartSpot'],
-                mean, dev, 0, 0
+                self.id, str(player.id), options['Faction'], options['Color'],
+                options['Team'], options['StartSpot'], mean, dev, 0, 0
             ))
         if not query_args:
             self._logger.warning("No player options available!")
@@ -743,7 +797,9 @@ class Game:
         return re.sub('[^\x20-\xFF]+', '_', name)[0:128]
 
     async def mark_invalid(self, new_validity_state: ValidityState):
-        self._logger.info("Marked as invalid because: %s", repr(new_validity_state))
+        self._logger.info(
+            "Marked as invalid because: %s", repr(new_validity_state)
+        )
         self.validity = new_validity_state
 
         # If we haven't started yet, the invalidity will be persisted to the database when we start.
@@ -756,7 +812,8 @@ class Game:
         async with self._db.acquire() as conn:
             await conn.execute(
                 "UPDATE game_stats SET validity = %s "
-                "WHERE id = %s", (new_validity_state.value, self.id))
+                "WHERE id = %s", (new_validity_state.value, self.id)
+            )
 
     def get_army_score(self, army):
         return self._results.score(army)
@@ -779,9 +836,11 @@ class Game:
         assert self.state == GameState.LIVE or self.state == GameState.ENDED
 
         if None in self.teams:
-            raise GameError("Missing team for at least one player. (player, team): {}".format(
-                [(player, get_team(player)) for player in self.players],
-            ))
+            raise GameError(
+                "Missing team for at least one player. (player, team): {}"
+                .format([(player, get_team(player))
+                         for player in self.players], )
+            )
 
         outcome_by_player = {
             player: self.get_army_result(player)
@@ -790,7 +849,6 @@ class Game:
 
         rater = GameRater(self.players_by_team, outcome_by_player, rating)
         return rater.compute_rating()
-
 
     async def report_army_stats(self, stats):
         self._army_stats = stats
@@ -802,7 +860,6 @@ class Game:
             GameState.LIVE: 'playing',
             GameState.ENDED: 'closed',
             GameState.INITIALIZING: 'closed',
-
         }.get(self.state, 'closed')
         return {
             "command": "game_info",
@@ -820,10 +877,12 @@ class Game:
             "max_players": self.max_players,
             "launched_at": self.launched_at,
             "teams": {
-                team: [player.login for player in self.players
-                       if self.get_player_option(player.id, 'Team') == team]
+                team: [
+                    player.login for player in self.players
+                    if self.get_player_option(player.id, 'Team') == team
+                ]
                 for team in self.teams
-                }
+            }
         }
 
     @property
@@ -850,5 +909,7 @@ class Game:
         return self.id.__hash__()
 
     def __str__(self):
-        return "Game({},{},{},{})".format(self.id, self.host.login if self.host else '', self.map_file_path,
-                                          len(self.players))
+        return "Game({},{},{},{})".format(
+            self.id, self.host.login if self.host else '', self.map_file_path,
+            len(self.players)
+        )

@@ -41,7 +41,7 @@ class GameResults(Mapping):
     """
     def __init__(self, game_id):
         Mapping.__init__(self)
-        self._game_id = game_id     # Just for logging
+        self._game_id = game_id    # Just for logging
         self._back = {}
 
     def __getitem__(self, key: int):
@@ -65,8 +65,9 @@ class GameResults(Mapping):
         for army in player_armies:
             if army not in self:
                 continue
-            if any(r.outcome is not GameOutcome.MUTUAL_DRAW
-                   for r in self[army]):
+            if any(
+                r.outcome is not GameOutcome.MUTUAL_DRAW for r in self[army]
+            ):
                 return False
         return True
 
@@ -79,15 +80,19 @@ class GameResults(Mapping):
         if army not in self:
             return GameOutcome.UNKNOWN
 
-        outcomes = set(r.outcome for r in self[army]
-                       if r.outcome is not GameOutcome.UNKNOWN)
+        outcomes = set(
+            r.outcome for r in self[army]
+            if r.outcome is not GameOutcome.UNKNOWN
+        )
 
         if len(outcomes) == 1:
             return outcomes.pop()
         else:
             if len(outcomes) > 1:
-                self._logger.info("Multiple outcomes for game %s army %s: %s",
-                                  self._game_id, army, list(outcomes))
+                self._logger.info(
+                    "Multiple outcomes for game %s army %s: %s", self._game_id,
+                    army, list(outcomes)
+                )
             return GameOutcome.UNKNOWN
 
     def score(self, army: int):
@@ -103,8 +108,10 @@ class GameResults(Mapping):
         if len(scores) == 1:
             return scores.popitem()[0]
 
-        self._logger.info("Conflicting scores (%s) reported for game %s",
-                          scores, self._game_id)
+        self._logger.info(
+            "Conflicting scores (%s) reported for game %s", scores,
+            self._game_id
+        )
         score, _ = max(scores.items(), key=lambda kv: kv[::-1])
         return score
 
@@ -127,7 +134,8 @@ class GameResults(Mapping):
             rows = await conn.execute(
                 "SELECT `place`, `score` "
                 "FROM `game_player_stats` "
-                "WHERE `gameId`=%s", (game_id,))
+                "WHERE `gameId`=%s", (game_id, )
+            )
 
             async for row in rows:
                 startspot, score = row[0], row[1]

@@ -17,7 +17,7 @@ def test_get_rating_groups():
     rater = GameRater(players_by_team, outcome_py_player)
     rating_groups = rater._get_rating_groups()
 
-    assert len(rating_groups) is 2
+    assert len(rating_groups) == 2
     assert {p1: Rating(1500, 500)} in rating_groups
 
 
@@ -76,6 +76,13 @@ def test_ranks_with_unknown():
     assert rater._ranks_from_team_outcomes([GameOutcome.DEFEAT, GameOutcome.UNKNOWN]) == [1,0]
     with pytest.raises(GameRatingError):
         rater._ranks_from_team_outcomes([GameOutcome.UNKNOWN, GameOutcome.UNKNOWN])
+
+def test_ranks_with_double_victory_or_defeat():
+    rater = GameRater({}, {})
+    with pytest.raises(GameRatingError):
+        rater._ranks_from_team_outcomes([GameOutcome.VICTORY, GameOutcome.VICTORY])
+    with pytest.raises(GameRatingError):
+        rater._ranks_from_team_outcomes([GameOutcome.DEFEAT, GameOutcome.DEFEAT])
 
 def test_ranks_with_draw():
     rater = GameRater({}, {})
