@@ -92,7 +92,7 @@ class GameRater(object):
             raise GameRatingError(f"Attempted to rate game with unknown outcome. Teams: {self._players_by_team} Outcomes: {self._outcome_by_player}")
         elif no_draw and at_most_one_defeat and at_most_one_win:
            if GameOutcome.VICTORY in team_outcomes:
-               return [0 if x is GameOutcome. VICTORY else 1 for x in team_outcomes]
+               return [0 if x is GameOutcome.VICTORY else 1 for x in team_outcomes]
            else:
                return [1 if x is GameOutcome.DEFEAT else 0 for x in team_outcomes]
         elif both_draw:

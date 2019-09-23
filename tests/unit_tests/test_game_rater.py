@@ -90,7 +90,7 @@ def test_ranks_with_draw():
     with pytest.raises(GameRatingError):
         rater._ranks_from_team_outcomes([GameOutcome.UNKNOWN, GameOutcome.DRAW])
 
-def compute_rating():
+def test_compute_rating():
     p1, p2 = MockPlayer(), MockPlayer()
     players_by_team = {2: [p1], 3: [p2]}
     outcome_py_player = {p1: GameOutcome.VICTORY, p2: GameOutcome.DEFEAT}
