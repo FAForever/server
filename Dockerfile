@@ -3,7 +3,7 @@ FROM python:3.6-slim
 # Apt-install c++ build tools and cleanup temporary files afterwards
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
-        build-essential && \
+        build-essential git && \
     apt-get clean
 RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
