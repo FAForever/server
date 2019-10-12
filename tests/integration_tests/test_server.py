@@ -79,23 +79,7 @@ async def test_server_valid_login(lobby_server):
     await lobby_server.wait_closed()
 
 
-async def test_matchmaker_info_on_login(mocker, lobby_server):
-    proto = await connect_client(lobby_server)
-    await perform_login(proto, ('test', 'test_password'))
-
-    # Make sure we get the matchmaker update before game info
-    got_info = False
-    while True:
-        msg = await proto.read_message()
-        if msg["command"] == "game_info":
-            break
-        elif msg["command"] == "matchmaker_info":
-            got_info = True
-
-    assert got_info
-
-
-async def test_server_double_login(loop, lobby_server):
+async def test_server_double_login(lobby_server):
     proto = await connect_client(lobby_server)
     await perform_login(proto, ('test', 'test_password'))
     msg = await proto.read_message()
