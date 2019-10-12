@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 from aiohttp import web
+from asynctest import CoroutineMock
 from server import GameState, VisibilityState
 from server.db.models import ban, friends_and_foes
 from server.game_service import GameService
@@ -18,7 +19,6 @@ from server.protocol import QDataStreamProtocol
 from server.rating import RatingType
 from server.types import Address
 from sqlalchemy import and_, select, text
-from asynctest import CoroutineMock
 
 pytestmark = pytest.mark.asyncio
 
@@ -301,14 +301,6 @@ async def test_send_game_list(mocker, database, lobbyconnection, game_stats_serv
 
     protocol.send_message.assert_any_call({'command': 'game_info',
                                            'games': [game1.to_dict(), game2.to_dict()]})
-
-
-async def test_send_mod_list(mocker, lobbyconnection, mock_games):
-    protocol = mocker.patch.object(lobbyconnection, 'protocol')
-
-    lobbyconnection.send_mod_list()
-
-    protocol.send_messages.assert_called_with(mock_games.all_game_modes())
 
 
 async def test_send_coop_maps(mocker, lobbyconnection):

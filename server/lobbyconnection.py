@@ -210,10 +210,6 @@ class LobbyConnection():
 
         self.protocol.send_messages(maps)
 
-    @timed
-    def send_mod_list(self):
-        self.protocol.send_messages(self.game_service.all_game_modes())
-
     @timed()
     def send_game_list(self):
         self.send({
@@ -629,7 +625,6 @@ class LobbyConnection():
         json_to_send = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
         self.send(json_to_send)
 
-        self.send_mod_list()
         self.send_game_list()
 
     def command_restore_game_session(self, message):
