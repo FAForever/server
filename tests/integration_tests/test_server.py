@@ -189,3 +189,20 @@ async def test_host_missing_fields(event_loop, lobby_server, player_service):
         assert msg['mapname'] == 'scmp_007'
         assert msg['map_file_path'] == 'maps/scmp_007.zip'
         assert msg['featured_mod'] == 'faf'
+
+
+async def test_coop_list(lobby_server):
+    _, _, proto = await connect_and_sign_in(
+        ('test', 'test_password'),
+        lobby_server
+    )
+
+    await read_until(proto, lambda msg: msg['command'] == 'game_info')
+
+    proto.send_message({"command": "coop_list"})
+    await proto.drain()
+
+    msg = await read_until_command(proto, "coop_info")
+    assert "name" in msg
+    assert "description" in msg
+    assert "filename" in msg

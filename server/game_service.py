@@ -2,8 +2,8 @@ import asyncio
 from typing import Dict, List, Optional, Union, ValuesView
 
 import aiocron
-from server.db import FAFDatabase
 from server import GameState, VisibilityState
+from server.db import FAFDatabase
 from server.decorators import with_logger
 from server.games import CoopGame, CustomGame, FeaturedMod, LadderGame
 from server.games.game import Game
@@ -188,19 +188,6 @@ class GameService:
     def remove_game(self, game: Game):
         if game.id in self.games:
             del self.games[game.id]
-
-    def all_game_modes(self):
-        mods = []
-        for name, mod in self.featured_mods.items():
-            mods.append({
-                'command': 'mod_info',
-                'publish': mod.publish,
-                'name': name,
-                'order': mod.order,
-                'fullname': mod.full_name,
-                'desc': mod.description
-            })
-        return mods
 
     def __getitem__(self, item: int) -> Game:
         return self.games[item]
