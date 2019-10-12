@@ -174,21 +174,20 @@ async def test_host_missing_fields(event_loop, lobby_server, player_service):
 
     await read_until(proto, lambda msg: msg['command'] == 'game_info')
 
-    with ClientTest(loop=event_loop, process_nat_packets=True, proto=proto) as client:
-        proto.send_message({
-            'command': 'game_host',
-            'mod': '',
-            'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
-            'title': ''
-        })
-        await proto.drain()
+    proto.send_message({
+        'command': 'game_host',
+        'mod': '',
+        'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
+        'title': ''
+    })
+    await proto.drain()
 
-        msg = await read_until(proto, lambda msg: msg['command'] == 'game_info')
+    msg = await read_until(proto, lambda msg: msg['command'] == 'game_info')
 
-        assert msg['title'] == 'test&#x27;s game'
-        assert msg['mapname'] == 'scmp_007'
-        assert msg['map_file_path'] == 'maps/scmp_007.zip'
-        assert msg['featured_mod'] == 'faf'
+    assert msg['title'] == 'test&#x27;s game'
+    assert msg['mapname'] == 'scmp_007'
+    assert msg['map_file_path'] == 'maps/scmp_007.zip'
+    assert msg['featured_mod'] == 'faf'
 
 
 async def test_coop_list(lobby_server):
