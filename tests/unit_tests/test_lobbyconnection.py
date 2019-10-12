@@ -131,7 +131,11 @@ async def test_command_game_host_creates_game(lobbyconnection,
                                               players):
     lobbyconnection.player = players.hosting
     lobbyconnection.protocol = mock.Mock()
-    await lobbyconnection.command_game_host(test_game_info)
+    lobbyconnection._authenticated = True
+    await lobbyconnection.on_message_received({
+        "command": "game_host",
+        **test_game_info
+    })
     expected_call = {
         'game_mode': 'faf',
         'name': test_game_info['title'],
@@ -140,8 +144,7 @@ async def test_command_game_host_creates_game(lobbyconnection,
         'password': test_game_info['password'],
         'mapname': test_game_info['mapname'],
     }
-    mock_games.create_game \
-        .assert_called_with(**expected_call)
+    mock_games.create_game.assert_called_with(**expected_call)
 
 
 async def test_launch_game(lobbyconnection, game, player_factory):
@@ -170,7 +173,11 @@ async def test_command_game_host_creates_correct_game(
     lobbyconnection.launch_game = mock.Mock()
 
     lobbyconnection.protocol = mock.Mock()
-    await lobbyconnection.command_game_host(test_game_info)
+    lobbyconnection._authenticated = True
+    await lobbyconnection.on_message_received({
+        "command": "game_host",
+        **test_game_info
+    })
     args_list = lobbyconnection.launch_game.call_args_list
     assert len(args_list) == 1
     args, kwargs = args_list[0]
@@ -195,7 +202,11 @@ async def test_command_game_join_calls_join_game(mocker,
     lobbyconnection.player = players.hosting
     test_game_info['uid'] = 42
 
-    await lobbyconnection.command_game_join(test_game_info)
+    lobbyconnection._authenticated = True
+    await lobbyconnection.on_message_received({
+        "command": "game_join",
+        **test_game_info
+    })
     expected_reply = {
         'command': 'game_launch',
         'mod': 'faf',
@@ -223,7 +234,11 @@ async def test_command_game_join_uid_as_str(mocker,
     lobbyconnection.player = players.hosting
     test_game_info['uid'] = '42'  # Pass in uid as string
 
-    await lobbyconnection.command_game_join(test_game_info)
+    lobbyconnection._authenticated = True
+    await lobbyconnection.on_message_received({
+        "command": "game_join",
+        **test_game_info
+    })
     expected_reply = {
         'command': 'game_launch',
         'mod': 'faf',
@@ -251,7 +266,11 @@ async def test_command_game_join_without_password(lobbyconnection,
     test_game_info['uid'] = 42
     del test_game_info['password']
 
-    await lobbyconnection.command_game_join(test_game_info)
+    lobbyconnection._authenticated = True
+    await lobbyconnection.on_message_received({
+        "command": "game_join",
+        **test_game_info
+    })
     lobbyconnection.send.assert_called_once_with(
         dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
 
@@ -265,7 +284,11 @@ async def test_command_game_join_game_not_found(lobbyconnection,
     lobbyconnection.player = players.hosting
     test_game_info['uid'] = 42
 
-    await lobbyconnection.command_game_join(test_game_info)
+    lobbyconnection._authenticated = True
+    await lobbyconnection.on_message_received({
+        "command": "game_join",
+        **test_game_info
+    })
     lobbyconnection.send.assert_called_once_with(
         dict(command="notice", style="info", text="The host has left the game"))
 
@@ -277,7 +300,11 @@ async def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
     lobbyconnection.send = mock.Mock()
     mock_games.create_game = mock.Mock()
     lobbyconnection.player = players.hosting
-    await lobbyconnection.command_game_host(test_game_info_invalid)
+    lobbyconnection._authenticated = True
+    await lobbyconnection.on_message_received({
+        "command": "game_host",
+        **test_game_info_invalid
+    })
     assert mock_games.create_game.mock_calls == []
     lobbyconnection.send.assert_called_once_with(
         dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
