@@ -384,15 +384,16 @@ class LobbyConnection():
 
         player_id, real_username, dbPassword, steamid, create_time, ban_reason, ban_expiry = (row[i] for i in range(7))
 
-        now = datetime.now()
-        if ban_reason is not None and now < ban_expiry:
-            await self.send_ban_message_and_abort(ban_expiry, ban_reason);
-
         if dbPassword != password:
             server.stats.incr('user.logins', tags={'status': 'failure'})
             raise AuthenticationError(auth_error_message)
 
         now = datetime.now()
+        if ban_reason is not None and now < ban_expiry:
+            self._logger.debug('Rejected login from banned user: %s, %s, %s',
+                               player_id, login, self.session)
+
+            await self.send_ban_message_and_abort(ban_expiry - now, ban_reason)
 
         # New accounts are prevented from playing if they didn't link to steam
 
@@ -695,7 +696,6 @@ class LobbyConnection():
         else:
             raise KeyError('invalid action')
 
-    @timed
     async def command_game_join(self, message):
         """
         We are going to join a game.
@@ -705,7 +705,7 @@ class LobbyConnection():
         if self._attempted_connectivity_test:
             raise ClientError("Cannot join game. Please update your client to the newest version.")
 
-        await self.abort_connection_if_banned();
+        await self.abort_connection_if_banned()
 
         uuid = int(message['uid'])
         password = message.get('password', None)
@@ -738,7 +738,6 @@ class LobbyConnection():
                 "style": "info",
                 "text": "The host has left the game"
             })
-
 
     async def command_game_matchmaking(self, message):
         mod = str(message.get('mod', 'ladder1v1'))
@@ -774,7 +773,7 @@ class LobbyConnection():
         if self._attempted_connectivity_test:
             raise ClientError("Cannot join game. Please update your client to the newest version.")
 
-        await self.abort_connection_if_banned();
+        await self.abort_connection_if_banned()
 
         visibility = VisibilityState.from_string(message.get('visibility'))
         if not isinstance(visibility, VisibilityState):
@@ -937,8 +936,8 @@ class LobbyConnection():
         :return: None
         """
         self.send({'command': 'notice',
-                       'style': 'info' if not fatal else 'error',
-                       'text': message})
+                   'style': 'info' if not fatal else 'error',
+                   'text': message})
         if fatal:
             self.abort(message)
 
@@ -971,7 +970,7 @@ class LobbyConnection():
             self.player_service.remove_player(self.player)
 
     async def abort_connection_if_banned(self):
-        async with self._db.engine.acquire() as conn:
+        async with self._db.acquire() as conn:
             now = datetime.now()
             result = await conn.execute(
                 select([ban.c.reason, ban.c.expires_at]).where(
@@ -979,9 +978,12 @@ class LobbyConnection():
                 ))
 
             data = await result.fetchone()
+            if data is None:
+                return
+
             ban_expiry = data[ban.c.expires_at]
 
-            if data is not None and now < ban_expiry:
+            if now < ban_expiry:
                 self._logger.debug('Aborting connection of banned user: %s, %s, %s',
                                    self.player.id, self.player.login, self.session)
                 self.send_ban_message_and_abort(ban_expiry - now, data[ban.c.reason])
