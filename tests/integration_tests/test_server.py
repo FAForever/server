@@ -209,7 +209,8 @@ async def test_coop_list(lobby_server):
     assert "filename" in msg
 
 
-async def test_server_ban_prevents_hosting(lobby_server, database):
+@pytest.mark.parametrize("command", ("game_host", "game_join"))
+async def test_server_ban_prevents_hosting(lobby_server, database, command):
     """
     Players who are banned while they are online, should immediately be
     prevented from joining or hosting games until their ban expires.
@@ -218,7 +219,7 @@ async def test_server_ban_prevents_hosting(lobby_server, database):
         ('banme', 'banme'), lobby_server
     )
     # User successfully logs in
-    msg = await read_until_command(proto, 'game_info')
+    await read_until_command(proto, 'game_info')
 
     async with database.acquire() as conn:
         await conn.execute(
@@ -233,7 +234,7 @@ async def test_server_ban_prevents_hosting(lobby_server, database):
             )
         )
 
-    proto.send_message({"command": "game_host"})
+    proto.send_message({"command": command})
     await proto.drain()
 
     msg = await proto.read_message()
