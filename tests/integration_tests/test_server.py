@@ -2,6 +2,8 @@ import asyncio
 
 import pytest
 from server import VisibilityState
+from server.db.models import ban
+from sqlalchemy import func, text
 
 from .conftest import (
     connect_and_sign_in, connect_client, perform_login, read_until,
@@ -172,7 +174,7 @@ async def test_host_missing_fields(event_loop, lobby_server, player_service):
         lobby_server
     )
 
-    await read_until(proto, lambda msg: msg['command'] == 'game_info')
+    await read_until_command(proto, 'game_info')
 
     proto.send_message({
         'command': 'game_host',
@@ -182,7 +184,7 @@ async def test_host_missing_fields(event_loop, lobby_server, player_service):
     })
     await proto.drain()
 
-    msg = await read_until(proto, lambda msg: msg['command'] == 'game_info')
+    msg = await read_until_command(proto, 'game_info')
 
     assert msg['title'] == 'test&#x27;s game'
     assert msg['mapname'] == 'scmp_007'
@@ -196,7 +198,7 @@ async def test_coop_list(lobby_server):
         lobby_server
     )
 
-    await read_until(proto, lambda msg: msg['command'] == 'game_info')
+    await read_until_command(proto, 'game_info')
 
     proto.send_message({"command": "coop_list"})
     await proto.drain()
@@ -205,3 +207,39 @@ async def test_coop_list(lobby_server):
     assert "name" in msg
     assert "description" in msg
     assert "filename" in msg
+
+
+async def test_server_ban_prevents_hosting(lobby_server, database):
+    """
+    Players who are banned while they are online, should immediately be
+    prevented from joining or hosting games until their ban expires.
+    """
+    player_id, _, proto = await connect_and_sign_in(
+        ('banme2', 'banme2'), lobby_server
+    )
+    # User successfully logs in
+    msg = await read_until_command(proto, 'game_info')
+
+    async with database.acquire() as conn:
+        await conn.execute(
+            ban.insert().values(
+                player_id=player_id,
+                author_id=player_id,
+                reason="Test live ban",
+                expires_at=func.date_add(
+                    func.now(), text("interval 1000 year")
+                ),
+                level='GLOBAL'
+            )
+        )
+
+    proto.send_message({"command": "game_host"})
+    await proto.drain()
+
+    msg = await proto.read_message()
+    assert msg == {
+        'command': 'notice',
+        'style': 'error',
+        'text': 'You are banned from FAF forever.\n Reason :\n Test live ban'
+    }
+    proto.close()
