@@ -215,7 +215,7 @@ async def test_server_ban_prevents_hosting(lobby_server, database):
     prevented from joining or hosting games until their ban expires.
     """
     player_id, _, proto = await connect_and_sign_in(
-        ('banme2', 'banme2'), lobby_server
+        ('banme', 'banme'), lobby_server
     )
     # User successfully logs in
     msg = await read_until_command(proto, 'game_info')
