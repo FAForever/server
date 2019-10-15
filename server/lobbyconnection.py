@@ -210,6 +210,14 @@ class LobbyConnection():
 
         self.protocol.send_messages(maps)
 
+    async def command_matchmaker_info(self, message):
+        self.send({
+            'command': 'matchmaker_info',
+            'queues': [queue.to_dict() for queue in self.ladder_service.queues.values()]
+        })
+
+        await self.protocol.drain()
+
     @timed()
     def send_game_list(self):
         self.send({

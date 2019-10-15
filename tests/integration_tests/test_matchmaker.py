@@ -66,8 +66,39 @@ async def test_matchmaker_info_message(lobby_server, mocker):
         ('ladder1', 'ladder1'),
         lobby_server
     )
+    # Because the mocking hasn't taken effect on the first message we need to
+    # wait for the second message
+    msg = await read_until_command(proto, 'matchmaker_info')
     msg = await read_until_command(proto, 'matchmaker_info')
 
+    assert msg == {
+        'command': 'matchmaker_info',
+        'queues': [
+            {
+                'queue_name': 'ladder1v1',
+                'queue_pop_time': '2019-07-01T16:53:21+00:00',
+                'boundary_80s': [],
+                'boundary_75s': []
+            }
+        ]
+    }
+
+
+@fast_forward(1000)
+async def test_command_matchmaker_info(lobby_server, mocker):
+    mocker.patch('server.matchmaker.pop_timer.time', return_value=1_562_000_000)
+
+    _, _, proto = await connect_and_sign_in(
+        ('ladder1', 'ladder1'),
+        lobby_server
+    )
+
+    await read_until_command(proto, "game_info")
+
+    proto.send_message({"command": "matchmaker_info"})
+    await proto.drain()
+
+    msg = await read_until_command(proto, "matchmaker_info")
     assert msg == {
         'command': 'matchmaker_info',
         'queues': [
