@@ -110,3 +110,35 @@ async def test_command_matchmaker_info(lobby_server, mocker):
             }
         ]
     }
+
+
+async def test_matchmaker_info_message_on_cancel(lobby_server):
+    _, _, proto = await connect_and_sign_in(
+        ('ladder1', 'ladder1'),
+        lobby_server
+    )
+
+    await read_until_command(proto, 'game_info')
+
+    proto.send_message({
+        'command': 'game_matchmaking',
+        'state': 'start',
+        'faction': 'uef'
+    })
+
+    # Update message because a new player joined the queue
+    msg = await read_until_command(proto, 'matchmaker_info')
+
+    assert msg["queues"][0]["queue_name"] == "ladder1v1"
+    assert len(msg["queues"][0]["boundary_80s"]) == 1
+
+    proto.send_message({
+        'command': 'game_matchmaking',
+        'state': 'stop',
+    })
+
+    # Update message because we left the queue
+    msg = await read_until_command(proto, 'matchmaker_info')
+
+    assert msg["queues"][0]["queue_name"] == "ladder1v1"
+    assert len(msg["queues"][0]["boundary_80s"]) == 0
