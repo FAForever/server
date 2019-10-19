@@ -9,7 +9,6 @@ from .conftest import (
     connect_and_sign_in, connect_client, perform_login, read_until,
     read_until_command
 )
-from .testclient import ClientTest
 
 pytestmark = pytest.mark.asyncio
 TEST_ADDRESS = ('127.0.0.1', None)
@@ -62,6 +61,16 @@ async def test_server_ban(lobby_server):
     proto.close()
 
 
+@pytest.mark.parametrize('user', ('ban_revoked', 'ban_expired'))
+async def test_server_ban_revoked_or_expired(lobby_server, user):
+    proto = await connect_client(lobby_server)
+    await perform_login(proto, (user, user))
+    msg = await proto.read_message()
+
+    assert msg["command"] == "welcome"
+    assert msg["login"] == user
+
+
 async def test_server_valid_login(lobby_server):
     proto = await connect_client(lobby_server)
     await perform_login(proto, ('test', 'test_password'))
@@ -76,9 +85,6 @@ async def test_server_valid_login(lobby_server):
                           'number_of_games': 5},
                    'id': 1,
                    'login': 'test'}
-    lobby_server.close()
-    proto.close()
-    await lobby_server.wait_closed()
 
 
 async def test_server_double_login(lobby_server):
@@ -144,27 +150,28 @@ async def test_info_broadcast_authenticated(lobby_server):
         assert False
 
 
-@pytest.mark.slow
-async def test_public_host(event_loop, lobby_server, player_service):
-    # TODO: This test can't fail, why is it here?
-    player_id, session, proto = await connect_and_sign_in(
-        ('test', 'test_password'),
-        lobby_server
-    )
+@pytest.mark.parametrize("user", [
+    ("test", "test_password"),
+    ("ban_revoked", "ban_revoked"),
+    ("ban_expired", "ban_expired")
+])
+async def test_game_host_authenticated(lobby_server, user):
+    _, _, proto = await connect_and_sign_in(user, lobby_server)
+    await read_until_command(proto, 'game_info')
 
-    await read_until(proto, lambda msg: msg['command'] == 'game_info')
+    proto.send_message({
+        'command': 'game_host',
+        'title': 'My Game',
+        'mod': 'faf',
+        'visibility': 'public',
+    })
+    await proto.drain()
 
-    with ClientTest(loop=event_loop, process_nat_packets=True, proto=proto) as client:
-        proto.send_message({
-            'command': 'game_host',
-            'mod': 'faf',
-            'visibility': VisibilityState.to_string(VisibilityState.PUBLIC)
-        })
-        await proto.drain()
+    msg = await read_until_command(proto, 'game_launch')
 
-        client.send_GameState(['Idle'])
-        client.send_GameState(['Lobby'])
-        await client._proto.writer.drain()
+    assert msg['mod'] == 'faf'
+    assert 'args' in msg
+    assert isinstance(msg['uid'], int)
 
 
 @pytest.mark.slow
