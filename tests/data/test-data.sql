@@ -7,7 +7,8 @@ insert into login (id, login, email, password, create_time) values
     (102, 'ladder_ban', 'ladder_ban@example.com', SHA2('ladder_ban', 256), '2000-01-01 00:00:00'),
     (200, 'banme', 'banme@example.com', SHA2('banme', 256), '2000-01-01 00:00:00'),
     (201, 'ban_revoked', 'ban_revoked@example.com', SHA2('ban_revoked', 256), '2000-01-01 00:00:00'),
-    (202, 'ban_expired', 'ban_expired@example.com', SHA2('ban_expired', 256), '2000-01-01 00:00:00')
+    (202, 'ban_expired', 'ban_expired@example.com', SHA2('ban_expired', 256), '2000-01-01 00:00:00'),
+    (203, 'ban_long_time', 'ban_null_expiration@example.com', SHA2('ban_long_time', 256), '2000-01-01 00:00:00')
 ;
 
 delete from clan_membership where player_id = 50;
@@ -42,7 +43,8 @@ insert into avatars (idUser, idAvatar, selected) values
 delete from ban where player_id = 201;
 insert into ban (player_id, author_id, reason, level, expires_at, revoke_time) values
   (201, 201, 'Test revoked ban', 'GLOBAL', NULL, now() - interval 1 day),
-  (202, 202, 'Test expired ban', 'GLOBAL', now() - interval 1 day, NULL)
+  (202, 202, 'Test expired ban', 'GLOBAL', now() - interval 1 day, NULL),
+  (203, 203, 'Test permanent ban', 'GLOBAL', now() + interval 1000 year, NULL)
 ;
 
 insert into game_stats (id, startTime, gameType, gameMod, host, mapId, gameName, validity) values

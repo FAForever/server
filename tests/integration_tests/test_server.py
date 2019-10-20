@@ -3,7 +3,6 @@ import asyncio
 import pytest
 from server import VisibilityState
 from server.db.models import ban
-from sqlalchemy import func, text
 
 from .conftest import (
     connect_and_sign_in, connect_client, perform_login, read_until,
@@ -50,9 +49,13 @@ async def test_server_invalid_login(lobby_server):
     proto.close()
 
 
-async def test_server_ban(lobby_server):
+@pytest.mark.parametrize("user", [
+    ("Dostya", "vodka"),
+    ("ban_long_time", "ban_long_time")
+])
+async def test_server_ban(lobby_server, user):
     proto = await connect_client(lobby_server)
-    await perform_login(proto, ('Dostya', 'vodka'))
+    await perform_login(proto, user)
     msg = await proto.read_message()
     assert msg == {
         'command': 'notice',
@@ -153,7 +156,8 @@ async def test_info_broadcast_authenticated(lobby_server):
 @pytest.mark.parametrize("user", [
     ("test", "test_password"),
     ("ban_revoked", "ban_revoked"),
-    ("ban_expired", "ban_expired")
+    ("ban_expired", "ban_expired"),
+    ("No_UID", "his_pw")
 ])
 async def test_game_host_authenticated(lobby_server, user):
     _, _, proto = await connect_and_sign_in(user, lobby_server)
@@ -234,9 +238,7 @@ async def test_server_ban_prevents_hosting(lobby_server, database, command):
                 player_id=player_id,
                 author_id=player_id,
                 reason="Test live ban",
-                expires_at=func.date_add(
-                    func.now(), text("interval 1000 year")
-                ),
+                expires_at=None,
                 level='GLOBAL'
             )
         )
