@@ -285,7 +285,7 @@ class LobbyConnection():
                         "command": "notice",
                         "style": "info",
                         "text": (
-                            "Your game was closed by an administrator "
+                            "Your game was closed by a moderator "
                             f"({self.player.login}). Please refer to our "
                             f"rules for the lobby/game here {config.RULE_LINK}."
                         )
