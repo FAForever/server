@@ -64,7 +64,7 @@ async def test_server_ban(lobby_server, user):
     proto.close()
 
 
-@pytest.mark.parametrize('user', ('ban_revoked', 'ban_expired'))
+@pytest.mark.parametrize('user', ['ban_revoked', 'ban_expired'])
 async def test_server_ban_revoked_or_expired(lobby_server, user):
     proto = await connect_client(lobby_server)
     await perform_login(proto, (user, user))
@@ -220,7 +220,7 @@ async def test_coop_list(lobby_server):
     assert "filename" in msg
 
 
-@pytest.mark.parametrize("command", ("game_host", "game_join"))
+@pytest.mark.parametrize("command", ["game_host", "game_join"])
 async def test_server_ban_prevents_hosting(lobby_server, database, command):
     """
     Players who are banned while they are online, should immediately be
