@@ -596,7 +596,7 @@ async def test_command_admin_closeFA(mocker, lobbyconnection):
     tuna.lobby_connection.send.assert_any_call(dict(
         command='notice',
         style='info',
-        text=("Your game was closed by an administrator (Sheeo). "
+        text=("Your game was closed by a moderator (Sheeo). "
               "Please refer to our rules for the lobby/game here {rule_link}."
               .format(rule_link=config.RULE_LINK))
     ))
