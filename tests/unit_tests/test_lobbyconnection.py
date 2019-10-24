@@ -387,9 +387,6 @@ async def test_send_coop_maps(mocker, lobbyconnection):
 
 
 async def test_command_admin_closelobby(mocker, lobbyconnection):
-    mocker.patch.object(lobbyconnection, 'protocol')
-    mocker.patch.object(lobbyconnection, '_logger')
-    config = mocker.patch('server.lobbyconnection.config')
     player = mocker.patch.object(lobbyconnection, 'player')
     player.login = 'Sheeo'
     player.admin = True
@@ -403,16 +400,10 @@ async def test_command_admin_closelobby(mocker, lobbyconnection):
         'user_id': 55
     })
 
-    tuna.lobby_connection.kick.assert_any_call(
-        message=("You were kicked from FAF by an administrator (Sheeo). "
-                 "Please refer to our rules for the lobby/game here {rule_link}."
-                 .format(rule_link=config.RULE_LINK))
-    )
+    tuna.lobby_connection.kick.assert_any_call(initiator="Sheeo")
 
 
 async def test_command_admin_closelobby_with_ban(mocker, lobbyconnection, database):
-    mocker.patch.object(lobbyconnection, 'protocol')
-    config = mocker.patch('server.lobbyconnection.config')
     player = mocker.patch.object(lobbyconnection, 'player')
     player.login = 'Sheeo'
     player.id = 1
@@ -433,11 +424,7 @@ async def test_command_admin_closelobby_with_ban(mocker, lobbyconnection, databa
         }
     })
 
-    banme.lobby_connection.kick.assert_any_call(
-        message=("You were kicked from FAF by an administrator (Sheeo). "
-                 "Please refer to our rules for the lobby/game here {rule_link}."
-                 .format(rule_link=config.RULE_LINK))
-    )
+    banme.lobby_connection.kick.assert_any_call(initiator="Sheeo")
 
     async with database.acquire() as conn:
         result = await conn.execute(select([ban]).where(ban.c.player_id == banme.id))
@@ -449,7 +436,6 @@ async def test_command_admin_closelobby_with_ban(mocker, lobbyconnection, databa
 
 
 async def test_command_admin_closelobby_with_ban_but_already_banned(mocker, lobbyconnection, database):
-    mocker.patch.object(lobbyconnection, 'protocol')
     player = mocker.patch.object(lobbyconnection, 'player')
     player.login = 'Sheeo'
     player.id = 1
@@ -497,7 +483,6 @@ async def test_command_admin_closelobby_with_ban_but_already_banned(mocker, lobb
 
 async def test_command_admin_closelobby_with_ban_duration_no_period(mocker, lobbyconnection, database):
     mocker.patch.object(lobbyconnection, 'protocol')
-    config = mocker.patch('server.lobbyconnection.config')
     player = mocker.patch.object(lobbyconnection, 'player')
     player.login = 'Sheeo'
     player.id = 1
@@ -518,11 +503,7 @@ async def test_command_admin_closelobby_with_ban_duration_no_period(mocker, lobb
         }
     })
 
-    banme.lobby_connection.kick.assert_any_call(
-        message=("You were kicked from FAF by an administrator (Sheeo). "
-                 "Please refer to our rules for the lobby/game here {rule_link}."
-                 .format(rule_link=config.RULE_LINK))
-    )
+    banme.lobby_connection.kick.assert_any_call(initiator="Sheeo")
 
     async with database.acquire() as conn:
         result = await conn.execute(select([ban.c.expires_at]).where(ban.c.player_id == banme.id))
@@ -606,7 +587,6 @@ async def test_command_admin_closelobby_with_ban_injection(mocker, lobbyconnecti
 async def test_command_admin_closeFA(mocker, lobbyconnection):
     mocker.patch.object(lobbyconnection, 'protocol')
     mocker.patch.object(lobbyconnection, '_logger')
-    config = mocker.patch('server.lobbyconnection.config')
     player = mocker.patch.object(lobbyconnection, 'player')
     player.login = 'Sheeo'
     player.admin = True
@@ -622,13 +602,11 @@ async def test_command_admin_closeFA(mocker, lobbyconnection):
         'user_id': 55
     })
 
-    tuna.lobby_connection.send.assert_any_call(dict(
-        command='notice',
-        style='info',
-        text=("Your game was closed by an administrator (Sheeo). "
-              "Please refer to our rules for the lobby/game here {rule_link}."
-              .format(rule_link=config.RULE_LINK))
-    ))
+    tuna.lobby_connection.send.assert_any_call({
+        "command": "notice",
+        "style": "kill",
+        "initiator": "Sheeo"
+    })
 
 
 async def test_game_subscription(lobbyconnection: LobbyConnection):
