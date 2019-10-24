@@ -279,17 +279,8 @@ class LobbyConnection():
                 if player:
                     self._logger.warning('Administrative action: %s closed game for %s', self.player, player)
                     player.lobby_connection.send({
-                        "command": "notice",
-                        "style": "kill"
-                    })
-                    player.lobby_connection.send({
-                        "command": "notice",
-                        "style": "info",
-                        "text": (
-                            "Your game was closed by an administrator "
-                            f"({self.player.login}). Please refer to our "
-                            f"rules for the lobby/game here {config.RULE_LINK}."
-                        )
+                        "command": "close_fa",
+                        "initiator": self.player.login
                     })
 
             elif action == "closelobby":
