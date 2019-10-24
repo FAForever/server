@@ -258,10 +258,12 @@ class LobbyConnection():
                 subject_id=subject_id,
             ))
 
-    def kick(self, message=None):
-        self.send({"command": "notice", "style": "kick"})
-        if message:
-            self.send({"command": "notice", "style": "info", "text": message})
+    def kick(self, initiator):
+        self.send({
+            "command": "notice",
+            "style": "kick",
+            "initiator": initiator
+        })
         self.abort()
 
     def send_updated_achievements(self, updated_achievements):
@@ -279,7 +281,8 @@ class LobbyConnection():
                 if player:
                     self._logger.warning('Administrative action: %s closed game for %s', self.player, player)
                     player.lobby_connection.send({
-                        "command": "close_fa",
+                        "command": "notice",
+                        "style": "kill",
                         "initiator": self.player.login
                     })
 
@@ -324,11 +327,7 @@ class LobbyConnection():
                                 raise ClientError('Your ban attempt upset the database: {}'.format(e))
                     else:
                         self._logger.warning('Administrative action: %s closed client for %s', self.player, player)
-                    player.lobby_connection.kick(
-                        message=("You were kicked from FAF by an administrator ({admin_name}). "
-                         "Please refer to our rules for the lobby/game here {rule_link}."
-                          .format(admin_name=self.player.login,
-                                  rule_link=config.RULE_LINK)))
+                    player.lobby_connection.kick(initiator=self.player.login)
                     if ban_fail:
                         raise ClientError("Kicked the player, but he was already banned!")
 
