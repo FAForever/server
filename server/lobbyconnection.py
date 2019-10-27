@@ -1,11 +1,11 @@
 import asyncio
-import datetime
 import hashlib
 import html
 import json
 import random
 import urllib.parse
 import urllib.request
+from datetime import datetime
 from typing import Optional
 
 import aiohttp
@@ -14,12 +14,13 @@ import pymysql
 import semver
 import server
 from server.db import FAFDatabase
-from sqlalchemy import and_, func, text
+from sqlalchemy import and_, func, select, text
 
 from . import config
 from .abc.base_game import GameConnectionState
 from .config import FAF_POLICY_SERVER_BASE_URL, TRACE, TWILIO_TTL
-from .db.models import ban, friends_and_foes
+from .db.models import ban, friends_and_foes, lobby_ban
+from .db.models import login as t_login
 from .decorators import timed, with_logger
 from .game_service import GameService
 from .gameconnection import GameConnection
@@ -361,20 +362,21 @@ class LobbyConnection():
                             "autojoin": [channel]
                         })
 
-    async def check_user_login(self, conn, login, password):
+    async def check_user_login(self, conn, username, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.
         result = await conn.execute(
-            "SELECT login.id as id,"
-            "login.login as username,"
-            "login.password as password,"
-            "login.steamid as steamid,"
-            "login.create_time as create_time,"
-            "lobby_ban.reason as reason,"
-            "lobby_ban.expires_at as expires_at "
-            "FROM login "
-            "LEFT JOIN lobby_ban ON login.id = lobby_ban.idUser "
-            "WHERE LOWER(login)=%s "
-            "ORDER BY expires_at DESC", (login.lower(), ))
+            select([
+                t_login.c.id,
+                t_login.c.login,
+                t_login.c.password,
+                t_login.c.steamid,
+                t_login.c.create_time,
+                lobby_ban.c.reason,
+                lobby_ban.c.expires_at
+            ]).select_from(t_login.outerjoin(lobby_ban))
+            .where(t_login.c.login == username)
+            .order_by(lobby_ban.c.expires_at.desc())
+        )
 
         auth_error_message = "Login not found or password incorrect. They are case sensitive."
         row = await result.fetchone()
@@ -382,33 +384,34 @@ class LobbyConnection():
             server.stats.incr('user.logins', tags={'status': 'failure'})
             raise AuthenticationError(auth_error_message)
 
-        player_id, real_username, dbPassword, steamid, create_time, ban_reason, ban_expiry = (row[i] for i in range(7))
+        player_id = row[t_login.c.id]
+        real_username = row[t_login.c.login]
+        dbPassword = row[t_login.c.password]
+        steamid = row[t_login.c.steamid]
+        create_time = row[t_login.c.create_time]
+        ban_reason = row[lobby_ban.c.reason]
+        ban_expiry = row[lobby_ban.c.expires_at]
 
         if dbPassword != password:
             server.stats.incr('user.logins', tags={'status': 'failure'})
             raise AuthenticationError(auth_error_message)
 
-        now = datetime.datetime.now()
-
+        now = datetime.now()
         if ban_reason is not None and now < ban_expiry:
-            ban_time = ban_expiry - now
-            ban_time_text = (f"for {humanize.naturaldelta(ban_time)}"
-                             if ban_time.days < 365 * 100 else "forever")
             self._logger.debug('Rejected login from banned user: %s, %s, %s',
-                               player_id, login, self.session)
-            raise ClientError((f"You are banned from FAF {ban_time_text}.\n "
-                               f"Reason :\n "
-                               f"{ban_reason}"), recoverable=False)
+                               player_id, username, self.session)
+
+            await self.send_ban_message_and_abort(ban_expiry - now, ban_reason)
 
         # New accounts are prevented from playing if they didn't link to steam
 
         if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() > config.FORCE_STEAM_LINK_AFTER_DATE:
-            self._logger.debug('Rejected login from new user: %s, %s, %s', player_id, login, self.session)
+            self._logger.debug('Rejected login from new user: %s, %s, %s', player_id, username, self.session)
             raise ClientError(
                 "Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on <a href='{steamlink_url}'>{steamlink_url}</a>.".format(steamlink_url=config.WWW_URL + '/account/link'),
                 recoverable=False)
 
-        self._logger.debug("Login from: %s, %s, %s", player_id, login, self.session)
+        self._logger.debug("Login from: %s, %s, %s", player_id, username, self.session)
 
         return player_id, real_username, steamid
 
@@ -701,8 +704,7 @@ class LobbyConnection():
         else:
             raise KeyError('invalid action')
 
-    @timed
-    def command_game_join(self, message):
+    async def command_game_join(self, message):
         """
         We are going to join a game.
         """
@@ -710,6 +712,8 @@ class LobbyConnection():
 
         if self._attempted_connectivity_test:
             raise ClientError("Cannot join game. Please update your client to the newest version.")
+
+        await self.abort_connection_if_banned()
 
         uuid = int(message['uid'])
         password = message.get('password', None)
@@ -771,12 +775,13 @@ class LobbyConnection():
         """ Request for coop map list"""
         asyncio.ensure_future(self.send_coop_maps())
 
-    @timed()
-    def command_game_host(self, message):
+    async def command_game_host(self, message):
         assert isinstance(self.player, Player)
 
         if self._attempted_connectivity_test:
             raise ClientError("Cannot join game. Please update your client to the newest version.")
+
+        await self.abort_connection_if_banned()
 
         visibility = VisibilityState.from_string(message.get('visibility'))
         if not isinstance(visibility, VisibilityState):
@@ -939,8 +944,8 @@ class LobbyConnection():
         :return: None
         """
         self.send({'command': 'notice',
-                       'style': 'info' if not fatal else 'error',
-                       'text': message})
+                   'style': 'info' if not fatal else 'error',
+                   'text': message})
         if fatal:
             self.abort(message)
 
@@ -971,3 +976,30 @@ class LobbyConnection():
         if self.player:
             self._logger.debug("Lost lobby connection removing player {}".format(self.player.id))
             self.player_service.remove_player(self.player)
+
+    async def abort_connection_if_banned(self):
+        async with self._db.acquire() as conn:
+            now = datetime.now()
+            result = await conn.execute(
+                select([lobby_ban.c.reason, lobby_ban.c.expires_at])
+                .where(lobby_ban.c.idUser == self.player.id)
+                .order_by(lobby_ban.c.expires_at.desc())
+            )
+
+            data = await result.fetchone()
+            if data is None:
+                return
+
+            ban_expiry = data[ban.c.expires_at]
+
+            if now < ban_expiry:
+                self._logger.debug('Aborting connection of banned user: %s, %s, %s',
+                                   self.player.id, self.player.login, self.session)
+                self.send_ban_message_and_abort(ban_expiry - now, data[ban.c.reason])
+
+    def send_ban_message_and_abort(self, ban_time, reason):
+        ban_time_text = (f"for {humanize.naturaldelta(ban_time)}"
+                         if ban_time.days < 365 * 100 else "forever")
+        raise ClientError((f"You are banned from FAF {ban_time_text}.\n "
+                           f"Reason :\n "
+                           f"{reason}"), recoverable=False)

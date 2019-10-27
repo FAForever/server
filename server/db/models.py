@@ -1,5 +1,7 @@
-from sqlalchemy import (TIMESTAMP, Boolean, Column, DateTime, Enum, Float,
-                        ForeignKey, Integer, MetaData, String, Table, Text)
+from sqlalchemy import (
+    TIMESTAMP, Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer,
+    MetaData, String, Table, Text
+)
 
 from ..games.game import Victory
 
@@ -143,6 +145,15 @@ ladder1v1_rating = Table(
     Column('numGames',      Integer,    nullable=False),
     Column('winGames',      Integer,    nullable=False),
     Column('is_active',     Boolean,    nullable=False)
+)
+
+# This is actually a view into the `ban` table with proper handling of ban
+# expiration and revocation
+lobby_ban = Table(
+    'lobby_ban', metadata,
+    Column('idUser',        Integer,    ForeignKey('login.id'), primary_key=True),
+    Column('reason',        Text,       nullable=False),
+    Column('expires_at',    DateTime)
 )
 
 moderation_report = Table(

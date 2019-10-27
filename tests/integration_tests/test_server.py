@@ -2,12 +2,12 @@ import asyncio
 
 import pytest
 from server import VisibilityState
+from server.db.models import ban
 
 from .conftest import (
     connect_and_sign_in, connect_client, perform_login, read_until,
     read_until_command
 )
-from .testclient import ClientTest
 
 pytestmark = pytest.mark.asyncio
 TEST_ADDRESS = ('127.0.0.1', None)
@@ -49,15 +49,29 @@ async def test_server_invalid_login(lobby_server):
     proto.close()
 
 
-async def test_server_ban(lobby_server):
+@pytest.mark.parametrize("user", [
+    ("Dostya", "vodka"),
+    ("ban_long_time", "ban_long_time")
+])
+async def test_server_ban(lobby_server, user):
     proto = await connect_client(lobby_server)
-    await perform_login(proto, ('Dostya', 'vodka'))
+    await perform_login(proto, user)
     msg = await proto.read_message()
     assert msg == {
         'command': 'notice',
         'style': 'error',
         'text': 'You are banned from FAF forever.\n Reason :\n Test permanent ban'}
     proto.close()
+
+
+@pytest.mark.parametrize('user', ['ban_revoked', 'ban_expired'])
+async def test_server_ban_revoked_or_expired(lobby_server, user):
+    proto = await connect_client(lobby_server)
+    await perform_login(proto, (user, user))
+    msg = await proto.read_message()
+
+    assert msg["command"] == "welcome"
+    assert msg["login"] == user
 
 
 async def test_server_valid_login(lobby_server):
@@ -74,9 +88,6 @@ async def test_server_valid_login(lobby_server):
                           'number_of_games': 5},
                    'id': 1,
                    'login': 'test'}
-    lobby_server.close()
-    proto.close()
-    await lobby_server.wait_closed()
 
 
 async def test_server_double_login(lobby_server):
@@ -142,27 +153,29 @@ async def test_info_broadcast_authenticated(lobby_server):
         assert False
 
 
-@pytest.mark.slow
-async def test_public_host(event_loop, lobby_server, player_service):
-    # TODO: This test can't fail, why is it here?
-    player_id, session, proto = await connect_and_sign_in(
-        ('test', 'test_password'),
-        lobby_server
-    )
+@pytest.mark.parametrize("user", [
+    ("test", "test_password"),
+    ("ban_revoked", "ban_revoked"),
+    ("ban_expired", "ban_expired"),
+    ("No_UID", "his_pw")
+])
+async def test_game_host_authenticated(lobby_server, user):
+    _, _, proto = await connect_and_sign_in(user, lobby_server)
+    await read_until_command(proto, 'game_info')
 
-    await read_until(proto, lambda msg: msg['command'] == 'game_info')
+    proto.send_message({
+        'command': 'game_host',
+        'title': 'My Game',
+        'mod': 'faf',
+        'visibility': 'public',
+    })
+    await proto.drain()
 
-    with ClientTest(loop=event_loop, process_nat_packets=True, proto=proto) as client:
-        proto.send_message({
-            'command': 'game_host',
-            'mod': 'faf',
-            'visibility': VisibilityState.to_string(VisibilityState.PUBLIC)
-        })
-        await proto.drain()
+    msg = await read_until_command(proto, 'game_launch')
 
-        client.send_GameState(['Idle'])
-        client.send_GameState(['Lobby'])
-        await client._proto.writer.drain()
+    assert msg['mod'] == 'faf'
+    assert 'args' in msg
+    assert isinstance(msg['uid'], int)
 
 
 @pytest.mark.slow
@@ -172,23 +185,22 @@ async def test_host_missing_fields(event_loop, lobby_server, player_service):
         lobby_server
     )
 
-    await read_until(proto, lambda msg: msg['command'] == 'game_info')
+    await read_until_command(proto, 'game_info')
 
-    with ClientTest(loop=event_loop, process_nat_packets=True, proto=proto) as client:
-        proto.send_message({
-            'command': 'game_host',
-            'mod': '',
-            'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
-            'title': ''
-        })
-        await proto.drain()
+    proto.send_message({
+        'command': 'game_host',
+        'mod': '',
+        'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
+        'title': ''
+    })
+    await proto.drain()
 
-        msg = await read_until(proto, lambda msg: msg['command'] == 'game_info')
+    msg = await read_until_command(proto, 'game_info')
 
-        assert msg['title'] == 'test&#x27;s game'
-        assert msg['mapname'] == 'scmp_007'
-        assert msg['map_file_path'] == 'maps/scmp_007.zip'
-        assert msg['featured_mod'] == 'faf'
+    assert msg['title'] == 'test&#x27;s game'
+    assert msg['mapname'] == 'scmp_007'
+    assert msg['map_file_path'] == 'maps/scmp_007.zip'
+    assert msg['featured_mod'] == 'faf'
 
 
 async def test_coop_list(lobby_server):
@@ -197,7 +209,7 @@ async def test_coop_list(lobby_server):
         lobby_server
     )
 
-    await read_until(proto, lambda msg: msg['command'] == 'game_info')
+    await read_until_command(proto, 'game_info')
 
     proto.send_message({"command": "coop_list"})
     await proto.drain()
@@ -206,3 +218,38 @@ async def test_coop_list(lobby_server):
     assert "name" in msg
     assert "description" in msg
     assert "filename" in msg
+
+
+@pytest.mark.parametrize("command", ["game_host", "game_join"])
+async def test_server_ban_prevents_hosting(lobby_server, database, command):
+    """
+    Players who are banned while they are online, should immediately be
+    prevented from joining or hosting games until their ban expires.
+    """
+    player_id, _, proto = await connect_and_sign_in(
+        ('banme', 'banme'), lobby_server
+    )
+    # User successfully logs in
+    await read_until_command(proto, 'game_info')
+
+    async with database.acquire() as conn:
+        await conn.execute(
+            ban.insert().values(
+                player_id=player_id,
+                author_id=player_id,
+                reason="Test live ban",
+                expires_at=None,
+                level='GLOBAL'
+            )
+        )
+
+    proto.send_message({"command": command})
+    await proto.drain()
+
+    msg = await proto.read_message()
+    assert msg == {
+        'command': 'notice',
+        'style': 'error',
+        'text': 'You are banned from FAF forever.\n Reason :\n Test live ban'
+    }
+    proto.close()
