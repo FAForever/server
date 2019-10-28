@@ -442,13 +442,9 @@ class Game:
         scores = {}
         for player in self.players:
             army = self.get_player_option(player.id, 'Army')
-            try:
-                score = self.get_army_score(army)
-                scores[player] = score
-                self._logger.info('Result for army %s, player: %s: %s', army, player, score)
-            except KeyError:
-                # Default to -1 if there is no result
-                scores[player] = -1
+            score = self.get_army_score(army)
+            scores[player] = score
+            self._logger.info('Result for army %s, player: %s: %s', army, player, score)
 
         async with self._db.acquire() as conn:
             rows = []
@@ -797,11 +793,7 @@ class Game:
             else:
                 if team not in team_scores:
                     team_scores[team] = 0
-                try:
-                    team_scores[team] += self.get_army_score(army)
-                except KeyError:
-                    team_scores[team] += 0
-                    self._logger.warning("Missing game result for %s: %s", army, player)
+                team_scores[team] += self.get_army_score(army)
         ranks = [-score for team, score in sorted(team_scores.items(), key=lambda t: t[0])]
         rating_groups = []
         for team in sorted(self.teams):

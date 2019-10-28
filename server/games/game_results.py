@@ -89,7 +89,8 @@ class GameResults(Mapping):
     def score(self, army: int, game_id=None):
         """
         Pick and return most frequently reported score for an army. If multiple
-        scores are most frequent, pick the largest one.
+        scores are most frequent, pick the largest one. Returns 0 if there are
+        no results for a given army.
         """
         if army not in self:
             return 0
