@@ -130,7 +130,7 @@ class Game:
         game_mode: str='faf'
     ):
         self._db = database
-        self._results = GameResults()
+        self._results = GameResults(id_)
         self._army_stats = None
         self._players_with_unsent_army_stats = []
         self._game_stats_service = game_stats_service
@@ -759,7 +759,7 @@ class Game:
                 "WHERE id = %s", (new_validity_state.value, self.id))
 
     def get_army_score(self, army):
-        return self._results.score(army, self.id)
+        return self._results.score(army)
 
     def get_army_result(self, player):
         army = self.get_player_option(player.id, 'Army')

@@ -406,25 +406,6 @@ async def test_compute_rating_balanced_teamgame(game: Game, player_factory):
             assert new_rating != Rating(*player.ratings[RatingType.GLOBAL])
 
 
-# FIXME - discuss correct get_army_result behaviour
-@pytest.mark.skip
-async def test_game_get_army_result_takes_most_reported_result(game,
-                                                               game_add_players):
-
-    game.state = GameState.LOBBY
-    players = game_add_players(game, 1)
-    await game.add_result(0, 0, 'defeat', 0)
-    await game.add_result(0, 0, 'defeat', 0)
-    await game.add_result(0, 0, 'victory', 0)
-
-    assert game.get_army_result(players[0]) == GameOutcome.DEFEAT
-
-    await game.add_result(0, 0, 'victory', 0)
-    await game.add_result(0, 0, 'victory', 0)
-
-    assert game.get_army_result(players[0]) == GameOutcome.VICTORY
-
-
 async def test_game_get_army_result_ignores_unknown_results(game,
                                                             game_add_players):
     game.state = GameState.LOBBY

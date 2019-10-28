@@ -39,8 +39,9 @@ class GameResults(Mapping):
     army and game as a whole. Supports a dict-like access to lists of results
     for each army, but don't modify these.
     """
-    def __init__(self):
+    def __init__(self, game_id):
         Mapping.__init__(self)
+        self._game_id = game_id     # Just for logging
         self._back = {}
 
     def __getitem__(self, key: int):
@@ -84,9 +85,12 @@ class GameResults(Mapping):
         if len(outcomes) == 1:
             return outcomes.pop()
         else:
+            if len(outcomes) > 1:
+                self._logger.info("Multiple outcomes for game %s army %s: %s",
+                                  self._game_id, army, list(outcomes))
             return GameOutcome.UNKNOWN
 
-    def score(self, army: int, game_id=None):
+    def score(self, army: int):
         """
         Pick and return most frequently reported score for an army. If multiple
         scores are most frequent, pick the largest one. Returns 0 if there are
@@ -101,7 +105,7 @@ class GameResults(Mapping):
 
         # FIXME - we pass game id just for logging
         self._logger.info("Conflicting scores (%s) reported for game %s",
-                          scores, game_id)
+                          scores, self._game_id)
         score, _ = max(scores.items(), key=lambda kv: kv[::-1])
         return score
 
@@ -121,7 +125,7 @@ class GameResults(Mapping):
     # corresponding types?
     @classmethod
     async def from_db(cls, database, game_id):
-        results = cls()
+        results = cls(game_id)
         async with database.acquire() as conn:
             rows = await conn.execute(
                 "SELECT `place`, `score` "
