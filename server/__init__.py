@@ -11,6 +11,7 @@ import logging
 from typing import Any, Dict, Optional
 
 import aiomeasures
+import asyncio
 
 from server.db import FAFDatabase
 from . import config as config
@@ -103,10 +104,20 @@ def run_lobby_server(
             player_service.clear_dirty()
 
             if len(dirty_queues) > 0:
-                ctx.broadcast_raw(encode_queues(dirty_queues), lambda lobby_conn: lobby_conn.authenticated)
+                asyncio.ensure_future(
+                    ctx.broadcast_raw(
+                        encode_queues(dirty_queues),
+                        lambda lobby_conn: lobby_conn.authenticated
+                    )
+                )
 
             if len(dirty_players) > 0:
-                ctx.broadcast_raw(encode_players(dirty_players), lambda lobby_conn: lobby_conn.authenticated)
+                asyncio.ensure_future(
+                    ctx.broadcast_raw(
+                        encode_players(dirty_players),
+                        lambda lobby_conn: lobby_conn.authenticated
+                    )
+                )
 
             # TODO: This spams squillions of messages: we should implement per-connection message
             # aggregation at the next abstraction layer down :P
@@ -125,7 +136,12 @@ def run_lobby_server(
                 else:
                     validation_func = lambda lobby_conn: lobby_conn.player.id not in game.host.foes
 
-                ctx.broadcast_raw(message, lambda lobby_conn: lobby_conn.authenticated and validation_func(lobby_conn))
+                asyncio.ensure_future(
+                    ctx.broadcast_raw(
+                        message,
+                        lambda lobby_conn: lobby_conn.authenticated and validation_func(lobby_conn)
+                    )
+                )
         except Exception as e:
             logging.getLogger().exception(e)
         finally:
@@ -134,7 +150,7 @@ def run_lobby_server(
     ping_msg = encode_message('PING')
 
     def ping_broadcast():
-        ctx.broadcast_raw(ping_msg)
+        asyncio.ensure_future(ctx.broadcast_raw(ping_msg))
         loop.call_later(45, ping_broadcast)
 
     def make_connection() -> LobbyConnection:

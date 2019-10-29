@@ -17,15 +17,13 @@ TEST_ADDRESS = ('127.0.0.1', None)
 async def test_server_deprecated_client(lobby_server):
     proto = await connect_client(lobby_server)
 
-    proto.send_message({'command': 'ask_session', 'user_agent': 'faf-client', 'version': '0.0.0'})
-    await proto.drain()
+    await proto.send_message({'command': 'ask_session', 'user_agent': 'faf-client', 'version': '0.0.0'})
     msg = await proto.read_message()
 
     assert msg['command'] == 'notice'
 
     proto = await connect_client(lobby_server)
-    proto.send_message({'command': 'ask_session', 'version': '0.0.0'})
-    await proto.drain()
+    await proto.send_message({'command': 'ask_session', 'version': '0.0.0'})
     msg = await proto.read_message()
 
     assert msg['command'] == 'notice'
@@ -155,13 +153,12 @@ async def test_info_broadcast_authenticated(lobby_server):
 
     await perform_login(proto1, ('test', 'test_password'))
     await perform_login(proto2, ('Rhiza', 'puff_the_magic_dragon'))
-    proto1.send_message({
+    await proto1.send_message({
         "command": "game_matchmaking",
         "state": "start",
         "mod": "ladder1v1",
         "faction": "uef"
     })
-    await proto1.drain()
     # Will timeout if the message is never received
     await read_until_command(proto2, "matchmaker_info")
     with pytest.raises(asyncio.TimeoutError):
@@ -181,13 +178,12 @@ async def test_game_host_authenticated(lobby_server, user):
     _, _, proto = await connect_and_sign_in(user, lobby_server)
     await read_until_command(proto, 'game_info')
 
-    proto.send_message({
+    await proto.send_message({
         'command': 'game_host',
         'title': 'My Game',
         'mod': 'faf',
         'visibility': 'public',
     })
-    await proto.drain()
 
     msg = await read_until_command(proto, 'game_launch')
 
@@ -205,13 +201,12 @@ async def test_host_missing_fields(event_loop, lobby_server, player_service):
 
     await read_until_command(proto, 'game_info')
 
-    proto.send_message({
+    await proto.send_message({
         'command': 'game_host',
         'mod': '',
         'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
         'title': ''
     })
-    await proto.drain()
 
     msg = await read_until_command(proto, 'game_info')
 
@@ -229,8 +224,7 @@ async def test_coop_list(lobby_server):
 
     await read_until_command(proto, 'game_info')
 
-    proto.send_message({"command": "coop_list"})
-    await proto.drain()
+    await proto.send_message({"command": "coop_list"})
 
     msg = await read_until_command(proto, "coop_info")
     assert "name" in msg
@@ -261,8 +255,7 @@ async def test_server_ban_prevents_hosting(lobby_server, database, command):
             )
         )
 
-    proto.send_message({"command": command})
-    await proto.drain()
+    await proto.send_message({"command": command})
 
     msg = await proto.read_message()
     assert msg == {

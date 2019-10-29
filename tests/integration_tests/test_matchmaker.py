@@ -19,19 +19,17 @@ async def queue_players_for_matchmaking(lobby_server):
     await read_until_command(proto1, 'game_info')
     await read_until_command(proto2, 'game_info')
 
-    proto1.send_message({
+    await proto1.send_message({
         'command': 'game_matchmaking',
         'state': 'start',
         'faction': 'uef'
     })
-    await proto1.drain()
 
-    proto2.send_message({
+    await proto2.send_message({
         'command': 'game_matchmaking',
         'state': 'start',
         'faction': 1  # Python client sends factions as numbers
     })
-    await proto2.drain()
 
     # If the players did not match, this will fail due to a timeout error
     await read_until_command(proto1, 'match_found')
@@ -46,7 +44,7 @@ async def test_game_matchmaking(lobby_server):
 
     # The player that queued last will be the host
     msg2 = await read_until_command(proto2, 'game_launch')
-    proto2.send_message({
+    await proto2.send_message({
         'command': 'GameState',
         'target': 'game',
         'args': ['Lobby']
@@ -95,8 +93,7 @@ async def test_command_matchmaker_info(lobby_server, mocker):
 
     await read_until_command(proto, "game_info")
 
-    proto.send_message({"command": "matchmaker_info"})
-    await proto.drain()
+    await proto.send_message({"command": "matchmaker_info"})
 
     msg = await read_until_command(proto, "matchmaker_info")
     assert msg == {
@@ -120,7 +117,7 @@ async def test_matchmaker_info_message_on_cancel(lobby_server):
 
     await read_until_command(proto, 'game_info')
 
-    proto.send_message({
+    await proto.send_message({
         'command': 'game_matchmaking',
         'state': 'start',
         'faction': 'uef'
@@ -132,7 +129,7 @@ async def test_matchmaker_info_message_on_cancel(lobby_server):
     assert msg["queues"][0]["queue_name"] == "ladder1v1"
     assert len(msg["queues"][0]["boundary_80s"]) == 1
 
-    proto.send_message({
+    await proto.send_message({
         'command': 'game_matchmaking',
         'state': 'stop',
     })

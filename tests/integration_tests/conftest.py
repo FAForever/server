@@ -110,7 +110,7 @@ async def perform_login(
 ) -> None:
     login, pw = credentials
     pw_hash = hashlib.sha256(pw.encode('utf-8'))
-    proto.send_message({
+    await proto.send_message({
         'command': 'hello',
         'version': '1.0.0-dev',
         'user_agent': 'faf-client',
@@ -118,7 +118,6 @@ async def perform_login(
         'password': pw_hash.hexdigest(),
         'unique_id': 'some_id'
     })
-    await proto.drain()
 
 
 async def read_until(
@@ -139,8 +138,7 @@ async def read_until_command(proto: QDataStreamProtocol, command: str) -> Dict[s
 
 
 async def get_session(proto):
-    proto.send_message({'command': 'ask_session', 'user_agent': 'faf-client', 'version': '0.11.16'})
-    await proto.drain()
+    await proto.send_message({'command': 'ask_session', 'user_agent': 'faf-client', 'version': '0.11.16'})
     msg = await read_until_command(proto, 'session')
 
     return msg['session']
