@@ -258,11 +258,10 @@ class LobbyConnection():
                 subject_id=subject_id,
             ))
 
-    def kick(self, initiator):
+    def kick(self):
         self.send({
             "command": "notice",
             "style": "kick",
-            "initiator": initiator
         })
         self.abort()
 
@@ -283,7 +282,6 @@ class LobbyConnection():
                     player.lobby_connection.send({
                         "command": "notice",
                         "style": "kill",
-                        "initiator": self.player.login
                     })
 
             elif action == "closelobby":
@@ -327,7 +325,7 @@ class LobbyConnection():
                                 raise ClientError('Your ban attempt upset the database: {}'.format(e))
                     else:
                         self._logger.warning('Administrative action: %s closed client for %s', self.player, player)
-                    player.lobby_connection.kick(initiator=self.player.login)
+                    player.lobby_connection.kick()
                     if ban_fail:
                         raise ClientError("Kicked the player, but he was already banned!")
 

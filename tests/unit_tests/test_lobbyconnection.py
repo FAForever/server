@@ -400,7 +400,7 @@ async def test_command_admin_closelobby(mocker, lobbyconnection):
         'user_id': 55
     })
 
-    tuna.lobby_connection.kick.assert_any_call(initiator="Sheeo")
+    tuna.lobby_connection.kick.assert_any_call()
 
 
 async def test_command_admin_closelobby_with_ban(mocker, lobbyconnection, database):
@@ -424,7 +424,7 @@ async def test_command_admin_closelobby_with_ban(mocker, lobbyconnection, databa
         }
     })
 
-    banme.lobby_connection.kick.assert_any_call(initiator="Sheeo")
+    banme.lobby_connection.kick.assert_any_call()
 
     async with database.acquire() as conn:
         result = await conn.execute(select([ban]).where(ban.c.player_id == banme.id))
@@ -503,7 +503,7 @@ async def test_command_admin_closelobby_with_ban_duration_no_period(mocker, lobb
         }
     })
 
-    banme.lobby_connection.kick.assert_any_call(initiator="Sheeo")
+    banme.lobby_connection.kick.assert_any_call()
 
     async with database.acquire() as conn:
         result = await conn.execute(select([ban.c.expires_at]).where(ban.c.player_id == banme.id))
@@ -605,7 +605,6 @@ async def test_command_admin_closeFA(mocker, lobbyconnection):
     tuna.lobby_connection.send.assert_any_call({
         "command": "notice",
         "style": "kill",
-        "initiator": "Sheeo"
     })
 
 
