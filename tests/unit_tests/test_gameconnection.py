@@ -1,13 +1,11 @@
-import asyncio
 from unittest import mock
-import pytest
-import asynctest
 
+import pytest
+from asynctest import CoroutineMock, exhaust_callbacks
 from server import GameConnection
 from server.games import Game
 from server.games.game import ValidityState, Victory
 from server.players import PlayerState
-from asynctest import CoroutineMock, exhaust_callbacks
 
 pytestmark = pytest.mark.asyncio
 
@@ -233,12 +231,12 @@ async def test_handle_action_TeamkillReport(game: Game, game_connection: GameCon
         result = await conn.execute("select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=200", (game.id))
         report = await result.fetchone()
         assert game.id == report["game_id"]
-        
+
         reported_user_query = await conn.execute("select player_id from reported_user where report_id=%s", (report["id"]))
         data = await reported_user_query.fetchone()
         assert data["player_id"] == 3
-        
-        
+
+
 async def test_handle_action_TeamkillReport_invalid_ids(game: Game, game_connection: GameConnection, database):
     game.launch = CoroutineMock()
     await game_connection.handle_action('TeamkillReport', ['230', 0, 'Dostya', 0, 'Rhiza'])
@@ -247,7 +245,7 @@ async def test_handle_action_TeamkillReport_invalid_ids(game: Game, game_connect
         result = await conn.execute("select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=230", (game.id))
         report = await result.fetchone()
         assert game.id == report["game_id"]
-        
+
         reported_user_query = await conn.execute("select player_id from reported_user where report_id=%s", (report["id"]))
         data = await reported_user_query.fetchone()
         assert data["player_id"] == 3

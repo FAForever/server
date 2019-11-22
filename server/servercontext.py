@@ -48,9 +48,12 @@ class ServerContext:
 
     async def broadcast_raw(self, message, validate_fn=lambda a: True):
         server.stats.incr('server.broadcasts')
+        tasks = []
         for conn, proto in self.connections.items():
             if validate_fn(conn):
-                await proto.send_raw(message)
+                tasks.append(proto.send_raw(message))
+
+        await asyncio.gather(tasks)
 
     async def client_connected(self, stream_reader, stream_writer):
         self._logger.debug("%s: Client connected", self)

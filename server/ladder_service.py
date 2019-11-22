@@ -113,8 +113,10 @@ class LadderService:
                 assert len(s2.players) == 1
                 p1, p2 = s1.players[0], s2.players[0]
                 msg = {"command": "match_found", "queue": "ladder1v1"}
-                await p1.lobby_connection.send(msg)
-                await p2.lobby_connection.send(msg)
+                await asyncio.gather(
+                    p1.lobby_connection.send(msg),
+                    p2.lobby_connection.send(msg)
+                )
                 asyncio.ensure_future(self.start_game(p1, p2))
             except Exception as e:
                 self._logger.exception(
@@ -166,8 +168,10 @@ class LadderService:
                 raise TimeoutError("Host left lobby")
         except TimeoutError:
             msg = {"command": "game_launch_timeout"}
-            await host.lobby_connection.send(msg)
-            await guest.lobby_connection.send(msg)
+            await asyncio.gather(
+                host.lobby_connection.send(msg),
+                guest.lobby_connection.send(msg)
+            )
             # TODO: Uncomment this line once the client supports `game_launch_timeout`.
             # Until then, returning here will cause the client to think it is
             # searching for ladder, even though the server has already removed it
