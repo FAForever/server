@@ -103,7 +103,6 @@ class GameResults(Mapping):
         if len(scores) == 1:
             return scores.popitem()[0]
 
-        # FIXME - we pass game id just for logging
         self._logger.info("Conflicting scores (%s) reported for game %s",
                           scores, self._game_id)
         score, _ = max(scores.items(), key=lambda kv: kv[::-1])
@@ -121,8 +120,6 @@ class GameResults(Mapping):
         else:
             return 0
 
-    # FIXME: Should we gather such methods in one class, or place them near
-    # corresponding types?
     @classmethod
     async def from_db(cls, database, game_id):
         results = cls(game_id)
