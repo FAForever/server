@@ -1,14 +1,15 @@
-insert into login (id, login, email, password, create_time) values
-    (50,  'player_service1', 'ps1@example.com', SHA2('player_service1', 256), '2000-01-01 00:00:00'),
-    (51,  'player_service2', 'ps2@example.com', SHA2('player_service2', 256), '2000-01-01 00:00:00'),
-    (52,  'player_service3', 'ps3@example.com', SHA2('player_service3', 256), '2000-01-01 00:00:00'),
-    (100, 'ladder1', 'ladder1@example.com', SHA2('ladder1', 256), '2000-01-01 00:00:00'),
-    (101, 'ladder2', 'ladder2@example.com', SHA2('ladder2', 256), '2000-01-01 00:00:00'),
-    (102, 'ladder_ban', 'ladder_ban@example.com', SHA2('ladder_ban', 256), '2000-01-01 00:00:00'),
-    (200, 'banme', 'banme@example.com', SHA2('banme', 256), '2000-01-01 00:00:00'),
-    (201, 'ban_revoked', 'ban_revoked@example.com', SHA2('ban_revoked', 256), '2000-01-01 00:00:00'),
-    (202, 'ban_expired', 'ban_expired@example.com', SHA2('ban_expired', 256), '2000-01-01 00:00:00'),
-    (203, 'ban_long_time', 'ban_null_expiration@example.com', SHA2('ban_long_time', 256), '2000-01-01 00:00:00')
+insert into login (id, login, email, password, steamid, create_time) values
+    (50,  'player_service1', 'ps1@example.com', SHA2('player_service1', 256), null, '2000-01-01 00:00:00'),
+    (51,  'player_service2', 'ps2@example.com', SHA2('player_service2', 256), null,  '2000-01-01 00:00:00'),
+    (52,  'player_service3', 'ps3@example.com', SHA2('player_service3', 256), null, '2000-01-01 00:00:00'),
+    (100, 'ladder1', 'ladder1@example.com', SHA2('ladder1', 256), null, '2000-01-01 00:00:00'),
+    (101, 'ladder2', 'ladder2@example.com', SHA2('ladder2', 256), null, '2000-01-01 00:00:00'),
+    (102, 'ladder_ban', 'ladder_ban@example.com', SHA2('ladder_ban', 256), null, '2000-01-01 00:00:00'),
+    (200, 'banme', 'banme@example.com', SHA2('banme', 256), null, '2000-01-01 00:00:00'),
+    (201, 'ban_revoked', 'ban_revoked@example.com', SHA2('ban_revoked', 256), null, '2000-01-01 00:00:00'),
+    (202, 'ban_expired', 'ban_expired@example.com', SHA2('ban_expired', 256), null, '2000-01-01 00:00:00'),
+    (203, 'ban_long_time', 'ban_null_expiration@example.com', SHA2('ban_long_time', 256), null, '2000-01-01 00:00:00'),
+    (300, 'steam_id', 'steam_id@example.com', SHA2('steam_id', 256), 34632, '2000-01-01 00:00:00')
 ;
 
 delete from clan_membership where player_id = 50;

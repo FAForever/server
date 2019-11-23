@@ -446,7 +446,7 @@ class LobbyConnection():
                 return False
         return True
 
-    async def check_policy_conformity(self, player_id, uid_hash, session):
+    async def check_policy_conformity(self, player_id, uid_hash, session, ignore_result=False):
         url = FAF_POLICY_SERVER_BASE_URL + '/verify'
         payload = {
             "player_id": player_id,
@@ -461,6 +461,9 @@ class LobbyConnection():
         async with aiohttp.ClientSession(raise_for_status=True) as session:
             async with session.post(url, json=payload, headers=headers) as resp:
                 response = await resp.json()
+
+        if ignore_result:
+            return True
 
         if response.get('result', '') == 'vm':
             self._logger.debug("Using VM: %d: %s", player_id, uid_hash)
@@ -525,8 +528,11 @@ class LobbyConnection():
                     "player_id": player_id
                 })
 
-            if not self.player_service.is_uniqueid_exempt(player_id) and steamid is None:
-                conforms_policy = await self.check_policy_conformity(player_id, message['unique_id'], self.session)
+            if not self.player_service.is_uniqueid_exempt(player_id):
+                conforms_policy = await self.check_policy_conformity(
+                    player_id, message['unique_id'], self.session,
+                    ignore_result=steamid is not None
+                )
                 if not conforms_policy:
                     return
 

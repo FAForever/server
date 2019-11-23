@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, Tuple
 from unittest import mock
 
 import pytest
+from aiohttp import web
 from server import GameService, PlayerService, run_lobby_server
 from server.ladder_service import LadderService
 from server.protocol import QDataStreamProtocol
@@ -51,6 +52,45 @@ def lobby_server(request, event_loop, database, player_service, game_service,
     request.addfinalizer(fin)
 
     return ctx
+
+
+@pytest.fixture
+def policy_server(event_loop):
+    host = 'localhost'
+    port = 6080
+
+    app = web.Application()
+    routes = web.RouteTableDef()
+
+    class Handle(object):
+        def __init__(self):
+            self.host = host
+            self.port = port
+            self.result = "honest"
+            self.verify = mock.Mock()
+
+    handle = Handle()
+
+    @routes.post('/verify')
+    async def token(request):
+        # Register that the endpoint was called using a Mock
+        handle.verify()
+
+        await request.json()
+        return web.json_response({'result': handle.result})
+
+    app.add_routes(routes)
+
+    runner = web.AppRunner(app)
+
+    async def start_app():
+        await runner.setup()
+        site = web.TCPSite(runner, host, port)
+        await site.start()
+
+    event_loop.run_until_complete(start_app())
+    yield handle
+    event_loop.run_until_complete(runner.cleanup())
 
 
 async def connect_client(server) -> QDataStreamProtocol:
