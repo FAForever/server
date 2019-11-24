@@ -53,9 +53,9 @@ class ClientError(Exception):
 
 
 class AuthenticationError(Exception):
-    def __init__(self, message, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.message = message
+    def __init__(self, context, **attrs):
+        self.context = context
+        self.attrs = attrs
 
 
 @with_logger
@@ -158,7 +158,8 @@ class LobbyConnection:
         except AuthenticationError as ex:
             await self.send({
                 'command': 'authentication_failed',
-                'text': ex.message
+                'context': ex.context,
+                **ex.attrs
             })
         except ClientError as ex:
             self._logger.warning("Client error: %s", ex.message)
@@ -391,11 +392,10 @@ class LobbyConnection:
             .order_by(lobby_ban.c.expires_at.desc())
         )
 
-        auth_error_message = "Login not found or password incorrect. They are case sensitive."
         row = await result.fetchone()
         if not row:
             metrics.user_logins.labels("failure").inc()
-            raise AuthenticationError(auth_error_message)
+            raise AuthenticationError("denied")
 
         player_id = row[t_login.c.id]
         real_username = row[t_login.c.login]
@@ -407,7 +407,7 @@ class LobbyConnection:
 
         if dbPassword != password:
             metrics.user_logins.labels("failure").inc()
-            raise AuthenticationError(auth_error_message)
+            raise AuthenticationError("denied")
 
         now = datetime.now()
         if ban_reason is not None and now < ban_expiry:
@@ -420,9 +420,7 @@ class LobbyConnection:
 
         if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() > config.FORCE_STEAM_LINK_AFTER_DATE:
             self._logger.debug('Rejected login from new user: %s, %s, %s', player_id, username, self.session)
-            raise ClientError(
-                "Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on <a href='{steamlink_url}'>{steamlink_url}</a>.".format(steamlink_url=config.WWW_URL + '/account/link'),
-                recoverable=False)
+            raise AuthenticationError("steam_link")
 
         self._logger.debug("Login from: %s, %s, %s", player_id, username, self.session)
 
