@@ -14,7 +14,7 @@ async def test_server_invalid_login(lobby_server):
     await perform_login(proto, ('Cat', 'epic'))
     auth_failed_msg = {
         'command': 'authentication_failed',
-        'text': 'Login not found or password incorrect. They are case sensitive.'
+        'context': 'denied'
     }
     msg = await proto.read_message()
     assert msg == auth_failed_msg
