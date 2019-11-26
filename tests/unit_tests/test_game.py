@@ -38,6 +38,12 @@ def custom_game(event_loop, database, game_service, game_stats_service):
     yield game
 
 
+async def game_player_scores(database, game):
+    async with database.acquire() as conn:
+        results = await conn.execute("SELECT playerId, score FROM game_player_stats WHERE gameid = %s", game.id)
+        return set(f.as_tuple() for f in await results.fetchall())
+
+
 async def test_initialization(game: Game):
     assert game.state == GameState.INITIALIZING
     assert game.enforce_rating is False
@@ -665,7 +671,7 @@ async def test_players_exclude_observers(game: Game, game_add_players,
     assert game.players == frozenset(players)
 
 
-async def test_game_outcomes(game: Game, players):
+async def test_game_outcomes(game: Game, database, players):
     game.state = GameState.LOBBY
     players.hosting.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
@@ -681,8 +687,15 @@ async def test_game_outcomes(game: Game, players):
     assert host_outcome is GameOutcome.VICTORY
     assert guest_outcome is GameOutcome.DEFEAT
 
+    # Default values before game ends
+    assert await game_player_scores(database, game) == {(players.hosting.id, 0),
+                                                        (players.joining.id, 0)}
+    await game.on_game_end()
+    assert await game_player_scores(database, game) == {(players.hosting.id, 1),
+                                                        (players.joining.id, 0)}
 
-async def test_game_outcomes_no_results(game: Game, players):
+
+async def test_game_outcomes_no_results(game: Game, database, players):
     game.state = GameState.LOBBY
     players.hosting.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
@@ -696,8 +709,12 @@ async def test_game_outcomes_no_results(game: Game, players):
     assert host_outcome is GameOutcome.UNKNOWN
     assert guest_outcome is GameOutcome.UNKNOWN
 
+    await game.on_game_end()
+    assert await game_player_scores(database, game) == {(players.hosting.id, 0),
+                                                        (players.joining.id, 0)}
 
-async def test_game_outcomes_conflicting(game: Game, players):
+
+async def test_game_outcomes_conflicting(game: Game, database, players):
     game.state = GameState.LOBBY
     players.hosting.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
@@ -714,6 +731,7 @@ async def test_game_outcomes_conflicting(game: Game, players):
     guest_outcome = game.get_army_result(players.joining)
     assert host_outcome is GameOutcome.UNKNOWN
     assert guest_outcome is GameOutcome.UNKNOWN
+    # No guarantees on scores for conflicting results.
 
 
 async def test_victory_conditions():

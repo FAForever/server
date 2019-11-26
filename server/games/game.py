@@ -725,7 +725,7 @@ class Game:
                 options['Color'],
                 options['Team'],
                 options['StartSpot'],
-                mean, dev, 0, -1
+                mean, dev, 0, 0
             ))
         if not query_args:
             self._logger.warning("No player options available!")
