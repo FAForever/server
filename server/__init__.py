@@ -33,7 +33,6 @@ __contact__ = 'admin@faforever.com'
 __license__ = 'GPLv3'
 __copyright__ = 'Copyright (c) 2011-2015 ' + __author__
 
-
 __all__ = (
     'GameConnection',
     'GameStatsService',
@@ -52,6 +51,7 @@ stats = None
 
 if not config.ENABLE_STATSD:
     from . import fake_statsd
+
     stats = fake_statsd.DummyConnection()
 else:
     stats = aiomeasures.StatsD(config.STATSD_SERVER)
@@ -81,14 +81,14 @@ def encode_queues(queues):
 
 
 def run_lobby_server(
-    address: (str, int),
-    database: FAFDatabase,
-    player_service: PlayerService,
-    games: GameService,
-    loop,
-    nts_client: Optional[TwilioNTS],
-    geoip_service: GeoIpService,
-    ladder_service: LadderService
+        address: (str, int),
+        database: FAFDatabase,
+        player_service: PlayerService,
+        games: GameService,
+        loop,
+        nts_client: Optional[TwilioNTS],
+        geoip_service: GeoIpService,
+        ladder_service: LadderService
 ) -> ServerContext:
     """
     Run the lobby server
@@ -121,7 +121,8 @@ def run_lobby_server(
                 # allowed to see them.
                 if game.visibility == VisibilityState.FRIENDS:
                     # To see this game, you must have an authenticated connection and be a friend of the host, or the host.
-                    validation_func = lambda lobby_conn: lobby_conn.player.id in game.host.friends or lobby_conn.player == game.host
+                    validation_func = lambda \
+                        lobby_conn: lobby_conn.player.id in game.host.friends or lobby_conn.player == game.host
                 else:
                     validation_func = lambda lobby_conn: lobby_conn.player.id not in game.host.foes
 
@@ -146,6 +147,7 @@ def run_lobby_server(
             players=player_service,
             ladder_service=ladder_service
         )
+
     ctx = ServerContext(make_connection, name="LobbyServer")
     loop.call_later(DIRTY_REPORT_INTERVAL, report_dirties)
     loop.call_soon(ping_broadcast)

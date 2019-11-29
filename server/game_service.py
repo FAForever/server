@@ -137,14 +137,14 @@ class GameService:
             "game_stats_service": self.game_stats_service
         }
 
-        GameClass = {
+        game_class = {
             'ladder1v1':    LadderGame,
             'coop':         CoopGame,
             'faf':          CustomGame,
             'fafbeta':      CustomGame,
             'equilibrium':  CustomGame
         }.get(game_mode, Game)
-        game = GameClass(**args)
+        game = game_class(**args)
 
         self.games[game_id] = game
 

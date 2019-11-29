@@ -21,6 +21,6 @@ class DummyConnection:
     def incr(self, a, tags=None):
         pass
 
-    class unit:
+    class Unit:
         def __init__(self):
             pass

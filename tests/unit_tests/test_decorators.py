@@ -7,7 +7,7 @@ from server.decorators import with_logger, timed
 
 def test_with_logger():
     @with_logger
-    class testclass():
+    class testclass:
         pass
     assert isinstance(testclass()._logger, logging.Logger)
 
@@ -25,7 +25,7 @@ def test_timed_fun():
 def test_timed_method():
     logger = mock.Mock()
 
-    class TestClass():
+    class TestClass:
         @timed(logger=logger, limit=0)
         def something(self):
             return "Somevalue"
