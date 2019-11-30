@@ -526,7 +526,7 @@ class LobbyConnection():
                 })
 
             if not self.player_service.is_uniqueid_exempt(player_id):
-                conforms_policy = await self.check_policy_conformity(player_id, message['unique_id'], self.session, steamid is not None))
+                conforms_policy = await self.check_policy_conformity(player_id, message['unique_id'], self.session, steamid is not None)
                 if not conforms_policy and steamid is None:
                     return
 
