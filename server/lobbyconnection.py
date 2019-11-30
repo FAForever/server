@@ -446,7 +446,7 @@ class LobbyConnection():
                 return False
         return True
 
-    async def check_policy_conformity(self, player_id, uid_hash, session):
+    async def check_policy_conformity(self, player_id, uid_hash, session, is_steam_linked):
         url = FAF_POLICY_SERVER_BASE_URL + '/verify'
         payload = {
             "player_id": player_id,
@@ -462,7 +462,7 @@ class LobbyConnection():
             async with session.post(url, json=payload, headers=headers) as resp:
                 response = await resp.json()
 
-        if response.get('result', '') == 'vm':
+        if not is_steam_linked and response.get('result', '') == 'vm':
             self._logger.debug("Using VM: %d: %s", player_id, uid_hash)
             self.send({
                 "command": "notice",
@@ -480,7 +480,7 @@ class LobbyConnection():
                               config.WWW_URL + "/account/link</a>.<br>If you need an exception, please contact an "
                                                "admin or moderator on the forums", fatal=True)
 
-        if response.get('result', '') == 'already_associated':
+        if not is_steam_linked and response.get('result', '') == 'already_associated':
             self._logger.warning("UID hit: %d: %s", player_id, uid_hash)
             self.send_warning("Your computer is already associated with another FAF account.<br><br>In order to "
                               "log in with an additional account, you have to link it to Steam: <a href='" +
@@ -526,7 +526,7 @@ class LobbyConnection():
                 })
 
             if not self.player_service.is_uniqueid_exempt(player_id):
-                conforms_policy = await self.check_policy_conformity(player_id, message['unique_id'], self.session)
+                conforms_policy = await self.check_policy_conformity(player_id, message['unique_id'], self.session, steamid is not None))
                 if not conforms_policy and steamid is None:
                     return
 
