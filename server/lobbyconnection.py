@@ -525,9 +525,9 @@ class LobbyConnection():
                     "player_id": player_id
                 })
 
-            if not self.player_service.is_uniqueid_exempt(player_id) and steamid is None:
+            if not self.player_service.is_uniqueid_exempt(player_id):
                 conforms_policy = await self.check_policy_conformity(player_id, message['unique_id'], self.session)
-                if not conforms_policy:
+                if not conforms_policy and steamid is None:
                     return
 
             # Update the user's IRC registration (why the fuck is this here?!)
