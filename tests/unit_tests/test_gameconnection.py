@@ -196,7 +196,7 @@ async def test_handle_action_GameResult_calls_add_result(game: Game, game_connec
     game_connection.connect_to_host = CoroutineMock()
 
     await game_connection.handle_action('GameResult', [0, 'score -5'])
-    game.add_result.assert_called_once_with(game_connection.player, 0, 'score', -5)
+    game.add_result.assert_called_once_with(game_connection.player.id, 0, 'score', -5)
 
 
 async def test_handle_action_GameOption(game: Game, game_connection: GameConnection):

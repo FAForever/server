@@ -257,7 +257,7 @@ class GameConnection(GpgNetServerProtocol):
                 self.finished_sim = True
                 await self.game.check_sim_end()
 
-            await self.game.add_result(self.player, army, result[0], int(result[1]))
+            await self.game.add_result(self.player.id, army, result[0], int(result[1]))
         except (KeyError, ValueError):  # pragma: no cover
             self._logger.warning("Invalid result for %s reported: %s", army, result)
 

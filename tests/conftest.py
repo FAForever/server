@@ -23,6 +23,7 @@ from server.db import FAFDatabase
 from tests.utils import MockDatabase
 
 from asynctest import CoroutineMock
+import asynctest
 
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -127,12 +128,12 @@ def ugame(database, players):
 def make_game(database, uid, players):
     from server.games import Game
     from server.abc.base_game import InitMode
-    mock_parent = mock.Mock()
-    game = mock.create_autospec(spec=Game(uid, database, mock_parent, mock.Mock()))
-    game.remove_game_connection = CoroutineMock()
-    players.hosting.getGame = mock.Mock(return_value=game)
-    players.joining.getGame = mock.Mock(return_value=game)
-    players.peer.getGame = mock.Mock(return_value=game)
+    mock_parent = CoroutineMock()
+    game = asynctest.create_autospec(spec=Game(uid, database, mock_parent,
+                                               CoroutineMock()))
+    players.hosting.getGame = CoroutineMock(return_value=game)
+    players.joining.getGame = CoroutineMock(return_value=game)
+    players.peer.getGame = CoroutineMock(return_value=game)
     game.hostPlayer = players.hosting
     game.init_mode = InitMode.NORMAL_LOBBY
     game.name = "Some game name"
