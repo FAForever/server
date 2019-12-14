@@ -1,13 +1,22 @@
+import asyncio
 from unittest import mock
 
+import asynctest
 import pytest
 from asynctest import CoroutineMock, exhaust_callbacks
 from server import GameConnection
+from server.abc.base_game import GameConnectionState
 from server.games import Game
-from server.games.game import ValidityState, Victory
+from server.games.game import GameState, ValidityState, Victory
 from server.players import PlayerState
 
 pytestmark = pytest.mark.asyncio
+
+
+@pytest.fixture
+def real_game(event_loop, database, game_service, game_stats_service):
+    game = Game(42, database, game_service, game_stats_service)
+    yield game
 
 
 def assert_message_sent(game_connection: GameConnection, command, args):
@@ -25,6 +34,41 @@ async def test_abort(game_connection: GameConnection, game: Game, players):
     game_connection.abort()
 
     game.remove_game_connection.assert_called_with(game_connection)
+
+
+async def test_disconnect_all_peers(
+    game_connection: GameConnection,
+    real_game: Game,
+    players
+):
+    real_game.state = GameState.LOBBY
+    game_connection.player = players.hosting
+    game_connection.game = real_game
+
+    disconnect_done = mock.Mock()
+
+    async def fake_send_dc(player_id):
+        await asyncio.sleep(1)  # Take some time
+        disconnect_done.success()
+        return "OK"
+
+    # Set up a peer that will disconnect without error
+    ok_disconnect = asynctest.create_autospec(GameConnection)
+    ok_disconnect.state = GameConnectionState.CONNECTED_TO_HOST
+    ok_disconnect.send_DisconnectFromPeer = fake_send_dc
+
+    # Set up a peer that will throw an exception
+    fail_disconnect = asynctest.create_autospec(GameConnection)
+    fail_disconnect.send_DisconnectFromPeer.return_value = Exception("Test exception")
+    fail_disconnect.state = GameConnectionState.CONNECTED_TO_HOST
+
+    # Add the peers to the game
+    real_game.add_game_connection(fail_disconnect)
+    real_game.add_game_connection(ok_disconnect)
+
+    await game_connection.disconnect_all_peers()
+
+    disconnect_done.success.assert_called_once()
 
 
 async def test_handle_action_GameState_idle_adds_connection(

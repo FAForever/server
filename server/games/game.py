@@ -3,17 +3,17 @@ import functools
 import logging
 import re
 import time
-from collections import Counter, defaultdict
+from collections import defaultdict
 from enum import Enum, unique
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple
 
 import trueskill
+from server.games.game_results import GameOutcome, GameResult, GameResults
+from server.rating import RatingType
 from trueskill import Rating
 
 from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
-from server.rating import RatingType
-from server.games.game_results import GameOutcome, GameResult, GameResults
 
 FFA_TEAM = 1
 
