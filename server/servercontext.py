@@ -53,7 +53,7 @@ class ServerContext:
             if validate_fn(conn):
                 tasks.append(proto.send_raw(message))
 
-        await asyncio.gather(tasks)
+        await asyncio.gather(*tasks)
 
     async def client_connected(self, stream_reader, stream_writer):
         self._logger.debug("%s: Client connected", self)

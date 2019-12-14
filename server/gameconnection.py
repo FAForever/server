@@ -120,7 +120,7 @@ class GameConnection(GpgNetServerProtocol):
                     if peer != self and peer.player != self.game.host:
                         self._logger.debug("%s connecting to %s", self.player, peer)
                         tasks.append(self.connect_to_peer(peer))
-                await asyncio.gather(tasks)
+                await asyncio.gather(*tasks)
         except Exception as e:  # pragma: no cover
             self._logger.exception(e)
 
@@ -539,7 +539,7 @@ class GameConnection(GpgNetServerProtocol):
             tasks.append(peer.send_DisconnectFromPeer(self.player.id))
 
         try:
-            await asyncio.gather(tasks)
+            await asyncio.gather(*tasks)
         except Exception:  # pragma no cover
             self._logger.exception(
                 "peer_sendDisconnectFromPeer failed for player %i",

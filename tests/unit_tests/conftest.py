@@ -1,14 +1,14 @@
 from unittest import mock
 
+import asynctest
 import pytest
+from asynctest import CoroutineMock
 from server import GameStatsService
 from server.game_service import GameService
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import Game
 from server.geoip_service import GeoIpService
 from server.ladder_service import LadderService
-import asynctest
-from asynctest import CoroutineMock
 
 
 @pytest.fixture
