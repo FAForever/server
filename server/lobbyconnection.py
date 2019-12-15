@@ -300,56 +300,9 @@ class LobbyConnection:
 
             elif action == "closelobby":
                 player = self.player_service[message['user_id']]
-                ban_fail = None
                 if player:
-                    if 'ban' in message:
-                        reason = message['ban'].get('reason', 'Unspecified')
-                        duration = int(message['ban'].get('duration', 1))
-                        period = message['ban'].get('period', 'SECOND').upper()
-
-                        self._logger.warning('Administrative action: %s closed client for %s with %s ban (Reason: %s)', self.player, player, duration, reason)
-                        async with self._db.acquire() as conn:
-                            try:
-                                result = await conn.execute(
-                                    select([lobby_ban.c.reason]).where(
-                                        and_(
-                                            lobby_ban.c.idUser == message["user_id"],
-                                            lobby_ban.c.expires_at > func.now()
-                                        )
-                                    )
-                                )
-
-                                row = await result.fetchone()
-                                if row:
-                                    ban_fail = row[0]
-                                else:
-                                    if period not in ["SECOND", "DAY", "WEEK", "MONTH"]:
-                                        self._logger.warning('Tried to ban player with invalid period')
-                                        raise ClientError(f"Period '{period}' is not allowed!")
-
-                                    await conn.execute(
-                                        ban.insert().values(
-                                            player_id=player.id,
-                                            author_id=self.player.id,
-                                            reason=reason,
-                                            expires_at=func.date_add(
-                                                func.now(),
-                                                text(f"interval :duration {period}")
-                                            ),
-                                            level='GLOBAL'
-                                        ),
-                                        duration=duration
-                                    )
-
-                            except pymysql.MySQLError as e:
-                                raise ClientError('Your ban attempt upset the database: {}'.format(e))
-                    else:
-                        self._logger.warning('Administrative action: %s closed client for %s', self.player, player)
-                    if player.lobby_connection is not None:
-                        with contextlib.suppress(DisconnectedError):
-                            await player.lobby_connection.kick()
-                    if ban_fail:
-                        raise ClientError("Kicked the player, but he was already banned!")
+                    self._logger.warning('Administrative action: %s closed client for %s', self.player, player)
+                    await player.lobby_connection.kick()
 
             elif action == "broadcast":
                 message_text = message.get('message')
