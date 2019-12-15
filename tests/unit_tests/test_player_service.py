@@ -117,7 +117,6 @@ async def test_mark_dirty(player_factory, player_service):
 async def test_update_data(player_factory, player_service):
     await player_service.update_data()
 
-    assert player_service.get_permission_group(1) == 2
     assert player_service.is_uniqueid_exempt(1) is True
     assert player_service.client_version_info == ('0.10.125', 'some-installer.msi')
 

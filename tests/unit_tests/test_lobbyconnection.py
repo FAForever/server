@@ -1,4 +1,3 @@
-from datetime import datetime
 from hashlib import sha256
 from unittest import mock
 from unittest.mock import Mock
@@ -23,7 +22,7 @@ from server.players import PlayerState
 from server.protocol import DisconnectedError, QDataStreamProtocol
 from server.rating import RatingType
 from server.types import Address
-from sqlalchemy import and_, select, text
+from sqlalchemy import and_, select
 
 pytestmark = pytest.mark.asyncio
 
@@ -106,7 +105,6 @@ def lobbyconnection(
 
     lc.player = mock_player
     lc.protocol = mock_protocol
-    lc.player_service.get_permission_group.return_value = 0
     lc.player_service.fetch_player_data = CoroutineMock()
     lc.peer_address = Address('127.0.0.1', 1234)
     lc._authenticated = True
@@ -521,14 +519,15 @@ async def test_coop_list(mocker, lobbyconnection):
     ]
 
 
-async def test_command_admin_closelobby(mocker, lobbyconnection):
-    player = mocker.patch.object(lobbyconnection, 'player')
-    player.login = 'Sheeo'
-    player.admin = True
-    tuna = mock.Mock()
-    tuna.id = 55
-    tuna.lobby_connection = asynctest.create_autospec(LobbyConnection)
-    lobbyconnection.player_service = {1: player, 55: tuna}
+async def test_command_admin_closelobby(mocker, lobbyconnection, player_factory):
+    player = lobbyconnection.player
+    player.id = 1
+    tuna = player_factory("Tuna", player_id=55, with_lobby_connection=True)
+    data = {
+        player.id: player,
+        tuna.id: tuna
+    }
+    lobbyconnection.player_service.__getitem__.side_effect = data.__getitem__
 
     await lobbyconnection.on_message_received({
         'command': 'admin',
@@ -543,8 +542,11 @@ async def test_command_admin_closeFA(lobbyconnection, player_factory):
     player = lobbyconnection.player
     player.id = 1
     tuna = player_factory("Tuna", player_id=55, with_lobby_connection=True)
-    lobbyconnection.player_service[player.id] = player
-    lobbyconnection.player_service[tuna.id] = tuna
+    data = {
+        player.id: player,
+        tuna.id: tuna
+    }
+    lobbyconnection.player_service.__getitem__.side_effect = data.__getitem__
 
     await lobbyconnection.on_message_received({
         'command': 'admin',
@@ -664,15 +666,17 @@ async def test_command_ice_servers(
     })
 
 
-async def test_broadcast(lobbyconnection: LobbyConnection, mocker):
-    player = mocker.patch.object(lobbyconnection, 'player')
-    player.login = 'Sheeo'
-    player.admin = True
-    player.lobby_connection = asynctest.create_autospec(LobbyConnection)
-    tuna = mock.Mock()
-    tuna.id = 55
-    tuna.lobby_connection = asynctest.create_autospec(LobbyConnection)
-    lobbyconnection.player_service = [player, tuna]
+async def test_broadcast(lobbyconnection: LobbyConnection, player_factory):
+    player = lobbyconnection.player
+    player.lobby_connection = lobbyconnection
+    player.id = 1
+    tuna = player_factory("Tuna", player_id=55, with_lobby_connection=True)
+    data = {
+        player.id: player,
+        tuna.id: tuna
+    }
+    lobbyconnection.player_service.__iter__.side_effect = data.values().__iter__
+    lobbyconnection.send_warning = CoroutineMock()
 
     await lobbyconnection.on_message_received({
         'command': 'admin',
@@ -684,18 +688,20 @@ async def test_broadcast(lobbyconnection: LobbyConnection, mocker):
     tuna.lobby_connection.send_warning.assert_called_with("This is a test message")
 
 
-async def test_broadcast_during_disconnect(lobbyconnection: LobbyConnection, mocker):
-    player = mocker.patch.object(lobbyconnection, 'player')
-    player.login = 'Sheeo'
-    player.admin = True
-    player.lobby_connection = asynctest.create_autospec(LobbyConnection)
-    tuna = mock.Mock()
-    tuna.id = 55
+async def test_broadcast_during_disconnect(lobbyconnection: LobbyConnection, player_factory):
+    player = lobbyconnection.player
+    player.lobby_connection = lobbyconnection
+    player.id = 1
     # To simulate when a player has been recently disconnected so that they
     # still appear in the player_service list, but their lobby_connection
     # object has already been destroyed
-    tuna.lobby_connection = None
-    lobbyconnection.player_service = [player, tuna]
+    tuna = player_factory("Tuna", player_id=55, with_lobby_connection=False)
+    data = {
+        player.id: player,
+        tuna.id: tuna
+    }
+    lobbyconnection.player_service.__iter__.side_effect = data.values().__iter__
+    lobbyconnection.send_warning = CoroutineMock()
 
     # This should not leak any exceptions
     await lobbyconnection.on_message_received({
@@ -707,16 +713,18 @@ async def test_broadcast_during_disconnect(lobbyconnection: LobbyConnection, moc
     player.lobby_connection.send_warning.assert_called_with("This is a test message")
 
 
-async def test_broadcast_connection_error(lobbyconnection: LobbyConnection, mocker):
-    player = mocker.patch.object(lobbyconnection, 'player')
-    player.login = 'Sheeo'
-    player.admin = True
-    player.lobby_connection = asynctest.create_autospec(LobbyConnection)
-    tuna = mock.Mock()
-    tuna.id = 55
-    tuna.lobby_connection = asynctest.create_autospec(LobbyConnection)
+async def test_broadcast_connection_error(lobbyconnection: LobbyConnection, player_factory):
+    player = lobbyconnection.player
+    player.lobby_connection = lobbyconnection
+    player.id = 1
+    tuna = player_factory("Tuna", player_id=55, with_lobby_connection=True)
     tuna.lobby_connection.send_warning.side_effect = ConnectionError("Some error")
-    lobbyconnection.player_service = [player, tuna]
+    data = {
+        player.id: player,
+        tuna.id: tuna
+    }
+    lobbyconnection.player_service.__iter__.side_effect = data.values().__iter__
+    lobbyconnection.send_warning = CoroutineMock()
 
     # This should not leak any exceptions
     await lobbyconnection.on_message_received({

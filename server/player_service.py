@@ -13,7 +13,8 @@ from trueskill import Rating
 from .core import Service
 from .db.models import (
     avatars, avatars_list, clan, clan_membership, global_rating,
-    ladder1v1_rating, leaderboard, leaderboard_rating, login
+    group_permission, group_permission_assignment, ladder1v1_rating,
+    leaderboard, leaderboard_rating, login, user_group_assignment
 )
 
 
@@ -24,7 +25,6 @@ class PlayerService(Service):
         self._players = dict()
 
         # Static-ish data fields.
-        self.privileged_users = {}
         self.uniqueid_exempt = {}
         self.client_version_info = ('0.0.0', None)
         self._dirty_players = set()
@@ -167,20 +167,37 @@ class PlayerService(Service):
                 )
                 continue
 
-
             player.ratings[rating_type] = (
                 row[table.format("mean")], row[table.format("deviation")]
             )
             player.game_count[rating_type] = row[table.format("numGames")]
-
 
     def remove_player(self, player: Player):
         if player.id in self._players:
             del self._players[player.id]
             metrics.players_online.set(len(self._players))
 
-    def get_permission_group(self, user_id: int) -> int:
-        return self.privileged_users.get(user_id, 0)
+    async def has_permission_role(self, player: Player, role_name: str) -> bool:
+        async with self._db.acquire() as conn:
+            result = await conn.execute(
+                select([group_permission.c.id])
+                .select_from(
+                    user_group_assignment
+                    .join(group_permission_assignment, onclause=(
+                        user_group_assignment.c.group_id ==
+                        group_permission_assignment.c.group_id
+                    ))
+                    .join(group_permission)
+                )
+                .where(
+                    and_(
+                        user_group_assignment.c.user_id == player.id,
+                        group_permission.c.technical_name == role_name
+                    )
+                )
+            )
+            row = await result.fetchone()
+            return row is not None
 
     def is_uniqueid_exempt(self, user_id: int) -> bool:
         return user_id in self.uniqueid_exempt
@@ -212,13 +229,6 @@ class PlayerService(Service):
         uniqueid check.
         """
         async with self._db.acquire() as conn:
-            # Admins/mods
-            result = await conn.execute(
-                "SELECT `user_id`, `group` FROM lobby_admin"
-            )
-            rows = await result.fetchall()
-            self.privileged_users = {r["user_id"]: r["group"] for r in rows}
-
             # UniqueID-exempt users.
             result = await conn.execute(
                 "SELECT `user_id` FROM uniqueid_exempt"

@@ -287,8 +287,8 @@ class LobbyConnection:
     async def command_admin(self, message):
         action = message['action']
 
-        if self.player.admin:
-            if action == "closeFA":
+        if action == "closeFA":
+            if await self.player_service.has_permission_role(self.player, 'ADMIN_KICK_SERVER'):
                 player = self.player_service[message['user_id']]
                 if player:
                     self._logger.warning('Administrative action: %s closed game for %s', self.player, player)
@@ -298,17 +298,18 @@ class LobbyConnection:
                             "style": "kill",
                         })
 
-            elif action == "closelobby":
+        elif action == "closelobby":
+            if await self.player_service.has_permission_role(self.player, 'ADMIN_KICK_SERVER'):
                 player = self.player_service[message['user_id']]
                 if player:
                     self._logger.warning('Administrative action: %s closed client for %s', self.player, player)
                     await player.lobby_connection.kick()
 
-            elif action == "broadcast":
-                message_text = message.get('message')
-                if not message_text:
-                    return
-
+        elif action == "broadcast":
+            message_text = message.get('message')
+            if not message_text:
+                return
+            if await self.player_service.has_permission_role(self.player, 'ADMIN_BROADCAST_MESSAGE'):
                 tasks = []
                 for player in self.player_service:
                     # Check if object still exists:
@@ -561,7 +562,8 @@ class LobbyConnection:
             except (pymysql.OperationalError, pymysql.ProgrammingError):
                 self._logger.error("Failure updating NickServ password for %s", login)
 
-        permission_group = self.player_service.get_permission_group(player_id)
+        # NOTE: permission_group is deprecated. Use permission roles instead
+        permission_group = 0
         self.player = Player(
             login=str(login),
             session=self.session,
@@ -639,9 +641,16 @@ class LobbyConnection:
             channels.append("#moderators")
 
         if self.player.clan is not None:
-            channels.append("#%s_clan" % self.player.clan)
+            channels.append(f"#{self.player.clan}_clan")
 
-        json_to_send = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
+        json_to_send = {
+            "command": "social",
+            "autojoin": channels,
+            "channels": channels,
+            "friends": friends,
+            "foes": foes,
+            "power": permission_group
+        }
         await self.send(json_to_send)
 
         await self.send_game_list()
