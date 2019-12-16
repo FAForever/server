@@ -91,7 +91,7 @@ class GameConnection(GpgNetServerProtocol):
             pass
         else:
             self._logger.exception("Unknown PlayerState: %s", state)
-            self.abort()
+            await self.abort()
 
     async def _handle_lobby_state(self):
         """
@@ -173,7 +173,7 @@ class GameConnection(GpgNetServerProtocol):
         except Exception as e:  # pragma: no cover
             self._logger.exception(e)
             self._logger.exception("Something awful happened in a game thread!")
-            self.abort()
+            await self.abort()
 
     async def handle_desync(self, *_args):  # pragma: no cover
         self.game.desyncs += 1
@@ -505,7 +505,7 @@ class GameConnection(GpgNetServerProtocol):
         if self.game:
             self.game_service.mark_dirty(self.game)
 
-    def abort(self, log_message: str=''):
+    async def abort(self, log_message: str=''):
         """
         Abort the connection
 
@@ -519,10 +519,10 @@ class GameConnection(GpgNetServerProtocol):
             self._logger.debug("%s.abort(%s)", self, log_message)
 
             if self.game.state == GameState.LOBBY:
-                asyncio.ensure_future(self.disconnect_all_peers())
+                await self.disconnect_all_peers()
 
             self._state = GameConnectionState.ENDED
-            asyncio.ensure_future(self.game.remove_game_connection(self))
+            await self.game.remove_game_connection(self)
             self._mark_dirty()
             self.player.state = PlayerState.IDLE
             del self.player.game
@@ -550,7 +550,7 @@ class GameConnection(GpgNetServerProtocol):
         except Exception as e:  # pragma: no cover
             self._logger.exception(e)
         finally:
-            self.abort()
+            await self.abort()
 
     def __str__(self):
         return "GameConnection({}, {})".format(self.player, self.game)

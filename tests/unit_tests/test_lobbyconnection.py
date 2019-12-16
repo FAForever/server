@@ -9,6 +9,7 @@ from asynctest import CoroutineMock
 from server import GameState, VisibilityState
 from server.db.models import ban, friends_and_foes
 from server.game_service import GameService
+from server.gameconnection import GameConnection
 from server.games import CustomGame, Game
 from server.geoip_service import GeoIpService
 from server.ice_servers.nts import TwilioNTS
@@ -148,7 +149,7 @@ async def test_command_game_host_creates_game(lobbyconnection,
 
 
 async def test_launch_game(lobbyconnection, game, player_factory):
-    old_game_conn = mock.Mock()
+    old_game_conn = asynctest.create_autospec(GameConnection)
 
     lobbyconnection.player = player_factory()
     lobbyconnection.game_connection = old_game_conn
@@ -301,7 +302,7 @@ async def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
 
 async def test_abort(mocker, lobbyconnection):
     lobbyconnection.protocol.writer.close = mock.Mock()
-    lobbyconnection.abort()
+    await lobbyconnection.abort()
 
     lobbyconnection.protocol.writer.close.assert_any_call()
 
@@ -589,7 +590,7 @@ async def test_game_subscription(lobbyconnection: LobbyConnection):
     game = Mock()
     game.handle_action = CoroutineMock()
     lobbyconnection.game_connection = game
-    lobbyconnection.ensure_authenticated = lambda _: True
+    lobbyconnection.ensure_authenticated = CoroutineMock(return_value=True)
 
     await lobbyconnection.on_message_received({'command': 'test',
                                                'args': ['foo', 42],
@@ -801,11 +802,11 @@ async def test_check_policy_conformity_fraudulent(lobbyconnection, policy_server
         f'http://{host}:{port}'
     ):
         # 42 is not a valid player ID which should cause a SQL constraint error
-        lobbyconnection.abort = mock.Mock()
+        lobbyconnection.abort = CoroutineMock()
         with pytest.raises(ClientError):
             await lobbyconnection.check_policy_conformity(42, "fraudulent", session=100)
 
-        lobbyconnection.abort = mock.Mock()
+        lobbyconnection.abort = CoroutineMock()
         player_id = 200
         honest = await lobbyconnection.check_policy_conformity(player_id, "fraudulent", session=100)
         assert honest is False
@@ -828,7 +829,7 @@ async def test_check_policy_conformity_fatal(lobbyconnection, policy_server):
         f'http://{host}:{port}'
     ):
         for result in ('vm', 'already_associated', 'fraudulent'):
-            lobbyconnection.abort = mock.Mock()
+            lobbyconnection.abort = CoroutineMock()
             honest = await lobbyconnection.check_policy_conformity(1, result, session=100)
             assert honest is False
             lobbyconnection.abort.assert_called_once()

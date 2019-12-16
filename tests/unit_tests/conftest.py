@@ -19,7 +19,15 @@ def lobbythread():
 
 
 @pytest.fixture
-def game_connection(request, database, game, players, game_service, player_service):
+def game_connection(
+    request,
+    database,
+    game,
+    players,
+    game_service,
+    player_service,
+    event_loop
+):
     from server import GameConnection
     conn = GameConnection(
         database=database,
@@ -33,7 +41,7 @@ def game_connection(request, database, game, players, game_service, player_servi
     conn.finished_sim = False
 
     def fin():
-        conn.abort()
+        event_loop.run_until_complete(conn.abort())
 
     request.addfinalizer(fin)
     return conn

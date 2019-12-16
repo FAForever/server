@@ -31,7 +31,7 @@ async def test_abort(game_connection: GameConnection, game: Game, players):
     game_connection.player = players.hosting
     game_connection.game = game
 
-    game_connection.abort()
+    await game_connection.abort()
 
     game.remove_game_connection.assert_called_with(game_connection)
 
@@ -91,7 +91,7 @@ async def test_handle_action_GameState_idle_non_searching_player_aborts(
 ):
     game_connection.player = players.hosting
     game_connection.lobby = mock.Mock()
-    game_connection.abort = mock.Mock()
+    game_connection.abort = CoroutineMock()
     players.hosting.state = PlayerState.IDLE
 
     await game_connection.handle_action('GameState', ['Idle'])
@@ -330,7 +330,7 @@ async def test_handle_action_TeamkillHappened(game: Game, game_connection: GameC
 
 async def test_handle_action_TeamkillHappened_AI(game: Game, game_connection: GameConnection, database):
     # Should fail with a sql constraint error if this isn't handled correctly
-    game_connection.abort = mock.Mock()
+    game_connection.abort = CoroutineMock()
     await game_connection.handle_action('TeamkillHappened', ['200', 0, 'Dostya', '0', 'Rhiza'])
     game_connection.abort.assert_not_called()
 

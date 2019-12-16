@@ -97,13 +97,13 @@ class LobbyConnection():
         self.peer_address = peername
         server.stats.incr('server.connections')
 
-    def abort(self, logspam=""):
+    async def abort(self, logspam=""):
         if self.player:
             self._logger.warning("Client %s dropped. %s" % (self.player.login, logspam))
         else:
             self._logger.warning("Aborting %s. %s" % (self.peer_address.host, logspam))
         if self.game_connection:
-            self.game_connection.abort()
+            await self.game_connection.abort()
             self.game_connection = None
         self._authenticated = False
         self.protocol.writer.close()
@@ -113,11 +113,11 @@ class LobbyConnection():
             self.player = None
         server.stats.incr('server.connections.aborted')
 
-    def ensure_authenticated(self, cmd):
+    async def ensure_authenticated(self, cmd):
         if not self._authenticated:
             if cmd not in ['hello', 'ask_session', 'create_account', 'ping', 'pong', 'Bottleneck']:  # Bottleneck is sent by the game during reconnect
                 server.stats.incr('server.received_messages.unauthenticated', tags={"command": cmd})
-                self.abort("Message invalid for unauthenticated connection: %s" % cmd)
+                await self.abort("Message invalid for unauthenticated connection: %s" % cmd)
                 return False
         return True
 
@@ -129,7 +129,7 @@ class LobbyConnection():
 
         try:
             cmd = message['command']
-            if not self.ensure_authenticated(cmd):
+            if not await self.ensure_authenticated(cmd):
                 return
             target = message.get('target')
             if target == 'game':
@@ -161,14 +161,14 @@ class LobbyConnection():
                 'text': ex.message
             })
             if not ex.recoverable:
-                self.abort(ex.message)
+                await self.abort(ex.message)
         except (KeyError, ValueError) as ex:
             self._logger.exception(ex)
-            self.abort("Garbage command: {}".format(message))
+            await self.abort("Garbage command: {}".format(message))
         except Exception as ex:  # pragma: no cover
             await self.send({'command': 'invalid'})
             self._logger.exception(ex)
-            self.abort("Error processing command")
+            await self.abort("Error processing command")
 
     async def command_ping(self, msg):
         await self.protocol.send_raw(self.protocol.pack_message('PONG'))
@@ -229,7 +229,7 @@ class LobbyConnection():
         elif "foe" in message:
             subject_id = message["foe"]
         else:
-            self.abort("No-op social_remove.")
+            await self.abort("No-op social_remove.")
             return
 
         async with self._db.acquire() as conn:
@@ -260,7 +260,7 @@ class LobbyConnection():
             "command": "notice",
             "style": "kick",
         })
-        self.abort()
+        await self.abort()
 
     async def send_updated_achievements(self, updated_achievements):
         await self.send({
@@ -776,7 +776,7 @@ class LobbyConnection():
         visibility = VisibilityState.from_string(message.get('visibility'))
         if not isinstance(visibility, VisibilityState):
             # Protocol violation.
-            self.abort("{} sent a nonsense visibility code: {}".format(self.player.login, message.get('visibility')))
+            await self.abort("{} sent a nonsense visibility code: {}".format(self.player.login, message.get('visibility')))
             return
 
         title = html.escape(message.get('title') or f"{self.player.login}'s game")
@@ -810,7 +810,7 @@ class LobbyConnection():
     async def launch_game(self, game, is_host=False, use_map=None):
         # TODO: Fix setting up a ridiculous amount of cyclic pointers here
         if self.game_connection:
-            self.game_connection.abort("Player launched a new game")
+            await self.game_connection.abort("Player launched a new game")
 
         if is_host:
             game.host = self.player
@@ -938,7 +938,7 @@ class LobbyConnection():
             'text': message
         })
         if fatal:
-            self.abort(message)
+            await self.abort(message)
 
     async def send(self, message):
         """
