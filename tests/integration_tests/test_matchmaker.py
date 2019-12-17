@@ -56,7 +56,7 @@ async def test_game_matchmaking(lobby_server):
     assert msg2['mod'] == 'ladder1v1'
 
 
-@fast_forward(1000)
+@fast_forward(100)
 async def test_matchmaker_info_message(lobby_server, mocker):
     mocker.patch('server.matchmaker.pop_timer.time', return_value=1_562_000_000)
 
