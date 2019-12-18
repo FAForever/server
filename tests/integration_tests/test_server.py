@@ -94,14 +94,10 @@ async def test_server_valid_login(lobby_server):
 async def test_policy_server_contacted(lobby_server, policy_server, player_service):
     player_service.is_uniqueid_exempt = lambda _: False
 
-    with mock.patch(
-        'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
-        f'http://{policy_server.host}:{policy_server.port}'
-    ):
-        _, _, proto = await connect_and_sign_in(("steam_id", "steam_id"), lobby_server)
-        await read_until_command(proto, 'game_info')
+    _, _, proto = await connect_and_sign_in(("steam_id", "steam_id"), lobby_server)
+    await read_until_command(proto, 'game_info')
 
-        policy_server.verify.assert_called_once()
+    policy_server.verify.assert_called_once()
 
 
 async def test_server_double_login(lobby_server):

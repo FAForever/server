@@ -528,13 +528,15 @@ class LobbyConnection():
                     "player_id": player_id
                 })
 
-            if not self.player_service.is_uniqueid_exempt(player_id):
-                conforms_policy = await self.check_policy_conformity(
-                    player_id, message['unique_id'], self.session,
-                    ignore_result=steamid is not None
+            conforms_policy = await self.check_policy_conformity(
+                player_id, message['unique_id'], self.session,
+                ignore_result=(
+                    steamid is not None or
+                    self.player_service.is_uniqueid_exempt(player_id)
                 )
-                if not conforms_policy:
-                    return
+            )
+            if not conforms_policy:
+                return
 
             # Update the user's IRC registration (why the fuck is this here?!)
             m = hashlib.md5()
