@@ -91,10 +91,17 @@ async def test_server_valid_login(lobby_server):
                    'login': 'test'}
 
 
-async def test_policy_server_contacted(lobby_server, policy_server, player_service):
+@pytest.mark.parametrize("user", [
+    ("test", "test_password"),
+    ("ban_revoked", "ban_revoked"),
+    ("ban_expired", "ban_expired"),
+    ("No_UID", "his_pw"),
+    ("steam_id", "steam_id")
+])
+async def test_policy_server_contacted(lobby_server, policy_server, player_service, user):
     player_service.is_uniqueid_exempt = lambda _: False
 
-    _, _, proto = await connect_and_sign_in(("steam_id", "steam_id"), lobby_server)
+    _, _, proto = await connect_and_sign_in(user, lobby_server)
     await read_until_command(proto, 'game_info')
 
     policy_server.verify.assert_called_once()
