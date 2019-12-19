@@ -7,11 +7,9 @@ https://github.com/gawel/aiocron/blob/e82a53c3f9a7950209cee7b3e493204c1dfc8b12/a
 
 import asyncio
 import functools
-import time
 
 
-@asyncio.coroutine
-def null_callback(*args):
+async def null_callback(*args):
     return args
 
 
@@ -23,7 +21,7 @@ def wrap_func(func):
 
 
 class Timer(object):
-    """Schedules a function to be called asynchronusly on a fixed interval"""
+    """Schedules a function to be called asynchronously on a fixed interval"""
 
     def __init__(self, interval, func=None, args=(), start=False, loop=None):
         self.interval = interval
@@ -33,7 +31,7 @@ class Timer(object):
             self.func = null_callback
         self.cron = wrap_func(self.func)
         self.auto_start = start
-        self.handle = self.future = self.croniter = None
+        self.handle = self.future = None
         self.loop = loop if loop is not None else asyncio.get_event_loop()
         if start and self.func is not null_callback:
             self.handle = self.loop.call_soon_threadsafe(self.start)
