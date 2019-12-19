@@ -1,9 +1,9 @@
 import asyncio
-from unittest import mock
 
 import pytest
 from server import VisibilityState
 from server.db.models import ban
+from tests.utils import fast_forward
 
 from .conftest import (
     connect_and_sign_in, connect_client, perform_login, read_until,
@@ -128,6 +128,14 @@ async def test_server_double_login(lobby_server):
     proto.close()
     proto2.close()
     await lobby_server.wait_closed()
+
+
+@fast_forward(50)
+async def test_ping_message(lobby_server):
+    _, _, proto = await connect_and_sign_in(('test', 'test_password'), lobby_server)
+
+    # We should receive the message every 45 seconds
+    await asyncio.wait_for(read_until_command(proto, 'ping'), 46)
 
 
 async def test_player_info_broadcast(lobby_server):
