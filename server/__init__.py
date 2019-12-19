@@ -27,6 +27,8 @@ from .player_service import PlayerService
 from .game_service import GameService
 from .ladder_service import LadderService
 from .control import init as run_control_server
+from .timing import at_interval
+
 
 __version__ = '0.9.17'
 __author__ = 'Askaholic, Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard, Michel Jung'
@@ -95,10 +97,7 @@ def run_lobby_server(
     Run the lobby server
     """
 
-    def report_dirties():
-        asyncio.ensure_future(do_report_dirties())
-        loop.call_later(DIRTY_REPORT_INTERVAL, report_dirties)
-
+    @at_interval(DIRTY_REPORT_INTERVAL)
     async def do_report_dirties():
         try:
             dirty_games = games.dirty_games
@@ -153,9 +152,9 @@ def run_lobby_server(
 
     ping_msg = encode_message('PING')
 
-    def ping_broadcast():
-        asyncio.ensure_future(ctx.broadcast_raw(ping_msg))
-        loop.call_later(45, ping_broadcast)
+    @at_interval(45)
+    async def ping_broadcast():
+        await ctx.broadcast_raw(ping_msg)
 
     def make_connection() -> LobbyConnection:
         return LobbyConnection(
@@ -167,7 +166,5 @@ def run_lobby_server(
             ladder_service=ladder_service
         )
     ctx = ServerContext(make_connection, name="LobbyServer")
-    loop.call_later(DIRTY_REPORT_INTERVAL, report_dirties)
-    loop.call_soon(ping_broadcast)
     loop.run_until_complete(ctx.listen(*address))
     return ctx
