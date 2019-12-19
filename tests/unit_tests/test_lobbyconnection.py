@@ -322,8 +322,8 @@ async def test_send_game_list(mocker, database, lobbyconnection, game_stats_serv
     })
 
 
-async def test_send_coop_maps(mocker, lobbyconnection):
-    await lobbyconnection.send_coop_maps()
+async def test_coop_list(mocker, lobbyconnection):
+    await lobbyconnection.command_coop_list({})
 
     args = lobbyconnection.protocol.send_messages.call_args_list
     assert len(args) == 1

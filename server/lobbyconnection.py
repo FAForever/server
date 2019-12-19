@@ -176,11 +176,11 @@ class LobbyConnection():
     def command_pong(self, msg):
         pass
 
-    @asyncio.coroutine
-    def command_create_account(self, message):
+    async def command_create_account(self, message):
         raise ClientError("FAF no longer supports direct registration. Please use the website to register.", recoverable=True)
 
-    async def send_coop_maps(self):
+    async def command_coop_list(self, message):
+        """ Request for coop map list"""
         async with self._db.acquire() as conn:
             result = await conn.execute("SELECT name, description, filename, type, id FROM `coop_map`")
 
@@ -760,10 +760,6 @@ class LobbyConnection():
                 search = Search([self.player])
 
             await self.ladder_service.start_search(self.player, search, queue_name=mod)
-
-    def command_coop_list(self, message):
-        """ Request for coop map list"""
-        asyncio.ensure_future(self.send_coop_maps())
 
     async def command_game_host(self, message):
         assert isinstance(self.player, Player)
