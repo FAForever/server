@@ -175,6 +175,34 @@ async def test_info_broadcast_authenticated(lobby_server):
         assert False
 
 
+async def test_game_info_not_broadcast_to_foes(lobby_server):
+    # Rhiza is foed by test
+    _, _, proto1 = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    _, _, proto2 = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(proto1, "game_info")
+    await read_until_command(proto2, "game_info")
+
+    await proto1.send_message({
+        "command": "game_host",
+        "title": "No Foes Allowed",
+        "mod": "faf",
+        "visibility": "public"
+    })
+
+    msg = await read_until_command(proto1, "game_info")
+
+    assert msg["featured_mod"] == "faf"
+    assert msg["title"] == "No Foes Allowed"
+    assert msg["visibility"] == "public"
+
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(read_until_command(proto2, "game_info"), 0.2)
+
+
 @pytest.mark.parametrize("user", [
     ("test", "test_password"),
     ("ban_revoked", "ban_revoked"),
@@ -212,7 +240,7 @@ async def test_host_missing_fields(event_loop, lobby_server, player_service):
     await proto.send_message({
         'command': 'game_host',
         'mod': '',
-        'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
+        'visibility': 'public',
         'title': ''
     })
 
