@@ -143,22 +143,30 @@ async def test_unauthenticated_calls_abort(lobbyconnection, test_game_info):
 
 
 async def test_bad_command_calls_abort(lobbyconnection):
+    lobbyconnection.send = CoroutineMock()
     lobbyconnection.abort = CoroutineMock()
 
     await lobbyconnection.on_message_received({
         "command": "this_isnt_real"
     })
 
-    lobbyconnection.abort.assert_called_once_with(
-        "Garbage command: this_isnt_real"
-    )
+    lobbyconnection.send.assert_called_once_with({"command": "invalid"})
+    lobbyconnection.abort.assert_called_once_with("Error processing command")
 
 
-async def test_command_create_account_raises_error(lobbyconnection):
-    with pytest.raises(ClientError):
-        await lobbyconnection.on_message_received({
-            "command": "create_account"
-        })
+async def test_command_create_account_returns_error(lobbyconnection):
+    lobbyconnection.send = CoroutineMock()
+
+    await lobbyconnection.on_message_received({
+        "command": "create_account"
+    })
+
+    lobbyconnection.send.assert_called_once_with({
+        "command": "notice",
+        "style": "error",
+        "text": ("FAF no longer supports direct registration. "
+                 "Please use the website to register.")
+    })
 
 
 async def test_command_game_host_creates_game(lobbyconnection,
