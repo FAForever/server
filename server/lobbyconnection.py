@@ -144,10 +144,8 @@ class LobbyConnection():
                 raise ClientError("Your client version is no longer supported. Please update to the newest version: https://faforever.com")
 
             handler = getattr(self, 'command_{}'.format(cmd))
-            if asyncio.iscoroutinefunction(handler):
-                await handler(message)
-            else:
-                handler(message)
+            await handler(message)
+
         except AuthenticationError as ex:
             await self.send({
                 'command': 'authentication_failed',

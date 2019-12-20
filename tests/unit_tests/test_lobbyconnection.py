@@ -128,6 +128,39 @@ def policy_server(event_loop):
     event_loop.run_until_complete(runner.cleanup())
 
 
+async def test_unauthenticated_calls_abort(lobbyconnection, test_game_info):
+    lobbyconnection._authenticated = False
+    lobbyconnection.abort = CoroutineMock()
+
+    await lobbyconnection.on_message_received({
+        "command": "game_host",
+        **test_game_info
+    })
+
+    lobbyconnection.abort.assert_called_once_with(
+        "Message invalid for unauthenticated connection: game_host"
+    )
+
+
+async def test_bad_command_calls_abort(lobbyconnection):
+    lobbyconnection.abort = CoroutineMock()
+
+    await lobbyconnection.on_message_received({
+        "command": "this_isnt_real"
+    })
+
+    lobbyconnection.abort.assert_called_once_with(
+        "Garbage command: this_isnt_real"
+    )
+
+
+async def test_command_create_account_raises_error(lobbyconnection):
+    with pytest.raises(ClientError):
+        await lobbyconnection.on_message_received({
+            "command": "create_account"
+        })
+
+
 async def test_command_game_host_creates_game(lobbyconnection,
                                               mock_games,
                                               test_game_info,
