@@ -203,6 +203,42 @@ async def test_game_info_not_broadcast_to_foes(lobby_server):
         await asyncio.wait_for(read_until_command(proto2, "game_info"), 0.2)
 
 
+async def test_game_info_broadcast_to_friends(lobby_server):
+    # test is the friend of friends
+    _, _, proto1 = await connect_and_sign_in(
+        ("friends", "friends"), lobby_server
+    )
+    _, _, proto2 = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    _, _, proto3 = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(proto1, "game_info")
+    await read_until_command(proto2, "game_info")
+    await read_until_command(proto3, "game_info")
+
+    await proto1.send_message({
+        "command": "game_host",
+        "title": "Friends Only",
+        "mod": "faf",
+        "visibility": "friends"
+    })
+
+    # The host and his friend should see the game
+    msg = await read_until_command(proto1, "game_info")
+    msg2 = await read_until_command(proto2, "game_info")
+
+    assert msg == msg2
+    assert msg["featured_mod"] == "faf"
+    assert msg["title"] == "Friends Only"
+    assert msg["visibility"] == "friends"
+
+    # However, the other person should not see the game
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(read_until_command(proto3, "game_info"), 0.2)
+
+
 @pytest.mark.parametrize("user", [
     ("test", "test_password"),
     ("ban_revoked", "ban_revoked"),
