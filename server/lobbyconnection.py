@@ -171,7 +171,7 @@ class LobbyConnection():
     async def command_ping(self, msg):
         await self.protocol.send_raw(self.protocol.pack_message('PONG'))
 
-    def command_pong(self, msg):
+    async def command_pong(self, msg):
         pass
 
     async def command_create_account(self, message):

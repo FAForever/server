@@ -154,6 +154,16 @@ async def test_bad_command_calls_abort(lobbyconnection):
     lobbyconnection.abort.assert_called_once_with("Error processing command")
 
 
+async def test_command_pong_does_nothing(lobbyconnection):
+    lobbyconnection.send = CoroutineMock()
+
+    await lobbyconnection.on_message_received({
+        "command": "pong"
+    })
+
+    lobbyconnection.send.assert_not_called()
+
+
 async def test_command_create_account_returns_error(lobbyconnection):
     lobbyconnection.send = CoroutineMock()
 
