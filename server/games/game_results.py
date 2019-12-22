@@ -14,13 +14,6 @@ class GameOutcome(Enum):
     UNKNOWN = 'unknown'
     CONFLICTING = 'conflicting'
 
-    @classmethod
-    def from_message(cls, msg: str):
-        try:
-            return cls(msg.lower())
-        except ValueError:
-            return cls.UNKNOWN
-
 
 class GameResult(NamedTuple):
     """

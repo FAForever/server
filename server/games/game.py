@@ -312,6 +312,7 @@ class Game:
         :param result_type: a string representing the result
         :param score: an arbitrary number assigned with the result
         :return:
+        :raises: ValueError on invalid result_type
         """
         if army not in self.armies:
             self._logger.debug(
@@ -320,9 +321,10 @@ class Game:
             )
             return
 
-        result = GameResult(
-            reporter, army, GameOutcome.from_message(result_type), score
-        )
+        if result_type == "score":
+            result_type = "unknown"
+
+        result = GameResult(reporter, army, GameOutcome(result_type), score)
         self._results.add(result)
         self._logger.info(
             "%s reported result for army %s: %s %s", reporter, army,
