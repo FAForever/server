@@ -1,14 +1,14 @@
 from unittest import mock
 
+import asynctest
 import pytest
+from asynctest import CoroutineMock
 from server import GameStatsService
 from server.game_service import GameService
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import Game
 from server.geoip_service import GeoIpService
 from server.ladder_service import LadderService
-import asynctest
-from asynctest import CoroutineMock
 
 
 @pytest.fixture
@@ -19,7 +19,15 @@ def lobbythread():
 
 
 @pytest.fixture
-def game_connection(request, database, game, players, game_service, player_service):
+def game_connection(
+    request,
+    database,
+    game,
+    players,
+    game_service,
+    player_service,
+    event_loop
+):
     from server import GameConnection
     conn = GameConnection(
         database=database,
@@ -33,7 +41,7 @@ def game_connection(request, database, game, players, game_service, player_servi
     conn.finished_sim = False
 
     def fin():
-        conn.abort()
+        event_loop.run_until_complete(conn.abort())
 
     request.addfinalizer(fin)
     return conn

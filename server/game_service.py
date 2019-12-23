@@ -2,11 +2,10 @@ import asyncio
 from typing import Dict, List, Optional, Union, ValuesView
 
 import aiocron
-from server import GameState, VisibilityState
 from server.db import FAFDatabase
 from server.decorators import with_logger
 from server.games import CoopGame, CustomGame, FeaturedMod, LadderGame
-from server.games.game import Game
+from server.games.game import Game, GameState, VisibilityState
 from server.matchmaker import MatchmakerQueue
 from server.players import Player
 

@@ -1,12 +1,11 @@
 import asyncio
 from unittest import mock
-from asynctest import exhaust_callbacks
 
 import pytest
+from asynctest import CoroutineMock, exhaust_callbacks
 from server import GameService, LadderService
 from server.matchmaker import Search
 from server.players import PlayerState
-from asynctest import CoroutineMock
 from tests.utils import fast_forward
 
 pytestmark = pytest.mark.asyncio
@@ -16,11 +15,6 @@ async def test_start_game(ladder_service: LadderService, game_service:
                           GameService, player_factory):
     p1 = player_factory('Dostya', player_id=1)
     p2 = player_factory('Rhiza', player_id=2)
-
-    mock_lc1 = mock.Mock()
-    mock_lc2 = mock.Mock()
-    p1.lobby_connection = mock_lc1
-    p2.lobby_connection = mock_lc2
 
     game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
 
@@ -37,11 +31,6 @@ async def test_start_game_timeout(ladder_service: LadderService, game_service:
     p1 = player_factory('Dostya', player_id=1)
     p2 = player_factory('Rhiza', player_id=2)
 
-    mock_lc1 = mock.Mock()
-    mock_lc2 = mock.Mock()
-    p1.lobby_connection = mock_lc1
-    p2.lobby_connection = mock_lc2
-
     game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
 
     await ladder_service.start_game(p1, p2)
@@ -56,19 +45,16 @@ async def test_start_game_timeout(ladder_service: LadderService, game_service:
 async def test_inform_player(ladder_service: LadderService, player_factory):
     p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
 
-    mock_lc = mock.Mock()
-    p1.lobby_connection = mock_lc
-
-    ladder_service.inform_player(p1)
+    await ladder_service.inform_player(p1)
 
     # Message is sent after the first call
     p1.lobby_connection.send.assert_called_once()
-    ladder_service.inform_player(p1)
+    await ladder_service.inform_player(p1)
     p1.lobby_connection.send.reset_mock()
     # But not after the second
     p1.lobby_connection.send.assert_not_called()
     ladder_service.on_connection_lost(p1)
-    ladder_service.inform_player(p1)
+    await ladder_service.inform_player(p1)
 
     # But it is called if the player relogs
     p1.lobby_connection.send.assert_called_once()
@@ -78,12 +64,9 @@ async def test_start_and_cancel_search(ladder_service: LadderService,
                                        player_factory, event_loop):
     p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500), ladder_games=0)
 
-    mock_lc = mock.Mock()
-    p1.lobby_connection = mock_lc
-
     search = Search([p1])
 
-    ladder_service.start_search(p1, search, 'ladder1v1')
+    await ladder_service.start_search(p1, search, 'ladder1v1')
     await exhaust_callbacks(event_loop)
 
     assert p1.state == PlayerState.SEARCHING_LADDER
@@ -100,12 +83,9 @@ async def test_start_search_cancels_previous_search(
         ladder_service: LadderService, player_factory, event_loop):
     p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500), ladder_games=0)
 
-    mock_lc = mock.Mock()
-    p1.lobby_connection = mock_lc
-
     search1 = Search([p1])
 
-    ladder_service.start_search(p1, search1, 'ladder1v1')
+    await ladder_service.start_search(p1, search1, 'ladder1v1')
     await exhaust_callbacks(event_loop)
 
     assert p1.state == PlayerState.SEARCHING_LADDER
@@ -113,7 +93,7 @@ async def test_start_search_cancels_previous_search(
 
     search2 = Search([p1])
 
-    ladder_service.start_search(p1, search2, 'ladder1v1')
+    await ladder_service.start_search(p1, search2, 'ladder1v1')
     await exhaust_callbacks(event_loop)
 
     assert p1.state == PlayerState.SEARCHING_LADDER
@@ -126,12 +106,9 @@ async def test_cancel_all_searches(ladder_service: LadderService,
                                    player_factory, event_loop):
     p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500), ladder_games=0)
 
-    mock_lc = mock.Mock()
-    p1.lobby_connection = mock_lc
-
     search = Search([p1])
 
-    ladder_service.start_search(p1, search, 'ladder1v1')
+    await ladder_service.start_search(p1, search, 'ladder1v1')
     await exhaust_callbacks(event_loop)
 
     assert p1.state == PlayerState.SEARCHING_LADDER
@@ -149,16 +126,11 @@ async def test_cancel_twice(ladder_service: LadderService, player_factory):
     p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500), ladder_games=0)
     p2 = player_factory('Brackman', player_id=2, ladder_rating=(2000, 500), ladder_games=0)
 
-    mock_lc1 = mock.Mock()
-    mock_lc2 = mock.Mock()
-    p1.lobby_connection = mock_lc1
-    p2.lobby_connection = mock_lc2
-
     search = Search([p1])
     search2 = Search([p2])
 
-    ladder_service.start_search(p1, search, 'ladder1v1')
-    ladder_service.start_search(p2, search2, 'ladder1v1')
+    await ladder_service.start_search(p1, search, 'ladder1v1')
+    await ladder_service.start_search(p2, search2, 'ladder1v1')
 
     searches = ladder_service._cancel_existing_searches(p1)
     assert search.is_cancelled
@@ -179,18 +151,13 @@ async def test_start_game_called_on_match(ladder_service: LadderService,
     p1 = player_factory('Dostya', player_id=1, ladder_rating=(2300, 64), ladder_games=0)
     p2 = player_factory('QAI', player_id=2, ladder_rating=(2350, 125), ladder_games=0)
 
-    mock_lc1 = mock.Mock()
-    mock_lc2 = mock.Mock()
-    p1.lobby_connection = mock_lc1
-    p2.lobby_connection = mock_lc2
-
     ladder_service.start_game = CoroutineMock()
-    ladder_service.inform_player = mock.Mock()
+    ladder_service.inform_player = CoroutineMock()
 
-    ladder_service.start_search(p1, Search([p1]), 'ladder1v1')
-    ladder_service.start_search(p2, Search([p2]), 'ladder1v1')
+    await ladder_service.start_search(p1, Search([p1]), 'ladder1v1')
+    await ladder_service.start_search(p2, Search([p2]), 'ladder1v1')
 
-    await asyncio.sleep(1)
+    await asyncio.sleep(2)
 
     ladder_service.inform_player.assert_called()
     ladder_service.start_game.assert_called_once()

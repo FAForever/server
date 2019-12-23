@@ -3,12 +3,12 @@ import math
 import time
 from typing import List, Optional, Tuple
 
+from server.rating import RatingType
 from trueskill import Rating, quality
 
 from .. import config
 from ..decorators import with_logger
 from ..players import Player
-from server.rating import RatingType
 
 
 @with_logger
@@ -70,7 +70,6 @@ class Search:
     def has_no_top_player(self) -> bool:
         max_rating = max(map(lambda rating_tuple: rating_tuple[0], self.ratings))
         return max_rating < config.TOP_PLAYER_MIN_RATING
-
 
     @property
     def ratings(self):

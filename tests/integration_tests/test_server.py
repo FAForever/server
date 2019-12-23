@@ -1,9 +1,9 @@
 import asyncio
-from unittest import mock
 
 import pytest
 from server import VisibilityState
 from server.db.models import ban
+from tests.utils import fast_forward
 
 from .conftest import (
     connect_and_sign_in, connect_client, perform_login, read_until,
@@ -17,15 +17,13 @@ TEST_ADDRESS = ('127.0.0.1', None)
 async def test_server_deprecated_client(lobby_server):
     proto = await connect_client(lobby_server)
 
-    proto.send_message({'command': 'ask_session', 'user_agent': 'faf-client', 'version': '0.0.0'})
-    await proto.drain()
+    await proto.send_message({'command': 'ask_session', 'user_agent': 'faf-client', 'version': '0.0.0'})
     msg = await proto.read_message()
 
     assert msg['command'] == 'notice'
 
     proto = await connect_client(lobby_server)
-    proto.send_message({'command': 'ask_session', 'version': '0.0.0'})
-    await proto.drain()
+    await proto.send_message({'command': 'ask_session', 'version': '0.0.0'})
     msg = await proto.read_message()
 
     assert msg['command'] == 'notice'
@@ -132,6 +130,14 @@ async def test_server_double_login(lobby_server):
     await lobby_server.wait_closed()
 
 
+@fast_forward(50)
+async def test_ping_message(lobby_server):
+    _, _, proto = await connect_and_sign_in(('test', 'test_password'), lobby_server)
+
+    # We should receive the message every 45 seconds
+    await asyncio.wait_for(read_until_command(proto, 'ping'), 46)
+
+
 async def test_player_info_broadcast(lobby_server):
     p1 = await connect_client(lobby_server)
     p2 = await connect_client(lobby_server)
@@ -155,19 +161,82 @@ async def test_info_broadcast_authenticated(lobby_server):
 
     await perform_login(proto1, ('test', 'test_password'))
     await perform_login(proto2, ('Rhiza', 'puff_the_magic_dragon'))
-    proto1.send_message({
+    await proto1.send_message({
         "command": "game_matchmaking",
         "state": "start",
         "mod": "ladder1v1",
         "faction": "uef"
     })
-    await proto1.drain()
     # Will timeout if the message is never received
     await read_until_command(proto2, "matchmaker_info")
     with pytest.raises(asyncio.TimeoutError):
         await asyncio.wait_for(proto3.read_message(), 0.2)
         # Unauthenticated connections should not receive the message
         assert False
+
+
+async def test_game_info_not_broadcast_to_foes(lobby_server):
+    # Rhiza is foed by test
+    _, _, proto1 = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    _, _, proto2 = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(proto1, "game_info")
+    await read_until_command(proto2, "game_info")
+
+    await proto1.send_message({
+        "command": "game_host",
+        "title": "No Foes Allowed",
+        "mod": "faf",
+        "visibility": "public"
+    })
+
+    msg = await read_until_command(proto1, "game_info")
+
+    assert msg["featured_mod"] == "faf"
+    assert msg["title"] == "No Foes Allowed"
+    assert msg["visibility"] == "public"
+
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(read_until_command(proto2, "game_info"), 0.2)
+
+
+async def test_game_info_broadcast_to_friends(lobby_server):
+    # test is the friend of friends
+    _, _, proto1 = await connect_and_sign_in(
+        ("friends", "friends"), lobby_server
+    )
+    _, _, proto2 = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    _, _, proto3 = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(proto1, "game_info")
+    await read_until_command(proto2, "game_info")
+    await read_until_command(proto3, "game_info")
+
+    await proto1.send_message({
+        "command": "game_host",
+        "title": "Friends Only",
+        "mod": "faf",
+        "visibility": "friends"
+    })
+
+    # The host and his friend should see the game
+    msg = await read_until_command(proto1, "game_info")
+    msg2 = await read_until_command(proto2, "game_info")
+
+    assert msg == msg2
+    assert msg["featured_mod"] == "faf"
+    assert msg["title"] == "Friends Only"
+    assert msg["visibility"] == "friends"
+
+    # However, the other person should not see the game
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(read_until_command(proto3, "game_info"), 0.2)
 
 
 @pytest.mark.parametrize("user", [
@@ -181,13 +250,12 @@ async def test_game_host_authenticated(lobby_server, user):
     _, _, proto = await connect_and_sign_in(user, lobby_server)
     await read_until_command(proto, 'game_info')
 
-    proto.send_message({
+    await proto.send_message({
         'command': 'game_host',
         'title': 'My Game',
         'mod': 'faf',
         'visibility': 'public',
     })
-    await proto.drain()
 
     msg = await read_until_command(proto, 'game_launch')
 
@@ -205,13 +273,12 @@ async def test_host_missing_fields(event_loop, lobby_server, player_service):
 
     await read_until_command(proto, 'game_info')
 
-    proto.send_message({
+    await proto.send_message({
         'command': 'game_host',
         'mod': '',
-        'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
+        'visibility': 'public',
         'title': ''
     })
-    await proto.drain()
 
     msg = await read_until_command(proto, 'game_info')
 
@@ -229,8 +296,7 @@ async def test_coop_list(lobby_server):
 
     await read_until_command(proto, 'game_info')
 
-    proto.send_message({"command": "coop_list"})
-    await proto.drain()
+    await proto.send_message({"command": "coop_list"})
 
     msg = await read_until_command(proto, "coop_info")
     assert "name" in msg
@@ -261,8 +327,7 @@ async def test_server_ban_prevents_hosting(lobby_server, database, command):
             )
         )
 
-    proto.send_message({"command": command})
-    await proto.drain()
+    await proto.send_message({"command": command})
 
     msg = await proto.read_message()
     assert msg == {

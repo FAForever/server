@@ -46,11 +46,14 @@ class ServerContext:
     def __contains__(self, connection):
         return connection in self.connections.keys()
 
-    def broadcast_raw(self, message, validate_fn=lambda a: True):
+    async def broadcast_raw(self, message, validate_fn=lambda a: True):
         server.stats.incr('server.broadcasts')
+        tasks = []
         for conn, proto in self.connections.items():
             if validate_fn(conn):
-                proto.send_raw(message)
+                tasks.append(proto.send_raw(message))
+
+        await asyncio.gather(*tasks)
 
     async def client_connected(self, stream_reader, stream_writer):
         self._logger.debug("%s: Client connected", self)
@@ -64,9 +67,6 @@ class ServerContext:
                 message = await protocol.read_message()
                 with server.stats.timer('connection.on_message_received'):
                     await connection.on_message_received(message)
-                with server.stats.timer('servercontext.drain'):
-                    await asyncio.sleep(0)
-                    await connection.drain()
         except ConnectionResetError:
             pass
         except ConnectionAbortedError:

@@ -28,7 +28,8 @@ class GeoIpService(object):
         self.db = None
 
         # crontab: min hour day month day_of_week
-        # Run every Wednesday because GeoLite2 is updated every Tuesday
+        # Run every Wednesday because GeoLite2 is updated every first Tuesday
+        # of the month.
         self._update_cron = aiocron.crontab(
             '0 0 0 * * 3', func=self.check_update_geoip_db
         )

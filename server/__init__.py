@@ -11,6 +11,7 @@ import logging
 from typing import Any, Dict, Optional
 
 import aiomeasures
+import asyncio
 
 from server.db import FAFDatabase
 from . import config as config
@@ -26,9 +27,11 @@ from .player_service import PlayerService
 from .game_service import GameService
 from .ladder_service import LadderService
 from .control import init as run_control_server
+from .timing import at_interval
+
 
 __version__ = '0.9.17'
-__author__ = 'Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard, Michel Jung'
+__author__ = 'Askaholic, Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard, Michel Jung'
 __contact__ = 'admin@faforever.com'
 __license__ = 'GPLv3'
 __copyright__ = 'Copyright (c) 2011-2015 ' + __author__
@@ -94,7 +97,8 @@ def run_lobby_server(
     Run the lobby server
     """
 
-    def report_dirties():
+    @at_interval(DIRTY_REPORT_INTERVAL)
+    async def do_report_dirties():
         try:
             dirty_games = games.dirty_games
             dirty_queues = games.dirty_queues
@@ -103,13 +107,20 @@ def run_lobby_server(
             player_service.clear_dirty()
 
             if len(dirty_queues) > 0:
-                ctx.broadcast_raw(encode_queues(dirty_queues), lambda lobby_conn: lobby_conn.authenticated)
+                await ctx.broadcast_raw(
+                    encode_queues(dirty_queues),
+                    lambda lobby_conn: lobby_conn.authenticated
+                )
 
             if len(dirty_players) > 0:
-                ctx.broadcast_raw(encode_players(dirty_players), lambda lobby_conn: lobby_conn.authenticated)
+                await ctx.broadcast_raw(
+                    encode_players(dirty_players),
+                    lambda lobby_conn: lobby_conn.authenticated
+                )
 
-            # TODO: This spams squillions of messages: we should implement per-connection message
-            # aggregation at the next abstraction layer down :P
+            # TODO: This spams squillions of messages: we should implement per-
+            # connection message aggregation at the next abstraction layer down :P
+            tasks = []
             for game in dirty_games:
                 if game.state == GameState.ENDED:
                     games.remove_game(game)
@@ -117,25 +128,33 @@ def run_lobby_server(
                 # So we're going to be broadcasting this to _somebody_...
                 message = encode_dict(game.to_dict())
 
-                # These games shouldn't be broadcast, but instead privately sent to those who are
-                # allowed to see them.
+                # These games shouldn't be broadcast, but instead privately sent
+                # to those who are allowed to see them.
                 if game.visibility == VisibilityState.FRIENDS:
-                    # To see this game, you must have an authenticated connection and be a friend of the host, or the host.
-                    validation_func = lambda lobby_conn: lobby_conn.player.id in game.host.friends or lobby_conn.player == game.host
+                    # To see this game, you must have an authenticated
+                    # connection and be a friend of the host, or the host.
+                    def validation_func(lobby_conn):
+                        return lobby_conn.player.id in game.host.friends or \
+                               lobby_conn.player == game.host
                 else:
-                    validation_func = lambda lobby_conn: lobby_conn.player.id not in game.host.foes
+                    def validation_func(lobby_conn):
+                        return lobby_conn.player.id not in game.host.foes
 
-                ctx.broadcast_raw(message, lambda lobby_conn: lobby_conn.authenticated and validation_func(lobby_conn))
+                tasks.append(ctx.broadcast_raw(
+                    message,
+                    lambda lobby_conn: lobby_conn.authenticated and validation_func(lobby_conn)
+                ))
+
+            await asyncio.gather(*tasks)
+
         except Exception as e:
             logging.getLogger().exception(e)
-        finally:
-            loop.call_later(DIRTY_REPORT_INTERVAL, report_dirties)
 
     ping_msg = encode_message('PING')
 
-    def ping_broadcast():
-        ctx.broadcast_raw(ping_msg)
-        loop.call_later(45, ping_broadcast)
+    @at_interval(45)
+    async def ping_broadcast():
+        await ctx.broadcast_raw(ping_msg)
 
     def make_connection() -> LobbyConnection:
         return LobbyConnection(
@@ -147,7 +166,5 @@ def run_lobby_server(
             ladder_service=ladder_service
         )
     ctx = ServerContext(make_connection, name="LobbyServer")
-    loop.call_later(DIRTY_REPORT_INTERVAL, report_dirties)
-    loop.call_soon(ping_broadcast)
     loop.run_until_complete(ctx.listen(*address))
     return ctx

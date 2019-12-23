@@ -1,12 +1,10 @@
 import asyncio
-from asynctest import exhaust_callbacks
-import pytest
 from unittest import mock
 
-from server import ServerContext
+import pytest
+from asynctest import exhaust_callbacks
+from server import ServerContext, fake_statsd
 from server.protocol import QDataStreamProtocol
-from server import fake_statsd
-
 
 pytestmark = pytest.mark.asyncio
 
@@ -45,8 +43,7 @@ def mock_context(event_loop, request, mock_server):
 async def test_serverside_abort(event_loop, mock_context, mock_server):
     (reader, writer) = await asyncio.open_connection(*mock_context.sockets[0].getsockname())
     proto = QDataStreamProtocol(reader, writer)
-    proto.send_message({"some_junk": True})
-    await writer.drain()
+    await proto.send_message({"some_junk": True})
     await exhaust_callbacks(event_loop)
 
     mock_server.on_connection_lost.assert_any_call()

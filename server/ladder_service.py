@@ -3,16 +3,16 @@ import random
 from collections import defaultdict
 from typing import Dict, List, NamedTuple, Set
 
+from server.db import FAFDatabase
+from server.rating import RatingType
 from sqlalchemy import and_, func, select, text
 
-from server.db import FAFDatabase
 from .config import LADDER_ANTI_REPETITION_LIMIT
 from .db.models import game_featuredMods, game_player_stats, game_stats
 from .decorators import with_logger
 from .game_service import GameService
 from .matchmaker import MatchmakerQueue, Search
 from .players import Player, PlayerState
-from server.rating import RatingType
 
 MapDescription = NamedTuple('Map', [("id", int), ("name", str), ("path", str)])
 
@@ -37,7 +37,7 @@ class LadderService:
 
         asyncio.ensure_future(self.handle_queue_matches())
 
-    def start_search(self, initiator: Player, search: Search, queue_name: str):
+    async def start_search(self, initiator: Player, search: Search, queue_name: str):
         self._cancel_existing_searches(initiator)
 
         for player in search.players:
@@ -45,7 +45,7 @@ class LadderService:
 
             # For now, inform_player is only designed for ladder1v1
             if queue_name == "ladder1v1":
-                self.inform_player(player)
+                await self.inform_player(player)
 
         self.searches[queue_name][initiator] = search
 
@@ -76,13 +76,13 @@ class LadderService:
                 del self.searches[queue_name][initiator]
         return searches
 
-    def inform_player(self, player: Player):
+    async def inform_player(self, player: Player):
         if player not in self._informed_players:
             self._informed_players.add(player)
             mean, deviation = player.ratings[RatingType.LADDER_1V1]
 
             if deviation > 490:
-                player.lobby_connection.send({
+                await player.lobby_connection.send({
                     "command": "notice",
                     "style": "info",
                     "text": (
@@ -97,7 +97,7 @@ class LadderService:
                 })
             elif deviation > 250:
                 progress = (500.0 - deviation) / 2.5
-                player.lobby_connection.send({
+                await player.lobby_connection.send({
                     "command": "notice",
                     "style": "info",
                     "text": (
@@ -113,8 +113,10 @@ class LadderService:
                 assert len(s2.players) == 1
                 p1, p2 = s1.players[0], s2.players[0]
                 msg = {"command": "match_found", "queue": "ladder1v1"}
-                p1.lobby_connection.send(msg)
-                p2.lobby_connection.send(msg)
+                await asyncio.gather(
+                    p1.lobby_connection.send(msg),
+                    p2.lobby_connection.send(msg)
+                )
                 asyncio.ensure_future(self.start_game(p1, p2))
             except Exception as e:
                 self._logger.exception(
@@ -159,15 +161,17 @@ class LadderService:
         # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
         # Really in the future, just send a better description
         self._logger.debug("Starting ladder game: %s", game)
-        host.lobby_connection.launch_game(game, is_host=True, use_map=mapname)
+        await host.lobby_connection.launch_game(game, is_host=True, use_map=mapname)
         try:
             hosted = await game.await_hosted()
             if not hosted:
                 raise TimeoutError("Host left lobby")
         except TimeoutError:
             msg = {"command": "game_launch_timeout"}
-            host.lobby_connection.send(msg)
-            guest.lobby_connection.send(msg)
+            await asyncio.gather(
+                host.lobby_connection.send(msg),
+                guest.lobby_connection.send(msg)
+            )
             # TODO: Uncomment this line once the client supports `game_launch_timeout`.
             # Until then, returning here will cause the client to think it is
             # searching for ladder, even though the server has already removed it
@@ -175,7 +179,7 @@ class LadderService:
             # return
             self._logger.debug("Ladder game failed to launch due to a timeout")
 
-        guest.lobby_connection.launch_game(
+        await guest.lobby_connection.launch_game(
             game, is_host=False, use_map=mapname
         )
         self._logger.debug("Ladder game launched successfully")
