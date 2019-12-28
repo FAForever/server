@@ -81,14 +81,14 @@ def encode_queues(queues):
 
 
 def run_lobby_server(
-        address: (str, int),
-        database: FAFDatabase,
-        player_service: PlayerService,
-        games: GameService,
-        loop,
-        nts_client: Optional[TwilioNTS],
-        geoip_service: GeoIpService,
-        ladder_service: LadderService
+    address: (str, int),
+    database: FAFDatabase,
+    player_service: PlayerService,
+    games: GameService,
+    loop,
+    nts_client: Optional[TwilioNTS],
+    geoip_service: GeoIpService,
+    ladder_service: LadderService
 ) -> ServerContext:
     """
     Run the lobby server
