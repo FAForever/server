@@ -1,4 +1,5 @@
 import asyncio
+from asyncio.locks import Condition
 
 import server
 from server.decorators import with_logger
@@ -12,10 +13,11 @@ class ServerContext:
     Base class for managing connections and holding state about them.
     """
 
-    def __init__(self, connection_factory, name='Unknown server'):
+    def __init__(self, connection_factory, throttler, name='Unknown server'):
         super().__init__()
         self.name = name
         self._server = None
+        self._throttler = throttler
         self._connection_factory = connection_factory
         self.connections = {}
         self._logger.debug("%s initialized", self)
@@ -36,8 +38,10 @@ class ServerContext:
     def sockets(self):
         return self._server.sockets
 
-    def wait_closed(self):
-        return self._server.wait_closed()
+    async def wait_closed(self):
+        if self._throttler is not None:
+            await self._throttler.close()
+        return await self._server.wait_closed()
 
     def close(self):
         self._server.close()
@@ -57,6 +61,8 @@ class ServerContext:
 
     async def client_connected(self, stream_reader, stream_writer):
         self._logger.debug("%s: Client connected", self)
+        if self._throttler is not None:
+            await self._throttler.consume()
         protocol = QDataStreamProtocol(stream_reader, stream_writer)
         connection = self._connection_factory()
         try:

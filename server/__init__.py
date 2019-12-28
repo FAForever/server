@@ -26,6 +26,7 @@ from .geoip_service import GeoIpService
 from .player_service import PlayerService
 from .game_service import GameService
 from .ladder_service import LadderService
+from .throttler import LoginThrottler
 from .control import init as run_control_server
 from .timing import at_interval
 
@@ -165,6 +166,14 @@ def run_lobby_server(
             players=player_service,
             ladder_service=ladder_service
         )
-    ctx = ServerContext(make_connection, name="LobbyServer")
+
+    if config.LOGIN_THROTTLER_CAPACITY != -1:
+        throttler = LoginThrottler(
+            config.LOGIN_THROTTLER_CAPACITY,
+            config.LOGIN_THROTTLER_RATE_PER_S)
+    else:
+        throttler = None
+
+    ctx = ServerContext(make_connection, throttler, name="LobbyServer")
     loop.run_until_complete(ctx.listen(*address))
     return ctx
