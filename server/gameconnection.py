@@ -1,7 +1,7 @@
 import asyncio
 
 from server.db import FAFDatabase
-from sqlalchemy import text, select
+from sqlalchemy import text, select, or_
 
 from .abc.base_game import GameConnectionState
 from .config import TRACE
@@ -311,8 +311,8 @@ class GameConnection(GpgNetServerProtocol):
             """
 
             check = await conn.execute(select([login.c.id]).where(
-                login.c.id == teamkiller_id or
-                login.c.login == teamkiller_name
+                or_(login.c.id == teamkiller_id,
+                login.c.login == teamkiller_name)
             ))
 
             row = await check.fetchone()
@@ -331,8 +331,8 @@ class GameConnection(GpgNetServerProtocol):
             """
 
             check = await conn.execute(select([login.c.id]).where(
-                login.c.id == reporter_id or
-                login.c.login == reporter_name
+                or_(login.c.id == reporter_id,
+                login.c.login == reporter_name)
             ))
 
             row = await check.fetchone()
