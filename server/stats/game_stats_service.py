@@ -2,6 +2,7 @@ import json
 
 from server import config
 from server.games import Game
+from server.games.game_results import GameOutcome
 from server.players import Player
 from server.stats.achievement_service import *
 from server.stats.event_service import *
@@ -46,7 +47,7 @@ class GameStatsService:
             return
 
         army_result = game.get_army_result(player)
-        if not army_result:
+        if army_result is GameOutcome.UNKNOWN:
             self._logger.warning("No army result available for player %s", player.login)
             return
 
@@ -59,7 +60,7 @@ class GameStatsService:
         e_queue = []
         self._logger.debug('Army result for %s => %s ', player, army_result)
 
-        survived = army_result == 'victory'
+        survived = army_result is GameOutcome.VICTORY
         blueprint_stats = stats['blueprints']
         unit_stats = stats['units']
         scored_highest = highest_scorer == player.login

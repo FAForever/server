@@ -24,14 +24,11 @@ class LadderGame(Game):
             await self.persist_rating_change_stats(new_ratings, RatingType.LADDER_1V1)
 
     def is_winner(self, player: Player):
-        return self.outcome(player) == GameOutcome.VICTORY
+        return self.get_army_result(player) is GameOutcome.VICTORY
 
     def get_army_score(self, army: int) -> int:
         """
         We override this function so that ladder game scores are only reported
         as 1 for win and 0 for anything else.
         """
-        for result in self._results.get(army, []):
-            if result[1] == 'victory':
-                return 1
-        return 0
+        return self._results.victory_only_score(army)

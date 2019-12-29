@@ -14,7 +14,7 @@ class Protocol(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def send_message(self, message: dict) -> None:
+    async def send_message(self, message: dict) -> None:
         """
         Send a single message in the form of a dictionary
 
@@ -23,7 +23,7 @@ class Protocol(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def send_messages(self, messages: List[dict]) -> None:
+    async def send_messages(self, messages: List[dict]) -> None:
         """
         Send multiple messages in the form of a list of dictionaries.
 
@@ -34,7 +34,7 @@ class Protocol(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def send_raw(self, data: bytes) -> None:
+    async def send_raw(self, data: bytes) -> None:
         """
         Send raw bytes. Should generally not be used.
 

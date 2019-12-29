@@ -2,12 +2,15 @@
 Tiny local-only http server for getting stats and performing various tasks
 """
 
+import logging
 import socket
+from json import dumps
 
 from aiohttp import web
-import logging
-from server import PlayerService, GameService, config
-from json import dumps
+
+from . import config
+from .game_service import GameService
+from .player_service import PlayerService
 
 logger = logging.getLogger(__name__)
 

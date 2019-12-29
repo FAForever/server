@@ -6,8 +6,9 @@ from unittest import mock
 import pytest
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import CoopGame, CustomGame
-from server.games.game import (Game, GameError, GameOutcome, GameState,
-                               ValidityState, Victory, VisibilityState)
+from server.games.game import (Game, GameError, GameState, ValidityState,
+                               Victory, VisibilityState)
+from server.games.game_results import GameOutcome
 from server.rating import RatingType
 from asynctest import CoroutineMock
 from tests.unit_tests.conftest import (add_connected_player,
@@ -35,6 +36,12 @@ def coop_game(event_loop, database, game_service, game_stats_service):
 def custom_game(event_loop, database, game_service, game_stats_service):
     game = CustomGame(42, database, game_service, game_stats_service)
     yield game
+
+
+async def game_player_scores(database, game):
+    async with database.acquire() as conn:
+        results = await conn.execute("SELECT playerId, score FROM game_player_stats WHERE gameid = %s", game.id)
+        return set(f.as_tuple() for f in await results.fetchall())
 
 
 async def test_initialization(game: Game):
@@ -305,7 +312,7 @@ async def test_game_teams_represents_active_teams(game: Game, players):
 
 
 async def test_invalid_army_not_add_result(game: Game, players):
-    await game.add_result(players.hosting, 99, "win", 10)
+    await game.add_result(players.hosting.id, 99, "win", 10)
 
     assert 99 not in game._results
 
@@ -317,8 +324,8 @@ async def test_game_ends_in_mutually_agreed_draw(game: Game, game_add_players):
     await game.launch()
     game.launched_at = time.time()-60*60
 
-    await game.add_result(players[0], 0, 'mutual_draw', 0)
-    await game.add_result(players[1], 1, 'mutual_draw', 0)
+    await game.add_result(players[0].id, 0, 'mutual_draw', 0)
+    await game.add_result(players[1].id, 1, 'mutual_draw', 0)
     await game.on_game_end()
 
     assert game.validity is ValidityState.MUTUAL_DRAW
@@ -332,8 +339,8 @@ async def test_game_not_ends_in_unilatery_agreed_draw(game: Game, players,
     await game.launch()
     game.launched_at = time.time()-60*60
 
-    await game.add_result(players.hosting, 0, 'mutual_draw', 0)
-    await game.add_result(players.joining, 1, 'victory', 10)
+    await game.add_result(players.hosting.id, 0, 'mutual_draw', 0)
+    await game.add_result(players.joining.id, 1, 'victory', 10)
     await game.on_game_end()
 
     assert game.validity is not ValidityState.MUTUAL_DRAW
@@ -357,8 +364,8 @@ async def test_compute_rating_computes_global_ratings(game: Game, players):
     players.joining.ratings[RatingType.GLOBAL] = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
-    await game.add_result(players.hosting, 0, 'victory', 1)
-    await game.add_result(players.joining, 1, 'defeat', 0)
+    await game.add_result(players.hosting.id, 0, 'victory', 1)
+    await game.add_result(players.joining.id, 1, 'defeat', 0)
     game.set_player_option(players.hosting.id, 'Team', 2)
     game.set_player_option(players.joining.id, 'Team', 3)
     groups = game.compute_rating()
@@ -372,8 +379,8 @@ async def test_compute_rating_computes_ladder_ratings(game: Game, players):
     players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
-    await game.add_result(players.hosting, 0, 'victory', 1)
-    await game.add_result(players.joining, 1, 'defeat', 0)
+    await game.add_result(players.hosting.id, 0, 'victory', 1)
+    await game.add_result(players.joining.id, 1, 'defeat', 0)
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 1)
     groups = game.compute_rating(rating=RatingType.LADDER_1V1)
@@ -405,21 +412,17 @@ async def test_compute_rating_balanced_teamgame(game: Game, player_factory):
             assert new_rating != Rating(*player.ratings[RatingType.GLOBAL])
 
 
-async def test_game_get_army_result_takes_most_reported_result(game,
-                                                               game_add_players):
-
+async def test_game_get_army_result_ignores_unknown_results(game,
+                                                            game_add_players):
     game.state = GameState.LOBBY
-    players = game_add_players(game, 1)
+    players = game_add_players(game, 2)
+
     await game.add_result(0, 0, 'defeat', 0)
-    await game.add_result(0, 0, 'defeat', 0)
-    await game.add_result(0, 0, 'victory', 0)
+    await game.add_result(0, 0, 'score', 0)
+    assert game.get_army_result(players[0]) == GameOutcome.DEFEAT
 
-    assert game.get_army_result(players[0]) == 'defeat'
-
-    await game.add_result(0, 0, 'victory', 0)
-    await game.add_result(0, 0, 'victory', 0)
-
-    assert game.get_army_result(players[0]) == 'victory'
+    await game.add_result(0, 1, 'score', 0)
+    assert game.get_army_result(players[1]) == GameOutcome.UNKNOWN
 
 
 async def test_on_game_end_does_not_call_rate_game_for_single_player(game):
@@ -668,24 +671,31 @@ async def test_players_exclude_observers(game: Game, game_add_players,
     assert game.players == frozenset(players)
 
 
-async def test_game_outcomes(game: Game, players):
+async def test_game_outcomes(game: Game, database, players):
     game.state = GameState.LOBBY
     players.hosting.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
-    await game.add_result(players.hosting, 0, 'victory', 1)
-    await game.add_result(players.joining, 1, 'defeat', 0)
+    await game.add_result(players.hosting.id, 0, 'victory', 1)
+    await game.add_result(players.joining.id, 1, 'defeat', 0)
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 1)
 
-    host_outcome = game.outcome(players.hosting)
-    guest_outcome = game.outcome(players.joining)
+    host_outcome = game.get_army_result(players.hosting)
+    guest_outcome = game.get_army_result(players.joining)
     assert host_outcome is GameOutcome.VICTORY
     assert guest_outcome is GameOutcome.DEFEAT
 
+    # Default values before game ends
+    assert await game_player_scores(database, game) == {(players.hosting.id, 0),
+                                                        (players.joining.id, 0)}
+    await game.on_game_end()
+    assert await game_player_scores(database, game) == {(players.hosting.id, 1),
+                                                        (players.joining.id, 0)}
 
-async def test_game_outcomes_no_results(game: Game, players):
+
+async def test_game_outcomes_no_results(game: Game, database, players):
     game.state = GameState.LOBBY
     players.hosting.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
@@ -694,29 +704,34 @@ async def test_game_outcomes_no_results(game: Game, players):
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 1)
 
-    host_outcome = game.outcome(players.hosting)
-    guest_outcome = game.outcome(players.joining)
-    assert host_outcome is None
-    assert guest_outcome is None
+    host_outcome = game.get_army_result(players.hosting)
+    guest_outcome = game.get_army_result(players.joining)
+    assert host_outcome is GameOutcome.UNKNOWN
+    assert guest_outcome is GameOutcome.UNKNOWN
+
+    await game.on_game_end()
+    assert await game_player_scores(database, game) == {(players.hosting.id, 0),
+                                                        (players.joining.id, 0)}
 
 
-async def test_game_outcomes_conflicting(game: Game, players):
+async def test_game_outcomes_conflicting(game: Game, database, players):
     game.state = GameState.LOBBY
     players.hosting.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
-    await game.add_result(players.hosting, 0, 'victory', 1)
-    await game.add_result(players.joining, 1, 'victory', 0)
-    await game.add_result(players.hosting, 0, 'defeat', 1)
-    await game.add_result(players.joining, 1, 'defeat', 0)
+    await game.add_result(players.hosting.id, 0, 'victory', 1)
+    await game.add_result(players.joining.id, 1, 'victory', 0)
+    await game.add_result(players.hosting.id, 0, 'defeat', 1)
+    await game.add_result(players.joining.id, 1, 'defeat', 0)
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 1)
 
-    host_outcome = game.outcome(players.hosting)
-    guest_outcome = game.outcome(players.joining)
-    assert host_outcome is None
-    assert guest_outcome is None
+    host_outcome = game.get_army_result(players.hosting)
+    guest_outcome = game.get_army_result(players.joining)
+    assert host_outcome is GameOutcome.UNKNOWN
+    assert guest_outcome is GameOutcome.UNKNOWN
+    # No guarantees on scores for conflicting results.
 
 
 async def test_victory_conditions():

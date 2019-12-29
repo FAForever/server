@@ -3,6 +3,7 @@ from unittest.mock import Mock
 import pytest
 from server.factions import Faction
 from server.games import Game
+from server.games.game_results import GameOutcome, GameResult, GameResults
 from server.stats import achievement_service as ach
 from server.stats import event_service as ev
 from server.stats.game_stats_service import GameStatsService
@@ -39,7 +40,8 @@ def player(player_factory):
 def game(database, game_stats_service, player):
     game = Game(1, database, Mock(), game_stats_service)
     game._player_options[player.id] = {'Army': 1}
-    game._results = {1: [('', 'victory', '')]}
+    game._results = GameResults(1)
+    game._results.add(GameResult(1, 1, GameOutcome.VICTORY, 0))
     return game
 
 
@@ -444,7 +446,7 @@ async def test_process_game_stats_abort_processing_if_no_army_result(game_stats_
     with open("tests/data/game_stats_full_example.json", "r") as stats_file:
         stats = stats_file.read()
 
-    game._results = {}
+    game._results = GameResults(1)
 
     await game_stats_service.process_game_stats(player, game, stats)
     assert len(achievement_service.mock_calls) == 0

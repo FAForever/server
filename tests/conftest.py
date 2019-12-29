@@ -11,18 +11,19 @@ import logging
 from typing import Iterable
 from unittest import mock
 
+import asynctest
 import pytest
+from asynctest import CoroutineMock
 from server.api.api_accessor import ApiAccessor
 from server.config import DB_LOGIN, DB_PASSWORD, DB_PORT, DB_SERVER
+from server.db import FAFDatabase
 from server.game_service import GameService
 from server.geoip_service import GeoIpService
+from server.lobbyconnection import LobbyConnection
 from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
 from server.rating import RatingType
-from server.db import FAFDatabase
 from tests.utils import MockDatabase
-
-from asynctest import CoroutineMock
 
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -127,12 +128,12 @@ def ugame(database, players):
 def make_game(database, uid, players):
     from server.games import Game
     from server.abc.base_game import InitMode
-    mock_parent = mock.Mock()
-    game = mock.create_autospec(spec=Game(uid, database, mock_parent, mock.Mock()))
-    game.remove_game_connection = CoroutineMock()
-    players.hosting.getGame = mock.Mock(return_value=game)
-    players.joining.getGame = mock.Mock(return_value=game)
-    players.peer.getGame = mock.Mock(return_value=game)
+    mock_parent = CoroutineMock()
+    game = asynctest.create_autospec(spec=Game(uid, database, mock_parent,
+                                               CoroutineMock()))
+    players.hosting.getGame = CoroutineMock(return_value=game)
+    players.joining.getGame = CoroutineMock(return_value=game)
+    players.peer.getGame = CoroutineMock(return_value=game)
     game.hostPlayer = players.hosting
     game.init_mode = InitMode.NORMAL_LOBBY
     game.name = "Some game name"
@@ -158,6 +159,11 @@ def player_factory():
 
         p = Player(ratings=ratings, game_count=games, **kwargs)
         p.state = state
+
+        # lobby_connection is a weak reference, but we want the mock
+        # to live for the full lifetime of the player object
+        p.__owned_lobby_connection = asynctest.create_autospec(LobbyConnection)
+        p.lobby_connection = p.__owned_lobby_connection
         return p
 
     return make

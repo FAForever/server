@@ -1,15 +1,22 @@
 import asyncio
 from unittest import mock
-import pytest
-import asynctest
 
-from server import GameConnection
-from server.games import Game
-from server.games.game import ValidityState, Victory
-from server.players import PlayerState
+import asynctest
+import pytest
 from asynctest import CoroutineMock, exhaust_callbacks
+from server import GameConnection
+from server.abc.base_game import GameConnectionState
+from server.games import Game
+from server.games.game import GameState, ValidityState, Victory
+from server.players import PlayerState
 
 pytestmark = pytest.mark.asyncio
+
+
+@pytest.fixture
+def real_game(event_loop, database, game_service, game_stats_service):
+    game = Game(42, database, game_service, game_stats_service)
+    yield game
 
 
 def assert_message_sent(game_connection: GameConnection, command, args):
@@ -24,9 +31,44 @@ async def test_abort(game_connection: GameConnection, game: Game, players):
     game_connection.player = players.hosting
     game_connection.game = game
 
-    game_connection.abort()
+    await game_connection.abort()
 
     game.remove_game_connection.assert_called_with(game_connection)
+
+
+async def test_disconnect_all_peers(
+    game_connection: GameConnection,
+    real_game: Game,
+    players
+):
+    real_game.state = GameState.LOBBY
+    game_connection.player = players.hosting
+    game_connection.game = real_game
+
+    disconnect_done = mock.Mock()
+
+    async def fake_send_dc(player_id):
+        await asyncio.sleep(1)  # Take some time
+        disconnect_done.success()
+        return "OK"
+
+    # Set up a peer that will disconnect without error
+    ok_disconnect = asynctest.create_autospec(GameConnection)
+    ok_disconnect.state = GameConnectionState.CONNECTED_TO_HOST
+    ok_disconnect.send_DisconnectFromPeer = fake_send_dc
+
+    # Set up a peer that will throw an exception
+    fail_disconnect = asynctest.create_autospec(GameConnection)
+    fail_disconnect.send_DisconnectFromPeer.return_value = Exception("Test exception")
+    fail_disconnect.state = GameConnectionState.CONNECTED_TO_HOST
+
+    # Add the peers to the game
+    real_game.add_game_connection(fail_disconnect)
+    real_game.add_game_connection(ok_disconnect)
+
+    await game_connection.disconnect_all_peers()
+
+    disconnect_done.success.assert_called_once()
 
 
 async def test_handle_action_GameState_idle_adds_connection(
@@ -49,7 +91,7 @@ async def test_handle_action_GameState_idle_non_searching_player_aborts(
 ):
     game_connection.player = players.hosting
     game_connection.lobby = mock.Mock()
-    game_connection.abort = mock.Mock()
+    game_connection.abort = CoroutineMock()
     players.hosting.state = PlayerState.IDLE
 
     await game_connection.handle_action('GameState', ['Idle'])
@@ -196,7 +238,7 @@ async def test_handle_action_GameResult_calls_add_result(game: Game, game_connec
     game_connection.connect_to_host = CoroutineMock()
 
     await game_connection.handle_action('GameResult', [0, 'score -5'])
-    game.add_result.assert_called_once_with(game_connection.player, 0, 'score', -5)
+    game.add_result.assert_called_once_with(game_connection.player.id, 0, 'score', -5)
 
 
 async def test_handle_action_GameOption(game: Game, game_connection: GameConnection):
@@ -234,12 +276,12 @@ async def test_handle_action_TeamkillReport(game: Game, game_connection: GameCon
                                     game.id)
         report = await result.fetchone()
         assert game.id == report["game_id"]
-        
+
         reported_user_query = await conn.execute("select player_id from reported_user where report_id=%s", (report["id"]))
         data = await reported_user_query.fetchone()
         assert data["player_id"] == 3
-        
-        
+
+
 async def test_handle_action_TeamkillReport_invalid_ids(game: Game, game_connection: GameConnection, database):
     game.launch = CoroutineMock()
     await game_connection.handle_action('TeamkillReport', ['230', 0, 'Dostya', 0, 'Rhiza'])
@@ -249,7 +291,7 @@ async def test_handle_action_TeamkillReport_invalid_ids(game: Game, game_connect
                                     game.id)
         report = await result.fetchone()
         assert game.id == report["game_id"]
-        
+
         reported_user_query = await conn.execute("select player_id from reported_user where report_id=%s", (report["id"]))
         data = await reported_user_query.fetchone()
         assert data["player_id"] == 3
@@ -291,7 +333,7 @@ async def test_handle_action_TeamkillHappened(game: Game, game_connection: GameC
 
 async def test_handle_action_TeamkillHappened_AI(game: Game, game_connection: GameConnection, database):
     # Should fail with a sql constraint error if this isn't handled correctly
-    game_connection.abort = mock.Mock()
+    game_connection.abort = CoroutineMock()
     await game_connection.handle_action('TeamkillHappened', ['200', 0, 'Dostya', '0', 'Rhiza'])
     game_connection.abort.assert_not_called()
 
