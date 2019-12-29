@@ -305,10 +305,9 @@ class GameConnection(GpgNetServerProtocol):
         """
                 
         async with self._db.acquire() as conn:
-            """
-                Sometime the game sends a wrong ID - but a correct player name
-                We need to make sure the player ID is correct before pursuing
-            """
+
+            # Sometime the game sends a wrong ID - but a correct player name
+            # We need to make sure the player ID is correct before pursuing
 
             check = await conn.execute(select([login.c.id]).where(
                 or_(login.c.id == teamkiller_id,
@@ -325,10 +324,9 @@ class GameConnection(GpgNetServerProtocol):
 
             verified_teamkiller_id = row[login.c.id]
 
-            """
-                The reporter's ID also needs to be checked the exact same way
-                for the same reasons
-            """
+        # The reporter's ID also needs to be checked the exact same way
+        # for the same reasons
+
 
             check = await conn.execute(select([login.c.id]).where(
                 or_(login.c.id == reporter_id,
@@ -360,7 +358,6 @@ class GameConnection(GpgNetServerProtocol):
                     report_id=result.lastrowid
                 )
             )
-
 
     async def handle_teamkill_happened(self, gametime, victim_id, victim_name, teamkiller_id, teamkiller_name):
         """
@@ -499,7 +496,7 @@ class GameConnection(GpgNetServerProtocol):
         if self.game:
             self.game_service.mark_dirty(self.game)
 
-    def abort(self, log_message: str=''):
+    def abort(self, log_message: str = ''):
         """
         Abort the connection
 
