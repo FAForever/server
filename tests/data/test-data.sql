@@ -1,11 +1,16 @@
-insert into login (id, login, email, password, create_time) values
-    (50,  'player_service1', 'ps1@example.com', SHA2('player_service1', 256), '2000-01-01 00:00:00'),
-    (51,  'player_service2', 'ps2@example.com', SHA2('player_service2', 256), '2000-01-01 00:00:00'),
-    (52,  'player_service3', 'ps3@example.com', SHA2('player_service3', 256), '2000-01-01 00:00:00'),
-    (100, 'ladder1', 'ladder1@example.com', SHA2('ladder1', 256), '2000-01-01 00:00:00'),
-    (101, 'ladder2', 'ladder2@example.com', SHA2('ladder2', 256), '2000-01-01 00:00:00'),
-    (102, 'ladder_ban', 'ladder_ban@example.com', SHA2('ladder_ban', 256), '2000-01-01 00:00:00'),
-    (200, 'banme', 'banme@example.com', SHA2('banme', 256), '2000-01-01 00:00:00')
+insert into login (id, login, email, password, steamid, create_time) values
+    (10,  'friends', 'friends@example.com', SHA2('friends', 256), null, '2000-01-01 00:00:00'),
+    (50,  'player_service1', 'ps1@example.com', SHA2('player_service1', 256), null, '2000-01-01 00:00:00'),
+    (51,  'player_service2', 'ps2@example.com', SHA2('player_service2', 256), null,  '2000-01-01 00:00:00'),
+    (52,  'player_service3', 'ps3@example.com', SHA2('player_service3', 256), null, '2000-01-01 00:00:00'),
+    (100, 'ladder1', 'ladder1@example.com', SHA2('ladder1', 256), null, '2000-01-01 00:00:00'),
+    (101, 'ladder2', 'ladder2@example.com', SHA2('ladder2', 256), null, '2000-01-01 00:00:00'),
+    (102, 'ladder_ban', 'ladder_ban@example.com', SHA2('ladder_ban', 256), null, '2000-01-01 00:00:00'),
+    (200, 'banme', 'banme@example.com', SHA2('banme', 256), null, '2000-01-01 00:00:00'),
+    (201, 'ban_revoked', 'ban_revoked@example.com', SHA2('ban_revoked', 256), null, '2000-01-01 00:00:00'),
+    (202, 'ban_expired', 'ban_expired@example.com', SHA2('ban_expired', 256), null, '2000-01-01 00:00:00'),
+    (203, 'ban_long_time', 'ban_null_expiration@example.com', SHA2('ban_long_time', 256), null, '2000-01-01 00:00:00'),
+    (300, 'steam_id', 'steam_id@example.com', SHA2('steam_id', 256), 34632, '2000-01-01 00:00:00')
 ;
 
 delete from clan_membership where player_id = 50;
@@ -37,7 +42,12 @@ insert into avatars (idUser, idAvatar, selected) values
     (52, 1, 1),
     (52, 2, 0);
 
-delete from ban where player_id = 200;
+delete from ban where player_id = 201;
+insert into ban (player_id, author_id, reason, level, expires_at, revoke_time) values
+  (201, 201, 'Test revoked ban', 'GLOBAL', NULL, now() - interval 1 day),
+  (202, 202, 'Test expired ban', 'GLOBAL', now() - interval 1 day, NULL),
+  (203, 203, 'Test permanent ban', 'GLOBAL', now() + interval 1000 year, NULL)
+;
 
 insert into game_stats (id, startTime, gameType, gameMod, host, mapId, gameName, validity) values
     (41935, NOW(), '0', 6, 1, 0, 'MapRepetition', 0),
@@ -61,6 +71,7 @@ insert into game_player_stats (gameId, playerId, AI, faction, color, team, place
 delete from friends_and_foes where user_id = 1 and subject_id = 2;
 insert into friends_and_foes (user_id, subject_id, status) values
     (2, 1, 'FRIEND'),
+    (10, 1, 'FRIEND'),
     (50, 1, 'FRIEND'),
     (50, 51, 'FRIEND'),
     (50, 52, 'FOE');

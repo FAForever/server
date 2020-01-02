@@ -1,6 +1,8 @@
 import time
 
 from .game import Game, ValidityState
+from server.rating import RatingType
+
 from server.abc.base_game import InitMode
 from server.decorators import with_logger
 
@@ -14,5 +16,5 @@ class CustomGame(Game):
         if not self.enforce_rating and time.time() - self.launched_at < limit:
             await self.mark_invalid(ValidityState.TOO_SHORT)
         if self.validity == ValidityState.VALID:
-            new_ratings = self.compute_rating(rating='global')
-            await self.persist_rating_change_stats(new_ratings, rating='global')
+            new_ratings = self.compute_rating(RatingType.GLOBAL)
+            await self.persist_rating_change_stats(new_ratings, RatingType.GLOBAL)

@@ -3,8 +3,9 @@ import os
 from typing import Dict
 
 import aiohttp
-from oauthlib.oauth2.rfc6749.errors import (InsecureTransportError,
-                                            MissingTokenError)
+from oauthlib.oauth2.rfc6749.errors import (
+    InsecureTransportError, MissingTokenError
+)
 
 
 class OAuth2Session(object):

@@ -1,4 +1,3 @@
-import server.db as db
 from sqlalchemy import and_
 
 from .core import Module
@@ -18,7 +17,7 @@ async def command_social_add(conn, message):
     else:
         return
 
-    async with db.engine.acquire() as dbconn:
+    async with conn._db.acquire() as dbconn:
         await dbconn.execute(friends_and_foes.insert().values(
             user_id=conn.player.id,
             status=status,
@@ -36,7 +35,7 @@ async def command_social_remove(conn, message):
         conn.abort("No-op social_remove.")
         return
 
-    async with db.engine.acquire() as dbconn:
+    async with conn._db.acquire() as dbconn:
         await dbconn.execute(friends_and_foes.delete().where(and_(
             friends_and_foes.c.user_id == conn.player.id,
             friends_and_foes.c.subject_id == subject_id
@@ -50,7 +49,7 @@ async def command_avatar(conn, message):
     if action == "list_avatar":
         avatarList = []
 
-        async with db.engine.acquire() as dbconn:
+        async with conn._db.acquire() as dbconn:
             result = await dbconn.execute(
                 "SELECT url, tooltip FROM `avatars` "
                 "LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = %s", (conn.player.id,))
@@ -60,12 +59,12 @@ async def command_avatar(conn, message):
                 avatarList.append(avatar)
 
             if avatarList:
-                conn.sendJSON({"command": "avatar", "avatarlist": avatarList})
+                await conn.send({"command": "avatar", "avatarlist": avatarList})
 
     elif action == "select":
         avatar = message['avatar']
 
-        async with db.engine.acquire() as dbconn:
+        async with conn._db.acquire() as dbconn:
             await dbconn.execute(
                 "UPDATE `avatars` SET `selected` = 0 WHERE `idUser` = %s", (conn.player.id, ))
             if avatar is not None:

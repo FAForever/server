@@ -28,8 +28,11 @@ class GeoIpService(object):
         self.db = None
 
         # crontab: min hour day month day_of_week
-        # Run every Wednesday because GeoLite2 is updated every Tuesday
-        self._update_cron = aiocron.crontab('0 0 0 * * 3', func=self.check_update_geoip_db)
+        # Run every Wednesday because GeoLite2 is updated every first Tuesday
+        # of the month.
+        self._update_cron = aiocron.crontab(
+            '0 0 0 * * 3', func=self.check_update_geoip_db
+        )
         asyncio.ensure_future(self.check_update_geoip_db())
 
     async def check_update_geoip_db(self) -> None:
@@ -39,19 +42,23 @@ class GeoIpService(object):
 
         self._logger.debug("Checking if geoip database needs updating")
         try:
-            date_modified = datetime.fromtimestamp(os.path.getmtime(self.file_path))
+            date_modified = datetime.fromtimestamp(
+                os.path.getmtime(self.file_path)
+            )
             delta = datetime.now() - date_modified
 
             if delta.days > config.GEO_IP_DATABASE_MAX_AGE_DAYS:
                 self._logger.info("Geoip database is out of date")
                 await self.download_geoip_db()
-        except FileNotFoundError:  # pragma: no cover
+        except FileNotFoundError:    # pragma: no cover
             self._logger.warning("Geoip database is missing...")
             await self.download_geoip_db()
-        except asyncio.TimeoutError:  # pragma: no cover
-            self._logger.warning("Failed to download database file! "
-                                 "Check the network connection and try again")
-        except Exception as e:  # pragma: no cover
+        except asyncio.TimeoutError:    # pragma: no cover
+            self._logger.warning(
+                "Failed to download database file! "
+                "Check the network connection and try again"
+            )
+        except Exception as e:    # pragma: no cover
             self._logger.exception(e)
             raise e
 
@@ -74,7 +81,7 @@ class GeoIpService(object):
             with gzip.open(temp_file_path, 'rb') as f_in:
                 with open(self.file_path, 'wb') as f_out:
                     shutil.copyfileobj(f_in, f_out)
-        except OSError:  # pragma: no cover
+        except OSError:    # pragma: no cover
             self._logger.warning("Failed to unzip downloaded file!")
         self._logger.info("New database download complete")
 
@@ -103,7 +110,9 @@ class GeoIpService(object):
         try:
             self.db = geoip2.database.Reader(self.file_path)
         except (InvalidDatabaseError, FileNotFoundError, ValueError):
-            self._logger.exception("Failed to load maxmind db! Maybe the download was interrupted")
+            self._logger.exception(
+                "Failed to load maxmind db! Maybe the download was interrupted"
+            )
 
     def country(self, address: str) -> str:
         """
@@ -117,6 +126,6 @@ class GeoIpService(object):
             return str(self.db.country(address).country.iso_code)
         except geoip2.errors.AddressNotFoundError:
             return default_value
-        except ValueError as e:  # pragma: no cover
+        except ValueError as e:    # pragma: no cover
             self._logger.exception("ValueError: %s", e)
             return default_value

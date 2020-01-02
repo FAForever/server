@@ -2,11 +2,10 @@ import asyncio
 from typing import Dict, List, Optional, Union, ValuesView
 
 import aiocron
-import server.db as db
-from server import GameState, VisibilityState
+from server.db import FAFDatabase
 from server.decorators import with_logger
 from server.games import CoopGame, CustomGame, FeaturedMod, LadderGame
-from server.games.game import Game
+from server.games.game import Game, GameState, VisibilityState
 from server.matchmaker import MatchmakerQueue
 from server.players import Player
 
@@ -16,7 +15,8 @@ class GameService:
     """
     Utility class for maintaining lifecycle of games
     """
-    def __init__(self, player_service, game_stats_service):
+    def __init__(self, database: FAFDatabase, player_service, game_stats_service):
+        self._db = database
         self._dirty_games = set()
         self._dirty_queues = set()
         self.player_service = player_service
@@ -45,7 +45,7 @@ class GameService:
         self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
 
     async def initialise_game_counter(self):
-        async with db.engine.acquire() as conn:
+        async with self._db.acquire() as conn:
             # InnoDB, unusually, doesn't allow insertion of values greater than the next expected
             # value into an auto_increment field. We'd like to do that, because we no longer insert
             # games into the database when they don't start, so game ids aren't contiguous (as
@@ -66,7 +66,7 @@ class GameService:
         Loads from the database the mostly-constant things that it doesn't make sense to query every
         time we need, but which can in principle change over time.
         """
-        async with db.engine.acquire() as conn:
+        async with self._db.acquire() as conn:
             result = await conn.execute("SELECT `id`, `gamemod`, `name`, description, publish, `order` FROM game_featuredMods")
 
             async for row in result:
@@ -126,6 +126,7 @@ class GameService:
         """
         game_id = self.create_uid()
         args = {
+            "database": self._db,
             "id_": game_id,
             "host": host,
             "name": name,
@@ -186,19 +187,6 @@ class GameService:
     def remove_game(self, game: Game):
         if game.id in self.games:
             del self.games[game.id]
-
-    def all_game_modes(self):
-        mods = []
-        for name, mod in self.featured_mods.items():
-            mods.append({
-                'command': 'mod_info',
-                'publish': mod.publish,
-                'name': name,
-                'order': mod.order,
-                'fullname': mod.full_name,
-                'desc': mod.description
-            })
-        return mods
 
     def __getitem__(self, item: int) -> Game:
         return self.games[item]

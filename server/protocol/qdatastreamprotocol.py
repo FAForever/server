@@ -103,23 +103,8 @@ class QDataStreamProtocol(Protocol):
         # FIXME: New protocol will remove the need for this
 
         pos, action = self.read_qstring(block)
-        if action in ['UPLOAD_MAP', 'UPLOAD_MOD']:
-            pos, _ = self.read_qstring(block, pos)  # login
-            pos, _ = self.read_qstring(block, pos)  # session
-            pos, name = self.read_qstring(block, pos)
-            pos, info = self.read_qstring(block, pos)
-            pos, size = self.read_int32(block, pos)
-            data = block[pos:size]
-            return {
-                'command': action.lower(),
-                'name': name,
-                'info': json.loads(info),
-                'data': data
-            }
-        elif action in ['PING', 'PONG']:
-            return {
-                'command': action.lower()
-            }
+        if action in ['PING', 'PONG']:
+            return {'command': action.lower()}
         else:
             message = json.loads(action)
             try:
@@ -136,15 +121,6 @@ class QDataStreamProtocol(Protocol):
                 pass
             return message
 
-    async def drain(self):
-        """
-        Await the write buffer to empty.
-
-        See StreamWriter.drain()
-        """
-        await asyncio.sleep(0)
-        await self.writer.drain()
-
     def close(self):
         """
         Close writer stream
@@ -152,20 +128,23 @@ class QDataStreamProtocol(Protocol):
         """
         self.writer.close()
 
-    def send_message(self, message: dict):
+    async def send_message(self, message: dict):
+        server.stats.incr('server.sent_messages')
         self.writer.write(
             self.pack_message(json.dumps(message, separators=(',', ':')))
         )
-        server.stats.incr('server.sent_messages')
+        await self.writer.drain()
 
-    def send_messages(self, messages):
+    async def send_messages(self, messages):
         server.stats.incr('server.sent_messages')
         payload = [
             self.pack_message(json.dumps(msg, separators=(',', ':')))
             for msg in messages
         ]
         self.writer.writelines(payload)
+        await self.writer.drain()
 
-    def send_raw(self, data):
+    async def send_raw(self, data):
         server.stats.incr('server.sent_messages')
         self.writer.write(data)
+        await self.writer.drain()

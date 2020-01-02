@@ -3,6 +3,7 @@ import math
 import time
 from typing import List, Optional, Tuple
 
+from server.rating import RatingType
 from trueskill import Rating, quality
 
 from .. import config
@@ -20,82 +21,88 @@ class Search:
         self,
         players: List[Player],
         start_time: Optional[float]=None,
-        rating_prop: str='ladder_rating'
+        rating_type: RatingType=RatingType.LADDER_1V1
     ):
         """
         Default ctor for a search
 
         :param players: player to use for searching
         :param start_time: optional start time for the search
-        :param rating_prop: 'ladder_rating' or 'global_rating'
+        :param rating_type: rating type
         :return: the search object
         """
         assert isinstance(players, list)
         for player in players:
-            assert getattr(player, rating_prop) is not None
+            assert player.ratings[rating_type] is not None
 
         self.players = players
-        self.rating_prop = rating_prop
+        self.rating_type = rating_type
         self.start_time = start_time or time.time()
         self._match = asyncio.Future()
-
-        # A map from 'deviation above' to 'minimum game quality required'
-        # This ensures that new players get matched broadly to
-        # give the system a chance at placing them
-        self._deviation_quality = {
-            350: 0.4,
-            300: 0.6,
-            250: 0.75,
-            0: 0.8
-        }
 
     @staticmethod
     def adjusted_rating(player: Player):
         """
         Returns an adjusted mean with a simple linear interpolation between current mean and a specified base mean
         """
-        mean, dev = player.ladder_rating
-        adjusted_mean = ((config.NEWBIE_MIN_GAMES - player.ladder_games) * config.NEWBIE_BASE_MEAN
-                         + player.ladder_games * mean) / config.NEWBIE_MIN_GAMES
+        mean, dev = player.ratings[RatingType.LADDER_1V1]
+        adjusted_mean = ((config.NEWBIE_MIN_GAMES - player.game_count[RatingType.LADDER_1V1]) * config.NEWBIE_BASE_MEAN
+                         + player.game_count[RatingType.LADDER_1V1] * mean) / config.NEWBIE_MIN_GAMES
         return adjusted_mean, dev
+
+    @staticmethod
+    def _is_ladder_newbie(player: Player) -> bool:
+        return player.game_count[RatingType.LADDER_1V1] <= config.NEWBIE_MIN_GAMES
+
+    def is_ladder1v1_search(self) -> bool:
+        return self.rating_type is RatingType.LADDER_1V1
+
+    def is_single_party(self) -> bool:
+        return len(self.players) == 1
+
+    def is_single_ladder_newbie(self) -> bool:
+        return (
+            self.is_single_party()
+            and self._is_ladder_newbie(self.players[0])
+            and self.is_ladder1v1_search()
+        )
+
+    def has_no_top_player(self) -> bool:
+        max_rating = max(map(lambda rating_tuple: rating_tuple[0], self.ratings))
+        return max_rating < config.TOP_PLAYER_MIN_RATING
 
     @property
     def ratings(self):
         ratings = []
         for player, rating in zip(self.players, self.raw_ratings):
             # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
-            if player.ladder_games <= config.NEWBIE_MIN_GAMES and self.rating_prop == 'ladder_rating':
+            if self._is_ladder_newbie(player):
                 rating = self.adjusted_rating(player)
             ratings.append(rating)
         return ratings
 
     @property
     def raw_ratings(self):
-        return [getattr(player, self.rating_prop) for player in self.players]
+        return [player.ratings[self.rating_type] for player in self.players]
+
+    def _nearby_rating_range(self, delta):
+        """
+        Returns 'boundary' mu values for player matching. Adjust delta for
+        different game qualities.
+        """
+        mu, _ = self.ratings[0]  # Takes the rating of the first player, only works for 1v1
+        rounded_mu = int(math.ceil(mu / 10) * 10) # Round to 10
+        return rounded_mu - delta, rounded_mu + delta
 
     @property
     def boundary_80(self):
-        """
-        Returns 'boundary' mu values for achieving roughly 80% quality
-
-        These are the mean, rounded to nearest 10, +/- 200, assuming sigma <= 100
-        """
-        # TODO: Figure out what to do with these boundaries
-        mu, _ = self.ratings[0]  # Takes the rating of the first player, only works for 1v1
-        rounded_mu = int(math.ceil(mu / 10) * 10)
-        return rounded_mu - 200, rounded_mu + 200
+        """ Achieves roughly 80% quality. """
+        return self._nearby_rating_range(200)
 
     @property
     def boundary_75(self):
-        """
-        Returns 'boundary' mu values for achieving roughly 75% quality
-
-        These are the mean, rounded to nearest 10, +/- 100, assuming sigma <= 200
-        """
-        # TODO: Figure out what to do with these boundaries
-        mu, _ = self.ratings[0]  # Takes the rating of the first player, only works for 1v1
-        rounded_mu = int(math.ceil(mu / 10) * 10)
-        return rounded_mu - 100, rounded_mu + 100
+        """ Achieves roughly 75% quality. FIXME - why is it MORE restrictive??? """
+        return self._nearby_rating_range(100)
 
     @property
     def search_expansion(self) -> float:
@@ -128,17 +135,15 @@ class Search:
     def match_threshold(self) -> float:
         """
         Defines the threshold for game quality
+        The base minimum quality is determined as 80% of the quality of a game
+        against a copy of yourself.
+        This is decreased by self.search_expansion if search is to be expanded.
 
         :return:
         """
-        thresholds = []
-        for rating in self.ratings:
-            _, deviation = rating
 
-            for d, q in self._deviation_quality.items():
-                if deviation >= d:
-                    thresholds.append(max(q - self.search_expansion, 0))
-        return min(thresholds)
+        quality_of_game_against_yourself = self.quality_with(self)
+        return max(0.8 * quality_of_game_against_yourself - self.search_expansion, 0)
 
     def quality_with(self, other: 'Search') -> float:
         assert all(other.raw_ratings)
@@ -180,13 +185,12 @@ class Search:
         self._logger.info("Matched %s with %s", self.players, other.players)
 
         for player, raw_rating in zip(self.players, self.raw_ratings):
-            ladder_games = player.ladder_games
-            if ladder_games <= config.NEWBIE_MIN_GAMES:
+            if self._is_ladder_newbie(player):
                 mean, dev = raw_rating
                 adjusted_mean = self.adjusted_rating(player)
                 self._logger.info('Adjusted mean rating for {player} with {ladder_games} games from {mean} to {adjusted_mean}'.format(
                     player=player,
-                    ladder_games=ladder_games,
+                    ladder_games=player.game_count[RatingType.LADDER_1V1],
                     mean=mean,
                     adjusted_mean=adjusted_mean
                 ))
@@ -209,6 +213,5 @@ class Search:
 
     def __str__(self):
         return "Search({}, {}, {})".format(self.players, self.match_threshold, self.search_expansion)
-
 
 Match = Tuple[Search, Search]

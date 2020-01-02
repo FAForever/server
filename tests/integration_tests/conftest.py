@@ -5,50 +5,98 @@ from typing import Any, Callable, Dict, Tuple
 from unittest import mock
 
 import pytest
+from aiohttp import web
 from server import GameService, PlayerService, run_lobby_server
 from server.ladder_service import LadderService
 from server.protocol import QDataStreamProtocol
 
 
 @pytest.fixture
-def mock_players():
-    m = mock.create_autospec(PlayerService())
+def mock_players(database):
+    m = mock.create_autospec(PlayerService(database))
     m.client_version_info = (0, None)
     return m
 
 
 @pytest.fixture
-def mock_games(mock_players):
-    return mock.create_autospec(GameService(mock_players))
+def mock_games(database, mock_players):
+    return mock.create_autospec(GameService(database, mock_players))
 
 
 @pytest.fixture
-def ladder_service(mocker, game_service):
-    mocker.patch('server.matchmaker.matchmaker_queue.config.QUEUE_POP_TIME_MAX', 1)
-    return LadderService(game_service)
+def ladder_service(mocker, database, game_service):
+    mocker.patch('server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX', 1)
+    return LadderService(database, game_service)
 
 
 @pytest.fixture
-def lobby_server(request, loop, player_service, game_service, geoip_service, ladder_service):
-    ctx = run_lobby_server(
-        address=('127.0.0.1', None),
-        geoip_service=geoip_service,
-        player_service=player_service,
-        games=game_service,
-        ladder_service=ladder_service,
-        nts_client=None,
-        loop=loop
-    )
-    player_service.is_uniqueid_exempt = lambda id: True
+def lobby_server(
+    request, event_loop, database, player_service, game_service,
+    geoip_service, ladder_service, policy_server
+):
+    with mock.patch(
+        'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
+        f'http://{policy_server.host}:{policy_server.port}'
+    ):
+        ctx = run_lobby_server(
+            address=('127.0.0.1', None),
+            database=database,
+            geoip_service=geoip_service,
+            player_service=player_service,
+            games=game_service,
+            ladder_service=ladder_service,
+            nts_client=None,
+            loop=event_loop
+        )
+        player_service.is_uniqueid_exempt = lambda id: True
 
-    def fin():
-        ctx.close()
-        ladder_service.shutdown_queues()
-        loop.run_until_complete(ctx.wait_closed())
+        def fin():
+            ctx.close()
+            ladder_service.shutdown_queues()
+            event_loop.run_until_complete(ctx.wait_closed())
 
-    request.addfinalizer(fin)
+        request.addfinalizer(fin)
 
-    return ctx
+        yield ctx
+
+
+@pytest.fixture
+def policy_server(event_loop):
+    host = 'localhost'
+    port = 6080
+
+    app = web.Application()
+    routes = web.RouteTableDef()
+
+    class Handle(object):
+        def __init__(self):
+            self.host = host
+            self.port = port
+            self.result = "honest"
+            self.verify = mock.Mock()
+
+    handle = Handle()
+
+    @routes.post('/verify')
+    async def token(request):
+        # Register that the endpoint was called using a Mock
+        handle.verify()
+
+        await request.json()
+        return web.json_response({'result': handle.result})
+
+    app.add_routes(routes)
+
+    runner = web.AppRunner(app)
+
+    async def start_app():
+        await runner.setup()
+        site = web.TCPSite(runner, host, port)
+        await site.start()
+
+    event_loop.run_until_complete(start_app())
+    yield handle
+    event_loop.run_until_complete(runner.cleanup())
 
 
 async def connect_client(server) -> QDataStreamProtocol:
@@ -62,7 +110,7 @@ async def perform_login(
 ) -> None:
     login, pw = credentials
     pw_hash = hashlib.sha256(pw.encode('utf-8'))
-    proto.send_message({
+    await proto.send_message({
         'command': 'hello',
         'version': '1.0.0-dev',
         'user_agent': 'faf-client',
@@ -70,7 +118,6 @@ async def perform_login(
         'password': pw_hash.hexdigest(),
         'unique_id': 'some_id'
     })
-    await proto.drain()
 
 
 async def read_until(
@@ -91,8 +138,7 @@ async def read_until_command(proto: QDataStreamProtocol, command: str) -> Dict[s
 
 
 async def get_session(proto):
-    proto.send_message({'command': 'ask_session', 'user_agent': 'faf-client', 'version': '0.11.16'})
-    await proto.drain()
+    await proto.send_message({'command': 'ask_session', 'user_agent': 'faf-client', 'version': '0.11.16'})
     msg = await read_until_command(proto, 'session')
 
     return msg['session']

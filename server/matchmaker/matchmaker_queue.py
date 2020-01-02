@@ -3,14 +3,13 @@ from collections import OrderedDict, deque
 from concurrent.futures import CancelledError
 from datetime import datetime, timezone
 from statistics import mean
-from time import time
 from typing import Deque, Dict
 
 import server
 
-from .. import config
 from ..decorators import with_logger
-from .algorithm import stable_marriage
+from .algorithm import make_matches
+from .pop_timer import PopTimer
 from .search import Match, Search
 
 
@@ -26,10 +25,9 @@ class MatchmakerQueue:
 
         self.queue: Dict[Search, Search] = OrderedDict()
         self._matches: Deque[Match] = deque()
-        self.last_queue_amounts: Deque[int] = deque()
         self._is_running = True
-        self._last_queue_pop = time()
-        self.next_queue_pop = self._last_queue_pop + config.QUEUE_POP_TIME_MAX
+
+        self.timer = PopTimer(self.queue_name)
         asyncio.ensure_future(self.queue_pop_timer())
         self._logger.debug("MatchmakerQueue initialized for %s", queue_name)
 
@@ -51,14 +49,7 @@ class MatchmakerQueue:
         in the queue.
         """
         while self._is_running:
-            time_remaining = self.next_queue_pop - time()
-            self._logger.info("Next %s wave happening in %is", self.queue_name, time_remaining)
-            server.stats.timing("matchmaker.queue.pop", int(time_remaining), tags={'queue_name': self.queue_name})
-            await asyncio.sleep(time_remaining)
-            server.stats.gauge(f"matchmaker.queue.{self.queue_name}.players", len(self))
-
-            self._last_queue_pop = time()
-            self.next_queue_pop = self._last_queue_pop + self.time_until_next_pop()
+            await self.timer.next_pop(lambda: len(self.queue))
 
             self.find_matches()
             server.stats.gauge(f"matchmaker.queue.{self.queue_name}.matches", len(self._matches))
@@ -74,26 +65,6 @@ class MatchmakerQueue:
             # match this round and will have higher priority next round.
 
             self.game_service.mark_dirty(self)
-
-    def time_until_next_pop(self) -> float:
-        """ Calculate how long we should wait for the next queue to pop based
-        on a moving average of the amount of people in the queue.
-
-        Uses a simple inverse relationship. See
-
-        https://www.desmos.com/calculator/v3tdrjbqub
-
-        for an exploration of possible functions.
-        """
-        num_queued = len(self)
-        self.last_queue_amounts.append(num_queued)
-        if len(self.last_queue_amounts) > config.QUEUE_POP_TIME_MOVING_AVG_SIZE:
-            self.last_queue_amounts.popleft()
-
-        x = mean(self.last_queue_amounts)
-        self._logger.debug("Moving average of %s queue size: %f", self.queue_name, x)
-        # Essentially y = max_time / (x+1) with a scale factor
-        return config.QUEUE_POP_TIME_MAX / (x / config.QUEUE_POP_TIME_SCALE_FACTOR + 1)
 
     async def search(self, search: Search) -> None:
         """
@@ -125,7 +96,7 @@ class MatchmakerQueue:
         # Call self.match on all matches and filter out the ones that were canceled
         new_matches = filter(
             lambda m: self.match(m[0], m[1]),
-            stable_marriage(self.queue.values())
+            make_matches(self.queue.values())
         )
         self._matches.extend(new_matches)
 
@@ -156,16 +127,13 @@ class MatchmakerQueue:
     def shutdown(self):
         self._is_running = False
 
-    def __len__(self):
-        return self.queue.__len__()
-
     def to_dict(self):
         """
         Return a fuzzy representation of the searches currently in the queue
         """
         return {
             'queue_name': self.queue_name,
-            'queue_pop_time': datetime.fromtimestamp(self.next_queue_pop, timezone.utc).isoformat(),
+            'queue_pop_time': datetime.fromtimestamp(self.timer.next_queue_pop, timezone.utc).isoformat(),
             'boundary_80s': [search.boundary_80 for search in self.queue.values()],
             'boundary_75s': [search.boundary_75 for search in self.queue.values()]
         }

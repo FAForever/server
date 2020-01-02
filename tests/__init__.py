@@ -1,5 +1,3 @@
-from asyncio import coroutine
-from unittest.mock import Mock
 import os
 
 
@@ -22,10 +20,3 @@ MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBANcXbVA8c7jMb8LVSQTp7G/YAiEPi2be
 -----END PUBLIC KEY-----
 """
 os.environ['API_JWT_PUBLIC_KEY'] = API_PUB_KEY
-
-
-def CoroMock(**kwargs) -> Mock:
-    coro = Mock(name="CoroutineResult", **kwargs)
-    corofunc = Mock(name="CoroutineFunction", side_effect=coroutine(coro))
-    corofunc.coro = coro
-    return corofunc

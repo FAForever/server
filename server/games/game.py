@@ -3,16 +3,19 @@ import functools
 import logging
 import re
 import time
-from collections import Counter, defaultdict
+from collections import defaultdict
 from enum import Enum, unique
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple
 
-import server.db as db
 import trueskill
+from server.games.game_results import GameOutcome, GameResult, GameResults
+from server.rating import RatingType
 from trueskill import Rating
 
-from ..abc.base_game import BaseGame, GameConnectionState, InitMode
+from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
+
+FFA_TEAM = 1
 
 
 @unique
@@ -101,41 +104,24 @@ class ValidityState(Enum):
     OTHER_UNRANK = 24
 
 
-@unique
-class GameOutcome(Enum):
-    VICTORY = 1
-    DEFEAT = 2
-    DRAW = 3
-    MUTUAL_DRAW = 4
-
-    @staticmethod
-    def from_string(value: str) -> Optional["GameOutcome"]:
-        """
-        :param value: The string to convert from
-
-        :return: VisibilityState or None if the string is not valid
-        """
-        return {
-            "victory": GameOutcome.VICTORY,
-            "defeat": GameOutcome.DEFEAT,
-            "draw": GameOutcome.DRAW,
-            "mutual_draw": GameOutcome.MUTUAL_DRAW
-        }.get(value)
-
-
 class GameError(Exception):
     pass
 
 
-class Game(BaseGame):
+class Game:
     """
     Object that lasts for the lifetime of a game on FAF.
+    """
+
+    """
+    The initialization mode to use for the Game.
     """
     init_mode = InitMode.NORMAL_LOBBY
 
     def __init__(
         self,
         id_: int,
+        database: "FAFDatabase",
         game_service: "GameService",
         game_stats_service: "GameStatsService",
         host: Optional[Player]=None,
@@ -143,8 +129,8 @@ class Game(BaseGame):
         map_: str='SCMP_007',
         game_mode: str='faf'
     ):
-        super().__init__()
-        self._results = {}
+        self._db = database
+        self._results = GameResults(id_)
         self._army_stats = None
         self._players_with_unsent_army_stats = []
         self._game_stats_service = game_stats_service
@@ -187,13 +173,10 @@ class Game(BaseGame):
         self._logger.debug("%s created", self)
         asyncio.get_event_loop().create_task(self.timeout_game())
 
-    async def sleep(self, n):
-        return await asyncio.sleep(n)
-
     async def timeout_game(self):
         # coop takes longer to set up
         tm = 30 if self.game_mode != 'coop' else 60
-        await self.sleep(tm)
+        await asyncio.sleep(tm)
         if self.state == GameState.INITIALIZING:
             self._is_hosted.set_exception(TimeoutError("Game setup timed out"))
             self._logger.debug("Game setup timed out.. Cancelling game")
@@ -206,17 +189,7 @@ class Game(BaseGame):
 
     @property
     def is_mutually_agreed_draw(self) -> bool:
-        # Don't count non-reported games as mutual draws
-        if not len(self._results):
-            return False
-        for army in self.armies:
-            if army in self._results:
-                for result in self._results[army]:
-                    if result[1] != 'mutual_draw':
-                        return False
-            else:
-                return False
-        return True
+        return self._results.is_mutually_agreed_draw(self.armies)
 
     @property
     def players(self):
@@ -242,6 +215,9 @@ class Game(BaseGame):
 
     @property
     def teams(self):
+        """
+        A set of all teams of this game's players.
+        """
         return frozenset({self.get_player_option(player.id, 'Team')
                           for player in self.players})
 
@@ -253,7 +229,7 @@ class Game(BaseGame):
         teams = set()
         for player in self.players:
             team = self.get_player_option(player.id, 'Team')
-            if team != 1:
+            if team != FFA_TEAM:
                 if team in teams:
                     return False
                 teams.add(team)
@@ -271,7 +247,7 @@ class Game(BaseGame):
     @property
     def is_even(self) -> bool:
         teams = self.team_count()
-        if 1 in teams: # someone is in ffa team, all teams need to have 1 player
+        if FFA_TEAM in teams: # someone is in ffa team, all teams need to have 1 player
             c = 1
             teams.pop(1)
         else:
@@ -316,34 +292,10 @@ class Game(BaseGame):
         if not self._is_hosted.done():
             self._is_hosted.set_result(value)
 
-    def outcome(self, player: Player) -> Optional[GameOutcome]:
-        """
-        Determines what the game outcome was for a given player. Did the
-        player win, lose, draw?
-
-        :param player: The player who's perspective we want
-        :return: GameOutcome or None if the outcome could not be determined
-        """
-        army = self.get_player_option(player.id, 'Army')
-        if army not in self._results:
-            return None
-
-        outcomes = set()
-        for result in self._results[army]:
-            outcomes.add(GameOutcome.from_string(result[1]))
-
-        # If there was exactly 1 outcome then return it
-        if len(outcomes) == 1:
-            return outcomes.pop()
-
-        # If there were no outcomes, or the outcomes do not agree then we can't
-        # determine the outcome
-        return None
-
-    async def add_result(self, reporter: Union[Player, int], army: int, result_type: str, score: int):
+    async def add_result(self, reporter: int, army: int, result_type: str, score: int):
         """
         As computed by the game.
-        :param reporter: a player instance or the player ID
+        :param reporter: player ID
         :param army: the army number being reported for
         :param result_type: a string representing the result
         :param score: an arbitrary number assigned with the result
@@ -351,13 +303,13 @@ class Game(BaseGame):
         """
         if army not in self.armies:
             self._logger.debug(
-                "Ignoring results for unknown army %s: %s %s reported by: %s", army, result_type, score, reporter)
+                "Ignoring results for unknown army %s: %s %s reported by: %s",
+                army, result_type, score, reporter)
             return
 
-        if army not in self._results:
-            self._results[army] = []
+        result = GameResult(reporter, army, GameOutcome.from_message(result_type), score)
+        self._results.add(result)
         self._logger.info("%s reported result for army %s: %s %s", reporter, army, result_type, score)
-        self._results[army].append((reporter, result_type.lower(), score))
 
         await self._process_pending_army_stats()
 
@@ -368,7 +320,7 @@ class Game(BaseGame):
                 continue
 
             for result in self._results[army]:
-                if result[1] in ['defeat', 'victory', 'draw', 'mutual_draw']:
+                if result.outcome is not GameOutcome.UNKNOWN:
                     await self._process_army_stats_for_player(player)
                     break
 
@@ -430,7 +382,7 @@ class Game(BaseGame):
         if len([conn for conn in self._connections.values() if not conn.finished_sim]) > 0:
             return
         self.ended = True
-        async with db.engine.acquire() as conn:
+        async with self._db.acquire() as conn:
             await conn.execute(
                 "UPDATE game_stats "
                 "SET endTime = NOW() "
@@ -454,7 +406,7 @@ class Game(BaseGame):
                     await self.mark_invalid(ValidityState.MUTUAL_DRAW)
                     return
 
-                if len(self._results) == 0:
+                if not self._results:
                     await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
                     return
 
@@ -468,23 +420,15 @@ class Game(BaseGame):
             self.state = GameState.ENDED
             self.game_service.mark_dirty(self)
 
+    async def rate_game(self):
+        pass
+
     async def load_results(self):
         """
         Load results from the database
         :return:
         """
-        self._results = {}
-        async with db.engine.acquire() as conn:
-            result = await conn.execute(
-                "SELECT `playerId`, `place`, `score` "
-                "FROM `game_player_stats` "
-                "WHERE `gameId`=%s", (self.id,))
-
-            async for row in result:
-                player_id, startspot, score = row[0], row[1], row[2]
-                # FIXME: Assertion about startspot == army
-                # FIXME: Reporter not retained in database
-                await self.add_result(0, startspot, 'score', score)
+        self._results = await GameResults.from_db(self._db, self.id)
 
     async def persist_results(self):
         """
@@ -498,15 +442,11 @@ class Game(BaseGame):
         scores = {}
         for player in self.players:
             army = self.get_player_option(player.id, 'Army')
-            try:
-                score = self.get_army_score(army)
-                scores[player] = score
-                self._logger.info('Result for army %s, player: %s: %s', army, player, score)
-            except KeyError:
-                # Default to -1 if there is no result
-                scores[player] = -1
+            score = self.get_army_score(army)
+            scores[player] = score
+            self._logger.info('Result for army %s, player: %s: %s', army, player, score)
 
-        async with db.engine.acquire() as conn:
+        async with self._db.acquire() as conn:
             rows = []
             for player, score in scores.items():
                 self._logger.info("Score for player %s: %s", player, score)
@@ -517,16 +457,7 @@ class Game(BaseGame):
                 "SET `score`=%s, `scoreTime`=NOW() "
                 "WHERE `gameId`=%s AND `playerId`=%s", rows)
 
-    async def clear_data(self):
-        async with db.engine.acquire() as conn:
-            await conn.execute(
-                "DELETE FROM game_player_stats "
-                "WHERE gameId=%s", (self.id,))
-            await conn.execute(
-                "DELETE FROM game_stats "
-                "WHERE id=%s", (self.id,))
-
-    async def persist_rating_change_stats(self, rating_groups, rating='global'):
+    async def persist_rating_change_stats(self, rating_groups, rating=RatingType.GLOBAL):
         """
         Persist computed ratings to the respective players' selected rating
         :param rating_groups: of the form returned by Game.compute_rating
@@ -539,29 +470,29 @@ class Game(BaseGame):
             for player, new_rating in team.items()
         }
 
-        rating_table = '{}_rating'.format('ladder1v1' if rating == 'ladder' else rating)
-
-        async with db.engine.acquire() as conn:
+        async with self._db.acquire() as conn:
             for player, new_rating in new_ratings.items():
-                self._logger.debug("New %s rating for %s: %s", rating, player, new_rating)
-                setattr(player, '{}_rating'.format(rating), new_rating)
+                self._logger.debug(f"New %s rating for %s: %s", rating.value, player, new_rating)
+                player.ratings[rating] = new_rating
                 await conn.execute(
                     "UPDATE game_player_stats "
                     "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
                     "WHERE gameId = %s AND playerId = %s",
                     (new_rating.mu, new_rating.sigma, self.id, player.id))
-                if rating != 'ladder':
-                    player.numGames += 1
+                player.game_count[rating] += 1
 
-                await self._update_rating_table(conn, rating_table, player, new_rating)
+                await self._update_rating_table(conn, rating, player, new_rating)
 
                 self.game_service.player_service.mark_dirty(player)
 
-    async def _update_rating_table(self, conn, table: str, player: Player, new_rating):
+    async def _update_rating_table(self, conn, rating: RatingType,
+                                   player: Player, new_rating):
         # If we are updating the ladder1v1_rating table then we also need to update
         # the `winGames` column which doesn't exist on the global_rating table
-        if table == 'ladder1v1_rating':
-            is_victory = self.outcome(player) == GameOutcome.VICTORY
+        table = f'{rating.value}_rating'
+
+        if rating is RatingType.LADDER_1V1:
+            is_victory = self.get_army_result(player) is GameOutcome.VICTORY
             await conn.execute(
                 "UPDATE ladder1v1_rating "
                 "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1, winGames = winGames + %s "
@@ -731,7 +662,7 @@ class Game(BaseGame):
         """
         assert self.host is not None
 
-        async with db.engine.acquire() as conn:
+        async with self._db.acquire() as conn:
             # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
             # so, and grab the map id at the same time.
             result = await conn.execute(
@@ -783,9 +714,9 @@ class Game(BaseGame):
                 continue
 
             if self.game_mode == 'ladder1v1':
-                mean, dev = player.ladder_rating
+                mean, dev = player.ratings[RatingType.LADDER_1V1]
             else:
-                mean, dev = player.global_rating
+                mean, dev = player.ratings[RatingType.GLOBAL]
 
             query_args.append((
                 self.id,
@@ -794,13 +725,13 @@ class Game(BaseGame):
                 options['Color'],
                 options['Team'],
                 options['StartSpot'],
-                mean, dev, 0, -1
+                mean, dev, 0, 0
             ))
         if not query_args:
             self._logger.warning("No player options available!")
             return
 
-        async with db.engine.acquire() as conn:
+        async with self._db.acquire() as conn:
             await conn.execute(query_str, query_args)
 
     def sanitize_name(self, name: str) -> str:
@@ -822,54 +753,25 @@ class Game(BaseGame):
 
         # Currently, we can only end up here if a game desynced or was a custom game that terminated
         # too quickly.
-        async with db.engine.acquire() as conn:
+        async with self._db.acquire() as conn:
             await conn.execute(
                 "UPDATE game_stats SET validity = %s "
                 "WHERE id = %s", (new_validity_state.value, self.id))
 
     def get_army_score(self, army):
-        """
-        Since we log multiple results from multiple sources, we have to pick one.
-
-        On conflict we try to pick the most frequently reported score. If there
-        are multiple scores with the same number of reports, we pick the greater
-        score.
-
-        TODO: Flag games with conflicting scores for manual review.
-        :param army index of army
-        :raise KeyError
-        :return:
-        """
-        scores: Dict[int, int] = Counter(
-            map(lambda res: res[2], self._results.get(army, []))
-        )
-
-        # There were no results
-        if not scores:
-            return 0
-
-        # All scores agreed
-        if len(scores) == 1:
-            return scores.popitem()[0]
-
-        # Return the highest score with the most votes
-        self._logger.info("Conflicting scores (%s) reported for game %s", scores, self)
-        score, _votes = max(scores.items(), key=lambda kv: kv[::-1])
-        return score
+        return self._results.score(army)
 
     def get_army_result(self, player):
-        results = self._results.get(self.get_player_option(player.id, 'Army'))
-        if not results:
-            return None
+        army = self.get_player_option(player.id, 'Army')
+        if army is None:
+            return GameOutcome.UNKNOWN
 
-        most_reported_result = Counter(i[1] for i in results).most_common(1)[0]
-        outcome = most_reported_result[0]
-        return outcome
+        return self._results.outcome(army)
 
-    def compute_rating(self, rating='global'):
+    def compute_rating(self, rating=RatingType.GLOBAL):
         """
         Compute new ratings
-        :param rating: 'global' or 'ladder'
+        :param rating: Rating type
         :return: rating groups of the form:
         >>> p1,p2,p3,p4 = Player()
         >>> [{p1: p1.rating, p2: p2.rating}, {p3: p3.rating, p4: p4.rating}]
@@ -886,25 +788,21 @@ class Game(BaseGame):
                 continue
             if not team:
                 raise GameError("Missing team for player id: {}".format(player.id))
-            if team != 1:
+            if team == FFA_TEAM:
+                ffa_scores.append((player, self.get_army_score(army)))
+            else:
                 if team not in team_scores:
                     team_scores[team] = 0
-                try:
-                    team_scores[team] += self.get_army_score(army)
-                except KeyError:
-                    team_scores[team] += 0
-                    self._logger.warning("Missing game result for %s: %s", army, player)
-            elif team == 1:
-                ffa_scores.append((player, self.get_army_score(army)))
+                team_scores[team] += self.get_army_score(army)
         ranks = [-score for team, score in sorted(team_scores.items(), key=lambda t: t[0])]
         rating_groups = []
         for team in sorted(self.teams):
             if team != 1:
-                rating_groups += [{player: Rating(*getattr(player, '{}_rating'.format(rating)))
+                rating_groups += [{player: Rating(*player.ratings[rating])
                                    for player in self.players if
                                    self.get_player_option(player.id, 'Team') == team}]
         for player, score in sorted(ffa_scores, key=lambda x: self.get_player_option(x[0].id, 'Army')):
-            rating_groups += [{player: Rating(*getattr(player, '{}_rating'.format(rating)))}]
+            rating_groups += [{player: Rating(*player.ratings[rating])}]
             ranks.append(-score)
         self._logger.debug("Rating groups: %s", rating_groups)
         self._logger.debug("Ranks: %s", ranks)

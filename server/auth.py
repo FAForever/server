@@ -42,7 +42,7 @@ if mod.pub_key:
             raise AuthenticationError("Token signature was invalid")
 
         new_irc_password = b64encode(os.urandom(30)).decode()
-        conn.send({
+        await conn.send({
             "command": "irc_password",
             "password": new_irc_password
         })

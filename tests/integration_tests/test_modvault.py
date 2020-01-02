@@ -1,4 +1,8 @@
+import pytest
+
 from .conftest import connect_and_sign_in, read_until_command
+
+pytestmark = pytest.mark.asyncio
 
 
 async def test_modvault_start(lobby_server):
@@ -9,11 +13,10 @@ async def test_modvault_start(lobby_server):
 
     await read_until_command(proto, 'game_info')
 
-    proto.send_message({
+    await proto.send_message({
         'command': 'modvault',
         'type': 'start'
     })
-    await proto.drain()
 
     # Make sure all 5 mod version messages are sent
     for _ in range(5):
@@ -28,12 +31,11 @@ async def test_modvault_like(lobby_server):
 
     await read_until_command(proto, 'game_info')
 
-    proto.send_message({
+    await proto.send_message({
         'command': 'modvault',
         'type': 'like',
         'uid': 'FFF'
     })
-    await proto.drain()
 
     msg = await read_until_command(proto, 'modvault_info')
     # Not going to verify the date

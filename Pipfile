@@ -1,5 +1,7 @@
 [scripts]
+devserver = "env LOG_LEVEL=TRACE python server.py"
 tests = "scripts/pipenv_run_tests.sh"
+vulture = "vulture server.py server/ --sort-by-size"
 
 [[source]]
 url = "https://pypi.org/simple"
@@ -9,8 +11,8 @@ name = "pypi"
 [packages]
 typing = "*"
 aiohttp = "*"
-aiomysql = "*"
 aiomeasures = "*"
+aiomysql = {editable = true, git = "https://github.com/aio-libs/aiomysql"}
 docopt = "*"
 semver = "*"
 "geoip2" = "*"
@@ -26,8 +28,11 @@ pyjwt = "*"
 pytest = "*"
 pytest-mock = "*"
 pytest-cov = "*"
+pytest-asyncio = "*"
 coveralls = "*"
 mock = "*"
+vulture = "*"
+asynctest = "*"
 
 [requires]
 python_version = "3.6"

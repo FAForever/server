@@ -1,5 +1,4 @@
 import pymysql
-import server.db as db
 from sqlalchemy import func, text
 
 from . import config
@@ -16,23 +15,16 @@ async def command_admin(conn, message):
 
     if conn.player.admin:
         if action == "closeFA":
-            player = conn.player_service[int(message['user_id'])]
+            player = conn.player_service[message['user_id']]
             if player:
-                conn._logger.warning(
-                    'Administrative action: %s closed game for %s', conn.player, player
-                )
-                player.lobby_connection.sendJSON({"command": "notice", "style": "kill"})
-                player.lobby_connection.sendJSON({
+                conn._logger.warning('Administrative action: %s closed game for %s', conn.player, player)
+                await player.lobby_connection.send({
                     "command": "notice",
-                    "style": "info",
-                    "text": (
-                        f"Your game was closed by an administrator ({conn.player.login}). "
-                        f"Please refer to our rules for the lobby/game here {config.RULE_LINK}."
-                    )
+                    "style": "kill",
                 })
 
         elif action == "closelobby":
-            player = conn.player_service[int(message['user_id'])]
+            player = conn.player_service[message['user_id']]
             ban_fail = None
             if player:
                 if 'ban' in message:
@@ -40,11 +32,8 @@ async def command_admin(conn, message):
                     duration = int(message['ban'].get('duration', 1))
                     period = message['ban'].get('period', 'SECOND').upper()
 
-                    conn._logger.warning(
-                        'Administrative action: %s closed client for %s with %s ban (Reason: %s)',
-                        conn.player, player, duration, reason
-                    )
-                    async with db.engine.acquire() as dbconn:
+                    conn._logger.warning('Administrative action: %s closed client for %s with %s ban (Reason: %s)', conn.player, player, duration, reason)
+                    async with conn._db.acquire() as dbconn:
                         try:
                             result = await dbconn.execute("SELECT reason from lobby_ban WHERE idUser=%s AND expires_at > NOW()", (message['user_id']))
 
@@ -56,8 +45,7 @@ async def command_admin(conn, message):
                                     conn._logger.warning('Tried to ban player with invalid period')
                                     raise ClientError(f"Period '{period}' is not allowed!")
 
-                                # NOTE: Text formatting in sql string is only ok
-                                # because we just checked it's value
+                                # NOTE: Text formatting in sql string is only ok because we just checked it's value
                                 await dbconn.execute(
                                     ban.insert().values(
                                         player_id=player.id,
@@ -76,12 +64,7 @@ async def command_admin(conn, message):
                             raise ClientError('Your ban attempt upset the database: {}'.format(e))
                 else:
                     conn._logger.warning('Administrative action: %s closed client for %s', conn.player, player)
-                player.lobby_connection.kick(
-                    message=(
-                        f"You were kicked from FAF by an administrator ({conn.player.login}). "
-                        f"Please refer to our rules for the lobby/game here {config.RULE_LINK}."
-                    )
-                )
+                await player.lobby_connection.kick()
                 if ban_fail:
                     raise ClientError("Kicked the player, but he was already banned!")
 
@@ -89,7 +72,7 @@ async def command_admin(conn, message):
             for player in conn.player_service:
                 try:
                     if player.lobby_connection:
-                        player.lobby_connection.send_warning(message.get('message'))
+                        await player.lobby_connection.send_warning(message.get('message'))
                 except Exception as ex:
                     conn._logger.debug("Could not send broadcast message to %s: %s", player, ex)
 
@@ -101,4 +84,7 @@ async def command_admin(conn, message):
             for user_id in user_ids:
                 player = conn.player_service[message[user_id]]
                 if player:
-                    player.lobby_connection.sendJSON(dict(command="social", autojoin=[channel]))
+                    await player.lobby_connection.send({
+                        "command": "social",
+                        "autojoin": [channel]
+                    })

@@ -6,8 +6,11 @@ from concurrent.futures import CancelledError, TimeoutError
 import mock
 import pytest
 import server.config as config
-from server.matchmaker import MatchmakerQueue, Search
-from server.players import Player
+from server.matchmaker import MatchmakerQueue, PopTimer, Search
+from server.rating import RatingType
+from tests.utils import fast_forward
+
+pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
@@ -16,52 +19,107 @@ def matchmaker_queue(game_service):
 
 
 @pytest.fixture
-def matchmaker_players():
-    return Player('Dostya', player_id=1, ladder_rating=(2300, 64), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           Player('Brackman', player_id=2, ladder_rating=(1200, 72), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           Player('Zoidberg', player_id=3, ladder_rating=(1300, 175), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           Player('QAI', player_id=4, ladder_rating=(2350, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           Player('Rhiza', player_id=5, ladder_rating=(1200, 175), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           Player('Newbie', player_id=6, ladder_rating=(1200, 175), ladder_games=(config.NEWBIE_MIN_GAMES - 1))
+def matchmaker_players(player_factory):
+    return player_factory('Dostya', player_id=1, ladder_rating=(2300, 64), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           player_factory('Brackman', player_id=2, ladder_rating=(1200, 72), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           player_factory('Zoidberg', player_id=3, ladder_rating=(1300, 175), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           player_factory('QAI', player_id=4, ladder_rating=(2350, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           player_factory('Rhiza', player_id=5, ladder_rating=(1200, 175), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           player_factory('Newbie', player_id=6, ladder_rating=(1200, 175), ladder_games=(config.NEWBIE_MIN_GAMES - 1))
 
 
 @pytest.fixture
-def matchmaker_players_all_match():
-    return Player('Dostya', player_id=1, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           Player('Brackman', player_id=2, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           Player('Zoidberg', player_id=3, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           Player('QAI', player_id=4, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           Player('Rhiza', player_id=5, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+def matchmaker_players_all_match(player_factory):
+    return player_factory('Dostya', player_id=1, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           player_factory('Brackman', player_id=2, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           player_factory('Zoidberg', player_id=3, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           player_factory('QAI', player_id=4, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           player_factory('Rhiza', player_id=5, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
 
 
-def test_newbie_min_games(mocker, loop, matchmaker_players):
-    p1, _, _, _, _, p6 = matchmaker_players
-    s1, s6 = Search([p1]), Search([p6])
-    assert s1.ratings[0] == p1.ladder_rating and s6.ratings[0] != p6.ladder_rating
+async def test_is_ladder_newbie(matchmaker_players):
+    pro, _, _, _, _, newbie = matchmaker_players
+    assert Search._is_ladder_newbie(pro) is False
+    assert Search._is_ladder_newbie(newbie)
 
 
-def test_search_threshold(mocker, loop, matchmaker_players):
+async def test_is_single_newbie(matchmaker_players):
+    pro, _, _, _, _, newbie = matchmaker_players
+
+    single_newbie = Search([newbie])
+    single_pro = Search([pro])
+    two_newbies = Search([newbie, newbie])
+    two_pros = Search([pro, pro])
+    two_mixed = Search([newbie, pro])
+
+    assert single_newbie.is_single_ladder_newbie()
+    assert single_pro.is_single_ladder_newbie() is False
+    assert two_newbies.is_single_ladder_newbie() == False
+    assert two_pros.is_single_ladder_newbie() == False
+    assert two_mixed.is_single_ladder_newbie() == False
+
+
+async def test_newbies_have_adjusted_rating(matchmaker_players):
+    pro, _, _, _, _, newbie = matchmaker_players
+    s1, s6 = Search([pro]), Search([newbie])
+    assert s1.ratings[0] == pro.ratings[RatingType.LADDER_1V1]
+    assert s6.ratings[0] != newbie.ratings[RatingType.LADDER_1V1]
+
+
+async def test_search_threshold(matchmaker_players):
     s = Search([matchmaker_players[0]])
     assert s.match_threshold <= 1
     assert s.match_threshold >= 0
 
 
-def test_search_quality_equivalence(mocker, loop, matchmaker_players):
+async def test_search_threshold_of_single_old_players_is_high(player_factory):
+    old_player = player_factory('experienced_player', player_id=1, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+    s = Search([old_player])
+    assert s.match_threshold >= 0.6
+
+
+async def test_search_threshold_of_team_old_players_is_high(player_factory):
+    old_player = player_factory('experienced_player', player_id=1, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+    another_old_player = player_factory('another experienced_player', player_id=2, ladder_rating=(1600, 60), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+    s = Search([old_player, another_old_player])
+    assert s.match_threshold >= 0.6
+
+
+async def test_search_threshold_of_single_new_players_is_low(player_factory):
+    new_player = player_factory('new_player', player_id=1, ladder_rating=(1500, 500), ladder_games=1)
+    s = Search([new_player])
+    assert s.match_threshold <= 0.4
+
+
+async def test_search_threshold_of_team_new_players_is_low(player_factory):
+    new_player = player_factory('new_player', player_id=1, ladder_rating=(1500, 500), ladder_games=1)
+    another_new_player = player_factory('another_new_player', player_id=2, ladder_rating=(1450, 450), ladder_games=1)
+    s = Search([new_player, another_new_player])
+    assert s.match_threshold <= 0.4
+
+
+async def test_search_quality_equivalence(matchmaker_players):
     p1, _, _, p4, _, _ = matchmaker_players
     s1, s4 = Search([p1]), Search([p4])
     assert s1.quality_with(s4) == s4.quality_with(s1)
 
 
-def test_search_quality(mocker, loop, matchmaker_players):
+async def test_search_quality(matchmaker_players):
     p1, _, p3, _, p5, p6 = matchmaker_players
     s1, s3, s5, s6 = Search([p1]), Search([p3]), Search([p5]), Search([p6])
     assert s3.quality_with(s5) > 0.7 and s1.quality_with(s6) < 0.2
 
 
-async def test_search_match(mocker, loop, matchmaker_players):
+async def test_search_match(matchmaker_players):
     p1, _, _, p4, _, _ = matchmaker_players
     s1, s4 = Search([p1]), Search([p4])
     assert s1.matches_with(s4)
+
+
+async def test_search_threshold_low_enough_to_play_yourself(matchmaker_players):
+    for player in matchmaker_players:
+        s = Search([player])
+        assert s.matches_with(s)
 
 
 async def test_search_team_match(matchmaker_players):
@@ -76,28 +134,28 @@ async def test_search_team_not_match(matchmaker_players):
     assert not s1.matches_with(s4)
 
 
-async def test_search_no_match(mocker, loop, matchmaker_players):
+async def test_search_no_match(matchmaker_players):
     p1, p2, _, _, _, _ = matchmaker_players
     s1, s2 = Search([p1]), Search([p2])
     assert not s1.matches_with(s2)
 
 
-def test_search_no_match_wrong_type(matchmaker_players):
+async def test_search_no_match_wrong_type(matchmaker_players):
     p1, _, _, _, _, _ = matchmaker_players
     s1 = Search([p1])
     assert not s1.matches_with(42)
 
 
-def test_search_boundaries(matchmaker_players):
+async def test_search_boundaries(matchmaker_players):
     p1 = matchmaker_players[0]
     s1 = Search([p1])
-    assert p1.ladder_rating[0] > s1.boundary_80[0]
-    assert p1.ladder_rating[0] < s1.boundary_80[1]
-    assert p1.ladder_rating[0] > s1.boundary_75[0]
-    assert p1.ladder_rating[0] < s1.boundary_75[1]
+    assert p1.ratings[RatingType.LADDER_1V1][0] > s1.boundary_80[0]
+    assert p1.ratings[RatingType.LADDER_1V1][0] < s1.boundary_80[1]
+    assert p1.ratings[RatingType.LADDER_1V1][0] > s1.boundary_75[0]
+    assert p1.ratings[RatingType.LADDER_1V1][0] < s1.boundary_75[1]
 
 
-def test_search_expansion(matchmaker_players, mocker):
+async def test_search_expansion(matchmaker_players, mocker):
     p1 = matchmaker_players[0]
     mocker.patch('time.time', return_value=0)
     s1 = Search([p1])
@@ -113,7 +171,7 @@ def test_search_expansion(matchmaker_players, mocker):
     assert e1 == s1.search_expansion
 
 
-async def test_search_await(mocker, loop, matchmaker_players):
+async def test_search_await(matchmaker_players):
     p1, p2, _, _, _, _ = matchmaker_players
     s1, s2 = Search([p1]), Search([p2])
     assert not s1.matches_with(s2)
@@ -123,22 +181,47 @@ async def test_search_await(mocker, loop, matchmaker_players):
     assert await_coro.done()
 
 
-def test_queue_time_until_next_pop(matchmaker_queue):
-    q1 = matchmaker_queue
-    q2 = MatchmakerQueue('test_queue_2', game_service=mock.Mock())
+async def test_queue_time_until_next_pop():
+    t1 = PopTimer("test_1")
+    t2 = PopTimer("test_2")
 
-    assert q1.time_until_next_pop() == config.QUEUE_POP_TIME_MAX
-    q1.queue = [None] * 5
-    a1 = q1.time_until_next_pop()
-    assert a1 < config.QUEUE_POP_TIME_MAX
-    a2 = q1.time_until_next_pop()
-    # Should be strictly less because of the moving average
+    assert t1.time_until_next_pop(0, 0) == config.QUEUE_POP_TIME_MAX
+    # If the desired number of players is not reached within the maximum waiting
+    # time, then the next round must wait for the maximum allowed time as well.
+    a1 = t1.time_until_next_pop(
+        num_queued=config.QUEUE_POP_DESIRED_PLAYERS - 1,
+        time_queued=config.QUEUE_POP_TIME_MAX
+    )
+    assert a1 == config.QUEUE_POP_TIME_MAX
+
+    # If there are more players than expected, the time should drop
+    a2 = t1.time_until_next_pop(
+        num_queued=config.QUEUE_POP_DESIRED_PLAYERS * 2,
+        time_queued=config.QUEUE_POP_TIME_MAX
+    )
     assert a2 < a1
 
-    # Make sure that queue moving averages are claculated independently
-    assert q2.time_until_next_pop() == config.QUEUE_POP_TIME_MAX
+    # Make sure that queue moving averages are calculated independently
+    assert t2.time_until_next_pop(0, 0) == config.QUEUE_POP_TIME_MAX
 
 
+async def test_queue_pop_time_moving_average_size():
+    t1 = PopTimer("test_1")
+
+    for _ in range(100):
+        t1.time_until_next_pop(100, 1)
+
+    # The rate should be extremely high, meaning the pop time should be low
+    assert t1.time_until_next_pop(100, 1) < 1
+
+    for _ in range(config.QUEUE_POP_TIME_MOVING_AVG_SIZE):
+        t1.time_until_next_pop(0, 100)
+
+    # The rate should be extremely low, meaning the pop time should be high
+    assert t1.time_until_next_pop(0, 100) == config.QUEUE_POP_TIME_MAX
+
+
+@fast_forward(3)
 async def test_queue_matches(matchmaker_queue):
     matches = [random.randrange(0, 1 << 20) for _ in range(20)]
     matchmaker_queue._matches = deque(matches)
@@ -160,10 +243,10 @@ async def test_shutdown_matchmaker(matchmaker_queue):
         assert False
 
 
-async def test_queue_many(mocker, player_service, matchmaker_queue):
-    p1, p2, p3 = Player('Dostya', player_id=1, ladder_rating=(2200, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-                 Player('Brackman', player_id=2, ladder_rating=(1500, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-                 Player('Zoidberg', player_id=3, ladder_rating=(1500, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+async def test_queue_many(player_service, matchmaker_queue, player_factory):
+    p1, p2, p3 = player_factory('Dostya', player_id=1, ladder_rating=(2200, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+                 player_factory('Brackman', player_id=2, ladder_rating=(1500, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+                 player_factory('Zoidberg', player_id=3, ladder_rating=(1500, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
 
     player_service.players = {p1.id: p1, p2.id: p2, p3.id: p3}
     s1 = Search([p1])
@@ -180,10 +263,10 @@ async def test_queue_many(mocker, player_service, matchmaker_queue):
     assert s3.is_matched
 
 
-async def test_queue_race(mocker, player_service, matchmaker_queue):
-    p1, p2, p3 = Player('Dostya', player_id=1, ladder_rating=(2300, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-                 Player('Brackman', player_id=2, ladder_rating=(2200, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-                 Player('Zoidberg', player_id=3, ladder_rating=(2300, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+async def test_queue_race(player_service, matchmaker_queue, player_factory):
+    p1, p2, p3 = player_factory('Dostya', player_id=1, ladder_rating=(2300, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+                 player_factory('Brackman', player_id=2, ladder_rating=(2200, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+                 player_factory('Zoidberg', player_id=3, ladder_rating=(2300, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
 
     player_service.players = {p1.id: p1, p2.id: p2, p3.id: p3}
 
@@ -200,10 +283,10 @@ async def test_queue_race(mocker, player_service, matchmaker_queue):
     except (TimeoutError, CancelledError):
         pass
 
-    assert len(matchmaker_queue) == 0
+    assert len(matchmaker_queue.queue) == 0
 
 
-async def test_queue_cancel(mocker, player_service, matchmaker_queue, matchmaker_players):
+async def test_queue_cancel(player_service, matchmaker_queue, matchmaker_players):
     # Turn list of players into map from ids to players.
     player_service.players = dict(map(lambda x: (x.id, x), list(matchmaker_players)))
 
@@ -219,7 +302,7 @@ async def test_queue_cancel(mocker, player_service, matchmaker_queue, matchmaker
     assert not s2.is_matched
 
 
-async def test_queue_mid_cancel(mocker, player_service, matchmaker_queue, matchmaker_players_all_match):
+async def test_queue_mid_cancel(player_service, matchmaker_queue, matchmaker_players_all_match):
     # Turn list of players into map from ids to players.
     player_service.players = dict(map(lambda x: (x.id, x), list(matchmaker_players_all_match)))
     p0, p1, p2, p3, _ = matchmaker_players_all_match
@@ -244,4 +327,4 @@ async def test_queue_mid_cancel(mocker, player_service, matchmaker_queue, matchm
     assert not s1.is_matched
     assert s2.is_matched
     assert s3.is_matched
-    assert len(matchmaker_queue) == 0
+    assert len(matchmaker_queue.queue) == 0

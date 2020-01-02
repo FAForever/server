@@ -1,10 +1,14 @@
 import mock
 from server.games import CoopGame
+import pytest
+
+pytestmark = pytest.mark.asyncio
 
 
-def test_create_coop_game():
+async def test_create_coop_game(database):
     game = CoopGame(
         id_=0,
+        database=database,
         host=mock.Mock(),
         name="Some game",
         map_="some_map",

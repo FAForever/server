@@ -1,28 +1,36 @@
 from unittest import mock
 
+import asynctest
 import pytest
+from asynctest import CoroutineMock
 from server import GameStatsService
-from server.abc.base_game import BaseGame
 from server.game_service import GameService
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import Game
 from server.geoip_service import GeoIpService
 from server.ladder_service import LadderService
-from server.players import Player
-from tests import CoroMock
 
 
 @pytest.fixture
 def lobbythread():
     return mock.Mock(
-        sendJSON=lambda obj: None
+        send=lambda obj: None
     )
 
 
 @pytest.fixture
-def game_connection(request, game, players, game_service, player_service):
+def game_connection(
+    request,
+    database,
+    game,
+    players,
+    game_service,
+    player_service,
+    event_loop
+):
     from server import GameConnection
     conn = GameConnection(
+        database=database,
         game=game,
         player=players.hosting,
         protocol=mock.Mock(),
@@ -33,7 +41,7 @@ def game_connection(request, game, players, game_service, player_service):
     conn.finished_sim = False
 
     def fin():
-        conn.abort()
+        event_loop.run_until_complete(conn.abort())
 
     request.addfinalizer(fin)
     return conn
@@ -45,7 +53,7 @@ def mock_game_connection():
 
 
 def make_mock_game_connection(state=GameConnectionState.INITIALIZING, player=None):
-    gc = mock.create_autospec(spec=GameConnection)
+    gc = asynctest.create_autospec(spec=GameConnection)
     gc.state = state
     gc.player = player
     gc.finished_sim = False
@@ -55,15 +63,16 @@ def make_mock_game_connection(state=GameConnectionState.INITIALIZING, player=Non
 @pytest.fixture
 def game_stats_service():
     service = mock.Mock(spec=GameStatsService)
-    service.process_game_stats = CoroMock()
+    service.process_game_stats = CoroutineMock()
+    service.reset_mock()
     return service
 
 
 @pytest.fixture
-def ladder_service(request, mocker, game_service: GameService):
-    mocker.patch('server.matchmaker.matchmaker_queue.config.QUEUE_POP_TIME_MAX', 1)
+def ladder_service(request, mocker, database, game_service: GameService):
+    mocker.patch('server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX', 1)
 
-    ladder_service = LadderService(game_service)
+    ladder_service = LadderService(database, game_service)
 
     def fin():
         ladder_service.shutdown_queues()
@@ -75,7 +84,7 @@ def ladder_service(request, mocker, game_service: GameService):
 @pytest.fixture
 def geoip_service():
     service = GeoIpService()
-    service.download_geoip_db = CoroMock()
+    service.download_geoip_db = CoroutineMock()
     return service
 
 
@@ -91,7 +100,7 @@ def add_connected_player(game: Game, player):
     return gc
 
 
-def add_connected_players(game: BaseGame, players):
+def add_connected_players(game: Game, players):
     """
     Utility to add players with army and StartSpot indexed by a list
     """
@@ -105,17 +114,23 @@ def add_connected_players(game: BaseGame, players):
     game.host = players[0]
 
 
-def add_players(gameobj: BaseGame, n: int, team: int=None):
-    game = gameobj
-    current = len(game.players)
-    players = []
-    for i in range(current, current+n):
-        players.append(Player(player_id=i + 1, login=f'Player {i + 1}', global_rating=(1500, 500)))
+@pytest.fixture
+def game_add_players(player_factory):
+    def add(gameobj: Game, n: int, team: int=None):
+        game = gameobj
+        current = len(game.players)
+        players = []
+        for i in range(current, current+n):
+            p = player_factory(player_id=i+1, login=f'Player {i + 1}',
+                               global_rating=(1500, 500))
+            players.append(p)
 
-    add_connected_players(game, players)
+        add_connected_players(game, players)
 
-    if team is not None:
-        for p in players:
-            game.set_player_option(p.id, 'Team', team)
+        if team is not None:
+            for p in players:
+                game.set_player_option(p.id, 'Team', team)
 
-    return players
+        return players
+
+    return add
