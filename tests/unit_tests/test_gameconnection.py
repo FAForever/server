@@ -272,7 +272,8 @@ async def test_handle_action_TeamkillReport(game: Game, game_connection: GameCon
     await game_connection.handle_action('TeamkillReport', ['200', '2', 'Dostya', '3', 'Rhiza'])
 
     async with database.acquire() as conn:
-        result = await conn.execute("select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=200", (game.id))
+        result = await conn.execute("select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=200",
+                                    game.id)
         report = await result.fetchone()
         assert game.id == report["game_id"]
 
@@ -286,7 +287,8 @@ async def test_handle_action_TeamkillReport_invalid_ids(game: Game, game_connect
     await game_connection.handle_action('TeamkillReport', ['230', 0, 'Dostya', 0, 'Rhiza'])
 
     async with database.acquire() as conn:
-        result = await conn.execute("select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=230", (game.id))
+        result = await conn.execute("select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=230",
+                                    game.id)
         report = await result.fetchone()
         assert game.id == report["game_id"]
 
@@ -323,7 +325,8 @@ async def test_handle_action_TeamkillHappened(game: Game, game_connection: GameC
     await game_connection.handle_action('TeamkillHappened', ['200', '2', 'Dostya', '3', 'Rhiza'])
 
     async with database.acquire() as conn:
-        result = await conn.execute("select game_id from teamkills where victim=2 and teamkiller=3 and game_id=%s and gametime=200", (game.id))
+        result = await conn.execute("select game_id from teamkills where victim=2 and teamkiller=3 and game_id=%s and gametime=200",
+                                    game.id)
         row = await result.fetchone()
         assert game.id == row[0]
 
@@ -376,7 +379,7 @@ async def test_handle_action_OperationComplete(ugame: Game, game_connection: Gam
     async with database.acquire() as conn:
         result = await conn.execute(
             "SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
-            (ugame.id))
+            ugame.id)
 
         row = await result.fetchone()
 
@@ -402,7 +405,7 @@ async def test_handle_action_OperationComplete_invalid(ugame: Game, game_connect
     async with database.acquire() as conn:
         result = await conn.execute(
             "SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
-            (ugame.id))
+            ugame.id)
 
         row = await result.fetchone()
 

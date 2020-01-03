@@ -84,7 +84,7 @@ class MatchmakerQueue:
             except CancelledError:
                 pass
             finally:
-                # If the queue was cancelled, or some other error occured,
+                # If the queue was cancelled, or some other error occurred,
                 # make sure to clean up.
                 self.game_service.mark_dirty(self)
                 if search in self.queue:

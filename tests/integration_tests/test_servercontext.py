@@ -55,4 +55,4 @@ async def test_server_fake_statsd():
     with dummy.timer('a'):
         dummy.incr('a')
         dummy.gauge('a', 'b', delta=True)
-        dummy.unit()
+        dummy.Unit()

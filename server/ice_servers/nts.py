@@ -10,7 +10,7 @@ from server.config import TWILIO_ACCOUNT_SID, TWILIO_TOKEN, TWILIO_TTL
 from twilio.rest import Client as TwilioRestClient
 
 
-class TwilioNTS():
+class TwilioNTS:
     """
     Twilio NTS Token Service
 

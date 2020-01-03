@@ -57,7 +57,7 @@ class AuthenticationError(Exception):
 
 
 @with_logger
-class LobbyConnection():
+class LobbyConnection:
     @timed()
     def __init__(
         self,
