@@ -1,7 +1,7 @@
 import asyncio
 
 from server.db import FAFDatabase
-from sqlalchemy import select, text
+from sqlalchemy import text, select, or_
 
 from .abc.base_game import GameConnectionState
 from .config import TRACE
@@ -311,14 +311,13 @@ class GameConnection(GpgNetServerProtocol):
         """
 
         async with self._db.acquire() as conn:
-            """
-                Sometime the game sends a wrong ID - but a correct player name
-                We need to make sure the player ID is correct before pursuing
-            """
+
+            # Sometime the game sends a wrong ID - but a correct player name
+            # We need to make sure the player ID is correct before pursuing
 
             check = await conn.execute(select([login.c.id]).where(
-                login.c.id == teamkiller_id or
-                login.c.login == teamkiller_name
+                or_(login.c.id == teamkiller_id,
+                login.c.login == teamkiller_name)
             ))
 
             row = await check.fetchone()
@@ -331,14 +330,13 @@ class GameConnection(GpgNetServerProtocol):
 
             verified_teamkiller_id = row[login.c.id]
 
-            """
-                The reporter's ID also needs to be checked the exact same way
-                for the same reasons
-            """
+        # The reporter's ID also needs to be checked the exact same way
+        # for the same reasons
+
 
             check = await conn.execute(select([login.c.id]).where(
-                login.c.id == reporter_id or
-                login.c.login == reporter_name
+                or_(login.c.id == reporter_id,
+                login.c.login == reporter_name)
             ))
 
             row = await check.fetchone()
@@ -366,7 +364,6 @@ class GameConnection(GpgNetServerProtocol):
                     report_id=result.lastrowid
                 )
             )
-
 
     async def handle_teamkill_happened(self, gametime, victim_id, victim_name, teamkiller_id, teamkiller_name):
         """
@@ -504,6 +501,7 @@ class GameConnection(GpgNetServerProtocol):
     def _mark_dirty(self):
         if self.game:
             self.game_service.mark_dirty(self.game)
+
 
     async def abort(self, log_message: str=''):
         """

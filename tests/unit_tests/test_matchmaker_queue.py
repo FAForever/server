@@ -227,7 +227,7 @@ async def test_queue_matches(matchmaker_queue):
     matchmaker_queue._matches = deque(matches)
 
     async def call_shutdown():
-        asyncio.sleep(1)
+        await asyncio.sleep(1)
         matchmaker_queue.shutdown()
 
     asyncio.ensure_future(call_shutdown())

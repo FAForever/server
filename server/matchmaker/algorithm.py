@@ -11,6 +11,7 @@ from .search import Match, Search
 # Number of candidates for matching
 SM_NUM_TO_RANK = 5
 
+
 ################################################################################
 #                                Implementation                                #
 ################################################################################
@@ -104,7 +105,7 @@ class RandomlyMatchNewbies(MatchmakingPolicy):
 
         unmatched_newbies = [
             search for search in self.searches
-            if search.is_single_ladder_newbie() and not search in self.matches
+            if search.is_single_ladder_newbie() and search not in self.matches
         ]
 
         while len(unmatched_newbies) >= 2:
@@ -119,8 +120,8 @@ class RandomlyMatchNewbies(MatchmakingPolicy):
 
             opponent = next((
                 search for search in self.searches
-                if search != newbie and not search in self.matches
-                and search.is_single_party() and search.has_no_top_player()
+                if search != newbie and search not in self.matches
+                   and search.is_single_party() and search.has_no_top_player()
             ), default_if_no_available_opponent)
             if opponent is not default_if_no_available_opponent:
                 self._match(newbie, opponent)

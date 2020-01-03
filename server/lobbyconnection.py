@@ -43,7 +43,7 @@ from .types import Address
 
 
 @with_logger
-class LobbyConnection():
+class LobbyConnection:
 
     # Lazy loaded when __init__ is run
     COMMAND_HANDLERS = {}

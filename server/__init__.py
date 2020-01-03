@@ -36,7 +36,6 @@ __contact__ = 'admin@faforever.com'
 __license__ = 'GPLv3'
 __copyright__ = 'Copyright (c) 2011-2015 ' + __author__
 
-
 __all__ = (
     'GameConnection',
     'GameStatsService',
@@ -55,6 +54,7 @@ stats = None
 
 if not config.ENABLE_STATSD:
     from . import fake_statsd
+
     stats = fake_statsd.DummyConnection()
 else:
     stats = aiomeasures.StatsD(config.STATSD_SERVER)
@@ -165,6 +165,7 @@ def run_lobby_server(
             players=player_service,
             ladder_service=ladder_service
         )
+
     ctx = ServerContext(make_connection, name="LobbyServer")
     loop.run_until_complete(ctx.listen(*address))
     return ctx
