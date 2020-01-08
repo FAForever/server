@@ -4,6 +4,7 @@ import os
 import shutil
 import tarfile
 from datetime import datetime
+from typing import IO
 
 import aiocron
 import aiohttp
@@ -86,22 +87,11 @@ class GeoIpService(object):
             temp_file_path
         )
 
-        def get_db_member(tar: tarfile.TarFile) -> str:
-            for name in tar.getnames():
-                if name.endswith("GeoLite2-Country.mmdb"):
-                    return name
-
-            # Because we verified the checksum earlier, this should only be
-            # possible if maxmind actually served us a bad file
-            raise Exception("Tar archive did not contain the database file!")
-
         # Unzip the archive and overwrite the old file
         try:
             with tarfile.open(temp_file_path, 'r:gz') as tar:
-                name = get_db_member(tar)
+                f_in = extract_file(tar, "GeoLite2-Country.mmdb")
                 with open(self.file_path, 'wb') as f_out:
-                    f_in = tar.extractfile(name)
-                    assert f_in is not None
                     shutil.copyfileobj(f_in, f_out)
         except (tarfile.TarError) as e:    # pragma: no cover
             self._logger.warning("Failed to extract downloaded file!")
@@ -180,3 +170,30 @@ class GeoIpService(object):
         except ValueError as e:    # pragma: no cover
             self._logger.exception("ValueError: %s", e)
             return default_value
+
+
+def extract_file(tar: tarfile.TarFile, name: str) -> IO[bytes]:
+    """
+    Helper for getting a file handle to the database file in the tar archive.
+    This is needed because we don't necessarily know the name of it's containing
+    folder.
+
+    :raises: TarError if the tar archive does not contain the databse file
+    """
+    mmdb = next(
+        (m for m in tar.getmembers() if
+            m.name.endswith(name)
+            and m.isfile()),
+        None
+    )
+    if mmdb is None:
+        # Because we verified the checksum earlier, this should only be
+        # possible if maxmind actually served us a bad file
+        raise tarfile.TarError("Tar archive did not contain the database file!")
+
+    f = tar.extractfile(mmdb)
+
+    if f is None:
+        raise tarfile.TarError("Tar archive did not contain the database file!")
+
+    return f
