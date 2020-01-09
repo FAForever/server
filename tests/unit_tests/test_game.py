@@ -21,12 +21,6 @@ from trueskill import Rating
 
 pytestmark = pytest.mark.asyncio
 
-PAULA_BEAN = dict(login='Paula_Bean', player_id=1, global_rating=Rating(1500, 250))
-PAULA_BEAN_COPY = dict(login='Paula_Bean', player_id=5, global_rating=Rating(1500, 250))
-SOME_GUY = dict(login='Some_Guy', player_id=2, global_rating=Rating(1700, 120.1))
-OTHER_GUY = dict(login='Some_Other_Guy', player_id=3, global_rating=Rating(1200, 72.02))
-THAT_PERSON = dict(login='That_Person', player_id=4, global_rating=Rating(1200, 72.02))
-
 @pytest.yield_fixture
 def game(event_loop, database, game_service, game_stats_service):
     game = Game(42, database, game_service, game_stats_service)
@@ -427,13 +421,14 @@ async def test_compute_rating_computes_ladder_ratings(game: Game, players):
 
 async def test_compute_rating_balanced_teamgame(game: Game, player_factory):
     game.state = GameState.LOBBY
-    players = [(player_factory(**info), result, team)
-               for info, result, team in [
-                   (PAULA_BEAN, 0, 2),
-                   (SOME_GUY, 0, 2),
-                   (OTHER_GUY, 0, 3),
-                   (THAT_PERSON, 0, 3),
-               ]]
+    players = [
+            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            for i, (rating, result, team) in enumerate([
+                (Rating(1500, 250), 0, 2),
+                (Rating(1700, 120), 0, 2),
+                (Rating(1200, 72), 0, 3),
+                (Rating(1200, 72), 0, 3),
+            ], 1)]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
         game.set_player_option(player.id, 'Team', team)
@@ -460,40 +455,18 @@ async def test_compute_rating_sum_of_scores_edge_case(
     game.state = GameState.LOBBY
     win_team = 2
     lose_team = 3
-    players = [(player_factory(**info), score, team) for info, score, team in [
-        (
-            dict(login="1", player_id=1, global_rating=Rating(1500, 200)), 1,
-            lose_team
-        ),
-        (
-            dict(login="2", player_id=2, global_rating=Rating(1500, 200)), 1,
-            lose_team
-        ),
-        (
-            dict(login="3", player_id=3, global_rating=Rating(1500, 200)), 1,
-            lose_team
-        ),
-        (
-            dict(login="4", player_id=4, global_rating=Rating(1500, 200)), -10,
-            lose_team
-        ),
-        (
-            dict(login="5", player_id=5, global_rating=Rating(1500, 200)), 10,
-            win_team
-        ),
-        (
-            dict(login="6", player_id=6, global_rating=Rating(1500, 200)), -10,
-            win_team
-        ),
-        (
-            dict(login="7", player_id=7, global_rating=Rating(1500, 200)), -10,
-            win_team
-        ),
-        (
-            dict(login="8", player_id=8, global_rating=Rating(1500, 200)), 2,
-            win_team
-        ),
-    ]]
+    players = [
+            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            for i, (rating, result, team) in enumerate([
+                (Rating(1500, 200), 1, lose_team),
+                (Rating(1500, 200), 1, lose_team),
+                (Rating(1500, 200), 1, lose_team),
+                (Rating(1500, 200), -10, lose_team),
+                (Rating(1500, 200), 10, win_team),
+                (Rating(1500, 200), -10, win_team),
+                (Rating(1500, 200), -10, win_team),
+                (Rating(1500, 200), 2, win_team),
+            ], 1)]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
         game.set_player_option(player.id, 'Team', team)
@@ -515,11 +488,12 @@ async def test_compute_rating_sum_of_scores_edge_case(
 
 async def test_compute_rating_two_player_FFA(game: Game, player_factory):
     game.state = GameState.LOBBY
-    players = [(player_factory(**info), result, team)
-               for info, result, team in [
-                   (PAULA_BEAN, 0, 1),
-                   (SOME_GUY, 0, 1),
-               ]]
+    players = [
+            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            for i, (rating, result, team) in enumerate([
+               (Rating(1500, 250), 0, 1),
+               (Rating(1700, 120), 0, 1),
+            ], 1)]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
         game.set_player_option(player.id, 'Team', team)
@@ -540,12 +514,13 @@ async def test_compute_rating_does_not_rate_multi_team(
     game: Game, player_factory
 ):
     game.state = GameState.LOBBY
-    players = [(player_factory(**info), result, team)
-               for info, result, team in [
-                   (PAULA_BEAN, 10, 2),
-                   (SOME_GUY, 0, 3),
-                   (OTHER_GUY, 0, 4),
-               ]]
+    players = [
+            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            for i, (rating, result, team) in enumerate([
+               (Rating(1500, 250), 10, 2),
+               (Rating(1700, 120), 0, 3),
+               (Rating(1200, 72), 0, 4),
+            ], 1)]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
         game.set_player_option(player.id, 'Team', team)
@@ -563,12 +538,13 @@ async def test_compute_rating_does_not_rate_multi_FFA(
     game: Game, player_factory
 ):
     game.state = GameState.LOBBY
-    players = [(player_factory(**info), result, team)
-               for info, result, team in [
-                   (PAULA_BEAN, 10, 1),
-                   (SOME_GUY, 0, 1),
-                   (OTHER_GUY, 0, 1),
-               ]]
+    players = [
+            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            for i, (rating, result, team) in enumerate([
+               (Rating(1500, 250), 10, 1),
+               (Rating(1700, 120), 0, 1),
+               (Rating(1200, 72), 0, 1),
+            ], 1)]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
         game.set_player_option(player.id, 'Team', team)
@@ -586,11 +562,12 @@ async def test_compute_rating_does_not_rate_double_win(
     game: Game, player_factory
 ):
     game.state = GameState.LOBBY
-    players = [(player_factory(**info), result, team)
-               for info, result, team in [
-                   (PAULA_BEAN, 10, 2),
-                   (SOME_GUY, 0, 3),
-               ]]
+    players = [
+            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            for i, (rating, result, team) in enumerate([
+               (Rating(1500, 250), 10, 2),
+               (Rating(1700, 120), 0, 3),
+            ], 1)]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
         game.set_player_option(player.id, 'Team', team)
@@ -607,11 +584,12 @@ async def test_compute_rating_treats_double_defeat_as_draw(
     game: Game, player_factory
 ):
     game.state = GameState.LOBBY
-    players = [(player_factory(**info), result, team)
-               for info, result, team in [
-                   (PAULA_BEAN, 10, 2),
-                   (PAULA_BEAN_COPY, 0, 3),
-               ]]
+    players = [
+            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            for i, (rating, result, team) in enumerate([
+               (Rating(1500, 250), 10, 2),
+               (Rating(1500, 250), 0, 3),
+            ], 1)]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
         game.set_player_option(player.id, 'Team', team)
@@ -632,13 +610,14 @@ async def test_compute_rating_works_with_partially_unknown_results(
     game: Game, player_factory
 ):
     game.state = GameState.LOBBY
-    players = [(player_factory(**info), result, team)
-               for info, result, team in [
-                   (PAULA_BEAN, 10, 2),
-                   (SOME_GUY, 0, 2),
-                   (OTHER_GUY, -10, 3),
-                   (THAT_PERSON, 0, 3),
-               ]]
+    players = [
+            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            for i, (rating, result, team) in enumerate([
+               (Rating(1500, 250), 10, 2),
+               (Rating(1700, 120), 0, 2),
+               (Rating(1200, 72), -10, 3),
+               (Rating(1200, 72), 0, 3),
+            ], 1)]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
         game.set_player_option(player.id, 'Team', team)
@@ -709,13 +688,14 @@ async def test_name_sanitization(game):
 
 async def test_to_dict(game, player_factory):
     game.state = GameState.LOBBY
-    players = [(player_factory(**info), result, team)
-               for info, result, team in [
-                   (PAULA_BEAN, 0, 1),
-                   (SOME_GUY, 0, 1),
-                   (OTHER_GUY, 0, 2),
-                   (THAT_PERSON, 0, 2),
-               ]]
+    players = [
+            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            for i, (rating, result, team) in enumerate([
+               (Rating(1500, 250), 0, 1),
+               (Rating(1700, 120), 0, 1),
+               (Rating(1200, 72), 0, 2),
+               (Rating(1200, 72), 0, 2),
+            ], 1)]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
         game.set_player_option(player.id, 'Team', team)
