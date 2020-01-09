@@ -21,6 +21,11 @@ from trueskill import Rating
 
 pytestmark = pytest.mark.asyncio
 
+PAULA_BEAN = dict(login='Paula_Bean', player_id=1, global_rating=Rating(1500, 250))
+PAULA_BEAN_COPY = dict(login='Paula_Bean', player_id=5, global_rating=Rating(1500, 250))
+SOME_GUY = dict(login='Some_Guy', player_id=2, global_rating=Rating(1700, 120.1))
+OTHER_GUY = dict(login='Some_Other_Guy', player_id=3, global_rating=Rating(1200, 72.02))
+THAT_PERSON = dict(login='That_Person', player_id=4, global_rating=Rating(1200, 72.02))
 
 @pytest.yield_fixture
 def game(event_loop, database, game_service, game_stats_service):
@@ -424,34 +429,10 @@ async def test_compute_rating_balanced_teamgame(game: Game, player_factory):
     game.state = GameState.LOBBY
     players = [(player_factory(**info), result, team)
                for info, result, team in [
-                   (
-                       dict(
-                           login='Paula_Bean',
-                           player_id=1,
-                           global_rating=Rating(1500, 250.7)
-                       ), 0, 2
-                   ),
-                   (
-                       dict(
-                           login='Some_Guy',
-                           player_id=2,
-                           global_rating=Rating(1700, 120.1)
-                       ), 0, 2
-                   ),
-                   (
-                       dict(
-                           login='Some_Other_Guy',
-                           player_id=3,
-                           global_rating=Rating(1200, 72.02)
-                       ), 0, 3
-                   ),
-                   (
-                       dict(
-                           login='That_Person',
-                           player_id=4,
-                           global_rating=Rating(1200, 72.02)
-                       ), 0, 3
-                   ),
+                   (PAULA_BEAN, 0, 2),
+                   (SOME_GUY, 0, 2),
+                   (OTHER_GUY, 0, 3),
+                   (THAT_PERSON, 0, 3),
                ]]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
@@ -536,20 +517,8 @@ async def test_compute_rating_two_player_FFA(game: Game, player_factory):
     game.state = GameState.LOBBY
     players = [(player_factory(**info), result, team)
                for info, result, team in [
-                   (
-                       dict(
-                           login='Paula_Bean',
-                           player_id=1,
-                           global_rating=Rating(1500, 250.7)
-                       ), 0, 1
-                   ),
-                   (
-                       dict(
-                           login='Some_Guy',
-                           player_id=2,
-                           global_rating=Rating(1700, 120.1)
-                       ), 0, 1
-                   ),
+                   (PAULA_BEAN, 0, 1),
+                   (SOME_GUY, 0, 1),
                ]]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
@@ -573,27 +542,9 @@ async def test_compute_rating_does_not_rate_multi_team(
     game.state = GameState.LOBBY
     players = [(player_factory(**info), result, team)
                for info, result, team in [
-                   (
-                       dict(
-                           login='Paula_Bean',
-                           player_id=1,
-                           global_rating=Rating(1500, 250.7)
-                       ), 10, 2
-                   ),
-                   (
-                       dict(
-                           login='Some_Guy',
-                           player_id=2,
-                           global_rating=Rating(1700, 120.1)
-                       ), 0, 3
-                   ),
-                   (
-                       dict(
-                           login='Some_Other_Guy',
-                           player_id=3,
-                           global_rating=Rating(1200, 72.02)
-                       ), 0, 4
-                   ),
+                   (PAULA_BEAN, 10, 2),
+                   (SOME_GUY, 0, 3),
+                   (OTHER_GUY, 0, 4),
                ]]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
@@ -614,27 +565,9 @@ async def test_compute_rating_does_not_rate_multi_FFA(
     game.state = GameState.LOBBY
     players = [(player_factory(**info), result, team)
                for info, result, team in [
-                   (
-                       dict(
-                           login='Paula_Bean',
-                           player_id=1,
-                           global_rating=Rating(1500, 250.7)
-                       ), 10, 1
-                   ),
-                   (
-                       dict(
-                           login='Some_Guy',
-                           player_id=2,
-                           global_rating=Rating(1700, 120.1)
-                       ), 0, 1
-                   ),
-                   (
-                       dict(
-                           login='Some_Other_Guy',
-                           player_id=3,
-                           global_rating=Rating(1200, 72.02)
-                       ), 0, 1
-                   ),
+                   (PAULA_BEAN, 10, 1),
+                   (SOME_GUY, 0, 1),
+                   (OTHER_GUY, 0, 1),
                ]]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
@@ -655,20 +588,8 @@ async def test_compute_rating_does_not_rate_double_win(
     game.state = GameState.LOBBY
     players = [(player_factory(**info), result, team)
                for info, result, team in [
-                   (
-                       dict(
-                           login='Paula_Bean',
-                           player_id=1,
-                           global_rating=Rating(1500, 250.7)
-                       ), 10, 2
-                   ),
-                   (
-                       dict(
-                           login='Some_Guy',
-                           player_id=2,
-                           global_rating=Rating(1700, 120.1)
-                       ), 0, 3
-                   ),
+                   (PAULA_BEAN, 10, 2),
+                   (SOME_GUY, 0, 3),
                ]]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
@@ -688,20 +609,8 @@ async def test_compute_rating_treats_double_defeat_as_draw(
     game.state = GameState.LOBBY
     players = [(player_factory(**info), result, team)
                for info, result, team in [
-                   (
-                       dict(
-                           login='Paula_Bean',
-                           player_id=1,
-                           global_rating=Rating(1500, 250)
-                       ), 10, 2
-                   ),
-                   (
-                       dict(
-                           login='Some_Guy',
-                           player_id=2,
-                           global_rating=Rating(1500, 250)
-                       ), 0, 3
-                   ),
+                   (PAULA_BEAN, 10, 2),
+                   (PAULA_BEAN_COPY, 0, 3),
                ]]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
@@ -725,34 +634,10 @@ async def test_compute_rating_works_with_partially_unknown_results(
     game.state = GameState.LOBBY
     players = [(player_factory(**info), result, team)
                for info, result, team in [
-                   (
-                       dict(
-                           login='Paula_Bean',
-                           player_id=1,
-                           global_rating=Rating(1500, 250.7)
-                       ), 10, 2
-                   ),
-                   (
-                       dict(
-                           login='Some_Guy',
-                           player_id=2,
-                           global_rating=Rating(1700, 120.1)
-                       ), 0, 2
-                   ),
-                   (
-                       dict(
-                           login='Some_Other_Guy',
-                           player_id=3,
-                           global_rating=Rating(1200, 72.02)
-                       ), -10, 3
-                   ),
-                   (
-                       dict(
-                           login='That_Person',
-                           player_id=4,
-                           global_rating=Rating(1200, 72.02)
-                       ), 0, 3
-                   ),
+                   (PAULA_BEAN, 10, 2),
+                   (SOME_GUY, 0, 2),
+                   (OTHER_GUY, -10, 3),
+                   (THAT_PERSON, 0, 3),
                ]]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
@@ -819,41 +704,17 @@ async def test_name_sanitization(game):
     except UnicodeDecodeError:
         pass
 
-    assert (game.name == "_Aâé~<1000")
+    assert game.name == "_Aâé~<1000"
 
 
 async def test_to_dict(game, player_factory):
     game.state = GameState.LOBBY
     players = [(player_factory(**info), result, team)
                for info, result, team in [
-                   (
-                       dict(
-                           login='Paula_Bean',
-                           player_id=1,
-                           global_rating=Rating(1500, 250.7)
-                       ), 0, 1
-                   ),
-                   (
-                       dict(
-                           login='Some_Guy',
-                           player_id=2,
-                           global_rating=Rating(1700, 120.1)
-                       ), 0, 1
-                   ),
-                   (
-                       dict(
-                           login='Some_Other_Guy',
-                           player_id=3,
-                           global_rating=Rating(1200, 72.02)
-                       ), 0, 2
-                   ),
-                   (
-                       dict(
-                           login='That_Person',
-                           player_id=4,
-                           global_rating=Rating(1200, 72.02)
-                       ), 0, 2
-                   ),
+                   (PAULA_BEAN, 0, 1),
+                   (SOME_GUY, 0, 1),
+                   (OTHER_GUY, 0, 2),
+                   (THAT_PERSON, 0, 2),
                ]]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
@@ -1088,14 +949,12 @@ async def test_game_outcomes(game: Game, database, players):
     assert host_outcome is GameOutcome.VICTORY
     assert guest_outcome is GameOutcome.DEFEAT
 
-    # Default values before game ends
-    assert await game_player_scores(database,
-                                    game) == {(players.hosting.id, 0),
-                                              (players.joining.id, 0)}
+    default_values_before_end = {(players.hosting.id, 0), (players.joining.id, 0)}
+    assert await game_player_scores(database, game) == default_values_before_end
+
     await game.on_game_end()
-    assert await game_player_scores(database,
-                                    game) == {(players.hosting.id, 1),
-                                              (players.joining.id, 0)}
+    expected_scores = {(players.hosting.id, 1), (players.joining.id, 0)}
+    assert await game_player_scores(database, game) == expected_scores
 
 
 async def test_game_outcomes_no_results(game: Game, database, players):
@@ -1113,9 +972,8 @@ async def test_game_outcomes_no_results(game: Game, database, players):
     assert guest_outcome is GameOutcome.UNKNOWN
 
     await game.on_game_end()
-    assert await game_player_scores(database,
-                                    game) == {(players.hosting.id, 0),
-                                              (players.joining.id, 0)}
+    expected_scores = {(players.hosting.id, 0), (players.joining.id, 0)}
+    assert await game_player_scores(database, game) == expected_scores
 
 
 

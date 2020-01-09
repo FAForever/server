@@ -410,10 +410,7 @@ class Game:
             return
         if self.state != GameState.LIVE:
             return
-        if len([
-            conn
-            for conn in self._connections.values() if not conn.finished_sim
-        ]) > 0:
+        if len([ conn for conn in self._connections.values() if not conn.finished_sim ]) > 0:
             return
         self.ended = True
         async with self._db.acquire() as conn:
@@ -436,8 +433,7 @@ class Game:
                     await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
                     return
 
-                if time.time(
-                ) - self.launched_at > 4 * 60 and self.is_mutually_agreed_draw:
+                if time.time() - self.launched_at > 4 * 60 and self.is_mutually_agreed_draw:
                     self._logger.info("Game is a mutual draw")
                     await self.mark_invalid(ValidityState.MUTUAL_DRAW)
                     return
@@ -661,8 +657,7 @@ class Game:
         """
 
         valid_options = {
-            "Victory":
-            (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
+            "Victory": (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
             "TeamSpawn": ("fixed", ValidityState.SPAWN_NOT_FIXED),
             "RevealedCivilians": ("No", ValidityState.CIVILIANS_REVEALED),
             "Difficulty": (3, ValidityState.WRONG_DIFFICULTY),
@@ -683,8 +678,7 @@ class Game:
             return
 
         valid_options = {
-            "Victory":
-            (Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION)
+            "Victory": (Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION)
         }
         await self._validate_game_options(valid_options)
 
@@ -729,9 +723,7 @@ class Game:
             if row:
                 self.map_id = row['id']
 
-            if (
-                not row or not row['ranked']
-            ) and self.validity is ValidityState.VALID:
+            if (not row or not row['ranked']) and self.validity is ValidityState.VALID:
                 await self.mark_invalid(ValidityState.BAD_MAP)
 
             modId = self.game_service.featured_mods[self.game_mode].id
