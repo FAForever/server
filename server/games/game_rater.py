@@ -98,6 +98,7 @@ class GameRater(object):
         both_draw = set(team_outcomes) < {
             GameOutcome.DRAW, GameOutcome.MUTUAL_DRAW
         }
+        both_defeat = team_outcomes == [GameOutcome.DEFEAT, GameOutcome.DEFEAT]
 
         if both_unknown:
             raise GameRatingError(
@@ -112,7 +113,7 @@ class GameRater(object):
                 return [
                     1 if x is GameOutcome.DEFEAT else 0 for x in team_outcomes
                 ]
-        elif both_draw:
+        elif both_draw or both_defeat:
             return [0, 0]
         else:
             raise GameRatingError(

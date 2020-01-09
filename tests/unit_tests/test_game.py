@@ -682,7 +682,7 @@ async def test_compute_rating_does_not_rate_double_win(
         game.compute_rating()
 
 
-async def test_compute_rating_does_not_rate_double_defeat(
+async def test_compute_rating_treats_double_defeat_as_draw(
     game: Game, player_factory
 ):
     game.state = GameState.LOBBY
@@ -692,14 +692,14 @@ async def test_compute_rating_does_not_rate_double_defeat(
                        dict(
                            login='Paula_Bean',
                            player_id=1,
-                           global_rating=Rating(1500, 250.7)
+                           global_rating=Rating(1500, 250)
                        ), 10, 2
                    ),
                    (
                        dict(
                            login='Some_Guy',
                            player_id=2,
-                           global_rating=Rating(1700, 120.1)
+                           global_rating=Rating(1500, 250)
                        ), 0, 3
                    ),
                ]]
@@ -711,41 +711,12 @@ async def test_compute_rating_does_not_rate_double_defeat(
 
     for player, result, _ in players:
         await game.add_result(player, player.id - 1, 'defeat', result)
-    with pytest.raises(GameRatingError):
-        game.compute_rating()
-
-
-async def test_compute_rating_does_not_rate_double_defeat(
-    game: Game, player_factory
-):
-    game.state = GameState.LOBBY
-    players = [(player_factory(**info), result, team)
-               for info, result, team in [
-                   (
-                       dict(
-                           login='Paula_Bean',
-                           player_id=1,
-                           global_rating=Rating(1500, 250.7)
-                       ), 10, 2
-                   ),
-                   (
-                       dict(
-                           login='Some_Guy',
-                           player_id=2,
-                           global_rating=Rating(1700, 120.1)
-                       ), 0, 3
-                   ),
-               ]]
-    add_connected_players(game, [player for player, _, _ in players])
-    for player, _, team in players:
-        game.set_player_option(player.id, 'Team', team)
-        game.set_player_option(player.id, 'Army', player.id - 1)
-    await game.launch()
-
-    for player, result, _ in players:
-        await game.add_result(player, player.id - 1, 'defeat', result)
-    with pytest.raises(GameRatingError):
-        game.compute_rating()
+    result = game.compute_rating()
+    for team in result:
+        for _, new_rating in team.items():
+            old_rating = Rating(*player.ratings[RatingType.GLOBAL])
+            assert new_rating.mu == old_rating.mu
+            assert new_rating.sigma < old_rating.sigma
 
 
 async def test_compute_rating_works_with_partially_unknown_results(

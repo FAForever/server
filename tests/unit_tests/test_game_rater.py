@@ -77,12 +77,14 @@ def test_ranks_with_unknown():
     with pytest.raises(GameRatingError):
         rater._ranks_from_team_outcomes([GameOutcome.UNKNOWN, GameOutcome.UNKNOWN])
 
-def test_ranks_with_double_victory_or_defeat():
+def test_ranks_with_double_victory_is_inconsistent():
     rater = GameRater({}, {})
     with pytest.raises(GameRatingError):
         rater._ranks_from_team_outcomes([GameOutcome.VICTORY, GameOutcome.VICTORY])
-    with pytest.raises(GameRatingError):
-        rater._ranks_from_team_outcomes([GameOutcome.DEFEAT, GameOutcome.DEFEAT])
+
+def test_ranks_with_double_defeat_treated_as_draw():
+    rater = GameRater({}, {})
+    assert rater._ranks_from_team_outcomes([GameOutcome.DEFEAT, GameOutcome.DEFEAT]) == [0,0]
 
 def test_ranks_with_draw():
     rater = GameRater({}, {})
