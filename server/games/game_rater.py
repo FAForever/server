@@ -68,7 +68,7 @@ class GameRater(object):
     def _get_team_outcome(self, team: Iterable[Player]) -> GameOutcome:
         outcomes = set(self._outcome_by_player[player] for player in team)
         outcomes.discard(GameOutcome.UNKNOWN)
-        if len(outcomes) == 0:
+        if not outcomes:
             return GameOutcome.UNKNOWN
         if len(outcomes) > 1:
             raise GameRatingError(
