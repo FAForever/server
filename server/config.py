@@ -52,8 +52,9 @@ COTURN_KEYS = os.getenv('COTURN_KEYS', "").split(',')
 GEO_IP_DATABASE_PATH = os.getenv("GEO_IP_DATABASE_PATH", "GeoLite2-Country.mmdb")
 GEO_IP_DATABASE_URL = os.getenv(
     "GEO_IP_DATABASE_URL",
-    "http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.mmdb.gz"
+    "https://download.maxmind.com/app/geoip_download"
 )
+GEO_IP_LICENSE_KEY = os.getenv("GEO_IP_LICENSE_KEY")
 GEO_IP_DATABASE_MAX_AGE_DAYS = int(os.getenv('GEO_IP_DATABASE_MAX_AGE_DAYS', 22))
 
 CONTROL_SERVER_PORT = int(os.getenv('CONTROL_SERVER_PORT', 4000))
