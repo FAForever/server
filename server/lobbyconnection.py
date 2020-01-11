@@ -329,12 +329,13 @@ class LobbyConnection:
                 if not message_text:
                     return
 
+                tasks = []
                 for player in self.player_service:
-                    try:
-                        if player.lobby_connection:
-                            await player.lobby_connection.send_warning(message_text)
-                    except Exception as ex:
-                        self._logger.debug("Could not send broadcast message to %s: %s".format(player, ex))
+                    if player.lobby_connection:
+                        tasks.append(
+                            player.lobby_connection.send_warning(message_text)
+                        )
+                await asyncio.gather(*tasks, return_exceptions=True)
 
         if self.player.mod:
             if action == "join_channel":
@@ -350,7 +351,7 @@ class LobbyConnection:
                             "autojoin": [channel]
                         }))
 
-                await asyncio.gather(*tasks)
+                await asyncio.gather(*tasks, return_exceptions=True)
         else:
             self._logger.debug("Wrong premissions!")
 
