@@ -29,7 +29,10 @@ async def test_check_update(fake_geoip_service, fake_geoip_path):
     # Set the modified time to unixtime 0
     with open(fake_geoip_path, 'a'):
         os.utime(fake_geoip_path, (0, 0))
+
     server.config.GEO_IP_DATABASE_MAX_AGE_DAYS = 32
+    server.config.GEO_IP_LICENSE_KEY = "Anything"
+
     fake_geoip_service.load_db = Mock()
     fake_geoip_service.download_geoip_db.reset_mock()
 

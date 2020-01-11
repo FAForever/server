@@ -41,6 +41,11 @@ class GeoIpService(object):
         """
             Check if the geoip database is old and update it if so.
         """
+        if not config.GEO_IP_LICENSE_KEY:
+            self._logger.warning(
+                "GEO_IP_LICENSE_KEY not set! Unable to download GeoIP database!"
+            )
+            return
 
         self._logger.debug("Checking if geoip database needs updating")
         try:
@@ -71,11 +76,7 @@ class GeoIpService(object):
             Download the geoip database to a file. If the downloaded file is not
         a valid gzip file, then it does NOT overwrite the old file.
         """
-        if not config.GEO_IP_LICENSE_KEY:
-            self._logger.warning(
-                "GEO_IP_LICENSE_KEY not set! Unable to download GeoIP database!"
-            )
-            return
+        assert config.GEO_IP_LICENSE_KEY is not None
 
         self._logger.info("Downloading new geoip database")
 
