@@ -431,6 +431,7 @@ async def test_command_admin_closelobby(mocker, lobbyconnection):
     player.admin = True
     tuna = mock.Mock()
     tuna.id = 55
+    tuna.lobby_connection = asynctest.create_autospec(LobbyConnection)
     lobbyconnection.player_service = {1: player, 55: tuna}
 
     await lobbyconnection.on_message_received({
@@ -449,6 +450,7 @@ async def test_command_admin_closelobby_with_ban(mocker, lobbyconnection, databa
     player.admin = True
     banme = mock.Mock()
     banme.id = 200
+    banme.lobby_connection = asynctest.create_autospec(LobbyConnection)
     lobbyconnection.player_service = {1: player, banme.id: banme}
 
     await lobbyconnection.on_message_received({
@@ -480,6 +482,7 @@ async def test_command_admin_closelobby_with_ban_but_already_banned(mocker, lobb
     player.admin = True
     banme = mock.Mock()
     banme.id = 200
+    banme.lobby_connection = asynctest.create_autospec(LobbyConnection)
     lobbyconnection.player_service = {1: player, banme.id: banme}
 
     await lobbyconnection.on_message_received({
@@ -525,6 +528,7 @@ async def test_command_admin_closelobby_with_ban_duration_no_period(mocker, lobb
     player.admin = True
     banme = mock.Mock()
     banme.id = 200
+    banme.lobby_connection = asynctest.create_autospec(LobbyConnection)
     lobbyconnection.player_service = {1: player, banme.id: banme}
 
     mocker.patch('server.lobbyconnection.func.now', return_value=text('FROM_UNIXTIME(1000)'))
@@ -600,7 +604,7 @@ async def test_command_admin_closelobby_with_ban_injection(mocker, lobbyconnecti
         }
     })
 
-    banme.lobbyconnection.kick.assert_not_called()
+    banme.lobby_connection.kick.assert_not_called()
     lobbyconnection.protocol.send_message.assert_called_once_with({
         'command': 'notice',
         'style': 'error',
@@ -623,6 +627,7 @@ async def test_command_admin_closeFA(mocker, lobbyconnection):
     player.id = 42
     tuna = mock.Mock()
     tuna.id = 55
+    tuna.lobby_connection = asynctest.create_autospec(LobbyConnection)
     lobbyconnection.player_service = {42: player, 55: tuna}
 
     await lobbyconnection.on_message_received({
@@ -731,8 +736,10 @@ async def test_broadcast(lobbyconnection: LobbyConnection, mocker):
     player = mocker.patch.object(lobbyconnection, 'player')
     player.login = 'Sheeo'
     player.admin = True
+    player.lobby_connection = asynctest.create_autospec(LobbyConnection)
     tuna = mock.Mock()
     tuna.id = 55
+    tuna.lobby_connection = asynctest.create_autospec(LobbyConnection)
     lobbyconnection.player_service = [player, tuna]
 
     await lobbyconnection.on_message_received({
@@ -743,6 +750,50 @@ async def test_broadcast(lobbyconnection: LobbyConnection, mocker):
 
     player.lobby_connection.send_warning.assert_called_with("This is a test message")
     tuna.lobby_connection.send_warning.assert_called_with("This is a test message")
+
+
+async def test_broadcast_during_disconnect(lobbyconnection: LobbyConnection, mocker):
+    player = mocker.patch.object(lobbyconnection, 'player')
+    player.login = 'Sheeo'
+    player.admin = True
+    player.lobby_connection = asynctest.create_autospec(LobbyConnection)
+    tuna = mock.Mock()
+    tuna.id = 55
+    # To simulate when a player has been recently disconnected so that they
+    # still appear in the player_service list, but their lobby_connection
+    # object has already been destroyed
+    tuna.lobby_connection = None
+    lobbyconnection.player_service = [player, tuna]
+
+    # This should not leak any exceptions
+    await lobbyconnection.on_message_received({
+        'command': 'admin',
+        'action': 'broadcast',
+        'message': "This is a test message"
+    })
+
+    player.lobby_connection.send_warning.assert_called_with("This is a test message")
+
+
+async def test_broadcast_error(lobbyconnection: LobbyConnection, mocker):
+    player = mocker.patch.object(lobbyconnection, 'player')
+    player.login = 'Sheeo'
+    player.admin = True
+    player.lobby_connection = asynctest.create_autospec(LobbyConnection)
+    tuna = mock.Mock()
+    tuna.id = 55
+    tuna.lobby_connection = asynctest.create_autospec(LobbyConnection)
+    tuna.lobby_connection.send_warning = Mock(side_effect=Exception("Some error"))
+    lobbyconnection.player_service = [player, tuna]
+
+    # This should not leak any exceptions
+    await lobbyconnection.on_message_received({
+        'command': 'admin',
+        'action': 'broadcast',
+        'message': "This is a test message"
+    })
+
+    player.lobby_connection.send_warning.assert_called_with("This is a test message")
 
 
 async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnection: LobbyConnection, mocker, mock_player):

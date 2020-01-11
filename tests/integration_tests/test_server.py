@@ -1,7 +1,6 @@
 import asyncio
 
 import pytest
-from server import VisibilityState
 from server.db.models import ban
 from tests.utils import fast_forward
 
