@@ -431,6 +431,7 @@ async def test_command_admin_closelobby(mocker, lobbyconnection):
     player.admin = True
     tuna = mock.Mock()
     tuna.id = 55
+    tuna.lobby_connection = asynctest.create_autospec(LobbyConnection)
     lobbyconnection.player_service = {1: player, 55: tuna}
 
     await lobbyconnection.on_message_received({
@@ -449,6 +450,7 @@ async def test_command_admin_closelobby_with_ban(mocker, lobbyconnection, databa
     player.admin = True
     banme = mock.Mock()
     banme.id = 200
+    banme.lobby_connection = asynctest.create_autospec(LobbyConnection)
     lobbyconnection.player_service = {1: player, banme.id: banme}
 
     await lobbyconnection.on_message_received({
@@ -480,6 +482,7 @@ async def test_command_admin_closelobby_with_ban_but_already_banned(mocker, lobb
     player.admin = True
     banme = mock.Mock()
     banme.id = 200
+    banme.lobby_connection = asynctest.create_autospec(LobbyConnection)
     lobbyconnection.player_service = {1: player, banme.id: banme}
 
     await lobbyconnection.on_message_received({
@@ -525,6 +528,7 @@ async def test_command_admin_closelobby_with_ban_duration_no_period(mocker, lobb
     player.admin = True
     banme = mock.Mock()
     banme.id = 200
+    banme.lobby_connection = asynctest.create_autospec(LobbyConnection)
     lobbyconnection.player_service = {1: player, banme.id: banme}
 
     mocker.patch('server.lobbyconnection.func.now', return_value=text('FROM_UNIXTIME(1000)'))
@@ -600,7 +604,7 @@ async def test_command_admin_closelobby_with_ban_injection(mocker, lobbyconnecti
         }
     })
 
-    banme.lobbyconnection.kick.assert_not_called()
+    banme.lobby_connection.kick.assert_not_called()
     lobbyconnection.protocol.send_message.assert_called_once_with({
         'command': 'notice',
         'style': 'error',
@@ -623,6 +627,7 @@ async def test_command_admin_closeFA(mocker, lobbyconnection):
     player.id = 42
     tuna = mock.Mock()
     tuna.id = 55
+    tuna.lobby_connection = asynctest.create_autospec(LobbyConnection)
     lobbyconnection.player_service = {42: player, 55: tuna}
 
     await lobbyconnection.on_message_received({

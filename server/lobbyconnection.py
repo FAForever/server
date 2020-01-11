@@ -274,7 +274,7 @@ class LobbyConnection:
                 player = self.player_service[message['user_id']]
                 if player:
                     self._logger.warning('Administrative action: %s closed game for %s', self.player, player)
-                    player.lobby_connection.send({
+                    await player.lobby_connection.send({
                         "command": "notice",
                         "style": "kill",
                     })
@@ -320,30 +320,39 @@ class LobbyConnection:
                                 raise ClientError('Your ban attempt upset the database: {}'.format(e))
                     else:
                         self._logger.warning('Administrative action: %s closed client for %s', self.player, player)
-                    player.lobby_connection.kick()
+                    await player.lobby_connection.kick()
                     if ban_fail:
                         raise ClientError("Kicked the player, but he was already banned!")
 
             elif action == "broadcast":
+                message_text = message.get('message')
+                if not message_text:
+                    return
+
                 for player in self.player_service:
                     try:
                         if player.lobby_connection:
-                            await player.lobby_connection.send_warning(message.get('message'))
+                            await player.lobby_connection.send_warning(message_text)
                     except Exception as ex:
                         self._logger.debug("Could not send broadcast message to %s: %s".format(player, ex))
 
-        elif self.player.mod:
+        if self.player.mod:
             if action == "join_channel":
                 user_ids = message['user_ids']
                 channel = message['channel']
 
+                tasks = []
                 for user_id in user_ids:
-                    player = self.player_service[message[user_id]]
+                    player = self.player_service[user_id]
                     if player:
-                        player.lobby_connection.send({
+                        tasks.append(player.lobby_connection.send({
                             "command": "social",
                             "autojoin": [channel]
-                        })
+                        }))
+
+                await asyncio.gather(*tasks)
+        else:
+            self._logger.debug("Wrong premissions!")
 
     async def check_user_login(self, conn, username, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.
