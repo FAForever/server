@@ -331,10 +331,15 @@ class LobbyConnection:
 
                 tasks = []
                 for player in self.player_service:
-                    if player.lobby_connection:
+                    try:
                         tasks.append(
                             player.lobby_connection.send_warning(message_text)
                         )
+                    except AttributeError:
+                        self._logger.debug("Failed to send broadcast to %s", player)
+                    except Exception:
+                        self._logger.exception("Failed to send broadcast to %s", player)
+
                 await asyncio.gather(*tasks, return_exceptions=True)
 
         if self.player.mod:
@@ -346,10 +351,15 @@ class LobbyConnection:
                 for user_id in user_ids:
                     player = self.player_service[user_id]
                     if player:
-                        tasks.append(player.lobby_connection.send({
-                            "command": "social",
-                            "autojoin": [channel]
-                        }))
+                        try:
+                            tasks.append(player.lobby_connection.send({
+                                "command": "social",
+                                "autojoin": [channel]
+                            }))
+                        except AttributeError:
+                            self._logger.debug("Failed to send join_channel to %s", player)
+                        except Exception:
+                            self._logger.exception("Failed to send join_channel to %s", player)
 
                 await asyncio.gather(*tasks, return_exceptions=True)
 

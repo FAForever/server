@@ -736,8 +736,10 @@ async def test_broadcast(lobbyconnection: LobbyConnection, mocker):
     player = mocker.patch.object(lobbyconnection, 'player')
     player.login = 'Sheeo'
     player.admin = True
+    player.lobby_connection = asynctest.create_autospec(LobbyConnection)
     tuna = mock.Mock()
     tuna.id = 55
+    tuna.lobby_connection = asynctest.create_autospec(LobbyConnection)
     lobbyconnection.player_service = [player, tuna]
 
     await lobbyconnection.on_message_received({
