@@ -352,8 +352,6 @@ class LobbyConnection:
                         }))
 
                 await asyncio.gather(*tasks, return_exceptions=True)
-        else:
-            self._logger.debug("Wrong premissions!")
 
     async def check_user_login(self, conn, username, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.
