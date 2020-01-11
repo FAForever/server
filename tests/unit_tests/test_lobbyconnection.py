@@ -752,6 +752,50 @@ async def test_broadcast(lobbyconnection: LobbyConnection, mocker):
     tuna.lobby_connection.send_warning.assert_called_with("This is a test message")
 
 
+async def test_broadcast_during_disconnect(lobbyconnection: LobbyConnection, mocker):
+    player = mocker.patch.object(lobbyconnection, 'player')
+    player.login = 'Sheeo'
+    player.admin = True
+    player.lobby_connection = asynctest.create_autospec(LobbyConnection)
+    tuna = mock.Mock()
+    tuna.id = 55
+    # To simulate when a player has been recently disconnected so that they
+    # still appear in the player_service list, but their lobby_connection
+    # object has already been destroyed
+    tuna.lobby_connection = None
+    lobbyconnection.player_service = [player, tuna]
+
+    # This should not leak any exceptions
+    await lobbyconnection.on_message_received({
+        'command': 'admin',
+        'action': 'broadcast',
+        'message': "This is a test message"
+    })
+
+    player.lobby_connection.send_warning.assert_called_with("This is a test message")
+
+
+async def test_broadcast_error(lobbyconnection: LobbyConnection, mocker):
+    player = mocker.patch.object(lobbyconnection, 'player')
+    player.login = 'Sheeo'
+    player.admin = True
+    player.lobby_connection = asynctest.create_autospec(LobbyConnection)
+    tuna = mock.Mock()
+    tuna.id = 55
+    tuna.lobby_connection = asynctest.create_autospec(LobbyConnection)
+    tuna.lobby_connection.send_warning = Mock(side_effect=Exception("Some error"))
+    lobbyconnection.player_service = [player, tuna]
+
+    # This should not leak any exceptions
+    await lobbyconnection.on_message_received({
+        'command': 'admin',
+        'action': 'broadcast',
+        'message': "This is a test message"
+    })
+
+    player.lobby_connection.send_warning.assert_called_with("This is a test message")
+
+
 async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnection: LobbyConnection, mocker, mock_player):
     lobbyconnection.player = mock_player
     del lobbyconnection.player.game_connection
