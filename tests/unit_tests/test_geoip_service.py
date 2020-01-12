@@ -1,7 +1,9 @@
-import gzip
+import hashlib
 import os
 import random
 import string
+import tarfile
+from io import BytesIO
 from unittest.mock import Mock
 
 import pytest
@@ -27,7 +29,10 @@ async def test_check_update(fake_geoip_service, fake_geoip_path):
     # Set the modified time to unixtime 0
     with open(fake_geoip_path, 'a'):
         os.utime(fake_geoip_path, (0, 0))
+
     server.config.GEO_IP_DATABASE_MAX_AGE_DAYS = 32
+    server.config.GEO_IP_LICENSE_KEY = "Anything"
+
     fake_geoip_service.load_db = Mock()
     fake_geoip_service.download_geoip_db.reset_mock()
 
@@ -39,14 +44,31 @@ async def test_check_update(fake_geoip_service, fake_geoip_path):
 async def test_do_update(fake_geoip_service, fake_geoip_path):
     # Config variables
     PORT = 8137
-    server.config.GEO_IP_DATABASE_URL = 'http://localhost:{}'.format(PORT)
+    server.config.GEO_IP_DATABASE_URL = f"http://localhost:{PORT}"
+    server.config.GEO_IP_LICENSE_KEY = "Anything"
     random_text = ''.join(random.choice(string.ascii_letters) for i in range(20))
+
+    data = BytesIO()
+    tar = tarfile.open(fileobj=data, mode="w:gz")
+    tarinfo = tarfile.TarInfo("GeoLite2-Country.mmdb")
+    tarinfo.size = len(random_text)
+    tar.addfile(tarinfo, BytesIO(random_text.encode()))
+    tar.close()
+    data.seek(0)
+
+    tarred_text = data.read()
+    checksum = hashlib.md5(tarred_text).hexdigest()
 
     # Set up local http server for geoip service to connect to
     async def file_download(request):
+        # md5 hash
+        if request.rel_url.query.get("suffix").endswith("md5"):
+            return web.Response(text=checksum)
+
+        # Fake database
         resp = web.StreamResponse()
         await resp.prepare(request)
-        await resp.write(gzip.compress(random_text.encode()))
+        await resp.write(tarred_text)
         await resp.write_eof()
         return resp
 

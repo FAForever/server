@@ -1,8 +1,10 @@
 import asyncio
-import gzip
+import hashlib
 import os
 import shutil
+import tarfile
 from datetime import datetime
+from typing import IO
 
 import aiocron
 import aiohttp
@@ -39,6 +41,11 @@ class GeoIpService(object):
         """
             Check if the geoip database is old and update it if so.
         """
+        if not config.GEO_IP_LICENSE_KEY:
+            self._logger.warning(
+                "GEO_IP_LICENSE_KEY not set! Unable to download GeoIP database!"
+            )
+            return
 
         self._logger.debug("Checking if geoip database needs updating")
         try:
@@ -69,23 +76,30 @@ class GeoIpService(object):
             Download the geoip database to a file. If the downloaded file is not
         a valid gzip file, then it does NOT overwrite the old file.
         """
+        assert config.GEO_IP_LICENSE_KEY is not None
 
         self._logger.info("Downloading new geoip database")
 
         # Download new file to a temp location
-        temp_file_path = "/tmp/geoip.mmdb.gz"
-        await self._download_file(config.GEO_IP_DATABASE_URL, temp_file_path)
+        temp_file_path = "/tmp/geoip.mmdb.tar.gz"
+        await self._download_file(
+            config.GEO_IP_DATABASE_URL,
+            config.GEO_IP_LICENSE_KEY,
+            temp_file_path
+        )
 
         # Unzip the archive and overwrite the old file
         try:
-            with gzip.open(temp_file_path, 'rb') as f_in:
+            with tarfile.open(temp_file_path, 'r:gz') as tar:
+                f_in = extract_file(tar, "GeoLite2-Country.mmdb")
                 with open(self.file_path, 'wb') as f_out:
                     shutil.copyfileobj(f_in, f_out)
-        except OSError:    # pragma: no cover
-            self._logger.warning("Failed to unzip downloaded file!")
+        except (tarfile.TarError) as e:    # pragma: no cover
+            self._logger.warning("Failed to extract downloaded file!")
+            raise e
         self._logger.info("New database download complete")
 
-    async def _download_file(self, url: str, file_path: str) -> None:
+    async def _download_file(self, url: str, license_key: str, file_path: str) -> None:
         """
             Download a file using aiohttp and save it to a file.
 
@@ -94,14 +108,42 @@ class GeoIpService(object):
         """
 
         chunk_size = 1024
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=60 * 20) as resp:
+        params = {
+            "edition_id": "GeoLite2-Country",
+            "license_key": license_key,
+            "suffix": "tar.gz"
+        }
+
+        async def get_checksum(session):
+            async with session.get(url, params={
+                **params,
+                "suffix": f"{params['suffix']}.md5"
+            }, timeout=60 * 20) as resp:
+                return await resp.text()
+
+        async def get_db_file_with_checksum(session):
+            hasher = hashlib.md5()
+            async with session.get(url, params=params, timeout=60 * 20) as resp:
                 with open(file_path, 'wb') as f:
                     while True:
                         chunk = await resp.content.read(chunk_size)
                         if not chunk:
                             break
                         f.write(chunk)
+                        hasher.update(chunk)
+
+            return hasher.hexdigest()
+
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            checksum, our_hash = await asyncio.gather(
+                get_checksum(session),
+                get_db_file_with_checksum(session)
+            )
+
+        if checksum != our_hash:
+            raise Exception(
+                f"Hashes did not match! Expected {checksum} got {our_hash}"
+            )
 
     def load_db(self) -> None:
         """
@@ -129,3 +171,30 @@ class GeoIpService(object):
         except ValueError as e:    # pragma: no cover
             self._logger.exception("ValueError: %s", e)
             return default_value
+
+
+def extract_file(tar: tarfile.TarFile, name: str) -> IO[bytes]:
+    """
+    Helper for getting a file handle to the database file in the tar archive.
+    This is needed because we don't necessarily know the name of it's containing
+    folder.
+
+    :raises: TarError if the tar archive does not contain the databse file
+    """
+    mmdb = next(
+        (m for m in tar.getmembers() if
+            m.name.endswith(name)
+            and m.isfile()),
+        None
+    )
+    if mmdb is None:
+        # Because we verified the checksum earlier, this should only be
+        # possible if maxmind actually served us a bad file
+        raise tarfile.TarError("Tar archive did not contain the database file!")
+
+    f = tar.extractfile(mmdb)
+
+    if f is None:
+        raise tarfile.TarError("Tar archive did not contain the database file!")
+
+    return f
