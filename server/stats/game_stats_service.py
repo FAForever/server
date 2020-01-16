@@ -109,7 +109,7 @@ class GameStatsService:
 
             await self._event_service.execute_batch_update(player.id, e_queue)
             if player.lobby_connection is not None:
-                player.lobby_connection.send_updated_achievements(updated_achievements)
+                await player.lobby_connection.send_updated_achievements(updated_achievements)
 
     def _category_stats(self, unit_stats, survived, achievements_queue, events_queue):
         built_air = unit_stats['air'].get('built', 0)
