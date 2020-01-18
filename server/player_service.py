@@ -146,17 +146,20 @@ class PlayerService:
             if row is not None:
                 self.client_version_info = (row[0], row[1])
 
-    def broadcast_shutdown(self):
+    async def broadcast_shutdown(self):
+        tasks = []
         for player in self:
             try:
-                if player.lobby_connection:
+                tasks.append(
                     player.lobby_connection.send_warning(
                         "The server has been shut down for maintenance, "
-                        "but should be back online soon. "
-                        "If you experience any problems, please restart your client. "
-                        "<br/><br/>We apologize for this interruption."
+                        "but should be back online soon. If you experience any "
+                        "problems, please restart your client. <br/><br/>"
+                        "We apologize for this interruption."
                     )
+                )
             except Exception as ex:
                 self._logger.debug(
                     "Could not send shutdown message to %s: %s", player, ex
                 )
+        await asyncio.gather(*tasks, return_exceptions=True)

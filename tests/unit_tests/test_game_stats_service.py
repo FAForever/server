@@ -1,13 +1,15 @@
 from unittest.mock import Mock
 
+import asynctest
 import pytest
+from asynctest import CoroutineMock
 from server.factions import Faction
 from server.games import Game
 from server.games.game_results import GameOutcome, GameResult, GameResults
+from server.lobbyconnection import LobbyConnection
 from server.stats import achievement_service as ach
 from server.stats import event_service as ev
 from server.stats.game_stats_service import GameStatsService
-from asynctest import CoroutineMock
 
 pytestmark = pytest.mark.asyncio
 
@@ -113,7 +115,7 @@ async def test_process_game_stats(
     with open("tests/data/game_stats_full_example.json", "r") as stats_file:
         stats = stats_file.read()
 
-    mock_lconn = Mock()
+    mock_lconn = asynctest.create_autospec(LobbyConnection)
     player.lobby_connection = mock_lconn
 
     await game_stats_service.process_game_stats(player, game, stats)

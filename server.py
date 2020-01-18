@@ -114,7 +114,7 @@ if __name__ == '__main__':
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
 
         loop.run_until_complete(done)
-        players_online.broadcast_shutdown()
+        loop.run_until_complete(players_online.broadcast_shutdown())
         ladder_service.shutdown_queues()
 
         # Close DB connections
