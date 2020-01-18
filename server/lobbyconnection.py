@@ -840,13 +840,20 @@ class LobbyConnection:
         self.player.game = game
         cmd = {
             "command": "game_launch",
-            "mod": game.game_mode,
+            "args": ["/numgames", self.player.game_count[RatingType.GLOBAL]],
             "uid": game.id,
-            "args": ["/numgames " + str(self.player.game_count[RatingType.GLOBAL])]
+            "mod": game.game_mode,
+            "mapname": use_map,
+            "name": game.name,
+            "team": game.get_player_option(self.player, "Team"),
+            "faction": game.get_player_option(self.player, "Faction"),
+            "expected_players": len(game.players) or None,
+            "map_position": game.get_player_option(self.player, "StartSpot"),
+            "init_mode": game.init_mode.value,
         }
-        if use_map:
-            cmd['mapname'] = use_map
-        await self.send(cmd)
+
+        # Remove args with None value
+        await self.send({k: v for k, v in cmd.items() if v is not None})
 
     async def command_modvault(self, message):
         type = message["type"]

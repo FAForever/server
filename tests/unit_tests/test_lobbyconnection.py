@@ -7,6 +7,7 @@ import pytest
 from aiohttp import web
 from asynctest import CoroutineMock
 from server import GameState, VisibilityState
+from server.abc.base_game import InitMode
 from server.db.models import ban, friends_and_foes
 from server.game_service import GameService
 from server.gameconnection import GameConnection
@@ -242,11 +243,12 @@ async def test_command_game_join_calls_join_game(mocker,
                                                  players,
                                                  game_stats_service):
     lobbyconnection.game_service = game_service
-    game = mock.create_autospec(Game(42, database, game_service, game_stats_service))
+    game = Game(42, database, game_service, game_stats_service)
     game.state = GameState.LOBBY
     game.password = None
     game.game_mode = 'faf'
     game.id = 42
+    game.name = "Test Game Name"
     game_service.games[42] = game
     lobbyconnection.player = players.hosting
     test_game_info['uid'] = 42
@@ -256,10 +258,12 @@ async def test_command_game_join_calls_join_game(mocker,
         **test_game_info
     })
     expected_reply = {
-        'command': 'game_launch',
-        'mod': 'faf',
-        'uid': 42,
-        'args': ['/numgames {}'.format(players.hosting.game_count[RatingType.GLOBAL])]
+        "command": "game_launch",
+        "args": ["/numgames", players.hosting.game_count[RatingType.GLOBAL]],
+        "uid": 42,
+        "mod": "faf",
+        "name": "Test Game Name",
+        "init_mode": InitMode.NORMAL_LOBBY.value,
     }
     lobbyconnection.protocol.send_message.assert_called_with(expected_reply)
 
@@ -272,11 +276,12 @@ async def test_command_game_join_uid_as_str(mocker,
                                             players,
                                             game_stats_service):
     lobbyconnection.game_service = game_service
-    game = mock.create_autospec(Game(42, database, game_service, game_stats_service))
+    game = Game(42, database, game_service, game_stats_service)
     game.state = GameState.LOBBY
     game.password = None
     game.game_mode = 'faf'
     game.id = 42
+    game.name = "Test Game Name"
     game_service.games[42] = game
     lobbyconnection.player = players.hosting
     test_game_info['uid'] = '42'  # Pass in uid as string
@@ -287,9 +292,11 @@ async def test_command_game_join_uid_as_str(mocker,
     })
     expected_reply = {
         'command': 'game_launch',
+        'args': ['/numgames', players.hosting.game_count[RatingType.GLOBAL]],
         'mod': 'faf',
         'uid': 42,
-        'args': ['/numgames {}'.format(players.hosting.game_count[RatingType.GLOBAL])]
+        'name': 'Test Game Name',
+        'init_mode': InitMode.NORMAL_LOBBY.value,
     }
     lobbyconnection.protocol.send_message.assert_called_with(expected_reply)
 
