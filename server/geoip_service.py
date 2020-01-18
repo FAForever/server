@@ -13,6 +13,7 @@ from maxminddb.errors import InvalidDatabaseError
 
 from . import config
 from .decorators import with_logger
+from .timing import Timer
 
 
 @with_logger
@@ -28,7 +29,9 @@ class GeoIpService(object):
     def __init__(self):
         self.file_path = config.GEO_IP_DATABASE_PATH
         self.db = None
+        self.db_update_time = None
 
+        self.check_geoip_db_file_updated()
         # crontab: min hour day month day_of_week
         # Run every Wednesday because GeoLite2 is updated every first Tuesday
         # of the month.
@@ -36,6 +39,30 @@ class GeoIpService(object):
             '0 0 0 * * 3', func=self.check_update_geoip_db
         )
         asyncio.ensure_future(self.check_update_geoip_db())
+        self._check_file_timer = Timer(
+            60 * 10, self.check_geoip_db_file_updated, start=True
+        )
+
+    def check_geoip_db_file_updated(self):
+        """
+            Checks if the local database file has been updated by a server admin
+        and loads it if it has.
+        """
+        if not os.path.isfile(self.file_path):
+            return
+
+        if self.db is None:
+            # We haven't loaded the file before
+            self.load_db()
+        else:
+            assert self.db_update_time is not None
+            # We have loaded the file, so check if it has been updated
+
+            date_modified = datetime.fromtimestamp(
+                os.path.getmtime(self.file_path)
+            )
+            if date_modified > self.db_update_time:
+                self.load_db()
 
     async def check_update_geoip_db(self) -> None:
         """
@@ -150,7 +177,13 @@ class GeoIpService(object):
             Loads the database into memory.
         """
         try:
+            # Set the time first, if the file is corrupted we don't need to try
+            # loading it again anyways
+            self.db_update_time = datetime.now()
             self.db = geoip2.database.Reader(self.file_path)
+            self._logger.info(
+                "File loaded successfully from %s", self.file_path
+            )
         except (InvalidDatabaseError, FileNotFoundError, ValueError):
             self._logger.exception(
                 "Failed to load maxmind db! Maybe the download was interrupted"

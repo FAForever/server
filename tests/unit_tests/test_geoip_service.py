@@ -3,7 +3,10 @@ import os
 import random
 import string
 import tarfile
+import tempfile
+from datetime import datetime
 from io import BytesIO
+from time import time
 from unittest.mock import Mock
 
 import pytest
@@ -39,6 +42,35 @@ async def test_check_update(fake_geoip_service, fake_geoip_path):
     await fake_geoip_service.check_update_geoip_db()
 
     fake_geoip_service.download_geoip_db.assert_called_once_with()
+
+
+async def test_check_file_exist(fake_geoip_service):
+    with tempfile.NamedTemporaryFile() as f:
+        # Set creation time into the past
+        os.utime(f.name, (time() - 60, time() - 60))
+        fake_geoip_service.file_path = f.name
+        fake_geoip_service.load_db = Mock()
+        fake_geoip_service.db = None
+        fake_geoip_service.db_update_time = None
+
+        fake_geoip_service.check_geoip_db_file_updated()
+
+        assert fake_geoip_service.load_db.call_count == 1
+        fake_geoip_service.db = Mock()
+        fake_geoip_service.db_update_time = datetime.now()
+
+        fake_geoip_service.check_geoip_db_file_updated()
+        fake_geoip_service.check_geoip_db_file_updated()
+        fake_geoip_service.check_geoip_db_file_updated()
+
+        # The file shouldn't be reloaded until it is updated
+        assert fake_geoip_service.load_db.call_count == 1
+
+        os.utime(f.name, (time(), time()))
+
+        fake_geoip_service.check_geoip_db_file_updated()
+
+        assert fake_geoip_service.load_db.call_count == 2
 
 
 async def test_do_update(fake_geoip_service, fake_geoip_path):
