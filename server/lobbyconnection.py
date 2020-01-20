@@ -844,6 +844,11 @@ class LobbyConnection:
             "uid": game.id,
             "mod": game.game_mode,
             "mapname": use_map,
+            # Following parameters are not used by the client yet. They are
+            # needed for setting up auto-lobby style matches such as ladder, gw,
+            # and team machmaking where the server decides what these game
+            # options are. Currently, options for ladder are hardcoded into the
+            # client.
             "name": game.name,
             "team": game.get_player_option(self.player, "Team"),
             "faction": game.get_player_option(self.player, "Faction"),
