@@ -55,8 +55,7 @@ class Timer(object):
         """Set next hop in the loop. Call task"""
         if self.handle is not None:
             self.handle.cancel()
-        delay = self.get_delay()
-        self.handle = self.loop.call_later(delay, self.call_next)
+        self.handle = self.loop.call_later(self.get_delay(), self.call_next)
         self.call_func()
 
     def call_func(self, *args, **kwargs):
