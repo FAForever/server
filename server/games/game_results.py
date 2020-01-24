@@ -1,8 +1,9 @@
-from enum import Enum
 from collections import Counter
 from collections.abc import Mapping
-from server.decorators import with_logger
+from enum import Enum
 from typing import NamedTuple
+
+from server.decorators import with_logger
 
 
 class GameOutcome(Enum):

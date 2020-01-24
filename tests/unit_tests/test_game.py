@@ -4,6 +4,7 @@ from typing import Any, List, Tuple
 from unittest import mock
 
 import pytest
+from asynctest import CoroutineMock
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import CoopGame, CustomGame
 from server.games.game import (
@@ -12,7 +13,6 @@ from server.games.game import (
 from server.games.game_rater import GameRatingError
 from server.games.game_results import GameOutcome
 from server.rating import RatingType
-from asynctest import CoroutineMock
 from tests.unit_tests.conftest import (
     add_connected_player, add_connected_players, make_mock_game_connection
 )
@@ -389,6 +389,18 @@ async def test_game_is_invalid_due_to_desyncs(game: Game, players):
     assert game.validity is ValidityState.TOO_MANY_DESYNCS
 
 
+async def test_compute_rating_raises_game_error(game: Game, players):
+    game.state = GameState.LOBBY
+    add_connected_players(game, [players.hosting, players.joining])
+    # add_connected_players sets this, so we need to unset it again
+    del game._player_options[players.hosting.id]["Team"]
+    game.set_player_option(players.joining.id, "Team", 1)
+    await game.launch()
+
+    with pytest.raises(GameError):
+        game.compute_rating(rating=RatingType.LADDER_1V1)
+
+
 async def test_compute_rating_computes_global_ratings(game: Game, players):
     game.state = GameState.LOBBY
     players.hosting.ratings[RatingType.GLOBAL] = Rating(1500, 250)
@@ -436,7 +448,7 @@ async def test_compute_rating_balanced_teamgame(game: Game, player_factory):
     await game.launch()
     for player, result, team in players:
         await game.add_result(
-            player, player.id - 1, 'victory' if team is 2 else 'defeat', result
+            player, player.id - 1, 'victory' if team == 2 else 'defeat', result
         )
     result = game.compute_rating()
     for team in result:
@@ -486,6 +498,51 @@ async def test_compute_rating_sum_of_scores_edge_case(
             else:
                 assert new_rating < old_rating
 
+
+async def test_compute_rating_only_one_surviver(game: Game, player_factory):
+    """
+    When a player dies their score is reported as "defeat", but this does not
+    necessarily mean they lost the game, if their team mates went on and later
+    reported a "victory".
+    """
+    game.state = GameState.LOBBY
+    win_team = 2
+    lose_team = 3
+    players = [
+            (
+                player_factory(login=f"{i}", player_id=i, global_rating=Rating(1500, 200)),
+                outcome, result, team
+            )
+            for i, (outcome, result, team) in enumerate([
+                ("defeat", -10, lose_team),
+                ("defeat", -10, lose_team),
+                ("defeat", -10, lose_team),
+                ("defeat", -10, lose_team),
+                ("defeat", -10, win_team),
+                ("defeat", -10, win_team),
+                ("defeat", -10, win_team),
+                ("victory", 10, win_team),
+            ], 1)]
+    add_connected_players(game, [player for player, _, _, _ in players])
+    for player, _, _, team in players:
+        game.set_player_option(player.id, 'Team', team)
+        game.set_player_option(player.id, 'Army', player.id - 1)
+    await game.launch()
+
+    for player, outcome, result, team in players:
+        await game.add_result(player, player.id - 1, outcome, result)
+
+    result = game.compute_rating()
+    for team in result:
+        for player, new_rating in team.items():
+            old_rating = Rating(*player.ratings[RatingType.GLOBAL])
+            # `team` index in result might not coincide with `team` index in players
+            if player.id > 4:
+                assert new_rating > old_rating
+            else:
+                assert new_rating < old_rating
+
+
 async def test_compute_rating_two_player_FFA(game: Game, player_factory):
     game.state = GameState.LOBBY
     players = [
@@ -501,13 +558,13 @@ async def test_compute_rating_two_player_FFA(game: Game, player_factory):
     await game.launch()
 
     for player, result, _ in players:
-        outcome = 'victory' if player.id is 1 else 'defeat'
+        outcome = 'victory' if player.id == 1 else 'defeat'
         await game.add_result(player, player.id - 1, outcome, result)
     result = game.compute_rating()
     for team in result:
         for player, new_rating in team.items():
             old_rating = Rating(*player.ratings[RatingType.GLOBAL])
-            assert (new_rating > old_rating) is (player.id is 1)
+            assert (new_rating > old_rating) is (player.id == 1)
 
 
 async def test_compute_rating_does_not_rate_multi_team(
@@ -528,7 +585,7 @@ async def test_compute_rating_does_not_rate_multi_team(
     await game.launch()
 
     for player, result, _ in players:
-        outcome = 'victory' if result is 10 else 'defeat'
+        outcome = 'victory' if result == 10 else 'defeat'
         await game.add_result(player, player.id - 1, outcome, result)
     with pytest.raises(GameRatingError):
         game.compute_rating()
@@ -552,7 +609,7 @@ async def test_compute_rating_does_not_rate_multi_FFA(
     await game.launch()
 
     for player, result, _ in players:
-        outcome = 'victory' if result is 10 else 'defeat'
+        outcome = 'victory' if result == 10 else 'defeat'
         await game.add_result(player, player.id - 1, outcome, result)
     with pytest.raises(GameRatingError):
         game.compute_rating()
@@ -625,12 +682,13 @@ async def test_compute_rating_works_with_partially_unknown_results(
     await game.launch()
 
     for player, result, _ in players:
-        outcome = 'victory' if result is 10 else 'unknown'
+        outcome = 'victory' if result == 10 else 'unknown'
         await game.add_result(player, player.id - 1, outcome, result)
     result = game.compute_rating()
     for team in result:
         for player, new_rating in team.items():
             assert new_rating != Rating(*player.ratings[RatingType.GLOBAL])
+
 
 async def test_game_get_army_result_ignores_unknown_results(game,
                                                             game_add_players):
@@ -954,7 +1012,6 @@ async def test_game_outcomes_no_results(game: Game, database, players):
     await game.on_game_end()
     expected_scores = {(players.hosting.id, 0), (players.joining.id, 0)}
     assert await game_player_scores(database, game) == expected_scores
-
 
 
 async def test_game_outcomes_conflicting(game: Game, database, players):
