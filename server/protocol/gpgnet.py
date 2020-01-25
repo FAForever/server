@@ -22,12 +22,12 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
         """
         await self.send_gpgnet_message('JoinGame', [remote_player_name, remote_player_uid])
 
-    async def send_HostGame(self, map):
+    async def send_HostGame(self, map_path):
         """
         Tells the game to start listening for incoming connections as a host
-        :param map: Which scenario to use
+        :param map_path: Which scenario to use
         """
-        await self.send_gpgnet_message('HostGame', [str(map)])
+        await self.send_gpgnet_message('HostGame', [str(map_path)])
 
     async def send_DisconnectFromPeer(self, id: int):
         """
@@ -38,7 +38,7 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
         """
         await self.send_gpgnet_message('DisconnectFromPeer', [id])
 
-    async def send_gpgnet_message(self, command_id, arguments):
+    async def send_gpgnet_message(self, command_id: str, arguments: List[Union[int, str, bool]]):
         message = {"command": command_id, "args": arguments}
         await self.send_message(message)
 
