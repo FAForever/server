@@ -7,15 +7,14 @@ from collections import defaultdict
 from enum import Enum, unique
 from typing import Any, Dict, Optional, Tuple
 
-import trueskill
+from server.config import FFA_TEAM
+from server.games.game_rater import GameRater
 from server.games.game_results import GameOutcome, GameResult, GameResults
 from server.rating import RatingType
-from server.games.game_rater import GameRater
+from trueskill import Rating
 
 from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
-
-from server.config import FFA_TEAM
 
 
 @unique
@@ -373,9 +372,8 @@ class Game:
                 f"Invalid GameConnectionState: {game_connection.state}"
             )
         if self.state != GameState.LOBBY and self.state != GameState.LIVE:
-            raise GameError(
-                "Invalid GameState: {state}".format(state=self.state)
-            )
+            raise GameError(f"Invalid GameState: {self.state}")
+
         self._logger.info("Added game connection %s", game_connection)
         self._connections[game_connection.player] = game_connection
 
@@ -398,7 +396,8 @@ class Game:
         self._logger.info("Removed game connection %s", game_connection)
 
         def host_left_lobby() -> bool:
-            return game_connection.player == self.host and self.state != GameState.LIVE
+            return (game_connection.player == self.host and
+                    self.state != GameState.LIVE)
 
         if len(self._connections) == 0 or host_left_lobby():
             await self.on_game_end()
@@ -410,7 +409,7 @@ class Game:
             return
         if self.state != GameState.LIVE:
             return
-        if len([ conn for conn in self._connections.values() if not conn.finished_sim ]) > 0:
+        if [conn for conn in self.connections if not conn.finished_sim]:
             return
         self.ended = True
         async with self._db.acquire() as conn:
@@ -757,8 +756,8 @@ class Game:
 
             def is_observer() -> bool:
                 return (
-                    options.get('Team', -1) < 0
-                    or options.get('StartSpot', 0) < 0
+                    self._player_options[player.id].get("Team", -1) < 0
+                    or self._player_options[player.id].get("StartSpot", -1) < 0
                 )
 
             if is_observer():
@@ -817,7 +816,7 @@ class Game:
 
         return self._results.outcome(army)
 
-    def compute_rating(self, rating=RatingType.GLOBAL):
+    def compute_rating(self, rating=RatingType.GLOBAL) -> Dict[Player, Rating]:
         """
         Compute new ratings
         :param rating: Rating type
@@ -830,8 +829,8 @@ class Game:
         if None in self.teams:
             raise GameError(
                 "Missing team for at least one player. (player, team): {}"
-                .format([(player, get_team(player))
-                         for player in self.players], )
+                .format([(player, self.get_player_option(player.id, 'Team'))
+                        for player in self.players])
             )
 
         outcome_by_player = {

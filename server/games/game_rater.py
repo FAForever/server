@@ -1,13 +1,13 @@
+from typing import Dict, Iterable, List
+
 import trueskill
-from trueskill import Rating
-from server.rating import RatingType
-from ..decorators import with_logger
-
-from server.games.game_results import GameOutcome
 from server.config import FFA_TEAM
-
-from typing import List, Dict, Iterable
+from server.games.game_results import GameOutcome
 from server.players import Player
+from server.rating import RatingType
+from trueskill import Rating
+
+from ..decorators import with_logger
 
 
 class GameRatingError(Exception):
@@ -70,6 +70,9 @@ class GameRater(object):
         outcomes.discard(GameOutcome.UNKNOWN)
         if not outcomes:
             return GameOutcome.UNKNOWN
+        if GameOutcome.VICTORY in outcomes:
+            # One player surviving implies that the entire team won
+            return GameOutcome.VICTORY
         if len(outcomes) > 1:
             raise GameRatingError(
                 f"Attempted to rate game where one of the teams has inconsistent outcome. Teams: {self._players_by_team} Outcomes: {self._outcome_by_player}"
