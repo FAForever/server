@@ -409,7 +409,7 @@ class Game:
             return
         if self.state != GameState.LIVE:
             return
-        if len([conn for conn in self.connections if not conn.finished_sim]) > 0:
+        if [conn for conn in self.connections if not conn.finished_sim]:
             return
         self.ended = True
         async with self._db.acquire() as conn:
