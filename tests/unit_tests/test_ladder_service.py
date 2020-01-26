@@ -431,6 +431,18 @@ async def test_team_game_name_conflicting(
     assert ladder_service.team_game_name([p1], [p2, p3]) == "Team CYB Vs Team Rhiza"
 
 
+async def test_team_game_name_no_clan(
+    ladder_service: LadderService, player_factory
+):
+    p1 = player_factory('Dostya')
+    p2 = player_factory('Rhiza')
+
+    p1.clan = None
+    p2.clan = None
+
+    assert ladder_service.team_game_name([p1], [p2]) == "Team Dostya Vs Team Rhiza"
+
+
 async def test_inform_player_message(
     ladder_service: LadderService,
     player_factory

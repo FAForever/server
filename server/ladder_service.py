@@ -507,8 +507,8 @@ class LadderService(Service):
         assert team1
         assert team2
 
-        team1_clans = set(map(lambda p: p.clan, team1))
-        team2_clans = set(map(lambda p: p.clan, team2))
+        team1_clans = {p.clan for p in team1 if p.clan is not None}
+        team2_clans = {p.clan for p in team2 if p.clan is not None}
 
         team1_name = team1[0].login
         team2_name = team2[0].login
