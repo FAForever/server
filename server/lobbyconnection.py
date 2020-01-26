@@ -955,7 +955,6 @@ class LobbyConnection:
                         await self.send(out)
                     except:
                         self._logger.error("Error handling table_mod row (uid: {})".format(uid), exc_info=True)
-                        pass
 
             elif type == "like":
                 canLike = True

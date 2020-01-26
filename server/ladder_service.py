@@ -1,11 +1,14 @@
 import asyncio
 import contextlib
+import random
+import re
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
 
 import aiocron
 from sqlalchemy import and_, func, select, text
 
+from .abc.base_game import InitMode
 from .async_functions import gather_without_exceptions
 from .config import config
 from .core import Service
@@ -47,6 +50,12 @@ class LadderService(Service):
                 game_service,
                 name='ladder1v1',
                 map_pools=[(self.ladder_1v1_map_pool, None, None)]
+            ),
+            'ladder2v2': MatchmakerQueue(
+                game_service=game_service,
+                name='ladder2v2',
+                min_team_size=2,
+                max_team_size=2
             )
         }
 
@@ -58,7 +67,7 @@ class LadderService(Service):
         await asyncio.gather(*[
             queue.initialize() for queue in self.queues.values()
         ])
-        asyncio.create_task(self.handle_queue_matches())
+        self.start_queue_handlers()
 
     async def update_data(self) -> None:
         async with self._db.acquire() as conn:
@@ -102,7 +111,7 @@ class LadderService(Service):
                 )
         # Remove queues that don't exist anymore
         for queue_name in list(self.queues.keys()):
-            if queue_name == "ladder1v1":
+            if queue_name in ("ladder1v1", "ladder2v2"):
                 # TODO: Remove me. Legacy queue fallback
                 continue
             if queue_name not in matchmaker_queues:
@@ -279,7 +288,14 @@ class LadderService(Service):
                     )
                 })
 
-    async def handle_queue_matches(self):
+    def start_queue_handlers(self):
+        for queue in self.queues:
+            if queue == "ladder1v1":
+                asyncio.ensure_future(self.handle_queue_matches_1v1())
+            else:
+                asyncio.ensure_future(self.handle_queue_matches(queue))
+
+    async def handle_queue_matches_1v1(self):
         async for s1, s2 in self.queues["ladder1v1"].iter_matches():
             try:
                 assert len(s1.players) == 1
@@ -291,14 +307,14 @@ class LadderService(Service):
                     p1.send_message(msg),
                     p2.send_message(msg)
                 )
-                asyncio.create_task(self.start_game(p1, p2))
+                asyncio.create_task(self.start_game_1v1(p1, p2))
             except Exception as e:
                 self._logger.exception(
                     "Error processing match between searches %s, and %s: %s",
                     s1, s2, e
                 )
 
-    async def start_game(self, host: Player, guest: Player):
+    async def start_game_1v1(self, host: Player, guest: Player):
         # TODO: Get game_mode from queue
         try:
             self._logger.debug(
@@ -326,11 +342,11 @@ class LadderService(Service):
                 host=host,
                 name=f"{host.login} Vs {guest.login}"
             )
+            game.init_mode = InitMode.AUTO_LOBBY
+            game.map_file_path = map_path
 
             host.game = game
             guest.game = game
-
-            game.map_file_path = map_path
 
             game.set_player_option(host.id, 'StartSpot', 1)
             game.set_player_option(guest.id, 'StartSpot', 2)
@@ -345,7 +361,7 @@ class LadderService(Service):
             game.set_player_option(host.id, 'Team', 1)
             game.set_player_option(guest.id, 'Team', 1)
 
-            mapname = map_path[5:-4]
+            mapname = re.match('maps/(.+).zip', map_path).group(1)
             # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
             # Really in the future, just send a better description
             self._logger.debug("Starting ladder game: %s", game)
@@ -392,6 +408,118 @@ class LadderService(Service):
                     host.send_message(msg),
                     guest.send_message(msg)
                 )
+
+    async def handle_queue_matches(self, queue_name: str):
+        async for s1, s2 in self.queues[queue_name].iter_matches():
+            try:
+                tasks = []
+                msg = {"command": "match_found", "queue": queue_name}
+                for player in s1.players + s2.players:
+                    tasks.append(player.send_message(msg))
+                await asyncio.gather(*tasks)
+                asyncio.ensure_future(
+                    self.start_game_with_teams(s1.players, s2.players)
+                )
+            except Exception as e:
+                self._logger.exception(
+                    "Error processing match between searches %s, and %s: %s",
+                    s1, s2, e
+                )
+
+    async def start_game_with_teams(self, team1: List[Player], team2: List[Player]):
+        assert team1
+        assert team2
+
+        host = team1[0]
+        all_players = team1 + team2
+
+        for player in all_players:
+            if player == host:
+                continue
+            player.state = PlayerState.JOINING
+        host.state = PlayerState.HOSTING
+
+        played_map_ids = await self.get_game_history(
+            all_players,
+            "ladder1v1",
+            limit=config.LADDER_ANTI_REPETITION_LIMIT
+        )
+        rating = min(
+            newbie_adjusted_ladder_mean(player)
+            for player in all_players
+        )
+        pool = self.queues["ladder1v1"].get_map_pool_for_rating(rating)
+        if not pool:
+            raise RuntimeError(f"No map pool available for rating {rating}!")
+        map_id, map_name, map_path = pool.choose_map(played_map_ids)
+
+        # TODO: Different game mode for team matchmaker?
+        game = self.game_service.create_game(
+            game_mode='faf',
+            host=host,
+            name=self.team_game_name(team1, team2)
+        )
+        game.init_mode = InitMode.AUTO_LOBBY
+        game.map_file_path = map_path
+
+        for i, player in enumerate(all_players):
+            i += 1  # Game options are 1-indexed
+            player.game = game
+
+            # Configure game options
+            game.set_player_option(player.id, 'Faction', player.faction)
+            game.set_player_option(player.id, 'Color', i)
+            game.set_player_option(player.id, 'Army', i+1)
+
+        for i, player in enumerate(team1):
+            game.set_player_option(player.id, 'Team', 2)
+            # Team 1 gets odd numbered start spots
+            game.set_player_option(player.id, 'StartSpot', 2 * i + 1)
+
+        for i, player in enumerate(team2):
+            game.set_player_option(player.id, 'Team', 3)
+            # Team 2 gets even numbered start spots
+            game.set_player_option(player.id, 'StartSpot', 2 * i + 2)
+
+        mapname = re.match('maps/(.*).zip', map_path).group(1)
+
+        await host.lobby_connection.launch_game(
+            game, is_host=True, use_map=mapname
+        )
+        try:
+            await game.await_hosted()
+        except TimeoutError:
+            msg = {"command": "game_launch_timeout"}
+            await asyncio.gather(*[
+                player.lobby_connection.send(msg) for player in all_players
+            ])
+            return
+
+        await asyncio.gather(*[
+            player.lobby_connection.launch_game(
+                game, is_host=False, use_map=mapname
+            )
+            for player in all_players if player != host
+        ])
+        # TODO: Wait for players to join here
+
+    def team_game_name(self, team1: List[Player], team2: List[Player]) -> str:
+        assert team1
+        assert team2
+
+        team1_clans = set(map(lambda p: p.clan, team1))
+        team2_clans = set(map(lambda p: p.clan, team2))
+
+        team1_name = team1[0].login
+        team2_name = team2[0].login
+
+        if len(team1_clans) == 1:
+            team1_name = team1_clans.pop()
+
+        if len(team2_clans) == 1:
+            team2_name = team2_clans.pop()
+
+        return f"Team {team1_name} Vs Team {team2_name}"
 
     async def get_game_history(
         self,

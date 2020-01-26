@@ -348,7 +348,7 @@ class Game:
                 game_stats.update().where(
                     game_stats.c.id == self.id
                 ).values(
-                    endTime = sql_now()
+                    endTime=sql_now()
                 )
             )
 

@@ -1,4 +1,5 @@
 import asyncio
+import itertools
 import math
 import time
 from typing import List, Optional, Tuple
@@ -232,6 +233,72 @@ class Search:
     def __repr__(self):
         """For debugging"""
         return f"Search({[p.login for p in self.players]})"
+
+
+class CombinedSearch(Search):
+    def __init__(self, *searches: Search):
+        assert searches
+        rating_type = searches[0].rating_type
+        assert all(map(lambda s: s.rating_type == rating_type, searches))
+
+        self.rating_type = rating_type
+        self.searches = searches
+
+    @property
+    def players(self) -> List[Player]:
+        return list(itertools.chain(*[s.players for s in self.searches]))
+
+    @property
+    def ratings(self):
+        return list(itertools.chain(*[s.ratings for s in self.searches]))
+
+    @property
+    def raw_ratings(self):
+        return list(itertools.chain(*[s.raw_ratings for s in self.searches]))
+
+    @property
+    def match_threshold(self) -> float:
+        """
+        Defines the threshold for game quality
+        """
+        return min(s.match_threshold for s in self.searches)
+
+    @property
+    def is_matched(self) -> bool:
+        return all(s.is_matched for s in self.searches)
+
+    def done(self) -> bool:
+        return all(s.done() for s in self.searches)
+
+    @property
+    def is_cancelled(self) -> bool:
+        return any(s.is_cancelled for s in self.searches)
+
+    def match(self, other: 'Search'):
+        """
+        Mark as matched with given opponent
+        """
+        self._logger.info("Combined search matched %s with %s", self.players, other.players)
+
+        for s in self.searches:
+            s.match(other)
+
+    async def await_match(self):
+        """
+        Wait for this search to complete
+        """
+        await asyncio.wait({s.await_match() for s in self.searches})
+
+    def cancel(self):
+        """
+        Cancel searching for a match
+        :return:
+        """
+        for s in self.searches:
+            s.cancel()
+
+    def __str__(self):
+        return "CombinedSearch({})".format(",".join(str(s) for s in self.searches))
 
 
 Match = Tuple[Search, Search]

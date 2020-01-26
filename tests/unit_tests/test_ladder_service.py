@@ -21,7 +21,8 @@ async def test_load_from_database(ladder_service, queue_factory):
     for _ in range(3):
         await ladder_service.update_data()
 
-        assert len(ladder_service.queues) == 1
+        # FIXME: Accounting for hardcoded queues
+        assert len(ladder_service.queues) == 2
 
         queue = ladder_service.queues["ladder1v1"]
         assert queue.name == "ladder1v1"
@@ -32,12 +33,16 @@ async def test_load_from_database(ladder_service, queue_factory):
         ]
 
 
-async def test_start_game(ladder_service: LadderService, player_factory):
+async def test_start_game_1v1(
+    ladder_service: LadderService,
+    game_service: GameService,
+    player_factory
+):
     p1 = player_factory('Dostya', player_id=1, with_lobby_connection=True)
     p2 = player_factory('Rhiza', player_id=2, with_lobby_connection=True)
 
     with mock.patch('server.games.game.Game.await_hosted', CoroutineMock()):
-        await ladder_service.start_game(p1, p2)
+        await ladder_service.start_game_1v1(p1, p2)
 
     assert p1.lobby_connection.launch_game.called
     assert p2.lobby_connection.launch_game.called
@@ -48,13 +53,32 @@ async def test_start_game_timeout(ladder_service: LadderService, player_factory)
     p1 = player_factory('Dostya', player_id=1, with_lobby_connection=True)
     p2 = player_factory('Rhiza', player_id=2, with_lobby_connection=True)
 
-    await ladder_service.start_game(p1, p2)
+    await ladder_service.start_game_1v1(p1, p2)
 
     p1.lobby_connection.send.assert_called_once_with({"command": "match_cancelled"})
     p2.lobby_connection.send.assert_called_once_with({"command": "match_cancelled"})
     assert p1.lobby_connection.launch_game.called
     # TODO: Once client supports `match_cancelled` change this to `assert not ...`
     assert p2.lobby_connection.launch_game.called
+
+
+async def test_start_game_with_teams(
+    ladder_service: LadderService, game_service: GameService, player_factory
+):
+    p1 = player_factory('Dostya', player_id=1, with_lobby_connection=True)
+    p2 = player_factory('Rhiza', player_id=2, with_lobby_connection=True)
+    p3 = player_factory('QAI', player_id=3, with_lobby_connection=True)
+    p4 = player_factory('Hall', player_id=4, with_lobby_connection=True)
+
+    game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
+
+    with mock.patch('server.games.game.Game.await_hosted', CoroutineMock()):
+        await ladder_service.start_game_with_teams([p1, p3], [p2, p4])
+
+    assert p1.lobby_connection.launch_game.called
+    assert p2.lobby_connection.launch_game.called
+    assert p3.lobby_connection.launch_game.called
+    assert p4.lobby_connection.launch_game.called
 
 
 async def test_inform_player(ladder_service: LadderService, player_factory):
@@ -80,6 +104,7 @@ async def test_inform_player(ladder_service: LadderService, player_factory):
     p1.lobby_connection.send.assert_called_once()
 
 
+@pytest.mark.skip("TODO: Add player parties")
 async def test_search_info_message(
     ladder_service: LadderService,
     player_factory,
@@ -160,42 +185,23 @@ async def test_start_search_multiqueue(
     p1 = player_factory(
         "Dostya", ladder_rating=(1000, 10), with_lobby_connection=True
     )
-    p2 = player_factory(
-        "Rhiza", ladder_rating=(1000, 10), with_lobby_connection=True
-    )
-    search1 = Search([p1, p2])
 
-    await ladder_service.start_search(p1, search1, "ladder1v1")
+    await ladder_service.start_search(p1, "ladder1v1")
     await exhaust_callbacks(event_loop)
 
-    assert ladder_service.searches == {
-        "ladder1v1": {
-            p1: search1
-        }
-    }
+    assert p1 in ladder_service.searches["ladder1v1"]
 
-    search2 = Search([p1, p2])
-    await ladder_service.start_search(p1, search2, "tmm2v2")
+    await ladder_service.start_search(p1, "tmm2v2")
     await exhaust_callbacks(event_loop)
 
-    assert ladder_service.searches == {
-        "ladder1v1": {
-            p1: search1
-        },
-        "tmm2v2": {
-            p1: search2
-        }
-    }
+    assert p1 in ladder_service.searches["ladder1v1"]
+    assert p1 in ladder_service.searches["tmm2v2"]
 
     await ladder_service.cancel_search(p1, "tmm2v2")
     await exhaust_callbacks(event_loop)
 
-    assert ladder_service.searches == {
-        "ladder1v1": {
-            p1: search1
-        },
-        "tmm2v2": {}
-    }
+    assert p1 in ladder_service.searches["ladder1v1"]
+    assert p1 not in ladder_service.searches["tmm2v2"]
 
 
 async def test_start_and_cancel_search(
@@ -296,7 +302,7 @@ async def test_cancel_twice(ladder_service: LadderService, player_factory):
 
 
 @fast_forward(5)
-async def test_start_game_called_on_match(
+async def test_start_game_1v1_called_on_match(
     ladder_service: LadderService, player_factory
 ):
     p1 = player_factory(
@@ -314,7 +320,7 @@ async def test_start_game_called_on_match(
         with_lobby_connection=True
     )
 
-    ladder_service.start_game = CoroutineMock()
+    ladder_service.start_game_1v1 = CoroutineMock()
     ladder_service.inform_player = CoroutineMock()
 
     await ladder_service.start_search(p1, Search([p1]), 'ladder1v1')
@@ -323,7 +329,7 @@ async def test_start_game_called_on_match(
     await asyncio.sleep(2)
 
     ladder_service.inform_player.assert_called()
-    ladder_service.start_game.assert_called_once()
+    ladder_service.start_game_1v1.assert_called_once()
 
 
 @pytest.mark.parametrize("ratings", (
@@ -350,7 +356,7 @@ async def test_start_game_map_selection_newbie_pool(
     queue.add_map_pool(newbie_map_pool, None, 500)
     queue.add_map_pool(full_map_pool, 500, None)
 
-    await ladder_service.start_game(p1, p2)
+    await ladder_service.start_game([p1], [p2], "ladder1v1")
 
     newbie_map_pool.choose_map.assert_called_once()
     full_map_pool.choose_map.assert_not_called()
@@ -399,6 +405,30 @@ async def test_get_ladder_history_many_maps(ladder_service: LadderService, playe
     )
 
     assert history == [6, 5, 4, 3]
+
+
+async def test_team_game_name(ladder_service: LadderService, player_factory):
+    p1 = player_factory(login='Dostya')
+    p2 = player_factory(login='Rhiza')
+
+    p1.clan = "CYB"
+    p2.clan = "AEO"
+
+    assert ladder_service.team_game_name([p1], [p2]) == "Team CYB Vs Team AEO"
+
+
+async def test_team_game_name_conflicting(
+    ladder_service: LadderService, player_factory
+):
+    p1 = player_factory(login='Dostya')
+    p2 = player_factory(login='Rhiza')
+    p3 = player_factory(login='Hall')
+
+    p1.clan = "CYB"
+    p2.clan = "AEO"
+    p3.clan = "UEF"
+
+    assert ladder_service.team_game_name([p1], [p2, p3]) == "Team CYB Vs Team Rhiza"
 
 
 async def test_inform_player_message(

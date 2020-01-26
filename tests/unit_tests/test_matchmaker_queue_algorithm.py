@@ -44,7 +44,12 @@ def st_searches_list(draw, min_players=1, max_players=10, max_size=30):
 
 @pytest.fixture(scope="session")
 def player_factory(player_factory):
-    def make(mean: int, deviation: int, ladder_games: int = config.NEWBIE_MIN_GAMES+1, name=None):
+    def make(
+        mean: int = 1500,
+        deviation: int = 500,
+        ladder_games: int = config.NEWBIE_MIN_GAMES+1,
+        name=None
+    ):
         """Make a player with the given ratings"""
         player = player_factory(
             ladder_rating=(mean, deviation),
@@ -340,7 +345,7 @@ def test_unmatched_newbies_do_not_forcefully_match_teams(player_factory):
     assert len(matches) == 0
 
 
-def unmatched_newbie_teams_do_not_forcefully_match_pros(p):
+def unmatched_newbie_teams_do_not_forcefully_match_pros(player_factory):
     newbie_team = Search([
         player_factory(1500, 500, ladder_games=0),
         player_factory(1500, 500, ladder_games=0)
@@ -446,3 +451,65 @@ def test_make_matches_communicates_failed_attempts(player_factory):
     assert not matches
     assert s1.failed_matching_attempts == 1
     assert s2.failed_matching_attempts == 1
+
+
+def test_make_teams_1(player_factory):
+    teams = [
+        [player_factory(name="p1"), player_factory(name="p2"), player_factory(name="p3")],
+        [player_factory(name="p4"), player_factory(name="p5")],
+        [player_factory(name="p6"), player_factory(name="p7")],
+        [player_factory(name="p8")],
+        [player_factory(name="p9")],
+        [player_factory(name="p10")],
+        [player_factory(name="p11")]
+    ]
+    do_test_make_teams(teams, 3, 2, {1})
+
+
+def test_make_teams_2(player_factory):
+    teams = [
+        [player_factory(name="p1"), player_factory(name="p2"), player_factory(name="p3")],
+        [player_factory(name="p4"), player_factory(name="p5")],
+        [player_factory(name="p6"), player_factory(name="p7")],
+        [player_factory(name="p8")],
+        [player_factory(name="p9")],
+        [player_factory(name="p10")],
+        [player_factory(name="p11")]
+    ]
+    do_test_make_teams(teams, 2, 1, {3})
+
+
+def test_make_teams_3(player_factory):
+    teams = [
+        [player_factory(name=f"p{i+1}")] for i in range(9)
+    ]
+    do_test_make_teams(teams, 4, 1, {1})
+
+
+def test_make_teams_4(player_factory):
+    teams = [
+        [player_factory()] for i in range(9)
+    ]
+    teams += [
+        [player_factory(), player_factory()] for i in range(5)
+    ]
+    teams += [
+        [player_factory(), player_factory(), player_factory()] for i in range(15)
+    ]
+    teams += [
+        [player_factory(), player_factory(), player_factory(), player_factory()] for i in range(4)
+    ]
+    do_test_make_teams(teams, 4, 7, {3, 2})
+
+
+def do_test_make_teams(teams, team_size, total_unmatched, unmatched_sizes):
+    searches = [Search(t) for t in teams]
+
+    matched, non_matched = algorithm.make_teams(searches, size=team_size)
+    players_non_matched = [s.players for s in non_matched]
+
+    for s in matched:
+        assert len(s.players) == team_size
+    assert len(players_non_matched) == total_unmatched
+    for players in players_non_matched:
+        assert len(players) in unmatched_sizes

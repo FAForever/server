@@ -3,12 +3,12 @@ import time
 from collections import OrderedDict, deque
 from concurrent.futures import CancelledError
 from datetime import datetime, timezone
-from typing import Deque, Dict, Iterable, Optional, Tuple
+from typing import Deque, Dict, Iterable, List, Optional, Tuple
 
 import server.metrics as metrics
 
 from ..decorators import with_logger
-from .algorithm import make_matches
+from .algorithm import make_matches, make_teams
 from .map_pool import MapPool
 from .pop_timer import PopTimer
 from .search import Match, Search
@@ -40,10 +40,14 @@ class MatchmakerQueue:
         self,
         game_service: "GameService",
         name: str,
+        min_team_size=1,
+        max_team_size=1,
         map_pools: Iterable[Tuple[MapPool, Optional[int], Optional[int]]] = ()
     ):
         self.game_service = game_service
         self.name = name
+        self.min_team_size = min_team_size
+        self.max_team_size = max_team_size
         self.map_pools = {info[0].id: info for info in map_pools}
 
         self.queue: Dict[Search, Search] = OrderedDict()
@@ -142,13 +146,26 @@ class MatchmakerQueue:
         if len(self.queue) < 2:
             return
 
+        searches = self.find_teams()
+
         # Call self.match on all matches and filter out the ones that were cancelled
         loop = asyncio.get_running_loop()
         new_matches = filter(
             lambda m: self.match(m[0], m[1]),
-            await loop.run_in_executor(None, make_matches, self.queue.values())
+            await loop.run_in_executor(None, make_matches, searches)
         )
         self._matches.extend(new_matches)
+
+    def find_teams(self) -> List[Search]:
+        searches = []
+        unmatched = list(self.queue.values())
+        for size in reversed(range(self.min_team_size, self.max_team_size + 1)):
+            teams, unmatched = make_teams(unmatched, size)
+            searches.extend(teams)
+
+            if not unmatched:
+                break
+        return searches
 
     def push(self, search: Search):
         """ Push the given search object onto the queue """

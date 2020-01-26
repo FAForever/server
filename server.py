@@ -16,8 +16,9 @@ import socket
 import sys
 from datetime import datetime
 
-import server
 from docopt import docopt
+
+import server
 from server.api.api_accessor import ApiAccessor
 from server.config import config
 from server.core import create_services
