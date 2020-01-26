@@ -434,8 +434,8 @@ async def test_team_game_name_conflicting(
 async def test_team_game_name_no_clan(
     ladder_service: LadderService, player_factory
 ):
-    p1 = player_factory('Dostya')
-    p2 = player_factory('Rhiza')
+    p1 = player_factory(login='Dostya')
+    p2 = player_factory(login='Rhiza')
 
     p1.clan = None
     p2.clan = None

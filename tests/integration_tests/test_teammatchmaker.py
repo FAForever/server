@@ -72,3 +72,13 @@ async def test_game_matchmaking(lobby_server):
         # Once the game is hosted it will have 1 connected player (the host)
         if "expected_players" in msg:
             assert msg["expected_players"] == 1
+
+
+@fast_forward(50)
+async def test_game_matchmaking_timeout(lobby_server):
+    protos = await queue_players_for_matchmaking(lobby_server)
+
+    # We don't send the `GameState: Lobby` command so the game should time out
+    await asyncio.gather(*[
+        read_until_command(proto, "match_cancelled") for proto in protos
+    ])
