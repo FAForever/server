@@ -25,6 +25,10 @@ class QDataStreamProtocol(Protocol):
         self.reader = reader
         self.writer = writer
 
+        # drain() cannot be called concurrently by multiple coroutines:
+        # http://bugs.python.org/issue29930.
+        self._drain_lock = asyncio.Lock()
+
     @staticmethod
     def read_qstring(buffer: bytes, pos: int=0) -> Tuple[int, str]:
         """
@@ -133,7 +137,8 @@ class QDataStreamProtocol(Protocol):
         self.writer.write(
             self.pack_message(json.dumps(message, separators=(',', ':')))
         )
-        await self.writer.drain()
+        async with self._drain_lock:
+            await self.writer.drain()
 
     async def send_messages(self, messages):
         server.stats.incr('server.sent_messages')
@@ -142,9 +147,11 @@ class QDataStreamProtocol(Protocol):
             for msg in messages
         ]
         self.writer.writelines(payload)
-        await self.writer.drain()
+        async with self._drain_lock:
+            await self.writer.drain()
 
     async def send_raw(self, data):
         server.stats.incr('server.sent_messages')
         self.writer.write(data)
-        await self.writer.drain()
+        async with self._drain_lock:
+            await self.writer.drain()

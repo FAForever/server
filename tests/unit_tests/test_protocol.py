@@ -1,10 +1,9 @@
-from asyncio import StreamReader
-
 import asyncio
-from unittest import mock
-import pytest
 import struct
+from asyncio import StreamReader
+from unittest import mock
 
+import pytest
 from server.protocol import QDataStreamProtocol
 
 pytestmark = pytest.mark.asyncio
@@ -14,21 +13,23 @@ pytestmark = pytest.mark.asyncio
 def reader(event_loop):
     return StreamReader(loop=event_loop)
 
+
 @pytest.fixture
 def writer():
     return mock.Mock()
+
 
 @pytest.fixture
 def protocol(reader, writer):
     return QDataStreamProtocol(reader, writer)
 
 
-async def test_QDataStreamProtocol_recv_small_message(protocol,reader):
+async def test_QDataStreamProtocol_recv_small_message(protocol, reader):
     data = QDataStreamProtocol.pack_block(b''.join([QDataStreamProtocol.pack_qstring('{"some_header": true}'),
                                                     QDataStreamProtocol.pack_qstring('Goodbye')]))
     reader.feed_data(data)
 
-    message =await protocol.read_message()
+    message = await protocol.read_message()
 
     assert message == {'some_header': True, 'legacy': ['Goodbye']}
 
@@ -60,3 +61,7 @@ async def test_unpacks_evil_qstring(protocol, reader):
     message = await protocol.read_message()
 
     assert message == {'command': 'ask_session'}
+
+
+async def test_many_simultaneous_writes(protocol):
+    pass
