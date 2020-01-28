@@ -163,6 +163,9 @@ class LobbyConnection:
         except (KeyError, ValueError) as ex:
             self._logger.exception(ex)
             await self.abort("Garbage command: {}".format(message))
+        except ConnectionError as e:
+            # Propagate connection errors to the ServerContext error handler.
+            raise e
         except Exception as ex:  # pragma: no cover
             await self.send({'command': 'invalid'})
             self._logger.exception(ex)

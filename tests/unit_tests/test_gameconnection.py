@@ -410,3 +410,12 @@ async def test_handle_action_OperationComplete_invalid(ugame: Game, game_connect
         row = await result.fetchone()
 
     assert row is None
+
+
+async def test_handle_action_invalid(game_connection: GameConnection):
+    game_connection.abort = CoroutineMock()
+
+    await game_connection.handle_action('ThisDoesntExist', [1, 2, 3])
+
+    game_connection.abort.assert_not_called()
+    game_connection.protocol.send_message.assert_not_called()

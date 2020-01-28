@@ -25,6 +25,11 @@ class ServerContext:
 
     async def listen(self, host, port):
         self._logger.debug("ServerContext.listen(%s, %s)", host, port)
+        # TODO: Use tags so we don't need to manually reset each one
+        server.stats.gauge('user.agents.None', 0)
+        server.stats.gauge('user.agents.downlords_faf_client', 0)
+        server.stats.gauge('user.agents.faf_client', 0)
+
         self._server = await asyncio.start_server(
             self.client_connected,
             host=host,

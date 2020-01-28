@@ -1,7 +1,7 @@
 import asyncio
 
 from server.db import FAFDatabase
-from sqlalchemy import text, select, or_
+from sqlalchemy import or_, select, text
 
 from .abc.base_game import GameConnectionState
 from .config import TRACE
@@ -170,6 +170,8 @@ class GameConnection(GpgNetServerProtocol):
             )
         except (TypeError, ValueError) as e:
             self._logger.exception("Bad command arguments: %s", e)
+        except ConnectionError as e:
+            raise e
         except Exception as e:  # pragma: no cover
             self._logger.exception(e)
             self._logger.exception("Something awful happened in a game thread!")
