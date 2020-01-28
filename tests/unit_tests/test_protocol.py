@@ -24,6 +24,32 @@ def protocol(reader, writer):
     return QDataStreamProtocol(reader, writer)
 
 
+@pytest.fixture
+def unix_srv(event_loop):
+    async def do_nothing(client_reader, client_writer):
+        await client_reader.read()
+
+    srv = event_loop.run_until_complete(
+        asyncio.start_unix_server(do_nothing, '/tmp/test.sock')
+    )
+
+    yield srv
+
+    srv.close()
+    event_loop.run_until_complete(srv.wait_closed())
+
+
+@pytest.fixture
+def unix_protocol(unix_srv, event_loop):
+    (reader, writer) = event_loop.run_until_complete(
+        asyncio.open_unix_connection('/tmp/test.sock')
+    )
+    protocol = QDataStreamProtocol(reader, writer)
+    yield protocol
+
+    protocol.close()
+
+
 async def test_QDataStreamProtocol_recv_small_message(protocol, reader):
     data = QDataStreamProtocol.pack_block(b''.join([QDataStreamProtocol.pack_qstring('{"some_header": true}'),
                                                     QDataStreamProtocol.pack_qstring('Goodbye')]))
@@ -63,5 +89,33 @@ async def test_unpacks_evil_qstring(protocol, reader):
     assert message == {'command': 'ask_session'}
 
 
-async def test_many_simultaneous_writes(protocol):
-    pass
+async def test_send_message_simultaneous_writes(unix_protocol):
+    msg = {
+        "command": "test",
+        "data": '*' * (4096*4)
+    }
+
+    # If drain calls are not synchronized, then this will raise an
+    # AssertionError from within asyncio
+    await asyncio.gather(*(unix_protocol.send_message(msg) for i in range(20)))
+
+
+async def test_send_messages_simultaneous_writes(unix_protocol):
+    msg = {
+        "command": "test",
+        "data": '*' * (4096*4)
+    }
+
+    # If drain calls are not synchronized, then this will raise an
+    # AssertionError from within asyncio
+    await asyncio.gather(*(
+        unix_protocol.send_messages((msg, msg)) for i in range(20))
+    )
+
+
+async def test_send_raw_simultaneous_writes(unix_protocol):
+    msg = b'*' * (4096*4)
+
+    # If drain calls are not synchronized, then this will raise an
+    # AssertionError from within asyncio
+    await asyncio.gather(*(unix_protocol.send_raw(msg) for i in range(20)))
