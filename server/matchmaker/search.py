@@ -106,6 +106,10 @@ class Search:
         return self._nearby_rating_range(100)
 
     @property
+    def failed_matching_attempts(self) -> int:
+        return self._failed_matching_attempts
+
+    @property
     def search_expansion(self) -> float:
         """
         Defines how much to expand the search range of game quality due to waiting
@@ -116,19 +120,17 @@ class Search:
         """
         
         return min(
-                self._failed_matching_attempts * config.LADDER_SEARCH_EXPANSION_STEP,
-                config.LADDER_SEARCH_EXPANSION_MAX
+            self._failed_matching_attempts * config.LADDER_SEARCH_EXPANSION_STEP,
+            config.LADDER_SEARCH_EXPANSION_MAX
         )
 
-    def register_failed_matching_attempt(self) -> int:
+    def register_failed_matching_attempt(self):
         """
         Signal that matchmaker tried to match this search but was unsuccessful
         and increase internal counter by one.
-        Returns number of failed matching attempts after increase.
         """
 
         self._failed_matching_attempts += 1
-        return self._failed_matching_attempts
 
 
     @property

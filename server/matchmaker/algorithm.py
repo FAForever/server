@@ -91,10 +91,10 @@ class StableMarriage(MatchmakingPolicy):
             self.searches
         )
         for search in unmatched_searches:
-            attempts = search.register_failed_matching_attempt()
+            search.register_failed_matching_attempt()
             self._logger.debug(
                 "Search %s remained unmatched at threshold %f in attempt number %i",
-                search, search.match_threshold, attempts
+                search, search.match_threshold, search.failed_matching_attempts
             )
 
 

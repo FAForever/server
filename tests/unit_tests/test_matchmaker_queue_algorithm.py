@@ -271,11 +271,11 @@ def test_stable_marriage_communicates_failed_attempts(p):
 
     searches = [s1, s2]
 
-    assert s1._failed_matching_attempts == 0
-    assert s2._failed_matching_attempts == 0
+    assert s1.failed_matching_attempts == 0
+    assert s2.failed_matching_attempts == 0
 
     matches = algorithm.make_matches(searches)
 
     # These searches should not have been matched
-    assert s1._failed_matching_attempts == 1
-    assert s2._failed_matching_attempts == 1
+    assert s1.failed_matching_attempts == 1
+    assert s2.failed_matching_attempts == 1
