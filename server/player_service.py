@@ -8,7 +8,6 @@ from server.players import Player
 from server.rating import RatingType
 from sqlalchemy import and_, select
 
-from .async_functions import gather_without_exceptions
 from .db.models import (
     avatars, avatars_list, clan, clan_membership, global_rating,
     ladder1v1_rating, login
@@ -158,11 +157,11 @@ class PlayerService:
                     "We apologize for this interruption."
                 )
             )
-        # The server is shutting down, ignore all exception types
-        await gather_without_exceptions(
-            tasks,
-            Exception,
-            callback=lambda ex: self._logger.debug(
-                "Could not send shutdown message to %s: %s", player, ex
-            )
-        )
+
+        for fut in asyncio.as_completed(tasks):
+            try:
+                await fut
+            except Exception as ex:
+                self._logger.debug(
+                    "Could not send shutdown message to %s: %s", player, ex
+                )

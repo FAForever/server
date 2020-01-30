@@ -4,7 +4,6 @@ from server.db import FAFDatabase
 from sqlalchemy import or_, select, text
 
 from .abc.base_game import GameConnectionState
-from .async_functions import gather_without_exceptions
 from .config import TRACE
 from .db.models import login, moderation_report, reported_user
 from .decorators import with_logger
@@ -545,14 +544,14 @@ class GameConnection(GpgNetServerProtocol):
             except Exception:
                 self._logger.exception("Failed to send DisconnectFromPeer to %s", peer)
 
-        await gather_without_exceptions(
-            tasks,
-            Exception,
-            callback=lambda _: self._logger.exception(
-                "peer_sendDisconnectFromPeer failed for player %i",
-                self.player.id
-            )
-        )
+        for fut in asyncio.as_completed(tasks):
+            try:
+                await fut
+            except Exception:
+                self._logger.exception(
+                    "peer_sendDisconnectFromPeer failed for player %i",
+                    self.player.id
+                )
 
     async def on_connection_lost(self):
         try:
