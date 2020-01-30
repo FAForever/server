@@ -18,6 +18,7 @@ from sqlalchemy import and_, func, select, text
 
 from . import config
 from .abc.base_game import GameConnectionState
+from .async_functions import gather_without_exceptions
 from .config import FAF_POLICY_SERVER_BASE_URL, TRACE, TWILIO_TTL
 from .db.models import ban, friends_and_foes, lobby_ban
 from .db.models import login as t_login
@@ -339,11 +340,12 @@ class LobbyConnection:
                             player.lobby_connection.send_warning(message_text)
                         )
                     except AttributeError:
+                        # In case player.lobby_connection was None
                         self._logger.debug("Failed to send broadcast to %s", player)
                     except Exception:
                         self._logger.exception("Failed to send broadcast to %s", player)
 
-                await asyncio.gather(*tasks, return_exceptions=True)
+                await gather_without_exceptions(tasks, ConnectionError)
 
         if self.player.mod:
             if action == "join_channel":
@@ -364,7 +366,7 @@ class LobbyConnection:
                         except Exception:
                             self._logger.exception("Failed to send join_channel to %s", player)
 
-                await asyncio.gather(*tasks, return_exceptions=True)
+                await gather_without_exceptions(tasks, ConnectionError)
 
     async def check_user_login(self, conn, username, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.

@@ -1,9 +1,11 @@
 import asyncio
 
 import server
-from server.decorators import with_logger
-from server.protocol import QDataStreamProtocol
-from server.types import Address
+
+from .async_functions import gather_without_exceptions
+from .decorators import with_logger
+from .protocol import QDataStreamProtocol
+from .types import Address
 
 
 @with_logger
@@ -58,7 +60,7 @@ class ServerContext:
             if validate_fn(conn):
                 tasks.append(proto.send_raw(message))
 
-        await asyncio.gather(*tasks)
+        await gather_without_exceptions(tasks, ConnectionError)
 
     async def client_connected(self, stream_reader, stream_writer):
         self._logger.debug("%s: Client connected", self)
