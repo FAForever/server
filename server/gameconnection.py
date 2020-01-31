@@ -536,13 +536,7 @@ class GameConnection(GpgNetServerProtocol):
             if peer == self:
                 continue
 
-            try:
-                tasks.append(peer.send_DisconnectFromPeer(self.player.id))
-            except AttributeError:
-                # In case player.lobby_connection was None
-                self._logger.debug("Failed to send DisconnectFromPeer to %s", peer)
-            except Exception:
-                self._logger.exception("Failed to send DisconnectFromPeer to %s", peer)
+            tasks.append(peer.send_DisconnectFromPeer(self.player.id))
 
         for fut in asyncio.as_completed(tasks):
             try:

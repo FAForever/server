@@ -335,15 +335,12 @@ class LobbyConnection:
 
                 tasks = []
                 for player in self.player_service:
-                    try:
+                    # Check if object still exists:
+                    # https://docs.python.org/3/library/weakref.html#weak-reference-objects
+                    if player.lobby_connection is not None:
                         tasks.append(
                             player.lobby_connection.send_warning(message_text)
                         )
-                    except AttributeError:
-                        # In case player.lobby_connection was None
-                        self._logger.debug("Failed to send broadcast to %s", player)
-                    except Exception:
-                        self._logger.exception("Failed to send broadcast to %s", player)
 
                 await gather_without_exceptions(tasks, ConnectionError)
 
@@ -355,16 +352,11 @@ class LobbyConnection:
                 tasks = []
                 for user_id in user_ids:
                     player = self.player_service[user_id]
-                    if player:
-                        try:
-                            tasks.append(player.lobby_connection.send({
-                                "command": "social",
-                                "autojoin": [channel]
-                            }))
-                        except AttributeError:
-                            self._logger.debug("Failed to send join_channel to %s", player)
-                        except Exception:
-                            self._logger.exception("Failed to send join_channel to %s", player)
+                    if player and player.lobby_connection is not None:
+                        tasks.append(player.lobby_connection.send({
+                            "command": "social",
+                            "autojoin": [channel]
+                        }))
 
                 await gather_without_exceptions(tasks, ConnectionError)
 
