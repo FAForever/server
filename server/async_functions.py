@@ -15,5 +15,5 @@ async def gather_without_exceptions(
     """
     results = await asyncio.gather(*tasks, return_exceptions=True)
     for result in results:
-        if isinstance(result, Exception) and result.__class__ in exc_classes:
+        if isinstance(result, Exception) and result.__class__ not in exc_classes:
             raise result
