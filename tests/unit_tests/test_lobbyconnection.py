@@ -782,7 +782,7 @@ async def test_broadcast_during_disconnect(lobbyconnection: LobbyConnection, moc
     player.lobby_connection.send_warning.assert_called_with("This is a test message")
 
 
-async def test_broadcast_error(lobbyconnection: LobbyConnection, mocker):
+async def test_broadcast_connection_error(lobbyconnection: LobbyConnection, mocker):
     player = mocker.patch.object(lobbyconnection, 'player')
     player.login = 'Sheeo'
     player.admin = True
@@ -790,7 +790,7 @@ async def test_broadcast_error(lobbyconnection: LobbyConnection, mocker):
     tuna = mock.Mock()
     tuna.id = 55
     tuna.lobby_connection = asynctest.create_autospec(LobbyConnection)
-    tuna.lobby_connection.send_warning = Mock(side_effect=Exception("Some error"))
+    tuna.lobby_connection.send_warning.side_effect = ConnectionError("Some error")
     lobbyconnection.player_service = [player, tuna]
 
     # This should not leak any exceptions
