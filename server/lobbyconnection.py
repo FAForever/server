@@ -18,6 +18,7 @@ from sqlalchemy import and_, func, select, text
 
 from . import config
 from .abc.base_game import GameConnectionState
+from .async_functions import gather_without_exceptions
 from .config import FAF_POLICY_SERVER_BASE_URL, TRACE, TWILIO_TTL
 from .db.models import ban, friends_and_foes, lobby_ban
 from .db.models import login as t_login
@@ -334,16 +335,14 @@ class LobbyConnection:
 
                 tasks = []
                 for player in self.player_service:
-                    try:
+                    # Check if object still exists:
+                    # https://docs.python.org/3/library/weakref.html#weak-reference-objects
+                    if player.lobby_connection is not None:
                         tasks.append(
                             player.lobby_connection.send_warning(message_text)
                         )
-                    except AttributeError:
-                        self._logger.debug("Failed to send broadcast to %s", player)
-                    except Exception:
-                        self._logger.exception("Failed to send broadcast to %s", player)
 
-                await asyncio.gather(*tasks, return_exceptions=True)
+                await gather_without_exceptions(tasks, ConnectionError)
 
         if self.player.mod:
             if action == "join_channel":
@@ -353,18 +352,13 @@ class LobbyConnection:
                 tasks = []
                 for user_id in user_ids:
                     player = self.player_service[user_id]
-                    if player:
-                        try:
-                            tasks.append(player.lobby_connection.send({
-                                "command": "social",
-                                "autojoin": [channel]
-                            }))
-                        except AttributeError:
-                            self._logger.debug("Failed to send join_channel to %s", player)
-                        except Exception:
-                            self._logger.exception("Failed to send join_channel to %s", player)
+                    if player and player.lobby_connection is not None:
+                        tasks.append(player.lobby_connection.send({
+                            "command": "social",
+                            "autojoin": [channel]
+                        }))
 
-                await asyncio.gather(*tasks, return_exceptions=True)
+                await gather_without_exceptions(tasks, ConnectionError)
 
     async def check_user_login(self, conn, username, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.

@@ -1,12 +1,14 @@
 import asyncio
 import hashlib
 import logging
+from collections import defaultdict
 from typing import Any, Callable, Dict, Tuple
 from unittest import mock
 
 import pytest
 from aiohttp import web
 from server import GameService, PlayerService, run_lobby_server
+from server.db.models import login
 from server.ladder_service import LadderService
 from server.protocol import QDataStreamProtocol
 
@@ -97,6 +99,27 @@ def policy_server(event_loop):
     event_loop.run_until_complete(start_app())
     yield handle
     event_loop.run_until_complete(runner.cleanup())
+
+
+@pytest.fixture
+async def tmp_user(database):
+    user_ids = defaultdict(lambda: 1)
+    password_plain = "foo"
+    password = hashlib.sha256(password_plain.encode()).hexdigest()
+
+    async def make_user(name="TempUser"):
+        user_id = user_ids[name]
+        login_name = f"{name}{user_id}"
+        async with database.acquire() as conn:
+            await conn.execute(login.insert().values(
+                login=login_name,
+                email=f"{login_name}@example.com",
+                password=password,
+            ))
+        user_ids[name] += 1
+        return login_name, password_plain
+
+    return make_user
 
 
 async def connect_client(server) -> QDataStreamProtocol:

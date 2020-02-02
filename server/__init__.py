@@ -106,13 +106,13 @@ def run_lobby_server(
             games.clear_dirty()
             player_service.clear_dirty()
 
-            if len(dirty_queues) > 0:
+            if dirty_queues:
                 await ctx.broadcast_raw(
                     encode_queues(dirty_queues),
                     lambda lobby_conn: lobby_conn.authenticated
                 )
 
-            if len(dirty_players) > 0:
+            if dirty_players:
                 await ctx.broadcast_raw(
                     encode_players(dirty_players),
                     lambda lobby_conn: lobby_conn.authenticated
