@@ -1,11 +1,11 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "68dd4a2a87bfcf05ac0894f307046eb4591604b2b1013236903a09624fd5d663"
+            "sha256": "1e924f6745c579cda979e87658d5a6ad89322cbb45836ed1ba828ffbd412c4c3"
         },
         "pipfile-spec": 6,
         "requires": {
-            "python_version": "3.6"
+            "python_version": "3.7"
         },
         "sources": [
             {
@@ -171,13 +171,6 @@
             ],
             "version": "==2.9"
         },
-        "idna-ssl": {
-            "hashes": [
-                "sha256:a933e3bb13da54383f9e8f35dc4f9cb9eb9b3b78c6b36f311254d6d0d92c6c7c"
-            ],
-            "markers": "python_version < '3.7'",
-            "version": "==1.1.0"
-        },
         "maxminddb": {
             "hashes": [
                 "sha256:d0ce131d901eb11669996b49a59f410efd3da2c6dbe2c0094fe2fef8d85b6336"
@@ -306,15 +299,6 @@
                 "sha256:f38d83c5a7a7086543a0f649564d661859c5146a85775ab90c0d2f93ffaa9714"
             ],
             "index": "pypi",
-            "version": "==3.7.4.1"
-        },
-        "typing-extensions": {
-            "hashes": [
-                "sha256:091ecc894d5e908ac75209f10d5b4f118fbdb2eb1ede6a63544054bb1edb41f2",
-                "sha256:910f4656f54de5993ad9304959ce9bb903f90aadc7c67a0bef07e678014e892d",
-                "sha256:cf8b63fedea4d89bab840ecbb93e75578af28f76f66c35889bd7065f5af88575"
-            ],
-            "markers": "python_version < '3.7'",
             "version": "==3.7.4.1"
         },
         "tzlocal": {
