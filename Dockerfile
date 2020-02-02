@@ -1,4 +1,4 @@
-FROM python:3.6-slim
+FROM python:3.7-slim
 
 # Apt-install c++ build tools and cleanup temporary files afterwards
 RUN apt-get update
