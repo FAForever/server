@@ -6,7 +6,8 @@ import random
 import urllib.parse
 import urllib.request
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Callable
+from functools import wraps
 
 import aiohttp
 import humanize
@@ -36,6 +37,17 @@ from .players import Player, PlayerState
 from .protocol import QDataStreamProtocol
 from .rating import RatingType
 from .types import Address
+from  .clientmessages import *
+
+
+COMMAND_HANDLERS = {}
+
+def handler(name):
+    def decorator(function: Callable) -> Callable:
+        COMMAND_HANDLERS[name] = function
+        return function
+
+    return decorator
 
 
 class ClientError(Exception):
@@ -49,6 +61,15 @@ class ClientError(Exception):
         super().__init__(*args, **kwargs)
         self.message = message
         self.recoverable = recoverable
+
+
+class MessageHandlingError(Exception):
+    """
+    A ValueError for the fields of a clientmessages.Message
+    """
+    def __init__(self, message, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.message = message
 
 
 class AuthenticationError(Exception):
@@ -88,6 +109,23 @@ class LobbyConnection:
 
         self._logger.debug("LobbyConnection initialized")
 
+    class Decorators:
+        """
+        Workaround to define decorators local to LobbyConnection.
+        Compare https://medium.com/@vadimpushtaev/decorator-inside-python-class-1e74d23107f6.
+        """
+        @classmethod
+        def require_auth(cls, function):
+            """Wraps around command methods to ensure client is authenticated."""
+            @wraps(function)
+            async def wrapper(self, *args, **kwargs):
+                if not self.authenticated:
+                    server.stats.incr('server.received_messages.unauthenticated', tags={"command": cmd})
+                    await self.abort("Message invalid for unauthenticated connection: %s" % cmd)
+                return await function(self, *args, **kwargs)
+
+            return wrapper
+
     @property
     def authenticated(self):
         return self._authenticated
@@ -122,6 +160,15 @@ class LobbyConnection:
                 return False
         return True
 
+    async def _handle_message(self, parsed_message):
+        try:
+            handler = COMMAND_HANDLERS[parsed_message.__class__]
+            await handler(self, parsed_message)
+        except Exception as e:
+            self._logger.debug(e)
+            raise e
+
+
     async def on_message_received(self, message):
         """
         Dispatches incoming messages
@@ -129,29 +176,19 @@ class LobbyConnection:
         self._logger.log(TRACE, "<<: %s", message)
 
         try:
-            cmd = message['command']
-            if not await self.ensure_authenticated(cmd):
-                return
-            target = message.get('target')
-            if target == 'game':
-                if not self.game_connection:
-                    return
-
-                await self.game_connection.handle_action(cmd, message.get('args', []))
-                return
-
-            if target == 'connectivity' and message.get('command') == 'InitiateTest':
-                self._attempted_connectivity_test = True
-                raise ClientError("Your client version is no longer supported. Please update to the newest version: https://faforever.com")
-
-            handler = getattr(self, 'command_{}'.format(cmd))
-            await handler(message)
+            parsed_message = MessageParser.parse(
+                self, 
+                message
+            )
+            
+            await self._handle_message(parsed_message)
 
         except AuthenticationError as ex:
             await self.send({
                 'command': 'authentication_failed',
                 'text': ex.message
             })
+
         except ClientError as ex:
             self._logger.warning("Client error: %s", ex.message)
             await self.send({
@@ -161,30 +198,59 @@ class LobbyConnection:
             })
             if not ex.recoverable:
                 await self.abort(ex.message)
-        except (KeyError, ValueError) as ex:
+
+        except MessageParsingError as ex:
             self._logger.exception(ex)
             await self.abort("Garbage command: {}".format(message))
+
         except ConnectionError as e:
             # Propagate connection errors to the ServerContext error handler.
             raise e
+
         except Exception as ex:  # pragma: no cover
             await self.send({'command': 'invalid'})
             self._logger.exception(ex)
             await self.abort("Error processing command")
 
-    async def command_ping(self, msg):
+    @handler(PingMessage)
+    async def command_ping(self, parsed_message):
+        """
+        Sends a 'Pong' message back to the client.
+
+        Does not require the client to be authenticated.
+        """
         await self.protocol.send_raw(self.protocol.pack_message('PONG'))
 
-    async def command_pong(self, msg):
+    @handler(PongMessage)
+    async def command_pong(self, parsed_message):
+        """
+        Does nothing.
+
+        Does not require the client to be authenticated.
+        """
         pass
 
-    async def command_create_account(self, message):
+    @handler(AccountCreationMessage)
+    async def command_create_account(self, parsed_message):
+        """
+        Deprecated.
+
+        Does not require the client to be authenticated.
+        """
         raise ClientError("FAF no longer supports direct registration. Please use the website to register.", recoverable=True)
 
-    async def command_coop_list(self, message):
-        """ Request for coop map list"""
+    @handler(CoopListMessage)
+    @Decorators.require_auth
+    async def command_coop_list(self, parsed_message):
+        """ 
+        Send coop map list to the client.
+
+        Requires the client to be authenticated.
+        """
         async with self._db.acquire() as conn:
-            result = await conn.execute("SELECT name, description, filename, type, id FROM `coop_map`")
+            result = await conn.execute(
+                "SELECT name, description, filename, type, id FROM `coop_map`"
+            )
 
             maps = []
             async for row in result:
@@ -213,7 +279,9 @@ class LobbyConnection:
 
         await self.protocol.send_messages(maps)
 
-    async def command_matchmaker_info(self, message):
+    @handler(MatchmakerInfoMessage)
+    @Decorators.require_auth
+    async def command_matchmaker_info(self, parsed_message):
         await self.send({
             'command': 'matchmaker_info',
             'queues': [queue.to_dict() for queue in self.ladder_service.queues.values()]
@@ -225,14 +293,13 @@ class LobbyConnection:
             'games': [game.to_dict() for game in self.game_service.open_games]
         })
 
-    async def command_social_remove(self, message):
-        if "friend" in message:
-            subject_id = message["friend"]
-        elif "foe" in message:
-            subject_id = message["foe"]
-        else:
-            await self.abort("No-op social_remove.")
-            return
+    @handler(SocialRemoveMessage)
+    @Decorators.require_auth
+    async def command_social_remove(self, parsed_message):
+        """
+        Remove Player form Friend and Foe lists.
+        """
+        subject_id = parsed_message.id_to_remove
 
         async with self._db.acquire() as conn:
             await conn.execute(friends_and_foes.delete().where(and_(
@@ -240,15 +307,15 @@ class LobbyConnection:
                 friends_and_foes.c.subject_id == subject_id
             )))
 
-    async def command_social_add(self, message):
-        if "friend" in message:
+    @handler(SocialAddMessage)
+    @Decorators.require_auth
+    async def command_social_add(self, parsed_message):
+        if parsed_message.adding_a_friend:
             status = "FRIEND"
-            subject_id = message["friend"]
-        elif "foe" in message:
-            status = "FOE"
-            subject_id = message["foe"]
         else:
-            return
+            status = "FOE"
+
+        subject_id = parsed_message.id_to_add
 
         async with self._db.acquire() as conn:
             await conn.execute(friends_and_foes.insert().values(
@@ -270,6 +337,9 @@ class LobbyConnection:
             "updated_achievements": updated_achievements
         })
 
+
+    @handler(AdminMessage)
+    @Decorators.require_auth
     async def command_admin(self, message):
         action = message['action']
 
@@ -525,6 +595,7 @@ class LobbyConnection:
 
         return response.get('result', '') == 'honest'
 
+    @handler(HelloMessage)
     async def command_hello(self, message):
         login = message['login'].strip()
         password = message['password']
@@ -646,6 +717,8 @@ class LobbyConnection:
 
         await self.send_game_list()
 
+    @handler(HelloMessage)
+    @Decorators.require_auth
     async def command_restore_game_session(self, message):
         game_id = int(message.get('game_id'))
 
@@ -675,42 +748,47 @@ class LobbyConnection:
         if not hasattr(self.player, "game"):
             self.player.game = game
 
+    @handler(AskSessionMessage)
     async def command_ask_session(self, message):
         if await self.check_version(message):
             await self.send({"command": "session", "session": self.session})
 
-    async def command_avatar(self, message):
-        action = message['action']
+    @handler(AvatarMessage)
+    @Decorators.require_auth
+    async def command_avatar(self, parsed_message):
+        if parsed_message.action == "list_avatar":
+            await self._command_avatar_list()
+        elif parsed_message.action == "select":
+            await self._command_avatar_select(parsed_message.url)
 
-        if action == "list_avatar":
-            avatarList = []
+    async def _command_avatar_list(self):
+        avatarList = []
 
-            async with self._db.acquire() as conn:
-                result = await conn.execute(
-                    "SELECT url, tooltip FROM `avatars` "
-                    "LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = %s", (self.player.id,))
+        async with self._db.acquire() as conn:
+            result = await conn.execute(
+                "SELECT url, tooltip FROM `avatars` "
+                "LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = %s", (self.player.id,))
 
-                async for row in result:
-                    avatar = {"url": row["url"], "tooltip": row["tooltip"]}
-                    avatarList.append(avatar)
+            async for row in result:
+                avatar = {"url": row["url"], "tooltip": row["tooltip"]}
+                avatarList.append(avatar)
+                print(avatarList)
 
-                if avatarList:
-                    await self.send({"command": "avatar", "avatarlist": avatarList})
+            if avatarList:
+                await self.send({"command": "avatar", "avatarlist": avatarList})
 
-        elif action == "select":
-            avatar = message['avatar']
-
-            async with self._db.acquire() as conn:
+    async def _command_avatar_select(self, avatar):
+        async with self._db.acquire() as conn:
+            await conn.execute(
+                "UPDATE `avatars` SET `selected` = 0 WHERE `idUser` = %s", (self.player.id, ))
+            if avatar is not None:
                 await conn.execute(
-                    "UPDATE `avatars` SET `selected` = 0 WHERE `idUser` = %s", (self.player.id, ))
-                if avatar is not None:
-                    await conn.execute(
-                        "UPDATE `avatars` SET `selected` = 1 WHERE `idAvatar` ="
-                        "(SELECT id FROM avatars_list WHERE avatars_list.url = %s) and "
-                        "`idUser` = %s", (avatar, self.player.id))
-        else:
-            raise KeyError('invalid action')
+                    "UPDATE `avatars` SET `selected` = 1 WHERE `idAvatar` ="
+                    "(SELECT id FROM avatars_list WHERE avatars_list.url = %s) and "
+                    "`idUser` = %s", (avatar, self.player.id))
 
+    @handler(GameJoinMessage)
+    @Decorators.require_auth
     async def command_game_join(self, message):
         """
         We are going to join a game.
@@ -754,30 +832,36 @@ class LobbyConnection:
                 "text": "The host has left the game"
             })
 
-    async def command_game_matchmaking(self, message):
-        mod = str(message.get('mod', 'ladder1v1'))
-        state = str(message['state'])
+    @handler(GameMatchmakingMessage)
+    @Decorators.require_auth
+    async def command_game_matchmaking(self, parsed_message):
 
         if self._attempted_connectivity_test:
             raise ClientError("Cannot host game. Please update your client to the newest version.")
 
-        if state == "stop":
+        if parsed_message.state == "stop":
             self.ladder_service.cancel_search(self.player)
             return
 
-        if state == "start":
+        if parsed_message.state == "start":
             assert self.player is not None
             # Faction can be either the name (e.g. 'uef') or the enum value (e.g. 1)
             self.player.faction = message['faction']
 
-            if mod == "ladder1v1":
+            if parsed_message.mod == "ladder1v1":
                 search = Search([self.player])
             else:
                 # TODO: Put player parties here
                 search = Search([self.player])
 
-            await self.ladder_service.start_search(self.player, search, queue_name=mod)
+            await self.ladder_service.start_search(
+                self.player, 
+                search,
+                queue_name=parsed_message.mod
+            )
 
+    @handler(GameHostMessage)
+    @Decorators.require_auth
     async def command_game_host(self, message):
         assert isinstance(self.player, Player)
 
@@ -861,6 +945,8 @@ class LobbyConnection:
         # Remove args with None value
         await self.send({k: v for k, v in cmd.items() if v is not None})
 
+    @handler(ModvaultMessage)
+    @Decorators.require_auth
     async def command_modvault(self, message):
         type = message["type"]
 
@@ -929,6 +1015,8 @@ class LobbyConnection:
             else:
                 raise ValueError('invalid type argument')
 
+    @handler(ICEServersMessage)
+    @Decorators.require_auth
     async def command_ice_servers(self, message):
         if not self.player:
             return
@@ -1020,3 +1108,10 @@ class LobbyConnection:
         raise ClientError((f"You are banned from FAF {ban_time_text}.\n "
                            f"Reason :\n "
                            f"{reason}"), recoverable=False)
+
+    def register_connectivity_test(self):
+        self._attempted_connectivity_test = True
+
+    @property
+    def is_authenticated(self):
+        return self._is_authenticated
