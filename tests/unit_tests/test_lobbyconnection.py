@@ -894,6 +894,16 @@ async def test_connection_lost(lobbyconnection):
     lobbyconnection.player_service.remove_player.assert_called_once_with(lobbyconnection.player)
 
 
+async def test_connection_lost_send(lobbyconnection, mock_protocol):
+    await lobbyconnection.on_connection_lost()
+
+    await lobbyconnection.send({"command": "Some Message"})
+
+    mock_protocol.send_message.assert_not_called()
+    mock_protocol.send_messages.assert_not_called()
+    mock_protocol.send_raw.assert_not_called()
+
+
 async def test_check_policy_conformity(lobbyconnection, policy_server):
     host, port = policy_server
     with mock.patch(

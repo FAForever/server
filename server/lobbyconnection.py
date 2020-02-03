@@ -971,13 +971,14 @@ class LobbyConnection:
         await self.protocol.send_message(message)
 
     async def drain(self):
-        await self.protocol.drain()
+        # TODO: Remove me, QDataStreamProtocol no longer has a drain method
+        pass
 
     async def on_connection_lost(self):
-        async def nopdrain(message):
+        async def nop(*args, **kwargs):
             return
-        self.drain = nopdrain
-        self.send = lambda m: None
+        self.drain = nop
+        self.send = nop
         if self.game_connection:
             self._logger.debug(
                 "Lost lobby connection killing game connection for player {}".format(self.game_connection.player.id))
