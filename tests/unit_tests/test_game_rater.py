@@ -129,3 +129,45 @@ def test_compute_rating():
     for team in result:
         for player, new_rating in team.items():
             assert new_rating != Rating(*player.ratings[RatingType.GLOBAL])
+
+
+def test_compute_rating_of_two_player_ffa_match_if_one_chose_a_team():
+    FFA_TEAM = 1
+    p1, p2 = MockPlayer(), MockPlayer()
+    players_by_team = {FFA_TEAM: [p1], 2: [p2]}
+    outcome_py_player = {p1: GameOutcome.VICTORY, p2: GameOutcome.DEFEAT}
+
+    rater = GameRater(players_by_team, outcome_py_player)
+    result = rater.compute_rating()
+    for team in result:
+        for player, new_rating in team.items():
+            assert new_rating != Rating(*player.ratings[RatingType.GLOBAL])
+
+
+def test_compute_rating_of_two_player_ffa_match_if_none_chose_a_team():
+    FFA_TEAM = 1
+    p1, p2 = MockPlayer(), MockPlayer()
+    players_by_team = {FFA_TEAM: [p1, p2]}
+    outcome_py_player = {p1: GameOutcome.VICTORY, p2: GameOutcome.DEFEAT}
+
+    rater = GameRater(players_by_team, outcome_py_player)
+    result = rater.compute_rating()
+    for team in result:
+        for player, new_rating in team.items():
+            assert new_rating != Rating(*player.ratings[RatingType.GLOBAL])
+
+
+def test_dont_rate_partial_ffa_matches():
+    FFA_TEAM = 1
+    p1, p2, p3, p4 = MockPlayer(), MockPlayer(), MockPlayer(), MockPlayer()
+    players_by_team = {FFA_TEAM: [p1, p3], 2: [p2, p4]}
+    outcome_py_player = {
+            p1: GameOutcome.VICTORY, 
+            p2: GameOutcome.DEFEAT, 
+            p3: GameOutcome.DEFEAT,
+            p4: GameOutcome.DEFEAT,
+    }
+
+    rater = GameRater(players_by_team, outcome_py_player)
+    with pytest.raises(GameRatingError):
+        result = rater.compute_rating()
