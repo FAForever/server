@@ -60,7 +60,7 @@ class ServerContext:
             if validate_fn(conn):
                 tasks.append(proto.send_raw(message))
 
-        await gather_without_exceptions(tasks, ConnectionError)
+        await gather_without_exceptions(tasks, Exception)
 
     async def client_connected(self, stream_reader, stream_writer):
         self._logger.debug("%s: Client connected", self)
