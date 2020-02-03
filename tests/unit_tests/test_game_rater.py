@@ -162,10 +162,25 @@ def test_dont_rate_partial_ffa_matches():
     p1, p2, p3, p4 = MockPlayer(), MockPlayer(), MockPlayer(), MockPlayer()
     players_by_team = {FFA_TEAM: [p1, p3], 2: [p2, p4]}
     outcome_py_player = {
-            p1: GameOutcome.VICTORY, 
-            p2: GameOutcome.DEFEAT, 
-            p3: GameOutcome.DEFEAT,
-            p4: GameOutcome.DEFEAT,
+        p1: GameOutcome.VICTORY,
+        p2: GameOutcome.DEFEAT,
+        p3: GameOutcome.DEFEAT,
+        p4: GameOutcome.DEFEAT,
+    }
+
+    rater = GameRater(players_by_team, outcome_py_player)
+    with pytest.raises(GameRatingError):
+        result = rater.compute_rating()
+
+
+def test_dont_rate_pure_ffa_matches():
+    FFA_TEAM = 1
+    p1, p2, p3 = MockPlayer(), MockPlayer(), MockPlayer()
+    players_by_team = {FFA_TEAM: [p1, p2, p3]}
+    outcome_py_player = {
+        p1: GameOutcome.VICTORY,
+        p2: GameOutcome.DEFEAT,
+        p3: GameOutcome.DEFEAT,
     }
 
     rater = GameRater(players_by_team, outcome_py_player)
