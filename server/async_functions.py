@@ -10,7 +10,7 @@ async def gather_without_exceptions(
     *exceptions: Type[BaseException],
 ) -> List[Any]:
     """
-    Call gather on a list of tasks, raising the first exception that dosen't
+    Run coroutines in parallell, raising the first exception that dosen't
     match any of the specified exception classes.
     """
     results = []
