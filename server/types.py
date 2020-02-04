@@ -1,5 +1,13 @@
 from typing import NamedTuple
 
-# Represents a peer IP address
-Address = NamedTuple('Address', [('host', str), ('port', int)])
-Address.from_string = lambda s: Address(*(s.split(':')))
+
+class Address(NamedTuple):
+    """A peer IP address"""
+
+    host: str
+    port: int
+
+    @classmethod
+    def from_string(cls, s: str) -> "Address":
+        host, port = s.split(":")
+        return cls(host, int(port))
