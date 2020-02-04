@@ -1,4 +1,4 @@
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 
 class Address(NamedTuple):
@@ -11,3 +11,13 @@ class Address(NamedTuple):
     def from_string(cls, s: str) -> "Address":
         host, port = s.split(":")
         return cls(host, int(port))
+
+
+class GameLaunchOptions(NamedTuple):
+    """Additional options used to configure the FA lobby"""
+
+    mapname: Optional[str] = None
+    team: Optional[int] = None
+    faction: Optional[int] = None
+    expected_players: Optional[int] = None
+    map_position: Optional[int] = None

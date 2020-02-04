@@ -36,7 +36,7 @@ from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, QDataStreamProtocol
 from .rating import RatingType
-from .types import Address
+from .types import Address, GameLaunchOptions
 
 
 class ClientError(Exception):
@@ -846,7 +846,12 @@ class LobbyConnection:
         )
         await self.launch_game(game, is_host=True)
 
-    async def launch_game(self, game, is_host=False, use_map=None):
+    async def launch_game(
+        self,
+        game,
+        is_host=False,
+        options=GameLaunchOptions(),
+    ):
         # TODO: Fix setting up a ridiculous amount of cyclic pointers here
         if self.game_connection:
             await self.game_connection.abort("Player launched a new game")
@@ -870,18 +875,14 @@ class LobbyConnection:
             "args": ["/numgames", self.player.game_count[RatingType.GLOBAL]],
             "uid": game.id,
             "mod": game.game_mode,
-            "mapname": use_map,
             # Following parameters are not used by the client yet. They are
             # needed for setting up auto-lobby style matches such as ladder, gw,
             # and team machmaking where the server decides what these game
             # options are. Currently, options for ladder are hardcoded into the
             # client.
             "name": game.name,
-            "team": game.get_player_option(self.player, "Team"),
-            "faction": game.get_player_option(self.player, "Faction"),
-            "expected_players": len(game.players) or None,
-            "map_position": game.get_player_option(self.player, "StartSpot"),
             "init_mode": game.init_mode.value,
+            **options._asdict()
         }
 
         # Remove args with None value

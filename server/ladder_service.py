@@ -16,6 +16,7 @@ from .game_service import GameService
 from .matchmaker import MatchmakerQueue, Search
 from .players import Player, PlayerState
 from .protocol import DisconnectedError
+from .types import GameLaunchOptions
 
 MapDescription = NamedTuple('Map', [("id", int), ("name", str), ("path", str)])
 
@@ -188,7 +189,13 @@ class LadderService:
             # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
             # Really in the future, just send a better description
             self._logger.debug("Starting ladder game: %s", game)
-            await host.lobby_connection.launch_game(game, is_host=True, use_map=mapname)
+            options = GameLaunchOptions(
+                mapname=mapname,
+                expected_players=2
+            )
+            await host.lobby_connection.launch_game(
+                game, is_host=True, options=options
+            )
             try:
                 hosted = await game.await_hosted()
                 if not hosted:
@@ -204,7 +211,7 @@ class LadderService:
 
                 # TODO: Graceful handling of NoneType errors due to disconnect
                 await guest.lobby_connection.launch_game(
-                    game, is_host=False, use_map=mapname
+                    game, is_host=False, options=options
                 )
             self._logger.debug("Ladder game launched successfully")
         except Exception:
