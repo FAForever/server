@@ -44,10 +44,10 @@ class GameRater(object):
         example output: [ {p1: Rating, p2: Rating}, {p3: Rating, p4: Rating} ]
         """
         if FFA_TEAM in self._players_by_team:
-            number_of_players = sum([
-                len(self._players_by_team[team])
-                for team in self._players_by_team
-            ])
+            number_of_parties = (
+                len(self._players_by_team[FFA_TEAM]) +
+                len(self._players_by_team) - 1
+            )
             if (
                 len(self._players_by_team[FFA_TEAM]) == 2
                 and len(self._players_by_team) == 1
@@ -55,10 +55,11 @@ class GameRater(object):
                 return [{
                     player: Rating(*player.ratings[self._rating_type])
                 } for player in self._players_by_team[FFA_TEAM]]
-            elif number_of_players != 2:
+            elif number_of_parties != 2:
                 raise GameRatingError(
-                    f"Attempted to rate FFA game with other than two players: {{team: players}} = {self._players_by_team}"
+                    f"Attempted to rate FFA game with other than two parties: {{team: players}} = {self._players_by_team}"
                 )
+
         if len(self._players_by_team) == 2:
             return [{
                 player: Rating(*player.ratings[self._rating_type])
