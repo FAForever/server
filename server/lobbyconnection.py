@@ -342,6 +342,10 @@ class LobbyConnection:
                             player.lobby_connection.send_warning(message_text)
                         )
 
+                self._logger.info(
+                    "%s broadcasting message to all players: %s",
+                    self.player.login, message_text
+                )
                 await gather_without_exceptions(tasks, Exception)
 
         if self.player.mod:
