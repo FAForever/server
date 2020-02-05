@@ -342,7 +342,7 @@ class LobbyConnection:
                             player.lobby_connection.send_warning(message_text)
                         )
 
-                await gather_without_exceptions(tasks, ConnectionError)
+                await gather_without_exceptions(tasks, Exception)
 
         if self.player.mod:
             if action == "join_channel":
@@ -358,7 +358,7 @@ class LobbyConnection:
                             "autojoin": [channel]
                         }))
 
-                await gather_without_exceptions(tasks, ConnectionError)
+                await gather_without_exceptions(tasks, Exception)
 
     async def check_user_login(self, conn, username, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.
