@@ -70,8 +70,10 @@ class StableMarriage(MatchmakingPolicy):
 
                 self._logger.debug(
                     "Quality between %s and %s: %f thresholds: [%f, %f]",
-                    search, preferred, search.quality_with(preferred),
-                    search.match_threshold, preferred.match_threshold
+                    search, preferred,
+                    search.quality_with(preferred),
+                    search.match_threshold,
+                    preferred.match_threshold
                 )
 
                 self._propose(search, preferred)
@@ -197,19 +199,22 @@ class _MatchingGraph:
     @staticmethod
     def _get_top_matches(search: Search, others: Iterable[Search]) -> List[Search]:
         def is_possible_match(other: Search) -> bool:
-            quality_log_string = (
-                f"Quality between {search} and {other}: {search.quality_with(other)}"
-                f" thresholds: [{search.match_threshold}, {other.match_threshold}]."
+            log_string = "Quality between %s and %s: %s thresholds: [%s, %s]."
+            log_args = (
+                search, other, self.quality_with(search, other),
+                search.match_threshold, other.match_threshold
             )
 
             if search.matches_with(other):
                 _MatchingGraph._logger.debug(
-                    f"{quality_log_string} Will be considered during stable marriage."
+                    f"{log_string} Will be considered during stable marriage.",
+                    *log_args
                 )
                 return True
             else:
                 _MatchingGraph._logger.debug(
-                    f"{quality_log_string} Will be discarded for stable marriage."
+                    f"{log_string} Will be discarded for stable marriage.",
+                    *log_args
                 )
                 return False
 
