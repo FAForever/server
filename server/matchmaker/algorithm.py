@@ -179,7 +179,7 @@ class Matchmaker(object):
 @with_logger
 class _MatchingGraph:
     def __init__(self):
-        self.quality = Cache(Search.quality_with)
+        self.quality = Cache(Search.quality_with, symmetric=True)
 
     @staticmethod
     def build_sparse(searches: List[Search]) -> Dict[Search, List[Search]]:
@@ -232,14 +232,21 @@ class _MatchingGraph:
 # Performance helpers
 
 class Cache(object):
-    def __init__(self, func):
+    def __init__(self, func, symmetric=False):
         self.func = func
+        # Whether or not the order of arguments matters
+        self.symmetric = symmetric
         self.data = {}
 
     def __call__(self, *args):
         if args in self.data:
             return self.data[args]
-        else:
-            res = self.func(*args)
-            self.data[args] = res
-            return res
+        if self.symmetric:
+            args = args[::-1]
+            if args in self.data:
+                return self.data[args]
+
+        # Not found in cache
+        res = self.func(*args)
+        self.data[args] = res
+        return res
