@@ -39,6 +39,7 @@ class Search:
         self.rating_type = rating_type
         self.start_time = start_time or time.time()
         self._match = asyncio.Future()
+        self._failed_matching_attempts = 0
 
     @staticmethod
     def adjusted_rating(player: Player):
@@ -105,31 +106,32 @@ class Search:
         return self._nearby_rating_range(100)
 
     @property
+    def failed_matching_attempts(self) -> int:
+        return self._failed_matching_attempts
+
+    @property
     def search_expansion(self) -> float:
         """
         Defines how much to expand the search range of game quality due to waiting
         time.
 
-        The graph of this function over time looks essentially like this:
-                           END (x)-> ___ <- MAX (y)
-                                    /
-                                ___/ <- START (x)
-        The search threshold will not expand until a certain time START has been
-        reached. Then it will expand linearly with time until time END, at which
-        point it will have reached it's maximum value and will not expand
-        further.
+        The threshold will expand linearly with every failed matching attempt
+        until it reaches the specified MAX.
         """
-        elapsed = time.time() - self.start_time
-        MAX = config.LADDER_SEARCH_EXPANSION_MAX
-        START = config.LADDER_SEARCH_EXPANSION_START
-        END = config.LADDER_SEARCH_EXPANSION_END
+        
+        return min(
+            self._failed_matching_attempts * config.LADDER_SEARCH_EXPANSION_STEP,
+            config.LADDER_SEARCH_EXPANSION_MAX
+        )
 
-        if elapsed < START:
-            return 0.0
-        if elapsed > END:
-            return MAX
+    def register_failed_matching_attempt(self):
+        """
+        Signal that matchmaker tried to match this search but was unsuccessful
+        and increase internal counter by one.
+        """
 
-        return (MAX / (END - START)) * (elapsed - START)
+        self._failed_matching_attempts += 1
+
 
     @property
     def match_threshold(self) -> float:

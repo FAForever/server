@@ -155,20 +155,23 @@ async def test_search_boundaries(matchmaker_players):
     assert p1.ratings[RatingType.LADDER_1V1][0] < s1.boundary_75[1]
 
 
-async def test_search_expansion(matchmaker_players, mocker):
+async def test_search_expansion_controlled_by_failed_matching_attempts(matchmaker_players, mocker):
     p1 = matchmaker_players[0]
-    mocker.patch('time.time', return_value=0)
     s1 = Search([p1])
 
     assert s1.search_expansion == 0.0
-    mocker.patch('time.time', return_value=500)
+
+    s1.register_failed_matching_attempt()
     assert s1.search_expansion > 0.0
 
     # Make sure that the expansion stops at some point
-    mocker.patch('time.time', return_value=500_000)
+    for _ in range(100):
+        s1.register_failed_matching_attempt()
     e1 = s1.search_expansion
-    mocker.patch('time.time', return_value=500_300)
+    
+    s1.register_failed_matching_attempt()
     assert e1 == s1.search_expansion
+    assert e1 == config.LADDER_SEARCH_EXPANSION_MAX
 
 
 async def test_search_await(matchmaker_players):
