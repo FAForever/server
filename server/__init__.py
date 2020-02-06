@@ -99,25 +99,31 @@ def run_lobby_server(
 
     @at_interval(DIRTY_REPORT_INTERVAL)
     async def do_report_dirties():
-        try:
-            dirty_games = games.dirty_games
-            dirty_queues = games.dirty_queues
-            dirty_players = player_service.dirty_players
-            games.clear_dirty()
-            player_service.clear_dirty()
+        dirty_games = games.dirty_games
+        dirty_queues = games.dirty_queues
+        dirty_players = player_service.dirty_players
+        games.clear_dirty()
+        player_service.clear_dirty()
 
+        try:
             if dirty_queues:
                 await ctx.broadcast_raw(
                     encode_queues(dirty_queues),
                     lambda lobby_conn: lobby_conn.authenticated
                 )
+        except Exception as e:
+            logging.getLogger().exception(e)
 
+        try:
             if dirty_players:
                 await ctx.broadcast_raw(
                     encode_players(dirty_players),
                     lambda lobby_conn: lobby_conn.authenticated
                 )
+        except Exception as e:
+            logging.getLogger().exception(e)
 
+        try:
             # TODO: This spams squillions of messages: we should implement per-
             # connection message aggregation at the next abstraction layer down :P
             tasks = []

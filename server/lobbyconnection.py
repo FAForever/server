@@ -342,7 +342,11 @@ class LobbyConnection:
                             player.lobby_connection.send_warning(message_text)
                         )
 
-                await gather_without_exceptions(tasks, ConnectionError)
+                self._logger.info(
+                    "%s broadcasting message to all players: %s",
+                    self.player.login, message_text
+                )
+                await gather_without_exceptions(tasks, Exception)
 
         if self.player.mod:
             if action == "join_channel":
@@ -358,7 +362,7 @@ class LobbyConnection:
                             "autojoin": [channel]
                         }))
 
-                await gather_without_exceptions(tasks, ConnectionError)
+                await gather_without_exceptions(tasks, Exception)
 
     async def check_user_login(self, conn, username, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.
@@ -971,13 +975,14 @@ class LobbyConnection:
         await self.protocol.send_message(message)
 
     async def drain(self):
-        await self.protocol.drain()
+        # TODO: Remove me, QDataStreamProtocol no longer has a drain method
+        pass
 
     async def on_connection_lost(self):
-        async def nopdrain(message):
+        async def nop(*args, **kwargs):
             return
-        self.drain = nopdrain
-        self.send = lambda m: None
+        self.drain = nop
+        self.send = nop
         if self.game_connection:
             self._logger.debug(
                 "Lost lobby connection killing game connection for player {}".format(self.game_connection.player.id))

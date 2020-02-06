@@ -2,23 +2,21 @@
 Some helper functions for common async tasks.
 """
 import asyncio
-from typing import Any, List
+from typing import Any, List, Type
 
 
 async def gather_without_exceptions(
     tasks: List[asyncio.Task],
-    *exceptions: type,
+    *exceptions: Type[BaseException],
 ) -> List[Any]:
     """
-    Call gather on a list of tasks, raising the first exception that dosen't
+    Run coroutines in parallel, raising the first exception that dosen't
     match any of the specified exception classes.
     """
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    for result in results:
-        if isinstance(result, Exception):
-            # Check if this exception is an instance (maybe subclass) that
-            # should be ignored
-            for exc_type in exceptions:
-                if not isinstance(result, exc_type):
-                    raise result
+    results = []
+    for fut in asyncio.as_completed(tasks):
+        try:
+            results.append(await fut)
+        except exceptions:
+            pass
     return results
