@@ -15,7 +15,7 @@ import asynctest
 import pytest
 from asynctest import CoroutineMock
 from server.api.api_accessor import ApiAccessor
-from server.config import DB_LOGIN, DB_PASSWORD, DB_PORT, DB_SERVER
+from server.config import DB_LOGIN, DB_PASSWORD, DB_PORT, DB_SERVER, TRACE
 from server.db import FAFDatabase
 from server.game_service import GameService
 from server.geoip_service import GeoIpService
@@ -25,7 +25,7 @@ from server.player_service import PlayerService
 from server.rating import RatingType
 from tests.utils import MockDatabase
 
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(TRACE)
 
 
 def pytest_addoption(parser):

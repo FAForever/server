@@ -538,11 +538,14 @@ class GameConnection(GpgNetServerProtocol):
 
             tasks.append(peer.send_DisconnectFromPeer(self.player.id))
 
-        for result in await asyncio.gather(*tasks, return_exceptions=True):
-            if isinstance(result, Exception):
+        for fut in asyncio.as_completed(tasks):
+            try:
+                await fut
+            except Exception:
                 self._logger.exception(
                     "peer_sendDisconnectFromPeer failed for player %i",
-                    self.player.id)
+                    self.player.id
+                )
 
     async def on_connection_lost(self):
         try:
