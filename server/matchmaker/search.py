@@ -175,9 +175,18 @@ class Search:
         if not isinstance(other, Search):
             return False
 
+        quality = self.quality_with(other)
+        return self._match_quality_acceptable(other, quality)
+
+    def _match_quality_acceptable(self, other: 'Search', quality: float) -> bool:
+        """
+        Determine if the given match quality is acceptable.
+
+        This gets it's own function so we can call it from the Matchmaker using
+        a cached `quality` value.
+        """
         # NOTE: We are assuming for optimization purposes that quality is
         # symmetric. If this ever changes, update here
-        quality = self.quality_with(other)
         if quality >= self.match_threshold and quality >= other.match_threshold:
             return True
         return False

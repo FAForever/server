@@ -178,6 +178,9 @@ class Matchmaker(object):
 
 @with_logger
 class _MatchingGraph:
+    def __init__(self):
+        self.quality = Cache(Search.quality_with)
+
     @staticmethod
     def build_sparse(searches: List[Search]) -> Dict[Search, List[Search]]:
         """ A graph in adjacency list representation, whose nodes are the searches
@@ -186,26 +189,27 @@ class _MatchingGraph:
         Note that the highest quality searches come at the end of the list so that
         it can be used as a stack with .pop().
         """
+        graph = _MatchingGraph()
         return {
             search: sorted(
-                _MatchingGraph._get_top_matches(
+                graph._get_top_matches(
                     search, filter(lambda s: s is not search, searches)
                 ),
-                key=lambda other: search.quality_with(other)
+                key=lambda other: graph.quality(search, other)
             )
             for search in searches
         }
 
-    @staticmethod
-    def _get_top_matches(search: Search, others: Iterable[Search]) -> List[Search]:
+    def _get_top_matches(self, search: Search, others: Iterable[Search]) -> List[Search]:
         def is_possible_match(other: Search) -> bool:
             log_string = "Quality between %s and %s: %s thresholds: [%s, %s]."
             log_args = (
-                search, other, self.quality_with(search, other),
+                search, other, self.quality(search, other),
                 search.match_threshold, other.match_threshold
             )
 
-            if search.matches_with(other):
+            quality = self.quality(search, other)
+            if search._match_quality_acceptable(other, quality):
                 _MatchingGraph._logger.debug(
                     f"{log_string} Will be considered during stable marriage.",
                     *log_args
@@ -221,5 +225,21 @@ class _MatchingGraph:
         return heapq.nlargest(
             SM_NUM_TO_RANK,
             filter(is_possible_match, others),
-            key=lambda other: search.quality_with(other)
+            key=lambda other: self.quality(search, other)
         )
+
+
+# Performance helpers
+
+class Cache(object):
+    def __init__(self, func):
+        self.func = func
+        self.data = {}
+
+    def __call__(self, *args):
+        if args in self.data:
+            return self.data[args]
+        else:
+            res = self.func(*args)
+            self.data[args] = res
+            return res
