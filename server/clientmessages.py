@@ -47,7 +47,7 @@ class CommandField(Enum):
     Bottleneck = auto()
 
 
-class Message():
+class Message:
     """
     Common base class for parsed messages from and to the client.
     """
@@ -59,7 +59,7 @@ class MessageFromClient(Message):
     """
     Common base class for parsed messages from the client.
     """
-    
+
     pass
 
 
@@ -134,6 +134,7 @@ class PingMessage(LobbyTargetMessage):
 
      - `command`: `ping`
     """
+
     command: str = "ping"
     _command_enum = CommandField.ping
 
@@ -148,12 +149,12 @@ class PongMessage(LobbyTargetMessage):
 
      - `command`: `pong`
     """
+
     command: str = "pong"
 
     @classmethod
     def build(cls, message):
         return PongMessage()
-
 
 
 class AccountCreationMessage(LobbyTargetMessage):
@@ -163,11 +164,13 @@ class AccountCreationMessage(LobbyTargetMessage):
 
      - `command`: `create_account`
     """
+
     command: str = "create_account"
 
     @classmethod
     def build(cls, message):
         return AccountCreationMessage()
+
 
 class CoopListMessage(LobbyTargetMessage):
     """
@@ -179,6 +182,7 @@ class CoopListMessage(LobbyTargetMessage):
 
      - `command`: `coop_list`
     """
+
     commad: str = "coop_list"
 
     @classmethod
@@ -196,6 +200,7 @@ class MatchmakerInfoMessage(LobbyTargetMessage):
 
      - `command`: `matchmaker_info`
     """
+
     command: str = "matchmaker_info"
     _command_enum = CommandField.matchmaker_info
 
@@ -217,6 +222,7 @@ class SocialRemoveMessage(NamedTuple, LobbyTargetMessage):
 
     If both `friend` and `foe` are specified, only the friend will be removed.
     """
+
     command: str
     id_to_remove: int
 
@@ -233,10 +239,7 @@ class SocialRemoveMessage(NamedTuple, LobbyTargetMessage):
                 f"Offending message: {message}."
             )
 
-        return cls(
-            "social_remove",
-            id_to_remove,
-        )
+        return cls("social_remove", id_to_remove)
 
 
 class SocialAddMessage(NamedTuple, LobbyTargetMessage):
@@ -256,6 +259,7 @@ class SocialAddMessage(NamedTuple, LobbyTargetMessage):
 
     If both `friend` and `foe` are specified, only the friend will be added.
     """
+
     command: str
     id_to_add: int
     adding_a_friend: bool
@@ -275,11 +279,7 @@ class SocialAddMessage(NamedTuple, LobbyTargetMessage):
                 f"Offending message: {message}."
             )
 
-        return cls(
-            "social_add",
-            id_to_add,
-            adding_a_friend,
-        )
+        return cls("social_add", id_to_add, adding_a_friend)
 
 
 class BottleneckMessage(LobbyTargetMessage):
@@ -325,17 +325,17 @@ class GameMatchmakingMessage(NamedTuple, LobbyTargetMessage):
         point specify in which queue to start matchmaking. Default `ladder1v1`
         if empty.
     """
+
     command: str
     mod: str
     state: str
-
 
     @classmethod
     def build(cls, message):
         # NOTE: copied str conversions from previous
         # lobbyconnection.LobbyConnection.command_game_matchmaking,
         # but not sure if needed.
-        mod = str(message.get("mod", "ladder1v1")),
+        mod = (str(message.get("mod", "ladder1v1")),)
 
         if str(message.get("state")) not in ["start", "stop"]:
             raise MessageParsingError(
@@ -345,29 +345,77 @@ class GameMatchmakingMessage(NamedTuple, LobbyTargetMessage):
             )
         state = str(message["state"])
 
-        return cls(
-            "game_matchmaking",
-            mod,
-            state,
-        )
+        return cls("game_matchmaking", mod, state)
 
 
-class GameHostMessage(LobbyTargetMessage):
+class GameHostMessage(NamedTuple, LobbyTargetMessage):
     """
-    Not yet implemented
+    Host a game.
+
+    Requires the client to be authenticated.
+
+    Required fields:  
+
+      - `command`: `game_matchmaking`  
+
+    Optional fields:
+      - `title`: title of the game (default: set by LobbyConnection.command_game_host)
+      - `mod`: (default: `faf`)
+      - `mapname`: (default `scmp_007`)
+      - `password`: (default: none)
+      - `visibility`: according to games.VisibilityState
     """
 
-    def __init__(self, lobbyconnection=None, message=None):
-        raise NotImplementedError
+    command: str
+    title: str
+    mod: str
+    mapname: str
+    password: str
+    visibility: str
+
+    @classmethod
+    def build(cls, message):
+        title = message.get("title")
+        mod = message.get("mod", "faf")
+        mapname = message.get("mapname", "scmp_007")
+        password = message.get("password")
+        visibility = message.get("visibility")
+
+        return cls("game_host", title, mod, mapname, password, visibility)
 
 
-class GameJoinMessage(LobbyTargetMessage):
+class GameJoinMessage(NamedTuple, LobbyTargetMessage):
     """
-    Not yet implemented
+    Join a game.
+
+    Requires the client to be authenticated.
+
+    Required fields:  
+
+      - `command`: `game_join`  
+      - `uid`: id of game to join
+
+    Optional fields:
+      - `password`: (default: none)
     """
 
-    def __init__(self, lobbyconnection=None, message=None):
-        raise NotImplementedError
+    command: str
+    uid: int
+    password: str
+
+    @classmethod
+    def build(cls, message):
+        try:
+            uid = int(message["uid"])
+        except (KeyError, ValueError):
+            raise MessageParsingError(
+                f"Command 'game_join' needs field 'uid' to be an integer. "
+                f"Offending message: {message}"
+            )
+
+        password = message.get("password")
+
+        return cls("game_join", uid, password)
 
 
 class ICEServersMessage(LobbyTargetMessage):
@@ -396,6 +444,7 @@ class RestoreGameSessionMessage(LobbyTargetMessage):
     def __init__(self, lobbyconnection=None, message=None):
         raise NotImplementedError
 
+
 class AvatarMessage(NamedTuple, LobbyTargetMessage):
     """
     Asks server to either return a list of avatars for the current user
@@ -409,6 +458,7 @@ class AvatarMessage(NamedTuple, LobbyTargetMessage):
       - `action`: `select` or `list_avatar` (default: `list_avatar`)
       - `avatar`: url of new avatar or `null` for default avatar (?) (default: `null`)
     """
+
     command: str
     action: str
     url: Optional[str]
@@ -427,11 +477,7 @@ class AvatarMessage(NamedTuple, LobbyTargetMessage):
                 f"Offending message: {message}"
             )
 
-        return cls(
-            "avatar",
-            action,
-            avatar_url,
-        )
+        return cls("avatar", action, avatar_url)
 
 
 class AskSessionMessage(LobbyTargetMessage):
@@ -456,7 +502,6 @@ class AskSessionMessage(LobbyTargetMessage):
 
         self._user_agent = message.get("user_agent")
         self._version = message.get("version")
-
 
     async def handle(self):
         self._connection.command_ask_session()
@@ -505,23 +550,24 @@ class MessageParsingError(Exception):
 
     pass
 
+
 COMMAND_TO_CLASS = {
-        CommandField.admin: AdminMessage,
-        CommandField.ask_session: AskSessionMessage,
-        CommandField.avatar: AvatarMessage,
-        CommandField.coop_list: CoopListMessage,
-        CommandField.create_account: AccountCreationMessage,
-        CommandField.game_host: GameHostMessage,
-        CommandField.game_join: GameJoinMessage,
-        CommandField.game_matchmaking: GameMatchmakingMessage,
-        CommandField.hello: HelloMessage,
-        CommandField.ice_servers: ICEServersMessage,
-        CommandField.matchmaker_info: MatchmakerInfoMessage,
-        CommandField.modvault: ModvaultMessage,
-        CommandField.ping: PingMessage,
-        CommandField.pong: PongMessage,
-        CommandField.restore_game_session: RestoreGameSessionMessage,
-        CommandField.social_add: SocialAddMessage,
-        CommandField.social_remove: SocialRemoveMessage,
-        CommandField.Bottleneck: BottleneckMessage,
+    CommandField.admin: AdminMessage,
+    CommandField.ask_session: AskSessionMessage,
+    CommandField.avatar: AvatarMessage,
+    CommandField.coop_list: CoopListMessage,
+    CommandField.create_account: AccountCreationMessage,
+    CommandField.game_host: GameHostMessage,
+    CommandField.game_join: GameJoinMessage,
+    CommandField.game_matchmaking: GameMatchmakingMessage,
+    CommandField.hello: HelloMessage,
+    CommandField.ice_servers: ICEServersMessage,
+    CommandField.matchmaker_info: MatchmakerInfoMessage,
+    CommandField.modvault: ModvaultMessage,
+    CommandField.ping: PingMessage,
+    CommandField.pong: PongMessage,
+    CommandField.restore_game_session: RestoreGameSessionMessage,
+    CommandField.social_add: SocialAddMessage,
+    CommandField.social_remove: SocialRemoveMessage,
+    CommandField.Bottleneck: BottleneckMessage,
 }

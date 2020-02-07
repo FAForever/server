@@ -177,10 +177,10 @@ class LobbyConnection:
 
         try:
             parsed_message = MessageParser.parse(
-                self, 
+                self,
                 message
             )
-            
+
             await self._handle_message(parsed_message)
 
         except AuthenticationError as ex:
@@ -789,37 +789,38 @@ class LobbyConnection:
 
     @handler(GameJoinMessage)
     @Decorators.require_auth
-    async def command_game_join(self, message):
-        """
-        We are going to join a game.
-        """
+    async def command_game_join(self, parsed_message):
+        # FIXME why is this assert here and how is an AssertionError handled?
         assert isinstance(self.player, Player)
 
         if self._attempted_connectivity_test:
-            raise ClientError("Cannot join game. Please update your client to the newest version.")
+            raise ClientError(
+                "Cannot join game. Please update your client to the newest version."
+            )
 
         await self.abort_connection_if_banned()
 
-        uuid = int(message['uid'])
-        password = message.get('password', None)
-
-        self._logger.debug("joining: %d with pw: %s", uuid, password)
+        self._logger.debug(
+            "joining: %d with pw: %s",
+            parsed_message.uid,
+            parsed_message.password,
+        )
         try:
-            game = self.game_service[uuid]
+            game = self.game_service[parsed_message.uid]
             if not game or game.state != GameState.LOBBY:
                 self._logger.debug("Game not in lobby state: %s", game)
                 await self.send({
                     "command": "notice",
                     "style": "info",
-                    "text": "The game you are trying to join is not ready."
+                    "text": "The game you are trying to join is not ready.",
                 })
                 return
 
-            if game.password != password:
+            if game.password != parsed_message.password:
                 await self.send({
                     "command": "notice",
                     "style": "info",
-                    "text": "Bad password (it's case sensitive)"
+                    "text": "Bad password (it's case sensitive)",
                 })
                 return
 
@@ -855,28 +856,37 @@ class LobbyConnection:
                 search = Search([self.player])
 
             await self.ladder_service.start_search(
-                self.player, 
+                self.player,
                 search,
                 queue_name=parsed_message.mod
             )
 
     @handler(GameHostMessage)
     @Decorators.require_auth
-    async def command_game_host(self, message):
+    async def command_game_host(self, parsed_message):
+        # FIXME why is this assert here and how is an AssertionError handled?
         assert isinstance(self.player, Player)
 
         if self._attempted_connectivity_test:
-            raise ClientError("Cannot join game. Please update your client to the newest version.")
+            raise ClientError(
+                "Cannot join game. Please update your client to the newest version."
+            )
 
         await self.abort_connection_if_banned()
 
-        visibility = VisibilityState.from_string(message.get('visibility'))
+        visibility = VisibilityState.from_string(parsed_message.visibility)
         if not isinstance(visibility, VisibilityState):
             # Protocol violation.
-            await self.abort("{} sent a nonsense visibility code: {}".format(self.player.login, message.get('visibility')))
+            await self.abort(
+                "{} sent a nonsense visibility code: {}".format(
+                    self.player.login, parsed_message.visibility
+                )
+            )
             return
 
-        title = html.escape(message.get('title') or f"{self.player.login}'s game")
+        title = html.escape(
+            parsed_message.title or f"{self.player.login}'s game"
+        )
 
         try:
             title.encode('ascii')
@@ -884,22 +894,19 @@ class LobbyConnection:
             await self.send({
                 "command": "notice",
                 "style": "error",
-                "text": "Non-ascii characters in game name detected."
+                "text": "Non-ascii characters in game name detected.",
             })
             return
 
-        mod = message.get('mod') or 'faf'
-        mapname = message.get('mapname') or 'scmp_007'
-        password = message.get('password')
-        game_mode = mod.lower()
+        game_mode = parsed_message.mod.lower()
 
         game = self.game_service.create_game(
             visibility=visibility,
             game_mode=game_mode,
             host=self.player,
             name=title,
-            mapname=mapname,
-            password=password
+            mapname=parsed_message.mapname,
+            password=parsed_message.password,
         )
         await self.launch_game(game, is_host=True)
         server.stats.incr('game.hosted', tags={'game_mode': game_mode})
