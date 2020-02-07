@@ -147,12 +147,11 @@ async def test_bad_command_calls_abort(lobbyconnection):
     lobbyconnection.send = CoroutineMock()
     lobbyconnection.abort = CoroutineMock()
 
-    await lobbyconnection.on_message_received({
-        "command": "this_isnt_real"
-    })
+    message = {"command": "this_isnt_real"}
+    await lobbyconnection.on_message_received(message)
 
     lobbyconnection.send.assert_called_once_with({"command": "invalid"})
-    lobbyconnection.abort.assert_called_once_with("Error processing command")
+    lobbyconnection.abort.assert_called_once_with(f"Message could not be parsed: {message}")
 
 
 async def test_command_pong_does_nothing(lobbyconnection):
@@ -380,7 +379,64 @@ async def test_send_game_list(mocker, database, lobbyconnection, game_stats_serv
     })
 
 
-async def test_coop_list(mocker, lobbyconnection):
+async def test_command_coop_list_parsing(mocker, lobbyconnection, mock_player):
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.id = 1
+
+    await lobbyconnection.on_message_received({
+        'command': 'coop_list',
+    })
+
+    args = lobbyconnection.protocol.send_messages.call_args_list
+    assert len(args) == 1
+    coop_maps = args[0][0][0]
+    for info in coop_maps:
+        del info['uid']
+    assert coop_maps == [
+        {
+            "command": "coop_info",
+            "name": "FA Campaign map",
+            "description": "A map from the FA campaign",
+            "filename": "maps/scmp_coop_123.v0002.zip",
+            "featured_mod": "coop",
+            "type": "FA Campaign"
+        },
+        {
+            "command": "coop_info",
+            "name": "Aeon Campaign map",
+            "description": "A map from the Aeon campaign",
+            "filename": "maps/scmp_coop_124.v0000.zip",
+            "featured_mod": "coop",
+            "type": "Aeon Vanilla Campaign"
+        },
+        {
+            "command": "coop_info",
+            "name": "Cybran Campaign map",
+            "description": "A map from the Cybran campaign",
+            "filename": "maps/scmp_coop_125.v0001.zip",
+            "featured_mod": "coop",
+            "type": "Cybran Vanilla Campaign"
+        },
+        {
+            "command": "coop_info",
+            "name": "UEF Campaign map",
+            "description": "A map from the UEF campaign",
+            "filename": "maps/scmp_coop_126.v0099.zip",
+            "featured_mod": "coop",
+            "type": "UEF Vanilla Campaign"
+        },
+        {
+            "command": "coop_info",
+            "name": "Prothyon - 16",
+            "description": "Prothyon - 16 is a secret UEF facility...",
+            "filename": "maps/prothyon16.v0005.zip",
+            "featured_mod": "coop",
+            "type": "Custom Missions"
+        }
+    ]
+
+
+async def test_command_coop_list(mocker, lobbyconnection):
     await lobbyconnection.command_coop_list({})
 
     args = lobbyconnection.protocol.send_messages.call_args_list
@@ -653,7 +709,7 @@ async def test_game_subscription(lobbyconnection: LobbyConnection):
     game = Mock()
     game.handle_action = CoroutineMock()
     lobbyconnection.game_connection = game
-    lobbyconnection.ensure_authenticated = CoroutineMock(return_value=True)
+    lobbyconnection._authenticated = True
 
     await lobbyconnection.on_message_received({'command': 'test',
                                                'args': ['foo', 42],

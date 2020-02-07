@@ -120,8 +120,19 @@ class LobbyConnection:
             @wraps(function)
             async def wrapper(self, *args, **kwargs):
                 if not self.authenticated:
-                    server.stats.incr('server.received_messages.unauthenticated', tags={"command": cmd})
-                    await self.abort("Message invalid for unauthenticated connection: %s" % cmd)
+                    try:
+                        command = args[0].command
+                    except:
+                        command = "invalid"
+
+                    server.stats.incr(
+                            'server.received_messages.unauthenticated', 
+                            tags={"command": command}
+                    )
+
+                    await self.abort(
+                        f"Message invalid for unauthenticated connection: {command}"
+                    )
                 return await function(self, *args, **kwargs)
 
             return wrapper
@@ -151,14 +162,6 @@ class LobbyConnection:
             self.player_service.remove_player(self.player)
             self.player = None
         server.stats.incr('server.connections.aborted')
-
-    async def ensure_authenticated(self, cmd):
-        if not self._authenticated:
-            if cmd not in ['hello', 'ask_session', 'create_account', 'ping', 'pong', 'Bottleneck']:  # Bottleneck is sent by the game during reconnect
-                server.stats.incr('server.received_messages.unauthenticated', tags={"command": cmd})
-                await self.abort("Message invalid for unauthenticated connection: %s" % cmd)
-                return False
-        return True
 
     async def _handle_message(self, parsed_message):
         try:
@@ -200,17 +203,28 @@ class LobbyConnection:
                 await self.abort(ex.message)
 
         except MessageParsingError as ex:
+            await self.send({'command': 'invalid'})
             self._logger.exception(ex)
-            await self.abort("Garbage command: {}".format(message))
+            await self.abort(f"Message could not be parsed: {message}")
 
         except ConnectionError as e:
             # Propagate connection errors to the ServerContext error handler.
             raise e
 
-        except Exception as ex:  # pragma: no cover
+        except Exception as ex:
             await self.send({'command': 'invalid'})
             self._logger.exception(ex)
             await self.abort("Error processing command")
+
+    @handler(GameTargetMessage)
+    async def handle_game_target_message(self, parsed_message):
+        if not self.game_connection:
+            return
+
+        await self.game_connection.handle_action(
+                parsed_message.command,
+                parsed_message.args,
+        )
 
     @handler(PingMessage)
     async def command_ping(self, parsed_message):
@@ -424,7 +438,7 @@ class LobbyConnection:
                         )
 
             elif action == "broadcast":
-                broadcast_text = parsed_message.broadcast
+                broadcast_text = parsed_message.broadcast_message
                 if not broadcast_text:
                     return
 
@@ -743,10 +757,10 @@ class LobbyConnection:
 
         await self.send_game_list()
 
-    @handler(HelloMessage)
+    @handler(RestoreGameSessionMessage)
     @Decorators.require_auth
-    async def command_restore_game_session(self, message):
-        game_id = int(message.get('game_id'))
+    async def command_restore_game_session(self, parsed_message):
+        game_id = parsed_message.game_id
 
         # Restore the player's game connection, if the game still exists and is live
         if not game_id or game_id not in self.game_service:

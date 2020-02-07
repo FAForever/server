@@ -79,7 +79,7 @@ class LobbyTargetMessage(MessageFromClient):
     """
 
     @staticmethod
-    def build(lobbyconnection, message):
+    def parse(message):
         command = MessageParser.parse_command(message)
         return COMMAND_TO_CLASS[command].build(message)
 
@@ -92,36 +92,34 @@ class ConnectivityTargetMessage(MessageFromClient):
     """
 
     @staticmethod
-    async def __init__(self, lobbyconnection=None, message=None):
-        lobbyconnection.register_connectivity_test()
-
-    async def handle(self):
-        raise ClientError(
-            f"Your client version is no longer supported."
-            f"Please update to the newest version: https://faforever.com"
-        )
+    def build(message):
+        raise NotImplementedError("TODO")
 
 
-class GameTargetMessage(MessageFromClient):
+
+class GameTargetMessage(NamedTuple, MessageFromClient):
     """
     Common base class for messages with `target` entry `'game'`.
 
     To be handled by a `GameConnection`.
     """
+    command: str
+    args: list
 
-    @staticmethod
-    async def build(lobbyconnection=None, message=None):
-        # need to make a distinction on command, arguments
-        # should fail if passed lobbyconnection does not have a game_connection
-        # message entry 'args' needs to be passed along
-        # previous code:
-        #   if target == 'game':
-        #       if not self.game_connection:
-        #           return
-        #
-        #       await self.game_connection.handle_action(cmd, message.get('args', []))
-        #       return
-        raise NotImplementedError("TODO")
+    @classmethod
+    def build(cls, message):
+
+        if "command" not in message:
+            raise MessageParsingError(
+                f"Message with target 'game' must contain field 'command'. "
+                f"Offending message: {message}."
+            )
+
+        command = message["command"]
+        arguments = message.get("args", [])
+
+
+        return cls(command, arguments)
 
 
 class PingMessage(LobbyTargetMessage):
@@ -529,13 +527,25 @@ class ModvaultMessage(LobbyTargetMessage):
         raise NotImplementedError
 
 
-class RestoreGameSessionMessage(LobbyTargetMessage):
+class RestoreGameSessionMessage(NamedTuple, LobbyTargetMessage):
     """
-    Not yet implemented
+    TODO Description
     """
+    command: str
+    game_id: int
 
-    def __init__(self, lobbyconnection=None, message=None):
-        raise NotImplementedError
+    @classmethod
+    def build(cls, message):
+        try:
+            game_id = int(message["game_id"])
+        except (KeyError, ValueError):
+            raise MessageParsingError(
+                f"Command 'restore_game_session' needs field 'game_id' to be an integer. "
+                f"Offending message: {message}"
+            )
+
+
+        return cls("restore_game_session", game_id)
 
 
 class AvatarMessage(NamedTuple, LobbyTargetMessage):
@@ -607,19 +617,14 @@ class MessageParser:
 
     @staticmethod
     def parse(lobbyconnection, message):
-        if "command" not in message:
-            raise MessageParsingError(
-                f"Message did not contain required 'command' field. "
-                f"Offending message: {message}"
-            )
         target = Target[message.get("target", "none")]
 
         if target is Target.game:
-            return GameTargetMessage.build(lobbyconnection, message)
+            return GameTargetMessage.build(message)
         elif target is Target.connectivity:
-            return ConnectivityTargetMessage(lobbyconnection, message)
+            return ConnectivityTargetMessage(message)
         else:
-            return LobbyTargetMessage.build(lobbyconnection, message)
+            return LobbyTargetMessage.parse(message)
 
     @staticmethod
     def parse_command(message):
