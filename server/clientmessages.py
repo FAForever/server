@@ -389,13 +389,28 @@ class AdminMessage(NamedTuple, LobbyTargetMessage):
         )
 
 
-class HelloMessage(LobbyTargetMessage):
+class HelloMessage(NamedTuple, LobbyTargetMessage):
     """
-    Not yet implemented
+    TODO Description
     """
+    command: str
+    login: str
+    password: str
+    unique_id: int
 
-    def __init__(self, lobbyconnection=None, message=None):
-        raise NotImplementedError
+    @classmethod
+    def build(cls, message):
+        try:
+            login = message["login"].strip()
+            password = message["password"]
+            unique_id = message["unique_id"]
+        except KeyError:
+            raise MessageParsingError(
+                f"Command 'hello' needs fields `login`, `password`, "
+                f"and `unique_id`. "
+                f"Offending message: {message}."
+            )
+        return cls("hello", login, password, unique_id)
 
 
 class GameMatchmakingMessage(NamedTuple, LobbyTargetMessage):
@@ -583,7 +598,7 @@ class AvatarMessage(NamedTuple, LobbyTargetMessage):
         return cls("avatar", action, avatar_url)
 
 
-class AskSessionMessage(LobbyTargetMessage):
+class AskSessionMessage(NamedTuple, LobbyTargetMessage):
     """
     TODO: Description
 
@@ -594,20 +609,19 @@ class AskSessionMessage(LobbyTargetMessage):
      - `command`: `ask_session`
 
     Expected fields:
-     - `user_agent`: TODO probably `'downlords-faf-client'`
-     - `version`: TODO probably version number of downlords-faf-client
-     """
+    - `user_agent`: TODO probably `'downlords-faf-client'`
+    - `version`: TODO probably version number of downlords-faf-client
+    """
+    command: str
+    user_agent: str
+    version: str
 
-    def __init__(self, lobbyconnection=None, message=None):
-        self._connection = lobbyconnection
-        self._message = message
-        self._command = CommandField.ask_session
+    @classmethod
+    def build(cls, message):
+        user_agent = message.get("user_agent")
+        version = message.get("version")
 
-        self._user_agent = message.get("user_agent")
-        self._version = message.get("version")
-
-    async def handle(self):
-        self._connection.command_ask_session()
+        return cls("ask_session", user_agent, version)
 
 
 class MessageParser:

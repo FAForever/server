@@ -527,7 +527,7 @@ class LobbyConnection:
 
         return player_id, real_username, steamid
 
-    async def check_version(self, message):
+    async def check_version(self, user_agent, version):
         versionDB, updateFile = self.player_service.client_version_info
         update_msg = {
             'command': 'update',
@@ -535,8 +535,7 @@ class LobbyConnection:
             'new_version': versionDB
         }
 
-        self.user_agent = message.get('user_agent')
-        version = message.get('version')
+        self.user_agent = user_agent
         server.stats.gauge('user.agents.None', -1, delta=True)
         server.stats.gauge('user.agents.{}'.format(self.user_agent), 1, delta=True)
 
@@ -636,9 +635,9 @@ class LobbyConnection:
         return response.get('result', '') == 'honest'
 
     @handler(HelloMessage)
-    async def command_hello(self, message):
-        login = message['login'].strip()
-        password = message['password']
+    async def command_hello(self, parsed_message):
+        login = parsed_message.login
+        password = parsed_message.password
 
         async with self._db.acquire() as conn:
             player_id, login, steamid = await self.check_user_login(conn, login, password)
@@ -654,7 +653,7 @@ class LobbyConnection:
                 })
 
             conforms_policy = await self.check_policy_conformity(
-                player_id, message['unique_id'], self.session,
+                player_id, parsed_message.unique_id, self.session,
                 ignore_result=(
                     steamid is not None or
                     self.player_service.is_uniqueid_exempt(player_id)
@@ -789,8 +788,8 @@ class LobbyConnection:
             self.player.game = game
 
     @handler(AskSessionMessage)
-    async def command_ask_session(self, message):
-        if await self.check_version(message):
+    async def command_ask_session(self, parsed_message):
+        if await self.check_version(parsed_message.user_agent, parsed_message.version):
             await self.send({"command": "session", "session": self.session})
 
     @handler(AvatarMessage)
