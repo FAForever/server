@@ -172,7 +172,7 @@ class AccountCreationMessage(LobbyTargetMessage):
         return AccountCreationMessage()
 
 
-class CoopListMessage(LobbyTargetMessage):
+class CoopListMessage(NamedTuple, LobbyTargetMessage):
     """
     Asks server for the list of coop maps.
 
@@ -291,13 +291,104 @@ class BottleneckMessage(LobbyTargetMessage):
         raise NotImplementedError
 
 
-class AdminMessage(LobbyTargetMessage):
+class AdminMessage(NamedTuple, LobbyTargetMessage):
     """
-    Not yet implemented
+    Various admin functionality crammed into a single command
+
+    Requires the client to be authenticated.
+
+    Required fields:  
+
+      - `command`: `admin`  
+      - `action`: one of `closeFA`, `closelobby`,`broadcast`, `join_channel`
+
+    Required if `action` is `closeFA` or `closelobby`:
+
+     - `user_id`: user id of target player
+
+    Optional if `action` is `closelobby`:
+
+     - `ban`: json containing ban details
+
+    Ban json should contain fiels `reason`, `duration`, and `period`.
+    Defaults are currently `Unspecified`, 1, and `SECOND`.
+    Admissible periods are `SECOND`, `DAY`, `WEEK`, `MONTH`.
+
+    Required if `action` is `broadcast`:
+
+     - `message`: message to broadcast
+
+    Required if `action` is `join_channel`:
+
+     - `channel`: ? probably some kind of channel id
+     - `user_ids`: ? probably ids of all users that will join the channel?
     """
 
-    def __init__(self, lobbyconnection=None, message=None):
-        raise NotImplementedError
+    command: str
+    action: str
+    target_user_id: Optional[int]
+    ban_data: Optional[dict]
+    broadcast_message: Optional[str]
+    channel: Optional[str]
+    channel_users: Optional[list]
+
+    @classmethod
+    def build(cls, message):
+        action = message.get("action")
+        if action not in ["closeFA", "closelobby", "broadcast", "join_channel"]:
+            raise MessageParsingError(
+                f"Message for command 'admin' must contain field 'action' with one of 'closeFA', 'closelobby', 'broadcast', 'join_channel'. Offending message: {message}."
+            )
+
+        target_user_id = message.get("user_id")
+
+        ban_data = message.get("ban")
+        if ban_data:
+            ban_data.setdefault("reason", "Unspecified")
+            ban_data.setdefault("duration", 1)
+            ban_data.setdefault("period", "SECOND")
+
+            ban_data["duration"] = int(
+                ban_data["duration"]
+            )  # NOTE: copied from LobbyConnection.command_admin, unsure if necessary
+            ban_data["period"] = ban_data["period"].upper()
+
+        broadcast_message = message.get("message")
+
+        channel_users = message.get("user_ids")
+        channel = message.get("channel")
+
+        if action == "closeFA" and target_user_id is None:
+            raise MessageParsingError(
+                f"Command 'admin' with action `closeFA` "
+                f"needs `user_id` to be id of target player. "
+                f"Offending message: {message}."
+            )
+
+        if action == "closelobby" and target_user_id is None:
+            raise MessageParsingError(
+                f"Command 'admin' with action `closelobby` "
+                f"needs `user_id` to be id of target player. "
+                f"Offending message: {message}."
+            )
+
+        have_channel_and_users = channel is not None and channel_users is not None
+        if action == "join_channel" and not have_channel_and_users:
+            raise MessageParsingError(
+                f"Command 'admin' with action `join_channel` "
+                f"needs fields `user_ids` and `channel`. "
+                f"Offending message: {message}."
+            )
+
+        return cls(
+            "admin",
+            action,
+            target_user_id,
+            ban_data,
+            broadcast_message,
+            channel,
+            channel_users,
+        )
 
 
 class HelloMessage(LobbyTargetMessage):
@@ -363,6 +454,8 @@ class GameHostMessage(NamedTuple, LobbyTargetMessage):
       - `mod`: (default: `faf`)
       - `mapname`: (default `scmp_007`)
       - `password`: (default: none)
+    password: Optional[str]
+
       - `visibility`: according to games.VisibilityState
     """
 
@@ -370,7 +463,7 @@ class GameHostMessage(NamedTuple, LobbyTargetMessage):
     title: str
     mod: str
     mapname: str
-    password: str
+    password: Optional[str]
     visibility: str
 
     @classmethod
@@ -401,7 +494,7 @@ class GameJoinMessage(NamedTuple, LobbyTargetMessage):
 
     command: str
     uid: int
-    password: str
+    password: Optional[str]
 
     @classmethod
     def build(cls, message):

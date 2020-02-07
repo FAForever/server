@@ -340,40 +340,55 @@ class LobbyConnection:
 
     @handler(AdminMessage)
     @Decorators.require_auth
-    async def command_admin(self, message):
-        action = message['action']
+    async def command_admin(self, parsed_message):
+        action = parsed_message.action
 
         if self.player.admin:
             if action == "closeFA":
-                player = self.player_service[message['user_id']]
+                player = self.player_service[parsed_message.target_user_id]
                 if player:
-                    self._logger.warning('Administrative action: %s closed game for %s', self.player, player)
+                    self._logger.warning(
+                        'Administrative action: %s closed game for %s',
+                        self.player, player
+                    )
                     await player.lobby_connection.send({
                         "command": "notice",
                         "style": "kill",
                     })
 
             elif action == "closelobby":
-                player = self.player_service[message['user_id']]
+                player = self.player_service[parsed_message.target_user_id]
                 ban_fail = None
                 if player:
-                    if 'ban' in message:
-                        reason = message['ban'].get('reason', 'Unspecified')
-                        duration = int(message['ban'].get('duration', 1))
-                        period = message['ban'].get('period', 'SECOND').upper()
+                    if parsed_message.ban_data is not None:
+                        reason = parsed_message.ban_data["reason"]
+                        duration = parsed_message.ban_data["duration"]
+                        period = parsed_message.ban_data["period"]
 
-                        self._logger.warning('Administrative action: %s closed client for %s with %s ban (Reason: %s)', self.player, player, duration, reason)
+                        self._logger.warning(
+                            'Administrative action: %s closed client for %s with %s ban (Reason: %s)',
+                            self.player, player, duration, reason
+                        )
                         async with self._db.acquire() as conn:
                             try:
-                                result = await conn.execute("SELECT reason from lobby_ban WHERE idUser=%s AND expires_at > NOW()", (message['user_id']))
+                                result = await conn.execute(
+                                    "SELECT reason from lobby_ban WHERE idUser=%s AND expires_at > NOW()",
+                                    (parsed_message.target_user_id)
+                                )
 
                                 row = await result.fetchone()
                                 if row:
                                     ban_fail = row[0]
                                 else:
-                                    if period not in ["SECOND", "DAY", "WEEK", "MONTH"]:
-                                        self._logger.warning('Tried to ban player with invalid period')
-                                        raise ClientError(f"Period '{period}' is not allowed!")
+                                    if period not in [
+                                        "SECOND", "DAY", "WEEK", "MONTH"
+                                    ]:
+                                        self._logger.warning(
+                                            'Tried to ban player with invalid period'
+                                        )
+                                        raise ClientError(
+                                            f"Period '{period}' is not allowed!"
+                                        )
 
                                     # NOTE: Text formatting in sql string is only ok because we just checked it's value
                                     await conn.execute(
@@ -383,7 +398,9 @@ class LobbyConnection:
                                             reason=reason,
                                             expires_at=func.date_add(
                                                 func.now(),
-                                                text(f"interval :duration {period}")
+                                                text(
+                                                    f"interval :duration {period}"
+                                                )
                                             ),
                                             level='GLOBAL'
                                         ),
@@ -391,16 +408,24 @@ class LobbyConnection:
                                     )
 
                             except pymysql.MySQLError as e:
-                                raise ClientError('Your ban attempt upset the database: {}'.format(e))
+                                raise ClientError(
+                                    'Your ban attempt upset the database: {}'
+                                    .format(e)
+                                )
                     else:
-                        self._logger.warning('Administrative action: %s closed client for %s', self.player, player)
+                        self._logger.warning(
+                            'Administrative action: %s closed client for %s',
+                            self.player, player
+                        )
                     await player.lobby_connection.kick()
                     if ban_fail:
-                        raise ClientError("Kicked the player, but he was already banned!")
+                        raise ClientError(
+                            "Kicked the player, but he was already banned!"
+                        )
 
             elif action == "broadcast":
-                message_text = message.get('message')
-                if not message_text:
+                broadcast_text = parsed_message.broadcast
+                if not broadcast_text:
                     return
 
                 tasks = []
@@ -409,7 +434,8 @@ class LobbyConnection:
                     # https://docs.python.org/3/library/weakref.html#weak-reference-objects
                     if player.lobby_connection is not None:
                         tasks.append(
-                            player.lobby_connection.send_warning(message_text)
+                            player.lobby_connection
+                            .send_warning(broadcast_text)
                         )
 
                 self._logger.info(
@@ -420,8 +446,8 @@ class LobbyConnection:
 
         if self.player.mod:
             if action == "join_channel":
-                user_ids = message['user_ids']
-                channel = message['channel']
+                user_ids = parsed_message.channel_users
+                channel = parsed_message.channel
 
                 tasks = []
                 for user_id in user_ids:
