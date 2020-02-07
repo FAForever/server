@@ -1,29 +1,18 @@
-import heapq
-from typing import Dict, Iterable, List, Set
+from typing import Dict, Iterable, List, Set, Tuple
 
 from ..decorators import with_logger
 from .search import Match, Search
 
-################################################################################
-#                           Constants and parameters                           #
-################################################################################
-
-# Number of candidates for matching
-SM_NUM_TO_RANK = 5
+WeighedGraph = Dict[Search, List[Tuple[Search, float]]]
 
 
-################################################################################
-#                                Implementation                                #
-################################################################################
-
-
-def make_matches(searches: List[Search]) -> List[Match]:
+def make_matches(searches: Iterable[Search]) -> List[Match]:
     return Matchmaker(searches).find()
 
 
 @with_logger
 class MatchmakingPolicy(object):
-    def __init__(self, searches: List[Search]):
+    def __init__(self, searches: Iterable[Search]):
         self.searches = searches
         self.matches: Dict[Search, Search] = {}
 
@@ -42,23 +31,27 @@ class MatchmakingPolicy(object):
 
 class StableMarriage(MatchmakingPolicy):
     def find(self) -> Dict[Search, Search]:
-        """Perform SM_NUM_TO_RANK runs of the stable matching algorithm.
-        Assumes that _MatchingGraph.build_sparse() only returns edges whose matches are acceptable
-        to both parties."""
-        ranks = _MatchingGraph.build_sparse(self.searches)
+        """ Perform the stable matching algorithm until a maximal stable matching
+        is found. Assumes that _MatchingGraph.build_weighted() only returns edges
+        whose matches are acceptable to both parties.
+        """
+        ranks = _MatchingGraph.build_weighted(self.searches)
+        _MatchingGraph.remove_isolated(ranks)
+        max_degree = max((len(edges) for edges in ranks.values()), default=0)
+
         self.matches.clear()
 
-        for i in range(SM_NUM_TO_RANK):
+        for i in range(max_degree):
             self._logger.debug(
                 "Round %i of stable marriage, currently %i matches", i,
                 len(self.matches) // 2
             )
             # Do one round of proposals
-            if len(self.matches) == len(self.searches):
+            if len(self.matches) == len(ranks):
                 # Everyone found a match so we are done
                 break
 
-            for search in self.searches:
+            for search in ranks:
                 if search in self.matches:
                     continue
 
@@ -66,17 +59,16 @@ class StableMarriage(MatchmakingPolicy):
                     # Preference list exhausted
                     continue
 
-                preferred = ranks[search].pop()
+                preferred, quality = ranks[search].pop()
 
                 self._logger.debug(
                     "Quality between %s and %s: %f thresholds: [%f, %f]",
-                    search, preferred,
-                    search.quality_with(preferred),
+                    search, preferred, quality,
                     search.match_threshold,
                     preferred.match_threshold
                 )
 
-                self._propose(search, preferred)
+                self._propose(search, preferred, quality)
 
         self._register_unmatched_searches()
 
@@ -98,7 +90,7 @@ class StableMarriage(MatchmakingPolicy):
                 search, search.match_threshold, search.failed_matching_attempts
             )
 
-    def _propose(self, search: Search, preferred: Search):
+    def _propose(self, search: Search, preferred: Search, new_quality: float):
         """ An unmatched search proposes to it's preferred opponent.
 
         If the opponent is not matched, they become matched. If the opponent is
@@ -111,7 +103,6 @@ class StableMarriage(MatchmakingPolicy):
 
         current_match = self.matches[preferred]
         current_quality = preferred.quality_with(current_match)
-        new_quality = search.quality_with(preferred)
 
         if new_quality > current_quality:
             # Found a better match
@@ -178,75 +169,75 @@ class Matchmaker(object):
 
 @with_logger
 class _MatchingGraph:
-    def __init__(self):
-        self.quality = Cache(Search.quality_with, symmetric=True)
-
     @staticmethod
-    def build_sparse(searches: List[Search]) -> Dict[Search, List[Search]]:
+    def build_weighted(searches: Iterable[Search]) -> WeighedGraph:
         """ A graph in adjacency list representation, whose nodes are the searches
-        and whose edges are the top few possible matchings for each node.
+        and whose edges are the possible matchings for each node.
 
         Note that the highest quality searches come at the end of the list so that
         it can be used as a stack with .pop().
         """
-        graph = _MatchingGraph()
-        return {
-            search: sorted(
-                graph._get_top_matches(
-                    search, filter(lambda s: s is not search, searches)
-                ),
-                key=lambda other: graph.quality(search, other)
-            )
-            for search in searches
-        }
+        adj_list = {search: [] for search in searches}
 
-    def _get_top_matches(self, search: Search, others: Iterable[Search]) -> List[Search]:
-        def is_possible_match(other: Search) -> bool:
-            log_string = "Quality between %s and %s: %s thresholds: [%s, %s]."
-            log_args = (
-                search, other, self.quality(search, other),
-                search.match_threshold, other.match_threshold
-            )
+        # Generate every edge. There are 'len(searches) choose 2' of these.
+        searches = [s for s in searches if s is not None]
+        for search, other in subset_pairs(searches):
+            quality = search.quality_with(other)
+            if not _MatchingGraph.is_possible_match(search, other, quality):
+                continue
 
-            quality = self.quality(search, other)
-            if search._match_quality_acceptable(other, quality):
-                _MatchingGraph._logger.debug(
-                    f"{log_string} Will be considered during stable marriage.",
-                    *log_args
-                )
-                return True
-            else:
-                _MatchingGraph._logger.debug(
-                    f"{log_string} Will be discarded for stable marriage.",
-                    *log_args
-                )
-                return False
+            # Add the edge in both directions
+            adj_list[search].append((other, quality))
+            adj_list[other].append((search, quality))
 
-        return heapq.nlargest(
-            SM_NUM_TO_RANK,
-            filter(is_possible_match, others),
-            key=lambda other: self.quality(search, other)
+        # Sort edges by their weights i.e. match quality
+        for search, neighbors in adj_list.items():
+            neighbors.sort(key=lambda edge: edge[1])
+
+        return adj_list
+
+    def is_possible_match(search: Search, other: Search, quality: float) -> bool:
+        log_string = "Quality between %s and %s: %s thresholds: [%s, %s]."
+        log_args = (
+            search, other, quality,
+            search.match_threshold, other.match_threshold
         )
 
+        if search._match_quality_acceptable(other, quality):
+            _MatchingGraph._logger.debug(
+                f"{log_string} Will be considered during stable marriage.",
+                *log_args
+            )
+            return True
+        else:
+            _MatchingGraph._logger.debug(
+                f"{log_string} Will be discarded for stable marriage.",
+                *log_args
+            )
+            return False
 
-# Performance helpers
+    @staticmethod
+    def remove_isolated(graph: WeighedGraph):
+        """ Remove any searches that have no possible matchings.
 
-class Cache(object):
-    def __init__(self, func, symmetric=False):
-        self.func = func
-        # Whether or not the order of arguments matters
-        self.symmetric = symmetric
-        self.data = {}
+        Note: This assumes that edges are undirected. Calling this on directed
+        graphs will produce incorrect results. """
+        for k, v in list(graph.items()):
+            if not v:
+                del graph[k]
 
-    def __call__(self, *args):
-        if args in self.data:
-            return self.data[args]
-        if self.symmetric:
-            args = args[::-1]
-            if args in self.data:
-                return self.data[args]
 
-        # Not found in cache
-        res = self.func(*args)
-        self.data[args] = res
-        return res
+def subset_pairs(l: list):
+    """ Generates all possible 2 subsets of `l` as tuples. Each pair of items will
+    show up in only one order and the elements in the pair will be distinct.
+    Note that the number of items generated is `len(l) choose 2`.
+
+    # Example
+
+    subset_pairs([1, 2, 3]) yields pairs (1, 2), (1, 3), (2, 3)
+
+    Note that this has O(n^2) time complexity.
+    """
+    for i, a in enumerate(l[:-1]):
+        for b in l[i+1:]:
+            yield a, b

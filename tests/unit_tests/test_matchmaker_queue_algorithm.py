@@ -12,19 +12,52 @@ def p(player_factory):
     return make
 
 
-def test_build_sparse_matching_graph(p):
+def test_build_weighted_matching_graph(p):
     s1 = Search([p(1500, 64, ladder_games=20)])
     s2 = Search([p(1500, 63, ladder_games=20)])
     s3 = Search([p(1600, 75, ladder_games=50)])
     searches = [s1, s2, s3]
 
-    ranks = algorithm._MatchingGraph.build_sparse(searches)
+    ranks = algorithm._MatchingGraph.build_weighted(searches)
 
     assert ranks == {
-        s1: [s3, s2],
-        s2: [s3, s1],
-        s3: [s1, s2]
+        s1: [(s3, s1.quality_with(s3)), (s2, s1.quality_with(s2))],
+        s2: [(s3, s2.quality_with(s3)), (s1, s2.quality_with(s1))],
+        s3: [(s1, s3.quality_with(s1)), (s2, s3.quality_with(s2))]
     }
+
+
+def test_remove_isolated(p):
+    s1 = Search([p(1500, 64, ladder_games=20)])
+    s2 = Search([p(1500, 63, ladder_games=20)])
+    s3 = Search([p(1600, 75, ladder_games=50)])
+    ranks = {
+        s1: [(s3, s1.quality_with(s3))],
+        s2: [],
+        s3: [(s1, s3.quality_with(s1))]
+    }
+
+    algorithm._MatchingGraph.remove_isolated(ranks)
+
+    assert ranks == {
+        s1: [(s3, s1.quality_with(s3))],
+        s3: [(s1, s3.quality_with(s1))]
+    }
+
+
+def test_remove_isolated_2(p):
+    s1 = Search([p(1500, 64, ladder_games=20)])
+    s2 = Search([p(1500, 63, ladder_games=20)])
+    s3 = Search([p(1600, 75, ladder_games=50)])
+    ranks = {
+        s1: [],
+        s2: [],
+        s3: []
+    }
+
+    algorithm._MatchingGraph.remove_isolated(ranks)
+
+    assert ranks == {}
 
 
 def test_match_graph_will_not_include_matches_below_threshold_quality(p):
@@ -32,7 +65,7 @@ def test_match_graph_will_not_include_matches_below_threshold_quality(p):
     s2 = Search([p(2000, 300)])
     searches = [s1, s2]
 
-    ranks = algorithm._MatchingGraph.build_sparse(searches)
+    ranks = algorithm._MatchingGraph.build_weighted(searches)
 
     assert ranks == {
         s1: [],
@@ -255,6 +288,17 @@ def test_matchmaker(p):
         assert top_player not in match_pair
 
 
+def test_matchmaker_random_only(p):
+    newbie1 = Search([p(1550, 500, ladder_games=1)])
+    newbie2 = Search([p(200, 400, ladder_games=9)])
+
+    searches = (newbie1, newbie2)
+    match_pairs = algorithm.make_matches(searches)
+    match_sets = [set(pair) for pair in match_pairs]
+
+    assert {newbie1, newbie2} in match_sets
+
+
 def test_stable_marriage_will_not_match_low_quality_games(p):
     s1 = Search([p(100, 64, name='p1')])
     s2 = Search([p(2000, 64, name='p2')])
@@ -279,5 +323,6 @@ def test_stable_marriage_communicates_failed_attempts(p):
     matches = algorithm.make_matches(searches)
 
     # These searches should not have been matched
+    assert not matches
     assert s1.failed_matching_attempts == 1
     assert s2.failed_matching_attempts == 1
