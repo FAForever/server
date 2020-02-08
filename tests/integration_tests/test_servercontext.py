@@ -81,6 +81,23 @@ async def test_broadcast_raw(context, mock_server):
     for _ in range(20):
         await ctx.broadcast_raw(b"Some bytes")
 
+    assert len(ctx.connections) == 0
+
+
+async def test_broadcast(context, mock_server):
+    srv, ctx = context
+    (reader, writer) = await asyncio.open_connection(
+        *srv.sockets[0].getsockname()
+    )
+    writer.close()
+
+    # If connection errors aren't handled, this should fail due to a
+    # ConnectionError
+    for _ in range(20):
+        await ctx.broadcast(["Some message"])
+
+    assert len(ctx.connections) == 0
+
 
 async def test_connection_broken_external(context, mock_server):
     """

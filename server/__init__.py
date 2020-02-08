@@ -65,24 +65,6 @@ def encode_message(message: str):
     return QDataStreamProtocol.pack_message(message)
 
 
-def encode_dict(d: Dict[Any, Any]):
-    return encode_message(json.dumps(d, separators=(',', ':')))
-
-
-def encode_players(players):
-    return encode_dict({
-        'command': 'player_info',
-        'players': [player.to_dict() for player in players]
-    })
-
-
-def encode_queues(queues):
-    return encode_dict({
-        'command': 'matchmaker_info',
-        'queues': [queue.to_dict() for queue in queues]
-    })
-
-
 def run_lobby_server(
     address: (str, int),
     database: FAFDatabase,
@@ -107,8 +89,10 @@ def run_lobby_server(
 
         try:
             if dirty_queues:
-                await ctx.broadcast_raw(
-                    encode_queues(dirty_queues),
+                await ctx.broadcast({
+                        'command': 'matchmaker_info',
+                        'queues': [queue.to_dict() for queue in dirty_queues]
+                    },
                     lambda lobby_conn: lobby_conn.authenticated
                 )
         except Exception as e:
@@ -116,8 +100,10 @@ def run_lobby_server(
 
         try:
             if dirty_players:
-                await ctx.broadcast_raw(
-                    encode_players(dirty_players),
+                await ctx.broadcast({
+                        'command': 'player_info',
+                        'players': [player.to_dict() for player in dirty_players]
+                    },
                     lambda lobby_conn: lobby_conn.authenticated
                 )
         except Exception as e:
@@ -132,7 +118,7 @@ def run_lobby_server(
                     games.remove_game(game)
 
                 # So we're going to be broadcasting this to _somebody_...
-                message = encode_dict(game.to_dict())
+                message = game.to_dict()
 
                 # These games shouldn't be broadcast, but instead privately sent
                 # to those who are allowed to see them.
@@ -146,7 +132,7 @@ def run_lobby_server(
                     def validation_func(lobby_conn):
                         return lobby_conn.player.id not in game.host.foes
 
-                tasks.append(ctx.broadcast_raw(
+                tasks.append(ctx.broadcast(
                     message,
                     lambda lobby_conn: lobby_conn.authenticated and validation_func(lobby_conn)
                 ))

@@ -3,8 +3,9 @@ import asyncio
 import server
 
 from .async_functions import gather_without_exceptions
+from .config import TRACE
 from .decorators import with_logger
-from .protocol import QDataStreamProtocol
+from .protocol import DisconnectedError, QDataStreamProtocol
 from .types import Address
 
 
@@ -53,14 +54,27 @@ class ServerContext:
     def __contains__(self, connection):
         return connection in self.connections.keys()
 
+    async def broadcast(self, message, validate_fn=lambda a: True):
+        self._logger.log(TRACE, "]]: %s", message)
+        await self._do_broadcast(
+            validate_fn,
+            lambda proto: proto.send_message(message)
+        )
+
     async def broadcast_raw(self, message, validate_fn=lambda a: True):
+        await self._do_broadcast(
+            validate_fn,
+            lambda proto: proto.send_raw(message)
+        )
+
+    async def _do_broadcast(self, validate_fn, map_fn):
         server.stats.incr('server.broadcasts')
         tasks = []
         for conn, proto in self.connections.items():
             if validate_fn(conn):
-                tasks.append(proto.send_raw(message))
+                tasks.append(map_fn(proto))
 
-        await gather_without_exceptions(tasks, Exception)
+        await gather_without_exceptions(tasks, DisconnectedError)
 
     async def client_connected(self, stream_reader, stream_writer):
         self._logger.debug("%s: Client connected", self)
