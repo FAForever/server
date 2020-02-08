@@ -1008,3 +1008,14 @@ async def test_check_policy_conformity_fatal(lobbyconnection, policy_server):
             honest = await lobbyconnection.check_policy_conformity(1, result, session=100)
             assert honest is False
             lobbyconnection.abort.assert_called_once()
+
+
+async def test_connectivity_tests_registered(lobbyconnection):
+    assert lobbyconnection._attempted_connectivity_test is False
+
+    await lobbyconnection.on_message_received({
+        "command": "InitiateTest",
+        "target": "connectivity"
+    })
+
+    assert lobbyconnection._attempted_connectivity_test is True

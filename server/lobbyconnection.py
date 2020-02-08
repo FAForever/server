@@ -1081,6 +1081,17 @@ class LobbyConnection:
             'ttl': ttl
         })
 
+    @handler(ConnectivityTargetMessage)
+    @Decorators.require_auth
+    async def handle_connectivity_messages(self, parsed_message):
+        if parsed_message.command == "InitiateTest":
+            self._register_connectivity_test()
+            raise ClientError(
+                f"Your client version is no longer supported. "
+                f"Please update to the newest version: https://faforever.com"
+            )
+
+
     async def send_warning(self, message: str, fatal: bool=False):
         """
         Display a warning message to the client
@@ -1154,7 +1165,7 @@ class LobbyConnection:
                            f"Reason :\n "
                            f"{reason}"), recoverable=False)
 
-    def register_connectivity_test(self):
+    def _register_connectivity_test(self):
         self._attempted_connectivity_test = True
 
     @property

@@ -84,16 +84,18 @@ class LobbyTargetMessage(MessageFromClient):
         return COMMAND_TO_CLASS[command].build(message)
 
 
-class ConnectivityTargetMessage(MessageFromClient):
+class ConnectivityTargetMessage(NamedTuple, MessageFromClient):
     """
     Deprecated functionality for `target` entry `'connectivity'`.
 
     Will ask client to update to the newest version.
     """
+    command: Optional[str]
 
-    @staticmethod
-    def build(message):
-        raise NotImplementedError("TODO")
+    @classmethod
+    def build(cls, message):
+        command = message.get("command")
+        return cls(command)
 
 
 class GameTargetMessage(NamedTuple, MessageFromClient):
@@ -677,7 +679,7 @@ class MessageParser:
         if target is Target.game:
             return GameTargetMessage.build(message)
         elif target is Target.connectivity:
-            return ConnectivityTargetMessage(message)
+            return ConnectivityTargetMessage.build(message)
         else:
             return LobbyTargetMessage.parse(message)
 
