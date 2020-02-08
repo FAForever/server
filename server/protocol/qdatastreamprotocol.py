@@ -10,6 +10,12 @@ from server.decorators import with_logger
 
 from .protocol import Protocol
 
+json_encoder = json.JSONEncoder(separators=(',', ':'))
+
+
+class DisconnectedError(ConnectionError):
+    """For signaling that a protocal has lost connection to the remote."""
+
 
 @with_logger
 class QDataStreamProtocol(Protocol):
@@ -28,6 +34,7 @@ class QDataStreamProtocol(Protocol):
         # drain() cannot be called concurrently by multiple coroutines:
         # http://bugs.python.org/issue29930.
         self._drain_lock = asyncio.Lock()
+        self.connected = True
 
     @staticmethod
     def read_qstring(buffer: bytes, pos: int=0) -> Tuple[int, str]:
@@ -132,26 +139,40 @@ class QDataStreamProtocol(Protocol):
         """
         self.writer.close()
 
-    async def send_message(self, message: dict):
-        server.stats.incr('server.sent_messages')
-        self.writer.write(
-            self.pack_message(json.dumps(message, separators=(',', ':')))
-        )
+    async def drain(self):
+        """
+        Await the write buffer to empty.
+        See StreamWriter.drain()
+        """
+        # TODO: Figure out if sleep is needed here. There was a bug in older
+        # versions of asyncio, but does it still exist in new versions?
+        # https://github.com/aio-libs/aioftp/issues/7
+        await asyncio.sleep(0)
         async with self._drain_lock:
-            await self.writer.drain()
+            try:
+                await self.writer.drain()
+            except Exception as e:
+                raise DisconnectedError("Protocol connection lost!") from e
+
+    async def send_message(self, message: dict):
+        await self.send_raw(
+            self.pack_message(json_encoder.encode(message))
+        )
 
     async def send_messages(self, messages):
+        if not self.connected:
+            raise DisconnectedError("Protocol is not connected!")
         server.stats.incr('server.sent_messages')
         payload = [
-            self.pack_message(json.dumps(msg, separators=(',', ':')))
+            self.pack_message(json_encoder.encode(msg))
             for msg in messages
         ]
         self.writer.writelines(payload)
-        async with self._drain_lock:
-            await self.writer.drain()
+        await self.drain()
 
     async def send_raw(self, data):
+        if not self.connected:
+            raise DisconnectedError("Protocol is not connected!")
         server.stats.incr('server.sent_messages')
         self.writer.write(data)
-        async with self._drain_lock:
-            await self.writer.drain()
+        await self.drain()

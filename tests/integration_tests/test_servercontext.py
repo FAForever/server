@@ -5,7 +5,7 @@ import pytest
 from asynctest import CoroutineMock, exhaust_callbacks
 from server import ServerContext, fake_statsd
 from server.lobbyconnection import LobbyConnection
-from server.protocol import QDataStreamProtocol
+from server.protocol import DisconnectedError, QDataStreamProtocol
 
 pytestmark = pytest.mark.asyncio
 
@@ -80,6 +80,30 @@ async def test_broadcast_raw(context, mock_server):
     # ConnectionError
     for _ in range(20):
         await ctx.broadcast_raw(b"Some bytes")
+
+
+async def test_connection_broken_external(context, mock_server):
+    """
+    When the connection breaks while the server is calling protocol.send from
+    somewhere other than the main read - response loop. Make sure that this
+    still triggers the proper connection cleanup.
+    """
+    srv, ctx = context
+    (reader, writer) = await asyncio.open_connection(
+        *srv.sockets[0].getsockname()
+    )
+    writer.close()
+
+    proto = next(iter(ctx.connections.values()))
+
+    # Need this sleep for test to work, otherwise closed protocol isn't detected
+    await asyncio.sleep(0)
+    with pytest.raises(DisconnectedError):
+        # Message needs to be long enough to exceed the high watermark,
+        # otherwise this call will return immediately without raising
+        await proto.send_message(["Some long message" * 4096])
+
+    assert len(ctx.connections) == 0
 
 
 async def test_server_fake_statsd():

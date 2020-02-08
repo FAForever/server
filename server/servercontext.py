@@ -70,7 +70,7 @@ class ServerContext:
             await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info('peername')))
             self.connections[connection] = protocol
             server.stats.gauge('user.agents.None', 1, delta=True)
-            while True:
+            while protocol.connected:
                 message = await protocol.read_message()
                 with server.stats.timer('connection.on_message_received'):
                     await connection.on_message_received(message)
