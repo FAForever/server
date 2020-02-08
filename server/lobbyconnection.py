@@ -179,10 +179,7 @@ class LobbyConnection:
         self._logger.log(TRACE, "<<: %s", message)
 
         try:
-            parsed_message = MessageParser.parse(
-                self,
-                message
-            )
+            parsed_message = MessageParser.parse(message)
 
             await self._handle_message(parsed_message)
 

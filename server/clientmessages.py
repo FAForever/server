@@ -185,7 +185,7 @@ class CoopListMessage(NamedTuple, LobbyTargetMessage):
      - `command`: `coop_list`
     """
 
-    commad: str = "coop_list"
+    command: str = "coop_list"
 
     @classmethod
     def build(cls, message):
@@ -351,7 +351,7 @@ class AdminMessage(NamedTuple, LobbyTargetMessage):
         target_user_id = message.get("user_id")
 
         ban_data = message.get("ban")
-        if ban_data:
+        if ban_data is not None:
             ban_data.setdefault("reason", "Unspecified")
             ban_data.setdefault("duration", 1)
             ban_data.setdefault("period", "SECOND")
@@ -366,16 +366,9 @@ class AdminMessage(NamedTuple, LobbyTargetMessage):
         channel_users = message.get("user_ids")
         channel = message.get("channel")
 
-        if action == "closeFA" and target_user_id is None:
+        if action in ["closeFA", "closelobby"] and target_user_id is None:
             raise MessageParsingError(
-                f"Command 'admin' with action `closeFA` "
-                f"needs `user_id` to be id of target player. "
-                f"Offending message: {message}."
-            )
-
-        if action == "closelobby" and target_user_id is None:
-            raise MessageParsingError(
-                f"Command 'admin' with action `closelobby` "
+                f"Command 'admin' with action `closeFA` or `closelobby` "
                 f"needs `user_id` to be id of target player. "
                 f"Offending message: {message}."
             )
@@ -625,7 +618,7 @@ class AvatarMessage(NamedTuple, LobbyTargetMessage):
 
     @classmethod
     def build(cls, message):
-        avatar_url = message.get("avatar", None)
+        avatar_url = message.get("avatar")
         if avatar_url == "null":
             avatar_url = None
 
@@ -673,7 +666,7 @@ class MessageParser:
     """
 
     @staticmethod
-    def parse(lobbyconnection, message):
+    def parse(message):
         target = Target[message.get("target", "none")]
 
         if target is Target.game:
@@ -685,13 +678,8 @@ class MessageParser:
 
     @staticmethod
     def parse_command(message):
-        if "command" not in message:
-            raise MessageParsingError(
-                f"Message did not contain required 'command' field. "
-                f"Offending message: {message}"
-            )
         try:
-            return CommandField[message["command"]]
+            return CommandField[message.get("command")]
         except KeyError:
             raise MessageParsingError(
                 f"'command' field of message {message} is invalid."

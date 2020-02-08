@@ -1019,3 +1019,19 @@ async def test_connectivity_tests_registered(lobbyconnection):
     })
 
     assert lobbyconnection._attempted_connectivity_test is True
+
+
+# cannot simply mock-overwrite command_hello, since the routing decorator will
+# direct to the old method
+@pytest.mark.xfail
+async def test_command_hello_routing(lobbyconnection):
+    lobbyconnection.command_hello = CoroutineMock()
+
+    await lobbyconnection.on_message_received({
+        "command": "hello",
+        "login": "foo",
+        "password": "bar",
+        "unique_id": 1,
+    })
+
+    lobbyconnection.command_hello.assert_called_once()
