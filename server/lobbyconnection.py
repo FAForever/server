@@ -875,7 +875,6 @@ class LobbyConnection:
     @handler(GameMatchmakingMessage)
     @Decorators.require_auth
     async def command_game_matchmaking(self, parsed_message):
-
         if self._attempted_connectivity_test:
             raise ClientError("Cannot host game. Please update your client to the newest version.")
 
@@ -886,7 +885,7 @@ class LobbyConnection:
         if parsed_message.state == "start":
             assert self.player is not None
             # Faction can be either the name (e.g. 'uef') or the enum value (e.g. 1)
-            self.player.faction = message['faction']
+            self.player.faction = parsed_message.faction
 
             if parsed_message.mod == "ladder1v1":
                 search = Search([self.player])
@@ -993,8 +992,8 @@ class LobbyConnection:
 
     @handler(ModvaultMessage)
     @Decorators.require_auth
-    async def command_modvault(self, message):
-        type = message["type"]
+    async def command_modvault(self, parsed_message):
+        type = parsed_message.type_field
 
         async with self._db.acquire() as conn:
             if type == "start":
@@ -1019,7 +1018,7 @@ class LobbyConnection:
 
             elif type == "like":
                 canLike = True
-                uid = message['uid']
+                uid = parsed_message.uid
                 result = await conn.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likers FROM `table_mod` WHERE uid = %s LIMIT 1", (uid,))
 
                 row = await result.fetchone()
@@ -1053,7 +1052,7 @@ class LobbyConnection:
                     await self.send(out)
 
             elif type == "download":
-                uid = message["uid"]
+                uid = parsed_message.uid
                 await conn.execute(
                     "UPDATE mod_stats s "
                     "JOIN mod_version v ON v.mod_id = s.mod_id "
@@ -1063,7 +1062,7 @@ class LobbyConnection:
 
     @handler(ICEServersMessage)
     @Decorators.require_auth
-    async def command_ice_servers(self, message):
+    async def command_ice_servers(self, parsed_message):
         if not self.player:
             return
 

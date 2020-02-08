@@ -419,7 +419,11 @@ async def test_server_ban_prevents_hosting(lobby_server, database, command):
             )
         )
 
-    await proto.send_message({"command": command})
+    command_message = {"command": command}
+    if command == "game_join":
+        command_message["uid"] = 1
+
+    await proto.send_message(command_message)
 
     msg = await proto.read_message()
     assert msg == {

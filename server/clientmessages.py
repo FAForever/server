@@ -1,6 +1,6 @@
 from enum import Enum, auto
 import functools
-from typing import NamedTuple, Optional
+from typing import NamedTuple, Optional, Union
 
 
 class Target(Enum):
@@ -96,13 +96,13 @@ class ConnectivityTargetMessage(MessageFromClient):
         raise NotImplementedError("TODO")
 
 
-
 class GameTargetMessage(NamedTuple, MessageFromClient):
     """
     Common base class for messages with `target` entry `'game'`.
 
     To be handled by a `GameConnection`.
     """
+
     command: str
     args: list
 
@@ -118,11 +118,10 @@ class GameTargetMessage(NamedTuple, MessageFromClient):
         command = message["command"]
         arguments = message.get("args", [])
 
-
         return cls(command, arguments)
 
 
-class PingMessage(LobbyTargetMessage):
+class PingMessage(NamedTuple, LobbyTargetMessage):
     """
     Returns a 'PONG' message.
 
@@ -134,10 +133,13 @@ class PingMessage(LobbyTargetMessage):
     """
 
     command: str = "ping"
-    _command_enum = CommandField.ping
+
+    @classmethod
+    def build(cls, message):
+        return cls()
 
 
-class PongMessage(LobbyTargetMessage):
+class PongMessage(NamedTuple, LobbyTargetMessage):
     """
     Does nothing.
 
@@ -152,10 +154,10 @@ class PongMessage(LobbyTargetMessage):
 
     @classmethod
     def build(cls, message):
-        return PongMessage()
+        return cls()
 
 
-class AccountCreationMessage(LobbyTargetMessage):
+class AccountCreationMessage(NamedTuple, LobbyTargetMessage):
     """
 
     Required fields:
@@ -167,7 +169,7 @@ class AccountCreationMessage(LobbyTargetMessage):
 
     @classmethod
     def build(cls, message):
-        return AccountCreationMessage()
+        return cls()
 
 
 class CoopListMessage(NamedTuple, LobbyTargetMessage):
@@ -188,7 +190,7 @@ class CoopListMessage(NamedTuple, LobbyTargetMessage):
         return CoopListMessage()
 
 
-class MatchmakerInfoMessage(LobbyTargetMessage):
+class MatchmakerInfoMessage(NamedTuple, LobbyTargetMessage):
     """
     TODO: Description
 
@@ -200,7 +202,10 @@ class MatchmakerInfoMessage(LobbyTargetMessage):
     """
 
     command: str = "matchmaker_info"
-    _command_enum = CommandField.matchmaker_info
+
+    @classmethod
+    def build(cls, message):
+        return cls()
 
 
 class SocialRemoveMessage(NamedTuple, LobbyTargetMessage):
@@ -280,13 +285,16 @@ class SocialAddMessage(NamedTuple, LobbyTargetMessage):
         return cls("social_add", id_to_add, adding_a_friend)
 
 
-class BottleneckMessage(LobbyTargetMessage):
+class BottleneckMessage(NamedTuple, LobbyTargetMessage):
     """
     Not yet implemented
     """
 
-    def __init__(self, lobbyconnection=None, message=None):
-        raise NotImplementedError
+    command: str = "Bottleneck"
+
+    @classmethod
+    def build(cls, message):
+        return cls()
 
 
 class AdminMessage(NamedTuple, LobbyTargetMessage):
@@ -393,6 +401,7 @@ class HelloMessage(NamedTuple, LobbyTargetMessage):
     """
     TODO Description
     """
+
     command: str
     login: str
     password: str
@@ -425,6 +434,8 @@ class GameMatchmakingMessage(NamedTuple, LobbyTargetMessage):
       - `state`: `start` or `stop`
 
     Optional fields:
+      - `faction`: faction of the player if `state` is `start`. Defailt `uef`.
+        Can either be the name (e.g. 'uef') or the enum value (e.g. 1).
       - `mod`: Currently discarded. If `state` is `start`, this  might at some
         point specify in which queue to start matchmaking. Default `ladder1v1`
         if empty.
@@ -433,13 +444,14 @@ class GameMatchmakingMessage(NamedTuple, LobbyTargetMessage):
     command: str
     mod: str
     state: str
+    faction: Optional[Union[str, int]]
 
     @classmethod
     def build(cls, message):
         # NOTE: copied str conversions from previous
         # lobbyconnection.LobbyConnection.command_game_matchmaking,
         # but not sure if needed.
-        mod = (str(message.get("mod", "ladder1v1")),)
+        mod = str(message.get("mod", "ladder1v1"))
 
         if str(message.get("state")) not in ["start", "stop"]:
             raise MessageParsingError(
@@ -449,7 +461,9 @@ class GameMatchmakingMessage(NamedTuple, LobbyTargetMessage):
             )
         state = str(message["state"])
 
-        return cls("game_matchmaking", mod, state)
+        faction = message.get("faction", "uef")
+
+        return cls("game_matchmaking", mod, state, faction)
 
 
 class GameHostMessage(NamedTuple, LobbyTargetMessage):
@@ -482,7 +496,9 @@ class GameHostMessage(NamedTuple, LobbyTargetMessage):
     @classmethod
     def build(cls, message):
         title = message.get("title")
-        mod = message.get("mod", "faf")
+        mod = (
+            message.get("mod") or "faf"
+        )  # want to choose default if mod string is empty.
         mapname = message.get("mapname", "scmp_007")
         password = message.get("password")
         visibility = message.get("visibility")
@@ -524,28 +540,53 @@ class GameJoinMessage(NamedTuple, LobbyTargetMessage):
         return cls("game_join", uid, password)
 
 
-class ICEServersMessage(LobbyTargetMessage):
+class ICEServersMessage(NamedTuple, LobbyTargetMessage):
     """
     Not yet implemented
     """
 
-    def __init__(self, lobbyconnection=None, message=None):
-        raise NotImplementedError
+    command: str
+
+    @classmethod
+    def build(cls, message):
+        return cls("ice_servers")
 
 
-class ModvaultMessage(LobbyTargetMessage):
+class ModvaultMessage(NamedTuple, LobbyTargetMessage):
     """
-    Not yet implemented
+    TODO: Description
     """
 
-    def __init__(self, lobbyconnection=None, message=None):
-        raise NotImplementedError
+    command: str
+    type_field: str
+    uid: int
+
+    @classmethod
+    def build(cls, message):
+        type_field = message.get("type")
+        if type_field not in ["start", "like", "download"]:
+            raise MessageParsingError(
+                f"Command 'modvault' needs field 'type' "
+                f"to be 'start', 'like', or 'download'. "
+                f"Offending message: {message}"
+            )
+
+        uid = message.get("uid")
+        if type_field in ["like", "download"] and uid is None:
+            raise MessageParsingError(
+                f"Command 'modvault' needs field 'uid' "
+                f"if 'type' is 'like' or 'download'. "
+                f"Offending message: {message}"
+            )
+
+        return cls("modvault", type_field, uid)
 
 
 class RestoreGameSessionMessage(NamedTuple, LobbyTargetMessage):
     """
     TODO Description
     """
+
     command: str
     game_id: int
 
@@ -558,7 +599,6 @@ class RestoreGameSessionMessage(NamedTuple, LobbyTargetMessage):
                 f"Command 'restore_game_session' needs field 'game_id' to be an integer. "
                 f"Offending message: {message}"
             )
-
 
         return cls("restore_game_session", game_id)
 
@@ -612,6 +652,7 @@ class AskSessionMessage(NamedTuple, LobbyTargetMessage):
     - `user_agent`: TODO probably `'downlords-faf-client'`
     - `version`: TODO probably version number of downlords-faf-client
     """
+
     command: str
     user_agent: str
     version: str
