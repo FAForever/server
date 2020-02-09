@@ -164,6 +164,16 @@ async def test_command_pong_does_nothing(lobbyconnection):
     lobbyconnection.send.assert_not_called()
 
 
+async def test_command_ping_sends_response(lobbyconnection):
+    lobbyconnection.protocol.send_raw = CoroutineMock()
+
+    await lobbyconnection.on_message_received({
+        "command": "ping"
+    })
+
+    lobbyconnection.protocol.send_raw.assert_called_once()
+
+
 async def test_command_create_account_returns_error(lobbyconnection):
     lobbyconnection.send = CoroutineMock()
 
@@ -718,6 +728,18 @@ async def test_game_subscription(lobbyconnection: LobbyConnection):
     game.handle_action.assert_called_with('test', ['foo', 42])
 
 
+async def test_game_subscription_does_nothing_without_game(
+    lobbyconnection: LobbyConnection
+):
+    lobbyconnection._authenticated = True
+
+    await lobbyconnection.on_message_received({
+        'command': 'test',
+        'args': ['foo', 42],
+        'target': 'game'
+    })
+
+
 async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection, mock_player: Player):
     lobbyconnection.player = mock_player
     lobbyconnection.player.id = 2  # Dostya test user
@@ -749,13 +771,16 @@ async def test_command_avatar_select(mocker, database, lobbyconnection: LobbyCon
         assert row[0] == 1
 
 
-async def get_friends(player_id, database):
+async def get_friends_or_foes(player_id, database, get_foes_instead = False):
+    status = "FRIEND"
+    if get_foes_instead:
+        status = "FOE"
     async with database.acquire() as conn:
         result = await conn.execute(
             select([friends_and_foes.c.subject_id]).where(
                 and_(
                     friends_and_foes.c.user_id == player_id,
-                    friends_and_foes.c.status == 'FRIEND'
+                    friends_and_foes.c.status == status
                 )
             )
         )
@@ -767,7 +792,7 @@ async def test_command_social_add_friend(lobbyconnection, mock_player, database)
     lobbyconnection.player = mock_player
     lobbyconnection.player.id = 1
 
-    friends = await get_friends(lobbyconnection.player.id, database)
+    friends = await get_friends_or_foes(lobbyconnection.player.id, database)
     assert friends == []
 
     await lobbyconnection.on_message_received({
@@ -775,15 +800,35 @@ async def test_command_social_add_friend(lobbyconnection, mock_player, database)
         'friend': 2
     })
 
-    friends = await get_friends(lobbyconnection.player.id, database)
+    friends = await get_friends_or_foes(lobbyconnection.player.id, database)
     assert friends == [2]
+
+
+async def test_command_social_add_foe(lobbyconnection, mock_player, database):
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.id = 6
+
+    foes = await get_friends_or_foes(
+        lobbyconnection.player.id, database, get_foes_instead=True
+    )
+    assert foes == []
+
+    await lobbyconnection.on_message_received({
+        'command': 'social_add',
+        'foe': 7
+    })
+
+    foes = await get_friends_or_foes(
+        lobbyconnection.player.id, database, get_foes_instead=True
+    )
+    assert foes == [7]
 
 
 async def test_command_social_remove_friend(lobbyconnection, mock_player, database):
     lobbyconnection.player = mock_player
     lobbyconnection.player.id = 2
 
-    friends = await get_friends(lobbyconnection.player.id, database)
+    friends = await get_friends_or_foes(lobbyconnection.player.id, database)
     assert friends == [1]
 
     await lobbyconnection.on_message_received({
@@ -791,7 +836,7 @@ async def test_command_social_remove_friend(lobbyconnection, mock_player, databa
         'friend': 1
     })
 
-    friends = await get_friends(lobbyconnection.player.id, database)
+    friends = await get_friends_or_foes(lobbyconnection.player.id, database)
     assert friends == []
 
 
