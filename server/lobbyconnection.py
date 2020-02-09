@@ -451,7 +451,7 @@ class LobbyConnection:
 
                 self._logger.info(
                     "%s broadcasting message to all players: %s",
-                    self.player.login, message_text
+                    self.player.login, broadcast_text
                 )
                 await gather_without_exceptions(tasks, Exception)
 
