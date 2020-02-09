@@ -90,7 +90,7 @@ def lobbyconnection(event_loop, database, mock_protocol, mock_games, mock_player
         games=mock_games,
         players=mock_players,
         nts_client=mock_nts_client,
-        ladder_service=mock.create_autospec(LadderService)
+        ladder_service=asynctest.create_autospec(LadderService)
     )
 
     lc.player = mock_player
@@ -626,15 +626,14 @@ async def test_command_admin_closelobby_with_ban_injection(mocker, lobbyconnecti
     assert len(bans) == 0
 
 
-async def test_command_admin_closeFA(mocker, lobbyconnection):
+async def test_command_admin_closeFA(mocker, lobbyconnection, player_factory):
     mocker.patch.object(lobbyconnection, '_logger')
     player = mocker.patch.object(lobbyconnection, 'player')
+    player = lobbyconnection.player
     player.login = 'Sheeo'
     player.admin = True
     player.id = 42
-    tuna = mock.Mock()
-    tuna.id = 55
-    tuna.lobby_connection = asynctest.create_autospec(LobbyConnection)
+    tuna = player_factory(login="Tuna", player_id=55)
     lobbyconnection.player_service = {42: player, 55: tuna}
 
     await lobbyconnection.on_message_received({

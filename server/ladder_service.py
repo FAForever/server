@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import random
 from collections import defaultdict
 from typing import Dict, List, NamedTuple, Set
@@ -7,12 +8,14 @@ from server.db import FAFDatabase
 from server.rating import RatingType
 from sqlalchemy import and_, func, select, text
 
+from .async_functions import gather_without_exceptions
 from .config import LADDER_ANTI_REPETITION_LIMIT
 from .db.models import game_featuredMods, game_player_stats, game_stats
 from .decorators import with_logger
 from .game_service import GameService
 from .matchmaker import MatchmakerQueue, Search
 from .players import Player, PlayerState
+from .protocol import DisconnectedError
 
 MapDescription = NamedTuple('Map', [("id", int), ("name", str), ("path", str)])
 
@@ -38,14 +41,27 @@ class LadderService:
         asyncio.ensure_future(self.handle_queue_matches())
 
     async def start_search(self, initiator: Player, search: Search, queue_name: str):
+        # TODO: Consider what happens if players disconnect while starting
+        # search. Will need a message to inform other players in the search
+        # that it has been cancelled.
         self._cancel_existing_searches(initiator)
 
+        tasks = []
         for player in search.players:
             player.state = PlayerState.SEARCHING_LADDER
 
             # For now, inform_player is only designed for ladder1v1
             if queue_name == "ladder1v1":
-                await self.inform_player(player)
+                tasks.append(self.inform_player(player))
+
+        try:
+            await asyncio.gather(*tasks)
+        except DisconnectedError:
+            self._logger.info(
+                "%i failed to start %s search due to a disconnect: %s",
+                initiator, queue_name, search
+            )
+            await self.cancel_search(initiator)
 
         self.searches[queue_name][initiator] = search
 
@@ -55,16 +71,25 @@ class LadderService:
 
         asyncio.ensure_future(self.queues[queue_name].search(search))
 
-    def cancel_search(self, initiator: Player):
+    async def cancel_search(self, initiator: Player):
         searches = self._cancel_existing_searches(initiator)
 
+        tasks = []
         for search in searches:
             for player in search.players:
                 if player.state == PlayerState.SEARCHING_LADDER:
                     player.state = PlayerState.IDLE
+
+                if player.lobby_connection is not None:
+                    tasks.append(player.send_message({
+                        "command": "game_matchmaking",
+                        "state": "stop"
+                    }))
             self._logger.info(
                 "%s stopped searching for ladder: %s", player, search
             )
+
+        await gather_without_exceptions(tasks, DisconnectedError)
 
     def _cancel_existing_searches(self, initiator: Player) -> List[Search]:
         searches = []
@@ -82,7 +107,7 @@ class LadderService:
             mean, deviation = player.ratings[RatingType.LADDER_1V1]
 
             if deviation > 490:
-                await player.lobby_connection.send({
+                await player.send_message({
                     "command": "notice",
                     "style": "info",
                     "text": (
@@ -97,7 +122,7 @@ class LadderService:
                 })
             elif deviation > 250:
                 progress = (500.0 - deviation) / 2.5
-                await player.lobby_connection.send({
+                await player.send_message({
                     "command": "notice",
                     "style": "info",
                     "text": (
@@ -113,9 +138,10 @@ class LadderService:
                 assert len(s2.players) == 1
                 p1, p2 = s1.players[0], s2.players[0]
                 msg = {"command": "match_found", "queue": "ladder1v1"}
+                # TODO: Handle disconnection
                 await asyncio.gather(
-                    p1.lobby_connection.send(msg),
-                    p2.lobby_connection.send(msg)
+                    p1.send_message(msg),
+                    p2.send_message(msg)
                 )
                 asyncio.ensure_future(self.start_game(p1, p2))
             except Exception as e:
@@ -125,64 +151,74 @@ class LadderService:
                 )
 
     async def start_game(self, host: Player, guest: Player):
-        self._logger.debug(
-            "Starting ladder game between %s and %s", host, guest
-        )
-        host.state = PlayerState.HOSTING
-        guest.state = PlayerState.JOINING
-
-        (map_id, map_name, map_path) = await self.choose_map([host, guest])
-
-        game = self.game_service.create_game(
-            game_mode='ladder1v1',
-            host=host,
-            name=f"{host.login} Vs {guest.login}"
-        )
-
-        host.game = game
-        guest.game = game
-
-        game.map_file_path = map_path
-
-        game.set_player_option(host.id, 'StartSpot', 1)
-        game.set_player_option(guest.id, 'StartSpot', 2)
-        game.set_player_option(host.id, 'Faction', host.faction)
-        game.set_player_option(guest.id, 'Faction', guest.faction)
-        game.set_player_option(host.id, 'Color', 1)
-        game.set_player_option(guest.id, 'Color', 2)
-        game.set_player_option(host.id, 'Army', 2)
-        game.set_player_option(guest.id, 'Army', 3)
-
-        # Remembering that "Team 1" corresponds to "-": the non-team.
-        game.set_player_option(host.id, 'Team', 1)
-        game.set_player_option(guest.id, 'Team', 1)
-
-        mapname = map_path[5:-4]
-        # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
-        # Really in the future, just send a better description
-        self._logger.debug("Starting ladder game: %s", game)
-        await host.lobby_connection.launch_game(game, is_host=True, use_map=mapname)
         try:
-            hosted = await game.await_hosted()
-            if not hosted:
-                raise TimeoutError("Host left lobby")
-        except TimeoutError:
-            msg = {"command": "game_launch_timeout"}
-            await asyncio.gather(
-                host.lobby_connection.send(msg),
-                guest.lobby_connection.send(msg)
+            self._logger.debug(
+                "Starting ladder game between %s and %s", host, guest
             )
-            # TODO: Uncomment this line once the client supports `game_launch_timeout`.
-            # Until then, returning here will cause the client to think it is
-            # searching for ladder, even though the server has already removed it
-            # from the queue.
-            # return
-            self._logger.debug("Ladder game failed to launch due to a timeout")
+            host.state = PlayerState.HOSTING
+            guest.state = PlayerState.JOINING
 
-        await guest.lobby_connection.launch_game(
-            game, is_host=False, use_map=mapname
-        )
-        self._logger.debug("Ladder game launched successfully")
+            (map_id, map_name, map_path) = await self.choose_map([host, guest])
+
+            game = self.game_service.create_game(
+                game_mode='ladder1v1',
+                host=host,
+                name=f"{host.login} Vs {guest.login}"
+            )
+
+            host.game = game
+            guest.game = game
+
+            game.map_file_path = map_path
+
+            game.set_player_option(host.id, 'StartSpot', 1)
+            game.set_player_option(guest.id, 'StartSpot', 2)
+            game.set_player_option(host.id, 'Faction', host.faction)
+            game.set_player_option(guest.id, 'Faction', guest.faction)
+            game.set_player_option(host.id, 'Color', 1)
+            game.set_player_option(guest.id, 'Color', 2)
+            game.set_player_option(host.id, 'Army', 2)
+            game.set_player_option(guest.id, 'Army', 3)
+
+            # Remembering that "Team 1" corresponds to "-": the non-team.
+            game.set_player_option(host.id, 'Team', 1)
+            game.set_player_option(guest.id, 'Team', 1)
+
+            mapname = map_path[5:-4]
+            # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
+            # Really in the future, just send a better description
+            self._logger.debug("Starting ladder game: %s", game)
+            await host.lobby_connection.launch_game(game, is_host=True, use_map=mapname)
+            try:
+                hosted = await game.await_hosted()
+                if not hosted:
+                    raise TimeoutError("Host left lobby")
+            except TimeoutError:
+                msg = {"command": "game_launch_cancelled"}
+                await asyncio.gather(
+                    host.send_message(msg),
+                    guest.send_message(msg)
+                )
+                # TODO: Uncomment this line once the client supports `game_launch_cancelled`.
+                # Until then, returning here will cause the client to think it is
+                # searching for ladder, even though the server has already removed it
+                # from the queue.
+
+                # return
+                self._logger.debug("Ladder game failed to launch due to a timeout")
+
+            await guest.lobby_connection.launch_game(
+                game, is_host=False, use_map=mapname
+            )
+            self._logger.debug("Ladder game launched successfully")
+        except Exception:
+            self._logger.exception("Failed to start ladder game!")
+            msg = {"command": "game_launch_cancelled"}
+            with contextlib.suppress(DisconnectedError):
+                await asyncio.gather(
+                    host.send_message(msg),
+                    guest.send_message(msg)
+                )
 
     async def choose_map(self, players: [Player]) -> MapDescription:
         maps = self.game_service.ladder_maps
@@ -232,8 +268,8 @@ class LadderService:
                 async for row in await conn.execute(query)
             ]
 
-    def on_connection_lost(self, player):
-        self.cancel_search(player)
+    async def on_connection_lost(self, player):
+        await self.cancel_search(player)
         if player in self._informed_players:
             self._informed_players.remove(player)
 

@@ -6,8 +6,20 @@ from .conftest import connect_and_sign_in, read_until_command
 pytestmark = pytest.mark.asyncio
 
 
+async def queue_player_for_matchmaking(user, lobby_server):
+    _, _, proto = await connect_and_sign_in(user, lobby_server)
+    await read_until_command(proto, 'game_info')
+    await proto.send_message({
+        'command': 'game_matchmaking',
+        'state': 'start',
+        'faction': 'uef'
+    })
+
+    return proto
+
+
 async def queue_players_for_matchmaking(lobby_server):
-    _, _, proto1 = await connect_and_sign_in(
+    proto1 = await queue_player_for_matchmaking(
         ('ladder1', 'ladder1'),
         lobby_server
     )
@@ -16,14 +28,7 @@ async def queue_players_for_matchmaking(lobby_server):
         lobby_server
     )
 
-    await read_until_command(proto1, 'game_info')
     await read_until_command(proto2, 'game_info')
-
-    await proto1.send_message({
-        'command': 'game_matchmaking',
-        'state': 'start',
-        'faction': 'uef'
-    })
 
     await proto2.send_message({
         'command': 'game_matchmaking',
@@ -38,7 +43,7 @@ async def queue_players_for_matchmaking(lobby_server):
     return proto1, proto2
 
 
-@fast_forward(1000)
+@fast_forward(100)
 async def test_game_matchmaking(lobby_server):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
 
@@ -54,6 +59,37 @@ async def test_game_matchmaking(lobby_server):
     assert msg1['uid'] == msg2['uid']
     assert msg1['mod'] == 'ladder1v1'
     assert msg2['mod'] == 'ladder1v1'
+
+
+async def test_game_matchmaking_cancel(lobby_server):
+    proto = await queue_player_for_matchmaking(
+        ('ladder1', 'ladder1'),
+        lobby_server
+    )
+
+    await proto.send_message({
+        'command': 'game_matchmaking',
+        'state': 'stop',
+    })
+
+    # The server should respond with a matchmaking stop message
+    msg = await read_until_command(proto, 'game_matchmaking')
+
+    assert msg == {
+        'command': 'game_matchmaking',
+        'state': 'stop',
+    }
+
+
+@fast_forward(10)
+async def test_game_matchmaking_disconnect(lobby_server):
+    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+    # One player disconnects before the game has launched
+    proto1.close()
+
+    msg = await read_until_command(proto2, 'game_launch_cancelled')
+
+    assert msg == {'command': 'game_launch_cancelled'}
 
 
 @fast_forward(100)
@@ -109,6 +145,7 @@ async def test_command_matchmaker_info(lobby_server, mocker):
     }
 
 
+@fast_forward(10)
 async def test_matchmaker_info_message_on_cancel(lobby_server):
     _, _, proto = await connect_and_sign_in(
         ('ladder1', 'ladder1'),

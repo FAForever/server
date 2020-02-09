@@ -9,6 +9,7 @@ from server.gameconnection import GameConnection, GameConnectionState
 from server.games import Game
 from server.geoip_service import GeoIpService
 from server.ladder_service import LadderService
+from server.protocol import QDataStreamProtocol
 
 
 @pytest.fixture
@@ -33,7 +34,7 @@ def game_connection(
         database=database,
         game=game,
         player=players.hosting,
-        protocol=mock.Mock(),
+        protocol=asynctest.create_autospec(QDataStreamProtocol),
         player_service=player_service,
         games=game_service
     )
