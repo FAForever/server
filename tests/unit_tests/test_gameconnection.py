@@ -121,7 +121,7 @@ async def test_handle_action_GameState_lobby_calls_ConnectToHost(
     event_loop,
     players
 ):
-    game_connection.send_message = mock.MagicMock()
+    game_connection.send = CoroutineMock()
     game_connection.connect_to_host = CoroutineMock()
     game_connection.player = players.joining
     players.joining.game = game
@@ -141,7 +141,7 @@ async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
     event_loop,
     players
 ):
-    game_connection.send_message = mock.MagicMock()
+    game_connection.send = CoroutineMock()
     game_connection.connect_to_host = CoroutineMock()
     game_connection.connect_to_peer = CoroutineMock()
     game_connection.player = players.joining

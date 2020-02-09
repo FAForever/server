@@ -11,7 +11,9 @@ from .game_service import GameService
 from .games.game import Game, GameState, ValidityState, Victory
 from .player_service import PlayerService
 from .players import Player, PlayerState
-from .protocol import GpgNetServerProtocol, QDataStreamProtocol
+from .protocol import (
+    DisconnectedError, GpgNetServerProtocol, QDataStreamProtocol
+)
 
 
 @with_logger
@@ -68,7 +70,16 @@ class GameConnection(GpgNetServerProtocol):
     def player(self, val: Player):
         self._player = val
 
-    async def send_message(self, message):
+    async def send(self, message):
+        """
+        Send a game message to the client.
+
+        :raises: DisconnectedError
+
+        NOTE: When calling this on a connection other than `self` make sure to
+        handle `DisconnectedError`, otherwise failure to send the message will
+        cause the caller to be disconnected as well.
+        """
         message['target'] = "game"
 
         self._logger.log(TRACE, ">> %s: %s", self.player.login, message)
@@ -313,40 +324,42 @@ class GameConnection(GpgNetServerProtocol):
         """
 
         async with self._db.acquire() as conn:
-
             # Sometime the game sends a wrong ID - but a correct player name
             # We need to make sure the player ID is correct before pursuing
 
             check = await conn.execute(select([login.c.id]).where(
-                or_(login.c.id == teamkiller_id,
-                login.c.login == teamkiller_name)
+                or_(
+                    login.c.id == teamkiller_id,
+                    login.c.login == teamkiller_name
+                )
             ))
 
             row = await check.fetchone()
             if not row:
-                self._logger.debug("Discarded teamkill report with unknown reported player %s[%s]",
-                                   teamkiller_id,
-                                   teamkiller_name
+                self._logger.debug(
+                    "Discarded teamkill report with unknown reported player %s[%s]",
+                    teamkiller_id, teamkiller_name
                 )
                 return
 
             verified_teamkiller_id = row[login.c.id]
 
-        # The reporter's ID also needs to be checked the exact same way
-        # for the same reasons
-
+            # The reporter's ID also needs to be checked the exact same way
+            # for the same reasons
 
             check = await conn.execute(select([login.c.id]).where(
-                or_(login.c.id == reporter_id,
-                login.c.login == reporter_name)
+                or_(
+                    login.c.id == reporter_id,
+                    login.c.login == reporter_name
+                )
             ))
 
             row = await check.fetchone()
             if not row:
-                self._logger.debug("Discarded teamkill report with unknown reporter %s[%s]",
-                                   reporter_id,
-                                   reporter_name
-                                   )
+                self._logger.debug(
+                    "Discarded teamkill report with unknown reporter %s[%s]",
+                    reporter_id, reporter_name
+                )
                 return
 
             verified_reporter_id = row[login.c.id]
@@ -396,22 +409,28 @@ class GameConnection(GpgNetServerProtocol):
         receiver_id = int(receiver_id)
         peer = self.player_service.get_player(receiver_id)
         if not peer:
-            self._logger.info(
+            self._logger.debug(
                 "Ignoring ICE message for unknown player: %s", receiver_id
             )
             return
 
         game_connection = peer.game_connection
         if not game_connection:
-            self._logger.info(
+            self._logger.debug(
                 "Ignoring ICE message for player without game connection: %s", receiver_id
             )
             return
 
-        await game_connection.send_message({
-            "command": "IceMsg",
-            "args": [int(self.player.id), ice_msg]
-        })
+        try:
+            await game_connection.send({
+                "command": "IceMsg",
+                "args": [int(self.player.id), ice_msg]
+            })
+        except DisconnectedError:
+            self._logger.debug(
+                "Failed to send ICE message to player due to a disconnect: %s",
+                receiver_id
+            )
 
     async def handle_game_state(self, state):
         """
@@ -503,7 +522,6 @@ class GameConnection(GpgNetServerProtocol):
     def _mark_dirty(self):
         if self.game:
             self.game_service.mark_dirty(self.game)
-
 
     async def abort(self, log_message: str=''):
         """
