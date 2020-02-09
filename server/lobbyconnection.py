@@ -63,15 +63,6 @@ class ClientError(Exception):
         self.recoverable = recoverable
 
 
-class MessageHandlingError(Exception):
-    """
-    A ValueError for the fields of a clientmessages.Message
-    """
-    def __init__(self, message, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.message = message
-
-
 class AuthenticationError(Exception):
     def __init__(self, message, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1164,7 +1155,3 @@ class LobbyConnection:
 
     def _register_connectivity_test(self):
         self._attempted_connectivity_test = True
-
-    @property
-    def is_authenticated(self):
-        return self._is_authenticated
