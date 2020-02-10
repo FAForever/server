@@ -84,6 +84,7 @@ class LobbyTargetMessage(MessageFromClient):
 
 class ConnectivityTargetMessage(NamedTuple, MessageFromClient):
     """Deprecated messages with `target` entry `'connectivity'` will be directed here."""
+
     command: Optional[str]
 
     @classmethod
@@ -93,17 +94,18 @@ class ConnectivityTargetMessage(NamedTuple, MessageFromClient):
 
 
 class GameTargetMessage(NamedTuple, MessageFromClient):
-    """ Messages with `target` entry `'game'` will be directed here
-and passed on to a `GameConnection`.
+    """
+    Messages with `target` entry `'game'` will be directed here
+    and passed on to a `GameConnection`.
 
-Required fields:
+    Required fields:
 
-  - `command`: command to be passed on to the `GameConnection`.
+      - `command`: command to be passed on to the `GameConnection`.
 
-Optional fields:
+    Optional fields:
 
-  - `args`: list of arguments to be passed along with the command
-"""
+      - `args`: list of arguments to be passed along with the command
+    """
 
     command: str
     args: list
@@ -124,10 +126,11 @@ Optional fields:
 
 
 class PingMessage(NamedTuple, LobbyTargetMessage):
-    """Required fields:
+    """
+    Required fields:
 
- - `command`: `ping`
-"""
+     - `command`: `ping`
+    """
 
     command: str = "ping"
 
@@ -137,10 +140,11 @@ class PingMessage(NamedTuple, LobbyTargetMessage):
 
 
 class PongMessage(NamedTuple, LobbyTargetMessage):
-    """Required fields:
+    """
+    Required fields:
 
- - `command`: `pong`
-"""
+     - `command`: `pong`
+    """
 
     command: str = "pong"
 
@@ -150,10 +154,11 @@ class PongMessage(NamedTuple, LobbyTargetMessage):
 
 
 class AccountCreationMessage(NamedTuple, LobbyTargetMessage):
-    """Required fields:
+    """
+    Required fields:
 
- - `command`: `create_account`
-"""
+     - `command`: `create_account`
+    """
 
     command: str = "create_account"
 
@@ -163,10 +168,11 @@ class AccountCreationMessage(NamedTuple, LobbyTargetMessage):
 
 
 class CoopListMessage(NamedTuple, LobbyTargetMessage):
-    """Required fields:
+    """
+    Required fields:
 
- - `command`: `coop_list`
-"""
+     - `command`: `coop_list`
+    """
 
     command: str = "coop_list"
 
@@ -176,10 +182,11 @@ class CoopListMessage(NamedTuple, LobbyTargetMessage):
 
 
 class MatchmakerInfoMessage(NamedTuple, LobbyTargetMessage):
-    """Required fields:
+    """
+    Required fields:
 
- - `command`: `matchmaker_info`
-"""
+     - `command`: `matchmaker_info`
+    """
 
     command: str = "matchmaker_info"
 
@@ -189,17 +196,18 @@ class MatchmakerInfoMessage(NamedTuple, LobbyTargetMessage):
 
 
 class SocialRemoveMessage(NamedTuple, LobbyTargetMessage):
-    """Required fields:  
+    """
+    Required fields:  
 
-  - `command`: `social_remove`  
+      - `command`: `social_remove`  
 
-And at least one of the following:
+    And at least one of the following:
 
- - `friend`: `id` of player to remove from friend list
- - `foe`: `id` of player to remove from foe list
+     - `friend`: `id` of player to remove from friend list
+     - `foe`: `id` of player to remove from foe list
 
-If both `friend` and `foe` are specified, the foe will be ignored
-"""
+    If both `friend` and `foe` are specified, the foe will be ignored
+    """
 
     command: str
     id_to_remove: int
@@ -221,17 +229,18 @@ If both `friend` and `foe` are specified, the foe will be ignored
 
 
 class SocialAddMessage(NamedTuple, LobbyTargetMessage):
-    """Required fields:  
+    """
+    Required fields:  
 
-  - `command`: `social_add`  
+      - `command`: `social_add`  
 
-And at least one of the following:
+    And at least one of the following:
 
- - `friend`: `id` of player to add to friend list
- - `foe`: `id` of player to add to foe list
- 
-If both `friend` and `foe` are specified, the `foe` will be ignored.
-"""
+     - `friend`: `id` of player to add to friend list
+     - `foe`: `id` of player to add to foe list
+     
+    If both `friend` and `foe` are specified, the `foe` will be ignored.
+    """
 
     command: str
     id_to_add: int
@@ -256,8 +265,9 @@ If both `friend` and `foe` are specified, the `foe` will be ignored.
 
 
 class BottleneckMessage(NamedTuple, LobbyTargetMessage):
-    """TODO: Unsure what this does. Will it still be sent? How does lobbyconnection handle it?
-"""
+    """
+    TODO: Unsure what this does. Will it still be sent? How does lobbyconnection handle it?
+    """
 
     command: str = "Bottleneck"
 
@@ -267,32 +277,33 @@ class BottleneckMessage(NamedTuple, LobbyTargetMessage):
 
 
 class AdminMessage(NamedTuple, LobbyTargetMessage):
-    """Required fields:  
+    """
+    Required fields:  
 
-  - `command`: `admin`  
-  - `action`: one of `closeFA`, `closelobby`,`broadcast`, `join_channel`
+      - `command`: `admin`  
+      - `action`: one of `closeFA`, `closelobby`,`broadcast`, `join_channel`
 
-Required if `action` is `closeFA` or `closelobby`:
+    Required if `action` is `closeFA` or `closelobby`:
 
- - `user_id`: user id of target player
+     - `user_id`: user id of target player
 
-Optional if `action` is `closelobby`:
+    Optional if `action` is `closelobby`:
 
- - `ban`: json containing ban details
+     - `ban`: json containing ban details
 
-Ban json should contain fiels `reason`, `duration`, and `period`.
-Defaults are currently `Unspecified`, 1, and `SECOND`.
-Admissible periods are `SECOND`, `DAY`, `WEEK`, `MONTH`.
+    Ban json should contain fiels `reason`, `duration`, and `period`.
+    Defaults are currently `Unspecified`, 1, and `SECOND`.
+    Admissible periods are `SECOND`, `DAY`, `WEEK`, `MONTH`.
 
-Required if `action` is `broadcast`:
+    Required if `action` is `broadcast`:
 
- - `message`: message to broadcast
+     - `message`: message to broadcast
 
-Required if `action` is `join_channel`:
+    Required if `action` is `join_channel`:
 
- - `channel`: ? probably some kind of channel id
- - `user_ids`: ? probably ids of all users that will join the channel?
-"""
+     - `channel`: ? probably some kind of channel id
+     - `user_ids`: ? probably ids of all users that will join the channel?
+    """
 
     command: str
     action: str
@@ -355,8 +366,9 @@ Required if `action` is `join_channel`:
 
 
 class HelloMessage(NamedTuple, LobbyTargetMessage):
-    """TODO Description
-"""
+    """
+    TODO Description
+    """
 
     command: str
     login: str
@@ -379,18 +391,19 @@ class HelloMessage(NamedTuple, LobbyTargetMessage):
 
 
 class GameMatchmakingMessage(NamedTuple, LobbyTargetMessage):
-    """Required fields:  
+    """
+    Required fields:  
 
-  - `command`: `game_matchmaking`  
-  - `state`: `start` or `stop`
+      - `command`: `game_matchmaking`  
+      - `state`: `start` or `stop`
 
-Optional fields:
-  - `faction`: faction of the player if `state` is `start`. Defailt `uef`.
-    Can either be the name (e.g. 'uef') or the enum value (e.g. 1).
-  - `mod`: Currently discarded. If `state` is `start`, this  might at some
-    point specify in which queue to start matchmaking. Default `ladder1v1`
-    if empty.
-"""
+    Optional fields:
+      - `faction`: faction of the player if `state` is `start`. Defailt `uef`.
+        Can either be the name (e.g. 'uef') or the enum value (e.g. 1).
+      - `mod`: Currently discarded. If `state` is `start`, this  might at some
+        point specify in which queue to start matchmaking. Default `ladder1v1`
+        if empty.
+    """
 
     command: str
     mod: str
@@ -418,18 +431,19 @@ Optional fields:
 
 
 class GameHostMessage(NamedTuple, LobbyTargetMessage):
-    """Required fields:  
+    """
+    Required fields:  
 
-  - `command`: `game_matchmaking`  
+      - `command`: `game_matchmaking`  
 
-Optional fields:
+    Optional fields:
 
-  - `title`: title of the game (default: set by LobbyConnection.command_game_host)  
-  - `mod`: (default: `faf`)  
-  - `mapname`: (default `scmp_007`)  
-  - `password`: (default: none)  
-  - `visibility`: according to games.VisibilityState  
-"""
+      - `title`: title of the game (default: set by LobbyConnection.command_game_host)  
+      - `mod`: (default: `faf`)  
+      - `mapname`: (default `scmp_007`)  
+      - `password`: (default: none)  
+      - `visibility`: according to games.VisibilityState  
+    """
 
     command: str
     title: str
@@ -452,14 +466,15 @@ Optional fields:
 
 
 class GameJoinMessage(NamedTuple, LobbyTargetMessage):
-    """Required fields:  
+    """
+    Required fields:  
 
-  - `command`: `game_join`  
-  - `uid`: id of game to join
+      - `command`: `game_join`  
+      - `uid`: id of game to join
 
-Optional fields:
-  - `password`: (default: none)
-"""
+    Optional fields:
+      - `password`: (default: none)
+    """
 
     command: str
     uid: int
@@ -538,15 +553,16 @@ class RestoreGameSessionMessage(NamedTuple, LobbyTargetMessage):
 
 
 class AvatarMessage(NamedTuple, LobbyTargetMessage):
-    """Required fields:  
+    """
+    Required fields:  
 
-  - `command`: `avatar`  
-  - `action`: `select` or `list_avatar` (default: `list_avatar`)
+      - `command`: `avatar`  
+      - `action`: `select` or `list_avatar` (default: `list_avatar`)
 
-Optional fields:
+    Optional fields:
 
-  - `avatar`: url of new avatar or `null` for default avatar (?) (default: `null`)
-"""
+      - `avatar`: url of new avatar or `null` for default avatar (?) (default: `null`)
+    """
 
     command: str
     action: str
@@ -570,14 +586,15 @@ Optional fields:
 
 
 class AskSessionMessage(NamedTuple, LobbyTargetMessage):
-    """Required fields:
+    """
+    Required fields:
 
- - `command`: `ask_session`
+     - `command`: `ask_session`
 
-Expected fields:
-- `user_agent`: TODO probably `'downlords-faf-client'`
-- `version`: TODO probably version number of downlords-faf-client
-"""
+    Expected fields:
+    - `user_agent`: TODO probably `'downlords-faf-client'`
+    - `version`: TODO probably version number of downlords-faf-client
+    """
 
     command: str
     user_agent: str

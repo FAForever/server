@@ -38,6 +38,7 @@ from .protocol import QDataStreamProtocol
 from .rating import RatingType
 from .types import Address
 from  .clientmessages import *
+from .docstrings import trim_docstring
 
 
 __pdoc__ = {}
@@ -48,7 +49,7 @@ def handler(handling_class):
         COMMAND_HANDLERS[handling_class] = function
 
         func_string = function.__doc__ or "[Method description missing]"
-        func_string = str(func_string).lstrip()
+        func_string = trim_docstring(func_string)
 
         if hasattr(function, "_requires_auth") and function._requires_auth:
             auth_string = "Requires the client to be authenticated."
@@ -56,7 +57,7 @@ def handler(handling_class):
             auth_string = "Does not require the client to be authenticated."
         
         class_string = handling_class.__doc__ or "[Message description missing]"
-        class_string = str(class_string).lstrip()
+        class_string = trim_docstring(class_string)
 
         new_docstring = "\n\n".join([func_string, auth_string, class_string])
         __pdoc__[f"LobbyConnection.{function.__name__}"] = new_docstring
