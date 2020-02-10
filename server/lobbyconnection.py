@@ -40,11 +40,27 @@ from .types import Address
 from  .clientmessages import *
 
 
+__pdoc__ = {}
 COMMAND_HANDLERS = {}
 
-def handler(name):
+def handler(handling_class):
     def decorator(function: Callable) -> Callable:
-        COMMAND_HANDLERS[name] = function
+        COMMAND_HANDLERS[handling_class] = function
+
+        func_string = function.__doc__ or "[Method description missing]"
+        func_string = str(func_string).lstrip()
+
+        if hasattr(function, "_requires_auth") and function._requires_auth:
+            auth_string = "Requires the client to be authenticated."
+        else:
+            auth_string = "Does not require the client to be authenticated."
+        
+        class_string = handling_class.__doc__ or "[Message description missing]"
+        class_string = str(class_string).lstrip()
+
+        new_docstring = "\n\n".join([func_string, auth_string, class_string])
+        __pdoc__[f"LobbyConnection.{function.__name__}"] = new_docstring
+
         return function
 
     return decorator
@@ -125,6 +141,8 @@ class LobbyConnection:
                         f"Message invalid for unauthenticated connection: {command}"
                     )
                 return await function(self, *args, **kwargs)
+
+            wrapper._requires_auth = True
 
             return wrapper
 
@@ -216,39 +234,23 @@ class LobbyConnection:
 
     @handler(PingMessage)
     async def command_ping(self, parsed_message):
-        """
-        Sends a 'Pong' message back to the client.
-
-        Does not require the client to be authenticated.
-        """
+        """Sends a 'Pong' message back to the client."""
         await self.protocol.send_raw(self.protocol.pack_message('PONG'))
 
     @handler(PongMessage)
     async def command_pong(self, parsed_message):
-        """
-        Does nothing.
-
-        Does not require the client to be authenticated.
-        """
+        """Does nothing."""
         pass
 
     @handler(AccountCreationMessage)
     async def command_create_account(self, parsed_message):
-        """
-        Deprecated.
-
-        Does not require the client to be authenticated.
-        """
+        """Deprecated."""
         raise ClientError("FAF no longer supports direct registration. Please use the website to register.", recoverable=True)
 
     @handler(CoopListMessage)
     @Decorators.require_auth
     async def command_coop_list(self, parsed_message):
-        """ 
-        Send coop map list to the client.
-
-        Requires the client to be authenticated.
-        """
+        """Sends list of coop maps."""
         async with self._db.acquire() as conn:
             result = await conn.execute(
                 "SELECT name, description, filename, type, id FROM `coop_map`"
@@ -284,6 +286,7 @@ class LobbyConnection:
     @handler(MatchmakerInfoMessage)
     @Decorators.require_auth
     async def command_matchmaker_info(self, parsed_message):
+        """Sends the current status of the matchmaking queue."""
         await self.send({
             'command': 'matchmaker_info',
             'queues': [queue.to_dict() for queue in self.ladder_service.queues.values()]
@@ -298,9 +301,7 @@ class LobbyConnection:
     @handler(SocialRemoveMessage)
     @Decorators.require_auth
     async def command_social_remove(self, parsed_message):
-        """
-        Remove Player form Friend and Foe lists.
-        """
+        """Removes Player from Friend and Foe lists."""
         subject_id = parsed_message.id_to_remove
 
         async with self._db.acquire() as conn:
@@ -312,6 +313,7 @@ class LobbyConnection:
     @handler(SocialAddMessage)
     @Decorators.require_auth
     async def command_social_add(self, parsed_message):
+        """Adds a Player to your Friend or Foe list."""
         if parsed_message.adding_a_friend:
             status = "FRIEND"
         else:
@@ -343,6 +345,7 @@ class LobbyConnection:
     @handler(AdminMessage)
     @Decorators.require_auth
     async def command_admin(self, parsed_message):
+        """Various admin functionality crammed into a single command."""
         action = parsed_message.action
 
         if self.player.admin:
@@ -624,6 +627,7 @@ class LobbyConnection:
 
     @handler(HelloMessage)
     async def command_hello(self, parsed_message):
+        """Login."""
         login = parsed_message.login
         password = parsed_message.password
 
@@ -783,6 +787,8 @@ class LobbyConnection:
     @handler(AvatarMessage)
     @Decorators.require_auth
     async def command_avatar(self, parsed_message):
+        """Sends a list of avatars for the current user or selects a new avatar."""
+
         if parsed_message.action == "list_avatar":
             await self._command_avatar_list()
         elif parsed_message.action == "select":
@@ -817,6 +823,7 @@ class LobbyConnection:
     @handler(GameJoinMessage)
     @Decorators.require_auth
     async def command_game_join(self, parsed_message):
+        """Join a (lobby) game."""
         # FIXME why is this assert here and how is an AssertionError handled?
         assert isinstance(self.player, Player)
 
@@ -863,6 +870,7 @@ class LobbyConnection:
     @handler(GameMatchmakingMessage)
     @Decorators.require_auth
     async def command_game_matchmaking(self, parsed_message):
+        """Join or leave a matchmaking queue."""
         if self._attempted_connectivity_test:
             raise ClientError("Cannot host game. Please update your client to the newest version.")
 
@@ -890,6 +898,7 @@ class LobbyConnection:
     @handler(GameHostMessage)
     @Decorators.require_auth
     async def command_game_host(self, parsed_message):
+        """Host a new (lobby) game."""
         # FIXME why is this assert here and how is an AssertionError handled?
         assert isinstance(self.player, Player)
 
@@ -981,6 +990,7 @@ class LobbyConnection:
     @handler(ModvaultMessage)
     @Decorators.require_auth
     async def command_modvault(self, parsed_message):
+        """Initialize modvault, or like or download a replay."""
         type = parsed_message.type_field
 
         async with self._db.acquire() as conn:
@@ -1155,3 +1165,15 @@ class LobbyConnection:
 
     def _register_connectivity_test(self):
         self._attempted_connectivity_test = True
+
+# hide LobbyConnection methods which don't have a handler in pdoc
+for method_name in filter(lambda x: not x.startswith("_"), dir(LobbyConnection)):
+    __pdoc__.setdefault(f"LobbyConnection.{method_name}", False)
+
+# hide remaining global objects
+__pdoc__["and_"] = False
+__pdoc__["handler"] = False
+__pdoc__["text"] = False
+__pdoc__["select"] = False
+__pdoc__["AuthenticationError"] = False
+__pdoc__["ClientError"] = False
