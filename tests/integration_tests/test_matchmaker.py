@@ -205,7 +205,7 @@ async def test_matchmaker_info_message(lobby_server, mocker):
     }
 
 
-@fast_forward(1000)
+@fast_forward(10)
 async def test_command_matchmaker_info(lobby_server, mocker):
     mocker.patch('server.matchmaker.pop_timer.time', return_value=1_562_000_000)
 
@@ -215,9 +215,10 @@ async def test_command_matchmaker_info(lobby_server, mocker):
     )
 
     await read_until_command(proto, "game_info")
+    # Wait for the dirty reporting to happen
+    await read_until_command(proto, "matchmaker_info")
 
     await proto.send_message({"command": "matchmaker_info"})
-
     msg = await read_until_command(proto, "matchmaker_info")
     assert msg == {
         'command': 'matchmaker_info',

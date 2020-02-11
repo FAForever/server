@@ -17,6 +17,7 @@ from server.geoip_service import GeoIpService
 from server.ice_servers.nts import TwilioNTS
 from server.ladder_service import LadderService
 from server.lobbyconnection import ClientError, LobbyConnection
+from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
 from server.players import Player, PlayerState
 from server.protocol import DisconnectedError, QDataStreamProtocol
@@ -966,6 +967,31 @@ async def test_command_game_matchmaking(lobbyconnection, mock_player):
     })
 
     lobbyconnection.ladder_service.cancel_search.assert_called_with(lobbyconnection.player)
+
+
+async def test_command_matchmaker_info(lobbyconnection, ladder_service):
+    queue = MatchmakerQueue("test", Mock())
+    queue.timer.next_queue_pop = 1_562_000_000
+
+    lobbyconnection.ladder_service.queues = {
+        "test": queue
+    }
+    lobbyconnection.send = CoroutineMock()
+    await lobbyconnection.on_message_received({
+        'command': 'matchmaker_info'
+    })
+
+    lobbyconnection.send.assert_called_with({
+        'command': 'matchmaker_info',
+        'queues': [
+            {
+                'queue_name': 'test',
+                'queue_pop_time': '2019-07-01T16:53:20+00:00',
+                'boundary_80s': [],
+                'boundary_75s': []
+            }
+        ]
+    })
 
 
 async def test_connection_lost(lobbyconnection):
