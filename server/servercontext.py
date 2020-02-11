@@ -55,11 +55,11 @@ class ServerContext:
         return connection in self.connections.keys()
 
     async def broadcast(self, message, validate_fn=lambda a: True):
-        self._logger.log(TRACE, "]]: %s", message)
         await self._do_broadcast(
             validate_fn,
             lambda proto: proto.send_message(message)
         )
+        self._logger.log(TRACE, "]]: %s", message)
 
     async def broadcast_raw(self, message, validate_fn=lambda a: True):
         await self._do_broadcast(
