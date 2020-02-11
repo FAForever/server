@@ -3,7 +3,7 @@ from typing import Dict, Iterable, List, Set, Tuple
 from ..decorators import with_logger
 from .search import Match, Search
 
-WeighedGraph = Dict[Search, List[Tuple[Search, float]]]
+WeightedGraph = Dict[Search, List[Tuple[Search, float]]]
 
 
 def make_matches(searches: Iterable[Search]) -> List[Match]:
@@ -142,7 +142,7 @@ class RandomlyMatchNewbies(MatchmakingPolicy):
 
 @with_logger
 class Matchmaker(object):
-    def __init__(self, searches: List[Search]):
+    def __init__(self, searches: Iterable[Search]):
         self.searches = searches
         self.matches: Dict[Search, Search] = {}
 
@@ -170,7 +170,7 @@ class Matchmaker(object):
 @with_logger
 class _MatchingGraph:
     @staticmethod
-    def build_weighted(searches: Iterable[Search]) -> WeighedGraph:
+    def build_weighted(searches: Iterable[Search]) -> WeightedGraph:
         """ A graph in adjacency list representation, whose nodes are the searches
         and whose edges are the possible matchings for each node.
 
@@ -217,7 +217,7 @@ class _MatchingGraph:
             return False
 
     @staticmethod
-    def remove_isolated(graph: WeighedGraph):
+    def remove_isolated(graph: WeightedGraph):
         """ Remove any searches that have no possible matchings.
 
         Note: This assumes that edges are undirected. Calling this on directed

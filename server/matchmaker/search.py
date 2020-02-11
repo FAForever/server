@@ -187,9 +187,8 @@ class Search:
         """
         # NOTE: We are assuming for optimization purposes that quality is
         # symmetric. If this ever changes, update here
-        if quality >= self.match_threshold and quality >= other.match_threshold:
-            return True
-        return False
+        return (quality >= self.match_threshold and
+                quality >= other.match_threshold)
 
     def match(self, other: 'Search'):
         """
