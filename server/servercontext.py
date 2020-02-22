@@ -101,5 +101,5 @@ class ServerContext:
         finally:
             del self.connections[connection]
             server.stats.gauge('user.agents.{}'.format(connection.user_agent), -1, delta=True)
-            protocol.writer.close()
+            protocol.close()
             await connection.on_connection_lost()

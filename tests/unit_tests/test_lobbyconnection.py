@@ -359,10 +359,10 @@ async def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
 
 
 async def test_abort(mocker, lobbyconnection):
-    lobbyconnection.protocol.writer.close = mock.Mock()
+    lobbyconnection.protocol.close = mock.Mock()
     await lobbyconnection.abort()
 
-    lobbyconnection.protocol.writer.close.assert_any_call()
+    lobbyconnection.protocol.close.assert_any_call()
 
 
 async def test_send_game_list(mocker, database, lobbyconnection, game_stats_service):

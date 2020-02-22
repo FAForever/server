@@ -115,7 +115,7 @@ class LobbyConnection:
             await self.game_connection.abort()
             self.game_connection = None
         self._authenticated = False
-        self.protocol.writer.close()
+        self.protocol.close()
 
         if self.player:
             self.player_service.remove_player(self.player)
