@@ -71,7 +71,7 @@ class ServerContext:
         server.stats.incr('server.broadcasts')
         tasks = []
         for conn, proto in self.connections.items():
-            if validate_fn(conn):
+            if proto.connected and validate_fn(conn):
                 tasks.append(map_fn(proto))
 
         await gather_without_exceptions(tasks, DisconnectedError)
