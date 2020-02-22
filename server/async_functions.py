@@ -2,7 +2,10 @@
 Some helper functions for common async tasks.
 """
 import asyncio
+import logging
 from typing import Any, List, Type
+
+logger = logging.getLogger(__name__)
 
 
 async def gather_without_exceptions(
@@ -18,5 +21,7 @@ async def gather_without_exceptions(
         try:
             results.append(await fut)
         except exceptions:
-            pass
+            logger.debug(
+                "Ignoring error in gather_without_exceptions", exc_info=True
+            )
     return results
