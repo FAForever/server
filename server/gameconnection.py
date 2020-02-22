@@ -8,7 +8,7 @@ from .config import TRACE
 from .db.models import login, moderation_report, reported_user
 from .decorators import with_logger
 from .game_service import GameService
-from .games.game import Game, GameState, ValidityState, Victory
+from .games.game import Game, GameError, GameState, ValidityState, Victory
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import (
@@ -125,7 +125,12 @@ class GameConnection(GpgNetServerProtocol):
                 return
 
             self._state = GameConnectionState.CONNECTED_TO_HOST
-            self.game.add_game_connection(self)
+
+            try:
+                self.game.add_game_connection(self)
+            except GameError as e:
+                await self.abort(f"GameError while joining %s: %s", self.game.id, e)
+                return
 
             tasks = []
             for peer in self.game.connections:

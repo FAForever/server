@@ -161,6 +161,28 @@ async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
     game_connection.connect_to_peer.assert_called_with(peer_conn)
 
 
+async def test_handle_lobby_state_handles_GameError(
+    real_game: Game,
+    game_connection: GameConnection,
+    event_loop,
+    players
+):
+    game_connection.abort = CoroutineMock()
+    game_connection.connect_to_host = CoroutineMock()
+    game_connection.player = players.joining
+    game_connection.game = real_game
+
+    players.joining.game = real_game
+
+    real_game.host = players.hosting
+    real_game.state = GameState.ENDED
+
+    await game_connection.handle_action('GameState', ['Lobby'])
+    await exhaust_callbacks(event_loop)
+
+    game_connection.abort.assert_called_once()
+
+
 async def test_handle_action_GameState_lobby_calls_abort(
     game: Game,
     game_connection: GameConnection,
