@@ -893,6 +893,14 @@ async def test_connection_lost(lobbyconnection):
     lobbyconnection.player_service.remove_player.assert_called_once_with(lobbyconnection.player)
 
 
+async def test_connection_lost_no_player(lobbyconnection):
+    lobbyconnection.player = None
+    await lobbyconnection.on_connection_lost()
+
+    lobbyconnection.ladder_service.on_connection_lost.assert_not_called()
+    lobbyconnection.player_service.remove_player.assert_not_called()
+
+
 async def test_connection_lost_send(lobbyconnection, mock_protocol):
     await lobbyconnection.on_connection_lost()
 

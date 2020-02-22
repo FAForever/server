@@ -998,10 +998,9 @@ class LobbyConnection:
                 "Lost lobby connection killing game connection for player {}".format(self.game_connection.player.id))
             await self.game_connection.on_connection_lost()
 
-        await self.ladder_service.on_connection_lost(self.player)
-
         if self.player:
             self._logger.debug("Lost lobby connection removing player {}".format(self.player.id))
+            await self.ladder_service.on_connection_lost(self.player)
             self.player_service.remove_player(self.player)
 
     async def abort_connection_if_banned(self):
