@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 from unittest import mock
 
 import pytest
@@ -116,10 +117,11 @@ async def test_connection_broken_external(context, mock_server):
     proto = next(iter(ctx.connections.values()))
     proto.writer.transport.set_write_buffer_limits(high=0)
 
-    with pytest.raises(DisconnectedError):
-        # Message needs to be long
-        await proto.send_message(["Some long message" * 8192])
+    # Might raise DisconnectedError depending on OS
+    with contextlib.suppress(DisconnectedError):
+        await proto.send_message(["Some long message" * 4096])
 
+    await asyncio.sleep(0)
     assert len(ctx.connections) == 0
 
 
