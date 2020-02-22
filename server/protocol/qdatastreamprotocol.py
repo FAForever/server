@@ -137,6 +137,7 @@ class QDataStreamProtocol(Protocol):
         Close writer stream
         :return:
         """
+        self.connected = False
         self.writer.close()
 
     async def drain(self):
@@ -151,7 +152,7 @@ class QDataStreamProtocol(Protocol):
             try:
                 await self.writer.drain()
             except Exception as e:
-                self.connected = False
+                self.close()
                 raise DisconnectedError("Protocol connection lost!") from e
 
     async def send_message(self, message: dict):
@@ -162,7 +163,7 @@ class QDataStreamProtocol(Protocol):
     async def send_messages(self, messages):
         if not self.connected:
             raise DisconnectedError("Protocol is not connected!")
-        server.stats.incr('server.sent_messages')
+
         payload = [
             self.pack_message(json_encoder.encode(msg))
             for msg in messages
@@ -170,9 +171,13 @@ class QDataStreamProtocol(Protocol):
         self.writer.writelines(payload)
         await self.drain()
 
+        server.stats.incr('server.sent_messages')
+
     async def send_raw(self, data):
         if not self.connected:
             raise DisconnectedError("Protocol is not connected!")
-        server.stats.incr('server.sent_messages')
+
         self.writer.write(data)
         await self.drain()
+
+        server.stats.incr('server.sent_messages')

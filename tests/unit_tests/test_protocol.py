@@ -50,6 +50,12 @@ def unix_protocol(unix_srv, event_loop):
     protocol.close()
 
 
+async def test_close(protocol):
+    protocol.close()
+
+    assert protocol.connected is False
+
+
 async def test_QDataStreamProtocol_recv_small_message(protocol, reader):
     data = QDataStreamProtocol.pack_block(b''.join([QDataStreamProtocol.pack_qstring('{"some_header": true}'),
                                                     QDataStreamProtocol.pack_qstring('Goodbye')]))
