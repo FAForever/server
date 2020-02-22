@@ -119,7 +119,9 @@ class GameConnection(GpgNetServerProtocol):
         # followed by the rest of the players.
         elif player_state == PlayerState.JOINING:
             await self.connect_to_host(self.game.host.game_connection)
-            if self._state is GameConnectionState.ENDED:  # We aborted while trying to connect
+
+            if self._state is GameConnectionState.ENDED:
+                # We aborted while trying to connect
                 return
 
             self._state = GameConnectionState.CONNECTED_TO_HOST
@@ -137,7 +139,10 @@ class GameConnection(GpgNetServerProtocol):
         Connect self to a given peer (host)
         :return:
         """
-        assert peer.player.state == PlayerState.HOSTING
+        if peer.player.state != PlayerState.HOSTING:
+            await self.abort("The host left the lobby")
+            return
+
         await self.send_JoinGame(peer.player.login, peer.player.id)
 
         await peer.send_ConnectToPeer(

@@ -161,6 +161,27 @@ async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
     game_connection.connect_to_peer.assert_called_with(peer_conn)
 
 
+async def test_handle_action_GameState_lobby_calls_abort(
+    game: Game,
+    game_connection: GameConnection,
+    event_loop,
+    players
+):
+    game_connection.send = CoroutineMock()
+    game_connection.abort = CoroutineMock()
+    game_connection.player = players.joining
+    players.joining.game = game
+    game.host = players.hosting
+    game.host.state = PlayerState.IDLE
+    game.map_file_path = 'maps/some_map.zip'
+    game.map_folder_name = 'some_map'
+
+    await game_connection.handle_action('GameState', ['Lobby'])
+    await exhaust_callbacks(event_loop)
+
+    game_connection.abort.assert_called_once()
+
+
 async def test_handle_action_GameState_launching_calls_launch(
     game: Game,
     game_connection: GameConnection,
