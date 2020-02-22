@@ -111,29 +111,26 @@ class GameConnection(GpgNetServerProtocol):
         We determine the connectivity of the peer and respond
         appropriately
         """
-        try:
-            player_state = self.player.state
-            if player_state == PlayerState.HOSTING:
-                await self.send_HostGame(self.game.map_folder_name)
-                self.game.set_hosted()
-            # If the player is joining, we connect him to host
-            # followed by the rest of the players.
-            elif player_state == PlayerState.JOINING:
-                await self.connect_to_host(self.game.host.game_connection)
-                if self._state is GameConnectionState.ENDED:  # We aborted while trying to connect
-                    return
+        player_state = self.player.state
+        if player_state == PlayerState.HOSTING:
+            await self.send_HostGame(self.game.map_folder_name)
+            self.game.set_hosted()
+        # If the player is joining, we connect him to host
+        # followed by the rest of the players.
+        elif player_state == PlayerState.JOINING:
+            await self.connect_to_host(self.game.host.game_connection)
+            if self._state is GameConnectionState.ENDED:  # We aborted while trying to connect
+                return
 
-                self._state = GameConnectionState.CONNECTED_TO_HOST
-                self.game.add_game_connection(self)
+            self._state = GameConnectionState.CONNECTED_TO_HOST
+            self.game.add_game_connection(self)
 
-                tasks = []
-                for peer in self.game.connections:
-                    if peer != self and peer.player != self.game.host:
-                        self._logger.debug("%s connecting to %s", self.player, peer)
-                        tasks.append(self.connect_to_peer(peer))
-                await asyncio.gather(*tasks)
-        except Exception as e:  # pragma: no cover
-            self._logger.exception(e)
+            tasks = []
+            for peer in self.game.connections:
+                if peer != self and peer.player != self.game.host:
+                    self._logger.debug("%s connecting to %s", self.player, peer)
+                    tasks.append(self.connect_to_peer(peer))
+            await asyncio.gather(*tasks)
 
     async def connect_to_host(self, peer: "GameConnection"):
         """
@@ -443,15 +440,11 @@ class GameConnection(GpgNetServerProtocol):
             await self._handle_idle_state()
 
         elif state == 'Lobby':
-            # The game is initialized and awaiting commands
-            # At this point, it is listening locally on the
-            # port we told it to (self.player.game_port)
-            # We schedule an async task to determine their connectivity
-            # and respond appropriately
+            # TODO: Do we still need to schedule with `ensure_future`?
             #
             # We do not yield from the task, since we
             # need to keep processing other commands while it runs
-            asyncio.ensure_future(self._handle_lobby_state())
+            await self._handle_lobby_state()
 
         elif state == 'Launching':
             if self.player.state != PlayerState.HOSTING:
