@@ -590,10 +590,19 @@ class LobbyConnection:
         if old_player:
             self._logger.debug("player {} already signed in: {}".format(self.player.id, old_player))
             if old_player.lobby_connection:
-                await old_player.lobby_connection.send_warning("You have been signed out because you signed in elsewhere.", fatal=True)
                 old_player.lobby_connection.game_connection = None
                 old_player.lobby_connection.player = None
-                self._logger.debug("Removing previous game_connection and player reference of player {} in hope on_connection_lost() wouldn't drop her out of the game".format(self.player.id))
+                self._logger.debug(
+                    "Removing previous game_connection and player reference of "
+                    "player %s in hope on_connection_lost() wouldn't drop her "
+                    "out of the game",
+                    self.player.id
+                )
+                with contextlib.suppress(DisconnectedError):
+                    await old_player.lobby_connection.send_warning(
+                        "You have been signed out because you signed in elsewhere.",
+                        fatal=True
+                    )
 
         await self.player_service.fetch_player_data(self.player)
 

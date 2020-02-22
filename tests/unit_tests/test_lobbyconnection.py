@@ -1,4 +1,5 @@
 from datetime import datetime
+from hashlib import sha256
 from unittest import mock
 from unittest.mock import Mock
 
@@ -18,7 +19,7 @@ from server.ladder_service import LadderService
 from server.lobbyconnection import ClientError, LobbyConnection
 from server.player_service import PlayerService
 from server.players import Player, PlayerState
-from server.protocol import QDataStreamProtocol
+from server.protocol import DisconnectedError, QDataStreamProtocol
 from server.rating import RatingType
 from server.types import Address
 from sqlalchemy import and_, select, text
@@ -178,6 +179,43 @@ async def test_command_create_account_returns_error(lobbyconnection):
         "text": ("FAF no longer supports direct registration. "
                  "Please use the website to register.")
     })
+
+
+async def test_double_login(lobbyconnection, mock_players, player_factory):
+    lobbyconnection.check_policy_conformity = CoroutineMock(return_value=True)
+    old_player = player_factory()
+    mock_players.get_player.return_value = old_player
+
+    await lobbyconnection.on_message_received({
+        "command": "hello",
+        "login": "test",
+        "password": sha256(b"test_password").hexdigest(),
+        "unique_id": "blah"
+    })
+
+    old_player.lobby_connection.send_warning.assert_called_with(
+        "You have been signed out because you signed in elsewhere.",
+        fatal=True
+    )
+
+
+async def test_double_login_disconnected(lobbyconnection, mock_players, player_factory):
+    lobbyconnection.abort = CoroutineMock()
+    lobbyconnection.check_policy_conformity = CoroutineMock(return_value=True)
+    old_player = player_factory()
+    mock_players.get_player.return_value = old_player
+
+    old_player.lobby_connection.send_warning.side_effect = DisconnectedError("Test disconnect")
+
+    # Should not raise
+    await lobbyconnection.on_message_received({
+        "command": "hello",
+        "login": "test",
+        "password": sha256(b"test_password").hexdigest(),
+        "unique_id": "blah"
+    })
+
+    lobbyconnection.abort.assert_not_called()
 
 
 async def test_command_game_host_creates_game(lobbyconnection,
