@@ -101,7 +101,7 @@ class GameConnection(GpgNetServerProtocol):
         elif state == PlayerState.JOINING:
             pass
         else:
-            self._logger.exception("Unknown PlayerState: %s", state)
+            self._logger.error("Unknown PlayerState: %s", state)
             await self.abort()
 
     async def _handle_lobby_state(self):
@@ -176,12 +176,11 @@ class GameConnection(GpgNetServerProtocol):
                 "Unrecognized command %s: %s from player %s",
                 command, args, self.player
             )
-        except (TypeError, ValueError) as e:
-            self._logger.exception("Bad command arguments: %s", e)
+        except (TypeError, ValueError):
+            self._logger.exception("Bad command arguments: %s")
         except ConnectionError as e:
             raise e
-        except Exception as e:  # pragma: no cover
-            self._logger.exception(e)
+        except Exception:  # pragma: no cover
             self._logger.exception("Something awful happened in a game thread!")
             await self.abort()
 
@@ -553,9 +552,10 @@ class GameConnection(GpgNetServerProtocol):
             try:
                 await fut
             except Exception:
-                self._logger.exception(
+                self._logger.debug(
                     "peer_sendDisconnectFromPeer failed for player %i",
-                    self.player.id
+                    self.player.id,
+                    exc_info=True
                 )
 
     async def on_connection_lost(self):
