@@ -144,14 +144,14 @@ class QDataStreamProtocol(Protocol):
         Await the write buffer to empty.
         See StreamWriter.drain()
         """
-        # TODO: Figure out if sleep is needed here. There was a bug in older
-        # versions of asyncio, but does it still exist in new versions?
+        # NOTE: This sleep is needed in python versions <= 3.6
         # https://github.com/aio-libs/aioftp/issues/7
         await asyncio.sleep(0)
         async with self._drain_lock:
             try:
                 await self.writer.drain()
             except Exception as e:
+                self.connected = False
                 raise DisconnectedError("Protocol connection lost!") from e
 
     async def send_message(self, message: dict):

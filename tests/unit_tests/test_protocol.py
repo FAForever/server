@@ -4,7 +4,7 @@ from asyncio import StreamReader
 from unittest import mock
 
 import pytest
-from server.protocol import QDataStreamProtocol
+from server.protocol import DisconnectedError, QDataStreamProtocol
 
 pytestmark = pytest.mark.asyncio
 
@@ -119,3 +119,14 @@ async def test_send_raw_simultaneous_writes(unix_protocol):
     # If drain calls are not synchronized, then this will raise an
     # AssertionError from within asyncio
     await asyncio.gather(*(unix_protocol.send_raw(msg) for i in range(20)))
+
+
+async def test_send_connected_attribute(unix_protocol, unix_srv):
+    unix_protocol.reader.set_exception(
+        RuntimeError("Unit test triggered exception")
+    )
+
+    with pytest.raises(DisconnectedError):
+        await unix_protocol.send_message({"Hello": "World"})
+
+    assert unix_protocol.connected is False

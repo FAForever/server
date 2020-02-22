@@ -110,15 +110,15 @@ async def test_connection_broken_external(context, mock_server):
         *srv.sockets[0].getsockname()
     )
     writer.close()
-
-    proto = next(iter(ctx.connections.values()))
-
     # Need this sleep for test to work, otherwise closed protocol isn't detected
     await asyncio.sleep(0)
+
+    proto = next(iter(ctx.connections.values()))
+    proto.writer.transport.set_write_buffer_limits(high=0)
+
     with pytest.raises(DisconnectedError):
-        # Message needs to be long enough to exceed the high watermark,
-        # otherwise this call will return immediately without raising
-        await proto.send_message(["Some long message" * 4096])
+        # Message needs to be long
+        await proto.send_message(["Some long message" * 8192])
 
     assert len(ctx.connections) == 0
 
