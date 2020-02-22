@@ -34,7 +34,11 @@ class QDataStreamProtocol(Protocol):
         # drain() cannot be called concurrently by multiple coroutines:
         # http://bugs.python.org/issue29930.
         self._drain_lock = asyncio.Lock()
-        self.connected = True
+
+    @property
+    def connected(self):
+        # TODO: In python 3.7 and above call writer.is_closing() directly
+        return not self.writer.transport.is_closing()
 
     @staticmethod
     def read_qstring(buffer: bytes, pos: int=0) -> Tuple[int, str]:
@@ -137,7 +141,6 @@ class QDataStreamProtocol(Protocol):
         Close writer stream
         :return:
         """
-        self.connected = False
         self.writer.close()
 
     async def drain(self):
