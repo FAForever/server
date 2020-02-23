@@ -121,7 +121,7 @@ async def test_connection_broken_external(context, mock_server):
     with contextlib.suppress(DisconnectedError):
         await proto.send_message(["Some long message" * 4096])
 
-    await asyncio.sleep(0)
+    await asyncio.sleep(0.1)
     assert len(ctx.connections) == 0
 
 

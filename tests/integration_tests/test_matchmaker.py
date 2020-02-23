@@ -153,6 +153,7 @@ async def test_matchmaker_info_message_on_cancel(lobby_server):
     )
 
     await read_until_command(proto, 'game_info')
+    await read_until_command(proto, 'matchmaker_info')
 
     await proto.send_message({
         'command': 'game_matchmaking',
