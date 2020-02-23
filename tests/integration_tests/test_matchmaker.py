@@ -145,7 +145,7 @@ async def test_command_matchmaker_info(lobby_server, mocker):
     }
 
 
-@fast_forward(10)
+@fast_forward(5)
 async def test_matchmaker_info_message_on_cancel(lobby_server):
     _, _, proto = await connect_and_sign_in(
         ('ladder1', 'ladder1'),
