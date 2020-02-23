@@ -144,11 +144,15 @@ class GameConnection(GpgNetServerProtocol):
         Connect self to a given peer (host)
         :return:
         """
-        if peer.player.state != PlayerState.HOSTING:
+        if not peer or peer.player.state != PlayerState.HOSTING:
             await self.abort("The host left the lobby")
             return
 
         await self.send_JoinGame(peer.player.login, peer.player.id)
+
+        if not peer:
+            await self.abort("The host left the lobby")
+            return
 
         await peer.send_ConnectToPeer(
             player_name=self.player.login,
