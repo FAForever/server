@@ -1,4 +1,5 @@
 import asyncio
+import json
 import struct
 from asyncio import StreamReader
 from unittest import mock
@@ -56,6 +57,11 @@ async def test_close(protocol):
     assert protocol.connected is False
 
 
+async def test_types():
+    with pytest.raises(NotImplementedError):
+        QDataStreamProtocol.pack_message({"Not": ["a", "string"]})
+
+
 async def test_QDataStreamProtocol_recv_small_message(protocol, reader):
     data = QDataStreamProtocol.pack_block(b''.join([QDataStreamProtocol.pack_qstring('{"some_header": true}'),
                                                     QDataStreamProtocol.pack_qstring('Goodbye')]))
@@ -93,6 +99,17 @@ async def test_unpacks_evil_qstring(protocol, reader):
     message = await protocol.read_message()
 
     assert message == {'command': 'ask_session'}
+
+
+async def test_pack_unpack(protocol, reader):
+    message = {
+        "Some": "crazy",
+        "Message": ["message", 10],
+        "with": 1000
+    }
+    reader.feed_data(QDataStreamProtocol.pack_message(json.dumps(message)))
+
+    assert message == await protocol.read_message()
 
 
 async def test_send_message_simultaneous_writes(unix_protocol):

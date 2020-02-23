@@ -64,19 +64,6 @@ class QDataStreamProtocol(Protocol):
         return size + pos + 4, (buffer[pos + 4:pos + 4 + size]).decode('UTF-16BE')
 
     @staticmethod
-    def read_int32(buffer: bytes, pos: int=0) -> Tuple[int, int]:
-        """
-        Read a serialized 32-bit integer from the given buffer at given position
-
-        :return (int, int): (buffer_pos, int)
-        """
-        chunk = buffer[pos:pos + 4]
-        assert len(chunk) == 4
-
-        (num, ) = struct.unpack('!i', chunk)
-        return pos + 4, num
-
-    @staticmethod
     def pack_qstring(message: str) -> bytes:
         encoded = message.encode('UTF-16BE')
         return struct.pack('!i', len(encoded)) + encoded
