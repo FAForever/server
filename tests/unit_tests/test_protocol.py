@@ -136,3 +136,15 @@ async def test_send_connected_attribute(unix_protocol, unix_srv):
         await unix_protocol.send_message({"Hello": "World"})
 
     assert unix_protocol.connected is False
+
+
+async def test_send_when_disconnected(protocol):
+    protocol.close()
+
+    assert protocol.connected is False
+
+    with pytest.raises(DisconnectedError):
+        await protocol.send_message(["some message"])
+
+    with pytest.raises(DisconnectedError):
+        await protocol.send_messages([["some message"], ["some other message"]])
