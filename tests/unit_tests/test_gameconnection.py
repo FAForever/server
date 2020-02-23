@@ -9,6 +9,7 @@ from server.abc.base_game import GameConnectionState
 from server.games import Game
 from server.games.game import GameState, ValidityState, Victory
 from server.players import PlayerState
+from server.protocol import DisconnectedError
 
 pytestmark = pytest.mark.asyncio
 
@@ -69,6 +70,25 @@ async def test_disconnect_all_peers(
     await game_connection.disconnect_all_peers()
 
     disconnect_done.success.assert_called_once()
+
+
+async def test_connect_to_peer(game_connection):
+    peer = asynctest.create_autospec(GameConnection)
+
+    await game_connection.connect_to_peer(peer)
+
+    peer.send_ConnectToPeer.assert_called_once()
+
+
+async def test_connect_to_peer_disconnected(game_connection):
+    # Weak reference has dissapeared
+    await game_connection.connect_to_peer(None)
+
+    peer = asynctest.create_autospec(GameConnection)
+    peer.send_ConnectToPeer.side_effect = DisconnectedError("Test error")
+
+    # The client disconnects right as we send the message
+    await game_connection.connect_to_peer(peer)
 
 
 async def test_handle_action_GameState_idle_adds_connection(

@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 
 from server.db import FAFDatabase
 from sqlalchemy import or_, select, text
@@ -165,16 +166,20 @@ class GameConnection(GpgNetServerProtocol):
         Connect two peers
         :return: None
         """
-        await self.send_ConnectToPeer(
-            player_name=peer.player.login,
-            player_uid=peer.player.id,
-            offer=True
-        )
-        await peer.send_ConnectToPeer(
-            player_name=self.player.login,
-            player_uid=self.player.id,
-            offer=False
-        )
+        if peer:
+            await self.send_ConnectToPeer(
+                player_name=peer.player.login,
+                player_uid=peer.player.id,
+                offer=True
+            )
+
+        if peer:
+            with contextlib.suppress(DisconnectedError):
+                await peer.send_ConnectToPeer(
+                    player_name=self.player.login,
+                    player_uid=self.player.id,
+                    offer=False
+                )
 
     async def handle_action(self, command, args):
         """
