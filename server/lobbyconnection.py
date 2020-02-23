@@ -334,7 +334,8 @@ class LobbyConnection:
                     else:
                         self._logger.warning('Administrative action: %s closed client for %s', self.player, player)
                     if player.lobby_connection:
-                        await player.lobby_connection.kick()
+                        with contextlib.suppress(DisconnectedError):
+                            await player.lobby_connection.kick()
                     if ban_fail:
                         raise ClientError("Kicked the player, but he was already banned!")
 
