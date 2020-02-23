@@ -138,7 +138,7 @@ class LadderService:
                 assert len(s2.players) == 1
                 p1, p2 = s1.players[0], s2.players[0]
                 msg = {"command": "match_found", "queue": "ladder1v1"}
-                # TODO: Handle disconnection
+                # TODO: Handle disconnection with a client supported message
                 await asyncio.gather(
                     p1.send_message(msg),
                     p2.send_message(msg)
@@ -195,10 +195,12 @@ class LadderService:
                     raise TimeoutError("Host left lobby")
             except TimeoutError:
                 msg = {"command": "game_launch_cancelled"}
-                await asyncio.gather(
-                    host.send_message(msg),
-                    guest.send_message(msg)
-                )
+                with contextlib.suppress(DisconnectedError):
+                    # Sending to host might not be needed, but we do it anyways
+                    await asyncio.gather(
+                        host.send_message(msg),
+                        guest.send_message(msg)
+                    )
                 # TODO: Uncomment this line once the client supports `game_launch_cancelled`.
                 # Until then, returning here will cause the client to think it is
                 # searching for ladder, even though the server has already removed it
@@ -207,6 +209,7 @@ class LadderService:
                 # return
                 self._logger.debug("Ladder game failed to launch due to a timeout")
 
+            # TODO: Graceful handling of NoneType errors due to disconnect
             await guest.lobby_connection.launch_game(
                 game, is_host=False, use_map=mapname
             )
