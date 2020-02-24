@@ -133,6 +133,7 @@ async def test_ping_message(lobby_server):
     await asyncio.wait_for(read_until_command(proto, 'ping'), 46)
 
 
+@fast_forward(5)
 async def test_player_info_broadcast(lobby_server):
     p1 = await connect_client(lobby_server)
     p2 = await connect_client(lobby_server)
@@ -146,7 +147,7 @@ async def test_player_info_broadcast(lobby_server):
     )
 
 
-@pytest.mark.slow
+@fast_forward(5)
 async def test_info_broadcast_authenticated(lobby_server):
     proto1 = await connect_client(lobby_server)
     proto2 = await connect_client(lobby_server)
@@ -168,6 +169,7 @@ async def test_info_broadcast_authenticated(lobby_server):
         assert False
 
 
+@fast_forward(5)
 async def test_game_info_not_broadcast_to_foes(lobby_server):
     # Rhiza is foed by test
     _, _, proto1 = await connect_and_sign_in(
@@ -196,6 +198,7 @@ async def test_game_info_not_broadcast_to_foes(lobby_server):
         await asyncio.wait_for(read_until_command(proto2, "game_info"), 0.2)
 
 
+@fast_forward(5)
 async def test_game_info_broadcast_to_friends(lobby_server):
     # test is the friend of friends
     _, _, proto1 = await connect_and_sign_in(
@@ -232,6 +235,7 @@ async def test_game_info_broadcast_to_friends(lobby_server):
         await asyncio.wait_for(read_until_command(proto3, "game_info"), 0.2)
 
 
+@pytest.mark.slow
 @fast_forward(300)
 async def test_game_info_broadcast_on_connection_error(
     event_loop, lobby_server, tmp_user, ladder_service, game_service, caplog
@@ -356,7 +360,7 @@ async def test_game_host_authenticated(lobby_server, user):
     assert isinstance(msg['uid'], int)
 
 
-@pytest.mark.slow
+@fast_forward(5)
 async def test_host_missing_fields(event_loop, lobby_server, player_service):
     player_id, session, proto = await connect_and_sign_in(
         ('test', 'test_password'),
@@ -380,6 +384,7 @@ async def test_host_missing_fields(event_loop, lobby_server, player_service):
     assert msg['featured_mod'] == 'faf'
 
 
+@fast_forward(5)
 async def test_coop_list(lobby_server):
     _, _, proto = await connect_and_sign_in(
         ('test', 'test_password'),
