@@ -6,9 +6,8 @@ Copyright (c) 2015-2016 Michael Søndergaard <sheeo@faforever.com>
 
 Distributed under GPLv3, see license.txt
 """
-import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Optional
 
 import aiomeasures
 import asyncio
