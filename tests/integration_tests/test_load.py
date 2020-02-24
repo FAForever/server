@@ -8,6 +8,41 @@ from .conftest import connect_and_sign_in, read_until_command
 
 pytestmark = pytest.mark.asyncio
 
+###############################################################################
+#                                   HELPERS                                   #
+###############################################################################
+
+
+async def host(proto):
+    """Send a sequence of commands to simulate hosting a game"""
+    await proto.send_message({
+        "command": "game_host",
+        "title": "A dirty game",
+        "mod": "faf",
+        "visibility": "public"
+    })
+    msg = await read_until_command(proto, "game_launch")
+
+    # Pretend like ForgedAlliance.exe opened
+    await proto.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Idle"]
+    })
+    return msg
+
+
+async def write_without_reading(proto):
+    # It takes quite a lot of spamming for the backpressure handling to take
+    # affect.
+    for _ in range(20_000):
+        await proto.send_message({
+            "command": "matchmaker_info",
+            "This is just to increase the message size": "DATA" * 1024
+        })
+
+    pytest.fail("The server did not apply backpressure to a spammer")
+
 
 @pytest.mark.slow
 @fast_forward(300)
@@ -42,24 +77,6 @@ async def test_game_info_broadcast_on_connection_error(
 
     # Set up our players that will disconnect
     dc_players = [await tmp_user("Disconnecter") for _ in range(NUM_PLAYERS_DC)]
-
-    # Host the games
-    async def host(proto):
-        await proto.send_message({
-            "command": "game_host",
-            "title": "A dirty game",
-            "mod": "faf",
-            "visibility": "public"
-        })
-        msg = await read_until_command(proto, "game_launch")
-
-        # Pretend like ForgedAlliance.exe opened
-        await proto.send_message({
-            "target": "game",
-            "command": "GameState",
-            "args": ["Idle"]
-        })
-        return msg
 
     async def spam_game_changes(proto):
         for _ in range(NUM_GAME_REHOSTS):
@@ -107,3 +124,57 @@ async def test_game_info_broadcast_on_connection_error(
     # Ensure that the connection errors haven't prevented games from being
     # cleaned up.
     assert len(game_service.all_games) == 0
+
+
+@fast_forward(50)
+async def test_backpressure_handling(lobby_server, tmp_user, caplog):
+    # TRACE will be spammed with thousands of messages
+    caplog.set_level(logging.DEBUG)
+
+    _, _, proto = await connect_and_sign_in(
+        await tmp_user("Malicious"), lobby_server
+    )
+    # Set our local buffer size to 0 so that we can detect immediately when the
+    # server has started applying backpressure
+    proto.writer.transport.set_write_buffer_limits(high=0)
+
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(write_without_reading(proto), 10)
+
+
+@fast_forward(50)
+async def test_backpressure_broadcast(lobby_server, tmp_user, caplog):
+    # TRACE will be spammed with thousands of messages
+    caplog.set_level(logging.DEBUG)
+
+    _, _, proto = await connect_and_sign_in(
+        await tmp_user("Normal"), lobby_server
+    )
+
+    _, _, proto2 = await connect_and_sign_in(
+        await tmp_user("Malicious"), lobby_server
+    )
+    # Set our local buffer size to 0 so that we can detect immediately when the
+    # server has started applying backpressure
+    proto2.writer.transport.set_write_buffer_limits(high=0)
+
+    async def normal_user(proto):
+        for _ in range(10):
+            # Trigger a broadcast
+            await host(proto)
+            # Make sure we receive the broadcast
+            await read_until_command(proto, "game_info")
+            await asyncio.sleep(0.1)
+            # Leave the game
+            await proto.send_message({
+                "target": "game",
+                "command": "GameState",
+                "args": ["Ended"]
+            })
+
+    # Start the spamming
+    asyncio.ensure_future(write_without_reading(proto2))
+
+    # Make sure that a normal user still gets their broadcasts.
+    # Improper handling will cause a TimeoutError
+    await asyncio.wait_for(normal_user(proto), 10)
