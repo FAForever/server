@@ -333,7 +333,7 @@ class LobbyConnection:
                                 raise ClientError('Your ban attempt upset the database: {}'.format(e))
                     else:
                         self._logger.warning('Administrative action: %s closed client for %s', self.player, player)
-                    if player.lobby_connection:
+                    if player.lobby_connection is not None:
                         with contextlib.suppress(DisconnectedError):
                             await player.lobby_connection.kick()
                     if ban_fail:
@@ -590,7 +590,7 @@ class LobbyConnection:
         old_player = self.player_service.get_player(self.player.id)
         if old_player:
             self._logger.debug("player {} already signed in: {}".format(self.player.id, old_player))
-            if old_player.lobby_connection:
+            if old_player.lobby_connection is not None:
                 old_player.lobby_connection.game_connection = None
                 old_player.lobby_connection.player = None
                 self._logger.debug(

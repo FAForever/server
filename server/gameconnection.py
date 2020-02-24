@@ -166,14 +166,14 @@ class GameConnection(GpgNetServerProtocol):
         Connect two peers
         :return: None
         """
-        if peer:
+        if peer is not None:
             await self.send_ConnectToPeer(
                 player_name=peer.player.login,
                 player_uid=peer.player.id,
                 offer=True
             )
 
-        if peer:
+        if peer is not None:
             with contextlib.suppress(DisconnectedError):
                 await peer.send_ConnectToPeer(
                     player_name=self.player.login,
