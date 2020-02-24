@@ -6,6 +6,7 @@ from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until_command
 
+# All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
 
 ###############################################################################
@@ -53,7 +54,7 @@ async def test_game_info_broadcast_on_connection_error(
     Causes connection errors in `do_report_dirties` which in turn will cause
     closed games not to be cleaned up if the errors aren't handled properly.
     """
-    # This test causes way to much logging output otherwise
+    # This test causes way too much logging output otherwise
     caplog.set_level(logging.WARNING)
 
     NUM_HOSTS = 10

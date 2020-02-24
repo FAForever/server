@@ -130,7 +130,7 @@ class GameConnection(GpgNetServerProtocol):
             try:
                 self.game.add_game_connection(self)
             except GameError as e:
-                await self.abort(f"GameError while joining %s: %s", self.game.id, e)
+                await self.abort(f"GameError while joining {self.game.id}: {e}")
                 return
 
             tasks = []
@@ -196,7 +196,7 @@ class GameConnection(GpgNetServerProtocol):
                 command, args, self.player
             )
         except (TypeError, ValueError):
-            self._logger.exception("Bad command arguments: %s")
+            self._logger.exception("Bad command arguments")
         except ConnectionError as e:
             raise e
         except Exception:  # pragma: no cover

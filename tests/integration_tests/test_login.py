@@ -4,6 +4,7 @@ from .conftest import (
     connect_and_sign_in, connect_client, perform_login, read_until_command
 )
 
+# All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
 
 

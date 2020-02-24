@@ -14,7 +14,7 @@ json_encoder = json.JSONEncoder(separators=(',', ':'))
 
 
 class DisconnectedError(ConnectionError):
-    """For signaling that a protocal has lost connection to the remote."""
+    """For signaling that a protocol has lost connection to the remote."""
 
 
 @with_logger
