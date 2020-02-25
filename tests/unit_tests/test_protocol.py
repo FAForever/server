@@ -2,6 +2,7 @@ import asyncio
 import json
 import struct
 from asyncio import StreamReader
+from socket import socketpair
 from unittest import mock
 
 import pytest
@@ -12,13 +13,28 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
-def reader(event_loop):
-    return StreamReader(loop=event_loop)
+def socket_pair():
+    """A pair of connected sockets."""
+    return socketpair()
 
 
 @pytest.fixture
-def writer():
-    return mock.Mock()
+async def reader_writer(socket_pair):
+    """A connected StreamReader, StreamWriter pair"""
+    rsock, _ = socket_pair
+    return await asyncio.open_connection(sock=rsock)
+
+
+@pytest.fixture
+def reader(reader_writer):
+    reader, _ = reader_writer
+    return reader
+
+
+@pytest.fixture
+def writer(reader_writer):
+    _, writer = reader_writer
+    return writer
 
 
 @pytest.fixture
@@ -168,11 +184,11 @@ async def test_send_when_disconnected(protocol):
         await protocol.send_messages([["some message"], ["some other message"]])
 
 
-@fast_forward(60)
+@fast_forward(5)
 async def test_disconnected_when_spamming(protocol):
     async def spam():
         while True:
-            await protocol.send_message({"Long": "message" * 2048})
+            await protocol.send_message({"Long": "message" * 2048}, timeout=1)
 
-    with pytest.raises(DisconnectedError):
-        await asyncio.wait_for(spam(), 60)
+    with pytest.raises(asyncio.TimeoutError):
+        await spam()
