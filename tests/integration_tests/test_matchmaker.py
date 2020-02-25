@@ -81,7 +81,7 @@ async def test_game_matchmaking_cancel(lobby_server):
     }
 
 
-@fast_forward(10)
+@fast_forward(50)
 async def test_game_matchmaking_disconnect(lobby_server):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
     # One player disconnects before the game has launched

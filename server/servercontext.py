@@ -3,7 +3,7 @@ import asyncio
 import server
 
 from .async_functions import gather_without_exceptions
-from .config import TRACE
+from .config import CLIENT_MAX_BUFFER_SIZE, CLIENT_STALL_TIME, TRACE
 from .decorators import with_logger
 from .protocol import DisconnectedError, QDataStreamProtocol
 from .types import Address
@@ -57,22 +57,40 @@ class ServerContext:
     async def broadcast(self, message, validate_fn=lambda a: True):
         await self._do_broadcast(
             validate_fn,
-            lambda proto: proto.send_message(message)
+            QDataStreamProtocol.send_message,
+            message
         )
         self._logger.log(TRACE, "]]: %s", message)
 
     async def broadcast_raw(self, message, validate_fn=lambda a: True):
         await self._do_broadcast(
             validate_fn,
-            lambda proto: proto.send_raw(message)
+            QDataStreamProtocol.send_raw,
+            message
         )
 
-    async def _do_broadcast(self, validate_fn, map_fn):
+    async def _do_broadcast(self, validate_fn, send_fn, message):
         server.stats.incr('server.broadcasts')
+
+        async def broadcast_with_stall_handling(proto):
+            try:
+                await asyncio.wait_for(
+                    send_fn(proto, message),
+                    timeout=CLIENT_STALL_TIME
+                )
+            except asyncio.TimeoutError:
+                buffer_size = len(proto.writer.transport._buffer)
+                if buffer_size > CLIENT_MAX_BUFFER_SIZE:
+                    self._logger.warning(
+                        "Terminating stalled connection with buffer size: %i",
+                        buffer_size
+                    )
+                    proto.abort()
+
         tasks = []
         for conn, proto in self.connections.items():
             if proto.connected and validate_fn(conn):
-                tasks.append(map_fn(proto))
+                tasks.append(broadcast_with_stall_handling(proto))
 
         await gather_without_exceptions(tasks, DisconnectedError)
 

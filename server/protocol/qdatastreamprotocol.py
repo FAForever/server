@@ -125,25 +125,33 @@ class QDataStreamProtocol(Protocol):
 
     def close(self):
         """
-        Close writer stream
+        Close writer stream as soon as the buffer has emptied.
         :return:
         """
         self.writer.close()
+
+    def abort(self):
+        """
+        Close writer stream immediately discarding the buffer contents
+        :return:
+        """
+        self.writer.transport.abort()
+
 
     async def drain(self):
         """
         Await the write buffer to empty.
         See StreamWriter.drain()
+
+        :raises: DisconnectedError if the client disconnects while waiting for
+        the write buffer to empty.
         """
         # NOTE: This sleep is needed in python versions <= 3.6
         # https://github.com/aio-libs/aioftp/issues/7
         await asyncio.sleep(0)
         async with self._drain_lock:
             try:
-                # If drain hangs for a long time without the connection
-                # dropping, then we will assume the client is up to no good and
-                # terminate their connection.
-                await asyncio.wait_for(self.writer.drain(), 30)
+                await self.writer.drain()
             except Exception as e:
                 self.close()
                 raise DisconnectedError("Protocol connection lost!") from e

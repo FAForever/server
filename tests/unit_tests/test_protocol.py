@@ -182,13 +182,3 @@ async def test_send_when_disconnected(protocol):
 
     with pytest.raises(DisconnectedError):
         await protocol.send_messages([["some message"], ["some other message"]])
-
-
-@fast_forward(5)
-async def test_disconnected_when_spamming(protocol):
-    async def spam():
-        while True:
-            await protocol.send_message({"Long": "message" * 2048}, timeout=1)
-
-    with pytest.raises(asyncio.TimeoutError):
-        await spam()
