@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from tests.utils import fast_forward
 
@@ -145,7 +147,7 @@ async def test_command_matchmaker_info(lobby_server, mocker):
     }
 
 
-@fast_forward(5)
+@fast_forward(10)
 async def test_matchmaker_info_message_on_cancel(lobby_server):
     _, _, proto = await connect_and_sign_in(
         ('ladder1', 'ladder1'),
@@ -161,11 +163,20 @@ async def test_matchmaker_info_message_on_cancel(lobby_server):
         'faction': 'uef'
     })
 
-    # Update message because a new player joined the queue
-    msg = await read_until_command(proto, 'matchmaker_info')
+    async def read_update_msg():
+        while True:
+            # Update message because a new player joined the queue
+            msg = await read_until_command(proto, 'matchmaker_info')
 
-    assert msg["queues"][0]["queue_name"] == "ladder1v1"
-    assert len(msg["queues"][0]["boundary_80s"]) == 1
+            if not msg["queues"][0]["boundary_80s"]:
+                continue
+
+            assert msg["queues"][0]["queue_name"] == "ladder1v1"
+            assert len(msg["queues"][0]["boundary_80s"]) == 1
+
+            return
+
+    await asyncio.wait_for(read_update_msg(), 2)
 
     await proto.send_message({
         'command': 'game_matchmaking',

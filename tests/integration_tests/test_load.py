@@ -160,7 +160,7 @@ async def test_backpressure_handling_stalls(lobby_server, caplog):
         await write_without_reading(proto)
 
 
-@fast_forward(50)
+@fast_forward(100)
 async def test_backpressure_broadcast(lobby_server, caplog):
     # TRACE will be spammed with thousands of messages
     caplog.set_level(logging.DEBUG)
@@ -196,4 +196,4 @@ async def test_backpressure_broadcast(lobby_server, caplog):
 
     # Make sure that a normal user still gets their broadcasts.
     # Improper handling will cause a TimeoutError
-    await asyncio.wait_for(normal_user(proto), NUM_GAME_REHOSTS * 2)
+    await asyncio.wait_for(normal_user(proto), NUM_GAME_REHOSTS * 3)
