@@ -3,7 +3,7 @@ import asyncio
 import server
 
 from .async_functions import gather_without_exceptions
-from .config import CLIENT_MAX_BUFFER_SIZE, CLIENT_STALL_TIME, TRACE
+from .config import CLIENT_MAX_WRITE_BUFFER_SIZE, CLIENT_STALL_TIME, TRACE
 from .decorators import with_logger
 from .protocol import DisconnectedError, QDataStreamProtocol
 from .types import Address
@@ -80,7 +80,7 @@ class ServerContext:
                 )
             except asyncio.TimeoutError:
                 buffer_size = len(proto.writer.transport._buffer)
-                if buffer_size > CLIENT_MAX_BUFFER_SIZE:
+                if buffer_size > CLIENT_MAX_WRITE_BUFFER_SIZE:
                     self._logger.warning(
                         "Terminating stalled connection with buffer size: %i",
                         buffer_size

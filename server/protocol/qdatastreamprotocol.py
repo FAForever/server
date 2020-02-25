@@ -30,6 +30,7 @@ class QDataStreamProtocol(Protocol):
         """
         self.reader = reader
         self.writer = writer
+        self.writer.transport.set_write_buffer_limits(high=0)
 
         # drain() cannot be called concurrently by multiple coroutines:
         # http://bugs.python.org/issue29930.

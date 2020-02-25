@@ -128,7 +128,7 @@ async def test_game_info_broadcast_on_connection_error(
     assert len(game_service.all_games) == 0
 
 
-@fast_forward(20)
+@fast_forward(30)
 async def test_backpressure_handling(lobby_server, caplog):
     # TRACE will be spammed with thousands of messages
     caplog.set_level(logging.DEBUG)
@@ -136,9 +136,10 @@ async def test_backpressure_handling(lobby_server, caplog):
     _, _, proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
-    # Set our local buffer size to 0 so that we can detect immediately when the
-    # server has started applying backpressure
+    # Set our local buffer size to 0 to help the server apply backpressure as
+    # early as possible.
     proto.writer.transport.set_write_buffer_limits(high=0)
+    proto.reader._limit = 0
 
     with pytest.raises(asyncio.TimeoutError):
         await asyncio.wait_for(write_without_reading(proto), 10)
@@ -152,9 +153,10 @@ async def test_backpressure_handling_stalls(lobby_server, caplog):
     _, _, proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
-    # Set our local buffer size to 0 so that we can detect immediately when the
-    # server has started applying backpressure
+    # Set our local buffer size to 0 to help the server apply backpressure as
+    # early as possible.
     proto.writer.transport.set_write_buffer_limits(high=0)
+    proto.reader._limit = 0
 
     with pytest.raises(DisconnectedError):
         await write_without_reading(proto)
@@ -174,9 +176,10 @@ async def test_backpressure_broadcast(lobby_server, caplog):
     _, _, proto2 = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
-    # Set our local buffer size to 0 so that we can detect immediately when the
-    # server has started applying backpressure
+    # Set our local buffer size to 0 to help the server apply backpressure as
+    # early as possible.
     proto2.writer.transport.set_write_buffer_limits(high=0)
+    proto.reader._limit = 0
 
     async def normal_user(proto):
         for _ in range(NUM_GAME_REHOSTS):
