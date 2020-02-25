@@ -144,28 +144,29 @@ async def test_backpressure_handling(lobby_server, tmp_user, caplog):
 
 
 @fast_forward(50)
-async def test_backpressure_broadcast(lobby_server, tmp_user, caplog):
+async def test_backpressure_broadcast(lobby_server, caplog):
     # TRACE will be spammed with thousands of messages
     caplog.set_level(logging.DEBUG)
 
+    NUM_GAME_REHOSTS = 20
+
     _, _, proto = await connect_and_sign_in(
-        await tmp_user("Normal"), lobby_server
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
     )
 
     _, _, proto2 = await connect_and_sign_in(
-        await tmp_user("Malicious"), lobby_server
+        ("test", "test_password"), lobby_server
     )
     # Set our local buffer size to 0 so that we can detect immediately when the
     # server has started applying backpressure
     proto2.writer.transport.set_write_buffer_limits(high=0)
 
     async def normal_user(proto):
-        for _ in range(10):
+        for _ in range(NUM_GAME_REHOSTS):
             # Trigger a broadcast
             await host(proto)
             # Make sure we receive the broadcast
             await read_until_command(proto, "game_info")
-            await asyncio.sleep(0.1)
             # Leave the game
             await proto.send_message({
                 "target": "game",
@@ -178,4 +179,4 @@ async def test_backpressure_broadcast(lobby_server, tmp_user, caplog):
 
     # Make sure that a normal user still gets their broadcasts.
     # Improper handling will cause a TimeoutError
-    await asyncio.wait_for(normal_user(proto), 10)
+    await asyncio.wait_for(normal_user(proto), NUM_GAME_REHOSTS * 2)
