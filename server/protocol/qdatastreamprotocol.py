@@ -140,7 +140,10 @@ class QDataStreamProtocol(Protocol):
         await asyncio.sleep(0)
         async with self._drain_lock:
             try:
-                await self.writer.drain()
+                # If drain hangs for a long time without the connection
+                # dropping, then we will assume the client is up to no good and
+                # terminate their connection.
+                await asyncio.wait_for(self.writer.drain(), 30)
             except Exception as e:
                 self.close()
                 raise DisconnectedError("Protocol connection lost!") from e

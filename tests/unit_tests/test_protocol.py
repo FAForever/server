@@ -6,6 +6,7 @@ from unittest import mock
 
 import pytest
 from server.protocol import DisconnectedError, QDataStreamProtocol
+from tests.utils import fast_forward
 
 pytestmark = pytest.mark.asyncio
 
@@ -165,3 +166,13 @@ async def test_send_when_disconnected(protocol):
 
     with pytest.raises(DisconnectedError):
         await protocol.send_messages([["some message"], ["some other message"]])
+
+
+@fast_forward(60)
+async def test_disconnected_when_spamming(protocol):
+    async def spam():
+        while True:
+            await protocol.send_message({"Long": "message" * 2048})
+
+    with pytest.raises(DisconnectedError):
+        await asyncio.wait_for(spam(), 60)
