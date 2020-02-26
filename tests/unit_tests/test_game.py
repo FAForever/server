@@ -435,7 +435,12 @@ async def test_compute_rating_computes_ladder_ratings(game: Game, players):
 async def test_compute_rating_balanced_teamgame(game: Game, player_factory):
     game.state = GameState.LOBBY
     players = [
-            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            (player_factory(
+                login=f"{i}",
+                player_id=i,
+                global_rating=rating,
+                with_lobby_connection=False
+            ), result, team)
             for i, (rating, result, team) in enumerate([
                 (Rating(1500, 250), 0, 2),
                 (Rating(1700, 120), 0, 2),
@@ -469,7 +474,12 @@ async def test_compute_rating_sum_of_scores_edge_case(
     win_team = 2
     lose_team = 3
     players = [
-            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            (player_factory(
+                login=f"{i}",
+                player_id=i,
+                global_rating=rating,
+                with_lobby_connection=False
+            ), result, team)
             for i, (rating, result, team) in enumerate([
                 (Rating(1500, 200), 1, lose_team),
                 (Rating(1500, 200), 1, lose_team),
@@ -511,7 +521,12 @@ async def test_compute_rating_only_one_surviver(game: Game, player_factory):
     lose_team = 3
     players = [
             (
-                player_factory(login=f"{i}", player_id=i, global_rating=Rating(1500, 200)),
+                player_factory(
+                    login=f"{i}",
+                    player_id=i,
+                    global_rating=Rating(1500, 200),
+                    with_lobby_connection=False
+                ),
                 outcome, result, team
             )
             for i, (outcome, result, team) in enumerate([

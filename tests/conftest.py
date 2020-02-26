@@ -22,6 +22,7 @@ from server.geoip_service import GeoIpService
 from server.lobbyconnection import LobbyConnection
 from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
+from server.players import Player, PlayerState
 from server.rating import RatingType
 from tests.utils import MockDatabase
 
@@ -141,29 +142,54 @@ def make_game(database, uid, players):
     return game
 
 
+def make_player(
+    state=PlayerState.IDLE,
+    global_rating=None,
+    ladder_rating=None,
+    numGames=0,
+    ladder_games=0,
+    **kwargs
+):
+    ratings = {k: v for k, v in {
+        RatingType.GLOBAL: global_rating,
+        RatingType.LADDER_1V1: ladder_rating,
+    }.items() if v is not None}
+
+    games = {
+        RatingType.GLOBAL: numGames,
+        RatingType.LADDER_1V1: ladder_games
+    }
+
+    p = Player(ratings=ratings, game_count=games, **kwargs)
+    p.state = state
+    return p
+
+
 @pytest.fixture
 def player_factory():
-    from server.players import Player, PlayerState
+    def make(
+        state=PlayerState.IDLE,
+        global_rating=None,
+        ladder_rating=None,
+        numGames=0,
+        ladder_games=0,
+        with_lobby_connection=True,
+        **kwargs
+    ):
+        p = make_player(
+            state=state,
+            global_rating=global_rating,
+            ladder_rating=ladder_rating,
+            numGames=numGames,
+            ladder_games=ladder_games,
+            **kwargs
+        )
 
-    def make(state=PlayerState.IDLE, global_rating=None, ladder_rating=None,
-             numGames=0, ladder_games=0, **kwargs):
-        ratings = {k: v for k, v in {
-            RatingType.GLOBAL: global_rating,
-            RatingType.LADDER_1V1: ladder_rating,
-        }.items() if v is not None}
-
-        games = {k: v for k, v in {
-            RatingType.GLOBAL: numGames,
-            RatingType.LADDER_1V1: ladder_games
-        }.items() if v is not None}
-
-        p = Player(ratings=ratings, game_count=games, **kwargs)
-        p.state = state
-
-        # lobby_connection is a weak reference, but we want the mock
-        # to live for the full lifetime of the player object
-        p.__owned_lobby_connection = asynctest.create_autospec(LobbyConnection)
-        p.lobby_connection = p.__owned_lobby_connection
+        if with_lobby_connection:
+            # lobby_connection is a weak reference, but we want the mock
+            # to live for the full lifetime of the player object
+            p.__owned_lobby_connection = asynctest.create_autospec(LobbyConnection)
+            p.lobby_connection = p.__owned_lobby_connection
         return p
 
     return make
