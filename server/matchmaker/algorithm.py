@@ -1,3 +1,4 @@
+import math
 from typing import Dict, Iterable, List, Set, Tuple
 
 from ..decorators import with_logger
@@ -65,25 +66,7 @@ class StableMarriage(MatchmakingPolicy):
 
                 self._propose(search, preferred, quality)
 
-        self._register_unmatched_searches()
-
         return self.matches
-
-    def _register_unmatched_searches(self):
-        """
-        Tells all unmatched searches that they went through a failed matching
-        attempt.
-        """
-        unmatched_searches = filter(
-            lambda search: search not in self.matches,
-            self.searches
-        )
-        for search in unmatched_searches:
-            search.register_failed_matching_attempt()
-            self._logger.debug(
-                "Search %s remained unmatched at threshold %f in attempt number %i",
-                search, search.match_threshold, search.failed_matching_attempts
-            )
 
     def _propose(self, search: Search, preferred: Search, new_quality: float):
         """ An unmatched search proposes to it's preferred opponent.
@@ -143,15 +126,38 @@ class Matchmaker(object):
 
     def find(self) -> List[Match]:
         self._logger.debug("Matching with stable marriage...")
-        self.matches.update(StableMarriage(self.searches).find())
+        searches = [s for s in self.searches if s is not None]
+        if len(searches) < 30:
+            ranks = _MatchingGraph.build_full(searches)
+        else:
+            ranks = _MatchingGraph.build_fast(searches)
+        self.matches.update(StableMarriage().find(ranks))
+
+        self._register_unmatched_searches()
 
         remaining_searches = [
             search for search in self.searches if search not in self.matches
         ]
         self._logger.debug("Matching randomly for remaining newbies...")
-        self.matches.update(RandomlyMatchNewbies(remaining_searches).find())
+        self.matches.update(RandomlyMatchNewbies().find(remaining_searches))
 
         return self._remove_duplicates()
+
+    def _register_unmatched_searches(self):
+        """
+        Tells all unmatched searches that they went through a failed matching
+        attempt.
+        """
+        unmatched_searches = filter(
+            lambda search: search not in self.matches,
+            self.searches
+        )
+        for search in unmatched_searches:
+            search.register_failed_matching_attempt()
+            self._logger.debug(
+                "Search %s remained unmatched at threshold %f in attempt number %i",
+                search, search.match_threshold, search.failed_matching_attempts
+            )
 
     def _remove_duplicates(self) -> List[Match]:
         matches_set: Set[Match] = set()
@@ -165,17 +171,19 @@ class Matchmaker(object):
 @with_logger
 class _MatchingGraph:
     @staticmethod
-    def build_weighted(searches: Iterable[Search]) -> WeightedGraph:
+    def build_full(searches: Iterable[Search]) -> WeightedGraph:
         """ A graph in adjacency list representation, whose nodes are the searches
-        and whose edges are the possible matchings for each node.
+        and whose edges are the possible matchings for each node. Checks every
+        possible edge for inclusion in the graph.
 
         Note that the highest quality searches come at the end of the list so that
         it can be used as a stack with .pop().
+
+        Time complexity: O(n^2)
         """
         adj_list = {search: [] for search in searches}
 
         # Generate every edge. There are 'len(searches) choose 2' of these.
-        searches = [s for s in searches if s is not None]
         for search, other in subset_pairs(searches):
             quality = search.quality_with(other)
             if not _MatchingGraph.is_possible_match(search, other, quality):
@@ -191,6 +199,36 @@ class _MatchingGraph:
 
         return adj_list
 
+    @staticmethod
+    def build_fast(searches: Iterable[Search]) -> WeightedGraph:
+        """ Builds approximately the same graph as `build_full`, but does not
+        check every possible edge.
+
+        Time complexity: O(n*log(n))
+        """
+        adj_list = {search: [] for search in searches}
+        # TODO: Support searches with larger parties
+        # Sort all searches by their average rating
+        searches = sorted(searches, key=lambda s: s.ratings[0][0])
+        # Now compute quality with `num_to_check` nearby searches on either side
+        num_to_check = max((4, int(math.log(len(searches), 2)))) // 2
+        for i, search in enumerate(searches):
+            for other in searches[i+1:i+1+num_to_check]:
+                quality = search.quality_with(other)
+                if not _MatchingGraph.is_possible_match(search, other, quality):
+                    continue
+
+                # Add the edge in both directions
+                adj_list[search].append((other, quality))
+                adj_list[other].append((search, quality))
+
+        # Sort edges by their weights i.e. match quality
+        for search, neighbors in adj_list.items():
+            neighbors.sort(key=lambda edge: edge[1])
+
+        return adj_list
+
+    @staticmethod
     def is_possible_match(search: Search, other: Search, quality: float) -> bool:
         log_string = "Quality between %s and %s: %s thresholds: [%s, %s]."
         log_args = (
