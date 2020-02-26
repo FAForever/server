@@ -126,20 +126,20 @@ class Matchmaker(object):
 
     def find(self) -> List[Match]:
         self._logger.debug("Matching with stable marriage...")
-        searches = [s for s in self.searches if s is not None]
+        searches = list(self.searches)
         if len(searches) < 30:
             ranks = _MatchingGraph.build_full(searches)
         else:
             ranks = _MatchingGraph.build_fast(searches)
         self.matches.update(StableMarriage().find(ranks))
 
-        self._register_unmatched_searches()
-
         remaining_searches = [
             search for search in self.searches if search not in self.matches
         ]
         self._logger.debug("Matching randomly for remaining newbies...")
         self.matches.update(RandomlyMatchNewbies().find(remaining_searches))
+
+        self._register_unmatched_searches()
 
         return self._remove_duplicates()
 
@@ -148,11 +148,10 @@ class Matchmaker(object):
         Tells all unmatched searches that they went through a failed matching
         attempt.
         """
-        unmatched_searches = filter(
-            lambda search: search not in self.matches,
-            self.searches
-        )
-        for search in unmatched_searches:
+        for search in self.searches:
+            if search in self.matches:
+                continue
+
             search.register_failed_matching_attempt()
             self._logger.debug(
                 "Search %s remained unmatched at threshold %f in attempt number %i",
@@ -171,7 +170,7 @@ class Matchmaker(object):
 @with_logger
 class _MatchingGraph:
     @staticmethod
-    def build_full(searches: Iterable[Search]) -> WeightedGraph:
+    def build_full(searches: List[Search]) -> WeightedGraph:
         """ A graph in adjacency list representation, whose nodes are the searches
         and whose edges are the possible matchings for each node. Checks every
         possible edge for inclusion in the graph.
@@ -200,7 +199,7 @@ class _MatchingGraph:
         return adj_list
 
     @staticmethod
-    def build_fast(searches: Iterable[Search]) -> WeightedGraph:
+    def build_fast(searches: List[Search]) -> WeightedGraph:
         """ Builds approximately the same graph as `build_full`, but does not
         check every possible edge.
 
@@ -255,22 +254,22 @@ class _MatchingGraph:
 
         Note: This assumes that edges are undirected. Calling this on directed
         graphs will produce incorrect results. """
-        for k, v in list(graph.items()):
-            if not v:
-                del graph[k]
+        for search, neighbors in list(graph.items()):
+            if not neighbors:
+                del graph[search]
 
 
 def subset_pairs(l: list):
-    """ Generates all possible 2 subsets of `l` as tuples. Each pair of items will
-    show up in only one order and the elements in the pair will be distinct.
-    Note that the number of items generated is `len(l) choose 2`.
+    """ Generates all possible 2 subsets of `l` as tuples. Each pair of items
+    will show up in only one order and the elements in the pair will be
+    distinct. Note that the number of items generated is `len(l) choose 2`.
 
     # Example
+    `subset_pairs([1, 2, 3])`
+        yields pairs (1, 2), (1, 3), (2, 3)
 
-    subset_pairs([1, 2, 3]) yields pairs (1, 2), (1, 3), (2, 3)
-
-    Note that this has O(n^2) time complexity.
+    Time complexity: O(n^2)
     """
     for i, a in enumerate(l[:-1]):
         for b in l[i+1:]:
-            yield a, b
+            yield (a, b)
