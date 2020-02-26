@@ -12,8 +12,7 @@ def make_matches(searches: Iterable[Search]) -> List[Match]:
 
 @with_logger
 class MatchmakingPolicy(object):
-    def __init__(self, searches: Iterable[Search]):
-        self.searches = searches
+    def __init__(self):
         self.matches: Dict[Search, Search] = {}
 
     def _match(self, s1: Search, s2: Search):
@@ -30,17 +29,13 @@ class MatchmakingPolicy(object):
 
 
 class StableMarriage(MatchmakingPolicy):
-    def find(self) -> Dict[Search, Search]:
+    def find(self, ranks: WeightedGraph) -> Dict[Search, Search]:
         """ Perform the stable matching algorithm until a maximal stable matching
-        is found. Assumes that _MatchingGraph.build_weighted() only returns edges
-        whose matches are acceptable to both parties.
+        is found.
         """
-        ranks = _MatchingGraph.build_weighted(self.searches)
-        _MatchingGraph.remove_isolated(ranks)
-        max_degree = max((len(edges) for edges in ranks.values()), default=0)
-
         self.matches.clear()
 
+        max_degree = max((len(edges) for edges in ranks.values()), default=0)
         for i in range(max_degree):
             self._logger.debug(
                 "Round %i of stable marriage, currently %i matches", i,
@@ -111,12 +106,12 @@ class StableMarriage(MatchmakingPolicy):
 
 
 class RandomlyMatchNewbies(MatchmakingPolicy):
-    def find(self) -> Dict[Search, Search]:
+    def find(self, searches: Iterable[Search]) -> Dict[Search, Search]:
         self.matches.clear()
 
         unmatched_newbies = [
-            search for search in self.searches
-            if search.is_single_ladder_newbie() and search not in self.matches
+            search for search in searches
+            if search.is_single_ladder_newbie()
         ]
 
         while len(unmatched_newbies) >= 2:
@@ -130,7 +125,7 @@ class RandomlyMatchNewbies(MatchmakingPolicy):
             default_if_no_available_opponent = None
 
             opponent = next((
-                search for search in self.searches
+                search for search in searches
                 if search != newbie and search not in self.matches
                 and search.is_single_party() and search.has_no_top_player()
             ), default_if_no_available_opponent)
