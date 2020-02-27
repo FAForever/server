@@ -92,6 +92,13 @@ class LobbyConnection:
     def authenticated(self):
         return self._authenticated
 
+    def get_user_identifier(self) -> str:
+        """For logging purposes"""
+        if self.player:
+            return self.player.login
+
+        return str(self.session)
+
     @asyncio.coroutine
     def on_connection_made(self, protocol: QDataStreamProtocol, peername: Address):
         self.protocol = protocol
@@ -126,7 +133,7 @@ class LobbyConnection:
         """
         Dispatches incoming messages
         """
-        self._logger.log(TRACE, "<<: %s", message)
+        self._logger.log(TRACE, "<< %s: %s", self.get_user_identifier(), message)
 
         try:
             cmd = message['command']
@@ -971,7 +978,7 @@ class LobbyConnection:
         :param message:
         :return:
         """
-        self._logger.log(TRACE, ">>: %s", message)
+        self._logger.log(TRACE, ">> %s: %s", self.get_user_identifier(), message)
         await self.protocol.send_message(message)
 
     async def drain(self):
