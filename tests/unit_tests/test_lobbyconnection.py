@@ -184,6 +184,7 @@ async def test_command_create_account_returns_error(lobbyconnection):
 async def test_double_login(lobbyconnection, mock_players, player_factory):
     lobbyconnection.check_policy_conformity = CoroutineMock(return_value=True)
     old_player = player_factory()
+    old_player.lobby_connection.player = old_player
     mock_players.get_player.return_value = old_player
 
     await lobbyconnection.on_message_received({
@@ -197,6 +198,8 @@ async def test_double_login(lobbyconnection, mock_players, player_factory):
         "You have been signed out because you signed in elsewhere.",
         fatal=True
     )
+    # This should only be reset in abort, which is mocked for this test
+    assert old_player.lobby_connection.player is not None
 
 
 async def test_double_login_disconnected(lobbyconnection, mock_players, player_factory):

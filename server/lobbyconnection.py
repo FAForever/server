@@ -592,7 +592,6 @@ class LobbyConnection:
             self._logger.debug("player {} already signed in: {}".format(self.player.id, old_player))
             if old_player.lobby_connection is not None:
                 old_player.lobby_connection.game_connection = None
-                old_player.lobby_connection.player = None
                 self._logger.debug(
                     "Removing previous game_connection and player reference of "
                     "player %s in hope on_connection_lost() wouldn't drop her "
