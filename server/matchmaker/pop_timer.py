@@ -4,6 +4,7 @@ from time import time
 from typing import Callable, Deque
 
 import server
+import server.metrics as metrics
 
 from .. import config
 from ..decorators import with_logger
@@ -41,13 +42,10 @@ class PopTimer(object):
 
         time_remaining = self.next_queue_pop - time()
         self._logger.info("Next %s wave happening in %is", self.queue_name, time_remaining)
-        server.stats.timing(
-            "matchmaker.queue.pop", int(time_remaining),
-            tags={'queue_name': self.queue_name}
-        )
+        metrics.matchmaker_queue_pop.labels(self.queue_name).observe(int(time_remaining))
         await asyncio.sleep(time_remaining)
         num_players = get_num_players()
-        server.stats.gauge(f"matchmaker.queue.{self.queue_name}.players", num_players)
+        metrics.matchmaker_players.labels(self.queue_name).set(num_players)
 
         self._last_queue_pop = time()
         self.next_queue_pop = self._last_queue_pop + self.time_until_next_pop(

@@ -14,6 +14,7 @@ import humanize
 import pymysql
 import semver
 import server
+import server.metrics as metrics
 from server.db import FAFDatabase
 from sqlalchemy import and_, func, select, text
 
@@ -104,7 +105,7 @@ class LobbyConnection:
     def on_connection_made(self, protocol: QDataStreamProtocol, peername: Address):
         self.protocol = protocol
         self.peer_address = peername
-        server.stats.incr('server.connections')
+        metrics.server_connections.inc()
 
     async def abort(self, logspam=""):
         if self.player:
@@ -120,12 +121,12 @@ class LobbyConnection:
         if self.player:
             self.player_service.remove_player(self.player)
             self.player = None
-        server.stats.incr('server.connections.aborted')
+        metrics.aborted_connections.inc()
 
     async def ensure_authenticated(self, cmd):
         if not self._authenticated:
             if cmd not in ['hello', 'ask_session', 'create_account', 'ping', 'pong', 'Bottleneck']:  # Bottleneck is sent by the game during reconnect
-                server.stats.incr('server.received_messages.unauthenticated', tags={"command": cmd})
+                metrics.unauth_messages.labels(cmd).inc()
                 await self.abort("Message invalid for unauthenticated connection: %s" % cmd)
                 return False
         return True
@@ -394,7 +395,7 @@ class LobbyConnection:
         auth_error_message = "Login not found or password incorrect. They are case sensitive."
         row = await result.fetchone()
         if not row:
-            server.stats.incr('user.logins', tags={'status': 'failure'})
+            metrics.user_logins.labels("failure").inc()
             raise AuthenticationError(auth_error_message)
 
         player_id = row[t_login.c.id]
@@ -406,7 +407,7 @@ class LobbyConnection:
         ban_expiry = row[lobby_ban.c.expires_at]
 
         if dbPassword != password:
-            server.stats.incr('user.logins', tags={'status': 'failure'})
+            metrics.user_logins.labels("failure").inc()
             raise AuthenticationError(auth_error_message)
 
         now = datetime.now()
@@ -438,8 +439,9 @@ class LobbyConnection:
 
         self.user_agent = message.get('user_agent')
         version = message.get('version')
-        server.stats.gauge('user.agents.None', -1, delta=True)
-        server.stats.gauge('user.agents.{}'.format(self.user_agent), 1, delta=True)
+        metrics.user_connections.labels("None").dec()
+        metrics.user_connections.labels(str(self.user_agent)).inc()
+        metrics.user_agent_version.labels(str(version)).inc()
 
         if not self.user_agent or 'downlords-faf-client' not in self.user_agent:
             await self.send_warning(
@@ -542,8 +544,8 @@ class LobbyConnection:
 
         async with self._db.acquire() as conn:
             player_id, login, steamid = await self.check_user_login(conn, login, password)
-            server.stats.incr('user.logins', tags={'status': 'success'})
-            server.stats.gauge('users.online', len(self.player_service))
+            metrics.user_logins.labels("success").inc()
+            metrics.users_online.set(len(self.player_service))
 
             await conn.execute(
                 "UPDATE login SET ip = %(ip)s, user_agent = %(user_agent)s, last_login = NOW() WHERE id = %(player_id)s",
@@ -836,7 +838,7 @@ class LobbyConnection:
             password=password
         )
         await self.launch_game(game, is_host=True)
-        server.stats.incr('game.hosted', tags={'game_mode': game_mode})
+        metrics.games_hosted.labels(game_mode or "None").inc()
 
     async def launch_game(self, game, is_host=False, use_map=None):
         # TODO: Fix setting up a ridiculous amount of cyclic pointers here

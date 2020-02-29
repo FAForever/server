@@ -9,7 +9,7 @@ Distributed under GPLv3, see license.txt
 import logging
 from typing import Optional
 
-import aiomeasures
+from prometheus_client import start_http_server
 import asyncio
 
 from server.db import FAFDatabase
@@ -51,12 +51,8 @@ __all__ = (
 DIRTY_REPORT_INTERVAL = 1  # Seconds
 stats = None
 
-if not config.ENABLE_STATSD:
-    from . import fake_statsd
-
-    stats = fake_statsd.DummyConnection()
-else:
-    stats = aiomeasures.StatsD(config.STATSD_SERVER)
+if config.ENABLE_METRICS:
+    start_http_server(config.METRICS_PORT)
 
 
 def encode_message(message: str):
