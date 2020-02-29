@@ -89,8 +89,11 @@ class ServerContext:
 
         tasks = []
         for conn, proto in self.connections.items():
-            if proto.connected and validate_fn(conn):
-                tasks.append(broadcast_with_stall_handling(proto))
+            try:
+                if proto.connected and validate_fn(conn):
+                    tasks.append(broadcast_with_stall_handling(proto))
+            except Exception:
+                self._logger.exception("Encountered error in broadcast")
 
         await gather_without_exceptions(tasks, DisconnectedError)
 
