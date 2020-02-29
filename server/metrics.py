@@ -61,8 +61,8 @@ server_broadcasts = Counter(
     "server_broadcasts_total", "Total number of broadcasts", ["protocol"]
 )
 
-connection_on_message_received = Summary(
-    "server_on_on_message_received_seconds",
+connection_on_message_received = Histogram(
+    "server_on_message_received_seconds",
     "Seconds spent in 'connection.on_message_received'",
 )
 

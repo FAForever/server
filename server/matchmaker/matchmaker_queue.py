@@ -4,6 +4,8 @@ from concurrent.futures import CancelledError
 from datetime import datetime, timezone
 from statistics import mean
 from typing import Deque, Dict
+import time
+import functools
 
 import server
 import server.metrics as metrics
@@ -12,6 +14,21 @@ from ..decorators import with_logger
 from .algorithm import make_matches
 from .pop_timer import PopTimer
 from .search import Match, Search
+
+
+def timed_async_search(func):
+    @functools.wraps(func)
+    async def wrapper(*args, **kwargs):
+        queue_name = args[0].queue_name
+        metric = metrics.matchmaker_searches.labels(queue_name)
+        start_time = time.perf_counter()
+        try:
+            result = await func(*args, **kwargs)
+            return result
+        finally:
+            metric.observe(time.perf_counter() - start_time)
+
+    return wrapper
 
 
 @with_logger
@@ -72,6 +89,7 @@ class MatchmakerQueue:
 
             self.game_service.mark_dirty(self)
 
+    @timed_async_search
     async def search(self, search: Search) -> None:
         """
         Search for a match.
@@ -82,8 +100,6 @@ class MatchmakerQueue:
         """
         assert search is not None
 
-        #TODO: re-introduce timed search context with asyncio support
-        # with metrics.searches.labels(self.queue_name).time():
         try:
             self.push(search)
             await search.await_match()
