@@ -12,6 +12,7 @@ def p(player_factory):
         player = player_factory(
             ladder_rating=(mean, deviation),
             ladder_games=ladder_games,
+            login=name,
             with_lobby_connection=False,
         )
         return player
@@ -120,6 +121,27 @@ def test_match_graph_will_not_include_matches_below_threshold_quality(p, build_f
         s1: [],
         s2: []
     }
+
+
+@pytest.mark.parametrize("build_func", (
+    algorithm._MatchingGraph.build_full,
+    algorithm._MatchingGraph.build_fast
+))
+def test_matching_graph_symmetric(p, build_func):
+    searches = (
+        Search([p(2300, 64, name='p1')]),
+        Search([p(1200, 72, name='p2')]),
+        Search([p(1300, 175, name='p3')]),
+        Search([p(2350, 125, name='p4')]),
+        Search([p(1200, 175, name='p5')]),
+        Search([p(1250, 175, name='p6')])
+    )
+    graph = build_func(searches)
+
+    # Verify that any edge also has the reverse edge
+    for search, neighbors in graph.items():
+        for other, quality in neighbors:
+            assert (search, quality) in graph[other]
 
 
 @pytest.mark.parametrize("build_func", (

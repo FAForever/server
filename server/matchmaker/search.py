@@ -228,5 +228,9 @@ class Search:
     def __str__(self):
         return "Search({}, {}, {})".format(self.players, self.match_threshold, self.search_expansion)
 
+    def __repr__(self):
+        """For debugging"""
+        return f"Search({[p.login for p in self.players]})"
+
 
 Match = Tuple[Search, Search]
