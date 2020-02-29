@@ -71,7 +71,7 @@ class GameConnection(GpgNetServerProtocol):
     async def send_message(self, message):
         message['target'] = "game"
 
-        self._logger.log(TRACE, ">>: %s", message)
+        self._logger.log(TRACE, ">> %s: %s", self.player.login, message)
         await self.protocol.send_message(message)
 
     async def _handle_idle_state(self):
