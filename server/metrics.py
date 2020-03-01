@@ -46,9 +46,6 @@ server_connections = Counter(
     "server_lobbyconnections_total",
     "Total number of connections to the lobby as per lobbyconnection.on_connection_made",
 )
-aborted_connections = Counter(
-    "server_lobbyconnections_aborted_total", "Total number of aborted lobbyconnections"
-)
 sent_messages = Counter(
     "server_messages_total", "Total number of Messages sent", ["protocol"]
 )
