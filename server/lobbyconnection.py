@@ -85,6 +85,7 @@ class LobbyConnection:
         self.session = int(random.randrange(0, 4294967295))
         self.protocol = None
         self.user_agent = None
+        self._version = None
 
         self._attempted_connectivity_test = False
 
@@ -428,19 +429,24 @@ class LobbyConnection:
 
         return player_id, real_username, steamid
 
-    async def check_version(self, message):
+    def _set_user_agent_and_version(self, user_agent, version):
+        metrics.user_connections.labels(str(self.user_agent)).dec()
+        self.user_agent = user_agent
+        metrics.user_connections.labels(str(self.user_agent)).inc()
+
+        # only count a new version if it previously wasn't set
+        # to avoid double counting
+        if self._version is None and version is not None:
+            metrics.user_agent_version.labels(str(version)).inc()
+        self._version = version
+
+    async def _check_version(self):
         versionDB, updateFile = self.player_service.client_version_info
         update_msg = {
             'command': 'update',
             'update': updateFile,
             'new_version': versionDB
         }
-
-        self.user_agent = message.get('user_agent')
-        version = message.get('version')
-        metrics.user_connections.labels("None").dec()
-        metrics.user_connections.labels(str(self.user_agent)).inc()
-        metrics.user_agent_version.labels(str(version)).inc()
 
         if not self.user_agent or 'downlords-faf-client' not in self.user_agent:
             await self.send_warning(
@@ -451,7 +457,7 @@ class LobbyConnection:
                 f'<a href="{config.WWW_URL}">{config.WWW_URL}</a>'
             )
 
-        if not version or not self.user_agent:
+        if not self._version or not self.user_agent:
             update_msg['command'] = 'welcome'
             # For compatibility with 0.10.x updating mechanism
             await self.send(update_msg)
@@ -460,6 +466,7 @@ class LobbyConnection:
         # Check their client is reporting the right version number.
         if 'downlords-faf-client' not in self.user_agent:
             try:
+                version = self._version
                 if "-" in version:
                     version = version.split('-')[0]
                 if "+" in version:
@@ -694,7 +701,11 @@ class LobbyConnection:
             self.player.game = game
 
     async def command_ask_session(self, message):
-        if await self.check_version(message):
+        user_agent = message.get("user_agent")
+        version = message.get("version")
+        self._set_user_agent_and_version(user_agent, version)
+
+        if await self._check_version():
             await self.send({"command": "session", "session": self.session})
 
     async def command_avatar(self, message):
