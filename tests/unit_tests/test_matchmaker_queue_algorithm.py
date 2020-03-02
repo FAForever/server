@@ -28,15 +28,14 @@ def st_searches(draw, num_players=1):
 
 @st.composite
 def st_searches_list(draw, min_players=1, max_players=10, max_size=50):
-    """Strategy for generating a list of Search objects where each Search has
-    the same number of players.
-    """
-    num_players = draw(
-        st.integers(min_value=min_players, max_value=max_players)
-    )
+    """Strategy for generating a list of Search objects"""
     return draw(
         st.lists(
-            st_searches(num_players=num_players),
+            st_searches(
+                num_players=draw(
+                    st.integers(min_value=min_players, max_value=max_players)
+                )
+            ),
             max_size=max_size
         )
     )
@@ -164,7 +163,7 @@ def test_match_graph_will_not_include_matches_below_threshold_quality(p, build_f
     algorithm._MatchingGraph.build_full,
     algorithm._MatchingGraph.build_fast
 ))
-@given(searches=st_searches_list())
+@given(searches=st_searches_list(max_players=2))
 def test_matching_graph_symmetric(caplog, build_func, searches):
     caplog.set_level(logging.INFO)
 
@@ -180,7 +179,7 @@ def test_matching_graph_symmetric(caplog, build_func, searches):
     algorithm._MatchingGraph.build_full,
     algorithm._MatchingGraph.build_fast
 ))
-@given(searches=st_searches_list())
+@given(searches=st_searches_list(max_players=2))
 def test_stable_marriage_produces_symmetric_matchings(caplog, build_func, searches):
     caplog.set_level(logging.INFO)
 
