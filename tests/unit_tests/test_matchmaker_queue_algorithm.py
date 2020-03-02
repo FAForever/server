@@ -62,13 +62,19 @@ def add_graph_edge_weights(graph) -> algorithm.WeightedGraph:
     }
 
 
-def test_build_full_matching_graph(p):
+@pytest.mark.parametrize("build_func", (
+    algorithm._MatchingGraph.build_full,
+    algorithm._MatchingGraph.build_fast
+))
+def test_build_full_matching_graph(p, build_func):
+    # For small numbers of searches, build_full and build_fast should create
+    # the same graph
     s1 = Search([p(1500, 64, ladder_games=20)])
     s2 = Search([p(1500, 63, ladder_games=20)])
     s3 = Search([p(1600, 75, ladder_games=50)])
     searches = [s1, s2, s3]
 
-    ranks = algorithm._MatchingGraph.build_full(searches)
+    ranks = build_func(searches)
 
     assert ranks == add_graph_edge_weights({
         s1: [s3, s2],
@@ -77,36 +83,23 @@ def test_build_full_matching_graph(p):
     })
 
 
-def test_build_matching_graph_different_ranks(p):
+@pytest.mark.parametrize("build_func", (
+    algorithm._MatchingGraph.build_full,
+    algorithm._MatchingGraph.build_fast
+))
+def test_build_matching_graph_different_ranks(p, build_func):
     s1 = Search([p(1500, 64, ladder_games=20)])
     s2 = Search([p(200, 63, ladder_games=20)])
     searches = [s1, s2]
 
-    ranks1 = algorithm._MatchingGraph.build_full(searches)
-    ranks2 = algorithm._MatchingGraph.build_fast(searches)
+    ranks = build_func(searches)
 
     empty_graph = add_graph_edge_weights({
         s1: [],
         s2: [],
     })
 
-    assert ranks1 == empty_graph
-    assert ranks2 == empty_graph
-
-
-def test_build_fast_matching_graph(p):
-    s1 = Search([p(1500, 64, ladder_games=20)])
-    s2 = Search([p(1500, 63, ladder_games=20)])
-    s3 = Search([p(1600, 75, ladder_games=50)])
-    searches = [s1, s2, s3]
-
-    ranks = algorithm._MatchingGraph.build_fast(searches)
-
-    assert ranks == add_graph_edge_weights({
-        s1: [s3, s2],
-        s2: [s3, s1],
-        s3: [s1, s2]
-    })
+    assert ranks == empty_graph
 
 
 def test_remove_isolated(p):
