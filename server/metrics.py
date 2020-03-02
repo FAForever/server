@@ -37,7 +37,7 @@ user_agent_version = Counter(
     "Total number of user agent version checks made",
     ["version"],
 )
-users_online = Gauge(
+players_online = Gauge(
     "server_user_online",
     "Number of users currently online as per lobbyconnection.player_service",
 )

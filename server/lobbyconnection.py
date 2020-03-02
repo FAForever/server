@@ -544,7 +544,6 @@ class LobbyConnection:
         async with self._db.acquire() as conn:
             player_id, login, steamid = await self.check_user_login(conn, login, password)
             metrics.user_logins.labels("success").inc()
-            metrics.users_online.set(len(self.player_service))
 
             await conn.execute(
                 "UPDATE login SET ip = %(ip)s, user_agent = %(user_agent)s, last_login = NOW() WHERE id = %(player_id)s",

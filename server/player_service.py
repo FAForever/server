@@ -2,6 +2,7 @@ import asyncio
 from typing import Optional, Set
 
 import aiocron
+import server.metrics as metrics
 from server.db import FAFDatabase
 from server.decorators import with_logger
 from server.players import Player
@@ -18,7 +19,7 @@ from .db.models import (
 class PlayerService:
     def __init__(self, database: FAFDatabase):
         self._db = database
-        self.players = dict()
+        self._players = dict()
 
         # Static-ish data fields.
         self.privileged_users = {}
@@ -34,16 +35,17 @@ class PlayerService:
         )
 
     def __len__(self):
-        return len(self.players)
+        return len(self._players)
 
     def __iter__(self):
-        return self.players.values().__iter__()
+        return self._players.values().__iter__()
 
     def __getitem__(self, player_id: int) -> Optional[Player]:
-        return self.players.get(player_id)
+        return self._players.get(player_id)
 
     def __setitem__(self, player_id: int, player: Player):
-        self.players[player_id] = player
+        self._players[player_id] = player
+        metrics.players_online.set(len(self._players))
 
     @property
     def dirty_players(self) -> Set[Player]:
@@ -106,8 +108,9 @@ class PlayerService:
                 player.avatar = {"url": url, "tooltip": tooltip}
 
     def remove_player(self, player: Player):
-        if player.id in self.players:
-            del self.players[player.id]
+        if player.id in self._players:
+            del self._players[player.id]
+            metrics.players_online.set(len(self._players))
 
     def get_permission_group(self, user_id: int) -> int:
         return self.privileged_users.get(user_id, 0)
@@ -116,7 +119,7 @@ class PlayerService:
         return user_id in self.uniqueid_exempt
 
     def get_player(self, player_id: int) -> Optional[Player]:
-        return self.players.get(player_id)
+        return self._players.get(player_id)
 
     async def update_data(self):
         """
