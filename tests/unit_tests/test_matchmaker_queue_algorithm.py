@@ -1,8 +1,34 @@
 import logging
 
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 from server import config
 from server.matchmaker import Search, algorithm
+from tests.conftest import make_player
+
+
+@st.composite
+def st_players(draw, name="Player"):
+    """Strategy for generating Player objects"""
+    return make_player(
+        ladder_rating=(draw(st.floats(0, 2500)), draw(st.floats(1, 500))),
+        ladder_games=draw(st.integers(0, 1000)),
+        login=name
+    )
+
+
+@st.composite
+def st_searches(draw, min_players=1, max_players=10):
+    """Strategy for generating Search objects"""
+    return Search([
+        draw(st_players(f"p{i}")) for i in range(
+            draw(st.integers(
+                min_value=min_players,
+                max_value=max_players
+            ))
+        )
+    ])
 
 
 @pytest.fixture
@@ -127,15 +153,8 @@ def test_match_graph_will_not_include_matches_below_threshold_quality(p, build_f
     algorithm._MatchingGraph.build_full,
     algorithm._MatchingGraph.build_fast
 ))
-def test_matching_graph_symmetric(p, build_func):
-    searches = (
-        Search([p(2300, 64, name='p1')]),
-        Search([p(1200, 72, name='p2')]),
-        Search([p(1300, 175, name='p3')]),
-        Search([p(2350, 125, name='p4')]),
-        Search([p(1200, 175, name='p5')]),
-        Search([p(1250, 175, name='p6')])
-    )
+@given(searches=st.lists(st_searches(), max_size=30))
+def test_matching_graph_symmetric(build_func, searches):
     graph = build_func(searches)
 
     # Verify that any edge also has the reverse edge
@@ -148,15 +167,8 @@ def test_matching_graph_symmetric(p, build_func):
     algorithm._MatchingGraph.build_full,
     algorithm._MatchingGraph.build_fast
 ))
-def test_stable_marriage_produces_symmetric_matchings(p, build_func):
-    s1 = Search([p(2300, 64, name='p1')])
-    s2 = Search([p(1200, 72, name='p2')])
-    s3 = Search([p(1300, 175, name='p3')])
-    s4 = Search([p(2350, 125, name='p4')])
-    s5 = Search([p(1200, 175, name='p5')])
-    s6 = Search([p(1250, 175, name='p6')])
-
-    searches = [s1, s2, s3, s4, s5, s6]
+@given(searches=st.lists(st_searches(), max_size=30))
+def test_stable_marriage_produces_symmetric_matchings(build_func, searches):
     ranks = build_func(searches)
 
     matches = algorithm.StableMarriage().find(ranks)

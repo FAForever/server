@@ -210,7 +210,7 @@ class _MatchingGraph:
         # Sort all searches by their average rating
         searches = sorted(searches, key=lambda s: s.ratings[0][0])
         # Now compute quality with `num_to_check` nearby searches on either side
-        num_to_check = max((4, int(math.log(len(searches), 2)))) // 2
+        num_to_check = int(math.log(max(16, len(searches)), 2)) // 2
         for i, search in enumerate(searches):
             for other in searches[i+1:i+1+num_to_check]:
                 quality = search.quality_with(other)
