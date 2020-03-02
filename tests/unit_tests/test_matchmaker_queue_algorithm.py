@@ -165,7 +165,9 @@ def test_match_graph_will_not_include_matches_below_threshold_quality(p, build_f
     algorithm._MatchingGraph.build_fast
 ))
 @given(searches=st_searches_list())
-def test_matching_graph_symmetric(build_func, searches):
+def test_matching_graph_symmetric(caplog, build_func, searches):
+    caplog.set_level(logging.INFO)
+
     graph = build_func(searches)
 
     # Verify that any edge also has the reverse edge
@@ -179,7 +181,9 @@ def test_matching_graph_symmetric(build_func, searches):
     algorithm._MatchingGraph.build_fast
 ))
 @given(searches=st_searches_list())
-def test_stable_marriage_produces_symmetric_matchings(build_func, searches):
+def test_stable_marriage_produces_symmetric_matchings(caplog, build_func, searches):
+    caplog.set_level(logging.INFO)
+
     ranks = build_func(searches)
 
     matches = algorithm.StableMarriage().find(ranks)
