@@ -13,7 +13,7 @@ unmatched_searches = Gauge(
 matchmaker_searches = Summary(
     "server_matchmaker_queue_search_duration_seconds",
     "Time spent searching for matches per search in seconds",
-    ["queue"],
+    ["queue", "status"],
 )
 matchmaker_players = Gauge(
     "server_matchmaker_queue_players", "Players in the queue at pop time", ["queue"]

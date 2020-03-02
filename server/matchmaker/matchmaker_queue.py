@@ -16,19 +16,24 @@ from .pop_timer import PopTimer
 from .search import Match, Search
 
 
-def timed_async_search(func):
-    @functools.wraps(func)
-    async def wrapper(self, *args, **kwargs):
-        queue_name = self.queue_name
-        metric = metrics.matchmaker_searches.labels(queue_name)
-        start_time = time.monotonic()
-        try:
-            result = await func(self, *args, **kwargs)
-            return result
-        finally:
-            metric.observe(time.monotonic() - start_time)
+class MatchmakerSearchTimer:
+    def __init__(self, queue_name):
+        self.queue_name = queue_name
 
-    return wrapper
+    def __enter__(self):
+        self.start_time = time.monotonic()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        total_time = time.monotonic() - self.start_time
+        if exc_type is None:
+            status = "successful"
+        elif exc_type is CancelledError:
+            status = "cancelled"
+        else:
+            status = "errored"
+
+        metric = metrics.matchmaker_searches.labels(self.queue_name, status)
+        metric.observe(total_time)
 
 
 @with_logger
@@ -89,7 +94,6 @@ class MatchmakerQueue:
 
             self.game_service.mark_dirty(self)
 
-    @timed_async_search
     async def search(self, search: Search) -> None:
         """
         Search for a match.
@@ -101,8 +105,9 @@ class MatchmakerQueue:
         assert search is not None
 
         try:
-            self.push(search)
-            await search.await_match()
+            with MatchmakerSearchTimer(self.queue_name):
+                self.push(search)
+                await search.await_match()
             self._logger.debug("Search complete: %s", search)
         except CancelledError:
             pass
