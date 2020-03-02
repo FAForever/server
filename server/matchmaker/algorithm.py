@@ -1,4 +1,5 @@
 import math
+from statistics import mean
 from typing import Dict, Iterable, List, Set, Tuple
 
 from ..decorators import with_logger
@@ -206,9 +207,11 @@ class _MatchingGraph:
         Time complexity: O(n*log(n))
         """
         adj_list = {search: [] for search in searches}
-        # TODO: Support searches with larger parties
-        # Sort all searches by their average rating
-        searches = sorted(searches, key=lambda s: s.ratings[0][0])
+        # Sort all searches by players average trueskill mean
+        searches = sorted(
+            searches,
+            key=lambda s: mean(map(lambda r: r[0], s.ratings))
+        )
         # Now compute quality with `num_to_check` nearby searches on either side
         num_to_check = int(math.log(max(16, len(searches)), 2)) // 2
         for i, search in enumerate(searches):
