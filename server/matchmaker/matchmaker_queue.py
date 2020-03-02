@@ -18,15 +18,15 @@ from .search import Match, Search
 
 def timed_async_search(func):
     @functools.wraps(func)
-    async def wrapper(*args, **kwargs):
-        queue_name = args[0].queue_name
+    async def wrapper(self, *args, **kwargs):
+        queue_name = self.queue_name
         metric = metrics.matchmaker_searches.labels(queue_name)
-        start_time = time.perf_counter()
+        start_time = time.monotonic()
         try:
-            result = await func(*args, **kwargs)
+            result = await func(self, *args, **kwargs)
             return result
         finally:
-            metric.observe(time.perf_counter() - start_time)
+            metric.observe(time.monotonic() - start_time)
 
     return wrapper
 

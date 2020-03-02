@@ -158,13 +158,13 @@ class QDataStreamProtocol(Protocol):
                 raise DisconnectedError("Protocol connection lost!") from e
 
     async def send_message(self, message: dict):
-        metrics.sent_messages.labels("normal").inc()
+        metrics.sent_messages.inc()
         await self.send_raw(
             self.pack_message(json_encoder.encode(message))
         )
 
     async def send_messages(self, messages):
-        metrics.sent_messages.labels("normal").inc()
+        metrics.sent_messages.inc()
         if not self.is_connected():
             raise DisconnectedError("Protocol is not connected!")
 
@@ -176,7 +176,7 @@ class QDataStreamProtocol(Protocol):
         await self.drain()
 
     async def send_raw(self, data):
-        metrics.sent_messages.labels("raw").inc()
+        metrics.sent_messages.inc()
         if not self.is_connected():
             raise DisconnectedError("Protocol is not connected!")
 

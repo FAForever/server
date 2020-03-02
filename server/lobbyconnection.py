@@ -837,7 +837,7 @@ class LobbyConnection:
             password=password
         )
         await self.launch_game(game, is_host=True)
-        metrics.games_hosted.labels(game_mode or "None").inc()
+        metrics.games_hosted.labels(str(game_mode)).inc()
 
     async def launch_game(self, game, is_host=False, use_map=None):
         # TODO: Fix setting up a ridiculous amount of cyclic pointers here
