@@ -46,9 +46,7 @@ server_connections = Counter(
     "server_lobbyconnections_total",
     "Total number of connections to the lobby as per lobbyconnection.on_connection_made",
 )
-sent_messages = Counter(
-    "server_messages_total", "Total number of Messages sent"
-)
+sent_messages = Counter("server_messages_total", "Total number of Messages sent")
 unauth_messages = Counter(
     "server_messages_unauthenticated_total",
     "Total number of unauthenticated messages",
@@ -65,4 +63,13 @@ connection_on_message_received = Histogram(
 
 games_hosted = Counter(
     "server_game_hosted_games_total", "Total number of games hosted", ["game_mode"]
+)
+
+live_games = Gauge(
+    "server_game_active_games_total", "Number of currently active games", ["game_mode"]
+)
+
+games_in_service = Gauge(
+    "server_game_games_in_game_service",
+    "Number games currently managed by game service",
 )

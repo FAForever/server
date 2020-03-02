@@ -290,7 +290,7 @@ async def test_command_game_join_calls_join_game(mocker,
     game.game_mode = 'faf'
     game.id = 42
     game.name = "Test Game Name"
-    game_service.games[42] = game
+    game_service._games[42] = game
     lobbyconnection.player = players.hosting
     test_game_info['uid'] = 42
 
@@ -323,7 +323,7 @@ async def test_command_game_join_uid_as_str(mocker,
     game.game_mode = 'faf'
     game.id = 42
     game.name = "Test Game Name"
-    game_service.games[42] = game
+    game_service._games[42] = game
     lobbyconnection.player = players.hosting
     test_game_info['uid'] = '42'  # Pass in uid as string
 
@@ -355,7 +355,7 @@ async def test_command_game_join_without_password(lobbyconnection,
     game.password = 'password'
     game.game_mode = 'faf'
     game.id = 42
-    game_service.games[42] = game
+    game_service._games[42] = game
     lobbyconnection.player = players.hosting
     test_game_info['uid'] = 42
     del test_game_info['password']
@@ -875,7 +875,7 @@ async def test_game_connection_not_restored_if_game_state_prohibits(lobbyconnect
     game.password = None
     game.game_mode = 'faf'
     game.id = 42
-    game_service.games[42] = game
+    game_service._games[42] = game
 
     await lobbyconnection.on_message_received({
         'command': 'restore_game_session',
@@ -904,7 +904,7 @@ async def test_game_connection_restored_if_game_exists(lobbyconnection: LobbyCon
     game.password = None
     game.game_mode = 'faf'
     game.id = 42
-    game_service.games[42] = game
+    game_service._games[42] = game
 
     await lobbyconnection.on_message_received({
         'command': 'restore_game_session',

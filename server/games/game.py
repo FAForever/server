@@ -7,6 +7,8 @@ from collections import defaultdict
 from enum import Enum, unique
 from typing import Any, Dict, Optional, Tuple
 
+import server.metrics as metrics
+
 from server.config import FFA_TEAM
 from server.games.game_rater import GameRater
 from server.games.game_results import GameOutcome, GameResult, GameResults
@@ -177,7 +179,7 @@ class Game:
         # coop takes longer to set up
         tm = 30 if self.game_mode != 'coop' else 60
         await asyncio.sleep(tm)
-        if self.state == GameState.INITIALIZING:
+        if self.state is GameState.INITIALIZING:
             self._is_hosted.set_exception(TimeoutError("Game setup timed out"))
             self._logger.debug("Game setup timed out.. Cancelling game")
             await self.on_game_end()
@@ -204,7 +206,7 @@ class Game:
           - Empty list
         :return: frozenset
         """
-        if self.state == GameState.LOBBY:
+        if self.state is GameState.LOBBY:
             return frozenset(self._connections.keys())
         else:
             return frozenset({
@@ -371,7 +373,7 @@ class Game:
             raise GameError(
                 f"Invalid GameConnectionState: {game_connection.state}"
             )
-        if self.state != GameState.LOBBY and self.state != GameState.LIVE:
+        if self.state is not GameState.LOBBY and self.state is not GameState.LIVE:
             raise GameError(f"Invalid GameState: {self.state}")
 
         self._logger.info("Added game connection %s", game_connection)
@@ -397,7 +399,7 @@ class Game:
 
         def host_left_lobby() -> bool:
             return (game_connection.player == self.host and
-                    self.state != GameState.LIVE)
+                    self.state is not GameState.LIVE)
 
         if len(self._connections) == 0 or host_left_lobby():
             await self.on_game_end()
@@ -407,7 +409,7 @@ class Game:
     async def check_sim_end(self):
         if self.ended:
             return
-        if self.state != GameState.LIVE:
+        if self.state is not GameState.LIVE:
             return
         if [conn for conn in self.connections if not conn.finished_sim]:
             return
@@ -421,11 +423,11 @@ class Game:
 
     async def on_game_end(self):
         try:
-            if self.state == GameState.LOBBY:
+            if self.state is GameState.LOBBY:
                 self._logger.info("Game cancelled pre launch")
-            elif self.state == GameState.INITIALIZING:
+            elif self.state is GameState.INITIALIZING:
                 self._logger.info("Game cancelled pre initialization")
-            elif self.state == GameState.LIVE:
+            elif self.state is GameState.LIVE:
                 self._logger.info("Game finished normally")
 
                 if self.desyncs > 20:
@@ -448,7 +450,11 @@ class Game:
             self._logger.exception("Error during game end")
         finally:
             self.set_hosted(value=False)
+
+            if self.state is GameState.LIVE:
+                metrics.live_games.labels(self.game_mode).dec()
             self.state = GameState.ENDED
+
             self.game_service.mark_dirty(self)
 
     async def rate_game(self):
@@ -688,12 +694,15 @@ class Game:
         Freezes the set of active players so they are remembered if they drop.
         :return: None
         """
-        assert self.state == GameState.LOBBY
+        assert self.state is GameState.LOBBY
         self.launched_at = time.time()
         self._players = self.players
         self._players_with_unsent_army_stats = list(self._players)
+
         self.state = GameState.LIVE
+        metrics.live_games.labels(self.game_mode).inc()
         self._logger.info("Game launched")
+
         await self.on_game_launched()
         await self.validate_game_settings()
 
@@ -795,7 +804,7 @@ class Game:
 
         # If we haven't started yet, the invalidity will be persisted to the database when we start.
         # Otherwise, we have to do a special update query to write this information out.
-        if self.state != GameState.LIVE:
+        if self.state is not GameState.LIVE:
             return
 
         # Currently, we can only end up here if a game desynced or was a custom game that terminated
@@ -824,7 +833,7 @@ class Game:
         >>> p1,p2,p3,p4 = Player()
         >>> [{p1: p1.rating, p2: p2.rating}, {p3: p3.rating, p4: p4.rating}]
         """
-        assert self.state == GameState.LIVE or self.state == GameState.ENDED
+        assert self.state is GameState.LIVE or self.state is GameState.ENDED
 
         if None in self.teams:
             raise GameError(
