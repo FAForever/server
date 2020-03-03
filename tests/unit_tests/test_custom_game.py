@@ -17,7 +17,7 @@ def custom_game(event_loop, database, game_service, game_stats_service):
 
 async def test_rate_game_early_abort_no_enforce(
         game_service, game_stats_service, custom_game, player_factory):
-    custom_game.state = GameState.LOBBY
+    custom_game.set_state(GameState.LOBBY)
     players = [
         player_factory(player_id=1, login='Dostya', global_rating=(1500, 500)),
         player_factory(player_id=2, login='Rhiza', global_rating=(1500, 500)),
@@ -36,7 +36,7 @@ async def test_rate_game_early_abort_no_enforce(
 
 async def test_rate_game_early_abort_with_enforce(
         game_service, game_stats_service, custom_game, player_factory):
-    custom_game.state = GameState.LOBBY
+    custom_game.set_state(GameState.LOBBY)
     players = [
         player_factory(player_id=1, login='Dostya', global_rating=(1500, 500)),
         player_factory(player_id=2, login='Rhiza', global_rating=(1500, 500)),
@@ -56,7 +56,7 @@ async def test_rate_game_early_abort_with_enforce(
 
 async def test_rate_game_late_abort_no_enforce(
         game_service, game_stats_service, custom_game, player_factory):
-    custom_game.state = GameState.LOBBY
+    custom_game.set_state(GameState.LOBBY)
     players = [
         player_factory(player_id=1, login='Dostya', global_rating=(1500, 500)),
         player_factory(player_id=2, login='Rhiza', global_rating=(1500, 500)),
@@ -76,7 +76,7 @@ async def test_rate_game_late_abort_no_enforce(
 async def test_global_rating_higher_after_custom_game_win(
         custom_game: CustomGame, game_add_players):
     game = custom_game
-    game.state = GameState.LOBBY
+    game.set_state(GameState.LOBBY)
     players = game_add_players(game, 2)
     game.set_player_option(players[0].id, 'Team', 2)
     game.set_player_option(players[1].id, 'Team', 3)

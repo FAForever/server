@@ -1,5 +1,6 @@
 import asyncio
 from typing import Dict, List, Optional, Union, ValuesView
+from collections import Counter
 
 import aiocron
 import server.metrics as metrics
@@ -44,6 +45,7 @@ class GameService:
         loop.run_until_complete(asyncio.ensure_future(self.initialise_game_counter()))
         loop.run_until_complete(loop.create_task(self.update_data()))
         self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
+        self._metrics_counter = Counter()
 
     async def initialise_game_counter(self):
         async with self._db.acquire() as conn:
@@ -147,7 +149,7 @@ class GameService:
         game = game_class(**args)
 
         self._games[game_id] = game
-        metrics.games_in_service.set(len(self._games))
+        self.update_active_game_metrics()
 
         game.visibility = visibility
         game.password = password
@@ -155,23 +157,24 @@ class GameService:
         self.mark_dirty(game)
         return game
 
+    def update_active_game_metrics(self):
+        # reset the count of every key to zero, 
+        # without removing it from Counter.elements()
+        for key in self._metrics_counter:
+            self._metrics_counter[key] = 0
+
+        self._metrics_counter += Counter(
+            (game.game_mode, game.state) 
+            for game in self._games.values()
+        ) # This will _not_ remove keys with count zero 
+
+        for (mode, state), count in self._metrics_counter.items():
+            metrics.active_games.labels(mode, str(state)).set(count)
+
     @property
     def live_games(self) -> List[Game]:
-        live_games =  [game for game in self._games.values() 
-                if game.state == GameState.LIVE]
-
-        #FIXME in case the live_games gauge ever gets out of sync with the
-        # actual number of live games, this might be a good opportunity to reset
-        # it to the actual number, since we just counted.
-        # However, it feels a bit dirty and I am on the fence about whether it is
-        # a good idea.
-        # This also adds a race condition...
-        # I am probably in favour of not updating the gauge here, but wanted to
-        # hear your thoughts in the review.
-        metrics.live_games.set(len(live_games))
-
-        return live_games
-
+        return [game for game in self._games.values() 
+            if game.state is GameState.LIVE]
 
     @property
     def open_games(self) -> List[Game]:
@@ -188,7 +191,7 @@ class GameService:
         :return:
         """
         return [game for game in self._games.values()
-                if game.state == GameState.LOBBY or game.state == GameState.LIVE]
+                if game.state is GameState.LOBBY or game.state is GameState.LIVE]
 
     @property
     def all_games(self) -> ValuesView[Game]:
@@ -197,12 +200,12 @@ class GameService:
     @property
     def pending_games(self) -> List[Game]:
         return [game for game in self._games.values()
-                if game.state == GameState.LOBBY or game.state == GameState.INITIALIZING]
+                if game.state is GameState.LOBBY or game.state is GameState.INITIALIZING]
 
     def remove_game(self, game: Game):
         if game.id in self._games:
             del self._games[game.id]
-            metrics.games_in_service.set(len(self._games))
+            self.update_active_game_metrics()
 
 
     def __getitem__(self, item: int) -> Game:

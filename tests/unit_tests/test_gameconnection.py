@@ -42,7 +42,7 @@ async def test_disconnect_all_peers(
     real_game: Game,
     players
 ):
-    real_game.state = GameState.LOBBY
+    real_game.set_state(GameState.LOBBY)
     game_connection.player = players.hosting
     game_connection.game = real_game
 

@@ -61,15 +61,9 @@ connection_on_message_received = Histogram(
     "Seconds spent in 'connection.on_message_received'",
 )
 
-games_hosted = Counter(
-    "server_game_hosted_games_total", "Total number of games hosted", ["game_mode"]
-)
 
-live_games = Gauge(
-    "server_game_active_games_total", "Number of currently active games", ["game_mode"]
-)
-
-games_in_service = Gauge(
-    "server_game_games_in_game_service",
-    "Number games currently managed by game service",
+active_games = Gauge(
+    "server_game_active_games_total", "Number of currently active games."
+    "Includes games in lobby, games currently running, and games that ended"
+    "but are still in the game_service.", ["game_mode", "game_state"]
 )

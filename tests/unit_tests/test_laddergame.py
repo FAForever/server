@@ -16,7 +16,7 @@ def laddergame(database, game_service, game_stats_service):
 
 
 async def test_results_ranked_by_victory(laddergame, players):
-    laddergame.state = GameState.LOBBY
+    laddergame.set_state(GameState.LOBBY)
     add_connected_players(laddergame, [players.hosting, players.joining])
 
     await laddergame.add_result(players.hosting.id, 0, 'victory', 1)
@@ -27,14 +27,14 @@ async def test_results_ranked_by_victory(laddergame, players):
 
 
 async def test_get_army_score_no_results(laddergame, players):
-    laddergame.state = GameState.LOBBY
+    laddergame.set_state(GameState.LOBBY)
     add_connected_players(laddergame, [players.hosting, players.joining])
 
     assert laddergame.get_army_score(0) == 0
 
 
 async def test_get_army_score_returns_0_or_1_only(laddergame, players):
-    laddergame.state = GameState.LOBBY
+    laddergame.set_state(GameState.LOBBY)
     add_connected_players(laddergame, [players.hosting, players.joining])
 
     await laddergame.add_result(players.hosting.id, 0, 'victory', 100)
@@ -44,7 +44,7 @@ async def test_get_army_score_returns_0_or_1_only(laddergame, players):
 
 
 async def test_is_winner(laddergame, players):
-    laddergame.state = GameState.LOBBY
+    laddergame.set_state(GameState.LOBBY)
     add_connected_players(laddergame, [players.hosting, players.joining])
 
     await laddergame.add_result(players.hosting.id, 0, 'victory', 1)
@@ -55,7 +55,7 @@ async def test_is_winner(laddergame, players):
 
 
 async def test_is_winner_on_draw(laddergame, players):
-    laddergame.state = GameState.LOBBY
+    laddergame.set_state(GameState.LOBBY)
     add_connected_players(laddergame, [players.hosting, players.joining])
 
     await laddergame.add_result(players.hosting.id, 0, 'draw', 1)
@@ -66,7 +66,7 @@ async def test_is_winner_on_draw(laddergame, players):
 
 
 async def test_rate_game(laddergame: LadderGame, database, game_add_players):
-    laddergame.state = GameState.LOBBY
+    laddergame.set_state(GameState.LOBBY)
     players = game_add_players(laddergame, 2)
     laddergame.set_player_option(players[0].id, 'Team', 2)
     laddergame.set_player_option(players[1].id, 'Team', 3)
@@ -100,7 +100,7 @@ async def test_rate_game(laddergame: LadderGame, database, game_add_players):
 
 async def test_persist_rating_victory(laddergame: LadderGame, database,
                                       game_add_players):
-    laddergame.state = GameState.LOBBY
+    laddergame.set_state(GameState.LOBBY)
     players = game_add_players(laddergame, 2)
     laddergame.set_player_option(players[0].id, 'Team', 2)
     laddergame.set_player_option(players[1].id, 'Team', 3)

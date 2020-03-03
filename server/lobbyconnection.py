@@ -680,7 +680,7 @@ class LobbyConnection:
             return
 
         game = self.game_service[game_id]  # type: Game
-        if game.state != GameState.LOBBY and game.state != GameState.LIVE:
+        if game.state is not GameState.LOBBY and game.state is not GameState.LIVE:
             await self.send_warning("The game you were connected to is no longer available")
             return
 
@@ -757,7 +757,7 @@ class LobbyConnection:
         self._logger.debug("joining: %d with pw: %s", uuid, password)
         try:
             game = self.game_service[uuid]
-            if not game or game.state != GameState.LOBBY:
+            if not game or game.state is not GameState.LOBBY:
                 self._logger.debug("Game not in lobby state: %s", game)
                 await self.send({
                     "command": "notice",
@@ -847,7 +847,6 @@ class LobbyConnection:
             password=password
         )
         await self.launch_game(game, is_host=True)
-        metrics.games_hosted.labels(str(game_mode)).inc()
 
     async def launch_game(self, game, is_host=False, use_map=None):
         # TODO: Fix setting up a ridiculous amount of cyclic pointers here

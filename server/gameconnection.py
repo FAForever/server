@@ -95,7 +95,7 @@ class GameConnection(GpgNetServerProtocol):
         state = self.player.state
 
         if state == PlayerState.HOSTING:
-            self.game.state = GameState.LOBBY
+            self.game.set_state(GameState.LOBBY)
             self._state = GameConnectionState.CONNECTED_TO_HOST
             self.game.add_game_connection(self)
             self.game.host = self.player
@@ -547,7 +547,7 @@ class GameConnection(GpgNetServerProtocol):
 
             self._logger.debug("%s.abort(%s)", self, log_message)
 
-            if self.game.state == GameState.LOBBY:
+            if self.game.state is GameState.LOBBY:
                 await self.disconnect_all_peers()
 
             self._state = GameConnectionState.ENDED
