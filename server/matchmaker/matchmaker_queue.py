@@ -81,9 +81,9 @@ class MatchmakerQueue:
 
             #TODO: Move this into algorithm, then don't need to recalculate quality_with?
             # Probably not a major bottleneck though.
-            for match in self._matches:
+            for search1, search2 in self._matches:
                 metrics.match_quality.labels(self.queue_name).observe(
-                    match[0].quality_with(match[1])
+                    search1.quality_with(search2)
                 )
 
             number_of_unmatched_searches = len(self.queue)
