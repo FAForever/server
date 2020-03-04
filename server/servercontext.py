@@ -72,30 +72,34 @@ class ServerContext:
     async def _do_broadcast(self, validate_fn, send_fn, message):
         server.stats.incr('server.broadcasts')
 
-        async def broadcast_with_stall_handling(proto):
-            try:
-                await asyncio.wait_for(
-                    send_fn(proto, message),
-                    timeout=CLIENT_STALL_TIME
-                )
-            except asyncio.TimeoutError:
-                buffer_size = len(proto.writer.transport._buffer)
-                if buffer_size > CLIENT_MAX_WRITE_BUFFER_SIZE:
-                    self._logger.warning(
-                        "Terminating stalled connection with buffer size: %i",
-                        buffer_size
-                    )
-                    proto.abort()
-
         tasks = []
         for conn, proto in self.connections.items():
             try:
-                if proto.connected and validate_fn(conn):
-                    tasks.append(broadcast_with_stall_handling(proto))
+                if proto.is_connected() and validate_fn(conn):
+                    tasks.append(
+                        self._broadcast_with_stall_handling(
+                            proto, send_fn, message
+                        )
+                    )
             except Exception:
                 self._logger.exception("Encountered error in broadcast")
 
         await gather_without_exceptions(tasks, DisconnectedError)
+
+    async def _broadcast_with_stall_handling(self, proto, send_fn, message):
+        try:
+            await asyncio.wait_for(
+                send_fn(proto, message),
+                timeout=CLIENT_STALL_TIME
+            )
+        except asyncio.TimeoutError:
+            buffer_size = proto.writer.transport.get_write_buffer_size()
+            if buffer_size > CLIENT_MAX_WRITE_BUFFER_SIZE:
+                self._logger.warning(
+                    "Terminating stalled connection with buffer size: %i",
+                    buffer_size
+                )
+                proto.abort()
 
     async def client_connected(self, stream_reader, stream_writer):
         self._logger.debug("%s: Client connected", self)
@@ -106,7 +110,7 @@ class ServerContext:
         try:
             await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info('peername')))
             server.stats.gauge('user.agents.None', 1, delta=True)
-            while protocol.connected:
+            while protocol.is_connected():
                 message = await protocol.read_message()
                 with server.stats.timer('connection.on_message_received'):
                     await connection.on_message_received(message)

@@ -30,19 +30,19 @@ class QDataStreamProtocol(Protocol):
         """
         self.reader = reader
         self.writer = writer
+        # Force calls to drain() to only return once the data has been sent
         self.writer.transport.set_write_buffer_limits(high=0)
 
         # drain() cannot be called concurrently by multiple coroutines:
         # http://bugs.python.org/issue29930.
         self._drain_lock = asyncio.Lock()
 
-    @property
-    def connected(self):
+    def is_connected(self) -> bool:
         # TODO: In python 3.7 and above call writer.is_closing() directly
         return not self.writer.transport.is_closing()
 
     @staticmethod
-    def read_qstring(buffer: bytes, pos: int=0) -> Tuple[int, str]:
+    def read_qstring(buffer: bytes, pos: int = 0) -> Tuple[int, str]:
         """
         Parse a serialized QString from buffer (A bytes like object) at given position
 
@@ -138,7 +138,6 @@ class QDataStreamProtocol(Protocol):
         """
         self.writer.transport.abort()
 
-
     async def drain(self):
         """
         Await the write buffer to empty.
@@ -163,7 +162,7 @@ class QDataStreamProtocol(Protocol):
         )
 
     async def send_messages(self, messages):
-        if not self.connected:
+        if not self.is_connected():
             raise DisconnectedError("Protocol is not connected!")
 
         payload = [
@@ -176,7 +175,7 @@ class QDataStreamProtocol(Protocol):
         server.stats.incr('server.sent_messages')
 
     async def send_raw(self, data):
-        if not self.connected:
+        if not self.is_connected():
             raise DisconnectedError("Protocol is not connected!")
 
         self.writer.write(data)
