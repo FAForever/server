@@ -145,7 +145,7 @@ async def test_backpressure_handling(lobby_server, caplog):
         await asyncio.wait_for(write_without_reading(proto), 10)
 
 
-@fast_forward(20)
+@fast_forward(1000)
 async def test_backpressure_handling_stalls(lobby_server, caplog):
     # TRACE will be spammed with thousands of messages
     caplog.set_level(logging.DEBUG)
