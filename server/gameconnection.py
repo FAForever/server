@@ -95,7 +95,7 @@ class GameConnection(GpgNetServerProtocol):
         state = self.player.state
 
         if state == PlayerState.HOSTING:
-            self.game.set_state(GameState.LOBBY)
+            self.game.state = GameState.LOBBY
             self._state = GameConnectionState.CONNECTED_TO_HOST
             self.game.add_game_connection(self)
             self.game.host = self.player

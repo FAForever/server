@@ -149,7 +149,6 @@ class GameService:
         game = game_class(**args)
 
         self._games[game_id] = game
-        self.update_active_game_metrics()
 
         game.visibility = visibility
         game.password = password
@@ -205,7 +204,6 @@ class GameService:
     def remove_game(self, game: Game):
         if game.id in self._games:
             del self._games[game.id]
-            self.update_active_game_metrics()
 
 
     def __getitem__(self, item: int) -> Game:

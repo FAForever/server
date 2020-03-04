@@ -76,6 +76,7 @@ def run_lobby_server(
 
     @at_interval(DIRTY_REPORT_INTERVAL)
     async def do_report_dirties():
+        games.update_active_game_metrics()
         dirty_games = games.dirty_games
         dirty_queues = games.dirty_queues
         dirty_players = player_service.dirty_players

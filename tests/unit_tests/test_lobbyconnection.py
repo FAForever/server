@@ -285,7 +285,7 @@ async def test_command_game_join_calls_join_game(mocker,
                                                  game_stats_service):
     lobbyconnection.game_service = game_service
     game = Game(42, database, game_service, game_stats_service)
-    game.set_state(GameState.LOBBY)
+    game.state = GameState.LOBBY
     game.password = None
     game.game_mode = 'faf'
     game.id = 42
@@ -318,7 +318,7 @@ async def test_command_game_join_uid_as_str(mocker,
                                             game_stats_service):
     lobbyconnection.game_service = game_service
     game = Game(42, database, game_service, game_stats_service)
-    game.set_state(GameState.LOBBY)
+    game.state = GameState.LOBBY
     game.password = None
     game.game_mode = 'faf'
     game.id = 42
@@ -871,7 +871,7 @@ async def test_game_connection_not_restored_if_game_state_prohibits(lobbyconnect
     lobbyconnection.player.state = PlayerState.IDLE
     lobbyconnection.game_service = game_service
     game = mock.create_autospec(Game(42, database, game_service, game_stats_service))
-    game.set_state(game_state)
+    game.state = game_state
     game.password = None
     game.game_mode = 'faf'
     game.id = 42

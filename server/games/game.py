@@ -155,7 +155,7 @@ class Game:
         self.desyncs = 0
         self.validity = ValidityState.VALID
         self.game_mode = game_mode
-        self._state = GameState.INITIALIZING
+        self.state = GameState.INITIALIZING
         self._connections = {}
         self.enforce_rating = False
         self.gameOptions = {
@@ -183,14 +183,6 @@ class Game:
             self._is_hosted.set_exception(TimeoutError("Game setup timed out"))
             self._logger.debug("Game setup timed out.. Cancelling game")
             await self.on_game_end()
-
-    @property
-    def state(self):
-        return self._state
-
-    def set_state(self, state: GameState):
-        self._state = state
-        self.game_service.update_active_game_metrics()
 
     @property
     def armies(self):
@@ -459,7 +451,7 @@ class Game:
         finally:
             self.set_hosted(value=False)
 
-            self.set_state(GameState.ENDED)
+            self.state = GameState.ENDED
 
             self.game_service.mark_dirty(self)
 
@@ -705,7 +697,7 @@ class Game:
         self._players = self.players
         self._players_with_unsent_army_stats = list(self._players)
 
-        self.set_state(GameState.LIVE)
+        self.state = GameState.LIVE
         self._logger.info("Game launched")
 
         await self.on_game_launched()
