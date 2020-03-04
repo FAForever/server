@@ -45,7 +45,7 @@ async def queue_players_for_matchmaking(lobby_server):
     return proto1, proto2
 
 
-@fast_forward(100)
+@fast_forward(50)
 async def test_game_matchmaking(lobby_server):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
 
@@ -54,9 +54,33 @@ async def test_game_matchmaking(lobby_server):
     await proto2.send_message({
         'command': 'GameState',
         'target': 'game',
+        'args': ['Idle']
+    })
+    await proto2.send_message({
+        'command': 'GameState',
+        'target': 'game',
         'args': ['Lobby']
     })
     msg1 = await read_until_command(proto1, 'game_launch')
+
+    assert msg1['uid'] == msg2['uid']
+    assert msg1['mod'] == 'ladder1v1'
+    assert msg2['mod'] == 'ladder1v1'
+
+
+@fast_forward(50)
+async def test_game_matchmaking_timeout(lobby_server):
+    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+
+    # The player that queued last will be the host
+    msg2 = await read_until_command(proto2, 'game_launch')
+    # LEGACY BEHAVIOUR: The host does not respond with the appropriate GameState
+    # so the match is cancelled. However, the client does not know how to
+    # handle `game_launch_cancelled` messages so we still send `game_launch` to
+    # prevent the client from showing that it is searching when it really isn't.
+    msg1 = await read_until_command(proto1, 'game_launch')
+    await read_until_command(proto2, 'game_launch_cancelled')
+    await read_until_command(proto1, 'game_launch_cancelled')
 
     assert msg1['uid'] == msg2['uid']
     assert msg1['mod'] == 'ladder1v1'

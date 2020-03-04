@@ -193,26 +193,19 @@ class LadderService:
                 hosted = await game.await_hosted()
                 if not hosted:
                     raise TimeoutError("Host left lobby")
-            except TimeoutError:
-                msg = {"command": "game_launch_cancelled"}
-                with contextlib.suppress(DisconnectedError):
-                    # Sending to host might not be needed, but we do it anyways
-                    await asyncio.gather(
-                        host.send_message(msg),
-                        guest.send_message(msg)
-                    )
-                # TODO: Uncomment this line once the client supports `game_launch_cancelled`.
-                # Until then, returning here will cause the client to think it is
-                # searching for ladder, even though the server has already removed it
-                # from the queue.
+            finally:
+                self._logger.debug("Ladder game failed to launch due to a timeout")
+                # TODO: Uncomment this return once the client supports
+                # `game_launch_cancelled`. Until then, returning here will cause
+                # the client to think it is searching for ladder, even though
+                # the server has already removed it from the queue.
 
                 # return
-                self._logger.debug("Ladder game failed to launch due to a timeout")
 
-            # TODO: Graceful handling of NoneType errors due to disconnect
-            await guest.lobby_connection.launch_game(
-                game, is_host=False, use_map=mapname
-            )
+                # TODO: Graceful handling of NoneType errors due to disconnect
+                await guest.lobby_connection.launch_game(
+                    game, is_host=False, use_map=mapname
+                )
             self._logger.debug("Ladder game launched successfully")
         except Exception:
             self._logger.exception("Failed to start ladder game!")
@@ -227,28 +220,27 @@ class LadderService:
         maps = self.game_service.ladder_maps
 
         if not maps:
-            self._logger.error(
+            self._logger.critical(
                 "Trying to choose a map from an empty map pool!"
             )
             raise RuntimeError("Ladder maps not set!")
 
         recently_played_map_ids = {
-            map_id
-            for player in players for map_id in await self
-            .get_ladder_history(player, limit=LADDER_ANTI_REPETITION_LIMIT)
+            map_id for player in players
+            for map_id in await self.get_ladder_history(
+                player, limit=LADDER_ANTI_REPETITION_LIMIT
+            )
         }
         randomized_maps = random.sample(maps, len(maps))
 
-        try:
-            return next(
-                filter(
-                    lambda m: m[0] not in recently_played_map_ids,
-                    randomized_maps
-                )
-            )
-        except StopIteration:
-            # If all maps were played recently, pick a random one
-            return randomized_maps[0]
+        return next(
+            filter(
+                lambda m: m[0] not in recently_played_map_ids,
+                randomized_maps
+            ),
+            # If all maps were played recently, default to a random one
+            randomized_maps[0]
+        )
 
     async def get_ladder_history(self, player: Player, limit=3) -> List[int]:
         async with self._db.acquire() as conn:
