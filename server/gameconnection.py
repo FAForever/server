@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 
 from server.db import FAFDatabase
 from sqlalchemy import or_, select, text
@@ -8,10 +9,12 @@ from .config import TRACE
 from .db.models import login, moderation_report, reported_user
 from .decorators import with_logger
 from .game_service import GameService
-from .games.game import Game, GameState, ValidityState, Victory
+from .games.game import Game, GameError, GameState, ValidityState, Victory
 from .player_service import PlayerService
 from .players import Player, PlayerState
-from .protocol import GpgNetServerProtocol, QDataStreamProtocol
+from .protocol import (
+    DisconnectedError, GpgNetServerProtocol, QDataStreamProtocol
+)
 
 
 @with_logger
@@ -68,11 +71,20 @@ class GameConnection(GpgNetServerProtocol):
     def player(self, val: Player):
         self._player = val
 
-    async def send_message(self, message):
+    async def send(self, message):
+        """
+        Send a game message to the client.
+
+        :raises: DisconnectedError
+
+        NOTE: When calling this on a connection other than `self` make sure to
+        handle `DisconnectedError`, otherwise failure to send the message will
+        cause the caller to be disconnected as well.
+        """
         message['target'] = "game"
 
-        self._logger.log(TRACE, ">> %s: %s", self.player.login, message)
         await self.protocol.send_message(message)
+        self._logger.log(TRACE, ">> %s: %s", self.player.login, message)
 
     async def _handle_idle_state(self):
         """
@@ -90,7 +102,7 @@ class GameConnection(GpgNetServerProtocol):
         elif state == PlayerState.JOINING:
             pass
         else:
-            self._logger.exception("Unknown PlayerState: %s", state)
+            self._logger.error("Unknown PlayerState: %s", state)
             await self.abort()
 
     async def _handle_lobby_state(self):
@@ -100,37 +112,48 @@ class GameConnection(GpgNetServerProtocol):
         We determine the connectivity of the peer and respond
         appropriately
         """
-        try:
-            player_state = self.player.state
-            if player_state == PlayerState.HOSTING:
-                await self.send_HostGame(self.game.map_folder_name)
-                self.game.set_hosted()
-            # If the player is joining, we connect him to host
-            # followed by the rest of the players.
-            elif player_state == PlayerState.JOINING:
-                await self.connect_to_host(self.game.host.game_connection)
-                if self._state is GameConnectionState.ENDED:  # We aborted while trying to connect
-                    return
+        player_state = self.player.state
+        if player_state == PlayerState.HOSTING:
+            await self.send_HostGame(self.game.map_folder_name)
+            self.game.set_hosted()
+        # If the player is joining, we connect him to host
+        # followed by the rest of the players.
+        elif player_state == PlayerState.JOINING:
+            await self.connect_to_host(self.game.host.game_connection)
 
-                self._state = GameConnectionState.CONNECTED_TO_HOST
+            if self._state is GameConnectionState.ENDED:
+                # We aborted while trying to connect
+                return
+
+            self._state = GameConnectionState.CONNECTED_TO_HOST
+
+            try:
                 self.game.add_game_connection(self)
+            except GameError as e:
+                await self.abort(f"GameError while joining {self.game.id}: {e}")
+                return
 
-                tasks = []
-                for peer in self.game.connections:
-                    if peer != self and peer.player != self.game.host:
-                        self._logger.debug("%s connecting to %s", self.player, peer)
-                        tasks.append(self.connect_to_peer(peer))
-                await asyncio.gather(*tasks)
-        except Exception as e:  # pragma: no cover
-            self._logger.exception(e)
+            tasks = []
+            for peer in self.game.connections:
+                if peer != self and peer.player != self.game.host:
+                    self._logger.debug("%s connecting to %s", self.player, peer)
+                    tasks.append(self.connect_to_peer(peer))
+            await asyncio.gather(*tasks)
 
     async def connect_to_host(self, peer: "GameConnection"):
         """
         Connect self to a given peer (host)
         :return:
         """
-        assert peer.player.state == PlayerState.HOSTING
+        if not peer or peer.player.state != PlayerState.HOSTING:
+            await self.abort("The host left the lobby")
+            return
+
         await self.send_JoinGame(peer.player.login, peer.player.id)
+
+        if not peer:
+            await self.abort("The host left the lobby")
+            return
 
         await peer.send_ConnectToPeer(
             player_name=self.player.login,
@@ -143,16 +166,20 @@ class GameConnection(GpgNetServerProtocol):
         Connect two peers
         :return: None
         """
-        await self.send_ConnectToPeer(
-            player_name=peer.player.login,
-            player_uid=peer.player.id,
-            offer=True
-        )
-        await peer.send_ConnectToPeer(
-            player_name=self.player.login,
-            player_uid=self.player.id,
-            offer=False
-        )
+        if peer is not None:
+            await self.send_ConnectToPeer(
+                player_name=peer.player.login,
+                player_uid=peer.player.id,
+                offer=True
+            )
+
+        if peer is not None:
+            with contextlib.suppress(DisconnectedError):
+                await peer.send_ConnectToPeer(
+                    player_name=self.player.login,
+                    player_uid=self.player.id,
+                    offer=False
+                )
 
     async def handle_action(self, command, args):
         """
@@ -168,12 +195,11 @@ class GameConnection(GpgNetServerProtocol):
                 "Unrecognized command %s: %s from player %s",
                 command, args, self.player
             )
-        except (TypeError, ValueError) as e:
-            self._logger.exception("Bad command arguments: %s", e)
+        except (TypeError, ValueError):
+            self._logger.exception("Bad command arguments")
         except ConnectionError as e:
             raise e
-        except Exception as e:  # pragma: no cover
-            self._logger.exception(e)
+        except Exception:  # pragma: no cover
             self._logger.exception("Something awful happened in a game thread!")
             await self.abort()
 
@@ -313,40 +339,42 @@ class GameConnection(GpgNetServerProtocol):
         """
 
         async with self._db.acquire() as conn:
-
             # Sometime the game sends a wrong ID - but a correct player name
             # We need to make sure the player ID is correct before pursuing
 
             check = await conn.execute(select([login.c.id]).where(
-                or_(login.c.id == teamkiller_id,
-                login.c.login == teamkiller_name)
+                or_(
+                    login.c.id == teamkiller_id,
+                    login.c.login == teamkiller_name
+                )
             ))
 
             row = await check.fetchone()
             if not row:
-                self._logger.debug("Discarded teamkill report with unknown reported player %s[%s]",
-                                   teamkiller_id,
-                                   teamkiller_name
+                self._logger.debug(
+                    "Discarded teamkill report with unknown reported player %s[%s]",
+                    teamkiller_id, teamkiller_name
                 )
                 return
 
             verified_teamkiller_id = row[login.c.id]
 
-        # The reporter's ID also needs to be checked the exact same way
-        # for the same reasons
-
+            # The reporter's ID also needs to be checked the exact same way
+            # for the same reasons
 
             check = await conn.execute(select([login.c.id]).where(
-                or_(login.c.id == reporter_id,
-                login.c.login == reporter_name)
+                or_(
+                    login.c.id == reporter_id,
+                    login.c.login == reporter_name
+                )
             ))
 
             row = await check.fetchone()
             if not row:
-                self._logger.debug("Discarded teamkill report with unknown reporter %s[%s]",
-                                   reporter_id,
-                                   reporter_name
-                                   )
+                self._logger.debug(
+                    "Discarded teamkill report with unknown reporter %s[%s]",
+                    reporter_id, reporter_name
+                )
                 return
 
             verified_reporter_id = row[login.c.id]
@@ -396,22 +424,28 @@ class GameConnection(GpgNetServerProtocol):
         receiver_id = int(receiver_id)
         peer = self.player_service.get_player(receiver_id)
         if not peer:
-            self._logger.info(
+            self._logger.debug(
                 "Ignoring ICE message for unknown player: %s", receiver_id
             )
             return
 
         game_connection = peer.game_connection
         if not game_connection:
-            self._logger.info(
+            self._logger.debug(
                 "Ignoring ICE message for player without game connection: %s", receiver_id
             )
             return
 
-        await game_connection.send_message({
-            "command": "IceMsg",
-            "args": [int(self.player.id), ice_msg]
-        })
+        try:
+            await game_connection.send({
+                "command": "IceMsg",
+                "args": [int(self.player.id), ice_msg]
+            })
+        except DisconnectedError:
+            self._logger.debug(
+                "Failed to send ICE message to player due to a disconnect: %s",
+                receiver_id
+            )
 
     async def handle_game_state(self, state):
         """
@@ -424,15 +458,11 @@ class GameConnection(GpgNetServerProtocol):
             await self._handle_idle_state()
 
         elif state == 'Lobby':
-            # The game is initialized and awaiting commands
-            # At this point, it is listening locally on the
-            # port we told it to (self.player.game_port)
-            # We schedule an async task to determine their connectivity
-            # and respond appropriately
+            # TODO: Do we still need to schedule with `ensure_future`?
             #
             # We do not yield from the task, since we
             # need to keep processing other commands while it runs
-            asyncio.ensure_future(self._handle_lobby_state())
+            await self._handle_lobby_state()
 
         elif state == 'Launching':
             if self.player.state != PlayerState.HOSTING:
@@ -504,7 +534,6 @@ class GameConnection(GpgNetServerProtocol):
         if self.game:
             self.game_service.mark_dirty(self.game)
 
-
     async def abort(self, log_message: str=''):
         """
         Abort the connection
@@ -542,9 +571,10 @@ class GameConnection(GpgNetServerProtocol):
             try:
                 await fut
             except Exception:
-                self._logger.exception(
+                self._logger.debug(
                     "peer_sendDisconnectFromPeer failed for player %i",
-                    self.player.id
+                    self.player.id,
+                    exc_info=True
                 )
 
     async def on_connection_lost(self):

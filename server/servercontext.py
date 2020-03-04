@@ -3,8 +3,9 @@ import asyncio
 import server
 
 from .async_functions import gather_without_exceptions
+from .config import CLIENT_MAX_WRITE_BUFFER_SIZE, CLIENT_STALL_TIME, TRACE
 from .decorators import with_logger
-from .protocol import QDataStreamProtocol
+from .protocol import DisconnectedError, QDataStreamProtocol
 from .types import Address
 
 
@@ -53,24 +54,63 @@ class ServerContext:
     def __contains__(self, connection):
         return connection in self.connections.keys()
 
+    async def broadcast(self, message, validate_fn=lambda a: True):
+        await self._do_broadcast(
+            validate_fn,
+            QDataStreamProtocol.send_message,
+            message
+        )
+        self._logger.log(TRACE, "]]: %s", message)
+
     async def broadcast_raw(self, message, validate_fn=lambda a: True):
+        await self._do_broadcast(
+            validate_fn,
+            QDataStreamProtocol.send_raw,
+            message
+        )
+
+    async def _do_broadcast(self, validate_fn, send_fn, message):
         server.stats.incr('server.broadcasts')
+
         tasks = []
         for conn, proto in self.connections.items():
-            if validate_fn(conn):
-                tasks.append(proto.send_raw(message))
+            try:
+                if proto.is_connected() and validate_fn(conn):
+                    tasks.append(
+                        self._broadcast_with_stall_handling(
+                            proto, send_fn, message
+                        )
+                    )
+            except Exception:
+                self._logger.exception("Encountered error in broadcast")
 
-        await gather_without_exceptions(tasks, Exception)
+        await gather_without_exceptions(tasks, DisconnectedError)
+
+    async def _broadcast_with_stall_handling(self, proto, send_fn, message):
+        try:
+            await asyncio.wait_for(
+                send_fn(proto, message),
+                timeout=CLIENT_STALL_TIME
+            )
+        except asyncio.TimeoutError:
+            buffer_size = proto.writer.transport.get_write_buffer_size()
+            if buffer_size > CLIENT_MAX_WRITE_BUFFER_SIZE:
+                self._logger.warning(
+                    "Terminating stalled connection with buffer size: %i",
+                    buffer_size
+                )
+                proto.abort()
 
     async def client_connected(self, stream_reader, stream_writer):
         self._logger.debug("%s: Client connected", self)
         protocol = QDataStreamProtocol(stream_reader, stream_writer)
         connection = self._connection_factory()
+        self.connections[connection] = protocol
+
         try:
             await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info('peername')))
-            self.connections[connection] = protocol
             server.stats.gauge('user.agents.None', 1, delta=True)
-            while True:
+            while protocol.is_connected():
                 message = await protocol.read_message()
                 with server.stats.timer('connection.on_message_received'):
                     await connection.on_message_received(message)
@@ -87,5 +127,5 @@ class ServerContext:
         finally:
             del self.connections[connection]
             server.stats.gauge('user.agents.{}'.format(connection.user_agent), -1, delta=True)
-            protocol.writer.close()
+            protocol.close()
             await connection.on_connection_lost()

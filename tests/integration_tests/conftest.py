@@ -171,6 +171,6 @@ async def connect_and_sign_in(credentials, lobby_server):
     proto = await connect_client(lobby_server)
     session = await get_session(proto)
     await perform_login(proto, credentials)
-    hello = await read_until(proto, lambda msg: msg['command'] == 'welcome')
+    hello = await read_until_command(proto, "welcome")
     player_id = hello['id']
     return player_id, session, proto

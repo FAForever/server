@@ -9,6 +9,7 @@ from server.abc.base_game import GameConnectionState
 from server.games import Game
 from server.games.game import GameState, ValidityState, Victory
 from server.players import PlayerState
+from server.protocol import DisconnectedError
 
 pytestmark = pytest.mark.asyncio
 
@@ -71,6 +72,25 @@ async def test_disconnect_all_peers(
     disconnect_done.success.assert_called_once()
 
 
+async def test_connect_to_peer(game_connection):
+    peer = asynctest.create_autospec(GameConnection)
+
+    await game_connection.connect_to_peer(peer)
+
+    peer.send_ConnectToPeer.assert_called_once()
+
+
+async def test_connect_to_peer_disconnected(game_connection):
+    # Weak reference has dissapeared
+    await game_connection.connect_to_peer(None)
+
+    peer = asynctest.create_autospec(GameConnection)
+    peer.send_ConnectToPeer.side_effect = DisconnectedError("Test error")
+
+    # The client disconnects right as we send the message
+    await game_connection.connect_to_peer(peer)
+
+
 async def test_handle_action_GameState_idle_adds_connection(
     game: Game,
     game_connection: GameConnection,
@@ -121,7 +141,7 @@ async def test_handle_action_GameState_lobby_calls_ConnectToHost(
     event_loop,
     players
 ):
-    game_connection.send_message = mock.MagicMock()
+    game_connection.send = CoroutineMock()
     game_connection.connect_to_host = CoroutineMock()
     game_connection.player = players.joining
     players.joining.game = game
@@ -141,7 +161,7 @@ async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
     event_loop,
     players
 ):
-    game_connection.send_message = mock.MagicMock()
+    game_connection.send = CoroutineMock()
     game_connection.connect_to_host = CoroutineMock()
     game_connection.connect_to_peer = CoroutineMock()
     game_connection.player = players.joining
@@ -159,6 +179,49 @@ async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
     await exhaust_callbacks(event_loop)
 
     game_connection.connect_to_peer.assert_called_with(peer_conn)
+
+
+async def test_handle_lobby_state_handles_GameError(
+    real_game: Game,
+    game_connection: GameConnection,
+    event_loop,
+    players
+):
+    game_connection.abort = CoroutineMock()
+    game_connection.connect_to_host = CoroutineMock()
+    game_connection.player = players.joining
+    game_connection.game = real_game
+
+    players.joining.game = real_game
+
+    real_game.host = players.hosting
+    real_game.state = GameState.ENDED
+
+    await game_connection.handle_action('GameState', ['Lobby'])
+    await exhaust_callbacks(event_loop)
+
+    game_connection.abort.assert_called_once()
+
+
+async def test_handle_action_GameState_lobby_calls_abort(
+    game: Game,
+    game_connection: GameConnection,
+    event_loop,
+    players
+):
+    game_connection.send = CoroutineMock()
+    game_connection.abort = CoroutineMock()
+    game_connection.player = players.joining
+    players.joining.game = game
+    game.host = players.hosting
+    game.host.state = PlayerState.IDLE
+    game.map_file_path = 'maps/some_map.zip'
+    game.map_folder_name = 'some_map'
+
+    await game_connection.handle_action('GameState', ['Lobby'])
+    await exhaust_callbacks(event_loop)
+
+    game_connection.abort.assert_called_once()
 
 
 async def test_handle_action_GameState_launching_calls_launch(

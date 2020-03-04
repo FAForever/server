@@ -1,4 +1,5 @@
 from datetime import datetime
+from hashlib import sha256
 from unittest import mock
 from unittest.mock import Mock
 
@@ -18,7 +19,7 @@ from server.ladder_service import LadderService
 from server.lobbyconnection import ClientError, LobbyConnection
 from server.player_service import PlayerService
 from server.players import Player, PlayerState
-from server.protocol import QDataStreamProtocol
+from server.protocol import DisconnectedError, QDataStreamProtocol
 from server.rating import RatingType
 from server.types import Address
 from sqlalchemy import and_, select, text
@@ -90,7 +91,7 @@ def lobbyconnection(event_loop, database, mock_protocol, mock_games, mock_player
         games=mock_games,
         players=mock_players,
         nts_client=mock_nts_client,
-        ladder_service=mock.create_autospec(LadderService)
+        ladder_service=asynctest.create_autospec(LadderService)
     )
 
     lc.player = mock_player
@@ -178,6 +179,46 @@ async def test_command_create_account_returns_error(lobbyconnection):
         "text": ("FAF no longer supports direct registration. "
                  "Please use the website to register.")
     })
+
+
+async def test_double_login(lobbyconnection, mock_players, player_factory):
+    lobbyconnection.check_policy_conformity = CoroutineMock(return_value=True)
+    old_player = player_factory()
+    old_player.lobby_connection.player = old_player
+    mock_players.get_player.return_value = old_player
+
+    await lobbyconnection.on_message_received({
+        "command": "hello",
+        "login": "test",
+        "password": sha256(b"test_password").hexdigest(),
+        "unique_id": "blah"
+    })
+
+    old_player.lobby_connection.send_warning.assert_called_with(
+        "You have been signed out because you signed in elsewhere.",
+        fatal=True
+    )
+    # This should only be reset in abort, which is mocked for this test
+    assert old_player.lobby_connection.player is not None
+
+
+async def test_double_login_disconnected(lobbyconnection, mock_players, player_factory):
+    lobbyconnection.abort = CoroutineMock()
+    lobbyconnection.check_policy_conformity = CoroutineMock(return_value=True)
+    old_player = player_factory()
+    mock_players.get_player.return_value = old_player
+
+    old_player.lobby_connection.send_warning.side_effect = DisconnectedError("Test disconnect")
+
+    # Should not raise
+    await lobbyconnection.on_message_received({
+        "command": "hello",
+        "login": "test",
+        "password": sha256(b"test_password").hexdigest(),
+        "unique_id": "blah"
+    })
+
+    lobbyconnection.abort.assert_not_called()
 
 
 async def test_command_game_host_creates_game(lobbyconnection,
@@ -359,10 +400,10 @@ async def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
 
 
 async def test_abort(mocker, lobbyconnection):
-    lobbyconnection.protocol.writer.close = mock.Mock()
+    lobbyconnection.protocol.close = mock.Mock()
     await lobbyconnection.abort()
 
-    lobbyconnection.protocol.writer.close.assert_any_call()
+    lobbyconnection.protocol.close.assert_any_call()
 
 
 async def test_send_game_list(mocker, database, lobbyconnection, game_stats_service):
@@ -626,15 +667,14 @@ async def test_command_admin_closelobby_with_ban_injection(mocker, lobbyconnecti
     assert len(bans) == 0
 
 
-async def test_command_admin_closeFA(mocker, lobbyconnection):
+async def test_command_admin_closeFA(mocker, lobbyconnection, player_factory):
     mocker.patch.object(lobbyconnection, '_logger')
     player = mocker.patch.object(lobbyconnection, 'player')
+    player = lobbyconnection.player
     player.login = 'Sheeo'
     player.admin = True
     player.id = 42
-    tuna = mock.Mock()
-    tuna.id = 55
-    tuna.lobby_connection = asynctest.create_autospec(LobbyConnection)
+    tuna = player_factory(login="Tuna", player_id=55)
     lobbyconnection.player_service = {42: player, 55: tuna}
 
     await lobbyconnection.on_message_received({
@@ -892,6 +932,14 @@ async def test_connection_lost(lobbyconnection):
 
     lobbyconnection.ladder_service.on_connection_lost.assert_called_once_with(lobbyconnection.player)
     lobbyconnection.player_service.remove_player.assert_called_once_with(lobbyconnection.player)
+
+
+async def test_connection_lost_no_player(lobbyconnection):
+    lobbyconnection.player = None
+    await lobbyconnection.on_connection_lost()
+
+    lobbyconnection.ladder_service.on_connection_lost.assert_not_called()
+    lobbyconnection.player_service.remove_player.assert_not_called()
 
 
 async def test_connection_lost_send(lobbyconnection, mock_protocol):

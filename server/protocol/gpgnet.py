@@ -40,10 +40,10 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
 
     async def send_gpgnet_message(self, command_id: str, arguments: List[Union[int, str, bool]]):
         message = {"command": command_id, "args": arguments}
-        await self.send_message(message)
+        await self.send(message)
 
     @abstractmethod
-    async def send_message(self, message):
+    async def send(self, message):
         pass  # pragma: no cover
 
 

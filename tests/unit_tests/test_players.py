@@ -1,8 +1,10 @@
 import gc
 from unittest import mock
 
+import pytest
 from server.factions import Faction
 from server.players import Player
+from server.protocol import DisconnectedError
 from server.rating import RatingType
 from trueskill import Rating
 
@@ -78,3 +80,12 @@ def test_serialize():
                     "number_of_games": 542,
                     "clan": 'TOAST'
     }
+
+
+@pytest.mark.asyncio
+async def test_send_message():
+    p = Player(login='Test')
+
+    assert p.lobby_connection is None
+    with pytest.raises(DisconnectedError):
+        await p.send_message({})

@@ -38,6 +38,14 @@ FAF_POLICY_SERVER_BASE_URL = os.getenv("FAF_POLICY_SERVER_BASE_URL", "http://faf
 FORCE_STEAM_LINK_AFTER_DATE = int(os.getenv('FORCE_STEAM_LINK_AFTER_DATE', 1536105599)) # 5 september 2018 by default
 FORCE_STEAM_LINK = os.getenv('FORCE_STEAM_LINK', 'false').lower() == 'true'
 
+# How long we wait for a connection to read our messages before we consider
+# it to be stalled. Stalled connections will be terminated if the max buffer
+# size is reached.
+CLIENT_STALL_TIME = int(os.getenv('CLIENT_STALL_TIME', 10))
+# Maximum number of bytes we will allow a stalled connection to get behind
+# before we terminate their connection.
+CLIENT_MAX_WRITE_BUFFER_SIZE = int(os.getenv('CLIENT_MAX_WRITE_BUFFER_SIZE', 2**16))
+
 NEWBIE_BASE_MEAN = int(os.getenv('NEWBIE_BASE_MEAN', 500))
 NEWBIE_MIN_GAMES = int(os.getenv('NEWBIE_MIN_GAMES', 10))
 TOP_PLAYER_MIN_RATING = int(os.getenv('TOP_PLAYER_MIN_RATING', 1600))

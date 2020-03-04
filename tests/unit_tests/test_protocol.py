@@ -1,22 +1,40 @@
 import asyncio
+import json
 import struct
 from asyncio import StreamReader
+from socket import socketpair
 from unittest import mock
 
 import pytest
-from server.protocol import QDataStreamProtocol
+from server.protocol import DisconnectedError, QDataStreamProtocol
+from tests.utils import fast_forward
 
 pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
-def reader(event_loop):
-    return StreamReader(loop=event_loop)
+def socket_pair():
+    """A pair of connected sockets."""
+    return socketpair()
 
 
 @pytest.fixture
-def writer():
-    return mock.Mock()
+async def reader_writer(socket_pair):
+    """A connected StreamReader, StreamWriter pair"""
+    rsock, _ = socket_pair
+    return await asyncio.open_connection(sock=rsock)
+
+
+@pytest.fixture
+def reader(reader_writer):
+    reader, _ = reader_writer
+    return reader
+
+
+@pytest.fixture
+def writer(reader_writer):
+    _, writer = reader_writer
+    return writer
 
 
 @pytest.fixture
@@ -48,6 +66,17 @@ def unix_protocol(unix_srv, event_loop):
     yield protocol
 
     protocol.close()
+
+
+async def test_close(protocol):
+    protocol.close()
+
+    assert protocol.is_connected() is False
+
+
+async def test_types():
+    with pytest.raises(NotImplementedError):
+        QDataStreamProtocol.pack_message({"Not": ["a", "string"]})
 
 
 async def test_QDataStreamProtocol_recv_small_message(protocol, reader):
@@ -89,6 +118,17 @@ async def test_unpacks_evil_qstring(protocol, reader):
     assert message == {'command': 'ask_session'}
 
 
+async def test_pack_unpack(protocol, reader):
+    message = {
+        "Some": "crazy",
+        "Message": ["message", 10],
+        "with": 1000
+    }
+    reader.feed_data(QDataStreamProtocol.pack_message(json.dumps(message)))
+
+    assert message == await protocol.read_message()
+
+
 async def test_send_message_simultaneous_writes(unix_protocol):
     msg = {
         "command": "test",
@@ -119,3 +159,26 @@ async def test_send_raw_simultaneous_writes(unix_protocol):
     # If drain calls are not synchronized, then this will raise an
     # AssertionError from within asyncio
     await asyncio.gather(*(unix_protocol.send_raw(msg) for i in range(20)))
+
+
+async def test_send_connected_attribute(unix_protocol, unix_srv):
+    unix_protocol.reader.set_exception(
+        RuntimeError("Unit test triggered exception")
+    )
+
+    with pytest.raises(DisconnectedError):
+        await unix_protocol.send_message({"Hello": "World"})
+
+    assert unix_protocol.is_connected() is False
+
+
+async def test_send_when_disconnected(protocol):
+    protocol.close()
+
+    assert protocol.is_connected() is False
+
+    with pytest.raises(DisconnectedError):
+        await protocol.send_message(["some message"])
+
+    with pytest.raises(DisconnectedError):
+        await protocol.send_messages([["some message"], ["some other message"]])

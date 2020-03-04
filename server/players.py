@@ -1,8 +1,10 @@
 import weakref
 from enum import Enum, unique
 
-from server.rating import RatingType, RatingTypeMap, PlayerRatings
+from server.rating import PlayerRatings, RatingType, RatingTypeMap
+
 from .factions import Faction
+from .protocol import DisconnectedError
 
 
 @unique
@@ -124,6 +126,17 @@ class Player:
     @game_connection.deleter
     def game_connection(self):
         self._game_connection = lambda: None
+
+    async def send_message(self, message):
+        """
+        Try to send a message to this player.
+
+        :raises: DisconnectedError if the player has disconnected
+        """
+        if self.lobby_connection is None:
+            raise DisconnectedError("Player has disconnected!")
+
+        await self.lobby_connection.send(message)
 
     def to_dict(self):
         """

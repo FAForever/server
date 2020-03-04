@@ -354,7 +354,7 @@ class Game:
             await self._game_stats_service.process_game_stats(
                 player, self, self._army_stats
             )
-        except Exception as e:
+        except Exception:
             # Never let an error in processing army stats cascade
             self._logger.exception(
                 "Army stats could not be processed from player %s in game %s",
@@ -444,8 +444,8 @@ class Game:
                 await self.persist_results()
                 await self.rate_game()
                 await self._process_pending_army_stats()
-        except Exception as e:    # pragma: no cover
-            self._logger.exception("Error during game end: %s", e)
+        except Exception:    # pragma: no cover
+            self._logger.exception("Error during game end")
         finally:
             self.set_hosted(value=False)
             self.state = GameState.ENDED

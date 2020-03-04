@@ -6,9 +6,8 @@ Copyright (c) 2015-2016 Michael Søndergaard <sheeo@faforever.com>
 
 Distributed under GPLv3, see license.txt
 """
-import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Optional
 
 import aiomeasures
 import asyncio
@@ -65,24 +64,6 @@ def encode_message(message: str):
     return QDataStreamProtocol.pack_message(message)
 
 
-def encode_dict(d: Dict[Any, Any]):
-    return encode_message(json.dumps(d, separators=(',', ':')))
-
-
-def encode_players(players):
-    return encode_dict({
-        'command': 'player_info',
-        'players': [player.to_dict() for player in players]
-    })
-
-
-def encode_queues(queues):
-    return encode_dict({
-        'command': 'matchmaker_info',
-        'queues': [queue.to_dict() for queue in queues]
-    })
-
-
 def run_lobby_server(
     address: (str, int),
     database: FAFDatabase,
@@ -105,54 +86,55 @@ def run_lobby_server(
         games.clear_dirty()
         player_service.clear_dirty()
 
-        try:
-            if dirty_queues:
-                await ctx.broadcast_raw(
-                    encode_queues(dirty_queues),
+        tasks = []
+        if dirty_queues:
+            tasks.append(
+                ctx.broadcast({
+                        'command': 'matchmaker_info',
+                        'queues': [queue.to_dict() for queue in dirty_queues]
+                    },
                     lambda lobby_conn: lobby_conn.authenticated
                 )
-        except Exception as e:
-            logging.getLogger().exception(e)
+            )
 
-        try:
-            if dirty_players:
-                await ctx.broadcast_raw(
-                    encode_players(dirty_players),
+        if dirty_players:
+            tasks.append(
+                ctx.broadcast({
+                        'command': 'player_info',
+                        'players': [player.to_dict() for player in dirty_players]
+                    },
                     lambda lobby_conn: lobby_conn.authenticated
                 )
-        except Exception as e:
-            logging.getLogger().exception(e)
+            )
+
+        # TODO: This spams squillions of messages: we should implement per-
+        # connection message aggregation at the next abstraction layer down :P
+        for game in dirty_games:
+            if game.state == GameState.ENDED:
+                games.remove_game(game)
+
+            # So we're going to be broadcasting this to _somebody_...
+            message = game.to_dict()
+
+            # These games shouldn't be broadcast, but instead privately sent
+            # to those who are allowed to see them.
+            if game.visibility == VisibilityState.FRIENDS:
+                # To see this game, you must have an authenticated
+                # connection and be a friend of the host, or the host.
+                def validation_func(lobby_conn):
+                    return lobby_conn.player.id in game.host.friends or \
+                           lobby_conn.player == game.host
+            else:
+                def validation_func(lobby_conn):
+                    return lobby_conn.player.id not in game.host.foes
+
+            tasks.append(ctx.broadcast(
+                message,
+                lambda lobby_conn: lobby_conn.authenticated and validation_func(lobby_conn)
+            ))
 
         try:
-            # TODO: This spams squillions of messages: we should implement per-
-            # connection message aggregation at the next abstraction layer down :P
-            tasks = []
-            for game in dirty_games:
-                if game.state == GameState.ENDED:
-                    games.remove_game(game)
-
-                # So we're going to be broadcasting this to _somebody_...
-                message = encode_dict(game.to_dict())
-
-                # These games shouldn't be broadcast, but instead privately sent
-                # to those who are allowed to see them.
-                if game.visibility == VisibilityState.FRIENDS:
-                    # To see this game, you must have an authenticated
-                    # connection and be a friend of the host, or the host.
-                    def validation_func(lobby_conn):
-                        return lobby_conn.player.id in game.host.friends or \
-                               lobby_conn.player == game.host
-                else:
-                    def validation_func(lobby_conn):
-                        return lobby_conn.player.id not in game.host.foes
-
-                tasks.append(ctx.broadcast_raw(
-                    message,
-                    lambda lobby_conn: lobby_conn.authenticated and validation_func(lobby_conn)
-                ))
-
             await asyncio.gather(*tasks)
-
         except Exception as e:
             logging.getLogger().exception(e)
 

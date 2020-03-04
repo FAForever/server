@@ -93,7 +93,7 @@ class MatchmakerQueue:
     def find_matches(self) -> None:
         self._logger.info("Searching for matches: %s", self.queue_name)
 
-        # Call self.match on all matches and filter out the ones that were canceled
+        # Call self.match on all matches and filter out the ones that were cancelled
         new_matches = filter(
             lambda m: self.match(m[0], m[1]),
             make_matches(self.queue.values())

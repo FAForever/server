@@ -35,10 +35,10 @@ async def test_start_game_timeout(ladder_service: LadderService, game_service:
 
     await ladder_service.start_game(p1, p2)
 
-    p1.lobby_connection.send.assert_called_once_with({"command": "game_launch_timeout"})
-    p2.lobby_connection.send.assert_called_once_with({"command": "game_launch_timeout"})
+    p1.lobby_connection.send.assert_called_once_with({"command": "game_launch_cancelled"})
+    p2.lobby_connection.send.assert_called_once_with({"command": "game_launch_cancelled"})
     assert p1.lobby_connection.launch_game.called
-    # TODO: Once client supports `game_launch_timeout` change this to `assert not ...`
+    # TODO: Once client supports `game_launch_cancelled` change this to `assert not ...`
     assert p2.lobby_connection.launch_game.called
 
 
@@ -53,7 +53,7 @@ async def test_inform_player(ladder_service: LadderService, player_factory):
     p1.lobby_connection.send.reset_mock()
     # But not after the second
     p1.lobby_connection.send.assert_not_called()
-    ladder_service.on_connection_lost(p1)
+    await ladder_service.on_connection_lost(p1)
     await ladder_service.inform_player(p1)
 
     # But it is called if the player relogs
@@ -73,7 +73,7 @@ async def test_start_and_cancel_search(ladder_service: LadderService,
     assert ladder_service.queues['ladder1v1'].queue[search]
     assert not search.is_cancelled
 
-    ladder_service.cancel_search(p1)
+    await ladder_service.cancel_search(p1)
 
     assert p1.state == PlayerState.IDLE
     assert search.is_cancelled
@@ -115,7 +115,7 @@ async def test_cancel_all_searches(ladder_service: LadderService,
     assert ladder_service.queues['ladder1v1'].queue[search]
     assert not search.is_cancelled
 
-    ladder_service.cancel_search(p1)
+    await ladder_service.cancel_search(p1)
 
     assert p1.state == PlayerState.IDLE
     assert search.is_cancelled

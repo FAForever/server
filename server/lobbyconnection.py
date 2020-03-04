@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import hashlib
 import html
 import json
@@ -33,7 +34,7 @@ from .ladder_service import LadderService
 from .matchmaker import Search
 from .player_service import PlayerService
 from .players import Player, PlayerState
-from .protocol import QDataStreamProtocol
+from .protocol import DisconnectedError, QDataStreamProtocol
 from .rating import RatingType
 from .types import Address
 
@@ -114,7 +115,7 @@ class LobbyConnection:
             await self.game_connection.abort()
             self.game_connection = None
         self._authenticated = False
-        self.protocol.writer.close()
+        self.protocol.close()
 
         if self.player:
             self.player_service.remove_player(self.player)
@@ -285,10 +286,11 @@ class LobbyConnection:
                 player = self.player_service[message['user_id']]
                 if player:
                     self._logger.warning('Administrative action: %s closed game for %s', self.player, player)
-                    await player.lobby_connection.send({
-                        "command": "notice",
-                        "style": "kill",
-                    })
+                    with contextlib.suppress(DisconnectedError):
+                        await player.send_message({
+                            "command": "notice",
+                            "style": "kill",
+                        })
 
             elif action == "closelobby":
                 player = self.player_service[message['user_id']]
@@ -331,7 +333,9 @@ class LobbyConnection:
                                 raise ClientError('Your ban attempt upset the database: {}'.format(e))
                     else:
                         self._logger.warning('Administrative action: %s closed client for %s', self.player, player)
-                    await player.lobby_connection.kick()
+                    if player.lobby_connection is not None:
+                        with contextlib.suppress(DisconnectedError):
+                            await player.lobby_connection.kick()
                     if ban_fail:
                         raise ClientError("Kicked the player, but he was already banned!")
 
@@ -364,12 +368,12 @@ class LobbyConnection:
                 for user_id in user_ids:
                     player = self.player_service[user_id]
                     if player and player.lobby_connection is not None:
-                        tasks.append(player.lobby_connection.send({
+                        tasks.append(player.send_message({
                             "command": "social",
                             "autojoin": [channel]
                         }))
 
-                await gather_without_exceptions(tasks, Exception)
+                await gather_without_exceptions(tasks, DisconnectedError)
 
     async def check_user_login(self, conn, username, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.
@@ -586,11 +590,18 @@ class LobbyConnection:
         old_player = self.player_service.get_player(self.player.id)
         if old_player:
             self._logger.debug("player {} already signed in: {}".format(self.player.id, old_player))
-            if old_player.lobby_connection:
-                await old_player.lobby_connection.send_warning("You have been signed out because you signed in elsewhere.", fatal=True)
-                old_player.lobby_connection.game_connection = None
-                old_player.lobby_connection.player = None
-                self._logger.debug("Removing previous game_connection and player reference of player {} in hope on_connection_lost() wouldn't drop her out of the game".format(self.player.id))
+            if old_player.lobby_connection is not None:
+                self._logger.debug(
+                    "Removing previous game_connection and player reference of "
+                    "player %s in hope on_connection_lost() wouldn't drop her "
+                    "out of the game",
+                    self.player.id
+                )
+                with contextlib.suppress(DisconnectedError):
+                    await old_player.lobby_connection.send_warning(
+                        "You have been signed out because you signed in elsewhere.",
+                        fatal=True
+                    )
 
         await self.player_service.fetch_player_data(self.player)
 
@@ -769,7 +780,7 @@ class LobbyConnection:
             raise ClientError("Cannot host game. Please update your client to the newest version.")
 
         if state == "stop":
-            self.ladder_service.cancel_search(self.player)
+            await self.ladder_service.cancel_search(self.player)
             return
 
         if state == "start":
@@ -978,8 +989,8 @@ class LobbyConnection:
         :param message:
         :return:
         """
-        self._logger.log(TRACE, ">> %s: %s", self.get_user_identifier(), message)
         await self.protocol.send_message(message)
+        self._logger.log(TRACE, ">> %s: %s", self.get_user_identifier(), message)
 
     async def drain(self):
         # TODO: Remove me, QDataStreamProtocol no longer has a drain method
@@ -995,10 +1006,9 @@ class LobbyConnection:
                 "Lost lobby connection killing game connection for player {}".format(self.game_connection.player.id))
             await self.game_connection.on_connection_lost()
 
-        self.ladder_service.on_connection_lost(self.player)
-
         if self.player:
             self._logger.debug("Lost lobby connection removing player {}".format(self.player.id))
+            await self.ladder_service.on_connection_lost(self.player)
             self.player_service.remove_player(self.player)
 
     async def abort_connection_if_banned(self):

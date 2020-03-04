@@ -1,5 +1,4 @@
 import asyncio
-import logging
 
 import pytest
 from server.db.models import ban
@@ -29,102 +28,6 @@ async def test_server_deprecated_client(lobby_server):
     assert msg['command'] == 'notice'
 
 
-async def test_server_invalid_login(lobby_server):
-    proto = await connect_client(lobby_server)
-    # Try a user that doesn't exist
-    await perform_login(proto, ('Cat', 'epic'))
-    auth_failed_msg = {
-        'command': 'authentication_failed',
-        'text': 'Login not found or password incorrect. They are case sensitive.'
-    }
-    msg = await proto.read_message()
-    assert msg == auth_failed_msg
-
-    # Try a user that exists, but use the wrong password
-    await perform_login(proto, ('test', 'epic'))
-    msg = await proto.read_message()
-    assert msg == auth_failed_msg
-
-    proto.close()
-
-
-@pytest.mark.parametrize("user", [
-    ("Dostya", "vodka"),
-    ("ban_long_time", "ban_long_time")
-])
-async def test_server_ban(lobby_server, user):
-    proto = await connect_client(lobby_server)
-    await perform_login(proto, user)
-    msg = await proto.read_message()
-    assert msg == {
-        'command': 'notice',
-        'style': 'error',
-        'text': 'You are banned from FAF forever.\n Reason :\n Test permanent ban'}
-    proto.close()
-
-
-@pytest.mark.parametrize('user', ['ban_revoked', 'ban_expired'])
-async def test_server_ban_revoked_or_expired(lobby_server, user):
-    proto = await connect_client(lobby_server)
-    await perform_login(proto, (user, user))
-    msg = await proto.read_message()
-
-    assert msg["command"] == "welcome"
-    assert msg["login"] == user
-
-
-async def test_server_valid_login(lobby_server):
-    proto = await connect_client(lobby_server)
-    await perform_login(proto, ('test', 'test_password'))
-    msg = await proto.read_message()
-    assert msg == {'command': 'welcome',
-                   'me': {'clan': '678',
-                          'country': '',
-                          'global_rating': [2000.0, 125.0],
-                          'id': 1,
-                          'ladder_rating': [2000.0, 125.0],
-                          'login': 'test',
-                          'number_of_games': 5},
-                   'id': 1,
-                   'login': 'test'}
-
-
-@pytest.mark.parametrize("user", [
-    ("test", "test_password"),
-    ("ban_revoked", "ban_revoked"),
-    ("ban_expired", "ban_expired"),
-    ("No_UID", "his_pw"),
-    ("steam_id", "steam_id")
-])
-async def test_policy_server_contacted(lobby_server, policy_server, player_service, user):
-    player_service.is_uniqueid_exempt = lambda _: False
-
-    _, _, proto = await connect_and_sign_in(user, lobby_server)
-    await read_until_command(proto, 'game_info')
-
-    policy_server.verify.assert_called_once()
-
-
-async def test_server_double_login(lobby_server):
-    proto = await connect_client(lobby_server)
-    await perform_login(proto, ('test', 'test_password'))
-    msg = await proto.read_message()
-    msg['command'] == 'welcome'
-
-    # Sign in again with a new protocol object
-    proto2 = await connect_client(lobby_server)
-    await perform_login(proto2, ('test', 'test_password'))
-    msg = await proto2.read_message()
-    msg['command'] == 'welcome'
-
-    msg = await read_until_command(proto, 'notice')
-    assert msg == {
-        'command': 'notice',
-        'style': 'error',
-        'text': 'You have been signed out because you signed in elsewhere.'
-    }
-
-
 @fast_forward(50)
 async def test_ping_message(lobby_server):
     _, _, proto = await connect_and_sign_in(('test', 'test_password'), lobby_server)
@@ -133,6 +36,7 @@ async def test_ping_message(lobby_server):
     await asyncio.wait_for(read_until_command(proto, 'ping'), 46)
 
 
+@fast_forward(5)
 async def test_player_info_broadcast(lobby_server):
     p1 = await connect_client(lobby_server)
     p2 = await connect_client(lobby_server)
@@ -146,7 +50,7 @@ async def test_player_info_broadcast(lobby_server):
     )
 
 
-@pytest.mark.slow
+@fast_forward(5)
 async def test_info_broadcast_authenticated(lobby_server):
     proto1 = await connect_client(lobby_server)
     proto2 = await connect_client(lobby_server)
@@ -168,6 +72,7 @@ async def test_info_broadcast_authenticated(lobby_server):
         assert False
 
 
+@fast_forward(5)
 async def test_game_info_not_broadcast_to_foes(lobby_server):
     # Rhiza is foed by test
     _, _, proto1 = await connect_and_sign_in(
@@ -196,6 +101,7 @@ async def test_game_info_not_broadcast_to_foes(lobby_server):
         await asyncio.wait_for(read_until_command(proto2, "game_info"), 0.2)
 
 
+@fast_forward(5)
 async def test_game_info_broadcast_to_friends(lobby_server):
     # test is the friend of friends
     _, _, proto1 = await connect_and_sign_in(
@@ -232,105 +138,6 @@ async def test_game_info_broadcast_to_friends(lobby_server):
         await asyncio.wait_for(read_until_command(proto3, "game_info"), 0.2)
 
 
-@fast_forward(300)
-async def test_game_info_broadcast_on_connection_error(
-    event_loop, lobby_server, tmp_user, ladder_service, game_service, caplog
-):
-    """
-    Causes connection errors in `do_report_dirties` which in turn will cause
-    closed games not to be cleaned up if the errors aren't handled properly.
-    """
-    # This test causes way to much logging output otherwise
-    caplog.set_level(logging.WARNING)
-
-    NUM_HOSTS = 10
-    NUM_PLAYERS_DC = 20
-    NUM_TIMES_DC = 10
-
-    # Number of times that games will be rehosted
-    NUM_GAME_REHOSTS = 20
-
-    # Set up our game hosts
-    host_protos = []
-    for _ in range(NUM_HOSTS):
-        _, _, proto = await connect_and_sign_in(
-            await tmp_user("Host"), lobby_server
-        )
-        host_protos.append(proto)
-    await asyncio.gather(*(
-        read_until_command(proto, "game_info")
-        for proto in host_protos
-    ))
-
-    # Set up our players that will disconnect
-    dc_players = [await tmp_user("Disconnecter") for _ in range(NUM_PLAYERS_DC)]
-
-    # Host the games
-    async def host(proto):
-        await proto.send_message({
-            "command": "game_host",
-            "title": "A dirty game",
-            "mod": "faf",
-            "visibility": "public"
-        })
-        msg = await read_until_command(proto, "game_launch")
-
-        # Pretend like ForgedAlliance.exe opened
-        await proto.send_message({
-            "target": "game",
-            "command": "GameState",
-            "args": ["Idle"]
-        })
-        return msg
-
-    async def spam_game_changes(proto):
-        for _ in range(NUM_GAME_REHOSTS):
-            # Host
-            await host(proto)
-            await asyncio.sleep(0.1)
-            # Leave the game
-            await proto.send_message({
-                "target": "game",
-                "command": "GameState",
-                "args": ["Ended"]
-            })
-
-    tasks = []
-    for proto in host_protos:
-        tasks.append(spam_game_changes(proto))
-
-    async def do_dc_player(player):
-        for _ in range(NUM_TIMES_DC):
-            _, _, proto = await connect_and_sign_in(player, lobby_server)
-            await read_until_command(proto, "game_info")
-            await asyncio.sleep(0.1)
-            proto.close()
-
-    async def do_dc_players():
-        await asyncio.gather(*(
-            do_dc_player(player)
-            for player in dc_players
-        ))
-
-    tasks.append(do_dc_players())
-
-    # Let the guests cause a bunch of broadcasts to happen while the other
-    # players are disconnecting
-    await asyncio.gather(*tasks)
-
-    # Wait for games to be cleaned up
-    for proto in host_protos:
-        proto.close()
-    ladder_service.shutdown_queues()
-
-    # Wait for games to time out if they need to
-    await asyncio.sleep(35)
-
-    # Ensure that the connection errors haven't prevented games from being
-    # cleaned up.
-    assert len(game_service.all_games) == 0
-
-
 @pytest.mark.parametrize("user", [
     ("test", "test_password"),
     ("ban_revoked", "ban_revoked"),
@@ -356,7 +163,7 @@ async def test_game_host_authenticated(lobby_server, user):
     assert isinstance(msg['uid'], int)
 
 
-@pytest.mark.slow
+@fast_forward(5)
 async def test_host_missing_fields(event_loop, lobby_server, player_service):
     player_id, session, proto = await connect_and_sign_in(
         ('test', 'test_password'),
@@ -380,6 +187,7 @@ async def test_host_missing_fields(event_loop, lobby_server, player_service):
     assert msg['featured_mod'] == 'faf'
 
 
+@fast_forward(5)
 async def test_coop_list(lobby_server):
     _, _, proto = await connect_and_sign_in(
         ('test', 'test_password'),
