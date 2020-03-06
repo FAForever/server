@@ -3,7 +3,8 @@ from prometheus_client import Counter, Gauge, Histogram
 
 matches = Gauge("server_matchmaker_queue_matches", "Number of matches made", ["queue"])
 match_quality = Histogram(
-    "server_matchmaker_queue_quality", "Quality of matches made", ["queue"]
+    "server_matchmaker_queue_quality", "Quality of matches made", ["queue"],
+    buckets=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
 )
 unmatched_searches = Gauge(
     "server_matchmaker_queue_unmatched_searches",
@@ -14,6 +15,7 @@ matchmaker_searches = Histogram(
     "server_matchmaker_queue_search_duration_seconds",
     "Time spent searching for matches per search in seconds",
     ["queue", "status"],
+    buckets=[30, 60, 120, 180, 240, 300, 600, 1800, 3600],
 )
 matchmaker_players = Gauge(
     "server_matchmaker_queue_players", "Players in the queue at pop time", ["queue"]
