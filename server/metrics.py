@@ -1,4 +1,4 @@
-from prometheus_client import Counter, Gauge, Summary, Histogram
+from prometheus_client import Counter, Gauge, Histogram
 
 
 matches = Gauge("server_matchmaker_queue_matches", "Number of matches made", ["queue"])
@@ -10,7 +10,7 @@ unmatched_searches = Gauge(
     "Number of unmatched searches after queue pop",
     ["queue"],
 )
-matchmaker_searches = Summary(
+matchmaker_searches = Histogram(
     "server_matchmaker_queue_search_duration_seconds",
     "Time spent searching for matches per search in seconds",
     ["queue", "status"],
@@ -18,7 +18,7 @@ matchmaker_searches = Summary(
 matchmaker_players = Gauge(
     "server_matchmaker_queue_players", "Players in the queue at pop time", ["queue"]
 )
-matchmaker_queue_pop = Summary(
+matchmaker_queue_pop = Gauge(
     "server_matchmaker_queue_pop_timer_seconds",
     "Queue pop timer duration in seconds",
     ["queue"],

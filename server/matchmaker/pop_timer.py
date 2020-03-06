@@ -42,7 +42,7 @@ class PopTimer(object):
 
         time_remaining = self.next_queue_pop - time()
         self._logger.info("Next %s wave happening in %is", self.queue_name, time_remaining)
-        metrics.matchmaker_queue_pop.labels(self.queue_name).observe(int(time_remaining))
+        metrics.matchmaker_queue_pop.labels(self.queue_name).set(int(time_remaining))
         await asyncio.sleep(time_remaining)
         num_players = get_num_players()
         metrics.matchmaker_players.labels(self.queue_name).set(num_players)
