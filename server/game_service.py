@@ -45,7 +45,6 @@ class GameService:
         loop.run_until_complete(asyncio.ensure_future(self.initialise_game_counter()))
         loop.run_until_complete(loop.create_task(self.update_data()))
         self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
-        self._metrics_counter = Counter()
 
     async def initialise_game_counter(self):
         async with self._db.acquire() as conn:
@@ -157,18 +156,21 @@ class GameService:
         return game
 
     def update_active_game_metrics(self):
-        # reset the count of every key to zero, 
-        # without removing it from Counter.elements()
-        for key in self._metrics_counter:
-            self._metrics_counter[key] = 0
+        modes = list(self.featured_mods.keys())
 
-        self._metrics_counter += Counter(
-            (game.game_mode, game.state) 
+        game_counter = Counter(
+            (
+                game.game_mode if game.game_mode in modes else "other",
+                game.state
+            )
             for game in self._games.values()
-        ) # This will _not_ remove keys with count zero 
+        )
 
-        for (mode, state), count in self._metrics_counter.items():
-            metrics.active_games.labels(mode, str(state)).set(count)
+        for state in GameState:
+            for mode in modes + ["other"]:
+                metrics.active_games.labels(mode, state.name).set(
+                    game_counter[(mode, state)]
+                )
 
     @property
     def live_games(self) -> List[Game]:
