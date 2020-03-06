@@ -265,7 +265,7 @@ async def test_queue_many(player_service, matchmaker_queue, p):
     matchmaker_queue.push(s2)
     matchmaker_queue.push(s3)
 
-    matchmaker_queue.find_matches()
+    await matchmaker_queue.find_matches()
 
     assert not s1.is_matched
     assert s2.is_matched
@@ -281,7 +281,7 @@ async def test_queue_race(player_service, matchmaker_queue, p):
 
     async def find_matches():
         await asyncio.sleep(0.01)
-        matchmaker_queue.find_matches()
+        await matchmaker_queue.find_matches()
     try:
         await asyncio.gather(
             asyncio.wait_for(matchmaker_queue.search(Search([p1])), 0.1),
@@ -324,7 +324,7 @@ async def test_queue_mid_cancel(player_service, matchmaker_queue, matchmaker_pla
 
     async def find_matches():
         await asyncio.sleep(0.01)
-        matchmaker_queue.find_matches()
+        await matchmaker_queue.find_matches()
     try:
         await asyncio.gather(
             asyncio.wait_for(matchmaker_queue.search(s3), 0.1),
