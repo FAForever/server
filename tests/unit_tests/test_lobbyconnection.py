@@ -7,7 +7,7 @@ import asynctest
 import pytest
 from aiohttp import web
 from asynctest import CoroutineMock
-from server import GameState, VisibilityState
+from server import GameState, VisibilityState, config
 from server.abc.base_game import InitMode
 from server.db.models import ban, friends_and_foes
 from server.game_service import GameService
@@ -60,7 +60,7 @@ def mock_player(player_factory):
 
 @pytest.fixture
 def mock_nts_client():
-    return mock.create_autospec(TwilioNTS)
+    return asynctest.create_autospec(TwilioNTS)
 
 
 @pytest.fixture
@@ -84,7 +84,16 @@ def mock_geoip():
 
 
 @pytest.fixture
-def lobbyconnection(event_loop, database, mock_protocol, mock_games, mock_players, mock_player, mock_geoip):
+def lobbyconnection(
+    event_loop,
+    database,
+    mock_protocol,
+    mock_games,
+    mock_players,
+    mock_player,
+    mock_geoip,
+    mock_nts_client
+):
     lc = LobbyConnection(
         database=database,
         geoip=mock_geoip,
@@ -779,6 +788,25 @@ async def test_command_social_remove_friend(lobbyconnection, mock_player, databa
     assert friends == []
 
 
+async def test_command_ice_servers(
+    lobbyconnection: LobbyConnection,
+    mock_nts_client
+):
+    lobbyconnection.coturn_generator.server_tokens = Mock(
+        return_value=["coturn_tokens"]
+    )
+    mock_nts_client.server_tokens.return_value = ["twilio_tokens"]
+
+    await lobbyconnection.on_message_received({"command": "ice_servers"})
+
+    mock_nts_client.server_tokens.assert_called_once()
+    lobbyconnection.protocol.send_message.assert_called_once_with({
+        "command": "ice_servers",
+        "ice_servers": ["coturn_tokens", "twilio_tokens"],
+        "ttl": config.TWILIO_TTL
+    })
+
+
 async def test_broadcast(lobbyconnection: LobbyConnection, mocker):
     player = mocker.patch.object(lobbyconnection, 'player')
     player.login = 'Sheeo'
@@ -863,9 +891,15 @@ async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnecti
 
 
 @pytest.mark.parametrize("game_state", [GameState.INITIALIZING, GameState.ENDED])
-async def test_game_connection_not_restored_if_game_state_prohibits(lobbyconnection: LobbyConnection, game_service: GameService,
-                                                                    game_stats_service, game_state, mock_player, mocker,
-                                                                    database):
+async def test_game_connection_not_restored_if_game_state_prohibits(
+    lobbyconnection: LobbyConnection,
+    game_service: GameService,
+    game_stats_service,
+    game_state,
+    mock_player,
+    mocker,
+    database
+):
     lobbyconnection.player = mock_player
     del lobbyconnection.player.game_connection
     lobbyconnection.player.state = PlayerState.IDLE
@@ -893,8 +927,14 @@ async def test_game_connection_not_restored_if_game_state_prohibits(lobbyconnect
 
 
 @pytest.mark.parametrize("game_state", [GameState.LIVE, GameState.LOBBY])
-async def test_game_connection_restored_if_game_exists(lobbyconnection: LobbyConnection, game_service: GameService,
-                                                       game_stats_service, game_state, mock_player, database):
+async def test_game_connection_restored_if_game_exists(
+    lobbyconnection: LobbyConnection,
+    game_service: GameService,
+    game_stats_service,
+    game_state,
+    mock_player,
+    database
+):
     lobbyconnection.player = mock_player
     del lobbyconnection.player.game_connection
     lobbyconnection.player.state = PlayerState.IDLE
@@ -912,7 +952,8 @@ async def test_game_connection_restored_if_game_exists(lobbyconnection: LobbyCon
     })
 
     assert lobbyconnection.game_connection
-    assert lobbyconnection.player.state == PlayerState.PLAYING
+    assert lobbyconnection.player.state is PlayerState.PLAYING
+    assert lobbyconnection.player.game is game
 
 
 async def test_command_game_matchmaking(lobbyconnection, mock_player):

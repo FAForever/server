@@ -475,6 +475,54 @@ async def test_handle_action_OperationComplete_invalid(ugame: Game, game_connect
     assert row is None
 
 
+async def test_handle_action_IceMsg(
+    game_connection: GameConnection,
+    player_service,
+    player_factory
+):
+    peer = player_factory(player_id=2)
+    peer.game_connection = asynctest.create_autospec(GameConnection)
+    player_service[peer.id] = peer
+    await game_connection.handle_action("IceMsg", [2, "the message"])
+
+    peer.game_connection.send.assert_called_once_with({
+        "command": "IceMsg",
+        "args": [game_connection.player.id, "the message"]
+    })
+
+
+async def test_handle_action_IceMsg_for_non_existent_player(
+    game_connection: GameConnection,
+):
+    # No exceptions raised
+    await game_connection.handle_action("IceMsg", [2, "the message"])
+
+
+async def test_handle_action_IceMsg_for_non_connected(
+    game_connection: GameConnection,
+    player_service,
+    player_factory
+):
+    peer = player_factory(player_id=2)
+    del peer.game_connection
+    player_service[peer.id] = peer
+    # No exceptions raised
+    await game_connection.handle_action("IceMsg", [2, "the message"])
+
+
+@pytest.mark.parametrize("action", (
+    "Rehost",
+    "Bottleneck",
+    "BottleneckCleared",
+    "Disconnected",
+    "Chat",
+    "GameFull"
+))
+async def test_handle_action_ignored(game_connection: GameConnection, action):
+    # No exceptions raised
+    await game_connection.handle_action(action, [])
+
+
 async def test_handle_action_invalid(game_connection: GameConnection):
     game_connection.abort = CoroutineMock()
 
