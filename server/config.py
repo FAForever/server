@@ -35,7 +35,7 @@ API_BASE_URL = os.getenv("API_BASE_URL", "http://api.test.faforever.com/")
 USE_API = os.getenv("USE_API", 'true').lower() == 'true'
 
 FAF_POLICY_SERVER_BASE_URL = os.getenv("FAF_POLICY_SERVER_BASE_URL", "http://faf-policy-server")
-FORCE_STEAM_LINK_AFTER_DATE = int(os.getenv('FORCE_STEAM_LINK_AFTER_DATE', 1536105599)) # 5 september 2018 by default
+FORCE_STEAM_LINK_AFTER_DATE = int(os.getenv('FORCE_STEAM_LINK_AFTER_DATE', 1536105599))  # 5 september 2018 by default
 FORCE_STEAM_LINK = os.getenv('FORCE_STEAM_LINK', 'false').lower() == 'true'
 
 # How long we wait for a connection to read our messages before we consider

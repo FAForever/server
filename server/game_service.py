@@ -116,10 +116,10 @@ class GameService:
         self,
         game_mode: str,
         visibility=VisibilityState.PUBLIC,
-        host: Optional[Player]=None,
-        name: Optional[str]=None,
-        mapname: Optional[str]=None,
-        password: Optional[str]=None
+        host: Optional[Player] = None,
+        name: Optional[str] = None,
+        mapname: Optional[str] = None,
+        password: Optional[str] = None
     ):
         """
         Main entrypoint for creating new games

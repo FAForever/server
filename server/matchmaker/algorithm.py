@@ -42,7 +42,7 @@ class MatchmakingPolicy(object):
 
 class StableMarriage(MatchmakingPolicy):
     def find(self) -> Dict[Search, Search]:
-        """Perform SM_NUM_TO_RANK runs of the stable matching algorithm. 
+        """Perform SM_NUM_TO_RANK runs of the stable matching algorithm.
         Assumes that _MatchingGraph.build_sparse() only returns edges whose matches are acceptable
         to both parties."""
         ranks = _MatchingGraph.build_sparse(self.searches)
@@ -80,7 +80,6 @@ class StableMarriage(MatchmakingPolicy):
 
         return self.matches
 
-
     def _register_unmatched_searches(self):
         """
         Tells all unmatched searches that they went through a failed matching
@@ -96,7 +95,6 @@ class StableMarriage(MatchmakingPolicy):
                 "Search %s remained unmatched at threshold %f in attempt number %i",
                 search, search.match_threshold, search.failed_matching_attempts
             )
-
 
     def _propose(self, search: Search, preferred: Search):
         """ An unmatched search proposes to it's preferred opponent.
@@ -141,7 +139,7 @@ class RandomlyMatchNewbies(MatchmakingPolicy):
             opponent = next((
                 search for search in self.searches
                 if search != newbie and search not in self.matches
-                   and search.is_single_party() and search.has_no_top_player()
+                and search.is_single_party() and search.has_no_top_player()
             ), default_if_no_available_opponent)
             if opponent is not default_if_no_available_opponent:
                 self._match(newbie, opponent)

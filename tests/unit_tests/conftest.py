@@ -117,7 +117,7 @@ def add_connected_players(game: Game, players):
 
 @pytest.fixture
 def game_add_players(player_factory):
-    def add(gameobj: Game, n: int, team: int=None):
+    def add(gameobj: Game, n: int, team: int = None):
         game = gameobj
         current = len(game.players)
         players = []

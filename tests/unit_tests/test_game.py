@@ -21,6 +21,7 @@ from trueskill import Rating
 
 pytestmark = pytest.mark.asyncio
 
+
 @pytest.yield_fixture
 def game(event_loop, database, game_service, game_stats_service):
     game = Game(42, database, game_service, game_stats_service)

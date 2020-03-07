@@ -5,7 +5,7 @@ from server.matchmaker import Search, algorithm
 
 @pytest.fixture
 def p(player_factory):
-    def make(mean: int, deviation: int, ladder_games: int=config.NEWBIE_MIN_GAMES+1, name=None):
+    def make(mean: int, deviation: int, ladder_games: int = config.NEWBIE_MIN_GAMES+1, name=None):
         """Make a player with the given ratings"""
         return player_factory(ladder_rating=(mean, deviation),
                               ladder_games=ladder_games)
@@ -55,7 +55,6 @@ def test_stable_marriage_produces_symmetric_matchings(p):
     for search in matches:
         opponent = matches[search]
         assert matches[opponent] == search
-
 
 
 def test_stable_marriage(p):
@@ -124,9 +123,9 @@ def test_stable_marriage_better_than_greedy(p):
 
     # However, because s1 is first in the list and gets top choice, we end with
     # the following stable configuration
-    assert matches[s1] == s5 # quality: 0.97
-    assert matches[s2] == s3 # quality: 0.93
-    assert matches[s4] == s6 # quality: 0.82
+    assert matches[s1] == s5  # quality: 0.97
+    assert matches[s2] == s3  # quality: 0.93
+    assert matches[s4] == s6  # quality: 0.82
 
 
 def test_stable_marriage_unmatch(p):
@@ -139,7 +138,7 @@ def test_stable_marriage_unmatch(p):
 
     matches = algorithm.StableMarriage(searches).find()
 
-    assert matches[s1] == s4 # quality: 0.96622
+    assert matches[s1] == s4  # quality: 0.96622
     assert matches[s2] == s3  # quality: 0.96623
 
 
@@ -225,6 +224,7 @@ def test_odd_number_of_unmatched_newbies(p):
 
     assert len(matches) == 4
 
+
 def test_matchmaker(p):
     newbie_that_matches1 = Search([p(1450, 500, ladder_games=1)])
     newbie_that_matches2 = Search([p(1550, 500, ladder_games=1)])
@@ -254,6 +254,7 @@ def test_matchmaker(p):
     for match_pair in match_pairs:
         assert top_player not in match_pair
 
+
 def test_stable_marriage_will_not_match_low_quality_games(p):
     s1 = Search([p(100, 64, name='p1')])
     s2 = Search([p(2000, 64, name='p2')])
@@ -264,6 +265,7 @@ def test_stable_marriage_will_not_match_low_quality_games(p):
 
     assert (s1, s2) not in matches
     assert (s2, s1) not in matches
+
 
 def test_stable_marriage_communicates_failed_attempts(p):
     s1 = Search([p(100, 64, name='p1')])

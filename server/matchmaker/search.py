@@ -20,8 +20,8 @@ class Search:
     def __init__(
         self,
         players: List[Player],
-        start_time: Optional[float]=None,
-        rating_type: RatingType=RatingType.LADDER_1V1
+        start_time: Optional[float] = None,
+        rating_type: RatingType = RatingType.LADDER_1V1
     ):
         """
         Default ctor for a search
@@ -92,7 +92,7 @@ class Search:
         different game qualities.
         """
         mu, _ = self.ratings[0]  # Takes the rating of the first player, only works for 1v1
-        rounded_mu = int(math.ceil(mu / 10) * 10) # Round to 10
+        rounded_mu = int(math.ceil(mu / 10) * 10)  # Round to 10
         return rounded_mu - delta, rounded_mu + delta
 
     @property
@@ -118,7 +118,7 @@ class Search:
         The threshold will expand linearly with every failed matching attempt
         until it reaches the specified MAX.
         """
-        
+
         return min(
             self._failed_matching_attempts * config.LADDER_SEARCH_EXPANSION_STEP,
             config.LADDER_SEARCH_EXPANSION_MAX
@@ -131,7 +131,6 @@ class Search:
         """
 
         self._failed_matching_attempts += 1
-
 
     @property
     def match_threshold(self) -> float:
@@ -215,5 +214,6 @@ class Search:
 
     def __str__(self):
         return "Search({}, {}, {})".format(self.players, self.match_threshold, self.search_expansion)
+
 
 Match = Tuple[Search, Search]
