@@ -118,7 +118,7 @@ class Search:
         The threshold will expand linearly with every failed matching attempt
         until it reaches the specified MAX.
         """
-        
+
         return min(
             self._failed_matching_attempts * config.LADDER_SEARCH_EXPANSION_STEP,
             config.LADDER_SEARCH_EXPANSION_MAX

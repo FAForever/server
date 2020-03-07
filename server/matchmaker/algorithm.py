@@ -42,7 +42,7 @@ class MatchmakingPolicy(object):
 
 class StableMarriage(MatchmakingPolicy):
     def find(self) -> Dict[Search, Search]:
-        """Perform SM_NUM_TO_RANK runs of the stable matching algorithm. 
+        """Perform SM_NUM_TO_RANK runs of the stable matching algorithm.
         Assumes that _MatchingGraph.build_sparse() only returns edges whose matches are acceptable
         to both parties."""
         ranks = _MatchingGraph.build_sparse(self.searches)

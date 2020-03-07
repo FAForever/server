@@ -8,13 +8,13 @@ class Unit(Enum):
     CYBRAN_ACU = 'url0001'
     UEF_ACU = 'uel0001'
     SERAPHIM_ACU = 'xsl0001'
-    
+
     # ASFs
     CORONA = 'uaa0303'
     GEMINI = 'ura0303'
     WASP = 'uea0303'
     IAZYNE = 'xsa0303'
-    
+
     # Experimentals
     PARAGON = 'xab1401'
     MAVOR = 'ueb2401'
@@ -31,7 +31,7 @@ class Unit(Enum):
     TEMPEST = 'uas0401'
     ATLANTIS = 'ues0401'
     NOVAX_CENTER = 'xeb2402'
-    
+
     # Transporters
     CHARIOT = 'uaa0107'
     ALUMINAR = 'uaa0104'
@@ -48,7 +48,7 @@ class Unit(Enum):
     CYBRAN_SACU = 'url0301'
     UEF_SACU = 'uel0301'
     SERAPHIM_SACU = 'xsl0301'
-    
+
     # Engineers
     AEON_T1_ENGINEER = 'ual0105'
     AEON_T2_ENGINEER = 'ual0208'
@@ -63,7 +63,7 @@ class Unit(Enum):
     SERAPHIM_T1_ENGINEER = 'xsl0105'
     SERAPHIM_T2_ENGINEER = 'xsl0208'
     SERAPHIM_T3_ENGINEER = 'xsl0309'
-    
+
     # Other units
     MERCY = 'daa0206'
     FIRE_BEETLE = 'xrl0302'
