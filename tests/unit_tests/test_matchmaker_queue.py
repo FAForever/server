@@ -54,9 +54,9 @@ async def test_is_single_newbie(matchmaker_players):
 
     assert single_newbie.is_single_ladder_newbie()
     assert single_pro.is_single_ladder_newbie() is False
-    assert two_newbies.is_single_ladder_newbie() == False
-    assert two_pros.is_single_ladder_newbie() == False
-    assert two_mixed.is_single_ladder_newbie() == False
+    assert two_newbies.is_single_ladder_newbie() is False
+    assert two_pros.is_single_ladder_newbie() is False
+    assert two_mixed.is_single_ladder_newbie() is False
 
 
 async def test_newbies_have_adjusted_rating(matchmaker_players):
