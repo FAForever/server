@@ -132,7 +132,6 @@ class Search:
 
         self._failed_matching_attempts += 1
 
-
     @property
     def match_threshold(self) -> float:
         """
@@ -215,5 +214,6 @@ class Search:
 
     def __str__(self):
         return "Search({}, {}, {})".format(self.players, self.match_threshold, self.search_expansion)
+
 
 Match = Tuple[Search, Search]

@@ -80,7 +80,6 @@ class StableMarriage(MatchmakingPolicy):
 
         return self.matches
 
-
     def _register_unmatched_searches(self):
         """
         Tells all unmatched searches that they went through a failed matching
@@ -96,7 +95,6 @@ class StableMarriage(MatchmakingPolicy):
                 "Search %s remained unmatched at threshold %f in attempt number %i",
                 search, search.match_threshold, search.failed_matching_attempts
             )
-
 
     def _propose(self, search: Search, preferred: Search):
         """ An unmatched search proposes to it's preferred opponent.
