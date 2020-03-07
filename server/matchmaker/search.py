@@ -92,7 +92,7 @@ class Search:
         different game qualities.
         """
         mu, _ = self.ratings[0]  # Takes the rating of the first player, only works for 1v1
-        rounded_mu = int(math.ceil(mu / 10) * 10) # Round to 10
+        rounded_mu = int(math.ceil(mu / 10) * 10)  # Round to 10
         return rounded_mu - delta, rounded_mu + delta
 
     @property
