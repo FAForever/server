@@ -1,8 +1,9 @@
-from server.ice_servers.coturn import CoturnHMAC
 from unittest import mock
-from twilio.rest import Client as TwilioRestClient
-from server.ice_servers.nts import TwilioNTS
+
 import pytest
+from server.ice_servers.coturn import CoturnHMAC
+from server.ice_servers.nts import TwilioNTS
+from twilio.rest import Client as TwilioRestClient
 
 
 @pytest.fixture

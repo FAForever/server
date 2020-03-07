@@ -1,9 +1,9 @@
-from unittest.mock import Mock, MagicMock
+from unittest.mock import MagicMock, Mock
 
 import pytest
+from asynctest import CoroutineMock
 from server.api.api_accessor import ApiAccessor, SessionManager
 from server.stats.achievement_service import AchievementService
-from asynctest import CoroutineMock
 
 pytestmark = pytest.mark.asyncio
 
@@ -48,6 +48,13 @@ async def test_fill_queue(service: AchievementService):
 async def test_api_broken(service: AchievementService):
     queue = create_queue()
     service.api_accessor.update_achievements = CoroutineMock(return_value=(500, None))
+    result = await service.execute_batch_update(42, queue)
+    assert result is None
+
+
+async def test_api_broken_2(service: AchievementService):
+    queue = create_queue()
+    service.api_accessor.update_achievements = CoroutineMock(side_effect=ConnectionError())
     result = await service.execute_batch_update(42, queue)
     assert result is None
 

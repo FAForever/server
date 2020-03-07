@@ -10,14 +10,16 @@ from asynctest import CoroutineMock
 from server import GameState, VisibilityState, config
 from server.abc.base_game import InitMode
 from server.db.models import ban, friends_and_foes
+from server.exceptions import ClientError
 from server.game_service import GameService
 from server.gameconnection import GameConnection
 from server.games import CustomGame, Game
 from server.geoip_service import GeoIpService
 from server.ice_servers.nts import TwilioNTS
 from server.ladder_service import LadderService
-from server.lobbyconnection import ClientError, LobbyConnection
+from server.lobbyconnection import LobbyConnection
 from server.matchmaker import MatchmakerQueue
+from server.party_service import PartyService
 from server.player_service import PlayerService
 from server.players import PlayerState
 from server.protocol import DisconnectedError, QDataStreamProtocol
@@ -101,7 +103,8 @@ def lobbyconnection(
         game_service=mock_games,
         players=mock_players,
         nts_client=mock_nts_client,
-        ladder_service=asynctest.create_autospec(LadderService)
+        ladder_service=asynctest.create_autospec(LadderService),
+        party_service=asynctest.create_autospec(PartyService)
     )
 
     lc.player = mock_player
@@ -231,10 +234,10 @@ async def test_double_login_disconnected(lobbyconnection, mock_players, player_f
     lobbyconnection.abort.assert_not_called()
 
 
-async def test_command_game_host_creates_game(lobbyconnection,
-                                              mock_games,
-                                              test_game_info,
-                                              players):
+async def test_command_game_host_creates_game(
+    lobbyconnection, mock_games, test_game_info, players
+):
+    players.hosting.state = PlayerState.IDLE
     lobbyconnection.player = players.hosting
     await lobbyconnection.on_message_received({
         "command": "game_host",
@@ -273,6 +276,9 @@ async def test_launch_game(lobbyconnection, game, player_factory):
 async def test_command_game_host_creates_correct_game(
         lobbyconnection, game_service, test_game_info, players):
     lobbyconnection.player = players.hosting
+    players.hosting.in_game = False
+    players.hosting.state = PlayerState.IDLE
+
     lobbyconnection.game_service = game_service
     lobbyconnection.launch_game = CoroutineMock()
 
@@ -286,13 +292,10 @@ async def test_command_game_host_creates_correct_game(
     assert isinstance(args[0], CustomGame)
 
 
-async def test_command_game_join_calls_join_game(mocker,
-                                                 database,
-                                                 lobbyconnection,
-                                                 game_service,
-                                                 test_game_info,
-                                                 players,
-                                                 game_stats_service):
+async def test_command_game_join_calls_join_game(
+    mocker, database, lobbyconnection, game_service, test_game_info,
+    players, game_stats_service
+):
     lobbyconnection.game_service = game_service
     game = Game(42, database, game_service, game_stats_service)
     game.state = GameState.LOBBY
@@ -302,6 +305,8 @@ async def test_command_game_join_calls_join_game(mocker,
     game.name = "Test Game Name"
     game_service._games[42] = game
     lobbyconnection.player = players.hosting
+    players.hosting.in_game = False
+    players.hosting.state = PlayerState.IDLE
     test_game_info['uid'] = 42
 
     await lobbyconnection.on_message_received({
@@ -319,13 +324,10 @@ async def test_command_game_join_calls_join_game(mocker,
     lobbyconnection.protocol.send_message.assert_called_with(expected_reply)
 
 
-async def test_command_game_join_uid_as_str(mocker,
-                                            database,
-                                            lobbyconnection,
-                                            game_service,
-                                            test_game_info,
-                                            players,
-                                            game_stats_service):
+async def test_command_game_join_uid_as_str(
+    mocker, database, lobbyconnection, game_service, test_game_info, players,
+    game_stats_service
+):
     lobbyconnection.game_service = game_service
     game = Game(42, database, game_service, game_stats_service)
     game.state = GameState.LOBBY
@@ -335,6 +337,8 @@ async def test_command_game_join_uid_as_str(mocker,
     game.name = "Test Game Name"
     game_service._games[42] = game
     lobbyconnection.player = players.hosting
+    players.hosting.state = PlayerState.IDLE
+    players.hosting.in_game = False
     test_game_info['uid'] = '42'  # Pass in uid as string
 
     await lobbyconnection.on_message_received({
@@ -352,12 +356,10 @@ async def test_command_game_join_uid_as_str(mocker,
     lobbyconnection.protocol.send_message.assert_called_with(expected_reply)
 
 
-async def test_command_game_join_without_password(lobbyconnection,
-                                                  database,
-                                                  game_service,
-                                                  test_game_info,
-                                                  players,
-                                                  game_stats_service):
+async def test_command_game_join_without_password(
+    lobbyconnection, database, game_service, test_game_info, players,
+    game_stats_service
+):
     lobbyconnection.send = CoroutineMock()
     lobbyconnection.game_service = game_service
     game = mock.create_autospec(Game(42, database, game_service, game_stats_service))
@@ -367,6 +369,8 @@ async def test_command_game_join_without_password(lobbyconnection,
     game.id = 42
     game_service._games[42] = game
     lobbyconnection.player = players.hosting
+    players.hosting.state = PlayerState.IDLE
+    players.hosting.in_game = False
     test_game_info['uid'] = 42
     del test_game_info['password']
 
@@ -378,13 +382,14 @@ async def test_command_game_join_without_password(lobbyconnection,
         dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
 
 
-async def test_command_game_join_game_not_found(lobbyconnection,
-                                                game_service,
-                                                test_game_info,
-                                                players):
+async def test_command_game_join_game_not_found(
+    lobbyconnection, game_service, test_game_info, players
+):
     lobbyconnection.send = CoroutineMock()
     lobbyconnection.game_service = game_service
     lobbyconnection.player = players.hosting
+    players.hosting.in_game = False
+    players.hosting.state = PlayerState.IDLE
     test_game_info['uid'] = 42
 
     await lobbyconnection.on_message_received({
@@ -395,9 +400,9 @@ async def test_command_game_join_game_not_found(lobbyconnection,
         dict(command="notice", style="info", text="The host has left the game"))
 
 
-async def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
-                                                               mock_games,
-                                                               test_game_info_invalid):
+async def test_command_game_host_calls_host_game_invalid_title(
+    lobbyconnection, mock_games, test_game_info_invalid
+):
     lobbyconnection.send = CoroutineMock()
     mock_games.create_game = mock.Mock()
     await lobbyconnection.on_message_received({
@@ -945,6 +950,57 @@ async def test_game_connection_restored_if_game_exists(
     assert lobbyconnection.game_connection
     assert lobbyconnection.player.state is PlayerState.PLAYING
     assert lobbyconnection.player.game is game
+
+
+async def test_command_invite_to_party(lobbyconnection, mock_player):
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.id = 2
+    lobbyconnection._authenticated = True
+
+    await lobbyconnection.on_message_received({
+        'command': 'invite_to_party',
+        'recipient_id': 1
+    })
+
+    lobbyconnection.party_service.invite_player_to_party.assert_called_once()
+
+
+async def test_command_accept_party_invite(lobbyconnection, mock_player):
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.id = 2
+    lobbyconnection._authenticated = True
+
+    await lobbyconnection.on_message_received({
+        'command': 'accept_party_invite',
+        'sender_id': 1
+    })
+
+    lobbyconnection.party_service.accept_invite.assert_called_once()
+
+
+async def test_command_kick_player_from_party(lobbyconnection, mock_player):
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.id = 2
+    lobbyconnection._authenticated = True
+
+    await lobbyconnection.on_message_received({
+        'command': 'kick_player_from_party',
+        'kicked_player_id': 1
+    })
+
+    lobbyconnection.party_service.kick_player_from_party.assert_called_once()
+
+
+async def test_command_leave_party(lobbyconnection, mock_player):
+    lobbyconnection.player = mock_player
+    lobbyconnection.player.id = 2
+    lobbyconnection._authenticated = True
+
+    await lobbyconnection.on_message_received({
+        'command': 'leave_party'
+    })
+
+    lobbyconnection.party_service.leave_party.assert_called_once()
 
 
 async def test_command_game_matchmaking(lobbyconnection):

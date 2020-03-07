@@ -45,11 +45,12 @@ def context(event_loop, request):
     def make_connection() -> LobbyConnection:
         return LobbyConnection(
             database=mock.Mock(),
-            geoip=mock.Mock(),
             game_service=mock.Mock(),
-            nts_client=mock.Mock(),
             players=mock.Mock(),
-            ladder_service=mock.Mock()
+            nts_client=mock.Mock(),
+            geoip=mock.Mock(),
+            ladder_service=mock.Mock(),
+            party_service=mock.Mock()
         )
 
     ctx = ServerContext(make_connection, name='TestServer')

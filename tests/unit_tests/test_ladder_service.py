@@ -39,6 +39,7 @@ async def test_start_game(ladder_service: LadderService, player_factory):
         await ladder_service.start_game(p1, p2)
 
     assert p1.lobby_connection.launch_game.called
+    # TODO: Once client supports `game_launch_timeout` change this to `assert not ...`
     assert p2.lobby_connection.launch_game.called
 
 

@@ -18,6 +18,7 @@ from datetime import datetime
 
 import server
 from docopt import docopt
+from server import PartyService
 from server.api.api_accessor import ApiAccessor
 from server.config import config
 from server.core import create_services
@@ -103,6 +104,7 @@ async def main():
         game_service=services["game_service"],
         nts_client=twilio_nts,
         ladder_service=services["ladder_service"],
+        party_service=services["party_service"],
         loop=loop
     )
 

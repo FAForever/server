@@ -1,4 +1,3 @@
-import asyncio
 import contextlib
 import hashlib
 import html
@@ -7,6 +6,7 @@ import random
 import urllib.parse
 import urllib.request
 from datetime import datetime
+from functools import wraps
 from typing import Optional
 
 import aiohttp
@@ -25,6 +25,7 @@ from .db.models import (
 )
 from .db.models import login as t_login
 from .decorators import timed, with_logger
+from .exceptions import AuthenticationError, ClientError
 from .game_service import GameService
 from .gameconnection import GameConnection
 from .games import GameState, VisibilityState
@@ -33,6 +34,7 @@ from .ice_servers.coturn import CoturnHMAC
 from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
 from .matchmaker import Search
+from .party_service import PartyService
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, QDataStreamProtocol
@@ -40,25 +42,6 @@ from .rating import RatingType
 from .types import Address, GameLaunchOptions
 
 PONG_MSG = QDataStreamProtocol.pack_message("PONG")
-
-
-class ClientError(Exception):
-    """
-    Represents a ClientError
-
-    If recoverable is False, it is expected that the
-    connection be terminated immediately.
-    """
-    def __init__(self, message, recoverable=True, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.message = message
-        self.recoverable = recoverable
-
-
-class AuthenticationError(Exception):
-    def __init__(self, message, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.message = message
 
 
 @with_logger
@@ -71,7 +54,8 @@ class LobbyConnection:
         players: PlayerService,
         nts_client: Optional[TwilioNTS],
         geoip: GeoIpService,
-        ladder_service: LadderService
+        ladder_service: LadderService,
+        party_service: PartyService
     ):
         self._db = database
         self.geoip_service = geoip
@@ -80,6 +64,7 @@ class LobbyConnection:
         self.nts_client = nts_client
         self.coturn_generator = CoturnHMAC(config.COTURN_HOSTS, config.COTURN_KEYS)
         self.ladder_service = ladder_service
+        self.party_service = party_service
         self._authenticated = False
         self.player = None  # type: Player
         self.game_connection = None  # type: GameConnection
@@ -104,8 +89,7 @@ class LobbyConnection:
 
         return str(self.session)
 
-    @asyncio.coroutine
-    def on_connection_made(self, protocol: QDataStreamProtocol, peername: Address):
+    async def on_connection_made(self, protocol: QDataStreamProtocol, peername: Address):
         self.protocol = protocol
         self.peer_address = peername
         metrics.server_connections.inc()
@@ -807,14 +791,32 @@ class LobbyConnection:
         else:
             raise KeyError('invalid action')
 
+    def ice_only(func):
+        """ Ensures that a handler function is not invoked from a non ICE client"""
+        @wraps(func)
+        async def wrapper(self, message):
+            if self._attempted_connectivity_test:
+                raise ClientError("Cannot join game. Please update your client to the newest version.")
+            return await func(self, message)
+        return wrapper
+
+    def player_idle(func):
+        """ Ensures that a handler function is not invoked unless the player state is IDLE"""
+        @wraps(func)
+        async def wrapper(self, message):
+            if self.player.state != PlayerState.IDLE:
+                await self.send({'command': 'invalid_state', 'state': self.player.state.value})
+                return
+            return await func(self, message)
+        return wrapper
+
+    @ice_only
+    @player_idle
     async def command_game_join(self, message):
         """
         We are going to join a game.
         """
         assert isinstance(self.player, Player)
-
-        if self._attempted_connectivity_test:
-            raise ClientError("Cannot join game. Please update your client to the newest version.")
 
         await self.abort_connection_if_banned()
 
@@ -851,16 +853,28 @@ class LobbyConnection:
 
         await self.launch_game(game, is_host=False)
 
+    @ice_only
     async def command_game_matchmaking(self, message):
         mod = str(message.get('mod', 'ladder1v1'))
         state = str(message['state'])
-
-        if self._attempted_connectivity_test:
-            raise ClientError("Cannot host game. Please update your client to the newest version.")
+        party = self.party_service.get_party(self.player)
 
         if state == "stop":
             await self.ladder_service.cancel_search(self.player)
             return
+
+        if party is not None:
+            busy = False
+            for player in party.members:
+                if player.state != PlayerState.IDLE:
+                    busy = True
+                    await self.send({
+                        'command': 'invalid_state',
+                        'state': player.state.value,
+                        'player': player.id
+                    })
+            if busy:
+                return
 
         if state == "start":
             assert self.player is not None
@@ -875,11 +889,10 @@ class LobbyConnection:
 
             await self.ladder_service.start_search(self.player, search, queue_name=mod)
 
+    @ice_only
+    @player_idle
     async def command_game_host(self, message):
         assert isinstance(self.player, Player)
-
-        if self._attempted_connectivity_test:
-            raise ClientError("Cannot join game. Please update your client to the newest version.")
 
         await self.abort_connection_if_banned()
 
@@ -1045,6 +1058,48 @@ class LobbyConnection:
             'ttl': ttl
         })
 
+    @player_idle
+    async def command_invite_to_party(self, message):
+        recipient = self.player_service.get_player(message["recipient_id"])
+        if recipient is None:
+            raise ClientError("The invited player doesn't exist", recoverable=True)
+
+        await self.party_service.invite_player_to_party(self.player, recipient)
+
+    @player_idle
+    async def command_accept_party_invite(self, message):
+        sender = self.player_service.get_player(message["sender_id"])
+        if sender is None:
+            raise ClientError("The inviting player doesn't exist", recoverable=True)
+
+        await self.party_service.accept_invite(self.player, sender)
+
+    @player_idle
+    async def command_kick_player_from_party(self, message):
+        kicked_player = self.player_service.get_player(message["kicked_player_id"])
+        if kicked_player is None:
+            raise ClientError("The kicked player doesn't exist", recoverable=True)
+
+        await self.party_service.kick_player_from_party(self.player, kicked_player)
+
+    @player_idle
+    async def command_ready_party(self, message):
+        await self.party_service.ready_player(self.player)
+
+    async def command_unready_party(self, message):
+        await self.party_service.unready_player(self.player)
+
+    async def command_leave_party(self, _message):
+        # TODO: Cancel party search here if one exists
+        await self.party_service.leave_party(self.player)
+
+    async def command_set_party_factions(self, message):
+        if len(message["factions"]) != 4 or not all(isinstance(f, bool) for f in message["factions"]):
+            self.abort("{} sent a wrongly formatted faction selection".format(self.player.login))
+
+        self.party_service.set_factions(self.player, message["factions"])
+
+
     async def send_warning(self, message: str, fatal: bool = False):
         """
         Display a warning message to the client
@@ -1088,6 +1143,7 @@ class LobbyConnection:
             )
             await self.ladder_service.on_connection_lost(self.player)
             self.player_service.remove_player(self.player)
+            await self.party_service.on_player_disconnected(self.player)
 
     async def abort_connection_if_banned(self):
         async with self._db.acquire() as conn:

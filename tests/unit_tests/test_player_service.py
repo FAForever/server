@@ -4,8 +4,6 @@ from mock import Mock
 from server.lobbyconnection import LobbyConnection
 from server.rating import RatingType
 
-from enum import Enum
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -52,7 +50,6 @@ async def test_fetch_ratings_partially_nonexistent(player_factory, player_servic
 
     player_service._logger.info.assert_called_once()
     assert player.ratings[RatingType.LADDER_1V1] == (1500, 500)
-
 
 
 async def test_fetch_player_data_multiple_avatar(player_factory, player_service):
@@ -114,7 +111,7 @@ async def test_mark_dirty(player_factory, player_service):
     assert player_service.dirty_players == set()
 
 
-async def test_update_data(player_factory, player_service):
+async def test_update_data(player_service):
     await player_service.update_data()
 
     assert player_service.get_permission_group(1) == 2

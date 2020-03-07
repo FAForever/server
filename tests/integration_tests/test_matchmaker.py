@@ -28,8 +28,7 @@ async def queue_players_for_matchmaking(lobby_server):
         lobby_server
     )
     _, _, proto2 = await connect_and_sign_in(
-        ('ladder2', 'ladder2'),
-        lobby_server
+        ('ladder2', 'ladder2'), lobby_server
     )
 
     await read_until_command(proto2, 'game_info')

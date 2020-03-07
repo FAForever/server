@@ -10,24 +10,24 @@ import logging
 from typing import Optional
 
 from prometheus_client import start_http_server
-
 from server.db import FAFDatabase
+
 from .config import config
-from .games.game import GameState, VisibilityState
-from .stats.game_stats_service import GameStatsService
+from .configuration_service import ConfigurationService  # noqa: F401
+from .control import run_control_server
+from .game_service import GameService
 from .gameconnection import GameConnection
+from .games.game import GameState, VisibilityState
+from .geoip_service import GeoIpService
 from .ice_servers.nts import TwilioNTS
+from .ladder_service import LadderService
 from .lobbyconnection import LobbyConnection
+from .party_service import PartyService
+from .player_service import PlayerService
 from .protocol import QDataStreamProtocol
 from .servercontext import ServerContext
-from .configuration_service import ConfigurationService  # noqa: F401
-from .geoip_service import GeoIpService
-from .player_service import PlayerService
-from .game_service import GameService
-from .ladder_service import LadderService
-from .control import run_control_server
+from .stats.game_stats_service import GameStatsService
 from .timing import at_interval
-
 
 __author__ = 'Askaholic, Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard, Michel Jung'
 __contact__ = 'admin@faforever.com'
@@ -39,6 +39,7 @@ __all__ = (
     'GameStatsService',
     'GameService',
     'LadderService',
+    'PartyService',
     'RatingService',
     'run_lobby_server',
     'run_control_server',
@@ -68,6 +69,7 @@ async def run_lobby_server(
     nts_client: Optional[TwilioNTS],
     geoip_service: GeoIpService,
     ladder_service: LadderService,
+    party_service: PartyService,
     loop,
 ) -> ServerContext:
     """
@@ -141,11 +143,12 @@ async def run_lobby_server(
     def make_connection() -> LobbyConnection:
         return LobbyConnection(
             database=database,
-            geoip=geoip_service,
             game_service=game_service,
-            nts_client=nts_client,
             players=player_service,
-            ladder_service=ladder_service
+            nts_client=nts_client,
+            geoip=geoip_service,
+            ladder_service=ladder_service,
+            party_service=party_service
         )
 
     ctx = ServerContext(make_connection, name="LobbyServer")
