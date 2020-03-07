@@ -503,26 +503,26 @@ class LobbyConnection:
                 )
             })
             await self.send_warning("Your computer seems to be a virtual machine.<br><br>In order to "
-                              "log in from a VM, you have to link your account to Steam: <a href='" +
-                              config.WWW_URL + "/account/link'>" +
-                              config.WWW_URL + "/account/link</a>.<br>If you need an exception, please contact an "
-                                               "admin or moderator on the forums", fatal=True)
+                                    "log in from a VM, you have to link your account to Steam: <a href='" +
+                                    config.WWW_URL + "/account/link'>" +
+                                    config.WWW_URL + "/account/link</a>.<br>If you need an exception, please contact an "
+                                                     "admin or moderator on the forums", fatal=True)
 
         if response.get('result', '') == 'already_associated':
             self._logger.warning("UID hit: %d: %s", player_id, uid_hash)
             await self.send_warning("Your computer is already associated with another FAF account.<br><br>In order to "
-                              "log in with an additional account, you have to link it to Steam: <a href='" +
-                              config.WWW_URL + "/account/link'>" +
-                              config.WWW_URL + "/account/link</a>.<br>If you need an exception, please contact an "
-                                               "admin or moderator on the forums", fatal=True)
+                                    "log in with an additional account, you have to link it to Steam: <a href='" +
+                                    config.WWW_URL + "/account/link'>" +
+                                    config.WWW_URL + "/account/link</a>.<br>If you need an exception, please contact an "
+                                                     "admin or moderator on the forums", fatal=True)
             return False
 
         if response.get('result', '') == 'fraudulent':
             self._logger.info("Banning player %s for fraudulent looking login.", player_id)
             await self.send_warning("Fraudulent login attempt detected. As a precautionary measure, your account has been "
-                              "banned permanently. Please contact an admin or moderator on the forums if you feel this is "
-                              "a false positive.",
-                              fatal=True)
+                                    "banned permanently. Please contact an admin or moderator on the forums if you feel this is "
+                                    "a false positive.",
+                                    fatal=True)
 
             async with self._db.acquire() as conn:
                 try:
