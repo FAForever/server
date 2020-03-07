@@ -168,7 +168,7 @@ async def test_search_expansion_controlled_by_failed_matching_attempts(matchmake
     for _ in range(100):
         s1.register_failed_matching_attempt()
     e1 = s1.search_expansion
-    
+
     s1.register_failed_matching_attempt()
     assert e1 == s1.search_expansion
     assert e1 == config.LADDER_SEARCH_EXPANSION_MAX
