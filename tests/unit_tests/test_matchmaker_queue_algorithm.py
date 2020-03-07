@@ -5,7 +5,7 @@ from server.matchmaker import Search, algorithm
 
 @pytest.fixture
 def p(player_factory):
-    def make(mean: int, deviation: int, ladder_games: int=config.NEWBIE_MIN_GAMES+1, name=None):
+    def make(mean: int, deviation: int, ladder_games: int = config.NEWBIE_MIN_GAMES+1, name=None):
         """Make a player with the given ratings"""
         return player_factory(ladder_rating=(mean, deviation),
                               ladder_games=ladder_games)
