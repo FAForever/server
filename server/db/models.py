@@ -71,16 +71,16 @@ friends_and_foes = Table(
 
 game_featuredMods = Table(
     'game_featuredMods', metadata,
-    Column('id',            Integer,    primary_key=True),
-    Column('gamemod',       String,     unique=True),
-    Column('description',   Text,       nullable=False),
-    Column('name',          String,     nullable=False),
-    Column('publish',       Boolean,    nullable=False, server_default='f'),
-    Column('order',         Integer,    nullable=False, server_default='0'),
-    Column('git_url',       String),
-    Column('git_branch',    String),
-    Column('file_extension',String),
-    Column('allow_override',Boolean)
+    Column('id',             Integer,    primary_key=True),
+    Column('gamemod',        String,     unique=True),
+    Column('description',    Text,       nullable=False),
+    Column('name',           String,     nullable=False),
+    Column('publish',        Boolean,    nullable=False, server_default='f'),
+    Column('order',          Integer,    nullable=False, server_default='0'),
+    Column('git_url',        String),
+    Column('git_branch',     String),
+    Column('file_extension', String),
+    Column('allow_override', Boolean)
 )
 
 game_player_stats = Table(
