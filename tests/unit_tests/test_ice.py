@@ -35,7 +35,7 @@ class FakeTwilioServers:
 def test_coturn_tokens(coturn_hmac, coturn_hosts, coturn_credentials):
     servers = coturn_hmac.server_tokens(username='faf-test', ttl=123456)
     comparison_list = []
-    for coturn_host,coturn_cred in zip(coturn_hosts, coturn_credentials):
+    for coturn_host, coturn_cred in zip(coturn_hosts, coturn_credentials):
         comparison_list.append(
             {"host": coturn_host, "cred": coturn_cred}
         )
@@ -62,7 +62,7 @@ async def test_twilio_nts(twilio):
     twilio.client.tokens.create.assert_called_once()
     assert servers == \
         {
-            "urls": ["a","b","c"],
+            "urls": ["a", "b", "c"],
             "username": "d",
             "credential": "e",
             "credentialType": "f"

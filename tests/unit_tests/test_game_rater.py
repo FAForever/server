@@ -80,16 +80,16 @@ def test_team_outcome_victory_has_priority():
 
 def test_ranks():
     rater = GameRater({}, {})
-    assert rater._ranks_from_team_outcomes([GameOutcome.VICTORY, GameOutcome.DEFEAT]) == [0,1]
-    assert rater._ranks_from_team_outcomes([GameOutcome.DEFEAT, GameOutcome.VICTORY]) == [1,0]
+    assert rater._ranks_from_team_outcomes([GameOutcome.VICTORY, GameOutcome.DEFEAT]) == [0, 1]
+    assert rater._ranks_from_team_outcomes([GameOutcome.DEFEAT, GameOutcome.VICTORY]) == [1, 0]
 
 
 def test_ranks_with_unknown():
     rater = GameRater({}, {})
-    assert rater._ranks_from_team_outcomes([GameOutcome.UNKNOWN, GameOutcome.DEFEAT]) == [0,1]
-    assert rater._ranks_from_team_outcomes([GameOutcome.VICTORY, GameOutcome.UNKNOWN]) == [0,1]
-    assert rater._ranks_from_team_outcomes([GameOutcome.UNKNOWN, GameOutcome.VICTORY]) == [1,0]
-    assert rater._ranks_from_team_outcomes([GameOutcome.DEFEAT, GameOutcome.UNKNOWN]) == [1,0]
+    assert rater._ranks_from_team_outcomes([GameOutcome.UNKNOWN, GameOutcome.DEFEAT]) == [0, 1]
+    assert rater._ranks_from_team_outcomes([GameOutcome.VICTORY, GameOutcome.UNKNOWN]) == [0, 1]
+    assert rater._ranks_from_team_outcomes([GameOutcome.UNKNOWN, GameOutcome.VICTORY]) == [1, 0]
+    assert rater._ranks_from_team_outcomes([GameOutcome.DEFEAT, GameOutcome.UNKNOWN]) == [1, 0]
     with pytest.raises(GameRatingError):
         rater._ranks_from_team_outcomes([GameOutcome.UNKNOWN, GameOutcome.UNKNOWN])
 
@@ -102,14 +102,14 @@ def test_ranks_with_double_victory_is_inconsistent():
 
 def test_ranks_with_double_defeat_treated_as_draw():
     rater = GameRater({}, {})
-    assert rater._ranks_from_team_outcomes([GameOutcome.DEFEAT, GameOutcome.DEFEAT]) == [0,0]
+    assert rater._ranks_from_team_outcomes([GameOutcome.DEFEAT, GameOutcome.DEFEAT]) == [0, 0]
 
 
 def test_ranks_with_draw():
     rater = GameRater({}, {})
 
-    assert rater._ranks_from_team_outcomes([GameOutcome.DRAW, GameOutcome.DRAW]) == [0,0]
-    assert rater._ranks_from_team_outcomes([GameOutcome.MUTUAL_DRAW, GameOutcome.MUTUAL_DRAW]) == [0,0]
+    assert rater._ranks_from_team_outcomes([GameOutcome.DRAW, GameOutcome.DRAW]) == [0, 0]
+    assert rater._ranks_from_team_outcomes([GameOutcome.MUTUAL_DRAW, GameOutcome.MUTUAL_DRAW]) == [0, 0]
 
     with pytest.raises(GameRatingError):
         rater._ranks_from_team_outcomes([GameOutcome.VICTORY, GameOutcome.DRAW])
