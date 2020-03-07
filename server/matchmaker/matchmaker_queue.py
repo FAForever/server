@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 from statistics import mean
 from typing import Deque, Dict
 import time
-import functools
 
 import server
 import server.metrics as metrics
@@ -79,7 +78,7 @@ class MatchmakerQueue:
             number_of_matches = len(self._matches)
             metrics.matches.labels(self.queue_name).set(number_of_matches)
 
-            #TODO: Move this into algorithm, then don't need to recalculate quality_with?
+            # TODO: Move this into algorithm, then don't need to recalculate quality_with?
             # Probably not a major bottleneck though.
             for search1, search2 in self._matches:
                 metrics.match_quality.labels(self.queue_name).observe(

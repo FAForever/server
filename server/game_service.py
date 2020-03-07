@@ -207,7 +207,6 @@ class GameService:
         if game.id in self._games:
             del self._games[game.id]
 
-
     def __getitem__(self, item: int) -> Game:
         return self._games[item]
 
