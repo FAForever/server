@@ -13,6 +13,7 @@ from asynctest import exhaust_callbacks
 from server import GameService, ServerInstance, run_control_server
 from server.db.models import login
 from server.ladder_service import LadderService
+from server.party_service import PartyService
 from server.protocol import Protocol, QDataStreamProtocol
 from server.rating_service.rating_service import RatingService
 from server.servercontext import ServerContext
@@ -65,7 +66,8 @@ async def lobby_server(
                 "game_service": game_service,
                 "ladder_service": ladder_service,
                 "rating_service": rating_service,
-                "message_queue_service": message_queue_service
+                "message_queue_service": message_queue_service,
+                "party_service": PartyService(game_service)
             }
         )
         ctx = await instance.listen(("127.0.0.1", None))

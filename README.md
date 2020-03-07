@@ -184,6 +184,14 @@ With most carrying a footer containing:
 
 * `{command: ice_servers}`: Send ICE TURN/STUN servers - Returns: `{command: ice_servers, : <ice servers>, date_created: <date token was created in ISO 8601 format>, ttl: <ttl in seconds>}`
 
+#### Parties
+* `{command: invite_to_party, recipient_id: <...>}`: Invite this player to a party
+* `{command: accept_party_invite, sender_id: <...>}`: Accept the party invite from the given player
+* `{command: kick_player_from_party, kicked_player_id: <...>}`: Kick a player from a party you own
+* `{command: leave_party}`: Leave the party you are currently in
+* `{command: ready_party}`: Ready up in your party
+* `{command: unready_party}`: Un-ready in your party
+
 ##### Misc
 
 * [deprecated] `{command: ask_session}`: response with a welcome command and a valid session (can be delayed)

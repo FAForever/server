@@ -112,7 +112,7 @@ async def test_mark_dirty(player_factory, player_service):
     assert player_service.dirty_players == set()
 
 
-async def test_update_data(player_factory, player_service):
+async def test_update_data(player_service):
     await player_service.update_data()
     assert player_service.is_uniqueid_exempt(1) is True
 

@@ -107,6 +107,7 @@ async def test_start_game_1v1(
     game = game_service[game_service.game_id_counter]
 
     assert p1.lobby_connection.launch_game.called
+    # TODO: Once client supports `game_launch_timeout` change this to `assert not ...`
     assert p2.lobby_connection.launch_game.called
     assert isinstance(game, LadderGame)
     assert game.rating_type == queue.rating_type
