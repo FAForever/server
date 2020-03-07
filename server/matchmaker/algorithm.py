@@ -139,7 +139,7 @@ class RandomlyMatchNewbies(MatchmakingPolicy):
             opponent = next((
                 search for search in self.searches
                 if search != newbie and search not in self.matches
-                   and search.is_single_party() and search.has_no_top_player()
+                and search.is_single_party() and search.has_no_top_player()
             ), default_if_no_available_opponent)
             if opponent is not default_if_no_available_opponent:
                 self._match(newbie, opponent)
