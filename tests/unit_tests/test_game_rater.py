@@ -187,7 +187,7 @@ def test_dont_rate_partial_ffa_matches():
 
     rater = GameRater(players_by_team, outcome_py_player)
     with pytest.raises(GameRatingError):
-        result = rater.compute_rating()
+        rater.compute_rating()
 
 
 def test_dont_rate_pure_ffa_matches_with_more_than_two_players():
@@ -202,11 +202,10 @@ def test_dont_rate_pure_ffa_matches_with_more_than_two_players():
 
     rater = GameRater(players_by_team, outcome_py_player)
     with pytest.raises(GameRatingError):
-        result = rater.compute_rating()
+        rater.compute_rating()
 
 
 def test_dont_rate_threeway_team_matches():
-    FFA_TEAM = 1
     p1, p2, p3 = MockPlayer(), MockPlayer(), MockPlayer()
     players_by_team = {2: [p1], 3: [p2], 4: [p3]}
     outcome_py_player = {
@@ -217,4 +216,4 @@ def test_dont_rate_threeway_team_matches():
 
     rater = GameRater(players_by_team, outcome_py_player)
     with pytest.raises(GameRatingError):
-        result = rater.compute_rating()
+        rater.compute_rating()
