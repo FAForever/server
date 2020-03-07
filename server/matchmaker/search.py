@@ -20,8 +20,8 @@ class Search:
     def __init__(
         self,
         players: List[Player],
-        start_time: Optional[float]=None,
-        rating_type: RatingType=RatingType.LADDER_1V1
+        start_time: Optional[float] = None,
+        rating_type: RatingType = RatingType.LADDER_1V1
     ):
         """
         Default ctor for a search

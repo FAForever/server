@@ -966,7 +966,7 @@ class LobbyConnection:
             'ttl': ttl
         })
 
-    async def send_warning(self, message: str, fatal: bool=False):
+    async def send_warning(self, message: str, fatal: bool = False):
         """
         Display a warning message to the client
         :param message: Warning message to display
