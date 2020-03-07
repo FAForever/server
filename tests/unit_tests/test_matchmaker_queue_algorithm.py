@@ -124,9 +124,9 @@ def test_stable_marriage_better_than_greedy(p):
 
     # However, because s1 is first in the list and gets top choice, we end with
     # the following stable configuration
-    assert matches[s1] == s5 # quality: 0.97
-    assert matches[s2] == s3 # quality: 0.93
-    assert matches[s4] == s6 # quality: 0.82
+    assert matches[s1] == s5  # quality: 0.97
+    assert matches[s2] == s3  # quality: 0.93
+    assert matches[s4] == s6  # quality: 0.82
 
 
 def test_stable_marriage_unmatch(p):
@@ -139,7 +139,7 @@ def test_stable_marriage_unmatch(p):
 
     matches = algorithm.StableMarriage(searches).find()
 
-    assert matches[s1] == s4 # quality: 0.96622
+    assert matches[s1] == s4  # quality: 0.96622
     assert matches[s2] == s3  # quality: 0.96623
 
 
