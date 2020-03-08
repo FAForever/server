@@ -270,6 +270,27 @@ async def test_unready_player_nonexistent(party_service, player_factory):
         await party_service.unready_player(player)
 
 
+async def test_set_factions(party_service, player_factory):
+    sender = player_factory(player_id=1)
+    receiver = player_factory(player_id=2)
+
+    # Create a party
+    await party_service.invite_player_to_party(sender, receiver)
+
+    await party_service.set_factions(sender, [False, True, True, False])
+
+    party_member = next(iter(party_service.player_parties[sender].members))
+    assert party_member.factions == [False, True, True, False]
+
+
+async def test_set_factions_creates_party(party_service, player_factory):
+    # TODO: Is this really the behavior we want?
+    player = player_factory(player_id=1)
+
+    await party_service.set_factions(player, [True, False, True, False])
+    assert player in party_service.player_parties
+
+
 async def test_player_disconnected(party_service, player_factory):
     sender = player_factory(player_id=1)
     receiver = player_factory(player_id=2)
