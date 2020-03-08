@@ -154,6 +154,52 @@ async def test_leave_party_nonexistent(party_service, player_factory):
         await party_service.leave_party(player)
 
 
+async def test_leave_party_not_owner(party_service, player_factory):
+    owner = player_factory(player_id=1)
+    player2 = player_factory(player_id=2)
+
+    await party_service.invite_player_to_party(owner, player2)
+    await party_service.accept_invite(player2, owner)
+
+    # The player who was invited leaves
+    await party_service.leave_party(player2)
+
+    assert owner in party_service.player_parties
+    assert get_members(party_service.player_parties[owner]) == {owner}
+    assert player2 not in party_service.player_parties
+
+
+async def test_leave_party_owner_causes_disband(party_service, player_factory):
+    owner = player_factory(player_id=1)
+    player2 = player_factory(player_id=2)
+
+    await party_service.invite_player_to_party(owner, player2)
+    await party_service.accept_invite(player2, owner)
+
+    # Owner leaves
+    await party_service.leave_party(owner)
+
+    assert owner not in party_service.player_parties
+    assert player2 not in party_service.player_parties
+
+
+async def test_leave_party_then_join_another(party_service, player_factory):
+    player1 = player_factory(player_id=1)
+    player2 = player_factory(player_id=2)
+    player3 = player_factory(player_id=3)
+
+    # Join 2 players into a party
+    await party_service.invite_player_to_party(player1, player2)
+    await party_service.accept_invite(player2, player1)
+
+    # Both players leave the party
+    await party_service.leave_party(player2)
+    await party_service.leave_party(player1)
+
+    # One of the players tries to create another party
+    await party_service.invite_player_to_party(player1, player3)
+
+
 async def test_ready_player(party_service, player_factory):
     sender = player_factory(player_id=1)
     receiver = player_factory(player_id=2)
