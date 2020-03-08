@@ -1,5 +1,5 @@
 import time
-from typing import List, NamedTuple, Optional
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 from .core import Service
 from .decorators import with_logger
@@ -8,7 +8,12 @@ from .game_service import GameService
 from .players import Player
 from .team_matchmaker.player_party import PlayerParty
 
-GroupInvite = NamedTuple('GroupInvite', [("sender", Player), ("recipient", Player), ("party", PlayerParty), ("created_at", float)])
+GroupInvite = NamedTuple('GroupInvite', [
+    ("sender", Player),
+    ("recipient", Player),
+    ("party", PlayerParty),
+    ("created_at", float)
+])
 
 PARTY_INVITE_TIMEOUT = 60 * 60 * 24  # secs
 
@@ -16,14 +21,14 @@ PARTY_INVITE_TIMEOUT = 60 * 60 * 24  # secs
 @with_logger
 class PartyService(Service):
     """
-    Service responsible for managing the global team matchmaking. Does grouping, matchmaking, updates statistics, and
-    launches the games.
+    Service responsible for managing the global team matchmaking. Does grouping,
+    matchmaking, updates statistics, and launches the games.
     """
 
     def __init__(self, game_service: GameService):
         self.game_service = game_service
-        self.player_parties: dict[Player, PlayerParty] = dict()
-        self._pending_invites: dict[(Player, Player), GroupInvite] = dict()
+        self.player_parties: Dict[Player, PlayerParty] = dict()
+        self._pending_invites: Dict[Tuple[Player, Player], GroupInvite] = dict()
 
     def get_party(self, owner: Player) -> Optional[PlayerParty]:
         return self.player_parties.get(owner)
@@ -41,7 +46,9 @@ class PartyService(Service):
             # TODO: Make this a separate command so it can be locallized correctly
             raise ClientError("This person does not accept invites from you.", recoverable=True)
 
-        self._pending_invites[(sender, recipient)] = GroupInvite(sender, recipient, party, time.time())
+        self._pending_invites[(sender, recipient)] = GroupInvite(
+            sender, recipient, party, time.time()
+        )
         await recipient.send_message({
             "command": "party_invite",
             "sender": sender.id
@@ -56,6 +63,8 @@ class PartyService(Service):
 
         pending_invite = self._pending_invites.pop((sender, recipient))
 
+        # TODO: Is it possible for this to fail?
+        assert pending_invite.party == self.player_parties.get(sender)
         if pending_invite.party != self.player_parties.get(sender):
             await recipient.send_message({'command': 'party_disbanded'})
             return
@@ -121,13 +130,13 @@ class PartyService(Service):
 
         await party.unready_player(player)
 
-    def set_factions(self, player: Player, factions: List[bool]):
+    async def set_factions(self, player: Player, factions: List[bool]):
         if player not in self.player_parties:
             self.player_parties[player] = PlayerParty(player)
             # raise ClientError("You are not in a party.", recoverable=True) TODO can we just create a party here?
 
         party = self.player_parties[player]
-        party.set_factions(player, factions)
+        await party.set_factions(player, factions)
 
     def clear_invites(self):
         invites = filter(
