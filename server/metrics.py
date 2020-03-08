@@ -77,7 +77,7 @@ unauth_messages = Counter(
 )
 
 server_broadcasts = Counter(
-    "server_broadcasts_total", "Total number of broadcasts", ["protocol"]
+    "server_broadcasts_total", "Total number of broadcasts"
 )
 
 connection_on_message_received = Histogram(
@@ -91,8 +91,8 @@ connection_on_message_received = Histogram(
 # =====
 active_games = Gauge(
     "server_game_active_games_total",
-    "Number of currently active games."
-    "Includes games in lobby, games currently running, and games that ended"
+    "Number of currently active games. "
+    "Includes games in lobby, games currently running, and games that ended "
     "but are still in the game_service.",
     ["game_mode", "game_state"],
 )

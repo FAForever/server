@@ -158,7 +158,6 @@ class QDataStreamProtocol(Protocol):
                 raise DisconnectedError("Protocol connection lost!") from e
 
     async def send_message(self, message: dict):
-        metrics.sent_messages.inc()
         await self.send_raw(
             self.pack_message(json_encoder.encode(message))
         )

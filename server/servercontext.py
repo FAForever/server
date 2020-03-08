@@ -67,7 +67,7 @@ class ServerContext:
         )
 
     async def _do_broadcast(self, validate_fn, send_fn, message):
-        metrics.server_broadcasts.labels("raw").inc()
+        metrics.server_broadcasts.inc()
         tasks = []
         for conn, proto in self.connections.items():
             try:
