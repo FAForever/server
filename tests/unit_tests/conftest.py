@@ -1,3 +1,5 @@
+from contextlib import AbstractContextManager
+from time import perf_counter
 from unittest import mock
 
 import asynctest
@@ -135,3 +137,35 @@ def game_add_players(player_factory):
         return players
 
     return add
+
+
+class Benchmark(AbstractContextManager):
+    """A contextmanager for benchmarking a section of code.
+
+    ## Usage:
+    ```
+    with Benchmark() as b:
+        time.sleep(1)
+
+    b.elapsed()
+    ```"""
+
+    def __init__(self):
+        self.start = None
+        self.end = None
+
+    def __enter__(self) -> "Benchmark":
+        self.start = perf_counter()
+        return self
+
+    def __exit__(self, ext_type, ext_val, ext_tb) -> bool:
+        self.end = perf_counter()
+        return False
+
+    def elapsed(self):
+        return self.end - self.start
+
+
+@pytest.fixture
+def bench():
+    return Benchmark()

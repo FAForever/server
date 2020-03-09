@@ -1,19 +1,28 @@
+# Project Files
 passwords.py
 faf-server.pem
+/test-data.sql
+GeoLite2-Country.mmdb
+
+# Generated files
 .cache
-*.egg-info/
-*.pyc
-*.swp
-.idea/
-logs/
-.coverage
-*.bak
-py3env
-.vagrant
-*.iml
-htmlcov
-develop_venv/
+.hypothesis
 .mypy_cache
 .pytest_cache
+.coverage
+.vagrant
+htmlcov
+*.pyc
+*.egg-info/
+*.swp
+
+# Virtualenv
+py3env
+develop_venv/
 .venv
-/test-data.sql
+
+# Misc
+.idea/
+logs/
+*.bak
+*.iml

@@ -51,7 +51,7 @@ class MatchmakerQueue:
         while self._is_running:
             await self.timer.next_pop(lambda: len(self.queue))
 
-            self.find_matches()
+            await self.find_matches()
             server.stats.gauge(f"matchmaker.queue.{self.queue_name}.matches", len(self._matches))
             if self._matches:
                 server.stats.gauge(
@@ -90,13 +90,17 @@ class MatchmakerQueue:
                 if search in self.queue:
                     del self.queue[search]
 
-    def find_matches(self) -> None:
+    async def find_matches(self) -> None:
         self._logger.info("Searching for matches: %s", self.queue_name)
 
+        if len(self.queue) < 2:
+            return
+
         # Call self.match on all matches and filter out the ones that were cancelled
+        loop = asyncio.get_event_loop()
         new_matches = filter(
             lambda m: self.match(m[0], m[1]),
-            make_matches(self.queue.values())
+            await loop.run_in_executor(None, make_matches, self.queue.values())
         )
         self._matches.extend(new_matches)
 

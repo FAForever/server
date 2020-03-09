@@ -41,6 +41,9 @@ class Search:
         self._match = asyncio.Future()
         self._failed_matching_attempts = 0
 
+        # Precompute this
+        self.quality_against_self = self.quality_with(self)
+
     @staticmethod
     def adjusted_rating(player: Player):
         """
@@ -143,8 +146,7 @@ class Search:
         :return:
         """
 
-        quality_of_game_against_yourself = self.quality_with(self)
-        return max(0.8 * quality_of_game_against_yourself - self.search_expansion, 0)
+        return max(0.8 * self.quality_against_self - self.search_expansion, 0)
 
     def quality_with(self, other: 'Search') -> float:
         assert all(other.raw_ratings)
@@ -172,10 +174,21 @@ class Search:
         """
         if not isinstance(other, Search):
             return False
-        elif self.quality_with(other) >= self.match_threshold and \
-                other.quality_with(self) >= other.match_threshold:
-            return True
-        return False
+
+        quality = self.quality_with(other)
+        return self._match_quality_acceptable(other, quality)
+
+    def _match_quality_acceptable(self, other: 'Search', quality: float) -> bool:
+        """
+        Determine if the given match quality is acceptable.
+
+        This gets it's own function so we can call it from the Matchmaker using
+        a cached `quality` value.
+        """
+        # NOTE: We are assuming for optimization purposes that quality is
+        # symmetric. If this ever changes, update here
+        return (quality >= self.match_threshold and
+                quality >= other.match_threshold)
 
     def match(self, other: 'Search'):
         """
@@ -214,6 +227,10 @@ class Search:
 
     def __str__(self):
         return "Search({}, {}, {})".format(self.players, self.match_threshold, self.search_expansion)
+
+    def __repr__(self):
+        """For debugging"""
+        return f"Search({[p.login for p in self.players]})"
 
 
 Match = Tuple[Search, Search]

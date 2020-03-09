@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import random
 from collections import deque
 from concurrent.futures import CancelledError, TimeoutError
@@ -14,27 +15,32 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
+def p(player_factory):
+    return functools.partial(player_factory, with_lobby_connection=False)
+
+
+@pytest.fixture
 def matchmaker_queue(game_service):
     return MatchmakerQueue('test_queue', game_service=mock.Mock())
 
 
 @pytest.fixture
-def matchmaker_players(player_factory):
-    return player_factory('Dostya', player_id=1, ladder_rating=(2300, 64), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           player_factory('Brackman', player_id=2, ladder_rating=(1200, 72), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           player_factory('Zoidberg', player_id=3, ladder_rating=(1300, 175), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           player_factory('QAI', player_id=4, ladder_rating=(2350, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           player_factory('Rhiza', player_id=5, ladder_rating=(1200, 175), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           player_factory('Newbie', player_id=6, ladder_rating=(1200, 175), ladder_games=(config.NEWBIE_MIN_GAMES - 1))
+def matchmaker_players(p):
+    return p('Dostya', player_id=1, ladder_rating=(2300, 64), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           p('Brackman', player_id=2, ladder_rating=(1200, 72), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           p('Zoidberg', player_id=3, ladder_rating=(1300, 175), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           p('QAI', player_id=4, ladder_rating=(2350, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           p('Rhiza', player_id=5, ladder_rating=(1200, 175), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           p('Newbie', player_id=6, ladder_rating=(1200, 175), ladder_games=(config.NEWBIE_MIN_GAMES - 1))
 
 
 @pytest.fixture
-def matchmaker_players_all_match(player_factory):
-    return player_factory('Dostya', player_id=1, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           player_factory('Brackman', player_id=2, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           player_factory('Zoidberg', player_id=3, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           player_factory('QAI', player_id=4, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-           player_factory('Rhiza', player_id=5, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+def matchmaker_players_all_match(p):
+    return p('Dostya', player_id=1, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           p('Brackman', player_id=2, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           p('Zoidberg', player_id=3, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           p('QAI', player_id=4, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+           p('Rhiza', player_id=5, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
 
 
 async def test_is_ladder_newbie(matchmaker_players):
@@ -72,28 +78,28 @@ async def test_search_threshold(matchmaker_players):
     assert s.match_threshold >= 0
 
 
-async def test_search_threshold_of_single_old_players_is_high(player_factory):
-    old_player = player_factory('experienced_player', player_id=1, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+async def test_search_threshold_of_single_old_players_is_high(p):
+    old_player = p('experienced_player', player_id=1, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
     s = Search([old_player])
     assert s.match_threshold >= 0.6
 
 
-async def test_search_threshold_of_team_old_players_is_high(player_factory):
-    old_player = player_factory('experienced_player', player_id=1, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
-    another_old_player = player_factory('another experienced_player', player_id=2, ladder_rating=(1600, 60), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+async def test_search_threshold_of_team_old_players_is_high(p):
+    old_player = p('experienced_player', player_id=1, ladder_rating=(1500, 50), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+    another_old_player = p('another experienced_player', player_id=2, ladder_rating=(1600, 60), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
     s = Search([old_player, another_old_player])
     assert s.match_threshold >= 0.6
 
 
-async def test_search_threshold_of_single_new_players_is_low(player_factory):
-    new_player = player_factory('new_player', player_id=1, ladder_rating=(1500, 500), ladder_games=1)
+async def test_search_threshold_of_single_new_players_is_low(p):
+    new_player = p('new_player', player_id=1, ladder_rating=(1500, 500), ladder_games=1)
     s = Search([new_player])
     assert s.match_threshold <= 0.4
 
 
-async def test_search_threshold_of_team_new_players_is_low(player_factory):
-    new_player = player_factory('new_player', player_id=1, ladder_rating=(1500, 500), ladder_games=1)
-    another_new_player = player_factory('another_new_player', player_id=2, ladder_rating=(1450, 450), ladder_games=1)
+async def test_search_threshold_of_team_new_players_is_low(p):
+    new_player = p('new_player', player_id=1, ladder_rating=(1500, 500), ladder_games=1)
+    another_new_player = p('another_new_player', player_id=2, ladder_rating=(1450, 450), ladder_games=1)
     s = Search([new_player, another_new_player])
     assert s.match_threshold <= 0.4
 
@@ -246,10 +252,10 @@ async def test_shutdown_matchmaker(matchmaker_queue):
         assert False
 
 
-async def test_queue_many(player_service, matchmaker_queue, player_factory):
-    p1, p2, p3 = player_factory('Dostya', player_id=1, ladder_rating=(2200, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-                 player_factory('Brackman', player_id=2, ladder_rating=(1500, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-                 player_factory('Zoidberg', player_id=3, ladder_rating=(1500, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+async def test_queue_many(player_service, matchmaker_queue, p):
+    p1, p2, p3 = p('Dostya', player_id=1, ladder_rating=(2200, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+                 p('Brackman', player_id=2, ladder_rating=(1500, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+                 p('Zoidberg', player_id=3, ladder_rating=(1500, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
 
     player_service.players = {p1.id: p1, p2.id: p2, p3.id: p3}
     s1 = Search([p1])
@@ -259,23 +265,23 @@ async def test_queue_many(player_service, matchmaker_queue, player_factory):
     matchmaker_queue.push(s2)
     matchmaker_queue.push(s3)
 
-    matchmaker_queue.find_matches()
+    await matchmaker_queue.find_matches()
 
     assert not s1.is_matched
     assert s2.is_matched
     assert s3.is_matched
 
 
-async def test_queue_race(player_service, matchmaker_queue, player_factory):
-    p1, p2, p3 = player_factory('Dostya', player_id=1, ladder_rating=(2300, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-                 player_factory('Brackman', player_id=2, ladder_rating=(2200, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
-                 player_factory('Zoidberg', player_id=3, ladder_rating=(2300, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+async def test_queue_race(player_service, matchmaker_queue, p):
+    p1, p2, p3 = p('Dostya', player_id=1, ladder_rating=(2300, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+                 p('Brackman', player_id=2, ladder_rating=(2200, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
+                 p('Zoidberg', player_id=3, ladder_rating=(2300, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
 
     player_service.players = {p1.id: p1, p2.id: p2, p3.id: p3}
 
     async def find_matches():
         await asyncio.sleep(0.01)
-        matchmaker_queue.find_matches()
+        await matchmaker_queue.find_matches()
     try:
         await asyncio.gather(
             asyncio.wait_for(matchmaker_queue.search(Search([p1])), 0.1),
@@ -318,7 +324,7 @@ async def test_queue_mid_cancel(player_service, matchmaker_queue, matchmaker_pla
 
     async def find_matches():
         await asyncio.sleep(0.01)
-        matchmaker_queue.find_matches()
+        await matchmaker_queue.find_matches()
     try:
         await asyncio.gather(
             asyncio.wait_for(matchmaker_queue.search(s3), 0.1),
