@@ -291,32 +291,37 @@ class LadderService(Service):
     def start_queue_handlers(self):
         for queue in self.queues:
             if queue == "ladder1v1":
-                asyncio.ensure_future(self.handle_queue_matches_1v1())
+                start_game = self.start_game_1v1
             else:
-                asyncio.ensure_future(self.handle_queue_matches(queue))
+                start_game = self.start_game_with_teams
 
-    async def handle_queue_matches_1v1(self):
-        async for s1, s2 in self.queues["ladder1v1"].iter_matches():
+            asyncio.ensure_future(self.handle_queue_matches(queue, start_game))
+
+    async def handle_queue_matches(self, queue_name: str, start_game):
+        async for s1, s2 in self.queues[queue_name].iter_matches():
             try:
-                assert len(s1.players) == 1
-                assert len(s2.players) == 1
-                p1, p2 = s1.players[0], s2.players[0]
-                msg = {"command": "match_found", "queue": "ladder1v1"}
+                msg = {"command": "match_found", "queue": queue_name}
                 # TODO: Handle disconnection with a client supported message
-                await asyncio.gather(
-                    p1.send_message(msg),
-                    p2.send_message(msg)
+                await asyncio.gather(*[
+                    player.send_message(msg)
+                    for player in s1.players + s2.players
+                ])
+                asyncio.create_task(
+                    start_game(s1.players, s2.players)
                 )
-                asyncio.create_task(self.start_game_1v1(p1, p2))
             except Exception as e:
                 self._logger.exception(
                     "Error processing match between searches %s, and %s: %s",
                     s1, s2, e
                 )
 
-    async def start_game_1v1(self, host: Player, guest: Player):
+    async def start_game_1v1(self, team1: List[Player], team2: List[Player]):
         # TODO: Get game_mode from queue
         try:
+            assert len(team1) == 1
+            assert len(team2) == 1
+            host, guest = team1 + team2
+
             self._logger.debug(
                 "Starting ladder game between %s and %s", host, guest
             )
@@ -409,35 +414,17 @@ class LadderService(Service):
                     guest.send_message(msg)
                 )
 
-    async def handle_queue_matches(self, queue_name: str):
-        async for s1, s2 in self.queues[queue_name].iter_matches():
-            try:
-                tasks = []
-                msg = {"command": "match_found", "queue": queue_name}
-                for player in s1.players + s2.players:
-                    tasks.append(player.send_message(msg))
-                await asyncio.gather(*tasks)
-                asyncio.ensure_future(
-                    self.start_game_with_teams(s1.players, s2.players)
-                )
-            except Exception as e:
-                self._logger.exception(
-                    "Error processing match between searches %s, and %s: %s",
-                    s1, s2, e
-                )
-
     async def start_game_with_teams(self, team1: List[Player], team2: List[Player]):
         assert team1
         assert team2
 
         host = team1[0]
         all_players = team1 + team2
+        all_guests = all_players[1:]
 
-        for player in all_players:
-            if player == host:
-                continue
-            player.state = PlayerState.JOINING
         host.state = PlayerState.HOSTING
+        for player in all_guests:
+            player.state = PlayerState.JOINING
 
         played_map_ids = await self.get_game_history(
             all_players,
@@ -499,7 +486,7 @@ class LadderService(Service):
             player.lobby_connection.launch_game(
                 game, is_host=False, use_map=mapname
             )
-            for player in all_players if player != host
+            for player in all_guests
         ])
         # TODO: Wait for players to join here
 
