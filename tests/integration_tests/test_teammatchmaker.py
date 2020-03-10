@@ -37,7 +37,7 @@ async def queue_players_for_matchmaking(lobby_server):
         read_until_command(proto, "match_found") for proto in protos
     ])
 
-    return tuple(protos)
+    return protos
 
 
 @fast_forward(5)
@@ -68,10 +68,11 @@ async def test_game_matchmaking(lobby_server):
         assert msg["init_mode"] == 1
         assert "None" not in msg["name"]
         # TODO: Make a 'ladder2v2' mod?
-        assert msg["mod"] == "faf"
-        # Once the game is hosted it will have 1 connected player (the host)
-        if "expected_players" in msg:
-            assert msg["expected_players"] == 1
+        assert msg["mod"] == "ladder2v2"
+        assert msg["expected_players"] == 4
+        assert msg["team"] in (2, 3)
+        assert msg["map_position"] in (1, 2, 3, 4)
+        assert msg["faction"] == 1
 
 
 @fast_forward(50)

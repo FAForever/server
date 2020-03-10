@@ -69,7 +69,8 @@ async def test_game_launch_message(lobby_server):
     assert msg1['uid'] == msg2['uid']
     assert msg1['mod'] == msg2['mod'] == 'ladder1v1'
     assert msg1['mapname'] == msg2['mapname']
-    assert msg1['team'] == msg2['team'] == 1
+    assert msg1['team'] == 2
+    assert msg2['team'] == 3
     assert msg1['faction'] == msg2['faction'] == 1  # faction 1 is uef
     assert msg1['expected_players'] == msg2['expected_players'] == 2
     assert msg1['map_position'] == 1

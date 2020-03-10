@@ -1,6 +1,5 @@
 import asyncio
 import contextlib
-import random
 import re
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
@@ -290,14 +289,9 @@ class LadderService(Service):
 
     def start_queue_handlers(self):
         for queue in self.queues:
-            if queue == "ladder1v1":
-                start_game = self.start_game_1v1
-            else:
-                start_game = self.start_game_with_teams
+            asyncio.ensure_future(self.handle_queue_matches(queue))
 
-            asyncio.ensure_future(self.handle_queue_matches(queue, start_game))
-
-    async def handle_queue_matches(self, queue_name: str, start_game):
+    async def handle_queue_matches(self, queue_name: str):
         async for s1, s2 in self.queues[queue_name].iter_matches():
             try:
                 msg = {"command": "match_found", "queue": queue_name}
@@ -307,7 +301,7 @@ class LadderService(Service):
                     for player in s1.players + s2.players
                 ])
                 asyncio.create_task(
-                    start_game(s1.players, s2.players)
+                    self.start_game(s1.players, s2.players, queue_name)
                 )
             except Exception as e:
                 self._logger.exception(
@@ -315,74 +309,81 @@ class LadderService(Service):
                     s1, s2, e
                 )
 
-    async def start_game_1v1(self, team1: List[Player], team2: List[Player]):
+    async def start_game(self, team1: List[Player], team2: List[Player], queue: str):
         # TODO: Get game_mode from queue
+        self._logger.debug(
+            "Starting %s game between %s and %s", queue, team1, team2
+        )
         try:
-            assert len(team1) == 1
-            assert len(team2) == 1
-            host, guest = team1 + team2
+            host = team1[0]
+            all_players = team1 + team2
+            all_guests = all_players[1:]
 
-            self._logger.debug(
-                "Starting ladder game between %s and %s", host, guest
-            )
             host.state = PlayerState.HOSTING
-            guest.state = PlayerState.JOINING
+            for guest in all_guests:
+                guest.state = PlayerState.JOINING
 
             played_map_ids = await self.get_game_history(
-                [host, guest],
+                all_players,
                 "ladder1v1",
                 limit=config.LADDER_ANTI_REPETITION_LIMIT
             )
             rating = min(
                 newbie_adjusted_ladder_mean(player)
-                for player in (host, guest)
+                for player in all_players
             )
             pool = self.queues["ladder1v1"].get_map_pool_for_rating(rating)
             if not pool:
                 raise RuntimeError(f"No map pool available for rating {rating}!")
             map_id, map_name, map_path = pool.choose_map(played_map_ids)
 
+            # TODO: Different game mode for team matchmaker?
             game = self.game_service.create_game(
-                game_mode='ladder1v1',
+                game_mode=queue,
                 host=host,
-                name=f"{host.login} Vs {guest.login}"
+                name=self.game_name(team1, team2)
             )
             game.init_mode = InitMode.AUTO_LOBBY
             game.map_file_path = map_path
 
-            host.game = game
-            guest.game = game
+            for i, player in enumerate(all_players):
+                i += 1  # Game options are 1-indexed
+                player.game = game
 
-            game.set_player_option(host.id, 'StartSpot', 1)
-            game.set_player_option(guest.id, 'StartSpot', 2)
-            game.set_player_option(host.id, 'Army', 1)
-            game.set_player_option(guest.id, 'Army', 2)
-            game.set_player_option(host.id, 'Faction', host.faction.value)
-            game.set_player_option(guest.id, 'Faction', guest.faction.value)
-            game.set_player_option(host.id, 'Color', 1)
-            game.set_player_option(guest.id, 'Color', 2)
+                # Configure game options
+                game.set_player_option(player.id, 'Faction', player.faction.value)
+                game.set_player_option(player.id, 'Color', i)
+                game.set_player_option(player.id, 'Army', i+1)
 
-            # Remembering that "Team 1" corresponds to "-": the non-team.
-            game.set_player_option(host.id, 'Team', 1)
-            game.set_player_option(guest.id, 'Team', 1)
+            for i, player in enumerate(team1):
+                game.set_player_option(player.id, 'Team', 2)
+                # Team 1 gets odd numbered start spots
+                game.set_player_option(player.id, 'StartSpot', 2 * i + 1)
+
+            for i, player in enumerate(team2):
+                game.set_player_option(player.id, 'Team', 3)
+                # Team 2 gets even numbered start spots
+                game.set_player_option(player.id, 'StartSpot', 2 * (i + 1))
 
             mapname = re.match('maps/(.+).zip', map_path).group(1)
             # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
             # Really in the future, just send a better description
             self._logger.debug("Starting ladder game: %s", game)
-            # Options shared by guest and host
+            # Options shared by all players
             options = GameLaunchOptions(
                 mapname=mapname,
-                team=1,
-                expected_players=2,
+                expected_players=len(all_players),
             )
-            await host.lobby_connection.launch_game(
-                game,
-                is_host=True,
-                options=options._replace(
-                    faction=host.faction,
-                    map_position=1
+
+            def game_options(player: Player) -> GameLaunchOptions:
+                return options._replace(
+                    team=game.get_player_option(player.id, "Team"),
+                    faction=player.faction,
+                    map_position=game.get_player_option(player.id, "StartSpot")
                 )
+
+            await host.lobby_connection.launch_game(
+                game, is_host=True, options=game_options(host)
             )
             try:
                 hosted = await game.await_hosted()
@@ -396,117 +397,52 @@ class LadderService(Service):
                 # already removed it from the queue.
 
                 # TODO: Graceful handling of NoneType errors due to disconnect
-                await guest.lobby_connection.launch_game(
-                    game,
-                    is_host=False,
-                    options=options._replace(
-                        faction=guest.faction,
-                        map_position=2
+                await asyncio.gather(*[
+                    guest.lobby_connection.launch_game(
+                        game, is_host=False, options=game_options(guest)
                     )
-                )
+                    for guest in all_guests
+                ])
+                # TODO: Wait for players to join here
             self._logger.debug("Ladder game launched successfully")
         except Exception:
             self._logger.exception("Failed to start ladder game!")
             msg = {"command": "match_cancelled"}
             with contextlib.suppress(DisconnectedError):
-                await asyncio.gather(
-                    host.send_message(msg),
-                    guest.send_message(msg)
-                )
+                await asyncio.gather(*[
+                    player.lobby_connection.send(msg) for player in all_players
+                ])
 
-    async def start_game_with_teams(self, team1: List[Player], team2: List[Player]):
-        assert team1
-        assert team2
+    def game_name(self, team1: List[Player], team2: List[Player]) -> str:
+        """
+        Generate a game name based on the players.
+        """
+        team1_name = self._team_name(team1)
+        team2_name = self._team_name(team2)
 
-        host = team1[0]
-        all_players = team1 + team2
-        all_guests = all_players[1:]
+        return f"{team1_name} Vs {team2_name}"
 
-        host.state = PlayerState.HOSTING
-        for player in all_guests:
-            player.state = PlayerState.JOINING
+    def _team_name(self, team: List[Player]):
+        """
+        Generate a team name based on the players. If all players are in the
+        same clan, use their clan name, otherwise use the name of the first
+        player.
+        """
+        assert team
 
-        played_map_ids = await self.get_game_history(
-            all_players,
-            "ladder1v1",
-            limit=config.LADDER_ANTI_REPETITION_LIMIT
-        )
-        rating = min(
-            newbie_adjusted_ladder_mean(player)
-            for player in all_players
-        )
-        pool = self.queues["ladder1v1"].get_map_pool_for_rating(rating)
-        if not pool:
-            raise RuntimeError(f"No map pool available for rating {rating}!")
-        map_id, map_name, map_path = pool.choose_map(played_map_ids)
+        player_1_name = team[0].login
 
-        # TODO: Different game mode for team matchmaker?
-        game = self.game_service.create_game(
-            game_mode='faf',
-            host=host,
-            name=self.team_game_name(team1, team2)
-        )
-        game.init_mode = InitMode.AUTO_LOBBY
-        game.map_file_path = map_path
+        if len(team) == 1:
+            return player_1_name
 
-        for i, player in enumerate(all_players):
-            i += 1  # Game options are 1-indexed
-            player.game = game
+        clans = {p.clan for p in team}
 
-            # Configure game options
-            game.set_player_option(player.id, 'Faction', player.faction)
-            game.set_player_option(player.id, 'Color', i)
-            game.set_player_option(player.id, 'Army', i+1)
+        if len(clans) == 1:
+            name = clans.pop() or player_1_name
+        else:
+            name = player_1_name
 
-        for i, player in enumerate(team1):
-            game.set_player_option(player.id, 'Team', 2)
-            # Team 1 gets odd numbered start spots
-            game.set_player_option(player.id, 'StartSpot', 2 * i + 1)
-
-        for i, player in enumerate(team2):
-            game.set_player_option(player.id, 'Team', 3)
-            # Team 2 gets even numbered start spots
-            game.set_player_option(player.id, 'StartSpot', 2 * i + 2)
-
-        mapname = re.match('maps/(.*).zip', map_path).group(1)
-
-        await host.lobby_connection.launch_game(
-            game, is_host=True, use_map=mapname
-        )
-        try:
-            await game.await_hosted()
-        except TimeoutError:
-            msg = {"command": "game_launch_timeout"}
-            await asyncio.gather(*[
-                player.lobby_connection.send(msg) for player in all_players
-            ])
-            return
-
-        await asyncio.gather(*[
-            player.lobby_connection.launch_game(
-                game, is_host=False, use_map=mapname
-            )
-            for player in all_guests
-        ])
-        # TODO: Wait for players to join here
-
-    def team_game_name(self, team1: List[Player], team2: List[Player]) -> str:
-        assert team1
-        assert team2
-
-        team1_clans = {p.clan for p in team1 if p.clan is not None}
-        team2_clans = {p.clan for p in team2 if p.clan is not None}
-
-        team1_name = team1[0].login
-        team2_name = team2[0].login
-
-        if len(team1_clans) == 1:
-            team1_name = team1_clans.pop()
-
-        if len(team2_clans) == 1:
-            team2_name = team2_clans.pop()
-
-        return f"Team {team1_name} Vs Team {team2_name}"
+        return f"Team {name}"
 
     async def get_game_history(
         self,

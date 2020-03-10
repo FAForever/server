@@ -2,17 +2,19 @@ from collections import Counter
 from typing import Dict, List, Optional, Union, ValuesView
 
 import aiocron
-import server.metrics as metrics
-from server.core import Service
-from server.db import FAFDatabase
-from server.decorators import with_logger
-from server.games import CoopGame, CustomGame, FeaturedMod, LadderGame
-from server.games.game import Game, GameState, VisibilityState
-from server.games.typedefs import EndedGameInfo, ValidityState
-from server.matchmaker import MatchmakerQueue
-from server.message_queue_service import MessageQueueService
-from server.players import Player
-from server.rating_service import RatingService
+
+from . import metrics
+from .core import Service
+from .db import FAFDatabase
+from .decorators import with_logger
+from .games import CoopGame, CustomGame, FeaturedMod, LadderGame
+from .games.game import Game, GameState, VisibilityState
+from .games.typedefs import EndedGameInfo, ValidityState
+from .matchmaker import MatchmakerQueue
+from .message_queue_service import MessageQueueService
+from .players import Player
+from .rating_service import RatingService
+from .types import Map
 
 
 @with_logger
@@ -42,9 +44,6 @@ class GameService(Service):
 
         # A set of mod ids that are allowed in ranked games (everyone loves caching)
         self.ranked_mods = set()
-
-        # Temporary proxy for the ladder service
-        self.ladder_service = None
 
         # The set of active games
         self._games: Dict[int, Game] = dict()
