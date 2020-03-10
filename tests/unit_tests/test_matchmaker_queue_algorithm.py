@@ -6,6 +6,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 from server import config
 from server.matchmaker import Search, algorithm
+from server.rating import RatingType
 from tests.conftest import make_player
 
 
@@ -453,6 +454,51 @@ def test_make_matches_communicates_failed_attempts(player_factory):
     assert s2.failed_matching_attempts == 1
 
 
+def test_make_teams_2v2_large_pool(player_factory):
+    """
+    When we have a large number of players all with similar ratings, we want
+    teams to be formed by putting players with the same rating on the same team.
+    """
+
+    # Large enough so the test is unlikely to pass by chance
+    num = 40
+
+    searches = [Search([player_factory(1000, 10, name=f"p{i}")]) for i in range(num)]
+    searches += [Search([player_factory(500, 10, name=f"p{i}")]) for i in range(num)]
+    matched, non_matched = algorithm.make_teams(searches, size=2)
+
+    assert non_matched == []
+
+    for search in matched:
+        p1, p2 = search.players
+        assert p1.ratings[RatingType.LADDER_1V1] == p2.ratings[RatingType.LADDER_1V1]
+
+
+def test_make_teams_2v2_small_pool(player_factory):
+    """
+    When we have a small number of players, we want teams to be formed by
+    distributing players of equal skill to different teams so that we can
+    maximize the chances of getting a match.
+    """
+
+    # Try a bunch of times so it is unlikely to pass by chance
+    for _ in range(20):
+        searches = [Search([player_factory(1000, 10, name=f"p{i}")]) for i in range(2)]
+        searches += [Search([player_factory(500, 10, name=f"p{i}")]) for i in range(2)]
+        matched, non_matched = algorithm.make_teams(searches, size=2)
+
+        assert non_matched == []
+
+        for search in matched:
+            p1, p2 = search.players
+            # Order doesn't matter
+            if p1.ratings[RatingType.LADDER_1V1] == (1000, 10):
+                assert p2.ratings[RatingType.LADDER_1V1] == (500, 10)
+            else:
+                assert p1.ratings[RatingType.LADDER_1V1] == (500, 10)
+                assert p2.ratings[RatingType.LADDER_1V1] == (1000, 10)
+
+
 def test_make_teams_1(player_factory):
     teams = [
         [player_factory(name="p1"), player_factory(name="p2"), player_factory(name="p3")],
@@ -487,18 +533,10 @@ def test_make_teams_3(player_factory):
 
 
 def test_make_teams_4(player_factory):
-    teams = [
-        [player_factory()] for i in range(9)
-    ]
-    teams += [
-        [player_factory(), player_factory()] for i in range(5)
-    ]
-    teams += [
-        [player_factory(), player_factory(), player_factory()] for i in range(15)
-    ]
-    teams += [
-        [player_factory(), player_factory(), player_factory(), player_factory()] for i in range(4)
-    ]
+    teams = [[player_factory()] for i in range(9)]
+    teams += [[player_factory(), player_factory()] for i in range(5)]
+    teams += [[player_factory(), player_factory(), player_factory()] for i in range(15)]
+    teams += [[player_factory(), player_factory(), player_factory(), player_factory()] for i in range(4)]
     do_test_make_teams(teams, 4, 7, {3, 2})
 
 
