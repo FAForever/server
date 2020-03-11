@@ -516,6 +516,16 @@ def test_make_teams_single_2v2_small_pool(player_factory):
                 assert p2.ratings[RatingType.LADDER_1V1] == (1000, 10)
 
 
+def test_make_buckets_performance(bench, player_factory):
+    NUM_SEARCHES = 1000
+    searches = [Search([player_factory(1500, 500, ladder_games=1)]) for _ in range(NUM_SEARCHES)]
+
+    with bench:
+        algorithm._make_buckets(searches)
+
+    assert bench.elapsed() < 0.1
+
+
 def test_make_teams_1(player_factory):
     teams = [
         [player_factory(name="p1"), player_factory(name="p2"), player_factory(name="p3")],

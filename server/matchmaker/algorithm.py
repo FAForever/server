@@ -340,12 +340,19 @@ def _make_buckets(searches: List[Search]) -> Buckets:
     while remaining:
         # Choose a pivot
         pivot, mean = random.choice(remaining)
-        # TODO: Optimize
-        buckets[pivot] = [
-            (other, other_mean) for other, other_mean in remaining
-            if other_mean >= mean - 50 and other_mean <= mean + 50
-        ]
-        remaining = [item for item in remaining if item not in buckets[pivot]]
+        low, high = mean - 50, mean + 50
+
+        # Partition remaining based on how close their means are
+        bucket, not_bucket = [], []
+        for item in remaining:
+            (_, other_mean) = item
+            if other_mean >= low and other_mean <= high:
+                bucket.append(item)
+            else:
+                not_bucket.append(item)
+
+        buckets[pivot] = bucket
+        remaining = not_bucket
 
     return buckets
 
