@@ -243,6 +243,7 @@ class CombinedSearch(Search):
 
         self.rating_type = rating_type
         self.searches = searches
+        self._failed_matching_attempts = 0
 
     @property
     def players(self) -> List[Player]:

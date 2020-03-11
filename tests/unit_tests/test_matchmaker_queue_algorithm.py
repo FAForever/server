@@ -454,7 +454,22 @@ def test_make_matches_communicates_failed_attempts(player_factory):
     assert s2.failed_matching_attempts == 1
 
 
-def test_make_teams_2v2_large_pool(player_factory):
+@pytest.mark.parametrize("make_teams_func", (
+    algorithm.make_teams,
+    algorithm.make_teams_from_single
+))
+@given(
+    searches=st_searches_list(max_players=1),
+    size=st.integers(min_value=1, max_value=10)
+)
+def test_make_teams_single_correct_size(searches, size, make_teams_func):
+    matched, non_matched = make_teams_func(searches, size)
+
+    for search in matched:
+        assert len(search.players) == size
+
+
+def test_make_teams_single_2v2_large_pool(player_factory):
     """
     When we have a large number of players all with similar ratings, we want
     teams to be formed by putting players with the same rating on the same team.
@@ -465,8 +480,9 @@ def test_make_teams_2v2_large_pool(player_factory):
 
     searches = [Search([player_factory(1000, 10, name=f"p{i}")]) for i in range(num)]
     searches += [Search([player_factory(500, 10, name=f"p{i}")]) for i in range(num)]
-    matched, non_matched = algorithm.make_teams(searches, size=2)
+    matched, non_matched = algorithm.make_teams_from_single(searches, size=2)
 
+    assert matched != []
     assert non_matched == []
 
     for search in matched:
@@ -474,7 +490,7 @@ def test_make_teams_2v2_large_pool(player_factory):
         assert p1.ratings[RatingType.LADDER_1V1] == p2.ratings[RatingType.LADDER_1V1]
 
 
-def test_make_teams_2v2_small_pool(player_factory):
+def test_make_teams_single_2v2_small_pool(player_factory):
     """
     When we have a small number of players, we want teams to be formed by
     distributing players of equal skill to different teams so that we can
@@ -484,9 +500,10 @@ def test_make_teams_2v2_small_pool(player_factory):
     # Try a bunch of times so it is unlikely to pass by chance
     for _ in range(20):
         searches = [Search([player_factory(1000, 10, name=f"p{i}")]) for i in range(2)]
-        searches += [Search([player_factory(500, 10, name=f"p{i}")]) for i in range(2)]
-        matched, non_matched = algorithm.make_teams(searches, size=2)
+        searches += [Search([player_factory(500, 10, name=f"r{i}")]) for i in range(2)]
+        matched, non_matched = algorithm.make_teams_from_single(searches, size=2)
 
+        assert matched != []
         assert non_matched == []
 
         for search in matched:

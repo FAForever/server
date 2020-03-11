@@ -8,7 +8,7 @@ from typing import Deque, Dict, Iterable, List, Optional, Tuple
 import server.metrics as metrics
 
 from ..decorators import with_logger
-from .algorithm import make_matches, make_teams
+from .algorithm import make_matches, make_teams, make_teams_from_single
 from .map_pool import MapPool
 from .pop_timer import PopTimer
 from .search import Match, Search
@@ -160,7 +160,10 @@ class MatchmakerQueue:
         searches = []
         unmatched = list(self.queue.values())
         for size in reversed(range(self.min_team_size, self.max_team_size + 1)):
-            teams, unmatched = make_teams(unmatched, size)
+            if all(len(s.players) == 1 for s in unmatched):
+                teams, unmatched = make_teams_from_single(unmatched, size)
+            else:
+                teams, unmatched = make_teams(unmatched, size)
             searches.extend(teams)
 
             if not unmatched:

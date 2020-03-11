@@ -1,16 +1,24 @@
 import itertools
 import math
+import random
 from collections import OrderedDict
 from statistics import mean
-from typing import Dict, Iterable, List, Optional, Set, Tuple
+from typing import (
+    Dict, Iterable, Iterator, List, Optional, Set, Tuple, TypeVar
+)
 
 from ..decorators import with_logger
 from .search import CombinedSearch, Match, Search
 
+T = TypeVar("T")
 WeightedGraph = Dict[Search, List[Tuple[Search, float]]]
+Buckets = Dict[Search, List[Tuple[Search, float]]]
 
 
 def make_matches(searches: Iterable[Search]) -> List[Match]:
+    """
+    Main entrypoint for the matchmaker algorithm.
+    """
     return Matchmaker(searches).find()
 
 
@@ -211,10 +219,7 @@ class _MatchingGraph:
         """
         adj_list = {search: [] for search in searches}
         # Sort all searches by players average trueskill mean
-        searches = sorted(
-            searches,
-            key=lambda s: mean(map(lambda r: r[0], s.ratings))
-        )
+        searches = sorted(searches, key=avg_mean)
         # Now compute quality with `num_to_check` nearby searches on either side
         num_to_check = int(math.log(max(16, len(searches)), 2)) // 2
         for i, search in enumerate(searches):
@@ -335,19 +340,12 @@ def _make_buckets(searches: List[Search]) -> Buckets:
     while remaining:
         # Choose a pivot
         pivot, mean = random.choice(remaining)
-        low, high = mean - 50, mean + 50
-
-        # Partition remaining based on how close their means are
-        bucket, not_bucket = [], []
-        for item in remaining:
-            (_, other_mean) = item
-            if low <= other_mean <= high:
-                bucket.append(item)
-            else:
-                not_bucket.append(item)
-
-        buckets[pivot] = bucket
-        remaining = not_bucket
+        # TODO: Optimize
+        buckets[pivot] = [
+            (other, other_mean) for other, other_mean in remaining
+            if other_mean >= mean - 50 and other_mean <= mean + 50
+        ]
+        remaining = [item for item in remaining if item not in buckets[pivot]]
 
     return buckets
 
@@ -357,7 +355,7 @@ def _distribute(
     team_size: int
 ) -> Iterator[CombinedSearch]:
     """
-    Distributes a sorted list into teams of a given size in a balanced manner.
+    Distributes a sorted list into teams of a given size in a ballanced manner.
     Player "skill" is determined by their position in the list.
 
     For example (using numbers to represent list positions)
@@ -373,7 +371,7 @@ def _distribute(
     teams: List[List[Search]] = [[] for _ in range(num_teams)]
     half = len(items) // 2
     # Rotate the second half of the list
-    rotated = items[:half] + rotate(items[half:], half // 2)
+    rotated = items[:half] + rotate(items[half:], half // 2 - 1)
     for i, (search, _) in enumerate(rotated):
         # Distribute the pairs to the appropriate team
         teams[i % num_teams].append(search)
@@ -387,7 +385,8 @@ def make_teams(
 ) -> Tuple[List[Search], List[Search]]:
     """ Tries to group as many searches together into teams of the given size as
     possible. Returns the new grouped searches, and the remaining searches that
-    were not succesfully grouped."""
+    were not succesfully grouped.
+    """
 
     searches_by_size = _make_searches_by_size(searches)
 
