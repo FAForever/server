@@ -13,7 +13,6 @@ import aiohttp
 import humanize
 import pymysql
 import semver
-import server
 import server.metrics as metrics
 from server.db import FAFDatabase
 from sqlalchemy import and_, func, select, text

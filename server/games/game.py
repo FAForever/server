@@ -7,8 +7,6 @@ from collections import defaultdict
 from enum import Enum, unique
 from typing import Any, Dict, Optional, Tuple
 
-import server.metrics as metrics
-
 from server.config import FFA_TEAM
 from server.games.game_rater import GameRater
 from server.games.game_results import GameOutcome, GameResult, GameResults

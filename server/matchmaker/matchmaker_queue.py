@@ -2,11 +2,9 @@ import asyncio
 from collections import OrderedDict, deque
 from concurrent.futures import CancelledError
 from datetime import datetime, timezone
-from statistics import mean
 from typing import Deque, Dict
 import time
 
-import server
 import server.metrics as metrics
 
 from ..decorators import with_logger

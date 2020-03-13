@@ -5,7 +5,6 @@ import struct
 from asyncio import StreamReader, StreamWriter
 from typing import Tuple
 
-import server
 import server.metrics as metrics
 from server.decorators import with_logger
 

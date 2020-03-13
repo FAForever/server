@@ -1,6 +1,5 @@
 import asyncio
 
-import server
 import server.metrics as metrics
 
 from .async_functions import gather_without_exceptions

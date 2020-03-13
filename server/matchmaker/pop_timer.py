@@ -3,7 +3,6 @@ from collections import deque
 from time import time
 from typing import Callable, Deque
 
-import server
 import server.metrics as metrics
 
 from .. import config
