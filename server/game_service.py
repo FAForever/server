@@ -174,8 +174,8 @@ class GameService:
 
     @property
     def live_games(self) -> List[Game]:
-        return [game for game in self._games.values() 
-            if game.state is GameState.LIVE]
+        return [game for game in self._games.values()
+                if game.state is GameState.LIVE]
 
     @property
     def open_games(self) -> List[Game]:
