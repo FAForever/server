@@ -252,12 +252,11 @@ async def test_shutdown_matchmaker(matchmaker_queue):
         assert False
 
 
-async def test_queue_many(player_service, matchmaker_queue, p):
+async def test_queue_many(matchmaker_queue, p):
     p1, p2, p3 = p('Dostya', player_id=1, ladder_rating=(2200, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
                  p('Brackman', player_id=2, ladder_rating=(1500, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
                  p('Zoidberg', player_id=3, ladder_rating=(1500, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
 
-    player_service.players = {p1.id: p1, p2.id: p2, p3.id: p3}
     s1 = Search([p1])
     s2 = Search([p2])
     s3 = Search([p3])
@@ -272,12 +271,11 @@ async def test_queue_many(player_service, matchmaker_queue, p):
     assert s3.is_matched
 
 
-async def test_queue_race(player_service, matchmaker_queue, p):
+async def test_queue_race(matchmaker_queue, p):
     p1, p2, p3 = p('Dostya', player_id=1, ladder_rating=(2300, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
                  p('Brackman', player_id=2, ladder_rating=(2200, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
                  p('Zoidberg', player_id=3, ladder_rating=(2300, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
 
-    player_service.players = {p1.id: p1, p2.id: p2, p3.id: p3}
 
     async def find_matches():
         await asyncio.sleep(0.01)
@@ -295,9 +293,8 @@ async def test_queue_race(player_service, matchmaker_queue, p):
     assert len(matchmaker_queue.queue) == 0
 
 
-async def test_queue_cancel(player_service, matchmaker_queue, matchmaker_players):
+async def test_queue_cancel(matchmaker_queue, matchmaker_players):
     # Turn list of players into map from ids to players.
-    player_service.players = dict(map(lambda x: (x.id, x), list(matchmaker_players)))
 
     s1, s2 = Search([matchmaker_players[1]]), Search([matchmaker_players[2]])
     matchmaker_queue.push(s1)
@@ -311,9 +308,8 @@ async def test_queue_cancel(player_service, matchmaker_queue, matchmaker_players
     assert not s2.is_matched
 
 
-async def test_queue_mid_cancel(player_service, matchmaker_queue, matchmaker_players_all_match):
+async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
     # Turn list of players into map from ids to players.
-    player_service.players = dict(map(lambda x: (x.id, x), list(matchmaker_players_all_match)))
     p0, p1, p2, p3, _ = matchmaker_players_all_match
     (s1, s2, s3) = (Search([p1]),
                     Search([p2]),
