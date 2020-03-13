@@ -1,6 +1,6 @@
 import asyncio
 
-import server
+import server.metrics as metrics
 
 from .async_functions import gather_without_exceptions
 from .config import CLIENT_MAX_WRITE_BUFFER_SIZE, CLIENT_STALL_TIME, TRACE
@@ -28,10 +28,6 @@ class ServerContext:
 
     async def listen(self, host, port):
         self._logger.debug("ServerContext.listen(%s, %s)", host, port)
-        # TODO: Use tags so we don't need to manually reset each one
-        server.stats.gauge('user.agents.None', 0)
-        server.stats.gauge('user.agents.downlords_faf_client', 0)
-        server.stats.gauge('user.agents.faf_client', 0)
 
         self._server = await asyncio.start_server(
             self.client_connected,
@@ -70,8 +66,7 @@ class ServerContext:
         )
 
     async def _do_broadcast(self, validate_fn, send_fn, message):
-        server.stats.incr('server.broadcasts')
-
+        metrics.server_broadcasts.inc()
         tasks = []
         for conn, proto in self.connections.items():
             try:
@@ -109,10 +104,10 @@ class ServerContext:
 
         try:
             await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info('peername')))
-            server.stats.gauge('user.agents.None', 1, delta=True)
+            metrics.user_connections.labels("None").inc()
             while protocol.is_connected():
                 message = await protocol.read_message()
-                with server.stats.timer('connection.on_message_received'):
+                with metrics.connection_on_message_received.time():
                     await connection.on_message_received(message)
         except ConnectionError:
             # User disconnected. Proceed to finally block for cleanup.
@@ -126,6 +121,6 @@ class ServerContext:
             self._logger.exception(ex)
         finally:
             del self.connections[connection]
-            server.stats.gauge('user.agents.{}'.format(connection.user_agent), -1, delta=True)
+            metrics.user_connections.labels(connection.user_agent).dec()
             protocol.close()
             await connection.on_connection_lost()

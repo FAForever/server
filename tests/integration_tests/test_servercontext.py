@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 from asynctest import CoroutineMock, exhaust_callbacks
-from server import ServerContext, fake_statsd
+from server import ServerContext
 from server.lobbyconnection import LobbyConnection
 from server.protocol import DisconnectedError, QDataStreamProtocol
 
@@ -123,12 +123,3 @@ async def test_connection_broken_external(context, mock_server):
 
     await asyncio.sleep(0.1)
     assert len(ctx.connections) == 0
-
-
-async def test_server_fake_statsd():
-    dummy = fake_statsd.DummyConnection()
-    # Verify that no exceptions are raised
-    with dummy.timer('a'):
-        dummy.incr('a')
-        dummy.gauge('a', 'b', delta=True)
-        dummy.Unit()

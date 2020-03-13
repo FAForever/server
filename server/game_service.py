@@ -1,7 +1,9 @@
 import asyncio
 from typing import Dict, List, Optional, Union, ValuesView
+from collections import Counter
 
 import aiocron
+import server.metrics as metrics
 from server.db import FAFDatabase
 from server.decorators import with_logger
 from server.games import CoopGame, CustomGame, FeaturedMod, LadderGame
@@ -36,7 +38,7 @@ class GameService:
         self.ladder_service = None
 
         # The set of active games
-        self.games: Dict[int, Game] = dict()
+        self._games: Dict[int, Game] = dict()
 
         # Synchronously initialise the game-id counter and static-ish-data.
         loop = asyncio.get_event_loop()
@@ -145,7 +147,7 @@ class GameService:
         }.get(game_mode, Game)
         game = game_class(**args)
 
-        self.games[game_id] = game
+        self._games[game_id] = game
 
         game.visibility = visibility
         game.password = password
@@ -153,10 +155,27 @@ class GameService:
         self.mark_dirty(game)
         return game
 
+    def update_active_game_metrics(self):
+        modes = list(self.featured_mods.keys())
+
+        game_counter = Counter(
+            (
+                game.game_mode if game.game_mode in modes else "other",
+                game.state
+            )
+            for game in self._games.values()
+        )
+
+        for state in GameState:
+            for mode in modes + ["other"]:
+                metrics.active_games.labels(mode, state.name).set(
+                    game_counter[(mode, state)]
+                )
+
     @property
     def live_games(self) -> List[Game]:
-        return [game for game in self.games.values()
-                if game.state == GameState.LIVE]
+        return [game for game in self._games.values()
+                if game.state is GameState.LIVE]
 
     @property
     def open_games(self) -> List[Game]:
@@ -172,24 +191,24 @@ class GameService:
         The client ignores everything "closed". This property fetches all such not-closed games.
         :return:
         """
-        return [game for game in self.games.values()
-                if game.state == GameState.LOBBY or game.state == GameState.LIVE]
+        return [game for game in self._games.values()
+                if game.state is GameState.LOBBY or game.state is GameState.LIVE]
 
     @property
     def all_games(self) -> ValuesView[Game]:
-        return self.games.values()
+        return self._games.values()
 
     @property
     def pending_games(self) -> List[Game]:
-        return [game for game in self.games.values()
-                if game.state == GameState.LOBBY or game.state == GameState.INITIALIZING]
+        return [game for game in self._games.values()
+                if game.state is GameState.LOBBY or game.state is GameState.INITIALIZING]
 
     def remove_game(self, game: Game):
-        if game.id in self.games:
-            del self.games[game.id]
+        if game.id in self._games:
+            del self._games[game.id]
 
     def __getitem__(self, item: int) -> Game:
-        return self.games[item]
+        return self._games[item]
 
     def __contains__(self, item):
-        return item in self.games
+        return item in self._games

@@ -2,15 +2,35 @@ import asyncio
 from collections import OrderedDict, deque
 from concurrent.futures import CancelledError
 from datetime import datetime, timezone
-from statistics import mean
 from typing import Deque, Dict
+import time
 
-import server
+import server.metrics as metrics
 
 from ..decorators import with_logger
 from .algorithm import make_matches
 from .pop_timer import PopTimer
 from .search import Match, Search
+
+
+class MatchmakerSearchTimer:
+    def __init__(self, queue_name):
+        self.queue_name = queue_name
+
+    def __enter__(self):
+        self.start_time = time.monotonic()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        total_time = time.monotonic() - self.start_time
+        if exc_type is None:
+            status = "successful"
+        elif exc_type is CancelledError:
+            status = "cancelled"
+        else:
+            status = "errored"
+
+        metric = metrics.matchmaker_searches.labels(self.queue_name, status)
+        metric.observe(total_time)
 
 
 @with_logger
@@ -52,14 +72,19 @@ class MatchmakerQueue:
             await self.timer.next_pop(lambda: len(self.queue))
 
             await self.find_matches()
-            server.stats.gauge(f"matchmaker.queue.{self.queue_name}.matches", len(self._matches))
-            if self._matches:
-                server.stats.gauge(
-                    f"matchmaker.queue.{self.queue_name}.quality",
-                    mean(map(lambda m: m[0].quality_with(m[1]), self._matches))
+
+            number_of_matches = len(self._matches)
+            metrics.matches.labels(self.queue_name).set(number_of_matches)
+
+            # TODO: Move this into algorithm, then don't need to recalculate quality_with?
+            # Probably not a major bottleneck though.
+            for search1, search2 in self._matches:
+                metrics.match_quality.labels(self.queue_name).observe(
+                    search1.quality_with(search2)
                 )
-            else:
-                server.stats.gauge(f"matchmaker.queue.{self.queue_name}.quality", 0)
+
+            number_of_unmatched_searches = len(self.queue)
+            metrics.unmatched_searches.labels(self.queue_name).set(number_of_unmatched_searches)
 
             # Any searches in the queue at this point were unable to find a
             # match this round and will have higher priority next round.
@@ -76,19 +101,19 @@ class MatchmakerQueue:
         """
         assert search is not None
 
-        with server.stats.timer('matchmaker.search'):
-            try:
+        try:
+            with MatchmakerSearchTimer(self.queue_name):
                 self.push(search)
                 await search.await_match()
-                self._logger.debug("Search complete: %s", search)
-            except CancelledError:
-                pass
-            finally:
-                # If the queue was cancelled, or some other error occurred,
-                # make sure to clean up.
-                self.game_service.mark_dirty(self)
-                if search in self.queue:
-                    del self.queue[search]
+            self._logger.debug("Search complete: %s", search)
+        except CancelledError:
+            pass
+        finally:
+            # If the queue was cancelled, or some other error occurred,
+            # make sure to clean up.
+            self.game_service.mark_dirty(self)
+            if search in self.queue:
+                del self.queue[search]
 
     async def find_matches(self) -> None:
         self._logger.info("Searching for matches: %s", self.queue_name)

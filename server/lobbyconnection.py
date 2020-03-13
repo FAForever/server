@@ -13,7 +13,7 @@ import aiohttp
 import humanize
 import pymysql
 import semver
-import server
+import server.metrics as metrics
 from server.db import FAFDatabase
 from sqlalchemy import and_, func, select, text
 
@@ -84,6 +84,7 @@ class LobbyConnection:
         self.session = int(random.randrange(0, 4294967295))
         self.protocol = None
         self.user_agent = None
+        self._version = None
 
         self._attempted_connectivity_test = False
 
@@ -104,7 +105,7 @@ class LobbyConnection:
     def on_connection_made(self, protocol: QDataStreamProtocol, peername: Address):
         self.protocol = protocol
         self.peer_address = peername
-        server.stats.incr('server.connections')
+        metrics.server_connections.inc()
 
     async def abort(self, logspam=""):
         if self.player:
@@ -120,12 +121,11 @@ class LobbyConnection:
         if self.player:
             self.player_service.remove_player(self.player)
             self.player = None
-        server.stats.incr('server.connections.aborted')
 
     async def ensure_authenticated(self, cmd):
         if not self._authenticated:
             if cmd not in ['hello', 'ask_session', 'create_account', 'ping', 'pong', 'Bottleneck']:  # Bottleneck is sent by the game during reconnect
-                server.stats.incr('server.received_messages.unauthenticated', tags={"command": cmd})
+                metrics.unauth_messages.labels(cmd).inc()
                 await self.abort("Message invalid for unauthenticated connection: %s" % cmd)
                 return False
         return True
@@ -394,7 +394,7 @@ class LobbyConnection:
         auth_error_message = "Login not found or password incorrect. They are case sensitive."
         row = await result.fetchone()
         if not row:
-            server.stats.incr('user.logins', tags={'status': 'failure'})
+            metrics.user_logins.labels("failure").inc()
             raise AuthenticationError(auth_error_message)
 
         player_id = row[t_login.c.id]
@@ -406,7 +406,7 @@ class LobbyConnection:
         ban_expiry = row[lobby_ban.c.expires_at]
 
         if dbPassword != password:
-            server.stats.incr('user.logins', tags={'status': 'failure'})
+            metrics.user_logins.labels("failure").inc()
             raise AuthenticationError(auth_error_message)
 
         now = datetime.now()
@@ -428,18 +428,24 @@ class LobbyConnection:
 
         return player_id, real_username, steamid
 
-    async def check_version(self, message):
+    def _set_user_agent_and_version(self, user_agent, version):
+        metrics.user_connections.labels(str(self.user_agent)).dec()
+        self.user_agent = user_agent
+        metrics.user_connections.labels(str(self.user_agent)).inc()
+
+        # only count a new version if it previously wasn't set
+        # to avoid double counting
+        if self._version is None and version is not None:
+            metrics.user_agent_version.labels(str(version)).inc()
+        self._version = version
+
+    async def _check_version(self):
         versionDB, updateFile = self.player_service.client_version_info
         update_msg = {
             'command': 'update',
             'update': updateFile,
             'new_version': versionDB
         }
-
-        self.user_agent = message.get('user_agent')
-        version = message.get('version')
-        server.stats.gauge('user.agents.None', -1, delta=True)
-        server.stats.gauge('user.agents.{}'.format(self.user_agent), 1, delta=True)
 
         if not self.user_agent or 'downlords-faf-client' not in self.user_agent:
             await self.send_warning(
@@ -450,7 +456,7 @@ class LobbyConnection:
                 f'<a href="{config.WWW_URL}">{config.WWW_URL}</a>'
             )
 
-        if not version or not self.user_agent:
+        if not self._version or not self.user_agent:
             update_msg['command'] = 'welcome'
             # For compatibility with 0.10.x updating mechanism
             await self.send(update_msg)
@@ -459,6 +465,7 @@ class LobbyConnection:
         # Check their client is reporting the right version number.
         if 'downlords-faf-client' not in self.user_agent:
             try:
+                version = self._version
                 if "-" in version:
                     version = version.split('-')[0]
                 if "+" in version:
@@ -542,8 +549,7 @@ class LobbyConnection:
 
         async with self._db.acquire() as conn:
             player_id, login, steamid = await self.check_user_login(conn, login, password)
-            server.stats.incr('user.logins', tags={'status': 'success'})
-            server.stats.gauge('users.online', len(self.player_service))
+            metrics.user_logins.labels("success").inc()
 
             await conn.execute(
                 "UPDATE login SET ip = %(ip)s, user_agent = %(user_agent)s, last_login = NOW() WHERE id = %(player_id)s",
@@ -673,7 +679,7 @@ class LobbyConnection:
             return
 
         game = self.game_service[game_id]  # type: Game
-        if game.state != GameState.LOBBY and game.state != GameState.LIVE:
+        if game.state is not GameState.LOBBY and game.state is not GameState.LIVE:
             await self.send_warning("The game you were connected to is no longer available")
             return
 
@@ -694,7 +700,11 @@ class LobbyConnection:
             self.player.game = game
 
     async def command_ask_session(self, message):
-        if await self.check_version(message):
+        user_agent = message.get("user_agent")
+        version = message.get("version")
+        self._set_user_agent_and_version(user_agent, version)
+
+        if await self._check_version():
             await self.send({"command": "session", "session": self.session})
 
     async def command_avatar(self, message):
@@ -746,7 +756,7 @@ class LobbyConnection:
         self._logger.debug("joining: %d with pw: %s", uuid, password)
         try:
             game = self.game_service[uuid]
-            if not game or game.state != GameState.LOBBY:
+            if not game or game.state is not GameState.LOBBY:
                 self._logger.debug("Game not in lobby state: %s", game)
                 await self.send({
                     "command": "notice",
@@ -836,7 +846,6 @@ class LobbyConnection:
             password=password
         )
         await self.launch_game(game, is_host=True)
-        server.stats.incr('game.hosted', tags={'game_mode': game_mode})
 
     async def launch_game(self, game, is_host=False, use_map=None):
         # TODO: Fix setting up a ridiculous amount of cyclic pointers here

@@ -50,7 +50,7 @@ async def game_player_scores(database, game):
 
 
 async def test_initialization(game: Game):
-    assert game.state == GameState.INITIALIZING
+    assert game.state is GameState.INITIALIZING
     assert game.enforce_rating is False
 
 
@@ -294,7 +294,7 @@ async def test_game_sim_ends_when_connections_ended_sim(game: Game, players):
 async def test_game_marked_dirty_when_timed_out(game: Game):
     game.state = GameState.INITIALIZING
     await game.timeout_game()
-    assert game.state == GameState.ENDED
+    assert game.state is GameState.ENDED
     assert game in game.game_service.dirty_games
 
 
@@ -327,7 +327,7 @@ async def test_game_launch_freezes_players(game: Game, players):
 
     await game.launch()
 
-    assert game.state == GameState.LIVE
+    assert game.state is GameState.LIVE
     assert game.players == {players.hosting, players.joining}
 
     await game.remove_game_connection(host_conn)
@@ -725,7 +725,7 @@ async def test_on_game_end_does_not_call_rate_game_for_single_player(game):
     game.launched_at = time.time()
 
     await game.on_game_end()
-    assert game.state == GameState.ENDED
+    assert game.state is GameState.ENDED
     game.rate_game.assert_not_called()
 
 
@@ -743,7 +743,7 @@ async def test_on_game_end_calls_rate_game_with_two_players(
     await game.add_result(1, 2, 'defeat', -10)
 
     await game.on_game_end()
-    assert game.state == GameState.ENDED
+    assert game.state is GameState.ENDED
     game.rate_game.assert_any_call()
 
     assert game.validity is ValidityState.VALID

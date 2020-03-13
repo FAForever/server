@@ -547,7 +547,7 @@ class GameConnection(GpgNetServerProtocol):
 
             self._logger.debug("%s.abort(%s)", self, log_message)
 
-            if self.game.state == GameState.LOBBY:
+            if self.game.state is GameState.LOBBY:
                 await self.disconnect_all_peers()
 
             self._state = GameConnectionState.ENDED

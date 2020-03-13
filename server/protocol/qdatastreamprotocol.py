@@ -5,7 +5,7 @@ import struct
 from asyncio import StreamReader, StreamWriter
 from typing import Tuple
 
-import server
+import server.metrics as metrics
 from server.decorators import with_logger
 
 from .protocol import Protocol
@@ -162,6 +162,7 @@ class QDataStreamProtocol(Protocol):
         )
 
     async def send_messages(self, messages):
+        metrics.sent_messages.inc()
         if not self.is_connected():
             raise DisconnectedError("Protocol is not connected!")
 
@@ -172,13 +173,10 @@ class QDataStreamProtocol(Protocol):
         self.writer.writelines(payload)
         await self.drain()
 
-        server.stats.incr('server.sent_messages')
-
     async def send_raw(self, data):
+        metrics.sent_messages.inc()
         if not self.is_connected():
             raise DisconnectedError("Protocol is not connected!")
 
         self.writer.write(data)
         await self.drain()
-
-        server.stats.incr('server.sent_messages')

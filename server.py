@@ -52,8 +52,8 @@ if __name__ == '__main__':
             if not done.done():
                 done.set_result(0)
 
-        if config.ENABLE_STATSD:
-            logger.info("Using StatsD server: ".format(config.STATSD_SERVER))
+        if config.ENABLE_METRICS:
+            logger.info("Using prometheus on port: {}".format(config.METRICS_PORT))
 
         # Make sure we can shutdown gracefully
         signal.signal(signal.SIGTERM, signal_handler)

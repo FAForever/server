@@ -15,8 +15,8 @@ LOG_LEVEL = logging.getLevelName(os.getenv('LOG_LEVEL', 'DEBUG'))
 # Optimum values for ladder here, using them for global as well.
 trueskill.setup(mu=1500, sigma=500, beta=240, tau=10, draw_probability=0.10)
 
-STATSD_SERVER = os.getenv('STATSD_SERVER', '127.0.0.1:8125')
-ENABLE_STATSD = os.getenv('ENABLE_STATSD', 'false').lower() == 'true'
+METRICS_PORT = int(os.getenv('METRICS_PORT', 8011))
+ENABLE_METRICS = os.getenv('ENABLE_STATSD', 'false').lower() == 'true'
 
 RULE_LINK = 'http://forums.faforever.com/forums/viewtopic.php?f=2&t=581#p5710'
 WWW_URL = 'https://www.faforever.com'

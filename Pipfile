@@ -11,7 +11,7 @@ name = "pypi"
 [packages]
 typing = "*"
 aiohttp = "*"
-aiomeasures = "*"
+prometheus_client = "*"
 docopt = "*"
 semver = "*"
 "geoip2" = "*"
