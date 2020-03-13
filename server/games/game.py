@@ -401,7 +401,9 @@ class Game:
             return (game_connection.player == self.host and
                     self.state is not GameState.LIVE)
 
-        if len(self._connections) == 0 or host_left_lobby():
+        if self.state is not GameState.ENDED and (
+            len(self._connections) == 0 or host_left_lobby()
+        ):
             await self.on_game_end()
         else:
             await self._process_pending_army_stats()

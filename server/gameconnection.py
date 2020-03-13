@@ -480,6 +480,9 @@ class GameConnection(GpgNetServerProtocol):
         self.finished_sim = True
         await self.game.check_sim_end()
 
+        if self.game.ended:
+            await self.game.on_game_end()
+
     async def handle_rehost(self, *args):
         """
         Signals that the user has rehosted the game. This is currently unused but

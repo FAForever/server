@@ -405,10 +405,24 @@ async def test_handle_action_GameEnded_ends_sim(
     game: Game,
     game_connection: GameConnection
 ):
+    game.ended = False
     await game_connection.handle_action('GameEnded', [])
 
     assert game_connection.finished_sim
-    assert game.check_sim_end.called
+    game.check_sim_end.assert_called_once()
+    game.on_game_end.assert_not_called()
+
+
+async def test_handle_action_GameEnded_ends_game(
+    game: Game,
+    game_connection: GameConnection
+):
+    game.ended = True
+    await game_connection.handle_action('GameEnded', [])
+
+    assert game_connection.finished_sim
+    game.check_sim_end.assert_called_once()
+    game.on_game_end.assert_called_once()
 
 
 async def test_handle_action_OperationComplete(ugame: Game, game_connection: GameConnection, database):
