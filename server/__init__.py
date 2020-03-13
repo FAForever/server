@@ -28,7 +28,6 @@ from .control import init as run_control_server
 from .timing import at_interval
 
 
-__version__ = '0.9.17'
 __author__ = 'Askaholic, Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard, Michel Jung'
 __contact__ = 'admin@faforever.com'
 __license__ = 'GPLv3'
