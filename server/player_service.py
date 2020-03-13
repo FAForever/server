@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional, Set
+from typing import Optional, Set, ValuesView
 
 import aiocron
 import server.metrics as metrics
@@ -46,6 +46,10 @@ class PlayerService:
     def __setitem__(self, player_id: int, player: Player):
         self._players[player_id] = player
         metrics.players_online.set(len(self._players))
+
+    @property
+    def all_players(self) -> ValuesView[Player]:
+        return self._players.values()
 
     @property
     def dirty_players(self) -> Set[Player]:

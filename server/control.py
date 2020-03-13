@@ -25,7 +25,7 @@ class ControlServer:
         return web.Response(body=body.encode(), content_type='application/json')
 
     def players(self, request):
-        body = dumps(to_dict_list(self.player_service.players.values()))
+        body = dumps(to_dict_list(self.player_service.all_players))
         return web.Response(body=body.encode(), content_type='application/json')
 
 
