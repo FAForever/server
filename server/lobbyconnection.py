@@ -752,36 +752,37 @@ class LobbyConnection:
         await self.abort_connection_if_banned()
 
         uuid = int(message['uid'])
-        password = message.get('password', None)
+        password = message.get('password')
 
         self._logger.debug("joining: %d with pw: %s", uuid, password)
         try:
             game = self.game_service[uuid]
-            if not game or game.state is not GameState.LOBBY:
-                self._logger.debug("Game not in lobby state: %s", game)
-                await self.send({
-                    "command": "notice",
-                    "style": "info",
-                    "text": "The game you are trying to join is not ready."
-                })
-                return
-
-            if game.password != password:
-                await self.send({
-                    "command": "notice",
-                    "style": "info",
-                    "text": "Bad password (it's case sensitive)"
-                })
-                return
-
-            await self.launch_game(game, is_host=False)
-
         except KeyError:
             await self.send({
                 "command": "notice",
                 "style": "info",
                 "text": "The host has left the game"
             })
+            return
+
+        if not game or game.state is not GameState.LOBBY:
+            self._logger.debug("Game not in lobby state: %s state %s", game, game.state)
+            await self.send({
+                "command": "notice",
+                "style": "info",
+                "text": "The game you are trying to join is not ready."
+            })
+            return
+
+        if game.password != password:
+            await self.send({
+                "command": "notice",
+                "style": "info",
+                "text": "Bad password (it's case sensitive)"
+            })
+            return
+
+        await self.launch_game(game, is_host=False)
 
     async def command_game_matchmaking(self, message):
         mod = str(message.get('mod', 'ladder1v1'))
