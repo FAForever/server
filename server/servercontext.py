@@ -50,11 +50,11 @@ class ServerContext:
         return connection in self.connections.keys()
 
     def write_broadcast(self, message, validate_fn=lambda a: True):
+        self._logger.log(TRACE, "]]: %s", message)
         self.write_broadcast_raw(
             QDataStreamProtocol.encode_message(message),
             validate_fn
         )
-        self._logger.log(TRACE, "]]: %s", message)
 
     def write_broadcast_raw(self, data, validate_fn=lambda a: True):
         metrics.server_broadcasts.inc()

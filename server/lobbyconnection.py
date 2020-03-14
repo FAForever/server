@@ -999,8 +999,8 @@ class LobbyConnection:
         :param message:
         :return:
         """
-        await self.protocol.send_message(message)
         self._logger.log(TRACE, ">> %s: %s", self.get_user_identifier(), message)
+        await self.protocol.send_message(message)
 
     async def drain(self):
         # TODO: Remove me, QDataStreamProtocol no longer has a drain method
