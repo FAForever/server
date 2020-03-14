@@ -243,7 +243,6 @@ class CombinedSearch(Search):
 
         self.rating_type = rating_type
         self.searches = searches
-        self._failed_matching_attempts = 0
 
     @property
     def players(self) -> List[Player]:
@@ -256,6 +255,15 @@ class CombinedSearch(Search):
     @property
     def raw_ratings(self):
         return list(itertools.chain(*[s.raw_ratings for s in self.searches]))
+
+    @property
+    def failed_matching_attempts(self) -> List[int]:
+        """Used for logging so returning a different type here is fine"""
+        return [search.failed_matching_attempts for search in self.searches]
+
+    def register_failed_matching_attempt(self):
+        for search in self.searches:
+            search.register_failed_matching_attempt()
 
     @property
     def match_threshold(self) -> float:

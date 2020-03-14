@@ -166,7 +166,7 @@ class Matchmaker(object):
 
             search.register_failed_matching_attempt()
             self._logger.debug(
-                "Search %s remained unmatched at threshold %f in attempt number %i",
+                "Search %s remained unmatched at threshold %f in attempt number %s",
                 search, search.match_threshold, search.failed_matching_attempts
             )
 
