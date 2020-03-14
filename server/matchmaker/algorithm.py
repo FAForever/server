@@ -346,7 +346,7 @@ def _make_buckets(searches: List[Search]) -> Buckets:
         bucket, not_bucket = [], []
         for item in remaining:
             (_, other_mean) = item
-            if other_mean >= low and other_mean <= high:
+            if low <= other_mean <= high:
                 bucket.append(item)
             else:
                 not_bucket.append(item)
@@ -362,7 +362,7 @@ def _distribute(
     team_size: int
 ) -> Iterator[CombinedSearch]:
     """
-    Distributes a sorted list into teams of a given size in a ballanced manner.
+    Distributes a sorted list into teams of a given size in a balanced manner.
     Player "skill" is determined by their position in the list.
 
     For example (using numbers to represent list positions)
@@ -378,7 +378,7 @@ def _distribute(
     teams: List[List[Search]] = [[] for _ in range(num_teams)]
     half = len(items) // 2
     # Rotate the second half of the list
-    rotated = items[:half] + rotate(items[half:], half // 2 - 1)
+    rotated = items[:half] + rotate(items[half:], half // 2)
     for i, (search, _) in enumerate(rotated):
         # Distribute the pairs to the appropriate team
         teams[i % num_teams].append(search)

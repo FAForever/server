@@ -578,3 +578,31 @@ def do_test_make_teams(teams, team_size, total_unmatched, unmatched_sizes):
     assert len(players_non_matched) == total_unmatched
     for players in players_non_matched:
         assert len(players) in unmatched_sizes
+
+
+def test_distribute_pairs_1(player_factory):
+    players = [player_factory(1500, 500, name=f"p{i+1}") for i in range(4)]
+    searches = [(Search([player]), 0) for player in players]
+    p1, p2, p3, p4 = players
+
+    grouped = [search.players for search in algorithm._distribute(searches, 2)]
+    assert grouped == [[p1, p4], [p2, p3]]
+
+
+def test_distribute_pairs_2(player_factory):
+    players = [player_factory(1500, 500, name=f"p{i+1}") for i in range(8)]
+    searches = [(Search([player]), 0) for player in players]
+    p1, p2, p3, p4, p5, p6, p7, p8 = players
+
+    grouped = [search.players for search in algorithm._distribute(searches, 2)]
+    assert grouped == [[p1, p4], [p2, p3], [p5, p8], [p6, p7]]
+
+
+def test_distribute_triples(player_factory):
+    players = [player_factory(1500, 500, name=f"p{i+1}") for i in range(6)]
+    searches = [(Search([player]), 0) for player in players]
+    p1, p2, p3, p4, p5, p6 = players
+
+    grouped = [search.players for search in algorithm._distribute(searches, 3)]
+
+    assert grouped == [[p1, p3, p6], [p2, p4, p5]]
