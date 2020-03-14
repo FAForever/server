@@ -8,8 +8,8 @@ class Address(NamedTuple):
     port: int
 
     @classmethod
-    def from_string(cls, s: str) -> "Address":
-        host, port = s.split(":")
+    def from_string(cls, address: str) -> "Address":
+        host, port = address.rsplit(":", 1)
         return cls(host, int(port))
 
 
