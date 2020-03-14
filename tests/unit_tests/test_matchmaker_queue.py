@@ -20,11 +20,6 @@ def p(player_factory):
 
 
 @pytest.fixture
-def matchmaker_queue(game_service):
-    return MatchmakerQueue('test_queue', game_service=mock.Mock())
-
-
-@pytest.fixture
 def matchmaker_players(p):
     return p('Dostya', player_id=1, ladder_rating=(2300, 64), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
            p('Brackman', player_id=2, ladder_rating=(1200, 72), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
@@ -184,7 +179,7 @@ async def test_search_await(matchmaker_players):
     p1, p2, _, _, _, _ = matchmaker_players
     s1, s2 = Search([p1]), Search([p2])
     assert not s1.matches_with(s2)
-    await_coro = asyncio.ensure_future(s1.await_match())
+    await_coro = asyncio.create_task(s1.await_match())
     s1.match(s2)
     await asyncio.wait_for(await_coro, 1)
     assert await_coro.done()
@@ -239,7 +234,7 @@ async def test_queue_matches(matchmaker_queue):
         await asyncio.sleep(1)
         matchmaker_queue.shutdown()
 
-    asyncio.ensure_future(call_shutdown())
+    asyncio.create_task(call_shutdown())
     collected_matches = [match async for match in matchmaker_queue.iter_matches()]
 
     assert collected_matches == matches
@@ -276,16 +271,16 @@ async def test_queue_race(matchmaker_queue, p):
                  p('Brackman', player_id=2, ladder_rating=(2200, 150), ladder_games=(config.NEWBIE_MIN_GAMES + 1)), \
                  p('Zoidberg', player_id=3, ladder_rating=(2300, 125), ladder_games=(config.NEWBIE_MIN_GAMES + 1))
 
-
     async def find_matches():
         await asyncio.sleep(0.01)
         await matchmaker_queue.find_matches()
+
     try:
         await asyncio.gather(
             asyncio.wait_for(matchmaker_queue.search(Search([p1])), 0.1),
             asyncio.wait_for(matchmaker_queue.search(Search([p2])), 0.1),
             asyncio.wait_for(matchmaker_queue.search(Search([p3])), 0.1),
-            asyncio.ensure_future(find_matches())
+            asyncio.create_task(find_matches())
         )
     except (TimeoutError, CancelledError):
         pass
@@ -314,8 +309,8 @@ async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
     (s1, s2, s3) = (Search([p1]),
                     Search([p2]),
                     Search([p3]))
-    asyncio.ensure_future(matchmaker_queue.search(s1))
-    asyncio.ensure_future(matchmaker_queue.search(s2))
+    asyncio.create_task(matchmaker_queue.search(s1))
+    asyncio.create_task(matchmaker_queue.search(s2))
     s1.cancel()
 
     async def find_matches():
@@ -324,7 +319,7 @@ async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
     try:
         await asyncio.gather(
             asyncio.wait_for(matchmaker_queue.search(s3), 0.1),
-            asyncio.ensure_future(find_matches())
+            asyncio.create_task(find_matches())
         )
     except CancelledError:
         pass

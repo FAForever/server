@@ -51,7 +51,7 @@ class OAuth2Session(object):
         if refresh_token:
             self.refresh_token = refresh_token
             expires_in = int(creds['expires_in'])
-            asyncio.ensure_future(self._schedule_refresh(expires_in - 5))
+            asyncio.create_task(self._schedule_refresh(expires_in - 5))
 
     async def _schedule_refresh(self, wait_time):
         await asyncio.sleep(wait_time)

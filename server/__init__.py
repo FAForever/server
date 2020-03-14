@@ -40,7 +40,7 @@ __all__ = (
     'LadderService',
     'run_lobby_server',
     'run_control_server',
-    'games',
+    'game_service',
     'control',
     'abc',
     'protocol'
@@ -57,27 +57,27 @@ if config.ENABLE_METRICS:
 PING_MSG = QDataStreamProtocol.pack_message('PING')
 
 
-def run_lobby_server(
+async def run_lobby_server(
     address: (str, int),
     database: FAFDatabase,
     player_service: PlayerService,
-    games: GameService,
-    loop,
+    game_service: GameService,
     nts_client: Optional[TwilioNTS],
     geoip_service: GeoIpService,
-    ladder_service: LadderService
+    ladder_service: LadderService,
+    loop,
 ) -> ServerContext:
     """
     Run the lobby server
     """
 
-    @at_interval(DIRTY_REPORT_INTERVAL)
+    @at_interval(DIRTY_REPORT_INTERVAL, loop=loop)
     async def do_report_dirties():
-        games.update_active_game_metrics()
-        dirty_games = games.dirty_games
-        dirty_queues = games.dirty_queues
+        game_service.update_active_game_metrics()
+        dirty_games = game_service.dirty_games
+        dirty_queues = game_service.dirty_queues
         dirty_players = player_service.dirty_players
-        games.clear_dirty()
+        game_service.clear_dirty()
         player_service.clear_dirty()
 
         try:
@@ -107,7 +107,7 @@ def run_lobby_server(
         for game in dirty_games:
             try:
                 if game.state == GameState.ENDED:
-                    games.remove_game(game)
+                    game_service.remove_game(game)
 
                 # So we're going to be broadcasting this to _somebody_...
                 message = game.to_dict()
@@ -131,7 +131,7 @@ def run_lobby_server(
             except Exception:
                 logger.exception("Error writing game_info %s", game.id)
 
-    @at_interval(45)
+    @at_interval(45, loop=loop)
     def ping_broadcast():
         ctx.write_broadcast_raw(PING_MSG)
 
@@ -139,12 +139,12 @@ def run_lobby_server(
         return LobbyConnection(
             database=database,
             geoip=geoip_service,
-            games=games,
+            game_service=game_service,
             nts_client=nts_client,
             players=player_service,
             ladder_service=ladder_service
         )
 
     ctx = ServerContext(make_connection, name="LobbyServer")
-    loop.run_until_complete(ctx.listen(*address))
+    await ctx.listen(*address)
     return ctx

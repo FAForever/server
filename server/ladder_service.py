@@ -10,6 +10,7 @@ from sqlalchemy import and_, func, select, text
 
 from .async_functions import gather_without_exceptions
 from .config import LADDER_ANTI_REPETITION_LIMIT
+from .core import Service
 from .db.models import game_featuredMods, game_player_stats, game_stats
 from .decorators import with_logger
 from .game_service import GameService
@@ -22,24 +23,35 @@ MapDescription = NamedTuple('Map', [("id", int), ("name", str), ("path", str)])
 
 
 @with_logger
-class LadderService:
+class LadderService(Service):
     """
     Service responsible for managing the 1v1 ladder. Does matchmaking, updates
     statistics, and launches the games.
     """
-    def __init__(self, database: FAFDatabase, games_service: GameService):
+    def __init__(
+        self,
+        database: FAFDatabase,
+        games_service: GameService,
+        loop=None
+    ):
         self._db = database
         self._informed_players: Set[Player] = set()
         self.game_service = games_service
 
+        if not loop:
+            loop = asyncio.get_running_loop()
+
         # Hardcoded here until it needs to be dynamic
         self.queues = {
-            'ladder1v1': MatchmakerQueue('ladder1v1', games_service)
+            'ladder1v1': MatchmakerQueue('ladder1v1', games_service, loop=loop)
         }
 
         self.searches: Dict[str, Dict[Player, Search]] = defaultdict(dict)
 
-        asyncio.ensure_future(self.handle_queue_matches())
+        loop.create_task(self.handle_queue_matches())
+
+    async def initialize(self):
+        pass
 
     async def start_search(self, initiator: Player, search: Search, queue_name: str):
         # TODO: Consider what happens if players disconnect while starting
@@ -70,7 +82,7 @@ class LadderService:
             "%s is searching for '%s': %s", initiator, queue_name, search
         )
 
-        asyncio.ensure_future(self.queues[queue_name].search(search))
+        asyncio.create_task(self.queues[queue_name].search(search))
 
     async def cancel_search(self, initiator: Player):
         searches = self._cancel_existing_searches(initiator)
@@ -144,7 +156,7 @@ class LadderService:
                     p1.send_message(msg),
                     p2.send_message(msg)
                 )
-                asyncio.ensure_future(self.start_game(p1, p2))
+                asyncio.create_task(self.start_game(p1, p2))
             except Exception as e:
                 self._logger.exception(
                     "Error processing match between searches %s, and %s: %s",

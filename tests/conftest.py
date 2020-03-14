@@ -206,23 +206,34 @@ def players(player_factory):
 
 
 @pytest.fixture
-def player_service(database):
-    return PlayerService(database)
+async def player_service(database):
+    player_service = PlayerService(database)
+    await player_service.initialize()
+    return player_service
 
 
 @pytest.fixture
-def game_service(database, player_service, game_stats_service):
-    return GameService(database, player_service, game_stats_service)
+async def game_service(database, player_service, game_stats_service):
+    game_service = GameService(
+        database,
+        player_service,
+        game_stats_service
+    )
+    await game_service.initialize()
+    return game_service
 
 
 @pytest.fixture
-def geoip_service() -> GeoIpService:
-    return GeoIpService()
+async def geoip_service() -> GeoIpService:
+    service = GeoIpService()
+    service.download_geoip_db = CoroutineMock()
+    await service.initialize()
+    return service
 
 
 @pytest.fixture
-def matchmaker_queue(game_service) -> MatchmakerQueue:
-    return MatchmakerQueue("ladder1v1test", game_service)
+def matchmaker_queue(game_service, event_loop) -> MatchmakerQueue:
+    return MatchmakerQueue("ladder1v1test", game_service, loop=event_loop)
 
 
 @pytest.fixture()

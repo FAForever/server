@@ -1,9 +1,9 @@
 import asyncio
+import time
 from collections import OrderedDict, deque
 from concurrent.futures import CancelledError
 from datetime import datetime, timezone
 from typing import Deque, Dict
-import time
 
 import server.metrics as metrics
 
@@ -38,7 +38,8 @@ class MatchmakerQueue:
     def __init__(
         self,
         queue_name: str,
-        game_service: "GameService"
+        game_service: "GameService",
+        loop=None
     ):
         self.game_service = game_service
         self.queue_name = queue_name
@@ -48,7 +49,9 @@ class MatchmakerQueue:
         self._is_running = True
 
         self.timer = PopTimer(self.queue_name)
-        asyncio.ensure_future(self.queue_pop_timer())
+        if not loop:
+            loop = asyncio.get_running_loop()
+        loop.create_task(self.queue_pop_timer())
         self._logger.debug("MatchmakerQueue initialized for %s", queue_name)
 
     async def iter_matches(self):
@@ -122,7 +125,7 @@ class MatchmakerQueue:
             return
 
         # Call self.match on all matches and filter out the ones that were cancelled
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         new_matches = filter(
             lambda m: self.match(m[0], m[1]),
             await loop.run_in_executor(None, make_matches, self.queue.values())

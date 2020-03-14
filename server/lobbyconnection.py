@@ -66,7 +66,7 @@ class LobbyConnection:
     def __init__(
         self,
         database: FAFDatabase,
-        games: GameService,
+        game_service: GameService,
         players: PlayerService,
         nts_client: Optional[TwilioNTS],
         geoip: GeoIpService,
@@ -74,7 +74,7 @@ class LobbyConnection:
     ):
         self._db = database
         self.geoip_service = geoip
-        self.game_service = games
+        self.game_service = game_service
         self.player_service = players
         self.nts_client = nts_client
         self.coturn_generator = CoturnHMAC()

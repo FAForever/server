@@ -71,23 +71,22 @@ def game_stats_service():
 
 
 @pytest.fixture
-def ladder_service(request, mocker, database, game_service: GameService):
+def ladder_service(
+    request,
+    mocker,
+    database,
+    event_loop,
+    game_service: GameService,
+):
     mocker.patch('server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX', 1)
 
-    ladder_service = LadderService(database, game_service)
+    ladder_service = LadderService(database, game_service, loop=event_loop)
 
     def fin():
         ladder_service.shutdown_queues()
 
     request.addfinalizer(fin)
     return ladder_service
-
-
-@pytest.fixture
-def geoip_service():
-    service = GeoIpService()
-    service.download_geoip_db = CoroutineMock()
-    return service
 
 
 def add_connected_player(game: Game, player):
@@ -123,8 +122,12 @@ def game_add_players(player_factory):
         current = len(game.players)
         players = []
         for i in range(current, current+n):
-            p = player_factory(player_id=i+1, login=f'Player {i + 1}',
-                               global_rating=(1500, 500))
+            p = player_factory(
+                player_id=i+1,
+                login=f'Player {i + 1}',
+                global_rating=(1500, 500),
+                with_lobby_connection=False
+            )
             players.append(p)
 
         add_connected_players(game, players)

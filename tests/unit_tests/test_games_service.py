@@ -6,11 +6,6 @@ from server.players import PlayerState
 pytestmark = pytest.mark.asyncio
 
 
-@pytest.fixture
-def game_service(database, players, game_stats_service):
-    return GameService(database, players, game_stats_service)
-
-
 async def test_initialization(game_service):
     assert len(game_service.dirty_games) == 0
 

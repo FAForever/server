@@ -9,6 +9,7 @@ from server.players import Player
 from server.rating import RatingType
 from sqlalchemy import and_, select
 
+from .core import Service
 from .db.models import (
     avatars, avatars_list, clan, clan_membership, global_rating,
     ladder1v1_rating, login
@@ -16,7 +17,7 @@ from .db.models import (
 
 
 @with_logger
-class PlayerService:
+class PlayerService(Service):
     def __init__(self, database: FAFDatabase):
         self._db = database
         self._players = dict()
@@ -27,9 +28,8 @@ class PlayerService:
         self.client_version_info = ('0.0.0', None)
         self._dirty_players = set()
 
-        asyncio.get_event_loop().run_until_complete(
-            asyncio.ensure_future(self.update_data())
-        )
+    async def initialize(self):
+        await self.update_data()
         self._update_cron = aiocron.crontab(
             '*/10 * * * *', func=self.update_data
         )

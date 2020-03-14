@@ -27,7 +27,7 @@ def st_searches(draw, num_players=1):
 
 
 @st.composite
-def st_searches_list(draw, min_players=1, max_players=10, max_size=50):
+def st_searches_list(draw, min_players=1, max_players=10, max_size=30):
     """Strategy for generating a list of Search objects"""
     return draw(
         st.lists(
