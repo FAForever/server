@@ -7,6 +7,7 @@ from unittest import mock
 
 import pytest
 from aiohttp import web
+from asynctest import exhaust_callbacks
 from server import GameService, PlayerService, run_lobby_server
 from server.db.models import login
 from server.ladder_service import LadderService
@@ -56,6 +57,7 @@ def lobby_server(
             ctx.close()
             ladder_service.shutdown_queues()
             event_loop.run_until_complete(ctx.wait_closed())
+            event_loop.run_until_complete(exhaust_callbacks(event_loop))
 
         request.addfinalizer(fin)
 
