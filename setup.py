@@ -13,7 +13,7 @@ def get_version() -> str:
         capture_output=True
     ).stdout.decode().strip()
 
-    m = re.match(r"v?(\d+\.\d+\.\d+)", output)
+    m = re.match(r"v?(\d+(\.\d+(\.\d+)?)?)", output)
     if not m:
         return "dev"
     return m.groups()[0]
