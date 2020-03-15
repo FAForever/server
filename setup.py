@@ -9,14 +9,17 @@ import server
 
 def get_version() -> str:
     output = subprocess.run(
-        ["git", "describe", "--abbrev=0", "--tags"],
+        ["git", "describe", "--tags"],
         capture_output=True
-    ).stdout.decode().strip()
+    ).stdout.decode().strip().split("-")
+    # Output is either v1.3.5 if the tag points to the current commit or
+    # something like this v1.3.5-11-g3b467ad if it doesn't
 
-    m = re.match(r"v?(\d+(\.\d+(\.\d+)?)?)", output)
-    if not m:
-        return "dev"
-    return m.groups()[0]
+    version = ".".join(re.findall(r"\d+", output[0])) or "dev"
+    if len(output) > 1:
+        return f"{version}-{output[-1]}"
+    else:
+        return version
 
 
 setup(
