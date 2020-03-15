@@ -1,4 +1,5 @@
 import logging
+import random
 
 import pytest
 
@@ -518,7 +519,14 @@ def test_make_teams_single_2v2_small_pool(player_factory):
 
 def test_make_buckets_performance(bench, player_factory):
     NUM_SEARCHES = 1000
-    searches = [Search([player_factory(1500, 500, ladder_games=1)]) for _ in range(NUM_SEARCHES)]
+    searches = [
+        Search([player_factory(
+            random.gauss(1500, 200),
+            500,
+            ladder_games=1
+        )])
+        for _ in range(NUM_SEARCHES)
+    ]
 
     with bench:
         algorithm._make_buckets(searches)
