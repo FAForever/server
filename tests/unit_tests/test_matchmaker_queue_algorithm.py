@@ -1,4 +1,5 @@
 import logging
+import math
 import random
 
 import pytest
@@ -479,8 +480,14 @@ def test_make_teams_single_2v2_large_pool(player_factory):
     # Large enough so the test is unlikely to pass by chance
     num = 40
 
-    searches = [Search([player_factory(1000, 10, name=f"p{i}")]) for i in range(num)]
-    searches += [Search([player_factory(500, 10, name=f"p{i}")]) for i in range(num)]
+    searches = [
+        Search([player_factory(random.uniform(950, 1050), 10, name=f"p{i}")])
+        for i in range(num)
+    ]
+    searches += [
+        Search([player_factory(random.uniform(450, 550), 10, name=f"p{i}")])
+        for i in range(num)
+    ]
     matched, non_matched = algorithm.make_teams_from_single(searches, size=2)
 
     assert matched != []
@@ -488,7 +495,10 @@ def test_make_teams_single_2v2_large_pool(player_factory):
 
     for search in matched:
         p1, p2 = search.players
-        assert p1.ratings[RatingType.LADDER_1V1] == p2.ratings[RatingType.LADDER_1V1]
+        p1_mean, _ = p1.ratings[RatingType.LADDER_1V1]
+        p2_mean, _ = p2.ratings[RatingType.LADDER_1V1]
+        #
+        assert math.fabs(p1_mean - p2_mean) <= 100
 
 
 def test_make_teams_single_2v2_small_pool(player_factory):
