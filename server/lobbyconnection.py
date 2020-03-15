@@ -875,7 +875,7 @@ class LobbyConnection:
             "args": ["/numgames", self.player.game_count[RatingType.GLOBAL]],
             "uid": game.id,
             "mod": game.game_mode,
-            # Following parameters are not used by the client yet. They are
+            # Following parameters may not be used by the client yet. They are
             # needed for setting up auto-lobby style matches such as ladder, gw,
             # and team machmaking where the server decides what these game
             # options are. Currently, options for ladder are hardcoded into the
@@ -885,7 +885,6 @@ class LobbyConnection:
             **options._asdict()
         }
 
-        # Remove args with None value
         await self.send({k: v for k, v in cmd.items() if v is not None})
 
     async def command_modvault(self, message):
