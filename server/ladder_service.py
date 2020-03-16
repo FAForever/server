@@ -50,7 +50,7 @@ class LadderService(Service):
 
         loop.create_task(self.handle_queue_matches())
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         pass
 
     async def start_search(self, initiator: Player, search: Search, queue_name: str):

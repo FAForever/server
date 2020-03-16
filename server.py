@@ -89,6 +89,7 @@ async def main():
     await asyncio.gather(
         player_service.initialize(),
         game_service.initialize(),
+        ladder_service.initialize(),
         geoip_service.initialize()
     )
 

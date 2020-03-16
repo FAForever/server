@@ -46,7 +46,7 @@ class GameService(Service):
         # The set of active games
         self._games: Dict[int, Game] = dict()
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         await self.initialise_game_counter()
         await self.update_data()
         self._update_cron = aiocron.crontab(
