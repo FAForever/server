@@ -1,6 +1,7 @@
 import json
 
 from server import config
+from server.core import Service
 from server.games import Game
 from server.games.game_results import GameOutcome
 from server.players import Player
@@ -12,7 +13,7 @@ from ..factions import Faction
 
 
 @with_logger
-class GameStatsService:
+class GameStatsService(Service):
     def __init__(self, event_service: EventService, achievement_service: AchievementService):
         self._event_service = event_service
         self._achievement_service = achievement_service

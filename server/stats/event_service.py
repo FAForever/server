@@ -1,4 +1,5 @@
 from server.api.api_accessor import ApiAccessor
+from server.core import Service
 from server.decorators import with_logger
 
 EVENT_CUSTOM_GAMES_PLAYED = 'cfa449a6-655b-48d5-9a27-6044804fe35c'
@@ -32,7 +33,7 @@ EVENT_SERAPHIM_WINS = '15b6c19a-6084-4e82-ada9-6c30e282191f'
 
 
 @with_logger
-class EventService:
+class EventService(Service):
     def __init__(self, api_accessor: ApiAccessor):
         self.api_accessor = api_accessor
 
