@@ -19,7 +19,6 @@ trueskill.setup(mu=1500, sigma=500, beta=240, tau=10, draw_probability=0.10)
 METRICS_PORT = int(os.getenv('METRICS_PORT', 8011))
 ENABLE_METRICS = os.getenv('ENABLE_STATSD', 'false').lower() == 'true'
 
-RULE_LINK = 'http://forums.faforever.com/forums/viewtopic.php?f=2&t=581#p5710'
 WWW_URL = 'https://www.faforever.com'
 CONTENT_URL = 'http://content.faforever.com'
 
