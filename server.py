@@ -23,14 +23,8 @@ from server.api.api_accessor import ApiAccessor
 from server.config import (
     DB_LOGIN, DB_NAME, DB_PASSWORD, DB_PORT, DB_SERVER, TWILIO_ACCOUNT_SID
 )
-from server.game_service import GameService
-from server.geoip_service import GeoIpService
+from server.core import create_services
 from server.ice_servers.nts import TwilioNTS
-from server.ladder_service import LadderService
-from server.player_service import PlayerService
-from server.stats.game_stats_service import (
-    AchievementService, EventService, GameStatsService
-)
 from server.timing import at_interval
 
 
@@ -77,24 +71,15 @@ async def main():
     if config.USE_API:
         api_accessor = ApiAccessor()
 
-    player_service = PlayerService(database)
-    geoip_service = GeoIpService()
+    services = create_services({
+        "api_accessor": api_accessor,
+        "database": database,
+        "loop": loop,
+    })
 
-    event_service = EventService(api_accessor)
-    achievement_service = AchievementService(api_accessor)
-    game_stats_service = GameStatsService(
-        event_service, achievement_service
-    )
-
-    game_service = GameService(database, player_service, game_stats_service)
-    ladder_service = LadderService(database, game_service)
-
-    await asyncio.gather(
-        player_service.initialize(),
-        game_service.initialize(),
-        ladder_service.initialize(),
-        geoip_service.initialize()
-    )
+    await asyncio.gather(*[
+        service.initialize() for service in services.values()
+    ])
 
     if config.PROFILING_INTERVAL > 0:
         logger.warning("Profiling enabled! This will create additional load.")
@@ -123,16 +108,19 @@ async def main():
             logging.info("Done profiling %i/%i", profiled_count, max_count)
             pr.dump_stats("profile.txt")
 
-    ctrl_server = await server.run_control_server(player_service, game_service)
+    ctrl_server = await server.run_control_server(
+        services["player_service"],
+        services["game_service"]
+    )
 
     lobby_server = await server.run_lobby_server(
         address=('', 8001),
         database=database,
-        geoip_service=geoip_service,
-        player_service=player_service,
-        game_service=game_service,
+        geoip_service=services["geo_ip_service"],
+        player_service=services["player_service"],
+        game_service=services["game_service"],
         nts_client=twilio_nts,
-        ladder_service=ladder_service,
+        ladder_service=services["ladder_service"],
         loop=loop
     )
 
@@ -149,8 +137,9 @@ async def main():
     await done
 
     # Cleanup
-    await ladder_service.shutdown()
-    await player_service.shutdown()
+    await asyncio.gather(*[
+        service.shutdown() for service in services.values()
+    ])
     await ctrl_server.shutdown()
 
     # Close DB connections
