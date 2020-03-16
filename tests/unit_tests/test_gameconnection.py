@@ -495,7 +495,7 @@ async def test_handle_action_IceMsg_for_non_existent_player(
     game_connection: GameConnection,
 ):
     # No exceptions raised
-    await game_connection.handle_action("IceMsg", [2, "the message"])
+    await game_connection.handle_action("IceMsg", [3826, "the message"])
 
 
 async def test_handle_action_IceMsg_for_non_connected(
