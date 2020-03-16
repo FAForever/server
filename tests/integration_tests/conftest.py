@@ -9,7 +9,7 @@ import asynctest
 import pytest
 from aiohttp import web
 from asynctest import exhaust_callbacks
-from server import GameService, run_lobby_server
+from server import GameService, run_control_server, run_lobby_server
 from server.db.models import login
 from server.ladder_service import LadderService
 from server.protocol import QDataStreamProtocol
@@ -28,7 +28,7 @@ def ladder_service(mocker, database, game_service, event_loop):
 
 @pytest.fixture
 async def lobby_server(
-    request, event_loop, database, player_service, game_service,
+    event_loop, database, player_service, game_service,
     geoip_service, ladder_service, policy_server
 ):
     with mock.patch(
@@ -54,19 +54,25 @@ async def lobby_server(
         )
         player_service.is_uniqueid_exempt = lambda id: True
 
-        def fin():
-            ctx.close()
-            ladder_service.shutdown_queues()
-            event_loop.run_until_complete(ctx.wait_closed())
-            event_loop.run_until_complete(exhaust_callbacks(event_loop))
-
-        request.addfinalizer(fin)
-
         yield ctx
+
+        ctx.close()
+        ladder_service.shutdown_queues()
+        await ctx.wait_closed()
+        await exhaust_callbacks(event_loop)
 
 
 @pytest.fixture
-def policy_server(event_loop):
+async def control_server(player_service, game_service):
+    server = await run_control_server(player_service, game_service)
+
+    yield server
+
+    await server.shutdown()
+
+
+@pytest.fixture
+async def policy_server():
     host = 'localhost'
     port = 6080
 
@@ -94,14 +100,13 @@ def policy_server(event_loop):
 
     runner = web.AppRunner(app)
 
-    async def start_app():
-        await runner.setup()
-        site = web.TCPSite(runner, host, port)
-        await site.start()
+    await runner.setup()
+    site = web.TCPSite(runner, host, port)
+    await site.start()
 
-    event_loop.run_until_complete(start_app())
     yield handle
-    event_loop.run_until_complete(runner.cleanup())
+
+    await runner.cleanup()
 
 
 @pytest.fixture

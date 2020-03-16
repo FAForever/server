@@ -120,7 +120,7 @@ async def main():
             logging.info("Done profiling %i/%i", profiled_count, max_count)
             pr.dump_stats("profile.txt")
 
-    ctrl_server = await server.run_control_server(loop, player_service, game_service)
+    ctrl_server = await server.run_control_server(player_service, game_service)
 
     lobby_server = await server.run_lobby_server(
         address=('', 8001),
@@ -137,8 +137,11 @@ async def main():
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
 
     await done
-    await player_service.broadcast_shutdown()
+
+    # Cleanup
     ladder_service.shutdown_queues()
+    await player_service.broadcast_shutdown()
+    await ctrl_server.shutdown()
 
     # Close DB connections
     await database.close()
