@@ -38,9 +38,6 @@ class LadderService(Service):
         self._informed_players: Set[Player] = set()
         self.game_service = games_service
 
-        if not loop:
-            loop = asyncio.get_running_loop()
-
         # Hardcoded here until it needs to be dynamic
         self.queues = {
             'ladder1v1': MatchmakerQueue('ladder1v1', games_service, loop=loop)
@@ -48,10 +45,8 @@ class LadderService(Service):
 
         self.searches: Dict[str, Dict[Player, Search]] = defaultdict(dict)
 
-        loop.create_task(self.handle_queue_matches())
-
     async def initialize(self) -> None:
-        pass
+        asyncio.create_task(self.handle_queue_matches())
 
     async def start_search(self, initiator: Player, search: Search, queue_name: str):
         # TODO: Consider what happens if players disconnect while starting

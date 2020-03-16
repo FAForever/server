@@ -71,22 +71,19 @@ def game_stats_service():
 
 
 @pytest.fixture
-def ladder_service(
-    request,
+async def ladder_service(
     mocker,
     database,
     event_loop,
     game_service: GameService,
 ):
     mocker.patch('server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX', 1)
-
     ladder_service = LadderService(database, game_service, loop=event_loop)
+    await ladder_service.initialize()
 
-    def fin():
-        ladder_service.shutdown_queues()
+    yield ladder_service
 
-    request.addfinalizer(fin)
-    return ladder_service
+    ladder_service.shutdown_queues()
 
 
 def add_connected_player(game: Game, player):

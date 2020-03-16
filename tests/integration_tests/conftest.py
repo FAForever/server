@@ -21,9 +21,14 @@ def mock_games():
 
 
 @pytest.fixture
-def ladder_service(mocker, database, game_service, event_loop):
+async def ladder_service(mocker, database, game_service, event_loop):
     mocker.patch('server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX', 1)
-    return LadderService(database, game_service, loop=event_loop)
+    ladder_service = LadderService(database, game_service, loop=event_loop)
+    await ladder_service.initialize()
+
+    yield ladder_service
+
+    ladder_service.shutdown_queues()
 
 
 @pytest.fixture
@@ -35,13 +40,6 @@ async def lobby_server(
         'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
         f'http://{policy_server.host}:{policy_server.port}'
     ):
-        await asyncio.gather(
-            player_service.initialize(),
-            game_service.initialize(),
-            ladder_service.initialize(),
-            geoip_service.initialize()
-        )
-
         ctx = await run_lobby_server(
             address=('127.0.0.1', None),
             database=database,
