@@ -690,8 +690,7 @@ class LobbyConnection:
 
         game.add_game_connection(self.game_connection)
         self.player.state = PlayerState.PLAYING
-        if not hasattr(self.player, "game"):
-            self.player.game = game
+        self.player.game = game
 
     async def command_ask_session(self, message):
         if await self.check_version(message):
@@ -958,7 +957,7 @@ class LobbyConnection:
         )
 
         if self.nts_client:
-            ice_servers = ice_servers + await self.nts_client.server_tokens(ttl=ttl)
+            ice_servers += await self.nts_client.server_tokens(ttl=ttl)
 
         await self.send({
             'command': 'ice_servers',

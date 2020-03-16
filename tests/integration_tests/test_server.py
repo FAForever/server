@@ -187,23 +187,6 @@ async def test_host_missing_fields(event_loop, lobby_server, player_service):
     assert msg['featured_mod'] == 'faf'
 
 
-@fast_forward(5)
-async def test_coop_list(lobby_server):
-    _, _, proto = await connect_and_sign_in(
-        ('test', 'test_password'),
-        lobby_server
-    )
-
-    await read_until_command(proto, 'game_info')
-
-    await proto.send_message({"command": "coop_list"})
-
-    msg = await read_until_command(proto, "coop_info")
-    assert "name" in msg
-    assert "description" in msg
-    assert "filename" in msg
-
-
 @pytest.mark.parametrize("command", ["game_host", "game_join"])
 async def test_server_ban_prevents_hosting(lobby_server, database, command):
     """
@@ -236,3 +219,40 @@ async def test_server_ban_prevents_hosting(lobby_server, database, command):
         'text': 'You are banned from FAF forever.\n Reason :\n Test live ban'
     }
     proto.close()
+
+
+@fast_forward(5)
+async def test_coop_list(lobby_server):
+    _, _, proto = await connect_and_sign_in(
+        ('test', 'test_password'),
+        lobby_server
+    )
+
+    await read_until_command(proto, 'game_info')
+
+    await proto.send_message({"command": "coop_list"})
+
+    msg = await read_until_command(proto, "coop_info")
+    assert "name" in msg
+    assert "description" in msg
+    assert "filename" in msg
+
+
+async def test_ice_servers_empty(lobby_server):
+    _, _, proto = await connect_and_sign_in(
+        ('test', 'test_password'),
+        lobby_server
+    )
+
+    await read_until_command(proto, 'game_info')
+
+    await proto.send_message({"command": "ice_servers"})
+
+    msg = await read_until_command(proto, "ice_servers")
+
+    # By default the server config should not have any ice servers
+    assert msg == {
+        'command': 'ice_servers',
+        'ice_servers': [],
+        'ttl': 86400
+    }
