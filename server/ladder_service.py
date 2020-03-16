@@ -31,21 +31,23 @@ class LadderService(Service):
     def __init__(
         self,
         database: FAFDatabase,
-        games_service: GameService,
-        loop=None
+        game_service: GameService,
     ):
         self._db = database
         self._informed_players: Set[Player] = set()
-        self.game_service = games_service
+        self.game_service = game_service
 
         # Hardcoded here until it needs to be dynamic
         self.queues = {
-            'ladder1v1': MatchmakerQueue('ladder1v1', games_service, loop=loop)
+            'ladder1v1': MatchmakerQueue('ladder1v1', game_service)
         }
 
         self.searches: Dict[str, Dict[Player, Search]] = defaultdict(dict)
 
     async def initialize(self) -> None:
+        await asyncio.gather(*[
+            queue.initialize() for queue in self.queues.values()
+        ])
         asyncio.create_task(self.handle_queue_matches())
 
     async def start_search(self, initiator: Player, search: Search, queue_name: str):

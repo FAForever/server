@@ -232,8 +232,9 @@ async def geoip_service() -> GeoIpService:
 
 
 @pytest.fixture
-def matchmaker_queue(game_service, event_loop) -> MatchmakerQueue:
-    return MatchmakerQueue("ladder1v1test", game_service, loop=event_loop)
+def matchmaker_queue(game_service) -> MatchmakerQueue:
+    queue = MatchmakerQueue("ladder1v1test", game_service)
+    return queue
 
 
 @pytest.fixture()

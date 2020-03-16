@@ -38,8 +38,7 @@ class MatchmakerQueue:
     def __init__(
         self,
         queue_name: str,
-        game_service: "GameService",
-        loop=None
+        game_service: "GameService"
     ):
         self.game_service = game_service
         self.queue_name = queue_name
@@ -49,10 +48,11 @@ class MatchmakerQueue:
         self._is_running = True
 
         self.timer = PopTimer(self.queue_name)
-        if not loop:
-            loop = asyncio.get_running_loop()
-        loop.create_task(self.queue_pop_timer())
         self._logger.debug("MatchmakerQueue initialized for %s", queue_name)
+
+    async def initialize(self):
+        loop = asyncio.get_running_loop()
+        loop.create_task(self.queue_pop_timer())
 
     async def iter_matches(self):
         """ Asynchronously yields matches as they become available """

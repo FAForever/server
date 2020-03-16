@@ -21,9 +21,9 @@ def mock_games():
 
 
 @pytest.fixture
-async def ladder_service(mocker, database, game_service, event_loop):
+async def ladder_service(mocker, database, game_service):
     mocker.patch('server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX', 1)
-    ladder_service = LadderService(database, game_service, loop=event_loop)
+    ladder_service = LadderService(database, game_service)
     await ladder_service.initialize()
 
     yield ladder_service
