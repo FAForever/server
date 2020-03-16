@@ -54,8 +54,8 @@ TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
 TWILIO_TOKEN = os.getenv("TWILIO_TOKEN", "")
 TWILIO_TTL = os.getenv("TWILIO_TTL", 3600*24)
 
-COTURN_HOSTS = os.getenv('COTURN_HOSTS', "").split(',')
-COTURN_KEYS = os.getenv('COTURN_KEYS', "").split(',')
+COTURN_HOSTS = list(filter(None, os.getenv('COTURN_HOSTS', "").split(',')))
+COTURN_KEYS = list(filter(None, os.getenv('COTURN_KEYS', "").split(',')))
 
 GEO_IP_DATABASE_PATH = os.getenv("GEO_IP_DATABASE_PATH", "GeoLite2-Country.mmdb")
 GEO_IP_DATABASE_URL = os.getenv(

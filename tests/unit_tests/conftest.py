@@ -31,7 +31,6 @@ def game_connection(
     player_service,
     event_loop
 ):
-    from server import GameConnection
     conn = GameConnection(
         database=database,
         game=game,
