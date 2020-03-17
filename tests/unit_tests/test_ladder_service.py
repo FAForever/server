@@ -1,11 +1,11 @@
 import asyncio
-import random
 from unittest import mock
 
 import pytest
 
 from asynctest import CoroutineMock, exhaust_callbacks
-from server import LadderService
+from server import GameService, LadderService
+from server.ladder_service import game_name
 from server.matchmaker import Search
 from server.players import PlayerState
 from server.types import Map
@@ -414,7 +414,7 @@ async def test_game_name(ladder_service: LadderService, player_factory):
     p3 = player_factory(login='Rhiza', clan="AEO")
     p4 = player_factory(login='Burke', clan="AEO")
 
-    assert ladder_service.game_name([p1, p2], [p3, p4]) == "Team CYB Vs Team AEO"
+    assert game_name([p1, p2], [p3, p4]) == "Team CYB Vs Team AEO"
 
 
 async def test_game_name_conflicting(
@@ -425,7 +425,7 @@ async def test_game_name_conflicting(
     p3 = player_factory(login='Rhiza', clan="AEO")
     p4 = player_factory(login='Hall', clan="UEF")
 
-    assert ladder_service.game_name([p1, p2], [p3, p4]) == "Team CYB Vs Team Rhiza"
+    assert game_name([p1, p2], [p3, p4]) == "Team CYB Vs Team Rhiza"
 
 
 async def test_game_name_no_clan(
@@ -436,7 +436,7 @@ async def test_game_name_no_clan(
     p3 = player_factory(login='Rhiza', clan=None)
     p4 = player_factory(login='Burke', clan=None)
 
-    assert ladder_service.game_name([p1, p2], [p3, p4]) == "Team Dostya Vs Team Rhiza"
+    assert game_name([p1, p2], [p3, p4]) == "Team Dostya Vs Team Rhiza"
 
 
 async def test_game_name_1v1(
@@ -445,7 +445,7 @@ async def test_game_name_1v1(
     p1 = player_factory(login='Dostya', clan="CYB")
     p2 = player_factory(login='Rhiza', clan=None)
 
-    assert ladder_service.game_name([p1], [p2]) == "Dostya Vs Rhiza"
+    assert game_name([p1], [p2]) == "Dostya Vs Rhiza"
 
 
 async def test_game_name_uneven(
@@ -455,7 +455,7 @@ async def test_game_name_uneven(
     p2 = player_factory(login='QAI', clan="CYB")
     p3 = player_factory(login='Rhiza', clan=None)
 
-    assert ladder_service.game_name([p1, p2], [p3]) == "Team CYB Vs Rhiza"
+    assert game_name([p1, p2], [p3]) == "Team CYB Vs Rhiza"
 
 
 async def test_inform_player_message(

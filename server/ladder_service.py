@@ -341,7 +341,7 @@ class LadderService(Service):
             game = self.game_service.create_game(
                 game_mode=queue,
                 host=host,
-                name=self.game_name(team1, team2)
+                name=game_name(team1, team2)
             )
             game.init_mode = InitMode.AUTO_LOBBY
             game.map_file_path = map_path
@@ -413,37 +413,6 @@ class LadderService(Service):
                     player.lobby_connection.send(msg) for player in all_players
                 ])
 
-    def game_name(self, team1: List[Player], team2: List[Player]) -> str:
-        """
-        Generate a game name based on the players.
-        """
-        team1_name = self._team_name(team1)
-        team2_name = self._team_name(team2)
-
-        return f"{team1_name} Vs {team2_name}"
-
-    def _team_name(self, team: List[Player]):
-        """
-        Generate a team name based on the players. If all players are in the
-        same clan, use their clan name, otherwise use the name of the first
-        player.
-        """
-        assert team
-
-        player_1_name = team[0].login
-
-        if len(team) == 1:
-            return player_1_name
-
-        clans = {p.clan for p in team}
-
-        if len(clans) == 1:
-            name = clans.pop() or player_1_name
-        else:
-            name = player_1_name
-
-        return f"Team {name}"
-
     async def get_game_history(
         self,
         players: List[Player],
@@ -481,6 +450,39 @@ class LadderService(Service):
     async def shutdown(self):
         for queue in self.queues.values():
             queue.shutdown()
+
+
+def game_name(team1: List[Player], team2: List[Player]) -> str:
+    """
+    Generate a game name based on the players.
+    """
+    team1_name = _team_name(team1)
+    team2_name = _team_name(team2)
+
+    return f"{team1_name} Vs {team2_name}"
+
+
+def _team_name(team: List[Player]) -> str:
+    """
+    Generate a team name based on the players. If all players are in the
+    same clan, use their clan name, otherwise use the name of the first
+    player.
+    """
+    assert team
+
+    player_1_name = team[0].login
+
+    if len(team) == 1:
+        return player_1_name
+
+    clans = {p.clan for p in team}
+
+    if len(clans) == 1:
+        name = clans.pop() or player_1_name
+    else:
+        name = player_1_name
+
+    return f"Team {name}"
 
 
 def newbie_adjusted_ladder_mean(player: Player):
