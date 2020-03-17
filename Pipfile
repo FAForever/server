@@ -1,6 +1,6 @@
 [scripts]
 devserver = "env LOG_LEVEL=TRACE python server.py"
-tests = "scripts/pipenv_run_tests.sh"
+tests = "scripts/run_tests_with_coverage.sh"
 vulture = "vulture server.py server/ --sort-by-size"
 
 [[source]]
