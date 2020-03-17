@@ -852,6 +852,12 @@ async def test_persist_results_called_with_two_players(game, game_add_players):
 
     await game.load_results()
     assert game.get_army_score(1) == 5
+    for player in game.players:
+        if game.get_player_option(player.id, 'Army') == 1:
+            assert game.get_army_result(player) is GameOutcome.VICTORY
+        else:
+            assert game.get_army_result(player) is GameOutcome.UNKNOWN
+
 
 
 async def test_persist_results_called_for_unranked(game, game_add_players):
@@ -865,9 +871,19 @@ async def test_persist_results_called_for_unranked(game, game_add_players):
 
     assert game.get_army_score(1) == 5
     assert len(game.players) == 2
+    for player in game.players:
+        if game.get_player_option(player.id, 'Army') == 1:
+            assert game.get_army_result(player) is GameOutcome.VICTORY
+        else:
+            assert game.get_army_result(player) is GameOutcome.UNKNOWN
 
     await game.load_results()
     assert game.get_army_score(1) == 5
+    for player in game.players:
+        if game.get_player_option(player.id, 'Army') == 1:
+            assert game.get_army_result(player) is GameOutcome.VICTORY
+        else:
+            assert game.get_army_result(player) is GameOutcome.UNKNOWN
 
 
 async def test_get_army_score_conflicting_results_clear_winner(
@@ -1045,8 +1061,8 @@ async def test_game_outcomes_conflicting(game: Game, database, players):
 
     host_outcome = game.get_army_result(players.hosting)
     guest_outcome = game.get_army_result(players.joining)
-    assert host_outcome is GameOutcome.UNKNOWN
-    assert guest_outcome is GameOutcome.UNKNOWN
+    assert host_outcome is GameOutcome.CONFLICTING
+    assert guest_outcome is GameOutcome.CONFLICTING
     # No guarantees on scores for conflicting results.
 
 

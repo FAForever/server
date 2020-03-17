@@ -475,21 +475,27 @@ class Game:
         scores = {}
         for player in self.players:
             army = self.get_player_option(player.id, 'Army')
+            outcome = self.get_army_result(player)
             score = self.get_army_score(army)
-            scores[player] = score
+            scores[player] = [score, outcome]
             self._logger.info(
-                'Result for army %s, player: %s: %s', army, player, score
+                'Result for army %s, player: %s: score %s, outcome %s',
+                army, player, score, outcome
             )
 
         async with self._db.acquire() as conn:
             rows = []
-            for player, score in scores.items():
-                self._logger.info("Score for player %s: %s", player, score)
-                rows.append((score, self.id, player.id))
+            for player, (score, outcome) in scores.items():
+                self._logger.info(
+                    "Score for player %s: score %s, outcome %s",
+                    player, score, outcome,
+                )
+                rows.append((score, outcome.name.upper(), self.id, player.id))
 
             await conn.execute(
                 "UPDATE game_player_stats "
-                "SET `score`=%s, `scoreTime`=NOW() "
+                "SET `score`=%s, `scoreTime`=NOW(), "
+                "`result`=%s "
                 "WHERE `gameId`=%s AND `playerId`=%s", rows
             )
 
