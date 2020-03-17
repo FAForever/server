@@ -181,4 +181,12 @@ class QDataStreamProtocol(Protocol):
             raise DisconnectedError("Protocol is not connected!")
 
         self.writer.write(data)
-        await self.drain()
+        # NOTE: This try/except is for debugging purposes only. In the log we
+        # are seeing "Task exception was never retrieved" errors for
+        # `send_message` and `send_raw` but the stack trace does not tell us
+        # enough to determine which tasks are generating them. We include the
+        # message contents here to help determine the cause.
+        try:
+            await self.drain()
+        except DisconnectedError as e:
+            raise DisconnectedError(data) from e
