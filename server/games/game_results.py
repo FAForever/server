@@ -91,8 +91,8 @@ class GameResults(Mapping):
             return outcomes.pop()
         elif len(outcomes) > 1:
             self._logger.info(
-                "Multiple outcomes for game %s army %s: %s", self._game_id,
-                army, list(outcomes)
+                "Multiple outcomes for game %s army %s: %s",
+                self._game_id, army, list(outcomes)
             )
             return GameOutcome.CONFLICTING
 
@@ -143,11 +143,6 @@ class GameResults(Mapping):
             async for row in rows:
                 startspot, score = row[0], row[1]
                 # FIXME: Assertion about startspot == army
-                # FIXME: Reporter not retained in database
-                # TODO: I don't understand the comment above
-                # there is no unique reporter for a score,
-                # only a consolidated score is saved in the database
-                # Is this asking us to save _all_ reports in the DB?
                 outcome = GameOutcome[row[2]]
                 result = GameResult(0, startspot, outcome, score)
                 results.add(result)

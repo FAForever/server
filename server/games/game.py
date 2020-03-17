@@ -477,7 +477,7 @@ class Game:
             army = self.get_player_option(player.id, 'Army')
             outcome = self.get_player_outcome(player)
             score = self.get_army_score(army)
-            scores[player] = [score, outcome]
+            scores[player] = (score, outcome)
             self._logger.info(
                 'Result for army %s, player: %s: score %s, outcome %s',
                 army, player, score, outcome
@@ -494,8 +494,7 @@ class Game:
 
             await conn.execute(
                 "UPDATE game_player_stats "
-                "SET `score`=%s, `scoreTime`=NOW(), "
-                "`result`=%s "
+                "SET `score`=%s, `scoreTime`=NOW(), `result`=%s "
                 "WHERE `gameId`=%s AND `playerId`=%s", rows
             )
 
