@@ -65,7 +65,7 @@ Run
     $ pipenv run tests
 
 (or `sudo pipenv run tests`, 
-if some tests error with `Permission denied)
+if some tests error with `Permission denied`)
 ## Other tools
 
 You can check for possible unused code with `vulture` by running:
