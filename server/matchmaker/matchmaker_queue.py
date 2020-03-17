@@ -160,10 +160,17 @@ class MatchmakerQueue:
         searches = []
         unmatched = list(self.queue.values())
         for size in reversed(range(self.min_team_size, self.max_team_size + 1)):
-            if all(len(s.players) == 1 for s in unmatched):
-                teams, unmatched = make_teams_from_single(unmatched, size)
+            need_team = []
+            for search in unmatched:
+                if len(search.players) == size:
+                    searches.append(search)
+                else:
+                    need_team.append(search)
+
+            if all(len(s.players) == 1 for s in need_team):
+                teams, unmatched = make_teams_from_single(need_team, size)
             else:
-                teams, unmatched = make_teams(unmatched, size)
+                teams, unmatched = make_teams(need_team, size)
             searches.extend(teams)
 
             if not unmatched:
