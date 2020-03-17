@@ -452,20 +452,18 @@ class LadderService(Service):
             queue.shutdown()
 
 
-def game_name(team1: List[Player], team2: List[Player]) -> str:
+def game_name(*teams: List[Player]) -> str:
     """
     Generate a game name based on the players.
     """
-    team1_name = _team_name(team1)
-    team2_name = _team_name(team2)
 
-    return f"{team1_name} Vs {team2_name}"
+    return " Vs ".join(_team_name(team) for team in teams)
 
 
 def _team_name(team: List[Player]) -> str:
     """
     Generate a team name based on the players. If all players are in the
-    same clan, use their clan name, otherwise use the name of the first
+    same clan, use their clan tag, otherwise use the name of the first
     player.
     """
     assert team
@@ -475,7 +473,7 @@ def _team_name(team: List[Player]) -> str:
     if len(team) == 1:
         return player_1_name
 
-    clans = {p.clan for p in team}
+    clans = {player.clan for player in team}
 
     if len(clans) == 1:
         name = clans.pop() or player_1_name
