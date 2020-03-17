@@ -14,7 +14,7 @@ before_install:
   - git clone https://github.com/FAForever/faf-stack.git faf-stack
       && pushd faf-stack
       && git checkout v20.2.7
-      && source .env.template
+      && export $(egrep -v '^#' .env.template | xargs)
       && cp -r config.template config
       && ./scripts/init-db.sh
       && popd
