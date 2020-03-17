@@ -28,6 +28,7 @@ from server.player_service import PlayerService
 from server.stats.game_stats_service import (
     AchievementService, EventService, GameStatsService
 )
+from server.timing import at_interval
 
 if __name__ == '__main__':
     args = docopt(__doc__, version='FAF Server')
@@ -73,6 +74,28 @@ if __name__ == '__main__':
         loop.run_until_complete(db_fut)
 
         players_online = PlayerService(database)
+
+        if config.PROFILING_INTERVAL > 0:
+            logger.warning("Profiling enabled! This can cause significant load.")
+            import cProfile
+            pr = cProfile.Profile()
+            profiled_count = 0
+
+            @at_interval(config.PROFILING_INTERVAL, loop=loop)
+            async def run_profiler():
+                global profiled_count
+
+                if profiled_count >= 200:
+                    return
+
+                logger.info("Starting profiler")
+                pr.enable()
+                await asyncio.sleep(2)
+                pr.disable()
+                profiled_count += 1
+
+                logging.info("Done profiling %i/200", profiled_count)
+                pr.dump_stats("profile.txt")
 
         twilio_nts = None
         if TWILIO_ACCOUNT_SID:
