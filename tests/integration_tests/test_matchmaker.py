@@ -64,8 +64,13 @@ async def test_game_matchmaking(lobby_server):
     msg1 = await read_until_command(proto1, 'game_launch')
 
     assert msg1['uid'] == msg2['uid']
-    assert msg1['mod'] == 'ladder1v1'
-    assert msg2['mod'] == 'ladder1v1'
+    assert msg1['mod'] == msg2['mod'] == 'ladder1v1'
+    assert msg1['mapname'] == msg2['mapname']
+    assert msg1['team'] == msg2['team'] == 1
+    assert msg1['faction'] == msg2['faction'] == 1  # faction 1 is uef
+    assert msg1['expected_players'] == msg2['expected_players'] == 2
+    assert msg1['map_position'] == 1
+    assert msg2['map_position'] == 2
 
 
 @fast_forward(50)

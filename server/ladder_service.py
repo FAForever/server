@@ -16,6 +16,7 @@ from .game_service import GameService
 from .matchmaker import MatchmakerQueue, Search
 from .players import Player, PlayerState
 from .protocol import DisconnectedError
+from .types import GameLaunchOptions
 
 MapDescription = NamedTuple('Map', [("id", int), ("name", str), ("path", str)])
 
@@ -188,23 +189,39 @@ class LadderService:
             # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
             # Really in the future, just send a better description
             self._logger.debug("Starting ladder game: %s", game)
-            await host.lobby_connection.launch_game(game, is_host=True, use_map=mapname)
+            # Options shared by guest and host
+            options = GameLaunchOptions(
+                mapname=mapname,
+                team=1,
+                expected_players=2,
+            )
+            await host.lobby_connection.launch_game(
+                game,
+                is_host=True,
+                options=options._replace(
+                    faction=host.faction,
+                    map_position=1
+                )
+            )
             try:
                 hosted = await game.await_hosted()
                 if not hosted:
                     raise TimeoutError("Host left lobby")
             finally:
-                self._logger.debug("Ladder game failed to launch due to a timeout")
-                # TODO: Uncomment this return once the client supports
-                # `game_launch_cancelled`. Until then, returning here will cause
-                # the client to think it is searching for ladder, even though
-                # the server has already removed it from the queue.
-
-                # return
+                # TODO: Once the client supports `game_launch_cancelled`, don't
+                # send `launch_game` to the client if the host timed out. Until
+                # then, failing to send `launch_game` will cause the client to
+                # think it is searching for ladder, even though the server has
+                # already removed it from the queue.
 
                 # TODO: Graceful handling of NoneType errors due to disconnect
                 await guest.lobby_connection.launch_game(
-                    game, is_host=False, use_map=mapname
+                    game,
+                    is_host=False,
+                    options=options._replace(
+                        faction=guest.faction,
+                        map_position=2
+                    )
                 )
             self._logger.debug("Ladder game launched successfully")
         except Exception:
