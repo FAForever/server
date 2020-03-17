@@ -60,12 +60,12 @@ deployment use `faf-stack`*
 
 ## Running the tests
 
-Some of the tests require the database to be pre-populated with test data. Download
-the latest `test-data.sql` from [FAForever/db](https://github.com/FAForever/db
-into the root of this project, then run:
+Run
 
     $ pipenv run tests
 
+(or `sudo pipenv run tests`, 
+if some tests error with `Permission denied`)
 ## Other tools
 
 You can check for possible unused code with `vulture` by running:
