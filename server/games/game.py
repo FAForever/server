@@ -475,7 +475,7 @@ class Game:
         scores = {}
         for player in self.players:
             army = self.get_player_option(player.id, 'Army')
-            outcome = self.get_army_result(player)
+            outcome = self.get_player_outcome(player)
             score = self.get_army_score(army)
             scores[player] = [score, outcome]
             self._logger.info(
@@ -542,7 +542,7 @@ class Game:
         table = f'{rating.value}_rating'
 
         if rating is RatingType.LADDER_1V1:
-            is_victory = self.get_army_result(player) is GameOutcome.VICTORY
+            is_victory = self.get_player_outcome(player) is GameOutcome.VICTORY
             await conn.execute(
                 "UPDATE ladder1v1_rating "
                 "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1, winGames = winGames + %s "
@@ -819,7 +819,7 @@ class Game:
     def get_army_score(self, army):
         return self._results.score(army)
 
-    def get_army_result(self, player):
+    def get_player_outcome(self, player):
         army = self.get_player_option(player.id, 'Army')
         if army is None:
             return GameOutcome.UNKNOWN
@@ -844,7 +844,7 @@ class Game:
             )
 
         outcome_by_player = {
-            player: self.get_army_result(player)
+            player: self.get_player_outcome(player)
             for player in self.players
         }
 

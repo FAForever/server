@@ -46,7 +46,7 @@ class GameStatsService:
             self._logger.warning("Player %s reported stats of a game he was not part of", player.login)
             return
 
-        army_result = game.get_army_result(player)
+        army_result = game.get_player_outcome(player)
         if army_result is GameOutcome.UNKNOWN:
             self._logger.warning("No army result available for player %s", player.login)
             return
