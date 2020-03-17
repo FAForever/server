@@ -93,6 +93,13 @@ class QDataStreamProtocol(Protocol):
             msg += QDataStreamProtocol.pack_qstring(arg)
         return QDataStreamProtocol.pack_block(msg)
 
+    @staticmethod
+    def encode_message(message) -> bytes:
+        """
+        Encodes a python object as raw bytes
+        """
+        return QDataStreamProtocol.pack_message(json_encoder.encode(message))
+
     async def read_message(self):
         """
         Read a message from the stream
@@ -157,19 +164,14 @@ class QDataStreamProtocol(Protocol):
                 raise DisconnectedError("Protocol connection lost!") from e
 
     async def send_message(self, message: dict):
-        await self.send_raw(
-            self.pack_message(json_encoder.encode(message))
-        )
+        await self.send_raw(self.encode_message(message))
 
     async def send_messages(self, messages):
         metrics.sent_messages.inc()
         if not self.is_connected():
             raise DisconnectedError("Protocol is not connected!")
 
-        payload = [
-            self.pack_message(json_encoder.encode(msg))
-            for msg in messages
-        ]
+        payload = [self.encode_message(msg) for msg in messages]
         self.writer.writelines(payload)
         await self.drain()
 
