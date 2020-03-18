@@ -76,16 +76,17 @@ if __name__ == '__main__':
         players_online = PlayerService(database)
 
         if config.PROFILING_INTERVAL > 0:
-            logger.warning("Profiling enabled! This can cause significant load.")
+            logger.warning("Profiling enabled! This will create additional load.")
             import cProfile
             pr = cProfile.Profile()
             profiled_count = 0
+            max_count = 200
 
             @at_interval(config.PROFILING_INTERVAL, loop=loop)
             async def run_profiler():
                 global profiled_count
 
-                if profiled_count >= 200:
+                if profiled_count >= max_count or len(players_online) > 1000:
                     return
 
                 logger.info("Starting profiler")
@@ -94,7 +95,7 @@ if __name__ == '__main__':
                 pr.disable()
                 profiled_count += 1
 
-                logging.info("Done profiling %i/200", profiled_count)
+                logging.info("Done profiling %i/%i", profiled_count, max_count)
                 pr.dump_stats("profile.txt")
 
         twilio_nts = None
