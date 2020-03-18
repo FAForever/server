@@ -113,6 +113,14 @@ async def check_game_settings(
         game.gameOptions[key] = old
 
 
+async def test_add_result_unknown(game, game_add_players):
+    game.state = GameState.LOBBY
+    players = game_add_players(game, 5, team=1)
+    await game.launch()
+    await game.add_result(0, 1, 'something invalid', 5)
+    assert game.get_player_outcome(players[0]) is GameOutcome.UNKNOWN
+
+
 async def test_ffa_not_rated(game, game_add_players):
     game.state = GameState.LOBBY
     game_add_players(game, 5, team=1)
