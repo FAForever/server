@@ -53,6 +53,8 @@ async def join_game(proto: QDataStreamProtocol, uid: int):
         "command": "GameState",
         "args": ["Lobby"]
     })
+    # HACK: Yield long enough for the server to process our message
+    await asyncio.sleep(0.5)
 
 
 async def get_player_ratings(proto, *names):
@@ -152,7 +154,4 @@ async def test_game_ended_rates_game(lobby_server):
 
     # The game should only be rated once
     with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(
-            read_until_command(host_proto, "player_info"),
-            timeout=10
-        )
+        await read_until_command(host_proto, "player_info", timeout=10)
