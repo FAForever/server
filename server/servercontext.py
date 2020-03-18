@@ -64,14 +64,14 @@ class ServerContext:
             try:
                 if proto.is_connected() and validate_fn(conn):
                     tasks.append(
-                        self._broadcast_raw_with_stall_handling(proto, message)
+                        self._send_raw_with_stall_handling(proto, message)
                     )
             except Exception:
                 self._logger.exception("Encountered error in broadcast")
 
         await gather_without_exceptions(tasks, DisconnectedError)
 
-    async def _broadcast_raw_with_stall_handling(self, proto, message):
+    async def _send_raw_with_stall_handling(self, proto, message):
         try:
             await asyncio.wait_for(
                 proto.send_raw(message),
