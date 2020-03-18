@@ -55,41 +55,30 @@ class ServerContext:
         return connection in self.connections.keys()
 
     async def broadcast(self, message, validate_fn=lambda a: True):
-        await self._do_broadcast(
-            validate_fn,
-            QDataStreamProtocol.send_message,
-            message
+        await self.broadcast_raw(
+            QDataStreamProtocol.encode_message(message),
+            validate_fn
         )
         self._logger.log(TRACE, "]]: %s", message)
 
     async def broadcast_raw(self, message, validate_fn=lambda a: True):
-        await self._do_broadcast(
-            validate_fn,
-            QDataStreamProtocol.send_raw,
-            message
-        )
-
-    async def _do_broadcast(self, validate_fn, send_fn, message):
         server.stats.incr('server.broadcasts')
-
         tasks = []
         for conn, proto in self.connections.items():
             try:
                 if proto.is_connected() and validate_fn(conn):
                     tasks.append(
-                        self._broadcast_with_stall_handling(
-                            proto, send_fn, message
-                        )
+                        self._send_raw_with_stall_handling(proto, message)
                     )
             except Exception:
                 self._logger.exception("Encountered error in broadcast")
 
         await gather_without_exceptions(tasks, DisconnectedError)
 
-    async def _broadcast_with_stall_handling(self, proto, send_fn, message):
+    async def _send_raw_with_stall_handling(self, proto, message):
         try:
             await asyncio.wait_for(
-                send_fn(proto, message),
+                proto.send_raw(message),
                 timeout=CLIENT_STALL_TIME
             )
         except asyncio.TimeoutError:
