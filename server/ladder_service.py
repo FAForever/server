@@ -288,20 +288,20 @@ class LadderService(Service):
                 })
 
     def start_queue_handlers(self):
-        for queue in self.queues:
+        for queue in self.queues.values():
             asyncio.ensure_future(self.handle_queue_matches(queue))
 
-    async def handle_queue_matches(self, queue_name: str):
-        async for s1, s2 in self.queues[queue_name].iter_matches():
+    async def handle_queue_matches(self, queue: MatchmakerQueue):
+        async for s1, s2 in queue.iter_matches():
             try:
-                msg = {"command": "match_found", "queue": queue_name}
+                msg = {"command": "match_found", "queue": queue.name}
                 # TODO: Handle disconnection with a client supported message
                 await asyncio.gather(*[
                     player.send_message(msg)
                     for player in s1.players + s2.players
                 ])
                 asyncio.create_task(
-                    self.start_game(s1.players, s2.players, queue_name)
+                    self.start_game(s1.players, s2.players, queue.name)
                 )
             except Exception as e:
                 self._logger.exception(
@@ -309,10 +309,10 @@ class LadderService(Service):
                     s1, s2, e
                 )
 
-    async def start_game(self, team1: List[Player], team2: List[Player], queue: str):
+    async def start_game(self, team1: List[Player], team2: List[Player], queue_name: str):
         # TODO: Get game_mode from queue
         self._logger.debug(
-            "Starting %s game between %s and %s", queue, team1, team2
+            "Starting %s game between %s and %s", queue_name, team1, team2
         )
         try:
             host = team1[0]
@@ -339,7 +339,7 @@ class LadderService(Service):
 
             # TODO: Different game mode for team matchmaker?
             game = self.game_service.create_game(
-                game_mode=queue,
+                game_mode=queue_name,
                 host=host,
                 name=game_name(team1, team2)
             )
