@@ -80,13 +80,17 @@ if __name__ == '__main__':
             import cProfile
             pr = cProfile.Profile()
             profiled_count = 0
-            max_count = 200
+            max_count = 300
 
             @at_interval(config.PROFILING_INTERVAL, loop=loop)
             async def run_profiler():
                 global profiled_count
+                global pr
 
-                if profiled_count >= max_count or len(players_online) > 1000:
+                if len(players_online) > 1000:
+                    return
+                elif profiled_count >= max_count:
+                    pr = None
                     return
 
                 logger.info("Starting profiler")
