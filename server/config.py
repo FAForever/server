@@ -44,7 +44,7 @@ FORCE_STEAM_LINK = os.getenv('FORCE_STEAM_LINK', 'false').lower() == 'true'
 CLIENT_STALL_TIME = int(os.getenv('CLIENT_STALL_TIME', 10))
 # Maximum number of bytes we will allow a stalled connection to get behind
 # before we terminate their connection.
-CLIENT_MAX_WRITE_BUFFER_SIZE = int(os.getenv('CLIENT_MAX_WRITE_BUFFER_SIZE', 2**16))
+CLIENT_MAX_WRITE_BUFFER_SIZE = int(os.getenv('CLIENT_MAX_WRITE_BUFFER_SIZE', 2**17))
 
 NEWBIE_BASE_MEAN = int(os.getenv('NEWBIE_BASE_MEAN', 500))
 NEWBIE_MIN_GAMES = int(os.getenv('NEWBIE_MIN_GAMES', 10))
