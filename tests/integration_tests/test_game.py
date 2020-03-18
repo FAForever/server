@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 import pytest
-from server.protocol import DisconnectedError, QDataStreamProtocol
+from server.protocol import QDataStreamProtocol
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until_command

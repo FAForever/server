@@ -158,8 +158,15 @@ async def read_until(
             pass
 
 
-async def read_until_command(proto: QDataStreamProtocol, command: str) -> Dict[str, Any]:
-    return await read_until(proto, lambda msg: msg.get('command') == command)
+async def read_until_command(
+    proto: QDataStreamProtocol,
+    command: str,
+    timeout: float = 60
+) -> Dict[str, Any]:
+    return await asyncio.wait_for(
+        read_until(proto, lambda msg: msg.get('command') == command),
+        timeout=timeout
+    )
 
 
 async def get_session(proto):
