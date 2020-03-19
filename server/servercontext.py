@@ -2,10 +2,9 @@ import asyncio
 
 import server.metrics as metrics
 
-from .async_functions import gather_without_exceptions
-from .config import CLIENT_MAX_WRITE_BUFFER_SIZE, CLIENT_STALL_TIME, TRACE
+from .config import TRACE
 from .decorators import with_logger
-from .protocol import DisconnectedError, QDataStreamProtocol
+from .protocol import QDataStreamProtocol
 from .types import Address
 
 
@@ -50,41 +49,23 @@ class ServerContext:
     def __contains__(self, connection):
         return connection in self.connections.keys()
 
-    async def broadcast(self, message, validate_fn=lambda a: True):
-        await self.broadcast_raw(
+    def write_broadcast(self, message, validate_fn=lambda a: True):
+        self.write_broadcast_raw(
             QDataStreamProtocol.encode_message(message),
             validate_fn
         )
         self._logger.log(TRACE, "]]: %s", message)
 
-    async def broadcast_raw(self, message, validate_fn=lambda a: True):
+    def write_broadcast_raw(self, data, validate_fn=lambda a: True):
         metrics.server_broadcasts.inc()
-        tasks = []
         for conn, proto in self.connections.items():
             try:
                 if proto.is_connected() and validate_fn(conn):
-                    tasks.append(
-                        self._send_raw_with_stall_handling(proto, message)
-                    )
+                    proto.writer.write(data)
             except Exception:
-                self._logger.exception("Encountered error in broadcast")
-
-        await gather_without_exceptions(tasks, DisconnectedError)
-
-    async def _send_raw_with_stall_handling(self, proto, message):
-        try:
-            await asyncio.wait_for(
-                proto.send_raw(message),
-                timeout=CLIENT_STALL_TIME
-            )
-        except asyncio.TimeoutError:
-            buffer_size = proto.writer.transport.get_write_buffer_size()
-            if buffer_size > CLIENT_MAX_WRITE_BUFFER_SIZE:
-                self._logger.warning(
-                    "Terminating stalled connection with buffer size: %i",
-                    buffer_size
+                self._logger.exception(
+                    "Encountered error in broadcast: %s", conn
                 )
-                proto.abort()
 
     async def client_connected(self, stream_reader, stream_writer):
         self._logger.debug("%s: Client connected", self)

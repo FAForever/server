@@ -143,20 +143,3 @@ async def test_backpressure_handling(lobby_server, caplog):
 
     with pytest.raises(asyncio.TimeoutError):
         await asyncio.wait_for(write_without_reading(proto), 10)
-
-
-@fast_forward(1000)
-async def test_backpressure_handling_stalls(lobby_server, caplog):
-    # TRACE will be spammed with thousands of messages
-    caplog.set_level(logging.DEBUG)
-
-    _, _, proto = await connect_and_sign_in(
-        ("test", "test_password"), lobby_server
-    )
-    # Set our local buffer size to 0 to help the server apply backpressure as
-    # early as possible.
-    proto.writer.transport.set_write_buffer_limits(high=0)
-    proto.reader._limit = 0
-
-    with pytest.raises(DisconnectedError):
-        await write_without_reading(proto)
