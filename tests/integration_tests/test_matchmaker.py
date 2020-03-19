@@ -1,6 +1,8 @@
 import asyncio
 
 import pytest
+from server.db.models import game_player_stats
+from sqlalchemy import and_, select
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until_command
@@ -45,23 +47,22 @@ async def queue_players_for_matchmaking(lobby_server):
     return proto1, proto2
 
 
-@fast_forward(50)
-async def test_game_matchmaking(lobby_server):
+@fast_forward(15)
+async def test_game_launch_message(lobby_server):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
 
-    # The player that queued last will be the host
-    msg2 = await read_until_command(proto2, 'game_launch')
-    await proto2.send_message({
+    msg1 = await read_until_command(proto1, 'game_launch')
+    await proto1.send_message({
         'command': 'GameState',
         'target': 'game',
         'args': ['Idle']
     })
-    await proto2.send_message({
+    await proto1.send_message({
         'command': 'GameState',
         'target': 'game',
         'args': ['Lobby']
     })
-    msg1 = await read_until_command(proto1, 'game_launch')
+    msg2 = await read_until_command(proto2, 'game_launch')
 
     assert msg1['uid'] == msg2['uid']
     assert msg1['mod'] == msg2['mod'] == 'ladder1v1'
@@ -71,6 +72,61 @@ async def test_game_matchmaking(lobby_server):
     assert msg1['expected_players'] == msg2['expected_players'] == 2
     assert msg1['map_position'] == 1
     assert msg2['map_position'] == 2
+
+
+@fast_forward(15)
+async def test_game_matchmaking_start(lobby_server, database):
+    host, guest = await queue_players_for_matchmaking(lobby_server)
+
+    # The player that queued last will be the host
+    msg = await read_until_command(host, 'game_launch')
+    await host.send_message({
+        'command': 'GameState',
+        'target': 'game',
+        'args': ['Idle']
+    })
+    await host.send_message({
+        'command': 'GameState',
+        'target': 'game',
+        'args': ['Lobby']
+    })
+
+    await read_until_command(guest, 'game_launch')
+    await guest.send_message({
+        'command': 'GameState',
+        'target': 'game',
+        'args': ['Idle']
+    })
+    await guest.send_message({
+        'command': 'GameState',
+        'target': 'game',
+        'args': ['Lobby']
+    })
+    await asyncio.sleep(0.5)
+
+    await host.send_message({
+        'command': 'GameState',
+        'target': 'game',
+        'args': ['Launching']
+    })
+
+    # Wait for db to be updated
+    await asyncio.sleep(1)
+
+    async with database.acquire() as conn:
+        result = await conn.execute(select([
+            game_player_stats.c.faction,
+            game_player_stats.c.color,
+            game_player_stats.c.team,
+            game_player_stats.c.place,
+        ]).where(game_player_stats.c.gameId == msg["uid"]))
+        rows = await result.fetchall()
+        assert len(rows) == 2
+        for row in rows:
+            assert row["faction"] == 1
+            assert row["color"] in (1, 2)
+            assert row["team"] is not None
+            assert row["place"] is not None
 
 
 @fast_forward(50)

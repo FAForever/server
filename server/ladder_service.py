@@ -176,8 +176,8 @@ class LadderService:
             game.set_player_option(guest.id, 'StartSpot', 2)
             game.set_player_option(host.id, 'Army', 1)
             game.set_player_option(guest.id, 'Army', 2)
-            game.set_player_option(host.id, 'Faction', host.faction)
-            game.set_player_option(guest.id, 'Faction', guest.faction)
+            game.set_player_option(host.id, 'Faction', host.faction.value)
+            game.set_player_option(guest.id, 'Faction', guest.faction.value)
             game.set_player_option(host.id, 'Color', 1)
             game.set_player_option(guest.id, 'Color', 2)
 
