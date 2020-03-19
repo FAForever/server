@@ -53,9 +53,9 @@ class ClientError(Exception):
 
 
 class AuthenticationError(Exception):
-    def __init__(self, message, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.message = message
+    def __init__(self, context, **attrs):
+        self.context = context
+        self.attrs = attrs
 
 
 @with_logger
@@ -158,7 +158,8 @@ class LobbyConnection:
         except AuthenticationError as ex:
             await self.send({
                 'command': 'authentication_failed',
-                'text': ex.message
+                'context': ex.context,
+                **ex.attrs
             })
         except ClientError as ex:
             self._logger.warning("Client error: %s", ex.message)
@@ -391,11 +392,10 @@ class LobbyConnection:
             .order_by(lobby_ban.c.expires_at.desc())
         )
 
-        auth_error_message = "Login not found or password incorrect. They are case sensitive."
         row = await result.fetchone()
         if not row:
             metrics.user_logins.labels("failure").inc()
-            raise AuthenticationError(auth_error_message)
+            raise AuthenticationError("denied")
 
         player_id = row[t_login.c.id]
         real_username = row[t_login.c.login]
@@ -407,7 +407,7 @@ class LobbyConnection:
 
         if dbPassword != password:
             metrics.user_logins.labels("failure").inc()
-            raise AuthenticationError(auth_error_message)
+            raise AuthenticationError("denied")
 
         now = datetime.now()
         if ban_reason is not None and now < ban_expiry:
@@ -420,9 +420,7 @@ class LobbyConnection:
 
         if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() > config.FORCE_STEAM_LINK_AFTER_DATE:
             self._logger.debug('Rejected login from new user: %s, %s, %s', player_id, username, self.session)
-            raise ClientError(
-                "Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on <a href='{steamlink_url}'>{steamlink_url}</a>.".format(steamlink_url=config.WWW_URL + '/account/link'),
-                recoverable=False)
+            raise AuthenticationError("steam_link")
 
         self._logger.debug("Login from: %s, %s, %s", player_id, username, self.session)
 
@@ -497,39 +495,16 @@ class LobbyConnection:
         if ignore_result:
             return True
 
-        if response.get('result', '') == 'vm':
+        result = response.get('result', '')
+
+        if result == 'vm':
             self._logger.debug("Using VM: %d: %s", player_id, uid_hash)
-            await self.send({
-                "command": "notice",
-                "style": "error",
-                "text": (
-                    "You need to link your account to Steam in order to use "
-                    "FAF in a virtual machine. Please contact an admin or "
-                    "moderator on the forums if you feel this is a false "
-                    "positive."
-                )
-            })
-            await self.send_warning("Your computer seems to be a virtual machine.<br><br>In order to "
-                                    "log in from a VM, you have to link your account to Steam: <a href='" +
-                                    config.WWW_URL + "/account/link'>" +
-                                    config.WWW_URL + "/account/link</a>.<br>If you need an exception, please contact an "
-                                                     "admin or moderator on the forums", fatal=True)
-
-        if response.get('result', '') == 'already_associated':
+            raise AuthenticationError("policy", result=result)
+        elif result == 'already_associated':
             self._logger.warning("UID hit: %d: %s", player_id, uid_hash)
-            await self.send_warning("Your computer is already associated with another FAF account.<br><br>In order to "
-                                    "log in with an additional account, you have to link it to Steam: <a href='" +
-                                    config.WWW_URL + "/account/link'>" +
-                                    config.WWW_URL + "/account/link</a>.<br>If you need an exception, please contact an "
-                                                     "admin or moderator on the forums", fatal=True)
-            return False
-
-        if response.get('result', '') == 'fraudulent':
+            raise AuthenticationError("policy", result=result)
+        elif result == 'fraudulent':
             self._logger.info("Banning player %s for fraudulent looking login.", player_id)
-            await self.send_warning("Fraudulent login attempt detected. As a precautionary measure, your account has been "
-                                    "banned permanently. Please contact an admin or moderator on the forums if you feel this is "
-                                    "a false positive.",
-                                    fatal=True)
 
             async with self._db.acquire() as conn:
                 try:
@@ -539,9 +514,9 @@ class LobbyConnection:
                 except pymysql.MySQLError as e:
                     raise ClientError('Banning failed: {}'.format(e))
 
-            return False
+            raise AuthenticationError("policy", result=result)
 
-        return response.get('result', '') == 'honest'
+        return result == 'honest'
 
     async def command_hello(self, message):
         login = message['login'].strip()

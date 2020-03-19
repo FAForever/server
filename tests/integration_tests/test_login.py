@@ -14,7 +14,7 @@ async def test_server_invalid_login(lobby_server):
     await perform_login(proto, ('Cat', 'epic'))
     auth_failed_msg = {
         'command': 'authentication_failed',
-        'text': 'Login not found or password incorrect. They are case sensitive.'
+        'context': 'denied'
     }
     msg = await proto.read_message()
     assert msg == auth_failed_msg
@@ -25,6 +25,26 @@ async def test_server_invalid_login(lobby_server):
     assert msg == auth_failed_msg
 
     proto.close()
+
+
+@pytest.mark.parametrize("user", [
+    ("test", "test_password"),
+    ("Rhiza", "puff_the_magic_dragon"),
+    ("ban_revoked", "ban_revoked")
+])
+async def test_server_steam_link(lobby_server, mocker, user):
+    mocker.patch("server.lobbyconnection.config.FORCE_STEAM_LINK", True)
+    mocker.patch("server.lobbyconnection.config.FORCE_STEAM_LINK_AFTER_DATE", 0)
+
+    proto = await connect_client(lobby_server)
+
+    await perform_login(proto, user)
+    auth_failed_msg = {
+        'command': 'authentication_failed',
+        'context': 'steam_link'
+    }
+    msg = await proto.read_message()
+    assert msg == auth_failed_msg
 
 
 @pytest.mark.parametrize("user", [

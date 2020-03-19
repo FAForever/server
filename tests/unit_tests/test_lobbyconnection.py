@@ -16,7 +16,9 @@ from server.games import CustomGame, Game
 from server.geoip_service import GeoIpService
 from server.ice_servers.nts import TwilioNTS
 from server.ladder_service import LadderService
-from server.lobbyconnection import ClientError, LobbyConnection
+from server.lobbyconnection import (
+    AuthenticationError, ClientError, LobbyConnection
+)
 from server.player_service import PlayerService
 from server.players import Player, PlayerState
 from server.protocol import DisconnectedError, QDataStreamProtocol
@@ -999,8 +1001,8 @@ async def test_check_policy_conformity(lobbyconnection, policy_server):
         'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
         f'http://{host}:{port}'
     ):
-        honest = await lobbyconnection.check_policy_conformity(1, "honest", session=100)
-        assert honest is True
+        # Should not raise an exception
+        await lobbyconnection.check_policy_conformity(1, "honest", session=100)
 
 
 async def test_check_policy_conformity_fraudulent(lobbyconnection, policy_server, database):
@@ -1010,15 +1012,12 @@ async def test_check_policy_conformity_fraudulent(lobbyconnection, policy_server
         f'http://{host}:{port}'
     ):
         # 42 is not a valid player ID which should cause a SQL constraint error
-        lobbyconnection.abort = CoroutineMock()
         with pytest.raises(ClientError):
             await lobbyconnection.check_policy_conformity(42, "fraudulent", session=100)
 
-        lobbyconnection.abort = CoroutineMock()
         player_id = 200
-        honest = await lobbyconnection.check_policy_conformity(player_id, "fraudulent", session=100)
-        assert honest is False
-        lobbyconnection.abort.assert_called_once()
+        with pytest.raises(AuthenticationError):
+            await lobbyconnection.check_policy_conformity(player_id, "fraudulent", session=100)
 
         # Check that the user has a ban entry in the database
         async with database.acquire() as conn:
@@ -1030,14 +1029,12 @@ async def test_check_policy_conformity_fraudulent(lobbyconnection, policy_server
             assert rows[-1][ban.c.reason] == "Auto-banned because of fraudulent login attempt"
 
 
-async def test_check_policy_conformity_fatal(lobbyconnection, policy_server):
+@pytest.mark.parametrize("result", ('vm', 'already_associated', 'fraudulent'))
+async def test_check_policy_conformity_fatal(lobbyconnection, policy_server, result):
     host, port = policy_server
     with mock.patch(
         'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
         f'http://{host}:{port}'
     ):
-        for result in ('vm', 'already_associated', 'fraudulent'):
-            lobbyconnection.abort = CoroutineMock()
-            honest = await lobbyconnection.check_policy_conformity(1, result, session=100)
-            assert honest is False
-            lobbyconnection.abort.assert_called_once()
+        with pytest.raises(AuthenticationError):
+            await lobbyconnection.check_policy_conformity(1, result, session=100)
