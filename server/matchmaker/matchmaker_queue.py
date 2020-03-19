@@ -143,7 +143,7 @@ class MatchmakerQueue:
     async def find_matches(self) -> None:
         self._logger.info("Searching for matches: %s", self.name)
 
-        if len(self.queue) < 2:
+        if len(self.queue) < 2 * self.min_team_size:
             return
 
         searches = self.find_teams()
