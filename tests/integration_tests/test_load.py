@@ -42,6 +42,7 @@ async def write_without_reading(proto):
             "command": "matchmaker_info",
             "This is just to increase the message size": "DATA" * 1024
         })
+        await asyncio.sleep(0)
 
     pytest.fail("The server did not apply backpressure to a spammer")
 
