@@ -54,7 +54,17 @@ class LadderService(Service):
                 game_service=game_service,
                 name='ladder2v2',
                 min_team_size=2,
-                max_team_size=2
+                max_team_size=2,
+                map_pools=[(
+                    MapPool("ladder2v2", [
+                        Map(566, "Fields of Isis", "maps/scmp_015.zip"),
+                        Map(568, "Syrtis Major", "maps/scmp_017.zip"),
+                        Map(577, "Vya-3 Protectorate", "maps/scmp_026.zip"),
+                        Map(585, "High Noon", "maps/scmp_034.zip"),
+                    ]),
+                    None,
+                    None
+                )]
             )
         }
 
