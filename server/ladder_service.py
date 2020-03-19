@@ -352,8 +352,6 @@ class LadderService(Service):
 
                 # Configure game options
                 game.set_player_option(player.id, 'Faction', player.faction.value)
-                # TODO: Colors are chosen by the game. Synchronize them...
-                game.set_player_option(player.id, 'Color', i)
 
             for i, player in enumerate(team1):
                 # Team 1 gets odd numbered start spots
@@ -361,6 +359,7 @@ class LadderService(Service):
                 game.set_player_option(player.id, 'Team', 2)
                 game.set_player_option(player.id, 'StartSpot', slot)
                 game.set_player_option(player.id, 'Army', slot)
+                game.set_player_option(player.id, 'Color', slot)
 
             for i, player in enumerate(team2):
                 # Team 2 gets even numbered start spots
@@ -368,6 +367,7 @@ class LadderService(Service):
                 game.set_player_option(player.id, 'Team', 3)
                 game.set_player_option(player.id, 'StartSpot', slot)
                 game.set_player_option(player.id, 'Army', slot)
+                game.set_player_option(player.id, 'Color', slot)
 
             mapname = re.match('maps/(.+).zip', map_path).group(1)
             # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
