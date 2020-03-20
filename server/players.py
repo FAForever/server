@@ -81,8 +81,12 @@ class Player:
     def faction(self, value):
         if isinstance(value, str):
             self._faction = Faction.from_string(value)
-        else:
+        elif isinstance(value, int):
+            self._faction = Faction(value)
+        elif isinstance(value, Faction):
             self._faction = value
+        else:
+            raise TypeError(f"Unsupported faction type {type(value)}!")
 
     @property
     def lobby_connection(self) -> "LobbyConnection":

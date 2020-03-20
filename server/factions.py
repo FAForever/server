@@ -10,5 +10,5 @@ class Faction(IntEnum):
     nomad = 5
 
     @staticmethod
-    def from_string(value):
-        return getattr(Faction, value)
+    def from_string(value: str) -> "Faction":
+        return Faction.__members__[value]
