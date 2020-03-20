@@ -2,10 +2,12 @@ import logging
 from ssl import SSLError
 from typing import Optional
 
-from oauthlib.oauth2.rfc6749.errors import (InsecureTransportError,
-                                            MissingTokenError)
-from server.config import (API_BASE_URL, API_CLIENT_ID, API_CLIENT_SECRET,
-                           API_TOKEN_URI)
+from oauthlib.oauth2.rfc6749.errors import (
+    InsecureTransportError, MissingTokenError
+)
+from server.config import (
+    API_BASE_URL, API_CLIENT_ID, API_CLIENT_SECRET, API_TOKEN_URI
+)
 
 from .oauth_session import OAuth2Session
 
@@ -83,4 +85,10 @@ class ApiAccessor:
     async def api_patch(self, path, json_data):
         api = await self.api_session.get_session()
         headers = {'Content-type': 'application/json'}
-        return await api.request("PATCH", API_BASE_URL + path, headers=headers, json=json_data)
+        return await api.request(
+            "PATCH",
+            API_BASE_URL + path,
+            headers=headers,
+            json=json_data,
+            raise_for_status=True
+        )
