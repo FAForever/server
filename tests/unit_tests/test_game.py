@@ -113,11 +113,19 @@ async def check_game_settings(
         game.gameOptions[key] = old
 
 
+async def test_add_result_unknown(game, game_add_players):
+    game.state = GameState.LOBBY
+    players = game_add_players(game, 5, team=1)
+    await game.launch()
+    await game.add_result(0, 1, 'something invalid', 5)
+    assert game.get_player_outcome(players[0]) is GameOutcome.UNKNOWN
+
+
 async def test_ffa_not_rated(game, game_add_players):
     game.state = GameState.LOBBY
     game_add_players(game, 5, team=1)
     await game.launch()
-    await game.add_result(0, 1, 'VICTORY', 5)
+    await game.add_result(0, 1, 'victory', 5)
     game.launched_at = time.time() - 60 * 20    # seconds
     await game.on_game_end()
     assert game.validity == ValidityState.FFA_NOT_RANKED
@@ -127,7 +135,7 @@ async def test_two_player_ffa_is_rated(game, game_add_players):
     game.state = GameState.LOBBY
     game_add_players(game, 2, team=1)
     await game.launch()
-    await game.add_result(0, 1, 'VICTORY', 5)
+    await game.add_result(0, 1, 'victory', 5)
     game.launched_at = time.time() - 60 * 20    # seconds
     await game.on_game_end()
     assert game.validity == ValidityState.VALID
@@ -139,7 +147,7 @@ async def test_multi_team_not_rated(game, game_add_players):
     game_add_players(game, 2, team=3)
     game_add_players(game, 2, team=4)
     await game.launch()
-    await game.add_result(0, 1, 'VICTORY', 5)
+    await game.add_result(0, 1, 'victory', 5)
     game.launched_at = time.time() - 60 * 20    # seconds
     await game.on_game_end()
     assert game.validity == ValidityState.MULTI_TEAM
@@ -161,7 +169,7 @@ async def test_has_ai_players_not_rated(game, game_add_players):
         }
     }
     await game.launch()
-    await game.add_result(0, 1, 'VICTORY', 5)
+    await game.add_result(0, 1, 'victory', 5)
     game.launched_at = time.time() - 60 * 20    # seconds
     await game.on_game_end()
     assert game.validity == ValidityState.HAS_AI_PLAYERS
@@ -172,7 +180,7 @@ async def test_uneven_teams_not_rated(game, game_add_players):
     game_add_players(game, 2, team=2)
     game_add_players(game, 3, team=3)
     await game.launch()
-    await game.add_result(0, 1, 'VICTORY', 5)
+    await game.add_result(0, 1, 'victory', 5)
     game.launched_at = time.time() - 60 * 20    # seconds
     await game.on_game_end()
     assert game.validity == ValidityState.UNEVEN_TEAMS_NOT_RANKED
@@ -816,7 +824,7 @@ async def test_persist_results_not_called_with_one_player(
     add_connected_players(game, players)
     await game.launch()
     assert len(game.players) == 1
-    await game.add_result(0, 1, 'VICTORY', 5)
+    await game.add_result(0, 1, 'victory', 5)
     await game.on_game_end()
 
     game.persist_results.assert_not_called()

@@ -401,26 +401,28 @@ async def test_handle_action_TeamkillHappened_AI(game: Game, game_connection: Ga
     game_connection.abort.assert_not_called()
 
 
-async def test_handle_action_GameResult_victory_ends_sim(
+async def test_handle_action_GameEnded_ends_sim(
     game: Game,
     game_connection: GameConnection
 ):
-    game_connection.connect_to_host = CoroutineMock()
-    await game_connection.handle_action('GameResult', [0, 'victory'])
+    game.ended = False
+    await game_connection.handle_action('GameEnded', [])
 
     assert game_connection.finished_sim
-    assert game.check_sim_end.called
+    game.check_sim_end.assert_called_once()
+    game.on_game_end.assert_not_called()
 
 
-async def test_handle_action_GameResult_draw_ends_sim(
+async def test_handle_action_GameEnded_ends_game(
     game: Game,
     game_connection: GameConnection
 ):
-    game_connection.connect_to_host = CoroutineMock()
-    await game_connection.handle_action('GameResult', [0, 'draw'])
+    game.ended = True
+    await game_connection.handle_action('GameEnded', [])
 
     assert game_connection.finished_sim
-    assert game.check_sim_end.called
+    game.check_sim_end.assert_called_once()
+    game.on_game_end.assert_called_once()
 
 
 async def test_handle_action_OperationComplete(ugame: Game, game_connection: GameConnection, database):

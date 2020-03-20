@@ -83,8 +83,8 @@ class GameConnection(GpgNetServerProtocol):
         """
         message['target'] = "game"
 
-        await self.protocol.send_message(message)
         self._logger.log(TRACE, ">> %s: %s", self.player.login, message)
+        await self.protocol.send_message(message)
 
     async def _handle_idle_state(self):
         """
@@ -278,20 +278,10 @@ class GameConnection(GpgNetServerProtocol):
 
     async def handle_game_result(self, army, result):
         army = int(army)
-        result = str(result)
+        result = str(result).lower()
         try:
-            if not any([result.startswith(possible_result)
-                        for possible_result in ['score', 'defeat', 'victory', 'draw']]):
-                raise ValueError()  # pragma: no cover
-            result = result.split(' ')
-
-            # This is the most common way for the player's sim to end
-            # We should add a reliable message to lua in the future
-            if result[0] in ['victory', 'draw'] and not self.finished_sim:
-                self.finished_sim = True
-                await self.game.check_sim_end()
-
-            await self.game.add_result(self.player.id, army, result[0], int(result[1]))
+            label, score = result.split(" ")
+            await self.game.add_result(self.player.id, army, label, int(score))
         except (KeyError, ValueError):  # pragma: no cover
             self._logger.warning("Invalid result for %s reported: %s", army, result)
 
@@ -485,10 +475,13 @@ class GameConnection(GpgNetServerProtocol):
 
     async def handle_game_ended(self, *args):
         """
-        Signals that the simulation has ended. This is currently unused but
-        included for documentation purposes.
+        Signals that the simulation has ended.
         """
-        pass
+        self.finished_sim = True
+        await self.game.check_sim_end()
+
+        if self.game.ended:
+            await self.game.on_game_end()
 
     async def handle_rehost(self, *args):
         """

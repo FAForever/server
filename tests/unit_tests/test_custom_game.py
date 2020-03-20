@@ -1,10 +1,10 @@
-import pytest
 import time
 
+import pytest
 from server.games import CustomGame
 from server.games.game import GameState, ValidityState
-from tests.unit_tests.conftest import add_connected_players
 from server.rating import RatingType
+from tests.unit_tests.conftest import add_connected_players
 
 pytestmark = pytest.mark.asyncio
 
@@ -26,7 +26,7 @@ async def test_rate_game_early_abort_no_enforce(
     custom_game.set_player_option(1, 'Team', 2)
     custom_game.set_player_option(2, 'Team', 3)
     await custom_game.launch()
-    await custom_game.add_result(0, 1, 'VICTORY', 5)
+    await custom_game.add_result(0, 1, 'victory', 5)
 
     custom_game.launched_at = time.time() - 60  # seconds
 
@@ -46,7 +46,7 @@ async def test_rate_game_early_abort_with_enforce(
     custom_game.set_player_option(2, 'Team', 3)
     await custom_game.launch()
     custom_game.enforce_rating = True
-    await custom_game.add_result(0, 1, 'VICTORY', 5)
+    await custom_game.add_result(0, 1, 'victory', 5)
 
     custom_game.launched_at = time.time() - 60  # seconds
 
@@ -65,7 +65,7 @@ async def test_rate_game_late_abort_no_enforce(
     custom_game.set_player_option(1, 'Team', 2)
     custom_game.set_player_option(2, 'Team', 3)
     await custom_game.launch()
-    await custom_game.add_result(0, 1, 'VICTORY', 5)
+    await custom_game.add_result(0, 1, 'victory', 5)
 
     custom_game.launched_at = time.time() - 600     # seconds
 
