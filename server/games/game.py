@@ -475,21 +475,26 @@ class Game:
         scores = {}
         for player in self.players:
             army = self.get_player_option(player.id, 'Army')
+            outcome = self.get_player_outcome(player)
             score = self.get_army_score(army)
-            scores[player] = score
+            scores[player] = (score, outcome)
             self._logger.info(
-                'Result for army %s, player: %s: %s', army, player, score
+                'Result for army %s, player: %s: score %s, outcome %s',
+                army, player, score, outcome
             )
 
         async with self._db.acquire() as conn:
             rows = []
-            for player, score in scores.items():
-                self._logger.info("Score for player %s: %s", player, score)
-                rows.append((score, self.id, player.id))
+            for player, (score, outcome) in scores.items():
+                self._logger.info(
+                    "Score for player %s: score %s, outcome %s",
+                    player, score, outcome,
+                )
+                rows.append((score, outcome.name.upper(), self.id, player.id))
 
             await conn.execute(
                 "UPDATE game_player_stats "
-                "SET `score`=%s, `scoreTime`=NOW() "
+                "SET `score`=%s, `scoreTime`=NOW(), `result`=%s "
                 "WHERE `gameId`=%s AND `playerId`=%s", rows
             )
 
@@ -536,7 +541,7 @@ class Game:
         table = f'{rating.value}_rating'
 
         if rating is RatingType.LADDER_1V1:
-            is_victory = self.get_army_result(player) is GameOutcome.VICTORY
+            is_victory = self.get_player_outcome(player) is GameOutcome.VICTORY
             await conn.execute(
                 "UPDATE ladder1v1_rating "
                 "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1, winGames = winGames + %s "
@@ -813,7 +818,7 @@ class Game:
     def get_army_score(self, army):
         return self._results.score(army)
 
-    def get_army_result(self, player):
+    def get_player_outcome(self, player):
         army = self.get_player_option(player.id, 'Army')
         if army is None:
             return GameOutcome.UNKNOWN
@@ -838,7 +843,7 @@ class Game:
             )
 
         outcome_by_player = {
-            player: self.get_army_result(player)
+            player: self.get_player_outcome(player)
             for player in self.players
         }
 

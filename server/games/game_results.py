@@ -12,6 +12,7 @@ class GameOutcome(Enum):
     DRAW = 'draw'
     MUTUAL_DRAW = 'mutual_draw'
     UNKNOWN = 'unknown'
+    CONFLICTING = 'conflicting'
 
     @classmethod
     def from_message(cls, msg: str):
@@ -88,13 +89,14 @@ class GameResults(Mapping):
 
         if len(outcomes) == 1:
             return outcomes.pop()
-        else:
-            if len(outcomes) > 1:
-                self._logger.info(
-                    "Multiple outcomes for game %s army %s: %s", self._game_id,
-                    army, list(outcomes)
-                )
-            return GameOutcome.UNKNOWN
+        elif len(outcomes) > 1:
+            self._logger.info(
+                "Multiple outcomes for game %s army %s: %s",
+                self._game_id, army, list(outcomes)
+            )
+            return GameOutcome.CONFLICTING
+
+        return GameOutcome.UNKNOWN
 
     def score(self, army: int):
         """
@@ -133,7 +135,7 @@ class GameResults(Mapping):
         results = cls(game_id)
         async with database.acquire() as conn:
             rows = await conn.execute(
-                "SELECT `place`, `score` "
+                "SELECT `place`, `score`, `result` "
                 "FROM `game_player_stats` "
                 "WHERE `gameId`=%s", (game_id, )
             )
@@ -141,7 +143,7 @@ class GameResults(Mapping):
             async for row in rows:
                 startspot, score = row[0], row[1]
                 # FIXME: Assertion about startspot == army
-                # FIXME: Reporter not retained in database
-                result = GameResult(0, startspot, GameOutcome.UNKNOWN, score)
+                outcome = GameOutcome[row[2]]
+                result = GameResult(0, startspot, outcome, score)
                 results.add(result)
         return results

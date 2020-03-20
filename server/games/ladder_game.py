@@ -24,7 +24,7 @@ class LadderGame(Game):
             await self.persist_rating_change_stats(new_ratings, RatingType.LADDER_1V1)
 
     def is_winner(self, player: Player):
-        return self.get_army_result(player) is GameOutcome.VICTORY
+        return self.get_player_outcome(player) is GameOutcome.VICTORY
 
     def get_army_score(self, army: int) -> int:
         """

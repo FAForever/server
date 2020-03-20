@@ -73,6 +73,11 @@ class GameRater(object):
     def _get_team_outcome(self, team: Iterable[Player]) -> GameOutcome:
         outcomes = set(self._outcome_by_player[player] for player in team)
         outcomes.discard(GameOutcome.UNKNOWN)
+
+        # Treat conflicting reports as unknown
+        # to make it harder to unrank games by faking reports
+        outcomes.discard(GameOutcome.CONFLICTING)
+
         if not outcomes:
             return GameOutcome.UNKNOWN
         if GameOutcome.VICTORY in outcomes:

@@ -706,17 +706,18 @@ async def test_compute_rating_works_with_partially_unknown_results(
             assert new_rating != Rating(*player.ratings[RatingType.GLOBAL])
 
 
-async def test_game_get_army_result_ignores_unknown_results(game,
-                                                            game_add_players):
+async def test_game_get_player_outcome_ignores_unknown_results(
+    game, game_add_players
+):
     game.state = GameState.LOBBY
     players = game_add_players(game, 2)
 
     await game.add_result(0, 0, 'defeat', 0)
     await game.add_result(0, 0, 'score', 0)
-    assert game.get_army_result(players[0]) == GameOutcome.DEFEAT
+    assert game.get_player_outcome(players[0]) is GameOutcome.DEFEAT
 
     await game.add_result(0, 1, 'score', 0)
-    assert game.get_army_result(players[1]) == GameOutcome.UNKNOWN
+    assert game.get_player_outcome(players[1]) is GameOutcome.UNKNOWN
 
 
 async def test_on_game_end_does_not_call_rate_game_for_single_player(game):
@@ -852,6 +853,11 @@ async def test_persist_results_called_with_two_players(game, game_add_players):
 
     await game.load_results()
     assert game.get_army_score(1) == 5
+    for player in game.players:
+        if game.get_player_option(player.id, 'Army') == 1:
+            assert game.get_player_outcome(player) is GameOutcome.VICTORY
+        else:
+            assert game.get_player_outcome(player) is GameOutcome.UNKNOWN
 
 
 async def test_persist_results_called_for_unranked(game, game_add_players):
@@ -865,9 +871,19 @@ async def test_persist_results_called_for_unranked(game, game_add_players):
 
     assert game.get_army_score(1) == 5
     assert len(game.players) == 2
+    for player in game.players:
+        if game.get_player_option(player.id, 'Army') == 1:
+            assert game.get_player_outcome(player) is GameOutcome.VICTORY
+        else:
+            assert game.get_player_outcome(player) is GameOutcome.UNKNOWN
 
     await game.load_results()
     assert game.get_army_score(1) == 5
+    for player in game.players:
+        if game.get_player_option(player.id, 'Army') == 1:
+            assert game.get_player_outcome(player) is GameOutcome.VICTORY
+        else:
+            assert game.get_player_outcome(player) is GameOutcome.UNKNOWN
 
 
 async def test_get_army_score_conflicting_results_clear_winner(
@@ -998,8 +1014,8 @@ async def test_game_outcomes(game: Game, database, players):
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 1)
 
-    host_outcome = game.get_army_result(players.hosting)
-    guest_outcome = game.get_army_result(players.joining)
+    host_outcome = game.get_player_outcome(players.hosting)
+    guest_outcome = game.get_player_outcome(players.joining)
     assert host_outcome is GameOutcome.VICTORY
     assert guest_outcome is GameOutcome.DEFEAT
 
@@ -1020,8 +1036,8 @@ async def test_game_outcomes_no_results(game: Game, database, players):
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 1)
 
-    host_outcome = game.get_army_result(players.hosting)
-    guest_outcome = game.get_army_result(players.joining)
+    host_outcome = game.get_player_outcome(players.hosting)
+    guest_outcome = game.get_player_outcome(players.joining)
     assert host_outcome is GameOutcome.UNKNOWN
     assert guest_outcome is GameOutcome.UNKNOWN
 
@@ -1043,10 +1059,10 @@ async def test_game_outcomes_conflicting(game: Game, database, players):
     game.set_player_option(players.hosting.id, 'Team', 1)
     game.set_player_option(players.joining.id, 'Team', 1)
 
-    host_outcome = game.get_army_result(players.hosting)
-    guest_outcome = game.get_army_result(players.joining)
-    assert host_outcome is GameOutcome.UNKNOWN
-    assert guest_outcome is GameOutcome.UNKNOWN
+    host_outcome = game.get_player_outcome(players.hosting)
+    guest_outcome = game.get_player_outcome(players.joining)
+    assert host_outcome is GameOutcome.CONFLICTING
+    assert guest_outcome is GameOutcome.CONFLICTING
     # No guarantees on scores for conflicting results.
 
 
