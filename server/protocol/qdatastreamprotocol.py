@@ -138,13 +138,6 @@ class QDataStreamProtocol(Protocol):
         """
         self.writer.close()
 
-    def abort(self):
-        """
-        Close writer stream immediately discarding the buffer contents
-        :return:
-        """
-        self.writer.transport.abort()
-
     async def drain(self):
         """
         Await the write buffer to empty.
