@@ -65,6 +65,10 @@ insert into login (id, login, email, password) values (6, 'newbie', 'noob@exampl
 insert into login (id, login, email, password, steamid) values (7, 'steambie', 'steambie@example.com', SHA2('password', 256), 111111);
 -- Test IPv6
 insert into login (id, login, email, password, ip) values (8, 'ipv6', 'ipv6@example.com', SHA2('ipv6', 256), '0000:0000:0000:0000:0000:0000:127.127.127.127');
+insert into login (id, login, email, password, create_time) values (9, 'player9', 'player9@example.com', SHA2('password', 256), '2000-01-01 00:00:00');
+-- player with id 10 is created further down...
+insert into login (id, login, email, password, create_time) values (11, 'player11', 'player11@example.com', SHA2('password', 256), '2000-01-01 00:00:00');
+insert into login (id, login, email, password, create_time) values (12, 'player12', 'player12@example.com', SHA2('password', 256), '2000-01-01 00:00:00');
 
 -- Name history
 insert into name_history (id, change_time, user_id, previous_name) values
