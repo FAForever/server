@@ -10,7 +10,6 @@ import logging
 from typing import Optional
 
 import aiomeasures
-import asyncio
 
 from server.db import FAFDatabase
 from . import config as config
@@ -50,6 +49,7 @@ __all__ = (
 
 DIRTY_REPORT_INTERVAL = 1  # Seconds
 stats = None
+logger = logging.getLogger("server")
 
 if not config.ENABLE_STATSD:
     from . import fake_statsd
@@ -59,9 +59,7 @@ else:
     stats = aiomeasures.StatsD(config.STATSD_SERVER)
 
 
-def encode_message(message: str):
-    # Crazy evil encoding scheme
-    return QDataStreamProtocol.pack_message(message)
+PING_MSG = QDataStreamProtocol.pack_message('PING')
 
 
 def run_lobby_server(
@@ -86,63 +84,60 @@ def run_lobby_server(
         games.clear_dirty()
         player_service.clear_dirty()
 
-        tasks = []
-        if dirty_queues:
-            tasks.append(
-                ctx.broadcast({
+        try:
+            if dirty_queues:
+                ctx.write_broadcast({
                         'command': 'matchmaker_info',
                         'queues': [queue.to_dict() for queue in dirty_queues]
                     },
                     lambda lobby_conn: lobby_conn.authenticated
                 )
-            )
+        except Exception:
+            logger.exception("Error writing matchmaker_info")
 
-        if dirty_players:
-            tasks.append(
-                ctx.broadcast({
+        try:
+            if dirty_players:
+                ctx.write_broadcast({
                         'command': 'player_info',
                         'players': [player.to_dict() for player in dirty_players]
                     },
                     lambda lobby_conn: lobby_conn.authenticated
                 )
-            )
+        except Exception:
+            logger.exception("Error writing player_info")
 
         # TODO: This spams squillions of messages: we should implement per-
         # connection message aggregation at the next abstraction layer down :P
         for game in dirty_games:
-            if game.state == GameState.ENDED:
-                games.remove_game(game)
+            try:
+                if game.state == GameState.ENDED:
+                    games.remove_game(game)
 
-            # So we're going to be broadcasting this to _somebody_...
-            message = game.to_dict()
+                # So we're going to be broadcasting this to _somebody_...
+                message = game.to_dict()
 
-            # These games shouldn't be broadcast, but instead privately sent
-            # to those who are allowed to see them.
-            if game.visibility == VisibilityState.FRIENDS:
-                # To see this game, you must have an authenticated
-                # connection and be a friend of the host, or the host.
-                def validation_func(lobby_conn):
-                    return lobby_conn.player.id in game.host.friends or \
-                           lobby_conn.player == game.host
-            else:
-                def validation_func(lobby_conn):
-                    return lobby_conn.player.id not in game.host.foes
+                # These games shouldn't be broadcast, but instead privately sent
+                # to those who are allowed to see them.
+                if game.visibility == VisibilityState.FRIENDS:
+                    # To see this game, you must have an authenticated
+                    # connection and be a friend of the host, or the host.
+                    def validation_func(lobby_conn):
+                        return lobby_conn.player.id in game.host.friends or \
+                               lobby_conn.player == game.host
+                else:
+                    def validation_func(lobby_conn):
+                        return lobby_conn.player.id not in game.host.foes
 
-            tasks.append(ctx.broadcast(
-                message,
-                lambda lobby_conn: lobby_conn.authenticated and validation_func(lobby_conn)
-            ))
-
-        try:
-            await asyncio.gather(*tasks)
-        except Exception as e:
-            logging.getLogger().exception(e)
-
-    ping_msg = encode_message('PING')
+                ctx.write_broadcast(
+                    message,
+                    lambda lobby_conn: lobby_conn.authenticated and validation_func(lobby_conn)
+                )
+            except Exception:
+                logger.exception("Error writing game_info %s", game.id)
 
     @at_interval(45)
-    async def ping_broadcast():
-        await ctx.broadcast_raw(ping_msg)
+    def ping_broadcast():
+        ctx.write_broadcast_raw(PING_MSG)
 
     def make_connection() -> LobbyConnection:
         return LobbyConnection(

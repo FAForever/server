@@ -38,6 +38,8 @@ from .protocol import DisconnectedError, QDataStreamProtocol
 from .rating import RatingType
 from .types import Address
 
+PONG_MSG = QDataStreamProtocol.pack_message("PONG")
+
 
 class ClientError(Exception):
     """
@@ -181,7 +183,7 @@ class LobbyConnection:
             await self.abort("Error processing command")
 
     async def command_ping(self, msg):
-        await self.protocol.send_raw(self.protocol.pack_message('PONG'))
+        await self.protocol.send_raw(PONG_MSG)
 
     async def command_pong(self, msg):
         pass
