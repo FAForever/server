@@ -69,8 +69,9 @@ async def test_game_info_broadcast_on_connection_error(
     # Set up our game hosts
     host_protos = []
     for _ in range(NUM_HOSTS):
+        user = await tmp_user("Host")
         _, _, proto = await connect_and_sign_in(
-            await tmp_user("Host"), lobby_server
+            user, lobby_server
         )
         host_protos.append(proto)
     await asyncio.gather(*(
