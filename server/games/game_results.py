@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Mapping
 from enum import Enum
 from typing import NamedTuple
@@ -75,21 +75,37 @@ class GameResults(Mapping):
         if army not in self:
             return GameOutcome.UNKNOWN
 
-        outcomes = set(
-            r.outcome for r in self[army]
-            if r.outcome is not GameOutcome.UNKNOWN
+        voters = defaultdict(set)
+        for report in filter(
+            lambda r: r.outcome is not GameOutcome.UNKNOWN, self[army]
+        ):
+            voters[report.outcome].add(report.reporter)
+
+        if len(voters) == 0:
+            return GameOutcome.UNKNOWN
+
+        if len(voters) == 1:
+            unique_outcome = next(iter(voters.keys()))
+            return unique_outcome
+
+        sorted_outcomes = sorted(
+            list(voters.keys()),
+            reverse=True,
+            key=lambda x: (len(voters[x]), x.value)
         )
 
-        if len(outcomes) == 1:
-            return outcomes.pop()
-        elif len(outcomes) > 1:
-            self._logger.info(
-                "Multiple outcomes for game %s army %s: %s",
-                self._game_id, army, list(outcomes)
-            )
-            return GameOutcome.CONFLICTING
+        top_votes = len(voters[sorted_outcomes[0]])
+        runnerup_votes = len(voters[sorted_outcomes[1]])
+        if top_votes > 1 >= runnerup_votes or top_votes >= runnerup_votes + 3:
+            decision = sorted_outcomes[0]
+        else:
+            decision = GameOutcome.CONFLICTING
 
-        return GameOutcome.UNKNOWN
+        self._logger.info(
+            f"Multiple outcomes for game {self._game_id} army {army} "
+            f"resolved to {decision}. Reports are: {voters}"
+        )
+        return decision
 
     def score(self, army: int):
         """
