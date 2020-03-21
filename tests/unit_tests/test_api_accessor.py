@@ -1,8 +1,8 @@
+import pytest
+from asynctest import CoroutineMock
 from mock import Mock
 from server.api.api_accessor import SessionManager
 from server.config import API_BASE_URL
-from asynctest import CoroutineMock
-import pytest
 
 pytestmark = pytest.mark.asyncio
 
@@ -36,7 +36,8 @@ async def test_api_patch(api_accessor):
         "PATCH",
         API_BASE_URL+'test',
         headers={'Content-type': 'application/json'},
-        json=data
+        json=data,
+        raise_for_status=True
     )
 
     assert result == (200, 'test')
