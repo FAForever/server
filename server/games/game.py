@@ -518,65 +518,6 @@ class Game:
                 "WHERE `gameId`=%s AND `playerId`=%s", rows
             )
 
-    async def persist_rating_change_stats(
-        self, rating_groups, rating=RatingType.GLOBAL
-    ):
-        """
-        Persist computed ratings to the respective players' selected rating
-        :param rating_groups: of the form returned by Game.compute_rating
-        :return: None
-        """
-        self._logger.info("Saving rating change stats")
-        new_ratings = {
-            player: new_rating
-            for team in rating_groups for player, new_rating in team.items()
-        }
-
-        async with self._db.acquire() as conn:
-            for player, new_rating in new_ratings.items():
-                self._logger.debug(
-                    "New %s rating for %s: %s", rating.value, player,
-                    new_rating
-                )
-                player.ratings[rating] = new_rating
-                await conn.execute(
-                    "UPDATE game_player_stats "
-                    "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
-                    "WHERE gameId = %s AND playerId = %s",
-                    (new_rating.mu, new_rating.sigma, self.id, player.id)
-                )
-                player.game_count[rating] += 1
-
-                await self._update_rating_table(
-                    conn, rating, player, new_rating
-                )
-
-                self.game_service.player_service.mark_dirty(player)
-
-    async def _update_rating_table(
-        self, conn, rating: RatingType, player: Player, new_rating
-    ):
-        # If we are updating the ladder1v1_rating table then we also need to update
-        # the `winGames` column which doesn't exist on the global_rating table
-        table = f'{rating.value}_rating'
-
-        if rating is RatingType.LADDER_1V1:
-            is_victory = self.get_player_outcome(player) is GameOutcome.VICTORY
-            await conn.execute(
-                "UPDATE ladder1v1_rating "
-                "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1, winGames = winGames + %s "
-                "WHERE id = %s", (
-                    new_rating.mu, new_rating.sigma, 1 if is_victory else 0,
-                    player.id
-                )
-            )
-        else:
-            await conn.execute(
-                "UPDATE " + table + " "
-                "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1 "
-                "WHERE id = %s", (new_rating.mu, new_rating.sigma, player.id)
-            )
-
     def set_player_option(self, player_id: int, key: str, value: Any):
         """
         Set game-associative options for given player, by id
@@ -850,31 +791,6 @@ class Game:
             return GameOutcome.UNKNOWN
 
         return self._results.outcome(army)
-
-    def compute_rating(self, rating=RatingType.GLOBAL) -> Dict[Player, Rating]:
-        """
-        Compute new ratings
-        :param rating: Rating type
-        :return: rating groups of the form:
-        >>> p1,p2,p3,p4 = Player()
-        >>> [{p1: p1.rating, p2: p2.rating}, {p3: p3.rating, p4: p4.rating}]
-        """
-        assert self.state is GameState.LIVE or self.state is GameState.ENDED
-
-        if None in self.teams:
-            raise GameError(
-                "Missing team for at least one player. (player, team): {}"
-                .format([(player, self.get_player_option(player.id, 'Team'))
-                        for player in self.players])
-            )
-
-        outcome_by_player = {
-            player: self.get_player_outcome(player)
-            for player in self.players
-        }
-
-        rater = GameRater(self.players_by_team, outcome_by_player, rating)
-        return rater.compute_rating()
 
     def report_army_stats(self, stats):
         self._army_stats = stats

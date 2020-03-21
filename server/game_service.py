@@ -10,6 +10,8 @@ from server.games import CoopGame, CustomGame, FeaturedMod, LadderGame
 from server.games.game import Game, GameState, VisibilityState
 from server.matchmaker import MatchmakerQueue
 from server.players import Player
+from server.rating_service.rating_service import RatingService
+from server.rating import RatingType
 
 
 @with_logger
@@ -18,16 +20,18 @@ class GameService(Service):
     Utility class for maintaining lifecycle of games
     """
     def __init__(
-        self,
-        database: FAFDatabase,
+        self, 
+        database: FAFDatabase, 
         player_service,
-        game_stats_service,
+        game_stats_service, 
+        rating_service: RatingService,
     ):
         self._db = database
         self._dirty_games = set()
         self._dirty_queues = set()
         self.player_service = player_service
         self.game_stats_service = game_stats_service
+        self._rating_service = rating_service
         self.game_id_counter = 0
 
         # Populated below in really_update_static_ish_data.
@@ -218,3 +222,9 @@ class GameService(Service):
 
     def __contains__(self, item):
         return item in self._games
+
+    async def send_to_rating_service(self, game: Game, rating_type: RatingType):
+        new_ratings = self._rating_service._compute_rating(game, rating_type)
+        await self._rating_service._persist_rating_change_stats(game, new_ratings, rating_type)
+
+

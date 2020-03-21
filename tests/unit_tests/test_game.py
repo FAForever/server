@@ -431,6 +431,9 @@ async def test_game_is_invalid_due_to_desyncs(game: Game, players):
     assert game.validity is ValidityState.TOO_MANY_DESYNCS
 
 
+# FIXME
+# tests below might still need to be moved to test_game_rating
+#
 async def test_compute_rating_raises_game_error(game: Game, players):
     game.state = GameState.LOBBY
     add_connected_players(game, [players.hosting, players.joining])
@@ -746,6 +749,9 @@ async def test_compute_rating_works_with_partially_unknown_results(
         for player, new_rating in team.items():
             assert new_rating != Rating(*player.ratings[RatingType.GLOBAL])
 
+
+# FIXME:
+# Test below might still need to be moved to test_game_rating
 
 async def test_game_get_player_outcome_ignores_unknown_results(
     game, game_add_players

@@ -11,8 +11,10 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture()
-def laddergame(database, game_service, game_stats_service):
-    return LadderGame(465312, database, game_service, game_stats_service)
+def laddergame(database, game_service, game_stats_service, rating_service):
+    return LadderGame(
+        465312, database, game_service, game_stats_service, rating_service
+    )
 
 
 async def test_results_ranked_by_victory(laddergame, players):

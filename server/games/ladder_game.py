@@ -20,8 +20,7 @@ class LadderGame(Game):
 
     async def rate_game(self):
         if self.validity == ValidityState.VALID:
-            new_ratings = self.compute_rating(RatingType.LADDER_1V1)
-            await self.persist_rating_change_stats(new_ratings, RatingType.LADDER_1V1)
+            await self.game_service.send_to_rating_service(self, RatingType.LADDER_1V1)
 
     def is_winner(self, player: Player):
         return self.get_player_outcome(player) is GameOutcome.VICTORY
