@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import pymysql
 from server.config import FFA_TEAM
-from server.games.game_rater import GameRater
+from server.rating_service.game_rater import GameRater
 from server.games.game_results import GameOutcome, GameResult, GameResults
 from server.rating import RatingType
 from trueskill import Rating

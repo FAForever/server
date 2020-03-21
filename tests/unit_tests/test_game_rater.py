@@ -1,5 +1,5 @@
 import pytest
-from server.games.game_rater import GameRater, GameRatingError
+from server.rating_service.game_rater import GameRater, GameRatingError
 from server.games.game_results import GameOutcome
 from server.rating import RatingType
 from trueskill import Rating

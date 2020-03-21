@@ -12,6 +12,7 @@ from asynctest import exhaust_callbacks
 from server import GameService, run_control_server, run_lobby_server
 from server.db.models import login
 from server.ladder_service import LadderService
+from server.rating_service.rating_service import RatingService
 from server.protocol import QDataStreamProtocol
 
 
@@ -30,11 +31,15 @@ async def ladder_service(mocker, database, game_service):
 
     await ladder_service.shutdown()
 
+@pytest.fixture
+def rating_service(database):
+    return RatingService(database)
+
 
 @pytest.fixture
 async def lobby_server(
     event_loop, database, player_service, game_service,
-    geoip_service, ladder_service, policy_server
+    geoip_service, ladder_service, rating_service, policy_server
 ):
     with mock.patch(
         'server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL',
@@ -47,6 +52,7 @@ async def lobby_server(
             player_service=player_service,
             game_service=game_service,
             ladder_service=ladder_service,
+            rating_service=rating_service,
             nts_client=None,
             loop=event_loop
         )

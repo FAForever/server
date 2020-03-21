@@ -25,6 +25,7 @@ from .geoip_service import GeoIpService
 from .player_service import PlayerService
 from .game_service import GameService
 from .ladder_service import LadderService
+from .rating_service.rating_service import RatingService
 from .control import run_control_server
 from .timing import at_interval
 
@@ -39,6 +40,7 @@ __all__ = (
     'GameStatsService',
     'GameService',
     'LadderService',
+    'RatingService',
     'run_lobby_server',
     'run_control_server',
     'game_service',
@@ -67,6 +69,7 @@ async def run_lobby_server(
     nts_client: Optional[TwilioNTS],
     geoip_service: GeoIpService,
     ladder_service: LadderService,
+    rating_service: RatingService,
     loop,
 ) -> ServerContext:
     """

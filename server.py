@@ -17,12 +17,13 @@ import sys
 from datetime import datetime
 
 import server
-from server.config import config
 from docopt import docopt
 from server.api.api_accessor import ApiAccessor
+from server.config import config
 from server.core import create_services
 from server.ice_servers.nts import TwilioNTS
 from server.profiler import Profiler
+from server.rating_service.rating_service import RatingService
 
 
 async def main():
@@ -68,6 +69,8 @@ async def main():
         "database": database,
         "loop": loop,
     })
+    rating_service = RatingService(database)
+    services["rating_service"] = rating_service
 
     await asyncio.gather(*[
         service.initialize() for service in services.values()
@@ -103,6 +106,7 @@ async def main():
         game_service=services["game_service"],
         nts_client=twilio_nts,
         ladder_service=services["ladder_service"],
+        rating_service=services["rating_service"],
         loop=loop
     )
 
