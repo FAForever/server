@@ -89,7 +89,7 @@ class GameResults(Mapping):
             return unique_outcome
 
         sorted_outcomes = sorted(
-            list(voters.keys()),
+            voters.keys(),
             reverse=True,
             key=lambda x: (len(voters[x]), x.value)
         )
@@ -102,8 +102,9 @@ class GameResults(Mapping):
             decision = GameOutcome.CONFLICTING
 
         self._logger.info(
-            f"Multiple outcomes for game {self._game_id} army {army} "
-            f"resolved to {decision}. Reports are: {voters}"
+            "Multiple outcomes for game %s army %s resolved to %s. Reports are: %s",
+            self._game_id, army, decision, voters
+
         )
         return decision
 
