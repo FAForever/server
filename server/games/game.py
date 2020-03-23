@@ -5,11 +5,11 @@ import re
 import time
 from collections import defaultdict
 from enum import Enum, unique
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, NamedTuple, List, Set
 
 import pymysql
 from server.config import FFA_TEAM
-from server.rating_service.game_rater import GameRater
+from server.rating_service.typedefs import GameRatingSummary
 from server.games.game_results import GameOutcome, GameResult, GameResults
 from server.rating import RatingType
 from trueskill import Rating
@@ -249,55 +249,45 @@ class Game:
 
     @property
     def is_even(self) -> bool:
-        teams = self.team_count()
-        if FFA_TEAM in teams:    # someone is in ffa team, all teams need to have 1 player
-            c = 1
-            teams.pop(1)
-        else:
-            n = len(teams)
-            if n <= 1:    # 0 teams are considered even, single team not
-                return n == 0
+        """
+        Returns True iff all teams have the same player count, taking into account that players on the FFA team are in individual teams.
+        Special cases:
+         - Returns True if there are zero teams.
+         - Returns False if there is a single team.
+        """
+        teams = self.team_sets
+        if len(teams) == 0:
+            return True
+        if len(teams) == 1:
+            return False
 
-            # all teams needs to have same count as the first
-            c = list(teams.values())[0]
+        team_sizes = set(len(team) for team in teams)
+        return len(team_sizes) == 1
 
-        for _, v in teams.items():
-            if v != c:
-                return False
-
-        return True
 
     @property
-    def players_by_team(self):
+    def team_sets(self) -> List[Set[Player]]:
         """
-        Returns a dictionary with team ids as keys and a list of players belonging to the team as values.
-        Note that all FFA players will be grouped together in FFA_TEAM.
+        Returns a list of teams represented as sets of players.
+        Note that FFA players will be separated into individual teams.
         """
-        teams = defaultdict(list)
+        if None in self.teams:
+            raise GameError(
+                "Missing team for at least one player. (player, team): {}"
+                .format([(player, game.get_player_option(player.id, 'Team'))
+                        for player in game.players])
+            )
+
+        teams = defaultdict(set)
+        ffa_players = []
         for player in self.players:
-            teams[self.get_player_option(player.id, 'Team')].append(player)
+            team_id = self.get_player_option(player.id, 'Team')
+            if team_id == FFA_TEAM:
+                ffa_players.append({player})
+            else:
+                teams[team_id].add(player)
 
-        return teams
-
-    def team_count(self):
-        """
-        Returns a dictionary containing team ids and their respective number of players.
-        Note that all FFA players will be grouped together in FFA_TEAM.
-        Example:
-            Team 1 has 2 players
-            Team 2 has 3 players
-            team 3 has 1 player
-            Return value is:
-            {
-                1: 2,
-                2: 3,
-                3: 1
-            }
-        """
-        return {
-            team: len(player_list)
-            for team, player_list in self.players_by_team.items()
-        }
+        return list(teams.values()) + ffa_players
 
     async def await_hosted(self):
         return await asyncio.wait_for(self._is_hosted, None)
@@ -517,6 +507,16 @@ class Game:
                 "SET `score`=%s, `scoreTime`=NOW(), `result`=%s "
                 "WHERE `gameId`=%s AND `playerId`=%s", rows
             )
+
+    def _get_rating_summary(self, rating_type: RatingType) -> GameRatingSummary:
+        return GameRatingSummary(
+            self.id,
+            rating_type,
+            [
+                { player.id: self.get_player_outcome(player) for player in team }
+                for team in self.team_sets
+            ]
+        )
 
     def set_player_option(self, player_id: int, key: str, value: Any):
         """

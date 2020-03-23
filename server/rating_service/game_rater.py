@@ -1,4 +1,4 @@
-from typing import Dict, List, Set
+from typing import Dict, List, Tuple, Set
 
 import trueskill
 from server.config import FFA_TEAM
@@ -9,66 +9,63 @@ from trueskill import Rating
 
 from ..decorators import with_logger
 
+from .typedefs import (
+    PlayerID,
+    GameRatingSummary,
+    RatingGroups,
+    SummaryResults,
+    GameRatingData,
+    RatingData,
+)
+
 
 class GameRatingError(Exception):
     pass
 
 
 @with_logger
-class GameRater(object):
-    def __init__(
-        self,
-        players_by_team: Dict[int, List[Player]],
-        outcome_by_player: Dict[Player, GameOutcome],
-        rating_type=RatingType.GLOBAL,
-    ):
-        self._rating_type = rating_type
-        self._outcome_by_player = outcome_by_player
-        self._players_by_team = players_by_team
-
-    def compute_rating(self) -> Dict[Player, Rating]:
-        rating_groups = self._get_rating_groups()
-        team_outcomes = [
-            set(self._outcome_by_player[player] for player in team)
-            for team in rating_groups
+class GameRater:
+    @classmethod
+    def compute_rating(
+        cls, rating_data: GameRatingData
+    ) -> Tuple[Dict[PlayerID, Rating], Dict[PlayerID, GameOutcome]]:
+        rating_groups = [
+            {player_id: data.rating for player_id, data in team.items()}
+            for team in rating_data
         ]
-        ranks = self._ranks_from_team_outcomes(team_outcomes)
+        cls._check_rating_groups(rating_groups)
 
-        self._logger.debug("Rating groups: %s", rating_groups)
-        self._logger.debug("Ranks: %s", ranks)
-        return trueskill.rate(rating_groups, ranks)
+        team_outcomes = [
+            set(player.outcome for player in team.values()) for team in rating_data
+        ]
+        ranks = cls._ranks_from_team_outcomes(team_outcomes)
 
-    def _get_rating_groups(self) -> List[Dict[Player, Rating]]:
-        """
-        Converts a dictionary mapping team ids to players to the trueskill rating_group format
-        example input: {team1: [p1, p2], team2: [p3, p4]}
-        example output: [ {p1: Rating, p2: Rating}, {p3: Rating, p4: Rating} ]
-        """
-        if FFA_TEAM in self._players_by_team:
-            number_of_parties = (
-                len(self._players_by_team[FFA_TEAM]) + len(self._players_by_team) - 1
-            )
-            if (
-                len(self._players_by_team[FFA_TEAM]) == 2
-                and len(self._players_by_team) == 1
-            ):
-                return [
-                    {player: Rating(*player.ratings[self._rating_type])}
-                    for player in self._players_by_team[FFA_TEAM]
-                ]
-            elif number_of_parties != 2:
-                raise GameRatingError(
-                    f"Attempted to rate FFA game with other than two parties: {{team: players}} = {self._players_by_team}"
-                )
+        cls._logger.debug("Rating groups: %s", rating_groups)
+        cls._logger.debug("Ranks: %s", ranks)
 
-        if len(self._players_by_team) == 2:
-            return [
-                {player: Rating(*player.ratings[self._rating_type]) for player in team}
-                for _, team in self._players_by_team.items()
-            ]
-        else:
+        new_rating_groups = trueskill.rate(rating_groups, ranks)
+
+        player_rating_map = {
+            player_id: new_rating
+            for team in new_rating_groups
+            for player_id, new_rating in team.items()
+        }
+
+        clean_team_outcomes = cls._ranks_to_clean_outcomes(ranks)
+        player_outcome_map = {
+            player_id: clean_team_outcomes[team_index]
+            for team_index, team in enumerate(rating_groups)
+            for player_id in team
+        }
+
+        return player_rating_map, player_outcome_map
+
+    @staticmethod
+    def _check_rating_groups(rating_groups: RatingGroups):
+        if len(rating_groups) != 2:
             raise GameRatingError(
-                f"Attempted to rate non-FFA game with other than two teams: {{team: players}} = {self._players_by_team}"
+                "Attempted to rate game with other than two parties. "
+                f"Rating groups: {rating_groups}"
             )
 
     @staticmethod
@@ -129,3 +126,14 @@ class GameRater(object):
 
         # Otherwise everyone is DEFEAT, we return a draw
         return [0, 0]
+
+    @staticmethod
+    def _ranks_to_clean_outcomes(ranks: List[int]) -> List[GameOutcome]:
+        if ranks == [0, 0]:
+            return [GameOutcome.DRAW, GameOutcome.DRAW]
+        elif ranks == [1, 0]:
+            return [GameOutcome.DEFEAT, GameOutcome.VICTORY]
+        elif ranks == [0, 1]:
+            return [GameOutcome.VICTORY, GameOutcome.DEFEAT]
+        else:
+            raise GameRatingError(f"Inconsistent ranks {ranks}")

@@ -206,8 +206,8 @@ async def player_service(database):
 
 
 @pytest.fixture
-def rating_service(database):
-    return RatingService(database)
+def rating_service(database, player_service):
+    return RatingService(database, player_service)
 
 
 @pytest.fixture

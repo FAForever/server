@@ -11,6 +11,7 @@ from server.games.game import Game, GameState, VisibilityState
 from server.matchmaker import MatchmakerQueue
 from server.players import Player
 from server.rating_service.rating_service import RatingService
+from server.rating_service.typedefs import GameRatingSummary
 from server.rating import RatingType
 
 
@@ -223,8 +224,5 @@ class GameService(Service):
     def __contains__(self, item):
         return item in self._games
 
-    async def send_to_rating_service(self, game: Game, rating_type: RatingType):
-        new_ratings = self._rating_service._compute_rating(game, rating_type)
-        await self._rating_service._persist_rating_change_stats(game, new_ratings, rating_type)
-
-
+    async def send_to_rating_service(self, summary: GameRatingSummary):
+        await self._rating_service.enqueue(summary)

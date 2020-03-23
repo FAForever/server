@@ -3,7 +3,7 @@ import logging
 from server.abc.base_game import InitMode
 from server.players import Player
 
-from .game import Game, GameOutcome, ValidityState
+from .game import Game, GameOutcome, ValidityState, GameState
 from server.rating import RatingType
 
 logger = logging.getLogger(__name__)
@@ -19,8 +19,13 @@ class LadderGame(Game):
         self.max_players = 2
 
     async def rate_game(self):
-        if self.validity == ValidityState.VALID:
-            await self.game_service.send_to_rating_service(self, RatingType.LADDER_1V1)
+        assert self.state is GameState.LIVE or self.state is GameState.ENDED
+
+        if self.validity is not ValidityState.VALID:
+            return
+
+        summary = self._get_rating_summary(RatingType.LADDER_1V1)
+        await self.game_service.send_to_rating_service(summary)
 
     def is_winner(self, player: Player):
         return self.get_player_outcome(player) is GameOutcome.VICTORY

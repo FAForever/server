@@ -7,6 +7,7 @@ from server.db import FAFDatabase
 from server.decorators import with_logger
 from server.players import Player
 from server.rating import RatingType
+from trueskill import Rating
 from sqlalchemy import and_, select
 
 from .core import Service
@@ -124,6 +125,17 @@ class PlayerService(Service):
 
     def get_player(self, player_id: int) -> Optional[Player]:
         return self._players.get(player_id)
+
+    def signal_player_rating_change(
+        self, player_id: int, rating_type: RatingType, new_rating: Rating
+    ) -> None:
+        player = self.get_player(player_id)
+        if player is None:
+            return
+
+        player.ratings[rating_type] = new_rating
+        player.game_count[rating_type] += 1
+        self.mark_dirty(player)
 
     async def update_data(self):
         """
