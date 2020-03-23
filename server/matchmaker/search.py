@@ -170,7 +170,8 @@ class Search:
 
     def matches_with(self, other: 'Search'):
         """
-        Determine if this search is compatible with other given search according to both wishes.
+        Determine if this search is compatible with other given search according
+        to both wishes.
         """
         if not isinstance(other, Search):
             return False

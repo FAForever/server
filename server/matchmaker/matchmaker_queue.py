@@ -51,8 +51,7 @@ class MatchmakerQueue:
         self._logger.debug("MatchmakerQueue initialized for %s", queue_name)
 
     async def initialize(self):
-        loop = asyncio.get_running_loop()
-        loop.create_task(self.queue_pop_timer())
+        asyncio.create_task(self.queue_pop_timer())
 
     async def iter_matches(self):
         """ Asynchronously yields matches as they become available """

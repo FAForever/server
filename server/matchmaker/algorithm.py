@@ -132,6 +132,7 @@ class Matchmaker(object):
             ranks = _MatchingGraph.build_full(searches)
         else:
             ranks = _MatchingGraph.build_fast(searches)
+        _MatchingGraph.remove_isolated(ranks)
         self.matches.update(StableMarriage().find(ranks))
 
         remaining_searches = [
