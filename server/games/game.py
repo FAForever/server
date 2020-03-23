@@ -5,14 +5,13 @@ import re
 import time
 from collections import defaultdict
 from enum import Enum, unique
-from typing import Any, Dict, Optional, Tuple, NamedTuple, List, Set
+from typing import Any, Dict, Optional, Tuple, List, Set
 
 import pymysql
 from server.config import FFA_TEAM
 from server.rating_service.typedefs import GameRatingSummary
 from server.games.game_results import GameOutcome, GameResult, GameResults
 from server.rating import RatingType
-from trueskill import Rating
 
 from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
@@ -255,7 +254,13 @@ class Game:
          - Returns True if there are zero teams.
          - Returns False if there is a single team.
         """
-        teams = self.team_sets
+        # FIXME: explicitly allowing a team to be set to None here.
+        # All players with team `None` are considered on one team.
+        # This is what code in production does and allows to launch games where
+        # players are missing the "Team" option.
+        # (Rating code will later raise an Error if players are missing that option.)
+        # Is this intentional?
+        teams = self.get_team_sets(allow_missing_team=True)
         if len(teams) == 0:
             return True
         if len(teams) == 1:
@@ -264,18 +269,16 @@ class Game:
         team_sizes = set(len(team) for team in teams)
         return len(team_sizes) == 1
 
-
-    @property
-    def team_sets(self) -> List[Set[Player]]:
+    def get_team_sets(self, allow_missing_team=False) -> List[Set[Player]]:
         """
         Returns a list of teams represented as sets of players.
         Note that FFA players will be separated into individual teams.
         """
-        if None in self.teams:
+        if not allow_missing_team and None in self.teams:
             raise GameError(
                 "Missing team for at least one player. (player, team): {}"
-                .format([(player, game.get_player_option(player.id, 'Team'))
-                        for player in game.players])
+                .format([(player, self.get_player_option(player.id, 'Team'))
+                        for player in self.players])
             )
 
         teams = defaultdict(set)
@@ -513,8 +516,8 @@ class Game:
             self.id,
             rating_type,
             [
-                { player.id: self.get_player_outcome(player) for player in team }
-                for team in self.team_sets
+                {player.id: self.get_player_outcome(player) for player in team}
+                for team in self.get_team_sets()
             ]
         )
 

@@ -1,6 +1,78 @@
 import pytest
+from asynctest import CoroutineMock
+from collections import namedtuple
+import time
 
-from server.games.game import Game
+from server.rating import RatingType
+from trueskill import Rating
+from server.rating_service.rating_service import RatingService
+from server.rating_service.game_rater import GameRatingError
+
+from server.games.game import Game, GameState, GameError
+from server.games.game_results import GameOutcome
+from server.games.custom_game import CustomGame
+from server.games.ladder_game import LadderGame
+from tests.unit_tests.conftest import (
+    add_connected_player,
+    add_connected_players,
+    make_mock_game_connection,
+)
+
+pytestmark = pytest.mark.asyncio
+
+FFA_TEAM = 1
+
+
+class PersistenceError(Exception):
+    """
+    Raised when detecting that rating results would not have been persisted.
+    """
+
+    pass
+
+
+@pytest.fixture
+def rating_service(database, player_service):
+    mock_service = RatingService(database, player_service)
+    mock_service._persist_rating_changes = CoroutineMock()
+
+    mock_ratings = {}
+
+    def set_mock_rating(player_id, rating_type, rating):
+        nonlocal mock_ratings
+        nonlocal mock_service
+        mock_service._logger.debug(
+            f"Set mock {rating_type} rating for player {player_id}: {rating}"
+        )
+        mock_ratings[(player_id, rating_type)] = rating
+
+    def get_mock_rating(*args, **kwargs):
+        nonlocal mock_ratings
+        nonlocal mock_service
+        player_id, rating_type = args
+        value = mock_ratings.get((player_id, rating_type), Rating(1500, 500))
+        mock_service._logger.debug(
+            f"Retrieved mock {rating_type} rating for player {player_id}: {value}"
+        )
+        return value
+
+    mock_service.set_mock_rating = set_mock_rating
+    mock_service._get_player_rating = CoroutineMock(wraps=get_mock_rating)
+
+    return mock_service
+
+
+def get_persisted_results(mock_service):
+    PersistedResults = namedtuple(
+        "PersistedResults", ["rating_type", "ratings", "outcomes"]
+    )
+    args = mock_service._persist_rating_changes.await_args
+    if args is None:
+        return PersistedResults(None, {}, {})
+
+    # TODO why does this need to be args[0]?
+    game_id, rating_type, old_ratings, new_ratings, outcomes = args[0]
+    return PersistedResults(rating_type, new_ratings, outcomes)
 
 
 @pytest.yield_fixture
@@ -9,432 +81,590 @@ def game(event_loop, database, game_service, game_stats_service):
     yield game
 
 
-async def test_compute_rating_raises_game_error(game: Game, players):
-    game.state = GameState.LOBBY
-    add_connected_players(game, [players.hosting, players.joining])
-    # add_connected_players sets this, so we need to unset it again
-    del game._player_options[players.hosting.id]["Team"]
-    game.set_player_option(players.joining.id, "Team", 1)
-    await game.launch()
-
-    with pytest.raises(GameError):
-        game.compute_rating(rating=RatingType.LADDER_1V1)
+@pytest.yield_fixture
+def custom_game(event_loop, database, game_service, game_stats_service):
+    game = CustomGame(42, database, game_service, game_stats_service)
+    yield game
 
 
-async def test_compute_rating_computes_global_ratings(game: Game, players):
-    game.state = GameState.LOBBY
-    players.hosting.ratings[RatingType.GLOBAL] = Rating(1500, 250)
-    players.joining.ratings[RatingType.GLOBAL] = Rating(1500, 250)
-    add_connected_players(game, [players.hosting, players.joining])
-    await game.launch()
-    await game.add_result(players.hosting.id, 0, "victory", 1)
-    await game.add_result(players.joining.id, 1, "defeat", 0)
-    game.set_player_option(players.hosting.id, "Team", 2)
-    game.set_player_option(players.joining.id, "Team", 3)
-    groups = game.compute_rating()
-    assert players.hosting in groups[0]
-    assert players.joining in groups[1]
+@pytest.yield_fixture
+def ladder_game(event_loop, database, game_service, game_stats_service):
+    game = LadderGame(42, database, game_service, game_stats_service)
+    yield game
 
 
-async def test_compute_rating_computes_ladder_ratings(game: Game, players):
-    game.state = GameState.LOBBY
-    players.hosting.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
-    players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
-    add_connected_players(game, [players.hosting, players.joining])
-    await game.launch()
-    await game.add_result(players.hosting.id, 0, "victory", 1)
-    await game.add_result(players.joining.id, 1, "defeat", 0)
-    game.set_player_option(players.hosting.id, "Team", 1)
-    game.set_player_option(players.joining.id, "Team", 1)
-    groups = game.compute_rating(rating=RatingType.LADDER_1V1)
-    assert players.hosting in groups[0]
-    assert players.joining in groups[1]
+def add_players_with_rating(player_factory, game, ratings, teams):
+    rating_service = game.game_service._rating_service
 
-
-async def test_compute_rating_balanced_teamgame(game: Game, player_factory):
-    game.state = GameState.LOBBY
     players = [
         (
             player_factory(
                 login=f"{i}",
                 player_id=i,
                 global_rating=rating,
+                ladder_rating=rating,
                 with_lobby_connection=False,
             ),
-            result,
             team,
         )
-        for i, (rating, result, team) in enumerate(
-            [
-                (Rating(1500, 250), 0, 2),
-                (Rating(1700, 120), 0, 2),
-                (Rating(1200, 72), 0, 3),
-                (Rating(1200, 72), 0, 3),
-            ],
-            1,
-        )
+        for i, (rating, team) in enumerate(zip(ratings, teams), 1)
     ]
-    add_connected_players(game, [player for player, _, _ in players])
-    for player, _, team in players:
-        game.set_player_option(player.id, "Team", team)
-        game.set_player_option(player.id, "Army", player.id - 1)
-    await game.launch()
-    for player, result, team in players:
-        await game.add_result(
-            player, player.id - 1, "victory" if team == 2 else "defeat", result
+
+    game.state = GameState.LOBBY
+    add_connected_players(game, [player for player, _ in players])
+
+    for player, team in players:
+        rating_service.set_mock_rating(
+            player.id, RatingType.GLOBAL, Rating(*player.ratings[RatingType.GLOBAL])
         )
-    result = game.compute_rating()
-    for team in result:
-        for player, new_rating in team.items():
-            assert player in game.players
-            assert new_rating != Rating(*player.ratings[RatingType.GLOBAL])
+        rating_service.set_mock_rating(
+            player.id,
+            RatingType.LADDER_1V1,
+            Rating(*player.ratings[RatingType.LADDER_1V1]),
+        )
+        player._mock_team = team
+        game.set_player_option(player.id, "Team", player._mock_team)
+        player._test_army = player.id - 1
+        game.set_player_option(player.id, "Army", player._test_army)
+
+    return players
 
 
-async def test_compute_rating_sum_of_scores_edge_case(game: Game, player_factory):
+async def report_results(game, message_list):
+    """
+    message list of the form 
+    List[(reporter_player_object, army_id_to_report_for, outcome_string, score)]
+    """
+    for player, army_id, outcome_string, score in message_list:
+        await game.add_result(player, army_id, outcome_string, score)
+
+
+async def test_rating_summary_missing_team_raises_game_error(game, players):
+    game.state = GameState.LOBBY
+    add_connected_players(game, [players.hosting, players.joining])
+    del game._player_options[players.hosting.id]["Team"]
+    await game.launch()
+
+    with pytest.raises(GameError):
+        game._get_rating_summary(RatingType.GLOBAL)
+
+
+async def test_rate_game_global_ratings(custom_game, players, rating_service):
+    custom_game.state = GameState.LOBBY
+    add_connected_players(custom_game, [players.hosting, players.joining])
+    custom_game.set_player_option(players.hosting.id, "Team", 2)
+    custom_game.set_player_option(players.joining.id, "Team", 3)
+
+    await custom_game.launch()
+    await custom_game.add_result(players.hosting.id, 0, "victory", 1)
+    await custom_game.add_result(players.joining.id, 1, "defeat", 0)
+
+    # will refuse to rate short custom games
+    custom_game.launched_at = time.time() - 600
+
+    await custom_game.rate_game()
+    results = get_persisted_results(custom_game.game_service._rating_service)
+    assert results.rating_type is RatingType.GLOBAL
+    assert players.hosting.id in results.ratings
+    assert players.joining.id in results.ratings
+
+
+async def test_rate_game_ladder_ratings(ladder_game, players):
+    rating_service = ladder_game.game_service._rating_service
+
+    ladder_game.state = GameState.LOBBY
+    add_connected_players(ladder_game, [players.hosting, players.joining])
+    ladder_game.set_player_option(players.hosting.id, "Team", 1)
+    ladder_game.set_player_option(players.joining.id, "Team", 1)
+
+    await ladder_game.launch()
+    await ladder_game.add_result(players.hosting.id, 0, "victory", 1)
+    await ladder_game.add_result(players.joining.id, 1, "defeat", 0)
+
+    await ladder_game.rate_game()
+    results = get_persisted_results(rating_service)
+    assert results.rating_type is RatingType.LADDER_1V1
+    assert players.hosting.id in results.ratings
+    assert players.joining.id in results.ratings
+
+
+async def test_rate_game_rating_balanced_teamgame(custom_game, player_factory):
+    rating_service = custom_game.game_service._rating_service
+
+    players = add_players_with_rating(
+        player_factory,
+        custom_game,
+        [Rating(1500, 250), Rating(1700, 120), Rating(1200, 72), Rating(1200, 72)],
+        [2, 2, 3, 3],
+    )
+
+    await custom_game.launch()
+    # will refuse to rate short custom games
+    custom_game.launched_at = time.time() - 600
+
+    await report_results(
+        custom_game,
+        [
+            (player, player._test_army, "victory" if team == 2 else "defeat", 0)
+            for player, team in players
+        ],
+    )
+
+    await custom_game.rate_game()
+    results = get_persisted_results(rating_service)
+
+    assert results.rating_type is RatingType.GLOBAL
+    for player, _ in players:
+        assert results.ratings[player.id] != Rating(*player.ratings[RatingType.GLOBAL])
+
+
+async def test_rate_game_sum_of_scores_edge_case(custom_game, player_factory):
     """
     For certain scores, compute_rating was determining the winner incorrectly,
     see issue <https://github.com/FAForever/server/issues/485>.
     """
-    game.state = GameState.LOBBY
+    rating_service = custom_game.game_service._rating_service
+
     win_team = 2
     lose_team = 3
-    players = [
-        (
-            player_factory(
-                login=f"{i}",
-                player_id=i,
-                global_rating=rating,
-                with_lobby_connection=False,
-            ),
-            result,
-            team,
-        )
-        for i, (rating, result, team) in enumerate(
-            [
-                (Rating(1500, 200), 1, lose_team),
-                (Rating(1500, 200), 1, lose_team),
-                (Rating(1500, 200), 1, lose_team),
-                (Rating(1500, 200), -10, lose_team),
-                (Rating(1500, 200), 10, win_team),
-                (Rating(1500, 200), -10, win_team),
-                (Rating(1500, 200), -10, win_team),
-                (Rating(1500, 200), 2, win_team),
-            ],
-            1,
-        )
-    ]
-    add_connected_players(game, [player for player, _, _ in players])
-    for player, _, team in players:
-        game.set_player_option(player.id, "Team", team)
-        game.set_player_option(player.id, "Army", player.id - 1)
-    await game.launch()
+    rating_list = [Rating(1500, 200)] * 8
+    team_list = (4 * [lose_team]) + (4 * [win_team])
+    score_list = [1, 1, 1, -10, 10, -10, 2]
 
-    for player, result, team in players:
-        outcome = "victory" if team is win_team else "defeat"
-        await game.add_result(player, player.id - 1, outcome, result)
+    players = add_players_with_rating(
+        player_factory, custom_game, rating_list, team_list
+    )
 
-    result = game.compute_rating()
-    for team in result:
-        for player, new_rating in team.items():
-            old_rating = Rating(*player.ratings[RatingType.GLOBAL])
-            if (
-                player.id > 4
-            ):  # `team` index in result might not coincide with `team` index in players
-                assert new_rating > old_rating
-            else:
-                assert new_rating < old_rating
+    await custom_game.launch()
+    # will refuse to rate short custom games
+    custom_game.launched_at = time.time() - 600
+
+    await report_results(
+        custom_game,
+        [
+            (
+                player,
+                player._test_army,
+                "victory" if team == win_team else "defeat",
+                score,
+            )
+            for (player, team), score in zip(players, score_list)
+        ],
+    )
+
+    await custom_game.rate_game()
+    results = get_persisted_results(rating_service)
+
+    assert results.rating_type is RatingType.GLOBAL
+    for player, team in players:
+        if team == win_team:
+            assert results.ratings[player.id] > Rating(
+                *player.ratings[RatingType.GLOBAL]
+            )
+        else:
+            assert results.ratings[player.id] < Rating(
+                *player.ratings[RatingType.GLOBAL]
+            )
 
 
-async def test_compute_rating_only_one_surviver(game: Game, player_factory):
+async def test_rate_game_only_one_survivor(custom_game, player_factory):
     """
     When a player dies their score is reported as "defeat", but this does not
     necessarily mean they lost the game, if their team mates went on and later
     reported a "victory".
     """
-    game.state = GameState.LOBBY
+    rating_service = custom_game.game_service._rating_service
+
     win_team = 2
     lose_team = 3
-    players = [
-        (
-            player_factory(
-                login=f"{i}",
-                player_id=i,
-                global_rating=Rating(1500, 200),
-                with_lobby_connection=False,
-            ),
-            outcome,
-            result,
-            team,
-        )
-        for i, (outcome, result, team) in enumerate(
-            [
-                ("defeat", -10, lose_team),
-                ("defeat", -10, lose_team),
-                ("defeat", -10, lose_team),
-                ("defeat", -10, lose_team),
-                ("defeat", -10, win_team),
-                ("defeat", -10, win_team),
-                ("defeat", -10, win_team),
-                ("victory", 10, win_team),
-            ],
-            1,
-        )
-    ]
-    add_connected_players(game, [player for player, _, _, _ in players])
-    for player, _, _, team in players:
-        game.set_player_option(player.id, "Team", team)
-        game.set_player_option(player.id, "Army", player.id - 1)
-    await game.launch()
+    rating_list = [Rating(1500, 200)] * 8
+    team_list = (4 * [lose_team]) + (4 * [win_team])
+    score_list = (7 * [-10]) + [10]
 
-    for player, outcome, result, team in players:
-        await game.add_result(player, player.id - 1, outcome, result)
+    players = add_players_with_rating(
+        player_factory, custom_game, rating_list, team_list
+    )
 
-    result = game.compute_rating()
-    for team in result:
-        for player, new_rating in team.items():
-            old_rating = Rating(*player.ratings[RatingType.GLOBAL])
-            # `team` index in result might not coincide with `team` index in players
-            if player.id > 4:
-                assert new_rating > old_rating
-            else:
-                assert new_rating < old_rating
+    await custom_game.launch()
+    # will refuse to rate short custom games
+    custom_game.launched_at = time.time() - 600
+
+    await report_results(
+        custom_game,
+        [
+            (player, player._test_army, "victory" if score == 10 else "defeat", score)
+            for (player, team), score in zip(players, score_list)
+        ],
+    )
+
+    await custom_game.rate_game()
+    results = get_persisted_results(rating_service)
+
+    assert results.rating_type is RatingType.GLOBAL
+    for player, team in players:
+        if team == win_team:
+            assert results.ratings[player.id] > Rating(
+                *player.ratings[RatingType.GLOBAL]
+            )
+        else:
+            assert results.ratings[player.id] < Rating(
+                *player.ratings[RatingType.GLOBAL]
+            )
 
 
-async def test_compute_rating_two_player_FFA(game: Game, player_factory):
-    game.state = GameState.LOBBY
-    players = [
-        (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
-        for i, (rating, result, team) in enumerate(
-            [(Rating(1500, 250), 0, 1), (Rating(1700, 120), 0, 1)], 1
-        )
-    ]
-    add_connected_players(game, [player for player, _, _ in players])
-    for player, _, team in players:
-        game.set_player_option(player.id, "Team", team)
-        game.set_player_option(player.id, "Army", player.id - 1)
-    await game.launch()
+async def test_rate_game_two_player_FFA(custom_game, player_factory):
+    rating_service = custom_game.game_service._rating_service
 
-    for player, result, _ in players:
-        outcome = "victory" if player.id == 1 else "defeat"
-        await game.add_result(player, player.id - 1, outcome, result)
-    result = game.compute_rating()
-    for team in result:
-        for player, new_rating in team.items():
-            old_rating = Rating(*player.ratings[RatingType.GLOBAL])
-            assert (new_rating > old_rating) is (player.id == 1)
+    rating_list = [Rating(1500, 250), Rating(1700, 120)]
+    team_list = [FFA_TEAM, FFA_TEAM]
+    score_list = [0, 0]
+
+    players = add_players_with_rating(
+        player_factory, custom_game, rating_list, team_list
+    )
+
+    await custom_game.launch()
+    # will refuse to rate short custom games
+    custom_game.launched_at = time.time() - 600
+
+    await report_results(
+        custom_game,
+        [
+            (
+                player,
+                player._test_army,
+                "victory" if player.id == 1 else "defeat",
+                score,
+            )
+            for (player, team), score in zip(players, score_list)
+        ],
+    )
+
+    await custom_game.rate_game()
+    results = get_persisted_results(rating_service)
+
+    assert results.rating_type is RatingType.GLOBAL
+    for player, _ in players:
+        assert (
+            results.ratings[player.id] > Rating(*player.ratings[RatingType.GLOBAL])
+        ) is (player.id == 1)
 
 
-async def test_compute_rating_does_not_rate_multi_team(game: Game, player_factory):
-    game.state = GameState.LOBBY
-    players = [
-        (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
-        for i, (rating, result, team) in enumerate(
-            [
-                (Rating(1500, 250), 10, 2),
-                (Rating(1700, 120), 0, 3),
-                (Rating(1200, 72), 0, 4),
-            ],
-            1,
-        )
-    ]
-    add_connected_players(game, [player for player, _, _ in players])
-    for player, _, team in players:
-        game.set_player_option(player.id, "Team", team)
-        game.set_player_option(player.id, "Army", player.id - 1)
-    await game.launch()
+async def test_rate_game_does_not_rate_multi_team(custom_game, player_factory):
+    rating_service = custom_game.game_service._rating_service
 
-    for player, result, _ in players:
-        outcome = "victory" if result == 10 else "defeat"
-        await game.add_result(player, player.id - 1, outcome, result)
+    rating_list = [Rating(1500, 250), Rating(1700, 120), Rating(1200, 72)]
+    team_list = [2, 3, 4]
+    score_list = [10, 0, 0]
+
+    players = add_players_with_rating(
+        player_factory, custom_game, rating_list, team_list
+    )
+
+    await custom_game.launch()
+    # will refuse to rate short custom games
+    custom_game.launched_at = time.time() - 600
+
+    await report_results(
+        custom_game,
+        [
+            (player, player._test_army, "victory" if score == 10 else "defeat", score)
+            for (player, team), score in zip(players, score_list)
+        ],
+    )
+
+    await custom_game.rate_game()
+    results = get_persisted_results(rating_service)
+    assert results.ratings == {}
+
+
+async def test_rate_game_does_not_rate_multi_FFA(custom_game, player_factory):
+    rating_service = custom_game.game_service._rating_service
+
+    rating_list = [Rating(1500, 250), Rating(1700, 120), Rating(1200, 72)]
+    team_list = [1, 1, 1]
+    score_list = [10, 0, 0]
+
+    players = add_players_with_rating(
+        player_factory, custom_game, rating_list, team_list
+    )
+
+    await custom_game.launch()
+    # will refuse to rate short custom games
+    custom_game.launched_at = time.time() - 600
+
+    await report_results(
+        custom_game,
+        [
+            (player, player._test_army, "victory" if score == 10 else "defeat", score)
+            for (player, team), score in zip(players, score_list)
+        ],
+    )
+
+    await custom_game.rate_game()
+
+    results = get_persisted_results(rating_service)
+    assert results.ratings == {}
+
+
+async def test_rate_game_does_not_rate_double_win(custom_game, player_factory):
+    rating_service = custom_game.game_service._rating_service
+
+    rating_list = [Rating(1500, 250), Rating(1700, 120)]
+    team_list = [2, 3]
+    score_list = [10, 10]
+
+    players = add_players_with_rating(
+        player_factory, custom_game, rating_list, team_list
+    )
+
+    await custom_game.launch()
+    # will refuse to rate short custom games
+    custom_game.launched_at = time.time() - 600
+
+    await report_results(
+        custom_game,
+        [
+            (player, player._test_army, "victory", score)
+            for (player, team), score in zip(players, score_list)
+        ],
+    )
+
     with pytest.raises(GameRatingError):
-        game.compute_rating()
+        await custom_game.rate_game()
+
+    results = get_persisted_results(rating_service)
+    assert results.ratings == {}
 
 
-async def test_compute_rating_does_not_rate_multi_FFA(game: Game, player_factory):
-    game.state = GameState.LOBBY
-    players = [
-        (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
-        for i, (rating, result, team) in enumerate(
-            [
-                (Rating(1500, 250), 10, 1),
-                (Rating(1700, 120), 0, 1),
-                (Rating(1200, 72), 0, 1),
-            ],
-            1,
-        )
-    ]
-    add_connected_players(game, [player for player, _, _ in players])
-    for player, _, team in players:
-        game.set_player_option(player.id, "Team", team)
-        game.set_player_option(player.id, "Army", player.id - 1)
-    await game.launch()
+async def test_rate_game_treats_double_defeat_as_draw(custom_game, player_factory):
+    rating_service = custom_game.game_service._rating_service
 
-    for player, result, _ in players:
-        outcome = "victory" if result == 10 else "defeat"
-        await game.add_result(player, player.id - 1, outcome, result)
-    with pytest.raises(GameRatingError):
-        game.compute_rating()
+    rating_list = [Rating(1500, 500), Rating(1500, 500)]
+    team_list = [2, 3]
+    score_list = [0, 0]
 
+    players = add_players_with_rating(
+        player_factory, custom_game, rating_list, team_list
+    )
 
-async def test_compute_rating_does_not_rate_double_win(game: Game, player_factory):
-    game.state = GameState.LOBBY
-    players = [
-        (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
-        for i, (rating, result, team) in enumerate(
-            [(Rating(1500, 250), 10, 2), (Rating(1700, 120), 0, 3)], 1
-        )
-    ]
-    add_connected_players(game, [player for player, _, _ in players])
-    for player, _, team in players:
-        game.set_player_option(player.id, "Team", team)
-        game.set_player_option(player.id, "Army", player.id - 1)
-    await game.launch()
+    await custom_game.launch()
+    # will refuse to rate short custom games
+    custom_game.launched_at = time.time() - 600
 
-    for player, result, _ in players:
-        await game.add_result(player, player.id - 1, "victory", result)
-    with pytest.raises(GameRatingError):
-        game.compute_rating()
+    await report_results(
+        custom_game,
+        [
+            (player, player._test_army, "defeat", score)
+            for (player, team), score in zip(players, score_list)
+        ],
+    )
 
+    await custom_game.rate_game()
 
-async def test_compute_rating_treats_double_defeat_as_draw(game: Game, player_factory):
-    game.state = GameState.LOBBY
-    players = [
-        (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
-        for i, (rating, result, team) in enumerate(
-            [(Rating(1500, 250), 10, 2), (Rating(1500, 250), 0, 3)], 1
-        )
-    ]
-    add_connected_players(game, [player for player, _, _ in players])
-    for player, _, team in players:
-        game.set_player_option(player.id, "Team", team)
-        game.set_player_option(player.id, "Army", player.id - 1)
-    await game.launch()
+    results = get_persisted_results(rating_service)
+    for player, _ in players:
+        new_rating = results.ratings[player.id]
+        old_rating = Rating(*player.ratings[RatingType.GLOBAL])
 
-    for player, result, _ in players:
-        await game.add_result(player, player.id - 1, "defeat", result)
-    result = game.compute_rating()
-    for team in result:
-        for _, new_rating in team.items():
-            old_rating = Rating(*player.ratings[RatingType.GLOBAL])
-            assert new_rating.mu == old_rating.mu
-            assert new_rating.sigma < old_rating.sigma
+        assert results.outcomes[player.id] is GameOutcome.DRAW
+        assert (new_rating.mu - old_rating.mu) < 0.1
+        assert new_rating.sigma < old_rating.sigma - 10
 
 
 async def test_compute_rating_works_with_partially_unknown_results(
-    game: Game, player_factory
+    custom_game, player_factory
 ):
-    game.state = GameState.LOBBY
-    players = [
-        (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
-        for i, (rating, result, team) in enumerate(
-            [
-                (Rating(1500, 250), 10, 2),
-                (Rating(1700, 120), 0, 2),
-                (Rating(1200, 72), -10, 3),
-                (Rating(1200, 72), 0, 3),
-            ],
-            1,
-        )
+    rating_service = custom_game.game_service._rating_service
+
+    win_team = 2
+    lose_team = 3
+    rating_list = [
+        Rating(1500, 250),
+        Rating(1700, 120),
+        Rating(1200, 72),
+        Rating(1200, 72),
     ]
-    add_connected_players(game, [player for player, _, _ in players])
-    for player, _, team in players:
-        game.set_player_option(player.id, "Team", team)
-        game.set_player_option(player.id, "Army", player.id - 1)
-    await game.launch()
+    team_list = [win_team, win_team, lose_team, lose_team]
+    score_list = [10, 0, -10, 0]
 
-    for player, result, _ in players:
-        outcome = "victory" if result == 10 else "unknown"
-        await game.add_result(player, player.id - 1, outcome, result)
-    result = game.compute_rating()
-    for team in result:
-        for player, new_rating in team.items():
-            assert new_rating != Rating(*player.ratings[RatingType.GLOBAL])
+    players = add_players_with_rating(
+        player_factory, custom_game, rating_list, team_list
+    )
 
+    await custom_game.launch()
+    # will refuse to rate short custom games
+    custom_game.launched_at = time.time() - 600
 
-# From old GameRater tests
-def test_compute_rating_of_two_player_ffa_match_if_one_chose_a_team():
-    FFA_TEAM = 1
-    p1, p2 = MockPlayer(), MockPlayer()
-    players_by_team = {FFA_TEAM: [p1], 2: [p2]}
-    outcome_py_player = {p1: GameOutcome.VICTORY, p2: GameOutcome.DEFEAT}
+    await report_results(
+        custom_game,
+        [
+            (player, player._test_army, "victory" if score == 10 else "unknown", score)
+            for (player, team), score in zip(players, score_list)
+        ],
+    )
 
-    rater = GameRater(players_by_team, outcome_py_player)
-    result = rater.compute_rating()
-    for team in result:
-        for player, new_rating in team.items():
-            assert new_rating != Rating(*player.ratings[RatingType.GLOBAL])
+    await custom_game.rate_game()
+    results = get_persisted_results(rating_service)
 
-
-def test_compute_rating_for_single_ffa_player_vs_a_team():
-    FFA_TEAM = 1
-    p1, p2, p3 = MockPlayer(), MockPlayer(), MockPlayer()
-    players_by_team = {FFA_TEAM: [p1], 2: [p2, p3]}
-    outcome_py_player = {
-        p1: GameOutcome.VICTORY,
-        p2: GameOutcome.DEFEAT,
-        p3: GameOutcome.DEFEAT,
-    }
-
-    rater = GameRater(players_by_team, outcome_py_player)
-    result = rater.compute_rating()
-    for team in result:
-        for player, new_rating in team.items():
-            assert new_rating != Rating(*player.ratings[RatingType.GLOBAL])
+    assert results.rating_type is RatingType.GLOBAL
+    for player, team in players:
+        if team == win_team:
+            assert results.ratings[player.id] > Rating(
+                *player.ratings[RatingType.GLOBAL]
+            )
+        else:
+            assert results.ratings[player.id] < Rating(
+                *player.ratings[RatingType.GLOBAL]
+            )
 
 
-def test_compute_rating_of_two_player_ffa_match_if_none_chose_a_team():
-    FFA_TEAM = 1
-    p1, p2 = MockPlayer(), MockPlayer()
-    players_by_team = {FFA_TEAM: [p1, p2]}
-    outcome_py_player = {p1: GameOutcome.VICTORY, p2: GameOutcome.DEFEAT}
+async def test_rate_game_single_ffa_vs_single_team(custom_game, player_factory):
+    rating_service = custom_game.game_service._rating_service
 
-    rater = GameRater(players_by_team, outcome_py_player)
-    result = rater.compute_rating()
-    for team in result:
-        for player, new_rating in team.items():
-            assert new_rating != Rating(*player.ratings[RatingType.GLOBAL])
+    rating_list = [Rating(1500, 500), Rating(1500, 500)]
+    team_list = [FFA_TEAM, 3]
+    score_list = [10, 0]
 
+    players = add_players_with_rating(
+        player_factory, custom_game, rating_list, team_list
+    )
 
-def test_dont_rate_partial_ffa_matches():
-    FFA_TEAM = 1
-    p1, p2, p3, p4 = MockPlayer(), MockPlayer(), MockPlayer(), MockPlayer()
-    players_by_team = {FFA_TEAM: [p1, p3], 2: [p2, p4]}
-    outcome_py_player = {
-        p1: GameOutcome.VICTORY,
-        p2: GameOutcome.DEFEAT,
-        p3: GameOutcome.DEFEAT,
-        p4: GameOutcome.DEFEAT,
-    }
+    await custom_game.launch()
+    # will refuse to rate short custom games
+    custom_game.launched_at = time.time() - 600
 
-    rater = GameRater(players_by_team, outcome_py_player)
-    with pytest.raises(GameRatingError):
-        rater.compute_rating()
+    await report_results(
+        custom_game,
+        [
+            (player, player._test_army, "victory" if score == 10 else "defeat", score)
+            for (player, team), score in zip(players, score_list)
+        ],
+    )
 
+    await custom_game.rate_game()
 
-def test_dont_rate_pure_ffa_matches_with_more_than_two_players():
-    FFA_TEAM = 1
-    p1, p2, p3 = MockPlayer(), MockPlayer(), MockPlayer()
-    players_by_team = {FFA_TEAM: [p1, p2, p3]}
-    outcome_py_player = {
-        p1: GameOutcome.VICTORY,
-        p2: GameOutcome.DEFEAT,
-        p3: GameOutcome.DEFEAT,
-    }
+    results = get_persisted_results(rating_service)
+    for player, _ in players:
+        new_rating = results.ratings[player.id]
+        old_rating = Rating(*player.ratings[RatingType.GLOBAL])
 
-    rater = GameRater(players_by_team, outcome_py_player)
-    with pytest.raises(GameRatingError):
-        rater.compute_rating()
+        assert new_rating != old_rating
 
 
-def test_dont_rate_threeway_team_matches():
-    p1, p2, p3 = MockPlayer(), MockPlayer(), MockPlayer()
-    players_by_team = {2: [p1], 3: [p2], 4: [p3]}
-    outcome_py_player = {
-        p1: GameOutcome.VICTORY,
-        p2: GameOutcome.DEFEAT,
-        p3: GameOutcome.DEFEAT,
-    }
+async def test_rate_game_single_ffa_vs_team(custom_game, player_factory):
+    rating_service = custom_game.game_service._rating_service
 
-    rater = GameRater(players_by_team, outcome_py_player)
-    with pytest.raises(GameRatingError):
-        rater.compute_rating()
+    rating_list = [Rating(1500, 500)] * 3
+    team_list = [FFA_TEAM, 3, 3]
+    score_list = [10, 0, 0]
+
+    players = add_players_with_rating(
+        player_factory, custom_game, rating_list, team_list
+    )
+
+    await custom_game.launch()
+    # will refuse to rate short custom games
+    custom_game.launched_at = time.time() - 600
+
+    await report_results(
+        custom_game,
+        [
+            (player, player._test_army, "victory" if score == 10 else "defeat", score)
+            for (player, team), score in zip(players, score_list)
+        ],
+    )
+
+    await custom_game.rate_game()
+
+    results = get_persisted_results(rating_service)
+    assert results.ratings == {}
+
+
+async def test_dont_rate_partial_ffa_matches(custom_game, player_factory):
+    rating_service = custom_game.game_service._rating_service
+
+    rating_list = [Rating(1500, 500)] * 4
+    team_list = [FFA_TEAM, FFA_TEAM, 3, 3]
+    score_list = [10, 0, 0, 0]
+
+    players = add_players_with_rating(
+        player_factory, custom_game, rating_list, team_list
+    )
+
+    await custom_game.launch()
+    # will refuse to rate short custom games
+    custom_game.launched_at = time.time() - 600
+
+    await report_results(
+        custom_game,
+        [
+            (player, player._test_army, "victory" if score == 10 else "defeat", score)
+            for (player, team), score in zip(players, score_list)
+        ],
+    )
+
+    await custom_game.rate_game()
+
+    results = get_persisted_results(rating_service)
+    assert results.ratings == {}
+
+
+async def test_dont_rate_pure_ffa_matches_with_more_than_two_players(
+    custom_game, player_factory
+):
+    rating_service = custom_game.game_service._rating_service
+
+    rating_list = [Rating(1500, 500)] * 3
+    team_list = [FFA_TEAM] * 3
+    score_list = [10, 0, 0]
+
+    players = add_players_with_rating(
+        player_factory, custom_game, rating_list, team_list
+    )
+
+    await custom_game.launch()
+    # will refuse to rate short custom games
+    custom_game.launched_at = time.time() - 600
+
+    await report_results(
+        custom_game,
+        [
+            (player, player._test_army, "victory" if score == 10 else "defeat", score)
+            for (player, team), score in zip(players, score_list)
+        ],
+    )
+
+    await custom_game.rate_game()
+
+    results = get_persisted_results(rating_service)
+    assert results.ratings == {}
+
+
+async def test_dont_rate_threeway_team_matches(custom_game, player_factory):
+    rating_service = custom_game.game_service._rating_service
+
+    rating_list = [Rating(1500, 500)] * 3
+    team_list = [2, 3, 4]
+    score_list = [10, 0, 0]
+
+    players = add_players_with_rating(
+        player_factory, custom_game, rating_list, team_list
+    )
+
+    await custom_game.launch()
+    # will refuse to rate short custom games
+    custom_game.launched_at = time.time() - 600
+
+    await report_results(
+        custom_game,
+        [
+            (player, player._test_army, "victory" if score == 10 else "defeat", score)
+            for (player, team), score in zip(players, score_list)
+        ],
+    )
+
+    await custom_game.rate_game()
+
+    results = get_persisted_results(rating_service)
+    assert results.ratings == {}

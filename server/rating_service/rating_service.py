@@ -3,7 +3,6 @@ from .typedefs import (
     RatingData,
     GameRatingData,
     GameRatingSummary,
-    GameRatingData,
     PlayerID,
 )
 
@@ -11,8 +10,6 @@ from server.db import FAFDatabase
 from server.player_service import PlayerService
 from server.decorators import with_logger
 
-from server.players import Player, PlayerState
-from server.games.game import GameState, GameError
 from server.games.game_results import GameOutcome
 
 from server.rating import RatingType
@@ -147,6 +144,9 @@ class RatingService:
             )
             return
 
+        self._logger.debug(
+            "Sending player rating update for player with id ", player_id
+        )
         self._player_service_callback(player_id, rating_type, new_rating)
 
     async def _update_rating_table(

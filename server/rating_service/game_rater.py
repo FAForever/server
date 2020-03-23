@@ -1,19 +1,14 @@
 from typing import Dict, List, Tuple, Set
 
 import trueskill
-from server.config import FFA_TEAM
 from server.games.game_results import GameOutcome
-from server.players import Player
-from server.rating import RatingType
 from trueskill import Rating
 
 from ..decorators import with_logger
 
 from .typedefs import (
     PlayerID,
-    GameRatingSummary,
     RatingGroups,
-    SummaryResults,
     GameRatingData,
     RatingData,
 )

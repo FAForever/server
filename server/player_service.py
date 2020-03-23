@@ -131,8 +131,15 @@ class PlayerService(Service):
     ) -> None:
         player = self.get_player(player_id)
         if player is None:
+            self._logger.debug(
+                "Received rating change for player with id %s not in PlayerService.",
+                player_id
+            )
             return
 
+        self._logger.debug(
+            "Received rating change for player %s.", player
+        )
         player.ratings[rating_type] = new_rating
         player.game_count[rating_type] += 1
         self.mark_dirty(player)

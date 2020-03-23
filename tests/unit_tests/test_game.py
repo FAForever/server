@@ -1204,3 +1204,22 @@ async def test_is_even_ffa(game: Game, game_add_players):
     game_add_players(game, 5, team=1)
 
     assert game.is_even
+
+
+async def test_is_even_missing_teams_allowed(game: Game, game_add_players):
+    game.state = GameState.LOBBY
+    player_id = 5
+    game_add_players(game, player_id, team=1)
+    del game._player_options[player_id]["Team"]
+
+    assert game.is_even
+
+
+async def test_team_sets_missing_team_disallowed(game: Game, game_add_players):
+    game.state = GameState.LOBBY
+    player_id = 5
+    game_add_players(game, player_id, team=1)
+    del game._player_options[player_id]["Team"]
+
+    with pytest.raises(GameError):
+        assert game.get_team_sets()

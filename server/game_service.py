@@ -12,7 +12,6 @@ from server.matchmaker import MatchmakerQueue
 from server.players import Player
 from server.rating_service.rating_service import RatingService
 from server.rating_service.typedefs import GameRatingSummary
-from server.rating import RatingType
 
 
 @with_logger
@@ -21,10 +20,10 @@ class GameService(Service):
     Utility class for maintaining lifecycle of games
     """
     def __init__(
-        self, 
-        database: FAFDatabase, 
+        self,
+        database: FAFDatabase,
         player_service,
-        game_stats_service, 
+        game_stats_service,
         rating_service: RatingService,
     ):
         self._db = database

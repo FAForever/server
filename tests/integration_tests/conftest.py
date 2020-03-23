@@ -31,13 +31,14 @@ async def ladder_service(mocker, database, game_service):
 
     await ladder_service.shutdown()
 
+
 @pytest.fixture
-def rating_service(database, mock_players):
+def mock_rating(database, mock_players):
     return RatingService(database, mock_players)
 
 
 @pytest.fixture
-async def lobby_server(
+def lobby_server(
     event_loop, database, player_service, game_service,
     geoip_service, ladder_service, rating_service, policy_server
 ):
