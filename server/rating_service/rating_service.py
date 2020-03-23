@@ -1,10 +1,5 @@
 from typing import Dict
-from .typedefs import (
-    RatingData,
-    GameRatingData,
-    GameRatingSummary,
-    PlayerID,
-)
+from .typedefs import RatingData, GameRatingData, GameRatingSummary, PlayerID
 
 from server.db import FAFDatabase
 from server.player_service import PlayerService
@@ -19,6 +14,10 @@ from .game_rater import GameRater
 from sqlalchemy import select
 from server.db.models import ladder1v1_rating as ladder1v1_table
 from server.db.models import global_rating as global_table
+
+
+class RatingNotFoundError(Exception):
+    pass
 
 
 @with_logger
@@ -73,7 +72,7 @@ class RatingService:
             row = await result.fetchone()
 
             if not row:
-                raise KeyError(
+                raise RatingNotFoundError(
                     f"Could not find a {rating_type} rating for player {player_id}."
                 )
 
@@ -132,9 +131,9 @@ class RatingService:
                     conn, rating_type, player_id, new_rating, outcomes[player_id]
                 )
 
-                await self._update_player_object(player_id, rating_type, new_rating)
+                self._update_player_object(player_id, rating_type, new_rating)
 
-    async def _update_player_object(
+    def _update_player_object(
         self, player_id: PlayerID, rating_type: RatingType, new_rating: Rating
     ) -> None:
         if self._player_service_callback is None:

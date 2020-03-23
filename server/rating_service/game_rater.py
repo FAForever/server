@@ -6,12 +6,7 @@ from trueskill import Rating
 
 from ..decorators import with_logger
 
-from .typedefs import (
-    PlayerID,
-    RatingGroups,
-    GameRatingData,
-    RatingData,
-)
+from .typedefs import PlayerID, RatingGroups, GameRatingData, RatingData
 
 
 class GameRatingError(Exception):
@@ -64,7 +59,7 @@ class GameRater:
             )
 
     @staticmethod
-    def _ranks_from_team_outcomes(team_outcomes: List[Set[GameOutcome]]) -> List[int]:
+    def _ranks_from_team_outcomes(team_outcomes: List[GameOutcome]) -> List[int]:
         """
         Takes a list of length two containing sets of GameOutcomes
         for individual players on a team
