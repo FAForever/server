@@ -204,8 +204,8 @@ async def test_set_player_option(game, players, mock_game_connection):
     mock_game_connection.player = players.hosting
     mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
     game.add_game_connection(mock_game_connection)
-    assert game.players == {players.hosting}
     game.set_player_option(players.hosting.id, 'Team', 1)
+    assert game.players == {players.hosting}
     assert game.get_player_option(players.hosting.id, 'Team') == 1
     assert game.teams == {1}
     game.set_player_option(players.hosting.id, 'StartSpot', 1)
@@ -221,7 +221,37 @@ async def test_add_game_connection(game: Game, players, mock_game_connection):
     mock_game_connection.player = players.hosting
     mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
     game.add_game_connection(mock_game_connection)
+    # Players should not be considered as 'in lobby' until the host has sent
+    # "PlayerOption" configuration for them
+    assert game.to_dict()["num_players"] == 0
+    game.set_player_option(players.hosting.id, 'Team', 1)
     assert players.hosting in game.players
+
+
+async def test_add_game_connection_twice(game: Game, players, mock_game_connection):
+    """
+    When a player disconnects and reconnects to the same game, they should not
+    be considered as 'in-lobby' until the new PlayerOptions are received.
+    """
+    game.state = GameState.LOBBY
+    mock_game_connection.player = players.hosting
+    mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
+    # Connect the host
+    game.add_game_connection(mock_game_connection)
+    game.set_player_option(players.hosting.id, 'Team', 1)
+    assert game.players == {players.hosting}
+    # Join a new player
+    join_conn = add_connected_player(game, players.joining)
+    assert game.players == {players.hosting, players.joining}
+    # Player leaves
+    await game.remove_game_connection(join_conn)
+    assert game.players == {players.hosting}
+    # Player joins again
+    game.add_game_connection(join_conn)
+    assert game.to_dict()["num_players"] == 1
+    game.set_player_option(players.joining.id, 'Team', 1)
+    assert game.players == {players.hosting, players.joining}
+    assert game.to_dict()["num_players"] == 2
 
 
 async def test_add_game_connection_throws_if_not_connected_to_host(
