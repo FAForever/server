@@ -1087,11 +1087,12 @@ async def test_single_wrong_report_still_rated_correctly(game: Game, player_fact
     with open("tests/data/uid11255492.log.json", "r") as f:
         log_dict = json.load(f)
 
+    old_rating = 1500
     players = {
         player_id: player_factory(
             login=f"{player_id}",
             player_id=player_id,
-            global_rating=Rating(1500, 250),
+            global_rating=Rating(old_rating, 250),
             with_lobby_connection=False,
         )
         for team in log_dict["teams"].values() for player_id in team
@@ -1108,11 +1109,12 @@ async def test_single_wrong_report_still_rated_correctly(game: Game, player_fact
         await game.add_result(players[reporter], reportee, outcome, score)
 
     result = game.compute_rating()
+    winning_ids = log_dict["teams"][str(log_dict["winning_team"])]
     for team in result:
         for player, new_rating in team.items():
             assert player in game.players
-            player_is_on_winning_team = player.id < 7
-            rating_improved = new_rating.mu > 1500
+            player_is_on_winning_team = player.id in winning_ids
+            rating_improved = new_rating.mu > old_rating
             assert rating_improved is player_is_on_winning_team
 
 
