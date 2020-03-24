@@ -1098,7 +1098,7 @@ async def test_single_wrong_report_still_rated_correctly(game: Game, player_fact
         for team in log_dict["teams"].values() for player_id in team
     }
 
-    add_connected_players(game, [player for player in players.values()])
+    add_connected_players(game, list(players.values()))
     for team_id, team_list in log_dict["teams"].items():
         for player_id in team_list:
             game.set_player_option(player_id, "Team", team_id)
