@@ -1,5 +1,6 @@
 import logging
 import time
+import json
 from typing import Any, List, Tuple
 from unittest import mock
 
@@ -1081,145 +1082,30 @@ async def test_single_wrong_report_still_rated_correctly(game: Game, player_fact
     game.update_game_player_stats = CoroutineMock()
 
     game.state = GameState.LOBBY
-    players = [
-            (player_factory(
-                login=f"{i}",
-                player_id=i,
-                global_rating=rating,
-                with_lobby_connection=False
-            ), score, team)
-            for i, (rating, score, team) in enumerate([
-                (Rating(1500, 250), 0, 2),
-                (Rating(1500, 250), 0, 2),
-                (Rating(1500, 250), 0, 2),
-                (Rating(1500, 250), 0, 2),
-                (Rating(1500, 250), 0, 2),
-                (Rating(1500, 250), 0, 2),
-                (Rating(1500, 250), 0, 3),
-                (Rating(1500, 250), 0, 3),
-                (Rating(1500, 250), 0, 3),
-                (Rating(1500, 250), 0, 3),
-                (Rating(1500, 250), 0, 3),
-                (Rating(1500, 250), 0, 3),
-            ], 1)]
-    add_connected_players(game, [player for player, _, _ in players])
-    for player, _, team in players:
-        game.set_player_option(player.id, 'Team', team)
-        game.set_player_option(player.id, 'Army', player.id - 1)
+
+    # Loading log data
+    with open("tests/data/uid11255492.log.json", "r") as f:
+        log_dict = json.load(f)
+
+    players = {
+        player_id: player_factory(
+            login=f"{player_id}",
+            player_id=player_id,
+            global_rating=Rating(1500, 250),
+            with_lobby_connection=False,
+        )
+        for team in log_dict["teams"].values() for player_id in team
+    }
+
+    add_connected_players(game, [player for player in players.values()])
+    for team_id, team_list in log_dict["teams"].items():
+        for player_id in team_list:
+            game.set_player_option(player_id, "Team", team_id)
+            game.set_player_option(player_id, "Army", player_id - 1)
     await game.launch()
 
-    await game.add_result(players[0][0].id, 1, "defeat", 0)
-    await game.add_result(players[3][0].id, 1, "defeat", 0)
-    await game.add_result(players[9][0].id, 1, "defeat", 0)
-    await game.add_result(players[4][0].id, 1, "defeat", 0)
-    await game.add_result(players[7][0].id, 1, "defeat", 0)
-    await game.add_result(players[1][0].id, 1, "defeat", 0)
-    await game.add_result(players[10][0].id, 1, "defeat", 0)
-    await game.add_result(players[2][0].id, 1, "defeat", 0)
-    await game.add_result(players[5][0].id, 1, "defeat", 0)
-    await game.add_result(players[8][0].id, 1, "defeat", 0)
-    await game.add_result(players[6][0].id, 1, "defeat", 0)
-    await game.add_result(players[4][0].id, 8, "defeat", 0)
-    await game.add_result(players[6][0].id, 8, "defeat", 0)
-    await game.add_result(players[9][0].id, 8, "defeat", 0)
-    await game.add_result(players[2][0].id, 8, "defeat", 0)
-    await game.add_result(players[3][0].id, 8, "defeat", 0)
-    await game.add_result(players[0][0].id, 8, "defeat", 0)
-    await game.add_result(players[8][0].id, 8, "defeat", 0)
-    await game.add_result(players[7][0].id, 8, "defeat", 0)
-    await game.add_result(players[5][0].id, 8, "defeat", 0)
-    await game.add_result(players[10][0].id, 8, "defeat", 0)
-    await game.add_result(players[1][0].id, 8, "defeat", 0)
-    await game.add_result(players[4][0].id, 11, "defeat", 0)
-    await game.add_result(players[4][0].id, 0, "defeat", 0)
-    await game.add_result(players[4][0].id, 2, "defeat", 0)
-    await game.add_result(players[4][0].id, 3, "defeat", 0)
-    await game.add_result(players[4][0].id, 6, "defeat", 0)
-    await game.add_result(players[4][0].id, 4, "defeat", 0)
-    await game.add_result(players[4][0].id, 5, "defeat", 0)
-    await game.add_result(players[4][0].id, 7, "defeat", 0)
-    await game.add_result(players[9][0].id, 7, "defeat", 0)
-    await game.add_result(players[6][0].id, 7, "defeat", 0)
-    await game.add_result(players[0][0].id, 7, "defeat", 0)
-    await game.add_result(players[2][0].id, 7, "defeat", 0)
-    await game.add_result(players[10][0].id, 7, "defeat", 0)
-    await game.add_result(players[8][0].id, 7, "defeat", 0)
-    await game.add_result(players[5][0].id, 7, "defeat", 0)
-    await game.add_result(players[7][0].id, 7, "defeat", 0)
-    await game.add_result(players[1][0].id, 7, "defeat", 0)
-    await game.add_result(players[9][0].id, 3, "defeat", 0)
-    await game.add_result(players[0][0].id, 3, "defeat", 0)
-    await game.add_result(players[2][0].id, 3, "defeat", 0)
-    await game.add_result(players[1][0].id, 3, "defeat", 0)
-    await game.add_result(players[7][0].id, 3, "defeat", 0)
-    await game.add_result(players[6][0].id, 3, "defeat", 0)
-    await game.add_result(players[8][0].id, 3, "defeat", 0)
-    await game.add_result(players[10][0].id, 3, "defeat", 0)
-    await game.add_result(players[5][0].id, 3, "defeat", 0)
-    await game.add_result(players[0][0].id, 3, "defeat", 0)
-    await game.add_result(players[9][0].id, 3, "defeat", 0)
-    await game.add_result(players[6][0].id, 3, "defeat", 0)
-    await game.add_result(players[7][0].id, 3, "defeat", 0)
-    await game.add_result(players[8][0].id, 3, "defeat", 0)
-    await game.add_result(players[2][0].id, 3, "defeat", 0)
-    await game.add_result(players[10][0].id, 3, "defeat", 0)
-    await game.add_result(players[1][0].id, 3, "defeat", 0)
-    await game.add_result(players[5][0].id, 3, "defeat", 0)
-    await game.add_result(players[6][0].id, 9, "defeat", 0)
-    await game.add_result(players[7][0].id, 9, "defeat", 0)
-    await game.add_result(players[8][0].id, 9, "defeat", 0)
-    await game.add_result(players[9][0].id, 9, "defeat", 0)
-    await game.add_result(players[2][0].id, 9, "defeat", 0)
-    await game.add_result(players[1][0].id, 9, "defeat", 0)
-    await game.add_result(players[10][0].id, 9, "defeat", 0)
-    await game.add_result(players[0][0].id, 9, "defeat", 0)
-    await game.add_result(players[5][0].id, 9, "defeat", 0)
-    await game.add_result(players[9][0].id, 0, "defeat", 0)
-    await game.add_result(players[6][0].id, 0, "defeat", 0)
-    await game.add_result(players[2][0].id, 0, "defeat", 0)
-    await game.add_result(players[7][0].id, 0, "defeat", 0)
-    await game.add_result(players[8][0].id, 0, "defeat", 0)
-    await game.add_result(players[10][0].id, 0, "defeat", 0)
-    await game.add_result(players[1][0].id, 0, "defeat", 0)
-    await game.add_result(players[5][0].id, 0, "defeat", 0)
-    await game.add_result(players[7][0].id, 11, "defeat", 0)
-    await game.add_result(players[7][0].id, 6, "defeat", 0)
-    await game.add_result(players[8][0].id, 11, "defeat", 0)
-    await game.add_result(players[1][0].id, 11, "defeat", 0)
-    await game.add_result(players[9][0].id, 11, "defeat", 0)
-    await game.add_result(players[6][0].id, 11, "defeat", 0)
-    await game.add_result(players[10][0].id, 11, "defeat", 0)
-    await game.add_result(players[2][0].id, 11, "defeat", 0)
-    await game.add_result(players[6][0].id, 10, "defeat", 0)
-    await game.add_result(players[2][0].id, 10, "defeat", 0)
-    await game.add_result(players[9][0].id, 10, "defeat", 0)
-    await game.add_result(players[1][0].id, 10, "defeat", 0)
-    await game.add_result(players[10][0].id, 10, "defeat", 0)
-    await game.add_result(players[8][0].id, 10, "defeat", 0)
-    await game.add_result(players[2][0].id, 2, "defeat", 0)
-    await game.add_result(players[2][0].id, 4, "defeat", 0)
-    await game.add_result(players[2][0].id, 5, "defeat", 0)
-    await game.add_result(players[2][0].id, 6, "defeat", 0)
-    await game.add_result(players[6][0].id, 6, "defeat", 0)
-    await game.add_result(players[1][0].id, 6, "defeat", 0)
-    await game.add_result(players[9][0].id, 6, "defeat", 0)
-    await game.add_result(players[8][0].id, 6, "defeat", 0)
-    await game.add_result(players[10][0].id, 6, "defeat", 0)
-    await game.add_result(players[1][0].id, 2, "victory", 0)
-    await game.add_result(players[6][0].id, 2, "victory", 0)
-    await game.add_result(players[6][0].id, 4, "victory", 0)
-    await game.add_result(players[6][0].id, 5, "victory", 0)
-    await game.add_result(players[1][0].id, 4, "victory", 0)
-    await game.add_result(players[1][0].id, 5, "victory", 0)
-    await game.add_result(players[8][0].id, 2, "victory", 0)
-    await game.add_result(players[9][0].id, 2, "victory", 0)
-    await game.add_result(players[9][0].id, 4, "victory", 0)
-    await game.add_result(players[9][0].id, 5, "victory", 0)
-    await game.add_result(players[8][0].id, 4, "victory", 0)
-    await game.add_result(players[8][0].id, 5, "victory", 0)
-    await game.add_result(players[10][0].id, 2, "victory", 0)
-    await game.add_result(players[10][0].id, 4, "victory", 0)
-    await game.add_result(players[10][0].id, 5, "victory", 0)
+    for reporter, reportee, outcome, score in log_dict["results"]:
+        await game.add_result(players[reporter], reportee, outcome, score)
 
     result = game.compute_rating()
     for team in result:
