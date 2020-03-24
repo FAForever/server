@@ -1076,6 +1076,10 @@ async def test_game_outcomes_conflicting(game: Game, database, players):
 
 async def test_single_wrong_report_still_rated_correctly(game: Game, player_factory):
     # based on replay with UID 11255492
+
+    # Mocking out database calls, since not all player IDs exist.
+    game.update_game_player_stats = CoroutineMock()
+
     game.state = GameState.LOBBY
     players = [
             (player_factory(

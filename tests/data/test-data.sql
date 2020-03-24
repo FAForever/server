@@ -352,8 +352,3 @@ insert into `mod` (id, display_name, author) values
 
 insert into mod_version (mod_id, uid, version, description, type, filename, icon) VALUES
         (100, 'FFF', 1, 'The best version so far', 'UI', 'noicon.zip', null);
-
-insert into login (id, login, email, password, create_time) values (9, 'player9', 'player9@example.com', SHA2('password', 256), '2000-01-01 00:00:00');
--- player with id 10 was created above
-insert into login (id, login, email, password, create_time) values (11, 'player11', 'player11@example.com', SHA2('password', 256), '2000-01-01 00:00:00');
-insert into login (id, login, email, password, create_time) values (12, 'player12', 'player12@example.com', SHA2('password', 256), '2000-01-01 00:00:00');
