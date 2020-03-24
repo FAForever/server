@@ -2,6 +2,7 @@ import pytest
 from asynctest import CoroutineMock
 from collections import namedtuple
 import time
+import asyncio
 
 from server.rating import RatingType
 from trueskill import Rating
@@ -32,8 +33,9 @@ class PersistenceError(Exception):
 
 
 @pytest.fixture
-def rating_service(database, player_service):
+async def rating_service(database, player_service):
     mock_service = RatingService(database, player_service)
+
     mock_service._persist_rating_changes = CoroutineMock()
 
     mock_ratings = {}
@@ -59,7 +61,11 @@ def rating_service(database, player_service):
     mock_service.set_mock_rating = set_mock_rating
     mock_service._get_player_rating = CoroutineMock(wraps=get_mock_rating)
 
-    return mock_service
+    await mock_service.initialize()
+
+    yield mock_service
+
+    await mock_service.kill()
 
 
 def get_persisted_results(mock_service):
@@ -149,7 +155,8 @@ async def test_rating_summary_missing_team_raises_game_error(game, players):
         game._get_rating_summary(RatingType.GLOBAL)
 
 
-async def test_rate_game_global_ratings(custom_game, players, rating_service):
+async def test_rate_game_global_ratings(custom_game, players):
+    rating_service = custom_game.game_service._rating_service
     custom_game.state = GameState.LOBBY
     add_connected_players(custom_game, [players.hosting, players.joining])
     custom_game.set_player_option(players.hosting.id, "Team", 2)
@@ -163,6 +170,8 @@ async def test_rate_game_global_ratings(custom_game, players, rating_service):
     custom_game.launched_at = time.time() - 600
 
     await custom_game.rate_game()
+    await rating_service._join_rating_queue()
+
     results = get_persisted_results(custom_game.game_service._rating_service)
     assert results.rating_type is RatingType.GLOBAL
     assert players.hosting.id in results.ratings
@@ -182,6 +191,8 @@ async def test_rate_game_ladder_ratings(ladder_game, players):
     await ladder_game.add_result(players.joining.id, 1, "defeat", 0)
 
     await ladder_game.rate_game()
+    await rating_service._join_rating_queue()
+
     results = get_persisted_results(rating_service)
     assert results.rating_type is RatingType.LADDER_1V1
     assert players.hosting.id in results.ratings
@@ -211,8 +222,9 @@ async def test_rate_game_rating_balanced_teamgame(custom_game, player_factory):
     )
 
     await custom_game.rate_game()
-    results = get_persisted_results(rating_service)
+    await rating_service._join_rating_queue()
 
+    results = get_persisted_results(rating_service)
     assert results.rating_type is RatingType.GLOBAL
     for player, _ in players:
         assert results.ratings[player.id] != Rating(*player.ratings[RatingType.GLOBAL])
@@ -253,8 +265,9 @@ async def test_rate_game_sum_of_scores_edge_case(custom_game, player_factory):
     )
 
     await custom_game.rate_game()
-    results = get_persisted_results(rating_service)
+    await rating_service._join_rating_queue()
 
+    results = get_persisted_results(rating_service)
     assert results.rating_type is RatingType.GLOBAL
     for player, team in players:
         if team == win_team:
@@ -298,8 +311,9 @@ async def test_rate_game_only_one_survivor(custom_game, player_factory):
     )
 
     await custom_game.rate_game()
-    results = get_persisted_results(rating_service)
+    await rating_service._join_rating_queue()
 
+    results = get_persisted_results(rating_service)
     assert results.rating_type is RatingType.GLOBAL
     for player, team in players:
         if team == win_team:
@@ -341,8 +355,9 @@ async def test_rate_game_two_player_FFA(custom_game, player_factory):
     )
 
     await custom_game.rate_game()
-    results = get_persisted_results(rating_service)
+    await rating_service._join_rating_queue()
 
+    results = get_persisted_results(rating_service)
     assert results.rating_type is RatingType.GLOBAL
     for player, _ in players:
         assert (
@@ -374,6 +389,8 @@ async def test_rate_game_does_not_rate_multi_team(custom_game, player_factory):
     )
 
     await custom_game.rate_game()
+    await rating_service._join_rating_queue()
+
     results = get_persisted_results(rating_service)
     assert results.ratings == {}
 
@@ -402,6 +419,7 @@ async def test_rate_game_does_not_rate_multi_FFA(custom_game, player_factory):
     )
 
     await custom_game.rate_game()
+    await rating_service._join_rating_queue()
 
     results = get_persisted_results(rating_service)
     assert results.ratings == {}
@@ -430,8 +448,8 @@ async def test_rate_game_does_not_rate_double_win(custom_game, player_factory):
         ],
     )
 
-    with pytest.raises(GameRatingError):
-        await custom_game.rate_game()
+    await custom_game.rate_game()
+    await rating_service._join_rating_queue()
 
     results = get_persisted_results(rating_service)
     assert results.ratings == {}
@@ -461,6 +479,7 @@ async def test_rate_game_treats_double_defeat_as_draw(custom_game, player_factor
     )
 
     await custom_game.rate_game()
+    await rating_service._join_rating_queue()
 
     results = get_persisted_results(rating_service)
     for player, _ in players:
@@ -505,8 +524,9 @@ async def test_compute_rating_works_with_partially_unknown_results(
     )
 
     await custom_game.rate_game()
-    results = get_persisted_results(rating_service)
+    await rating_service._join_rating_queue()
 
+    results = get_persisted_results(rating_service)
     assert results.rating_type is RatingType.GLOBAL
     for player, team in players:
         if team == win_team:
@@ -543,6 +563,7 @@ async def test_rate_game_single_ffa_vs_single_team(custom_game, player_factory):
     )
 
     await custom_game.rate_game()
+    await rating_service._join_rating_queue()
 
     results = get_persisted_results(rating_service)
     for player, _ in players:
@@ -576,6 +597,7 @@ async def test_rate_game_single_ffa_vs_team(custom_game, player_factory):
     )
 
     await custom_game.rate_game()
+    await rating_service._join_rating_queue()
 
     results = get_persisted_results(rating_service)
     assert results.ratings == {}
@@ -605,6 +627,7 @@ async def test_dont_rate_partial_ffa_matches(custom_game, player_factory):
     )
 
     await custom_game.rate_game()
+    await rating_service._join_rating_queue()
 
     results = get_persisted_results(rating_service)
     assert results.ratings == {}
@@ -636,6 +659,7 @@ async def test_dont_rate_pure_ffa_matches_with_more_than_two_players(
     )
 
     await custom_game.rate_game()
+    await rating_service._join_rating_queue()
 
     results = get_persisted_results(rating_service)
     assert results.ratings == {}
@@ -665,6 +689,7 @@ async def test_dont_rate_threeway_team_matches(custom_game, player_factory):
     )
 
     await custom_game.rate_game()
+    await rating_service._join_rating_queue()
 
     results = get_persisted_results(rating_service)
     assert results.ratings == {}

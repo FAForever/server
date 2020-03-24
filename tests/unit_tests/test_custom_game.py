@@ -1,4 +1,5 @@
 import time
+import asyncio
 
 import pytest
 from server.games import CustomGame
@@ -74,7 +75,7 @@ async def test_rate_game_late_abort_no_enforce(
 
 
 async def test_global_rating_higher_after_custom_game_win(
-        custom_game: CustomGame, game_add_players):
+        custom_game: CustomGame, game_add_players, rating_service):
     game = custom_game
     game.state = GameState.LOBBY
     players = game_add_players(game, 2)
@@ -87,6 +88,9 @@ async def test_global_rating_higher_after_custom_game_win(
     await game.add_result(0, 0, 'victory', 5)
     await game.add_result(0, 1, 'defeat', -5)
     await game.on_game_end()
+
+    # await game being rated
+    await rating_service._join_rating_queue()
 
     assert game.validity is ValidityState.VALID
     assert players[0].ratings[RatingType.GLOBAL][0] > old_mean

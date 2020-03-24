@@ -1001,7 +1001,7 @@ async def test_report_army_stats_sends_stats_for_defeated_player(
 
 
 async def test_partial_stats_not_affecting_rating_persistence(
-    custom_game, event_service, achievement_service, game_add_players
+    custom_game, event_service, achievement_service, game_add_players, rating_service
 ):
     from server.stats.game_stats_service import GameStatsService
     game = custom_game
@@ -1020,6 +1020,9 @@ async def test_partial_stats_not_affecting_rating_persistence(
     await game.add_result(0, 1, 'defeat', -10)
     game.report_army_stats("{'stats': {'Player 1': {}}}")
     await game.on_game_end()
+
+    # await game being rated
+    await rating_service._join_rating_queue()
 
     assert game.validity is ValidityState.VALID
     assert players[0].ratings[RatingType.GLOBAL][0] > old_mean

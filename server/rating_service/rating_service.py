@@ -1,6 +1,8 @@
 from typing import Dict
 from .typedefs import RatingData, GameRatingData, GameRatingSummary, PlayerID
 
+import asyncio
+
 from server.db import FAFDatabase
 from server.player_service import PlayerService
 from server.decorators import with_logger
@@ -9,14 +11,22 @@ from server.games.game_results import GameOutcome
 
 from server.rating import RatingType
 from trueskill import Rating
-from .game_rater import GameRater
+from .game_rater import GameRater, GameRatingError
 
 from sqlalchemy import select
 from server.db.models import ladder1v1_rating as ladder1v1_table
 from server.db.models import global_rating as global_table
 
 
-class RatingNotFoundError(Exception):
+class RatingServiceError(Exception):
+    pass
+
+
+class ServiceNotReadyError(RatingServiceError):
+    pass
+
+
+class RatingNotFoundError(RatingServiceError):
     pass
 
 
@@ -31,11 +41,48 @@ class RatingService:
     def __init__(self, database: FAFDatabase, player_service: PlayerService):
         self._db = database
         self._player_service_callback = player_service.signal_player_rating_change
+        self._accept_input = False
+        self._queue = asyncio.Queue()
+        self._task = None
+
+    async def initialize(self):
+        # TODO use create_task in python3.7
+        self._accept_input = True
+        self._logger.debug("RatingService starting...")
+        self._task = asyncio.ensure_future(self._handle_rating_queue())
 
     async def enqueue(self, summary: GameRatingSummary) -> None:
-        await self.rate(summary)
+        if not self._accept_input:
+            self._logger.warning("Dropped rating request %s", summary)
+            raise ServiceNotReadyError(
+                "RatingService not yet initialized or shutting down."
+            )
 
-    async def rate(self, summary: GameRatingSummary) -> None:
+        self._logger.debug("Queued up rating request %s", summary)
+        await self._queue.put(summary)
+
+    async def _handle_rating_queue(self):
+        self._logger.info("RatingService started!")
+        while True:
+            summary = await self._queue.get()
+            self._logger.debug("Now rating request %s", summary)
+
+            try:
+                await self._rate(summary)
+            except GameRatingError:
+                self._logger.warning("Error rating game %s", summary)
+            except RatingNotFoundError:
+                self._logger.warning("Missing rating entry to rate game %s", summary)
+            else:
+                self._logger.debug("Done rating request.")
+
+            self._queue.task_done()
+
+            if self._queue.empty() and not self._accept_input:
+                self._logger.info("RatingService shutting down.")
+                break
+
+    async def _rate(self, summary: GameRatingSummary) -> None:
         rating_data = await self._get_rating_data(summary)
         new_ratings, final_outcomes = GameRater.compute_rating(rating_data)
         old_ratings = {
@@ -137,7 +184,7 @@ class RatingService:
         self, player_id: PlayerID, rating_type: RatingType, new_rating: Rating
     ) -> None:
         if self._player_service_callback is None:
-            self._logger.warn(
+            self._logger.warning(
                 "Tried to send rating change to player service, "
                 "but no service was registered."
             )
@@ -176,8 +223,29 @@ class RatingService:
                 (new_rating.mu, new_rating.sigma, player_id),
             )
 
-    def shutdown(self):
+    async def _join_rating_queue(self):
+        """
+        Offers a call that is blocking until the rating queue has been emptied.
+        Mostly for testing purposes.
+        """
+        await self._queue.join()
+
+    async def shutdown(self):
         """
         Finish rating all remaining games, then exit.
         """
-        pass
+        self._accept_input = False
+        self._logger.debug(
+            "Shutdown initiated. Waiting on current queue: %s", self._queue
+        )
+        await self._queue.join()
+        self._logger.debug("Queue emptied: %s", self._queue)
+        await self.kill()
+
+    async def kill(self):
+        """
+        Exit without waiting for the queue to join.
+        """
+        self._accept_input = False
+        if self._task is not None:
+            self._task.cancel()

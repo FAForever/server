@@ -34,7 +34,9 @@ async def ladder_service(mocker, database, game_service):
 
 @pytest.fixture
 def mock_rating(database, mock_players):
-    return RatingService(database, mock_players)
+    service = RatingService(database, mock_players)
+    service.initialize()
+    return service
 
 
 @pytest.fixture

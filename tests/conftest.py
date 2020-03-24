@@ -28,6 +28,8 @@ from server.players import Player, PlayerState
 from server.rating import RatingType
 from tests.utils import MockDatabase
 
+pytestmark = pytest.mark.asyncio
+
 logging.getLogger().setLevel(TRACE)
 
 
@@ -205,9 +207,12 @@ async def player_service(database):
     return player_service
 
 
+@pytest.mark.asyncio
 @pytest.fixture
-def rating_service(database, player_service):
-    return RatingService(database, player_service)
+async def rating_service(database, player_service):
+    service = RatingService(database, player_service)
+    await service.initialize()
+    return service
 
 
 @pytest.fixture
