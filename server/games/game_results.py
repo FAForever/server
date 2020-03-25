@@ -87,7 +87,7 @@ class GameResults(Mapping):
             return GameOutcome.UNKNOWN
 
         if len(voters) == 1:
-            unique_outcome = next(iter(voters.keys()))
+            unique_outcome = voters.popitem()[0]
             return unique_outcome
 
         sorted_outcomes = sorted(
