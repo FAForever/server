@@ -6,6 +6,7 @@ import asyncio
 from server.db import FAFDatabase
 from server.player_service import PlayerService
 from server.decorators import with_logger
+from server.metrics import rating_service_backlog
 
 from server.games.game_results import GameOutcome
 
@@ -60,6 +61,7 @@ class RatingService:
 
         self._logger.debug("Queued up rating request %s", summary)
         await self._queue.put(summary)
+        rating_service_backlog.set(self._queue.qsize())
 
     async def _handle_rating_queue(self):
         self._logger.info("RatingService started!")
@@ -77,6 +79,7 @@ class RatingService:
                 self._logger.debug("Done rating request.")
 
             self._queue.task_done()
+            rating_service_backlog.set(self._queue.qsize())
 
             if self._queue.empty() and not self._accept_input:
                 self._logger.info("RatingService shutting down.")

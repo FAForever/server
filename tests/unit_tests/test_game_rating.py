@@ -1,8 +1,9 @@
+import json
+import time
+from collections import namedtuple
+
 import pytest
 from asynctest import CoroutineMock
-from collections import namedtuple
-import time
-import asyncio
 
 from server.rating import RatingType
 from trueskill import Rating
@@ -105,7 +106,7 @@ def add_players_with_rating(player_factory, game, ratings, teams):
     players = [
         (
             player_factory(
-                login=f"{i}",
+                f"{i}",
                 player_id=i,
                 global_rating=rating,
                 ladder_rating=rating,
@@ -693,3 +694,49 @@ async def test_dont_rate_threeway_team_matches(custom_game, player_factory):
 
     results = get_persisted_results(rating_service)
     assert results.ratings == {}
+
+
+async def test_single_wrong_report_still_rated_correctly(game: Game, player_factory):
+    # based on replay with UID 11255492
+
+    # Mocking out database calls, since not all player IDs exist.
+    game.update_game_player_stats = CoroutineMock()
+
+    game.state = GameState.LOBBY
+
+    # Loading log data
+    with open("tests/data/uid11255492.log.json", "r") as f:
+        log_dict = json.load(f)
+
+    old_rating = 1500
+    players = {
+        player_id: player_factory(
+            login=f"{player_id}",
+            player_id=player_id,
+            global_rating=Rating(old_rating, 250),
+            with_lobby_connection=False,
+        )
+        for team in log_dict["teams"].values() for player_id in team
+    }
+
+    add_connected_players(game, list(players.values()))
+    for team_id, team_list in log_dict["teams"].items():
+        for player_id in team_list:
+            game.set_player_option(player_id, "Team", team_id)
+            game.set_player_option(player_id, "Army", player_id - 1)
+    await game.launch()
+
+    for reporter, reportee, outcome, score in log_dict["results"]:
+        await game.add_result(players[reporter], reportee, outcome, score)
+
+    rating_service = game.game_service._rating_service
+    await game.rate_game()
+    await rating_service._join_rating_queue()
+
+    results = get_persisted_results(rating_service)
+    winning_ids = log_dict["teams"][str(log_dict["winning_team"])]
+    for player_id, new_rating in results.ratings.items():
+        if player_id in winning_ids:
+            assert new_rating.mu > old_rating
+        else:
+            assert new_rating.my < old_rating

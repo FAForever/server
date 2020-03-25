@@ -40,7 +40,7 @@ def mock_rating(database, mock_players):
 
 
 @pytest.fixture
-def lobby_server(
+async def lobby_server(
     event_loop, database, player_service, game_service,
     geoip_service, ladder_service, rating_service, policy_server
 ):
