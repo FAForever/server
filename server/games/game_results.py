@@ -68,9 +68,11 @@ class GameResults(Mapping):
 
     def outcome(self, army: int) -> GameOutcome:
         """
-        Determines what the game outcome was for a given army. Returns the
-        outcome all players agree on, excluding players that reported an
-        unknown outcome. Reports unknown outcome if players disagree.
+        Determines what the game outcome was for a given army.
+        Returns the unique reported outcome if all players agree,
+        or the majority outcome if only a few reports disagree.
+        Otherwise returns CONFLICTING if there is too much disagreement
+        or UNKNOWN if no reports were filed.
         """
         if army not in self:
             return GameOutcome.UNKNOWN
@@ -91,12 +93,12 @@ class GameResults(Mapping):
         sorted_outcomes = sorted(
             voters.keys(),
             reverse=True,
-            key=lambda x: (len(voters[x]), x.value)
+            key=lambda outcome: (len(voters[outcome]), outcome.value)
         )
 
         top_votes = len(voters[sorted_outcomes[0]])
-        runnerup_votes = len(voters[sorted_outcomes[1]])
-        if top_votes > 1 >= runnerup_votes or top_votes >= runnerup_votes + 3:
+        runner_up_votes = len(voters[sorted_outcomes[1]])
+        if top_votes > 1 >= runner_up_votes or top_votes >= runner_up_votes + 3:
             decision = sorted_outcomes[0]
         else:
             decision = GameOutcome.CONFLICTING
