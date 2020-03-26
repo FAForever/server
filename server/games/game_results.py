@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Mapping
 from enum import Enum
 from typing import NamedTuple
@@ -68,28 +68,47 @@ class GameResults(Mapping):
 
     def outcome(self, army: int) -> GameOutcome:
         """
-        Determines what the game outcome was for a given army. Returns the
-        outcome all players agree on, excluding players that reported an
-        unknown outcome. Reports unknown outcome if players disagree.
+        Determines what the game outcome was for a given army.
+        Returns the unique reported outcome if all players agree,
+        or the majority outcome if only a few reports disagree.
+        Otherwise returns CONFLICTING if there is too much disagreement
+        or UNKNOWN if no reports were filed.
         """
         if army not in self:
             return GameOutcome.UNKNOWN
 
-        outcomes = set(
-            r.outcome for r in self[army]
-            if r.outcome is not GameOutcome.UNKNOWN
+        voters = defaultdict(set)
+        for report in filter(
+            lambda r: r.outcome is not GameOutcome.UNKNOWN, self[army]
+        ):
+            voters[report.outcome].add(report.reporter)
+
+        if len(voters) == 0:
+            return GameOutcome.UNKNOWN
+
+        if len(voters) == 1:
+            unique_outcome = voters.popitem()[0]
+            return unique_outcome
+
+        sorted_outcomes = sorted(
+            voters.keys(),
+            reverse=True,
+            key=lambda outcome: (len(voters[outcome]), outcome.value)
         )
 
-        if len(outcomes) == 1:
-            return outcomes.pop()
-        elif len(outcomes) > 1:
-            self._logger.info(
-                "Multiple outcomes for game %s army %s: %s",
-                self._game_id, army, list(outcomes)
-            )
-            return GameOutcome.CONFLICTING
+        top_votes = len(voters[sorted_outcomes[0]])
+        runner_up_votes = len(voters[sorted_outcomes[1]])
+        if top_votes > 1 >= runner_up_votes or top_votes >= runner_up_votes + 3:
+            decision = sorted_outcomes[0]
+        else:
+            decision = GameOutcome.CONFLICTING
 
-        return GameOutcome.UNKNOWN
+        self._logger.info(
+            "Multiple outcomes for game %s army %s resolved to %s. Reports are: %s",
+            self._game_id, army, decision, voters
+
+        )
+        return decision
 
     def score(self, army: int):
         """

@@ -1,5 +1,6 @@
 import logging
 import time
+import json
 from typing import Any, List, Tuple
 from unittest import mock
 
@@ -1072,6 +1073,49 @@ async def test_game_outcomes_conflicting(game: Game, database, players):
     assert host_outcome is GameOutcome.CONFLICTING
     assert guest_outcome is GameOutcome.CONFLICTING
     # No guarantees on scores for conflicting results.
+
+
+async def test_single_wrong_report_still_rated_correctly(game: Game, player_factory):
+    # based on replay with UID 11255492
+
+    # Mocking out database calls, since not all player IDs exist.
+    game.update_game_player_stats = CoroutineMock()
+
+    game.state = GameState.LOBBY
+
+    # Loading log data
+    with open("tests/data/uid11255492.log.json", "r") as f:
+        log_dict = json.load(f)
+
+    old_rating = 1500
+    players = {
+        player_id: player_factory(
+            login=f"{player_id}",
+            player_id=player_id,
+            global_rating=Rating(old_rating, 250),
+            with_lobby_connection=False,
+        )
+        for team in log_dict["teams"].values() for player_id in team
+    }
+
+    add_connected_players(game, list(players.values()))
+    for team_id, team_list in log_dict["teams"].items():
+        for player_id in team_list:
+            game.set_player_option(player_id, "Team", team_id)
+            game.set_player_option(player_id, "Army", player_id - 1)
+    await game.launch()
+
+    for reporter, reportee, outcome, score in log_dict["results"]:
+        await game.add_result(players[reporter], reportee, outcome, score)
+
+    result = game.compute_rating()
+    winning_ids = log_dict["teams"][str(log_dict["winning_team"])]
+    for team in result:
+        for player, new_rating in team.items():
+            assert player in game.players
+            player_is_on_winning_team = player.id in winning_ids
+            rating_improved = new_rating.mu > old_rating
+            assert rating_improved is player_is_on_winning_team
 
 
 async def test_victory_conditions():
