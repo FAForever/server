@@ -91,7 +91,7 @@ async def test_broadcast_shutdown(player_factory, player_service):
     player.lobby_connection = lconn
     player_service[0] = player
 
-    await player_service.broadcast_shutdown()
+    await player_service.shutdown()
 
     player.lobby_connection.send_warning.assert_called_once()
 
@@ -104,6 +104,6 @@ async def test_broadcast_shutdown_error(player_factory, player_service):
 
     player_service[0] = player
 
-    await player_service.broadcast_shutdown()
+    await player_service.shutdown()
 
     player.lobby_connection.send_warning.assert_called_once()

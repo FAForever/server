@@ -153,7 +153,7 @@ class PlayerService(Service):
             if row is not None:
                 self.client_version_info = (row[0], row[1])
 
-    async def broadcast_shutdown(self):
+    async def shutdown(self):
         tasks = []
         for player in self:
             if player.lobby_connection is not None:

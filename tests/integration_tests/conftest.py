@@ -28,7 +28,7 @@ async def ladder_service(mocker, database, game_service):
 
     yield ladder_service
 
-    ladder_service.shutdown_queues()
+    await ladder_service.shutdown()
 
 
 @pytest.fixture
@@ -55,7 +55,6 @@ async def lobby_server(
         yield ctx
 
         ctx.close()
-        ladder_service.shutdown_queues()
         await ctx.wait_closed()
         await exhaust_callbacks(event_loop)
 

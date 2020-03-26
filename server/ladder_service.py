@@ -294,6 +294,6 @@ class LadderService(Service):
         if player in self._informed_players:
             self._informed_players.remove(player)
 
-    def shutdown_queues(self):
+    async def shutdown(self):
         for queue in self.queues.values():
             queue.shutdown()

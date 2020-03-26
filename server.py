@@ -139,8 +139,8 @@ async def main():
     await done
 
     # Cleanup
-    ladder_service.shutdown_queues()
-    await player_service.broadcast_shutdown()
+    await ladder_service.shutdown()
+    await player_service.shutdown()
     await ctrl_server.shutdown()
 
     # Close DB connections

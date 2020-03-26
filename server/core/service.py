@@ -1,6 +1,3 @@
-from abc import abstractmethod
-
-
 class Service(object):
     """
     All services should inherit from this class.
@@ -8,9 +5,14 @@ class Service(object):
     Services are singleton objects which manage some server task.
     """
 
-    @abstractmethod
     async def initialize(self) -> None:
         """
         Called once while the server is starting.
         """
-        pass
+        pass  # pragma: no cover
+
+    async def shutdown(self) -> None:
+        """
+        Called once after the server received the shutdown signal.
+        """
+        pass  # pragma: no cover

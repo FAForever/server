@@ -83,7 +83,7 @@ async def ladder_service(
 
     yield ladder_service
 
-    ladder_service.shutdown_queues()
+    await ladder_service.shutdown()
 
 
 def add_connected_player(game: Game, player):
