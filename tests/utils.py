@@ -1,7 +1,8 @@
-import functools
 import asyncio
+import functools
+from asyncio import Event, Lock
+
 import asynctest
-from asyncio import Lock, Event
 from aiomysql.sa import create_engine
 
 
@@ -57,7 +58,7 @@ def fast_forward(timeout):
             loop = asyncio.get_event_loop()
             advance_time = EventLoopClockAdvancer(loop)
             time = 0
-            fut = asyncio.ensure_future(f(*args, **kwargs))
+            fut = asyncio.create_task(f(*args, **kwargs))
 
             while not fut.done() and time < timeout:
                 await asynctest.exhaust_callbacks(loop)

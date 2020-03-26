@@ -1,4 +1,5 @@
 from server.api.api_accessor import ApiAccessor
+from server.core import Service
 from server.decorators import with_logger
 
 ACH_NOVICE = 'c6e6039f-c543-424e-ab5f-b34df1336e81'
@@ -61,7 +62,7 @@ ACH_DONT_MESS_WITH_ME = '2103e0de-1c87-4fba-bc1b-0bba66669607'
 
 
 @with_logger
-class AchievementService:
+class AchievementService(Service):
     def __init__(self, api_accessor: ApiAccessor):
         self.api_accessor = api_accessor
 

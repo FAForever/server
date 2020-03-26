@@ -5,67 +5,71 @@ from collections import defaultdict
 from typing import Any, Callable, Dict, Tuple
 from unittest import mock
 
+import asynctest
 import pytest
 from aiohttp import web
 from asynctest import exhaust_callbacks
-from server import GameService, PlayerService, run_lobby_server
+from server import GameService, run_control_server, run_lobby_server
 from server.db.models import login
 from server.ladder_service import LadderService
 from server.protocol import QDataStreamProtocol
 
 
 @pytest.fixture
-def mock_players(database):
-    m = mock.create_autospec(PlayerService(database))
-    m.client_version_info = (0, None)
-    return m
+def mock_games():
+    return asynctest.create_autospec(GameService)
 
 
 @pytest.fixture
-def mock_games(database, mock_players):
-    return mock.create_autospec(GameService(database, mock_players))
-
-
-@pytest.fixture
-def ladder_service(mocker, database, game_service):
+async def ladder_service(mocker, database, game_service):
     mocker.patch('server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX', 1)
-    return LadderService(database, game_service)
+    ladder_service = LadderService(database, game_service)
+    await ladder_service.initialize()
+
+    yield ladder_service
+
+    await ladder_service.shutdown()
 
 
 @pytest.fixture
-def lobby_server(
-    request, event_loop, database, player_service, game_service,
+async def lobby_server(
+    event_loop, database, player_service, game_service,
     geoip_service, ladder_service, policy_server
 ):
     with mock.patch(
         'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
         f'http://{policy_server.host}:{policy_server.port}'
     ):
-        ctx = run_lobby_server(
+        ctx = await run_lobby_server(
             address=('127.0.0.1', None),
             database=database,
             geoip_service=geoip_service,
             player_service=player_service,
-            games=game_service,
+            game_service=game_service,
             ladder_service=ladder_service,
             nts_client=None,
             loop=event_loop
         )
         player_service.is_uniqueid_exempt = lambda id: True
 
-        def fin():
-            ctx.close()
-            ladder_service.shutdown_queues()
-            event_loop.run_until_complete(ctx.wait_closed())
-            event_loop.run_until_complete(exhaust_callbacks(event_loop))
-
-        request.addfinalizer(fin)
-
         yield ctx
+
+        ctx.close()
+        await ctx.wait_closed()
+        await exhaust_callbacks(event_loop)
 
 
 @pytest.fixture
-def policy_server(event_loop):
+async def control_server(player_service, game_service):
+    server = await run_control_server(player_service, game_service)
+
+    yield server
+
+    await server.shutdown()
+
+
+@pytest.fixture
+async def policy_server():
     host = 'localhost'
     port = 6080
 
@@ -93,14 +97,13 @@ def policy_server(event_loop):
 
     runner = web.AppRunner(app)
 
-    async def start_app():
-        await runner.setup()
-        site = web.TCPSite(runner, host, port)
-        await site.start()
+    await runner.setup()
+    site = web.TCPSite(runner, host, port)
+    await site.start()
 
-    event_loop.run_until_complete(start_app())
     yield handle
-    event_loop.run_until_complete(runner.cleanup())
+
+    await runner.cleanup()
 
 
 @pytest.fixture

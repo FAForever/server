@@ -12,12 +12,13 @@ import geoip2.database
 from maxminddb.errors import InvalidDatabaseError
 
 from . import config
+from .core import Service
 from .decorators import with_logger
 from .timing import Timer
 
 
 @with_logger
-class GeoIpService(object):
+class GeoIpService(Service):
     """
         Service for managing the GeoIp database. This includes an asyncio crontab
     which periodically checks if the current file is out of date. If it is, then
@@ -32,13 +33,15 @@ class GeoIpService(object):
         self.db_update_time = None
 
         self.check_geoip_db_file_updated()
+
+    async def initialize(self) -> None:
+        await self.check_update_geoip_db()
         # crontab: min hour day month day_of_week
         # Run every Wednesday because GeoLite2 is updated every first Tuesday
         # of the month.
         self._update_cron = aiocron.crontab(
             '0 0 0 * * 3', func=self.check_update_geoip_db
         )
-        asyncio.ensure_future(self.check_update_geoip_db())
         self._check_file_timer = Timer(
             60 * 10, self.check_geoip_db_file_updated, start=True
         )

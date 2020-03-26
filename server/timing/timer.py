@@ -32,7 +32,7 @@ class Timer(object):
         self.cron = wrap_func(self.func)
         self.auto_start = start
         self.handle = self.future = None
-        self.loop = loop if loop is not None else asyncio.get_event_loop()
+        self.loop = loop if loop is not None else asyncio.get_running_loop()
         if start and self.func is not null_callback:
             self.handle = self.loop.call_soon_threadsafe(self.start)
 

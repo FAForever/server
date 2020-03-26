@@ -46,7 +46,7 @@ def context(event_loop, request):
         return LobbyConnection(
             database=mock.Mock(),
             geoip=mock.Mock(),
-            games=mock.Mock(),
+            game_service=mock.Mock(),
             nts_client=mock.Mock(),
             players=mock.Mock(),
             ladder_service=mock.Mock()

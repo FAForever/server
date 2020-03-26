@@ -35,6 +35,6 @@ class TwilioNTS:
 
         :param ttl - ttl in seconds
         """
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         token = await loop.run_in_executor(None, partial(self.client.tokens.create, ttl))
         return token.ice_servers

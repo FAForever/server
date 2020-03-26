@@ -30,6 +30,123 @@ from server.stats.game_stats_service import (
 )
 from server.timing import at_interval
 
+
+async def main():
+    loop = asyncio.get_running_loop()
+    done = asyncio.Future()
+
+    def signal_handler(sig: int, _frame):
+        logger.info(
+            "Received signal %s, shutting down",
+            signal.Signals(sig)
+        )
+        if not done.done():
+            done.set_result(0)
+
+    # Make sure we can shutdown gracefully
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
+    if config.ENABLE_METRICS:
+        logger.info("Using prometheus on port: {}".format(config.METRICS_PORT))
+
+    database = server.db.FAFDatabase(loop)
+    await database.connect(
+        host=DB_SERVER,
+        port=int(DB_PORT),
+        user=DB_LOGIN,
+        password=DB_PASSWORD,
+        maxsize=10,
+        db=DB_NAME,
+    )
+
+    # Set up services
+
+    twilio_nts = None
+    if TWILIO_ACCOUNT_SID:
+        twilio_nts = TwilioNTS()
+    else:
+        logger.warning(
+            "Twilio is not set up. You must set TWILIO_ACCOUNT_SID and TWILIO_TOKEN to use the Twilio ICE servers."
+        )
+
+    api_accessor = None
+    if config.USE_API:
+        api_accessor = ApiAccessor()
+
+    player_service = PlayerService(database)
+    geoip_service = GeoIpService()
+
+    event_service = EventService(api_accessor)
+    achievement_service = AchievementService(api_accessor)
+    game_stats_service = GameStatsService(
+        event_service, achievement_service
+    )
+
+    game_service = GameService(database, player_service, game_stats_service)
+    ladder_service = LadderService(database, game_service)
+
+    await asyncio.gather(
+        player_service.initialize(),
+        game_service.initialize(),
+        ladder_service.initialize(),
+        geoip_service.initialize()
+    )
+
+    if config.PROFILING_INTERVAL > 0:
+        logger.warning("Profiling enabled! This will create additional load.")
+        import cProfile
+        pr = cProfile.Profile()
+        profiled_count = 0
+        max_count = 300
+
+        @at_interval(config.PROFILING_INTERVAL, loop=loop)
+        async def run_profiler():
+            nonlocal profiled_count
+            nonlocal pr
+
+            if len(player_service) > 1000:
+                return
+            elif profiled_count >= max_count:
+                del pr
+                return
+
+            logger.info("Starting profiler")
+            pr.enable()
+            await asyncio.sleep(2)
+            pr.disable()
+            profiled_count += 1
+
+            logging.info("Done profiling %i/%i", profiled_count, max_count)
+            pr.dump_stats("profile.txt")
+
+    ctrl_server = await server.run_control_server(player_service, game_service)
+
+    lobby_server = await server.run_lobby_server(
+        address=('', 8001),
+        database=database,
+        geoip_service=geoip_service,
+        player_service=player_service,
+        game_service=game_service,
+        nts_client=twilio_nts,
+        ladder_service=ladder_service,
+        loop=loop
+    )
+
+    for sock in lobby_server.sockets:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+
+    await done
+
+    # Cleanup
+    await ladder_service.shutdown()
+    await player_service.shutdown()
+    await ctrl_server.shutdown()
+
+    # Close DB connections
+    await database.close()
+
+
 if __name__ == '__main__':
     args = docopt(__doc__, version='FAF Server')
 
@@ -44,111 +161,4 @@ if __name__ == '__main__':
     logger.addHandler(stderr_handler)
     logger.setLevel(config.LOG_LEVEL)
 
-    try:
-        loop = asyncio.get_event_loop()
-        done = asyncio.Future()
-
-        def signal_handler(_sig, _frame):
-            logger.info("Received signal, shutting down")
-            if not done.done():
-                done.set_result(0)
-
-        if config.ENABLE_METRICS:
-            logger.info("Using prometheus on port: {}".format(config.METRICS_PORT))
-
-        # Make sure we can shutdown gracefully
-        signal.signal(signal.SIGTERM, signal_handler)
-        signal.signal(signal.SIGINT, signal_handler)
-
-        database = server.db.FAFDatabase(loop)
-        db_fut = asyncio.ensure_future(
-            database.connect(
-                host=DB_SERVER,
-                port=int(DB_PORT),
-                user=DB_LOGIN,
-                password=DB_PASSWORD,
-                maxsize=10,
-                db=DB_NAME,
-            )
-        )
-        loop.run_until_complete(db_fut)
-
-        players_online = PlayerService(database)
-
-        if config.PROFILING_INTERVAL > 0:
-            logger.warning("Profiling enabled! This will create additional load.")
-            import cProfile
-            pr = cProfile.Profile()
-            profiled_count = 0
-            max_count = 300
-
-            @at_interval(config.PROFILING_INTERVAL, loop=loop)
-            async def run_profiler():
-                global profiled_count
-                global pr
-
-                if len(players_online) > 1000:
-                    return
-                elif profiled_count >= max_count:
-                    pr = None
-                    return
-
-                logger.info("Starting profiler")
-                pr.enable()
-                await asyncio.sleep(2)
-                pr.disable()
-                profiled_count += 1
-
-                logging.info("Done profiling %i/%i", profiled_count, max_count)
-                pr.dump_stats("profile.txt")
-
-        twilio_nts = None
-        if TWILIO_ACCOUNT_SID:
-            twilio_nts = TwilioNTS()
-        else:
-            logger.warning(
-                "Twilio is not set up. You must set TWILIO_ACCOUNT_SID and TWILIO_TOKEN to use the Twilio ICE servers."
-            )
-
-        api_accessor = None
-        if config.USE_API:
-            api_accessor = ApiAccessor()
-
-        event_service = EventService(api_accessor)
-        achievement_service = AchievementService(api_accessor)
-        game_stats_service = GameStatsService(
-            event_service, achievement_service
-        )
-
-        games = GameService(database, players_online, game_stats_service)
-        ladder_service = LadderService(database, games)
-
-        ctrl_server = loop.run_until_complete(
-            server.run_control_server(loop, players_online, games)
-        )
-
-        lobby_server = server.run_lobby_server(
-            address=('', 8001),
-            database=database,
-            geoip_service=GeoIpService(),
-            player_service=players_online,
-            games=games,
-            nts_client=twilio_nts,
-            ladder_service=ladder_service,
-            loop=loop
-        )
-
-        for sock in lobby_server.sockets:
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-
-        loop.run_until_complete(done)
-        loop.run_until_complete(players_online.broadcast_shutdown())
-        ladder_service.shutdown_queues()
-
-        # Close DB connections
-        loop.run_until_complete(database.close())
-
-        loop.close()
-
-    except Exception as ex:
-        logger.exception("Failure booting server {}".format(ex))
+    asyncio.run(main())

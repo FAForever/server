@@ -17,6 +17,7 @@ from server.geoip_service import GeoIpService
 from server.ice_servers.nts import TwilioNTS
 from server.ladder_service import LadderService
 from server.lobbyconnection import ClientError, LobbyConnection
+from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
 from server.players import Player, PlayerState
 from server.protocol import DisconnectedError, QDataStreamProtocol
@@ -64,13 +65,13 @@ def mock_nts_client():
 
 
 @pytest.fixture
-def mock_players(database):
-    return mock.create_autospec(PlayerService(database))
+def mock_players():
+    return asynctest.create_autospec(PlayerService)
 
 
 @pytest.fixture
-def mock_games(database, mock_players, game_stats_service):
-    return mock.create_autospec(GameService(database, mock_players, game_stats_service))
+def mock_games():
+    return asynctest.create_autospec(GameService)
 
 
 @pytest.fixture
@@ -80,7 +81,7 @@ def mock_protocol():
 
 @pytest.fixture
 def mock_geoip():
-    return mock.create_autospec(GeoIpService())
+    return asynctest.create_autospec(GeoIpService)
 
 
 @pytest.fixture
@@ -97,7 +98,7 @@ def lobbyconnection(
     lc = LobbyConnection(
         database=database,
         geoip=mock_geoip,
-        games=mock_games,
+        game_service=mock_games,
         players=mock_players,
         nts_client=mock_nts_client,
         ladder_service=asynctest.create_autospec(LadderService)
@@ -966,6 +967,31 @@ async def test_command_game_matchmaking(lobbyconnection, mock_player):
     })
 
     lobbyconnection.ladder_service.cancel_search.assert_called_with(lobbyconnection.player)
+
+
+async def test_command_matchmaker_info(lobbyconnection, ladder_service):
+    queue = MatchmakerQueue("test", Mock())
+    queue.timer.next_queue_pop = 1_562_000_000
+
+    lobbyconnection.ladder_service.queues = {
+        "test": queue
+    }
+    lobbyconnection.send = CoroutineMock()
+    await lobbyconnection.on_message_received({
+        'command': 'matchmaker_info'
+    })
+
+    lobbyconnection.send.assert_called_with({
+        'command': 'matchmaker_info',
+        'queues': [
+            {
+                'queue_name': 'test',
+                'queue_pop_time': '2019-07-01T16:53:20+00:00',
+                'boundary_80s': [],
+                'boundary_75s': []
+            }
+        ]
+    })
 
 
 async def test_connection_lost(lobbyconnection):

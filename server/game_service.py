@@ -1,9 +1,10 @@
 import asyncio
-from typing import Dict, List, Optional, Union, ValuesView
 from collections import Counter
+from typing import Dict, List, Optional, Union, ValuesView
 
 import aiocron
 import server.metrics as metrics
+from server.core import Service
 from server.db import FAFDatabase
 from server.decorators import with_logger
 from server.games import CoopGame, CustomGame, FeaturedMod, LadderGame
@@ -13,11 +14,16 @@ from server.players import Player
 
 
 @with_logger
-class GameService:
+class GameService(Service):
     """
     Utility class for maintaining lifecycle of games
     """
-    def __init__(self, database: FAFDatabase, player_service, game_stats_service):
+    def __init__(
+        self,
+        database: FAFDatabase,
+        player_service,
+        game_stats_service,
+    ):
         self._db = database
         self._dirty_games = set()
         self._dirty_queues = set()
@@ -40,11 +46,12 @@ class GameService:
         # The set of active games
         self._games: Dict[int, Game] = dict()
 
-        # Synchronously initialise the game-id counter and static-ish-data.
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(asyncio.ensure_future(self.initialise_game_counter()))
-        loop.run_until_complete(loop.create_task(self.update_data()))
-        self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
+    async def initialize(self) -> None:
+        await self.initialise_game_counter()
+        await self.update_data()
+        self._update_cron = aiocron.crontab(
+            '*/10 * * * *', func=self.update_data
+        )
 
     async def initialise_game_counter(self):
         async with self._db.acquire() as conn:

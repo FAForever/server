@@ -120,7 +120,7 @@ async def test_game_info_broadcast_on_connection_error(
     # Wait for games to be cleaned up
     for proto in host_protos:
         proto.close()
-    ladder_service.shutdown_queues()
+    await ladder_service.shutdown()
 
     # Wait for games to time out if they need to
     await asyncio.sleep(35)

@@ -1,9 +1,9 @@
-FROM python:3.6-slim
+FROM python:3.7-slim
 
-# Apt-install c++ build tools and cleanup temporary files afterwards
+# Need git for installing aiomysql
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
-        build-essential git && \
+        git && \
     apt-get clean
 RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
