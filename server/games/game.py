@@ -207,7 +207,7 @@ class Game:
         if self.state is GameState.LOBBY:
             return frozenset(
                 player for player in self._connections.keys()
-                if player and player.id in self._player_options
+                if player.id in self._player_options
             )
         else:
             return frozenset(
@@ -397,25 +397,21 @@ class Game:
 
         player = game_connection.player
         del self._connections[player]
+        del player.game
 
-        if player:
-            del player.game
-
-            if (
-                self.state is GameState.LOBBY and
-                player.id in self._player_options
-            ):
-                del self._player_options[player.id]
+        if self.state is GameState.LOBBY and player.id in self._player_options:
+            del self._player_options[player.id]
 
         await self.check_sim_end()
 
         self._logger.info("Removed game connection %s", game_connection)
 
-        def host_left_lobby() -> bool:
-            return player == self.host and self.state is not GameState.LIVE
+        host_left_lobby = (
+            player == self.host and self.state is not GameState.LIVE
+        )
 
         if self.state is not GameState.ENDED and (
-            len(self._connections) == 0 or host_left_lobby()
+            len(self._connections) == 0 or host_left_lobby
         ):
             await self.on_game_end()
         else:

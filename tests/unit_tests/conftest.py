@@ -46,8 +46,11 @@ def mock_game_connection():
     return make_mock_game_connection()
 
 
-def make_mock_game_connection(state=GameConnectionState.INITIALIZING, player=None):
-    gc = asynctest.create_autospec(spec=GameConnection)
+def make_mock_game_connection(
+    state=GameConnectionState.INITIALIZING,
+    player=mock.Mock()
+):
+    gc = asynctest.create_autospec(GameConnection)
     gc.state = state
     gc.player = player
     gc.finished_sim = False
