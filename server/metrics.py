@@ -1,4 +1,6 @@
-from prometheus_client import Counter, Gauge, Histogram
+from prometheus_client import Counter, Gauge, Histogram, Info
+
+info = Info("build", "Information collected on server start")
 
 # ==========
 # Matchmaker

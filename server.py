@@ -10,8 +10,11 @@ Options:
 
 import asyncio
 import logging
+import os
 import signal
 import socket
+import sys
+from datetime import datetime
 
 import server
 import server.config as config
@@ -135,6 +138,13 @@ async def main():
 
     for sock in lobby_server.sockets:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+
+    server.metrics.info.info({
+        "version": os.environ.get("VERSION") or "dev",
+        "python_version": ".".join(map(str, sys.version_info[:3])),
+        "start_time": datetime.utcnow().strftime("%m-%d %H:%M"),
+        "game_uid": str(game_service.game_id_counter)
+    })
 
     await done
 
