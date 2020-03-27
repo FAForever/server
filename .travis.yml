@@ -24,7 +24,7 @@ before_install:
 install:
   - pipenv sync --dev
   - cp faf-server.example.pem faf-server.pem
-  - docker build -t faf-python-server .
+  - docker build --build-arg TRAVIS_TAG -t faf-python-server .
 
 script:
   - scripts/run_tests_with_coverage.sh
