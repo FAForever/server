@@ -86,7 +86,6 @@ async def test_game_ended_rates_game(lobby_server):
     host_id, _, host_proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
-    await read_until_command(host_proto, "game_info")
     guest_id, _, guest_proto = await connect_and_sign_in(
         ("Rhiza", "puff_the_magic_dragon"), lobby_server
     )
