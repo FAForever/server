@@ -2,10 +2,10 @@ import asyncio
 
 import pytest
 from server.db.models import game_player_stats
-from sqlalchemy import and_, select
+from sqlalchemy import select
 from tests.utils import fast_forward
 
-from .conftest import connect_and_sign_in, read_until_command
+from .conftest import connect_and_sign_in, read_until, read_until_command
 
 pytestmark = pytest.mark.asyncio
 
@@ -111,7 +111,12 @@ async def test_game_matchmaking_start(lobby_server, database):
     })
 
     # Wait for db to be updated
-    await asyncio.sleep(1)
+    await read_until(
+        host, lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
+    )
+    await read_until(
+        guest, lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
+    )
 
     async with database.acquire() as conn:
         result = await conn.execute(select([
