@@ -90,6 +90,7 @@ async def test_game_matchmaking_start(lobby_server, database):
         'target': 'game',
         'args': ['Lobby']
     })
+    await read_until_command(host, 'game_info')
 
     await read_until_command(guest, 'game_launch')
     await guest.send_message({
@@ -102,6 +103,8 @@ async def test_game_matchmaking_start(lobby_server, database):
         'target': 'game',
         'args': ['Lobby']
     })
+    await read_until_command(host, 'game_info')
+    await read_until_command(guest, 'game_info')
     await asyncio.sleep(0.5)
 
     await host.send_message({
