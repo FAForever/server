@@ -96,15 +96,14 @@ class DependencyInjector(object):
         resolved = ChainMap(instances, self.injectables)
 
         while True:
+            if not dep:
+                return instances
             # Find all services with no dependencies (leaves of our graph)
             leaves = [
                 name for name, dependencies in dep.items() if not dependencies
             ]
             if not leaves:
-                if not dep:
-                    return instances
-
-                # Find which dependencies are missing
+                # Find which dependencies could not be resolved
                 missing = {
                     d for dependencies in dep.values()
                     for d in dependencies if d not in dep
