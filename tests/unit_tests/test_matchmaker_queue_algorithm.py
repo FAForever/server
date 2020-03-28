@@ -1,7 +1,7 @@
 import logging
 
 import pytest
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 from server import config
 from server.matchmaker import Search, algorithm
@@ -157,6 +157,7 @@ def test_match_graph_will_not_include_matches_below_threshold_quality(p, build_f
     algorithm._MatchingGraph.build_fast
 ))
 @given(searches=st_searches_list(max_players=2))
+@settings(deadline=300)
 def test_matching_graph_symmetric(caplog, build_func, searches):
     caplog.set_level(logging.INFO)
 
@@ -173,6 +174,7 @@ def test_matching_graph_symmetric(caplog, build_func, searches):
     algorithm._MatchingGraph.build_fast
 ))
 @given(searches=st_searches_list(max_players=2))
+@settings(deadline=300)
 def test_stable_marriage_produces_symmetric_matchings(caplog, build_func, searches):
     caplog.set_level(logging.INFO)
 
