@@ -35,7 +35,7 @@ def game_stats_service(event_service, achievement_service):
 
 @pytest.fixture()
 def player(player_factory):
-    return player_factory(login="TestUser", player_id=42)
+    return player_factory("TestUser", player_id=42)
 
 
 @pytest.fixture()
