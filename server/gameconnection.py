@@ -100,7 +100,7 @@ class GameConnection(GpgNetServerProtocol):
             self.game.add_game_connection(self)
             self.game.host = self.player
         elif state == PlayerState.JOINING:
-            pass
+            return
         else:
             self._logger.error("Unknown PlayerState: %s", state)
             await self.abort()
@@ -446,6 +446,8 @@ class GameConnection(GpgNetServerProtocol):
 
         if state == 'Idle':
             await self._handle_idle_state()
+            # Don't mark as dirty
+            return
 
         elif state == 'Lobby':
             # TODO: Do we still need to schedule with `ensure_future`?
@@ -470,7 +472,6 @@ class GameConnection(GpgNetServerProtocol):
                     )
         elif state == 'Ended':
             await self.on_connection_lost()
-
         self._mark_dirty()
 
     async def handle_game_ended(self, *args):

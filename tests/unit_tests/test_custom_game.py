@@ -19,8 +19,8 @@ async def test_rate_game_early_abort_no_enforce(
         game_service, game_stats_service, custom_game, player_factory):
     custom_game.state = GameState.LOBBY
     players = [
-        player_factory(player_id=1, login='Dostya', global_rating=(1500, 500)),
-        player_factory(player_id=2, login='Rhiza', global_rating=(1500, 500)),
+        player_factory("Dostya", player_id=1, global_rating=(1500, 500)),
+        player_factory("Rhiza", player_id=2, global_rating=(1500, 500)),
     ]
     add_connected_players(custom_game, players)
     custom_game.set_player_option(1, 'Team', 2)
@@ -38,8 +38,8 @@ async def test_rate_game_early_abort_with_enforce(
         game_service, game_stats_service, custom_game, player_factory):
     custom_game.state = GameState.LOBBY
     players = [
-        player_factory(player_id=1, login='Dostya', global_rating=(1500, 500)),
-        player_factory(player_id=2, login='Rhiza', global_rating=(1500, 500)),
+        player_factory("Dostya", player_id=1, global_rating=(1500, 500)),
+        player_factory("Rhiza", player_id=2, global_rating=(1500, 500)),
     ]
     add_connected_players(custom_game, players)
     custom_game.set_player_option(1, 'Team', 2)
@@ -58,8 +58,8 @@ async def test_rate_game_late_abort_no_enforce(
         game_service, game_stats_service, custom_game, player_factory):
     custom_game.state = GameState.LOBBY
     players = [
-        player_factory(player_id=1, login='Dostya', global_rating=(1500, 500)),
-        player_factory(player_id=2, login='Rhiza', global_rating=(1500, 500)),
+        player_factory("Dostya", player_id=1, global_rating=(1500, 500)),
+        player_factory("Rhiza", player_id=2, global_rating=(1500, 500)),
     ]
     add_connected_players(custom_game, players)
     custom_game.set_player_option(1, 'Team', 2)

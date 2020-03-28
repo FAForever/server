@@ -11,10 +11,13 @@ from tests.utils import fast_forward
 pytestmark = pytest.mark.asyncio
 
 
-async def test_start_game(ladder_service: LadderService, game_service:
-                          GameService, player_factory):
-    p1 = player_factory('Dostya', player_id=1)
-    p2 = player_factory('Rhiza', player_id=2)
+async def test_start_game(
+    ladder_service: LadderService,
+    game_service: GameService,
+    player_factory
+):
+    p1 = player_factory('Dostya', player_id=1, with_lobby_connection=True)
+    p2 = player_factory('Rhiza', player_id=2, with_lobby_connection=True)
 
     game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
 
@@ -26,10 +29,13 @@ async def test_start_game(ladder_service: LadderService, game_service:
 
 
 @fast_forward(120)
-async def test_start_game_timeout(ladder_service: LadderService, game_service:
-                                  GameService, player_factory):
-    p1 = player_factory('Dostya', player_id=1)
-    p2 = player_factory('Rhiza', player_id=2)
+async def test_start_game_timeout(
+    ladder_service: LadderService,
+    game_service: GameService,
+    player_factory
+):
+    p1 = player_factory('Dostya', player_id=1, with_lobby_connection=True)
+    p2 = player_factory('Rhiza', player_id=2, with_lobby_connection=True)
 
     game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
 
@@ -43,7 +49,12 @@ async def test_start_game_timeout(ladder_service: LadderService, game_service:
 
 
 async def test_inform_player(ladder_service: LadderService, player_factory):
-    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500))
+    p1 = player_factory(
+        'Dostya',
+        player_id=1,
+        ladder_rating=(1500, 500),
+        with_lobby_connection=True
+    )
 
     await ladder_service.inform_player(p1)
 
@@ -146,10 +157,23 @@ async def test_cancel_twice(ladder_service: LadderService, player_factory):
 
 
 @fast_forward(5)
-async def test_start_game_called_on_match(ladder_service: LadderService,
-                                          player_factory):
-    p1 = player_factory('Dostya', player_id=1, ladder_rating=(2300, 64), ladder_games=0)
-    p2 = player_factory('QAI', player_id=2, ladder_rating=(2350, 125), ladder_games=0)
+async def test_start_game_called_on_match(
+    ladder_service: LadderService, player_factory
+):
+    p1 = player_factory(
+        'Dostya',
+        player_id=1,
+        ladder_rating=(2300, 64),
+        ladder_games=0,
+        with_lobby_connection=True
+    )
+    p2 = player_factory(
+        'QAI',
+        player_id=2,
+        ladder_rating=(2350, 125),
+        ladder_games=0,
+        with_lobby_connection=True
+    )
 
     ladder_service.start_game = CoroutineMock()
     ladder_service.inform_player = CoroutineMock()

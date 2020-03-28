@@ -33,7 +33,7 @@ async def test_ping_message(lobby_server):
     _, _, proto = await connect_and_sign_in(('test', 'test_password'), lobby_server)
 
     # We should receive the message every 45 seconds
-    await asyncio.wait_for(read_until_command(proto, 'ping'), 46)
+    await read_until_command(proto, 'ping', timeout=46)
 
 
 @fast_forward(5)
@@ -98,7 +98,7 @@ async def test_game_info_not_broadcast_to_foes(lobby_server):
     assert msg["visibility"] == "public"
 
     with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(read_until_command(proto2, "game_info"), 0.2)
+        await read_until_command(proto2, "game_info", timeout=1)
 
 
 @fast_forward(5)
@@ -135,7 +135,7 @@ async def test_game_info_broadcast_to_friends(lobby_server):
 
     # However, the other person should not see the game
     with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(read_until_command(proto3, "game_info"), 0.2)
+        await read_until_command(proto3, "game_info", timeout=1)
 
 
 @pytest.mark.parametrize("user", [

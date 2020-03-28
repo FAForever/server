@@ -9,16 +9,8 @@ from server import GameStatsService
 from server.game_service import GameService
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import Game
-from server.geoip_service import GeoIpService
 from server.ladder_service import LadderService
 from server.protocol import QDataStreamProtocol
-
-
-@pytest.fixture
-def lobbythread():
-    return mock.Mock(
-        send=lambda obj: None
-    )
 
 
 @pytest.fixture

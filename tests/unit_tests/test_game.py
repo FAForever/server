@@ -1,6 +1,6 @@
+import json
 import logging
 import time
-import json
 from typing import Any, List, Tuple
 from unittest import mock
 
@@ -312,8 +312,8 @@ async def test_clear_slot(
 ):
     game.state = GameState.LOBBY
     players = [
-        player_factory(player_id=1, login='Dostya', global_rating=(1500, 500)),
-        player_factory(player_id=2, login='Rhiza', global_rating=(1500, 500))
+        player_factory("Dostya", player_id=1, global_rating=(1500, 500)),
+        player_factory("Rhiza", player_id=2, global_rating=(1500, 500))
     ]
     add_connected_players(game, players)
     game.set_ai_option('rush', 'StartSpot', 3)
@@ -571,7 +571,7 @@ async def test_compute_rating_only_one_surviver(game: Game, player_factory):
 async def test_compute_rating_two_player_FFA(game: Game, player_factory):
     game.state = GameState.LOBBY
     players = [
-            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            (player_factory(f"{i}", player_id=i, global_rating=rating), result, team)
             for i, (rating, result, team) in enumerate([
                (Rating(1500, 250), 0, 1),
                (Rating(1700, 120), 0, 1),
@@ -597,7 +597,7 @@ async def test_compute_rating_does_not_rate_multi_team(
 ):
     game.state = GameState.LOBBY
     players = [
-            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            (player_factory(f"{i}", player_id=i, global_rating=rating), result, team)
             for i, (rating, result, team) in enumerate([
                (Rating(1500, 250), 10, 2),
                (Rating(1700, 120), 0, 3),
@@ -621,7 +621,7 @@ async def test_compute_rating_does_not_rate_multi_FFA(
 ):
     game.state = GameState.LOBBY
     players = [
-            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            (player_factory(f"{i}", player_id=i, global_rating=rating), result, team)
             for i, (rating, result, team) in enumerate([
                (Rating(1500, 250), 10, 1),
                (Rating(1700, 120), 0, 1),
@@ -645,7 +645,7 @@ async def test_compute_rating_does_not_rate_double_win(
 ):
     game.state = GameState.LOBBY
     players = [
-            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            (player_factory(f"{i}", player_id=i, global_rating=rating), result, team)
             for i, (rating, result, team) in enumerate([
                (Rating(1500, 250), 10, 2),
                (Rating(1700, 120), 0, 3),
@@ -667,7 +667,7 @@ async def test_compute_rating_treats_double_defeat_as_draw(
 ):
     game.state = GameState.LOBBY
     players = [
-            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            (player_factory(f"{i}", player_id=i, global_rating=rating), result, team)
             for i, (rating, result, team) in enumerate([
                (Rating(1500, 250), 10, 2),
                (Rating(1500, 250), 0, 3),
@@ -693,7 +693,7 @@ async def test_compute_rating_works_with_partially_unknown_results(
 ):
     game.state = GameState.LOBBY
     players = [
-            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            (player_factory(f"{i}", player_id=i, global_rating=rating), result, team)
             for i, (rating, result, team) in enumerate([
                (Rating(1500, 250), 10, 2),
                (Rating(1700, 120), 0, 2),
@@ -773,7 +773,7 @@ async def test_name_sanitization(game):
 async def test_to_dict(game, player_factory):
     game.state = GameState.LOBBY
     players = [
-            (player_factory(login=f"{i}", player_id=i, global_rating=rating), result, team)
+            (player_factory(f"{i}", player_id=i, global_rating=rating), result, team)
             for i, (rating, result, team) in enumerate([
                (Rating(1500, 250), 0, 1),
                (Rating(1700, 120), 0, 1),
@@ -820,7 +820,7 @@ async def test_persist_results_not_called_with_one_player(
 
     game.state = GameState.LOBBY
     players = [
-        player_factory(player_id=1, login='Dostya', global_rating=(1500, 500))
+        player_factory("Dostya", player_id=1, global_rating=(1500, 500))
     ]
     add_connected_players(game, players)
     await game.launch()

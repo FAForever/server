@@ -92,7 +92,7 @@ async def test_broadcast_empty_message(lobby_server):
     })
 
     with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(read_until_command(proto2, "notice"), 0.5)
+        await read_until_command(proto2, "notice", timeout=1)
 
 
 async def test_join_channel(lobby_server):

@@ -168,12 +168,13 @@ def make_player(
 @pytest.fixture
 def player_factory():
     def make(
+        login=None,
         state=PlayerState.IDLE,
         global_rating=None,
         ladder_rating=None,
         numGames=0,
         ladder_games=0,
-        with_lobby_connection=True,
+        with_lobby_connection=False,
         **kwargs
     ):
         p = make_player(
@@ -182,6 +183,7 @@ def player_factory():
             ladder_rating=ladder_rating,
             numGames=numGames,
             ladder_games=ladder_games,
+            login=login,
             **kwargs
         )
 
@@ -199,9 +201,9 @@ def player_factory():
 def players(player_factory):
     from server.players import PlayerState
     return mock.Mock(
-        hosting=player_factory(login='Paula_Bean', player_id=1, state=PlayerState.HOSTING),
-        peer=player_factory(login='That_Guy', player_id=2, state=PlayerState.JOINING),
-        joining=player_factory(login='James_Kirk', player_id=3, state=PlayerState.JOINING)
+        hosting=player_factory('Paula_Bean', player_id=1, state=PlayerState.HOSTING),
+        peer=player_factory('That_Guy', player_id=2, state=PlayerState.JOINING),
+        joining=player_factory('James_Kirk', player_id=3, state=PlayerState.JOINING)
     )
 
 
