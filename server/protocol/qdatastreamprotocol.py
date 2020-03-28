@@ -185,3 +185,19 @@ class QDataStreamProtocol(Protocol):
             await self.drain()
         except DisconnectedError as e:
             raise DisconnectedError(data) from e
+
+    def write(self, message):
+        """
+        Write data to the socket without waiting for it to be sent. This should
+        only be used when forwarding data from one connection to another.
+        """
+        if not self.is_connected():
+            raise DisconnectedError("Protocol is not connected!")
+
+        self.write_raw(self.encode_message(message))
+
+    def write_raw(self, data):
+        if not self.is_connected():
+            raise DisconnectedError("Protocol is not connected!")
+
+        self.writer.write(data)
