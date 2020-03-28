@@ -424,7 +424,7 @@ class LadderService(Service):
             msg = {"command": "match_cancelled"}
             with contextlib.suppress(DisconnectedError):
                 await asyncio.gather(*[
-                    player.lobby_connection.send(msg) for player in all_players
+                    player.send_message(msg) for player in all_players
                 ])
 
     async def get_game_history(
