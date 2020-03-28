@@ -673,6 +673,8 @@ class LobbyConnection:
         await self.send_game_list()
 
     async def command_restore_game_session(self, message):
+        assert self.player is not None
+
         game_id = int(message.get('game_id'))
 
         # Restore the player's game connection, if the game still exists and is live
@@ -855,6 +857,7 @@ class LobbyConnection:
         is_host=False,
         options=GameLaunchOptions(),
     ):
+        assert self.player is not None
         # TODO: Fix setting up a ridiculous amount of cyclic pointers here
         if self.game_connection:
             await self.game_connection.abort("Player launched a new game")

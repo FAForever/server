@@ -205,14 +205,17 @@ class Game:
         :return: frozenset
         """
         if self.state is GameState.LOBBY:
-            return frozenset(self._connections.keys())
+            return frozenset(
+                player for player in self._connections.keys()
+                if player.id in self._player_options
+            )
         else:
-            return frozenset({
+            return frozenset(
                 player
                 for player in self._players
                 if self.get_player_option(player.id, 'Army') is not None
                 and self.get_player_option(player.id, 'Army') >= 0
-            })
+            )
 
     @property
     def connections(self):
@@ -391,19 +394,24 @@ class Game:
         """
         if game_connection not in self._connections.values():
             return
-        del self._connections[game_connection.player]
-        if game_connection.player:
-            del game_connection.player.game
+
+        player = game_connection.player
+        del self._connections[player]
+        del player.game
+
+        if self.state is GameState.LOBBY and player.id in self._player_options:
+            del self._player_options[player.id]
+
         await self.check_sim_end()
 
         self._logger.info("Removed game connection %s", game_connection)
 
-        def host_left_lobby() -> bool:
-            return (game_connection.player == self.host and
-                    self.state is not GameState.LIVE)
+        host_left_lobby = (
+            player == self.host and self.state is not GameState.LIVE
+        )
 
         if self.state is not GameState.ENDED and (
-            len(self._connections) == 0 or host_left_lobby()
+            len(self._connections) == 0 or host_left_lobby
         ):
             await self.on_game_end()
         else:
