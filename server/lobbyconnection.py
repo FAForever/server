@@ -1024,14 +1024,19 @@ class LobbyConnection:
     async def command_invite_to_party(self, message):
         recipient = self.player_service.get_player(message["recipient_id"])
         if recipient is None:
+            # TODO: Client localized message
             raise ClientError("The invited player doesn't exist", recoverable=True)
 
-        await self.party_service.invite_player_to_party(self.player, recipient)
+        if self.player.id in recipient.foes:
+            return
+
+        self.party_service.invite_player_to_party(self.player, recipient)
 
     @player_idle
     async def command_accept_party_invite(self, message):
         sender = self.player_service.get_player(message["sender_id"])
         if sender is None:
+            # TODO: Client localized message
             raise ClientError("The inviting player doesn't exist", recoverable=True)
 
         await self.party_service.accept_invite(self.player, sender)
@@ -1040,6 +1045,7 @@ class LobbyConnection:
     async def command_kick_player_from_party(self, message):
         kicked_player = self.player_service.get_player(message["kicked_player_id"])
         if kicked_player is None:
+            # TODO: Client localized message
             raise ClientError("The kicked player doesn't exist", recoverable=True)
 
         await self.party_service.kick_player_from_party(self.player, kicked_player)
@@ -1060,7 +1066,6 @@ class LobbyConnection:
             self.abort("{} sent a wrongly formatted faction selection".format(self.player.login))
 
         self.party_service.set_factions(self.player, message["factions"])
-
 
     async def send_warning(self, message: str, fatal: bool = False):
         """
