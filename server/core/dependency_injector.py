@@ -51,16 +51,25 @@ class DependencyInjector(object):
         # Objects which are available to the constructors of injected objects
         self.injectables: Dict[str, object] = {}
 
-    def add_injectables(self, **kwargs: object) -> None:
+    def add_injectables(
+        self, injectables: Dict[str, object] = {}, **kwargs: object
+    ) -> None:
         """
         Register additional objects that can be requested by injected classes.
         """
+        self.injectables.update(injectables)
         self.injectables.update(kwargs)
 
-    def build_classes(self, classes: Dict[str, type]) -> Dict[str, object]:
+    def build_classes(
+        self, classes: Dict[str, type] = {}, **kwargs: type
+    ) -> Dict[str, object]:
         """
         Resolve dependencies by name and instantiate each class.
         """
+        # kwargs is temporary so we won't be messing with the caller's data
+        kwargs.update(classes)
+        classes = kwargs
+
         dep = self._make_dependency_graph(classes)
         # Can get away with a shallow copy because dep values are not modified
         # in-place.
