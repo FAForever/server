@@ -235,6 +235,9 @@ class GameConnection(GpgNetServerProtocol):
             )
         elif key == 'Title':
             self.game.name = self.game.sanitize_name(value)
+        else:
+            self._logger.warning("Ignoring game option: %s", key)
+            return
 
         self._mark_dirty()
 
@@ -253,13 +256,17 @@ class GameConnection(GpgNetServerProtocol):
                     ids=tuple(uids))
                 async for row in result:
                     self.game.mods[row["uid"]] = row["name"]
+        else:
+            self._logger.warning("Ignoring game mod: %s, %s", mode, args)
+            return
+
         self._mark_dirty()
 
-    async def handle_player_option(self, id_, command, value):
+    async def handle_player_option(self, player_id, command, value):
         if self.player.state != PlayerState.HOSTING:
             return
 
-        self.game.set_player_option(int(id_), command, value)
+        self.game.set_player_option(int(player_id), command, value)
         self._mark_dirty()
 
     async def handle_ai_option(self, name, key, value):
@@ -459,6 +466,12 @@ class GameConnection(GpgNetServerProtocol):
         elif state == 'Launching':
             if self.player.state != PlayerState.HOSTING:
                 return
+
+            self._logger.info(
+                "Launching game %s in state %s",
+                self.game,
+                self.game.state
+            )
 
             await self.game.launch()
 
