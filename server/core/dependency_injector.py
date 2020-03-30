@@ -66,10 +66,16 @@ class DependencyInjector(object):
         # in-place.
         param_map = dep.copy()
 
-        return self._build_classes_from_dependencies(dep, classes, param_map)
+        instances = self._build_classes_from_dependencies(
+            dep, classes, param_map
+        )
+        self.add_injectables(**instances)
+        return instances
 
     def _make_dependency_graph(self, classes: Dict[str, type]) -> DependencyGraph:
-        """Build dependency graph"""
+        """
+        Build dependency graph
+        """
         graph: DependencyGraph = defaultdict(list)
         for name in self.injectables:
             graph[name] = []
@@ -98,6 +104,7 @@ class DependencyInjector(object):
         while True:
             if not dep:
                 return instances
+
             # Find all services with no dependencies (leaves of our graph)
             leaves = [
                 name for name, dependencies in dep.items() if not dependencies
@@ -129,6 +136,9 @@ class DependencyInjector(object):
                         param: resolved[param]
                         for param in param_names
                     })
+                else:
+                    instances[obj_name] = resolved[obj_name]
+
                 del dep[obj_name]
 
             # Remove leaves from the dependency graph

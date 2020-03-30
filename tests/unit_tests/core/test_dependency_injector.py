@@ -22,6 +22,17 @@ def test_dependency_injector_builds_classes(injector):
     assert isinstance(classes["b"], B)
 
 
+def test_dependency_injector_only_builds_once(injector):
+    class A:
+        def __init__(self) -> None:
+            pass
+
+    classes = injector.build_classes({"a": A})
+    classes2 = injector.build_classes({"a": A})
+
+    assert classes["a"] is classes2["a"]
+
+
 def test_dependency_injector_resolves_dependencies(injector):
     class A:
         def __init__(self, injected: object) -> None:
@@ -49,6 +60,22 @@ def test_dependency_injector_resolves_class_dependencies(injector):
     assert isinstance(classes["a"], A)
     assert isinstance(classes["b"], B)
     assert classes["b"].a is classes["a"]
+
+
+def test_dependency_injector_saves_instances(injector):
+    class A:
+        def __init__(self) -> None:
+            pass
+
+    class B:
+        def __init__(self, a: A) -> None:
+            self.a = a
+
+    classes = injector.build_classes({"a": A})
+    classes2 = injector.build_classes({"b": B})
+
+    assert classes["a"] is classes2["a"]
+    assert classes2["b"].a is classes2["a"]
 
 
 def test_dependency_injector_finds_missing(injector):
