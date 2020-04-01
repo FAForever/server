@@ -66,7 +66,7 @@ async def rating_service(database, player_service):
 
     yield mock_service
 
-    await mock_service.kill()
+    mock_service.kill()
 
 
 def get_persisted_results(mock_service):
@@ -167,9 +167,7 @@ async def test_rate_game_global_ratings(custom_game, players):
     await custom_game.add_result(players.hosting.id, 0, "victory", 1)
     await custom_game.add_result(players.joining.id, 1, "defeat", 0)
 
-    # will refuse to rate short custom games
-    custom_game.launched_at = time.time() - 600
-
+    custom_game.enforce_rating = True
     await custom_game.rate_game()
     await rating_service._join_rating_queue()
 
@@ -211,8 +209,6 @@ async def test_rate_game_rating_balanced_teamgame(custom_game, player_factory):
     )
 
     await custom_game.launch()
-    # will refuse to rate short custom games
-    custom_game.launched_at = time.time() - 600
 
     await report_results(
         custom_game,
@@ -222,6 +218,7 @@ async def test_rate_game_rating_balanced_teamgame(custom_game, player_factory):
         ],
     )
 
+    custom_game.enforce_rating = True
     await custom_game.rate_game()
     await rating_service._join_rating_queue()
 
@@ -249,8 +246,6 @@ async def test_rate_game_sum_of_scores_edge_case(custom_game, player_factory):
     )
 
     await custom_game.launch()
-    # will refuse to rate short custom games
-    custom_game.launched_at = time.time() - 600
 
     await report_results(
         custom_game,
@@ -265,6 +260,7 @@ async def test_rate_game_sum_of_scores_edge_case(custom_game, player_factory):
         ],
     )
 
+    custom_game.enforce_rating = True
     await custom_game.rate_game()
     await rating_service._join_rating_queue()
 
@@ -300,8 +296,6 @@ async def test_rate_game_only_one_survivor(custom_game, player_factory):
     )
 
     await custom_game.launch()
-    # will refuse to rate short custom games
-    custom_game.launched_at = time.time() - 600
 
     await report_results(
         custom_game,
@@ -311,6 +305,7 @@ async def test_rate_game_only_one_survivor(custom_game, player_factory):
         ],
     )
 
+    custom_game.enforce_rating = True
     await custom_game.rate_game()
     await rating_service._join_rating_queue()
 
@@ -339,8 +334,6 @@ async def test_rate_game_two_player_FFA(custom_game, player_factory):
     )
 
     await custom_game.launch()
-    # will refuse to rate short custom games
-    custom_game.launched_at = time.time() - 600
 
     await report_results(
         custom_game,
@@ -355,6 +348,7 @@ async def test_rate_game_two_player_FFA(custom_game, player_factory):
         ],
     )
 
+    custom_game.enforce_rating = True
     await custom_game.rate_game()
     await rating_service._join_rating_queue()
 
@@ -378,8 +372,6 @@ async def test_rate_game_does_not_rate_multi_team(custom_game, player_factory):
     )
 
     await custom_game.launch()
-    # will refuse to rate short custom games
-    custom_game.launched_at = time.time() - 600
 
     await report_results(
         custom_game,
@@ -389,6 +381,7 @@ async def test_rate_game_does_not_rate_multi_team(custom_game, player_factory):
         ],
     )
 
+    custom_game.enforce_rating = True
     await custom_game.rate_game()
     await rating_service._join_rating_queue()
 
@@ -408,8 +401,6 @@ async def test_rate_game_does_not_rate_multi_FFA(custom_game, player_factory):
     )
 
     await custom_game.launch()
-    # will refuse to rate short custom games
-    custom_game.launched_at = time.time() - 600
 
     await report_results(
         custom_game,
@@ -419,6 +410,7 @@ async def test_rate_game_does_not_rate_multi_FFA(custom_game, player_factory):
         ],
     )
 
+    custom_game.enforce_rating = True
     await custom_game.rate_game()
     await rating_service._join_rating_queue()
 
@@ -438,8 +430,6 @@ async def test_rate_game_does_not_rate_double_win(custom_game, player_factory):
     )
 
     await custom_game.launch()
-    # will refuse to rate short custom games
-    custom_game.launched_at = time.time() - 600
 
     await report_results(
         custom_game,
@@ -449,6 +439,7 @@ async def test_rate_game_does_not_rate_double_win(custom_game, player_factory):
         ],
     )
 
+    custom_game.enforce_rating = True
     await custom_game.rate_game()
     await rating_service._join_rating_queue()
 
@@ -468,8 +459,6 @@ async def test_rate_game_treats_double_defeat_as_draw(custom_game, player_factor
     )
 
     await custom_game.launch()
-    # will refuse to rate short custom games
-    custom_game.launched_at = time.time() - 600
 
     await report_results(
         custom_game,
@@ -479,6 +468,7 @@ async def test_rate_game_treats_double_defeat_as_draw(custom_game, player_factor
         ],
     )
 
+    custom_game.enforce_rating = True
     await custom_game.rate_game()
     await rating_service._join_rating_queue()
 
@@ -513,8 +503,6 @@ async def test_compute_rating_works_with_partially_unknown_results(
     )
 
     await custom_game.launch()
-    # will refuse to rate short custom games
-    custom_game.launched_at = time.time() - 600
 
     await report_results(
         custom_game,
@@ -524,6 +512,7 @@ async def test_compute_rating_works_with_partially_unknown_results(
         ],
     )
 
+    custom_game.enforce_rating = True
     await custom_game.rate_game()
     await rating_service._join_rating_queue()
 
@@ -552,8 +541,6 @@ async def test_rate_game_single_ffa_vs_single_team(custom_game, player_factory):
     )
 
     await custom_game.launch()
-    # will refuse to rate short custom games
-    custom_game.launched_at = time.time() - 600
 
     await report_results(
         custom_game,
@@ -563,6 +550,7 @@ async def test_rate_game_single_ffa_vs_single_team(custom_game, player_factory):
         ],
     )
 
+    custom_game.enforce_rating = True
     await custom_game.rate_game()
     await rating_service._join_rating_queue()
 
@@ -586,8 +574,6 @@ async def test_rate_game_single_ffa_vs_team(custom_game, player_factory):
     )
 
     await custom_game.launch()
-    # will refuse to rate short custom games
-    custom_game.launched_at = time.time() - 600
 
     await report_results(
         custom_game,
@@ -597,6 +583,7 @@ async def test_rate_game_single_ffa_vs_team(custom_game, player_factory):
         ],
     )
 
+    custom_game.enforce_rating = True
     await custom_game.rate_game()
     await rating_service._join_rating_queue()
 
@@ -616,8 +603,6 @@ async def test_dont_rate_partial_ffa_matches(custom_game, player_factory):
     )
 
     await custom_game.launch()
-    # will refuse to rate short custom games
-    custom_game.launched_at = time.time() - 600
 
     await report_results(
         custom_game,
@@ -627,6 +612,7 @@ async def test_dont_rate_partial_ffa_matches(custom_game, player_factory):
         ],
     )
 
+    custom_game.enforce_rating = True
     await custom_game.rate_game()
     await rating_service._join_rating_queue()
 
@@ -648,8 +634,6 @@ async def test_dont_rate_pure_ffa_matches_with_more_than_two_players(
     )
 
     await custom_game.launch()
-    # will refuse to rate short custom games
-    custom_game.launched_at = time.time() - 600
 
     await report_results(
         custom_game,
@@ -659,6 +643,7 @@ async def test_dont_rate_pure_ffa_matches_with_more_than_two_players(
         ],
     )
 
+    custom_game.enforce_rating = True
     await custom_game.rate_game()
     await rating_service._join_rating_queue()
 
@@ -678,8 +663,6 @@ async def test_dont_rate_threeway_team_matches(custom_game, player_factory):
     )
 
     await custom_game.launch()
-    # will refuse to rate short custom games
-    custom_game.launched_at = time.time() - 600
 
     await report_results(
         custom_game,
@@ -689,6 +672,7 @@ async def test_dont_rate_threeway_team_matches(custom_game, player_factory):
         ],
     )
 
+    custom_game.enforce_rating = True
     await custom_game.rate_game()
     await rating_service._join_rating_queue()
 
@@ -716,7 +700,8 @@ async def test_single_wrong_report_still_rated_correctly(game: Game, player_fact
             global_rating=Rating(old_rating, 250),
             with_lobby_connection=False,
         )
-        for team in log_dict["teams"].values() for player_id in team
+        for team in log_dict["teams"].values()
+        for player_id in team
     }
 
     add_connected_players(game, list(players.values()))

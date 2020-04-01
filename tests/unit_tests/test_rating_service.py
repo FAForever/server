@@ -20,11 +20,11 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture()
-async def initialized_service(database, player_service):
+async def rating_service(database, player_service):
     service = RatingService(database, player_service)
     await service.initialize()
     yield service
-    await service.kill()
+    service.kill()
 
 
 @pytest.fixture()
@@ -59,8 +59,8 @@ async def test_enqueue_manual_initialization(
     service._rate.assert_called()
 
 
-async def test_enqueue_initialized_fixture(initialized_service, game_rating_summary):
-    service = initialized_service
+async def test_enqueue_initialized_fixture(rating_service, game_rating_summary):
+    service = rating_service
     service._rate = CoroutineMock()
 
     await service.enqueue(game_rating_summary)
@@ -151,7 +151,7 @@ async def test_update_player_service(uninitialized_service, player_service):
 async def test_update_player_service_failure_warning(uninitialized_service):
     service = uninitialized_service
     service._player_service_callback = None
-    service._logger = mock.MagicMock()
+    service._logger = mock.Mock()
 
     service._update_player_object(1, RatingType.GLOBAL, Rating(1000, 100))
 
@@ -159,11 +159,11 @@ async def test_update_player_service_failure_warning(uninitialized_service):
 
 
 async def test_game_rating_error_handled(
-    initialized_service, game_rating_summary, bad_game_rating_summary
+    rating_service, game_rating_summary, bad_game_rating_summary
 ):
-    service = initialized_service
+    service = rating_service
     service._persist_rating_changes = CoroutineMock()
-    service._logger = mock.MagicMock()
+    service._logger = mock.Mock()
 
     await service.enqueue(bad_game_rating_summary)
     await service.enqueue(game_rating_summary)
@@ -177,11 +177,11 @@ async def test_game_rating_error_handled(
 
 
 async def test_nonexisting_rating_error_handled(
-    initialized_service, game_rating_summary
+    rating_service, game_rating_summary
 ):
-    service = initialized_service
+    service = rating_service
     service._persist_rating_changes = CoroutineMock()
-    service._logger = mock.MagicMock()
+    service._logger = mock.Mock()
 
     bad_results = [{999: GameOutcome.VICTORY}, {888: GameOutcome.DEFEAT}]
     bad_summary = GameRatingSummary(1, RatingType.GLOBAL, bad_results)

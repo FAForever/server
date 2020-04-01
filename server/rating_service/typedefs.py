@@ -30,3 +30,15 @@ class GameRatingSummary(NamedTuple):
     game_id: int
     rating_type: Optional[RatingType]
     results: SummaryResults
+
+
+class RatingServiceError(Exception):
+    pass
+
+
+class ServiceNotReadyError(RatingServiceError):
+    pass
+
+
+class RatingNotFoundError(RatingServiceError):
+    pass

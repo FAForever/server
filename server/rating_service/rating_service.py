@@ -1,5 +1,12 @@
 from typing import Dict
-from .typedefs import RatingData, GameRatingData, GameRatingSummary, PlayerID
+from .typedefs import (
+    RatingData,
+    GameRatingData,
+    GameRatingSummary,
+    PlayerID,
+    ServiceNotReadyError,
+    RatingNotFoundError,
+)
 
 import asyncio
 
@@ -19,18 +26,6 @@ from server.db.models import ladder1v1_rating as ladder1v1_table
 from server.db.models import global_rating as global_table
 
 
-class RatingServiceError(Exception):
-    pass
-
-
-class ServiceNotReadyError(RatingServiceError):
-    pass
-
-
-class RatingNotFoundError(RatingServiceError):
-    pass
-
-
 @with_logger
 class RatingService:
     """
@@ -46,11 +41,13 @@ class RatingService:
         self._queue = asyncio.Queue()
         self._task = None
 
-    async def initialize(self):
-        # TODO use create_task in python3.7
+    async def initialize(self) -> None:
+        if self._task is not None:
+            self._logger.error("Service already runnning or not properly shut down.")
+            return
         self._accept_input = True
         self._logger.debug("RatingService starting...")
-        self._task = asyncio.ensure_future(self._handle_rating_queue())
+        self._task = asyncio.create_task(self._handle_rating_queue())
 
     async def enqueue(self, summary: GameRatingSummary) -> None:
         if not self._accept_input:
@@ -63,9 +60,9 @@ class RatingService:
         await self._queue.put(summary)
         rating_service_backlog.set(self._queue.qsize())
 
-    async def _handle_rating_queue(self):
+    async def _handle_rating_queue(self) -> None:
         self._logger.info("RatingService started!")
-        while True:
+        while self._accept_input or not self._queue.empty():
             summary = await self._queue.get()
             self._logger.debug("Now rating request %s", summary)
 
@@ -81,9 +78,7 @@ class RatingService:
             self._queue.task_done()
             rating_service_backlog.set(self._queue.qsize())
 
-            if self._queue.empty() and not self._accept_input:
-                self._logger.info("RatingService shutting down.")
-                break
+        self._logger.info("RatingService stopped.")
 
     async def _rate(self, summary: GameRatingSummary) -> None:
         rating_data = await self._get_rating_data(summary)
@@ -101,33 +96,6 @@ class RatingService:
             final_outcomes,
         )
 
-    async def _get_player_rating(
-        self, player_id: int, rating_type: RatingType
-    ) -> Rating:
-        if rating_type is RatingType.GLOBAL:
-            table = global_table
-        elif rating_type is RatingType.LADDER_1V1:
-            table = ladder1v1_table
-        else:
-            raise ValueError(f"Unknown rating type {rating_type}.")
-
-        async with self._db.acquire() as conn:
-            sql = (
-                select([table.c.mean, table.c.deviation], use_labels=True)
-                .select_from(table)
-                .where(table.c.id == player_id)
-            )
-
-            result = await conn.execute(sql)
-            row = await result.fetchone()
-
-            if not row:
-                raise RatingNotFoundError(
-                    f"Could not find a {rating_type} rating for player {player_id}."
-                )
-
-            return Rating(row[table.c.mean], row[table.c.deviation])
-
     async def _get_rating_data(self, summary: GameRatingSummary) -> GameRatingData:
         ratings = {}
         for player_id in (p for team in summary.results for p in team):
@@ -143,6 +111,31 @@ class RatingService:
             for outcomes in summary.results
         ]
 
+    async def _get_player_rating(
+        self, player_id: int, rating_type: RatingType
+    ) -> Rating:
+        if rating_type is RatingType.GLOBAL:
+            table = global_table
+        elif rating_type is RatingType.LADDER_1V1:
+            table = ladder1v1_table
+        else:
+            raise ValueError(f"Unknown rating type {rating_type}.")
+
+        async with self._db.acquire() as conn:
+            sql = select([table.c.mean, table.c.deviation]).where(
+                table.c.id == player_id
+            )
+
+            result = await conn.execute(sql)
+            row = await result.fetchone()
+
+            if not row:
+                raise RatingNotFoundError(
+                    f"Could not find a {rating_type} rating for player {player_id}."
+                )
+
+            return Rating(row[table.c.mean], row[table.c.deviation])
+
     async def _persist_rating_changes(
         self,
         game_id: int,
@@ -150,15 +143,13 @@ class RatingService:
         old_ratings: Dict[PlayerID, Rating],
         new_ratings: Dict[PlayerID, Rating],
         outcomes: Dict[PlayerID, GameOutcome],
-    ):
+    ) -> None:
         """
         Persist computed ratings to the respective players' selected rating
-        :param rating_groups: of the form returned by Game.compute_rating
-        :return: None
         """
         # FIXME old_ratings only passed for logging, but might be nice with new
         # tables. If not used in new tables, throw it out.
-        self._logger.info("Saving rating change stats")
+        self._logger.info("Saving rating change stats for game %i", game_id)
 
         async with self._db.acquire() as conn:
             for player_id, new_rating in new_ratings.items():
@@ -183,21 +174,6 @@ class RatingService:
 
                 self._update_player_object(player_id, rating_type, new_rating)
 
-    def _update_player_object(
-        self, player_id: PlayerID, rating_type: RatingType, new_rating: Rating
-    ) -> None:
-        if self._player_service_callback is None:
-            self._logger.warning(
-                "Tried to send rating change to player service, "
-                "but no service was registered."
-            )
-            return
-
-        self._logger.debug(
-            "Sending player rating update for player with id ", player_id
-        )
-        self._player_service_callback(player_id, rating_type, new_rating)
-
     async def _update_rating_table(
         self,
         conn,
@@ -205,7 +181,7 @@ class RatingService:
         player_id: PlayerID,
         new_rating: Rating,
         outcome: GameOutcome,
-    ):
+    ) -> None:
         # If we are updating the ladder1v1_rating table then we also need to update
         # the `winGames` column which doesn't exist on the global_rating table
         table = f"{rating_type.value}_rating"
@@ -226,14 +202,29 @@ class RatingService:
                 (new_rating.mu, new_rating.sigma, player_id),
             )
 
-    async def _join_rating_queue(self):
+    def _update_player_object(
+        self, player_id: PlayerID, rating_type: RatingType, new_rating: Rating
+    ) -> None:
+        if self._player_service_callback is None:
+            self._logger.warning(
+                "Tried to send rating change to player service, "
+                "but no service was registered."
+            )
+            return
+
+        self._logger.debug(
+            "Sending player rating update for player with id ", player_id
+        )
+        self._player_service_callback(player_id, rating_type, new_rating)
+
+    async def _join_rating_queue(self) -> None:
         """
         Offers a call that is blocking until the rating queue has been emptied.
         Mostly for testing purposes.
         """
         await self._queue.join()
 
-    async def shutdown(self):
+    async def shutdown(self) -> None:
         """
         Finish rating all remaining games, then exit.
         """
@@ -242,13 +233,14 @@ class RatingService:
             "Shutdown initiated. Waiting on current queue: %s", self._queue
         )
         await self._queue.join()
+        self._task = None
         self._logger.debug("Queue emptied: %s", self._queue)
-        await self.kill()
 
-    async def kill(self):
+    def kill(self) -> None:
         """
         Exit without waiting for the queue to join.
         """
         self._accept_input = False
         if self._task is not None:
             self._task.cancel()
+            self._task = None
