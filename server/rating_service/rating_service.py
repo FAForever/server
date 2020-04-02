@@ -166,7 +166,7 @@ class RatingService:
             raise ValueError(f"Unknown rating type {rating_type}.")
 
         async with self._db.acquire() as conn:
-            sql = select([table.c.mean, table.c.deviation]).where(
+            sql = select([table.c.mean, table.c.deviation, table.c.numGames]).where(
                 table.c.id == player_id
             )
 
@@ -178,7 +178,20 @@ class RatingService:
                     f"Could not find a {rating_type} rating for player {player_id}."
                 )
 
-            # TODO: add rating entry to new table
+            # FIXME: the old tables don't seem to have a `won_games` column,
+            # but the new `leaderboard_rating` does.
+            # Could set the new `won_games` to 50% of the total_games,
+            # since this should be the long-term limit anyways...
+            await conn.execute(
+                "INSERT INTO leaderboard_rating "
+                "(login_id, mean, deviation, total_games, leaderboard_id) "
+                "VALUES (%s, %s, %s, %s, %s);",
+                player_id,
+                row[table.c.mean],
+                row[table.c.deviation],
+                row[table.c.numGames],
+                self._rating_type_ids[rating_type.value],
+            )
 
             return Rating(row[table.c.mean], row[table.c.deviation])
 

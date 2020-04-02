@@ -9,6 +9,8 @@ from server.rating_service.rating_service import (
     ServiceNotReadyError,
 )
 from server.db import FAFDatabase
+from sqlalchemy import select
+from server.db.models import leaderboard_rating
 
 from server.rating import RatingType
 from trueskill import Rating
@@ -114,11 +116,25 @@ async def test_get_player_rating_legacy(semiinitialized_service):
     legacy_global_rating = Rating(1201, 250)
     legacy_ladder_rating = Rating(1301, 400)
 
+    rating_sql = select([leaderboard_rating.c.mean]).where(
+        leaderboard_rating.c.login_id == player_id
+    )
+
+    async with service._db.acquire() as conn:
+        result = await conn.execute(rating_sql)
+        rows = await result.fetchall()
+    assert len(rows) == 0  # no new rating entries yet
+
     rating = await service._get_player_rating(player_id, RatingType.GLOBAL)
     assert rating == legacy_global_rating
 
     rating = await service._get_player_rating(player_id, RatingType.LADDER_1V1)
     assert rating == legacy_ladder_rating
+
+    async with service._db.acquire() as conn:
+        result = await conn.execute(rating_sql)
+        rows = await result.fetchall()
+    assert len(rows) == 2  # new rating entries were created
 
 
 async def test_get_new_player_rating(semiinitialized_service):
