@@ -16,6 +16,7 @@ from server.decorators import with_logger
 from server.metrics import rating_service_backlog
 
 from server.games.game_results import GameOutcome
+from server.games.game import ValidityState
 
 from server.rating import RatingType
 from trueskill import Rating
@@ -70,6 +71,7 @@ class RatingService:
                 await self._rate(summary)
             except GameRatingError:
                 self._logger.warning("Error rating game %s", summary)
+                await self._persist_rating_error(summary.game_id)
             except RatingNotFoundError:
                 self._logger.warning("Missing rating entry to rate game %s", summary)
             else:
@@ -216,6 +218,14 @@ class RatingService:
             "Sending player rating update for player with id ", player_id
         )
         self._player_service_callback(player_id, rating_type, new_rating)
+
+    async def _persist_rating_error(self, game_id: int) -> None:
+        validity_state = ValidityState.UNKNOWN_RESULT
+        async with self._db.acquire() as conn:
+            await conn.execute(
+                "UPDATE game_stats SET validity = %s " "WHERE id = %s",
+                (validity_state.value, game_id),
+            )
 
     async def _join_rating_queue(self) -> None:
         """

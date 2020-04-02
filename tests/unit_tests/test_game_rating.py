@@ -10,7 +10,7 @@ from trueskill import Rating
 from server.rating_service.rating_service import RatingService
 from server.rating_service.game_rater import GameRatingError
 
-from server.games.game import Game, GameState, GameError
+from server.games.game import Game, GameState, GameError, ValidityState
 from server.games.game_results import GameOutcome
 from server.games.custom_game import CustomGame
 from server.games.ladder_game import LadderGame
@@ -445,6 +445,40 @@ async def test_rate_game_does_not_rate_double_win(custom_game, player_factory):
 
     results = get_persisted_results(rating_service)
     assert results.ratings == {}
+
+
+async def test_rating_errors_persisted(custom_game, player_factory):
+    rating_service = custom_game.game_service._rating_service
+
+    rating_list = [Rating(1500, 250), Rating(1700, 120)]
+    team_list = [2, 3]
+    score_list = [10, 10]
+
+    players = add_players_with_rating(
+        player_factory, custom_game, rating_list, team_list
+    )
+
+    await custom_game.launch()
+
+    await report_results(
+        custom_game,
+        [
+            (player, player._test_army, "victory", score)
+            for (player, team), score in zip(players, score_list)
+        ],
+    )
+
+    custom_game.enforce_rating = True
+    await custom_game.rate_game()
+    await rating_service._join_rating_queue()
+
+    async with rating_service._db.acquire() as conn:
+        rows = await conn.execute(
+            "SELECT `validity` FROM `game_stats` " "WHERE `id`=%s", (custom_game.id,)
+        )
+    row = await rows.fetchone()
+
+    assert row[0] == ValidityState.UNKNOWN_RESULT.value
 
 
 async def test_rate_game_treats_double_defeat_as_draw(custom_game, player_factory):
