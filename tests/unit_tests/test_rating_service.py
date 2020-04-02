@@ -33,6 +33,13 @@ def uninitialized_service(database, player_service):
 
 
 @pytest.fixture()
+async def semiinitialized_service(database, player_service):
+    service = RatingService(database, player_service)
+    await service._load_rating_type_ids()
+    return service
+
+
+@pytest.fixture()
 def game_rating_summary():
     summary_results = [{1: GameOutcome.VICTORY}, {2: GameOutcome.DEFEAT}]
     return GameRatingSummary(1, RatingType.GLOBAL, summary_results)
@@ -76,34 +83,56 @@ async def test_enqueue_uninitialized(uninitialized_service):
     await service.shutdown()
 
 
-async def test_get_player_rating_global(uninitialized_service):
+async def test_load_rating_type_ids(uninitialized_service):
     service = uninitialized_service
+    await service._load_rating_type_ids()
+
+    assert service._rating_type_ids == {"global": 1, "ladder1v1": 2}
+
+
+async def test_get_player_rating_global(semiinitialized_service):
+    service = semiinitialized_service
     player_id = 50
     true_rating = Rating(1200, 250)
     rating = await service._get_player_rating(player_id, RatingType.GLOBAL)
     assert rating == true_rating
 
 
-async def test_get_player_rating_ladder(uninitialized_service):
-    service = uninitialized_service
+async def test_get_player_rating_ladder(semiinitialized_service):
+    service = semiinitialized_service
     player_id = 50
     true_rating = Rating(1300, 400)
     rating = await service._get_player_rating(player_id, RatingType.LADDER_1V1)
     assert rating == true_rating
 
 
-async def test_get_new_player_rating(uninitialized_service):
+async def test_get_player_rating_legacy(semiinitialized_service):
+    service = semiinitialized_service
+    # Player 51 should have a rating entry in the old `global_rating`
+    # and `ladder1v1_rating` tables but not in `leaderboard_rating`.
+    player_id = 51
+    legacy_global_rating = Rating(1201, 250)
+    legacy_ladder_rating = Rating(1301, 400)
+
+    rating = await service._get_player_rating(player_id, RatingType.GLOBAL)
+    assert rating == legacy_global_rating
+
+    rating = await service._get_player_rating(player_id, RatingType.LADDER_1V1)
+    assert rating == legacy_ladder_rating
+
+
+async def test_get_new_player_rating(semiinitialized_service):
     """
     What happens if a player doesn't have a rating table entry yet?
     """
-    service = uninitialized_service
+    service = semiinitialized_service
     player_id = 999
     with pytest.raises(RatingNotFoundError):
         await service._get_player_rating(player_id, RatingType.LADDER_1V1)
 
 
-async def test_get_rating_data(uninitialized_service):
-    service = uninitialized_service
+async def test_get_rating_data(semiinitialized_service):
+    service = semiinitialized_service
     game_id = 1
 
     player1_id = 1
@@ -129,8 +158,8 @@ async def test_get_rating_data(uninitialized_service):
     assert rating_data[1] == {player2_id: player2_expected_data}
 
 
-async def test_rating(uninitialized_service, game_rating_summary):
-    service = uninitialized_service
+async def test_rating(semiinitialized_service, game_rating_summary):
+    service = semiinitialized_service
     service._persist_rating_changes = CoroutineMock()
 
     await service._rate(game_rating_summary)
@@ -176,9 +205,7 @@ async def test_game_rating_error_handled(
     service._persist_rating_changes.assert_called_once()
 
 
-async def test_nonexisting_rating_error_handled(
-    rating_service, game_rating_summary
-):
+async def test_nonexisting_rating_error_handled(rating_service, game_rating_summary):
     service = rating_service
     service._persist_rating_changes = CoroutineMock()
     service._logger = mock.Mock()

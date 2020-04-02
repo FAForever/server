@@ -1,7 +1,3 @@
--- ================================================
--- Contents of old FAForever/db/test-data.sql below
--- ================================================
-
 -- DUMMY DATA ONLY, FOR USE IN UNIT TESTS
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -49,6 +45,9 @@ DELETE FROM name_history;
 DELETE FROM user_group_assignment;
 DELETE FROM login;
 DELETE FROM email_domain_blacklist;
+DELETE FROM leaderboard;
+DELETE FROM leaderboard_rating;
+DELETE FROM leaderboard_rating_journal;
 
 SET FOREIGN_KEY_CHECKS=1;
 
@@ -266,8 +265,6 @@ INSERT INTO ladder_division_score (season, user_id, league, score, games) VALUES
 INSERT INTO email_domain_blacklist VALUES ('spam.org');
 
 -- ================================================
--- Contents of old FAForever/db/test-data.sql above
--- ================================================
 -- Contents of old tests/data/test-data.sql below
 -- ================================================
 
@@ -290,22 +287,42 @@ delete from clan_membership where player_id = 50;
 insert into clan_membership (clan_id, player_id) values
     (1, 50);
 
-insert into global_rating (id, mean, deviation, numGames, is_active) values
-    (50,  1200, 250, 42, 1),
-    (51,  1200, 250, 42, 1),
-    (52,  1200, 250, 42, 1),
-    (100, 1500, 500, 0, 1),
-    (101, 1500, 500, 0, 1),
-    (102, 1500, 500, 0, 1)
+insert into leaderboard (id, technical_name, name_key, description_key) values
+    (1, 'global', 'name_key', 'description_key'),
+    (2, 'ladder1v1', 'name_key', 'description_key')
 ;
 
-insert into ladder1v1_rating (id, mean, deviation, numGames, is_active) values
-    (50,  1300, 400, 12, 1),
-    (51,  1300, 400, 12, 1),
-    (52,  1300, 400, 12, 1),
+insert into leaderboard_rating (login_id, mean, deviation, total_games, leaderboard_id) values
+    (50,  1200, 250, 42, 1),
+    (50,  1300, 400, 12, 2),
+    (52,  1200, 250, 42, 1),
+    (52,  1300, 400, 12, 2),
     (100, 1500, 500, 0, 1),
+    (100, 1500, 500, 0, 2),
     (101, 1500, 500, 0, 1),
-    (102, 1500, 500, 0, 1)
+    (101, 1500, 500, 0, 2),
+    (102, 1500, 500, 0, 1),
+    (102, 1500, 500, 0, 2)
+;
+
+-- legacy table for global rating
+insert into global_rating (id, mean, deviation, numGames, is_active) values
+    (50,  1201, 250, 42, 1),
+    (51,  1201, 250, 42, 1),
+    (52,  1201, 250, 42, 1),
+    (100, 1501, 500, 0, 1),
+    (101, 1501, 500, 0, 1),
+    (102, 1501, 500, 0, 1)
+;
+
+-- legacy table for ladder rating
+insert into ladder1v1_rating (id, mean, deviation, numGames, is_active) values
+    (50,  1301, 400, 12, 1),
+    (51,  1301, 400, 12, 1),
+    (52,  1301, 400, 12, 1),
+    (100, 1501, 500, 0, 1),
+    (101, 1501, 500, 0, 1),
+    (102, 1501, 500, 0, 1)
 ;
 
 insert into avatars (idUser, idAvatar, selected) values

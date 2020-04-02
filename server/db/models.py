@@ -134,7 +134,7 @@ game_stats = Table(
     Column('validity',  Integer,        nullable=False),
 )
 
-global_rating = Table(
+legacy_global_rating = Table(
     'global_rating', metadata,
     Column('id',        Integer,    ForeignKey('login.id'), primary_key=True),
     Column('mean',      Float),
@@ -157,7 +157,7 @@ login = Table(
     Column('last_login',    TIMESTAMP)
 )
 
-ladder1v1_rating = Table(
+legacy_ladder1v1_rating = Table(
     'ladder1v1_rating', metadata,
     Column('id',            Integer,    ForeignKey('login.id'), primary_key=True),
     Column('mean',          Float),
@@ -165,6 +165,32 @@ ladder1v1_rating = Table(
     Column('numGames',      Integer,    nullable=False),
     Column('winGames',      Integer,    nullable=False),
     Column('is_active',     Boolean,    nullable=False)
+)
+
+leaderboard = Table(
+    'leaderboard', metadata,
+    Column('id',                Integer, primary_key=True),
+    Column('technical_name',    String, nullable=False, unique=True),
+)
+
+leaderboard_rating = Table(
+    'leaderboard_rating', metadata,
+    Column('login_id',      Integer,    ForeignKey('login.id')),
+    Column('mean',          Float),
+    Column('deviation',     Float),
+    Column('total_games',   Integer,    nullable=False),
+    Column('won_games',     Integer,    nullable=False),
+    Column('leaderboard_id',Integer,    ForeignKey('leaderboard')),
+)
+
+leaderboard_rating_journal = Table(
+    'leaderboard_rating_journal', metadata,
+    Column('game_player_stats_id',      Integer,    ForeignKey('game_player_stats.id')),
+    Column('leaderboard_id',            Integer,    ForeignKey('leaderboard')),
+    Column('rating_mean_before',        Float,      nullable=False),
+    Column('rating_mean_after',         Float,      nullable=False),
+    Column('rating_deviation_before',   Float,      nullable=False),
+    Column('rating_deviation_after',    Float,      nullable=False),
 )
 
 # This is actually a view into the `ban` table with proper handling of ban

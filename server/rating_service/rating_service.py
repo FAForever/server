@@ -22,9 +22,11 @@ from server.rating import RatingType
 from trueskill import Rating
 from .game_rater import GameRater, GameRatingError
 
-from sqlalchemy import select
-from server.db.models import ladder1v1_rating as ladder1v1_table
-from server.db.models import global_rating as global_table
+from sqlalchemy import select, and_
+from server.db.models import legacy_ladder1v1_rating as legacy_ladder1v1_table
+from server.db.models import legacy_global_rating as legacy_global_table
+from server.db.models import leaderboard_rating as rating_table
+from server.db.models import leaderboard as rating_type_table
 
 
 @with_logger
@@ -41,14 +43,25 @@ class RatingService:
         self._accept_input = False
         self._queue = asyncio.Queue()
         self._task = None
+        self._rating_type_ids = None
 
     async def initialize(self) -> None:
         if self._task is not None:
             self._logger.error("Service already runnning or not properly shut down.")
             return
+
+        await self._load_rating_type_ids()
         self._accept_input = True
         self._logger.debug("RatingService starting...")
         self._task = asyncio.create_task(self._handle_rating_queue())
+
+    async def _load_rating_type_ids(self):
+        async with self._db.acquire() as conn:
+            sql = select([rating_type_table.c.id, rating_type_table.c.technical_name])
+            result = await conn.execute(sql)
+            rows = await result.fetchall()
+
+        self._rating_type_ids = {row["technical_name"]: row["id"] for row in rows}
 
     async def enqueue(self, summary: GameRatingSummary) -> None:
         if not self._accept_input:
@@ -116,10 +129,39 @@ class RatingService:
     async def _get_player_rating(
         self, player_id: int, rating_type: RatingType
     ) -> Rating:
+        if self._rating_type_ids is None:
+            self._logger.warning(
+                "Tried to fetch player data before initializing service."
+            )
+            raise ServiceNotReadyError("RatingService not yet initialized.")
+
+        rating_type_id = self._rating_type_ids.get(rating_type.value)
+        if rating_type_id is None:
+            raise ValueError(f"Unknown rating type {rating_type}.")
+
+        async with self._db.acquire() as conn:
+            sql = select([rating_table.c.mean, rating_table.c.deviation]).where(
+                and_(
+                    rating_table.c.login_id == player_id,
+                    rating_table.c.leaderboard_id == rating_type_id,
+                )
+            )
+
+            result = await conn.execute(sql)
+            row = await result.fetchone()
+
+        if not row:
+            return await self._get_player_legacy_rating(player_id, rating_type)
+
+        return Rating(row[rating_table.c.mean], row[rating_table.c.deviation])
+
+    async def _get_player_legacy_rating(
+        self, player_id: int, rating_type: RatingType
+    ) -> Rating:
         if rating_type is RatingType.GLOBAL:
-            table = global_table
+            table = legacy_global_table
         elif rating_type is RatingType.LADDER_1V1:
-            table = ladder1v1_table
+            table = legacy_ladder1v1_table
         else:
             raise ValueError(f"Unknown rating type {rating_type}.")
 
@@ -135,6 +177,8 @@ class RatingService:
                 raise RatingNotFoundError(
                     f"Could not find a {rating_type} rating for player {player_id}."
                 )
+
+            # TODO: add rating entry to new table
 
             return Rating(row[table.c.mean], row[table.c.deviation])
 

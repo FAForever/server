@@ -18,6 +18,16 @@ async def test_fetch_player_data(player_factory, player_service):
     assert player.avatar == {'url': 'http://content.faforever.com/faf/avatars/UEF.png', 'tooltip': 'UEF'}
 
 
+async def test_fetch_player_data_legacy_rating(player_factory, player_service):
+    # Player 51 should only have legacy rating entries,
+    # but no `leaderboard_rating` entries.
+    player = player_factory(player_id=51)
+
+    await player_service.fetch_player_data(player)
+    assert player.ratings[RatingType.GLOBAL] == (1201, 250)
+    assert player.ratings[RatingType.LADDER_1V1] == (1301, 400)
+
+
 async def test_fetch_player_data_multiple_avatar(player_factory, player_service):
     player1 = player_factory(player_id=51)
     player2 = player_factory(player_id=52)
