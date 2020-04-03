@@ -229,12 +229,19 @@ class RatingService:
                     old_rating,
                     new_rating,
                 )
-                # FIXME Could also set mean, deviation  to old rating in the following
                 await conn.execute(
                     "UPDATE game_player_stats "
-                    "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
+                    "SET after_mean = %s, after_deviation = %s, "
+                    "mean = %s, deviation = %s, scoreTime = NOW() "
                     "WHERE gameId = %s AND playerId = %s",
-                    (new_rating.mu, new_rating.sigma, game_id, player_id),
+                    (
+                        new_rating.mu,
+                        new_rating.sigma,
+                        old_rating.mu,
+                        old_rating.sigma,
+                        game_id,
+                        player_id,
+                    ),
                 )
 
                 gps_rows = await conn.execute(
