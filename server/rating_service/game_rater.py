@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Set
+from typing import Dict, List, Tuple
 
 import trueskill
 from server.games.game_results import GameOutcome

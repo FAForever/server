@@ -1,7 +1,9 @@
 import pytest
 import time
 
-from sqlalchemy import text
+from sqlalchemy import select, and_
+from server.db.models import leaderboard_rating
+
 from server.games import LadderGame
 from server.games.game import GameState, ValidityState
 from tests.unit_tests.test_game import add_connected_players
@@ -109,11 +111,18 @@ async def test_persist_rating_victory(laddergame: LadderGame, database,
     laddergame.set_player_option(players[0].id, 'Team', 2)
     laddergame.set_player_option(players[1].id, 'Team', 3)
 
-    async with database.acquire() as conn:
-        result = await conn.execute(
-            text("SELECT id, numGames, winGames FROM ladder1v1_rating WHERE id in :ids ORDER BY id"),
-            ids=tuple([players[0].id, players[1].id])
+    rating_sql = select([
+        leaderboard_rating.c.total_games,
+        leaderboard_rating.c.won_games
+    ]).where(
+        and_(
+            leaderboard_rating.c.login_id.in_((players[0].id, players[1].id)),
+            leaderboard_rating.c.leaderboard_id == 2,
         )
+    ).order_by(leaderboard_rating.c.login_id)
+
+    async with database.acquire() as conn:
+        result = await conn.execute(rating_sql)
         result_before = await result.fetchall()
 
     await laddergame.launch()
@@ -127,13 +136,10 @@ async def test_persist_rating_victory(laddergame: LadderGame, database,
     assert laddergame.validity is ValidityState.VALID
 
     async with database.acquire() as conn:
-        result = await conn.execute(
-            text("SELECT id, numGames, winGames FROM ladder1v1_rating WHERE id in :ids ORDER BY id"),
-            ids=tuple([players[0].id, players[1].id])
-        )
+        result = await conn.execute(rating_sql)
         result_after = await result.fetchall()
 
-    assert result_after[0]['numGames'] == result_before[0]['numGames'] + 1
-    assert result_after[1]['numGames'] == result_before[1]['numGames'] + 1
-    assert result_after[0]['winGames'] == result_before[0]['winGames'] + 1
-    assert result_after[1]['winGames'] == result_before[1]['winGames']
+    assert result_after[0]['total_games'] == result_before[0]['total_games'] + 1
+    assert result_after[1]['total_games'] == result_before[1]['total_games'] + 1
+    assert result_after[0]['won_games'] == result_before[0]['won_games'] + 1
+    assert result_after[1]['won_games'] == result_before[1]['won_games']

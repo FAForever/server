@@ -6,6 +6,7 @@ from .typedefs import (
     PlayerID,
     ServiceNotReadyError,
     RatingNotFoundError,
+    EntryNotFoundError,
 )
 
 import asyncio
@@ -27,6 +28,7 @@ from server.db.models import legacy_ladder1v1_rating as legacy_ladder1v1_table
 from server.db.models import legacy_global_rating as legacy_global_table
 from server.db.models import leaderboard_rating as rating_table
 from server.db.models import leaderboard as rating_type_table
+from server.db.models import game_player_stats as gps_table
 
 
 @with_logger
@@ -87,6 +89,8 @@ class RatingService:
                 await self._persist_rating_error(summary.game_id)
             except RatingNotFoundError:
                 self._logger.warning("Missing rating entry to rate game %s", summary)
+            except Exception:
+                self._logger.exception("Failed rating request %s", summary)
             else:
                 self._logger.debug("Done rating request.")
 
@@ -160,15 +164,18 @@ class RatingService:
     ) -> Rating:
         if rating_type is RatingType.GLOBAL:
             table = legacy_global_table
+            sql = select([table.c.mean, table.c.deviation, table.c.numGames]).where(
+                table.c.id == player_id
+            )
         elif rating_type is RatingType.LADDER_1V1:
             table = legacy_ladder1v1_table
+            sql = select(
+                [table.c.mean, table.c.deviation, table.c.numGames, table.c.winGames]
+            ).where(table.c.id == player_id)
         else:
             raise ValueError(f"Unknown rating type {rating_type}.")
 
         async with self._db.acquire() as conn:
-            sql = select([table.c.mean, table.c.deviation, table.c.numGames]).where(
-                table.c.id == player_id
-            )
 
             result = await conn.execute(sql)
             row = await result.fetchone()
@@ -178,18 +185,22 @@ class RatingService:
                     f"Could not find a {rating_type} rating for player {player_id}."
                 )
 
-            # FIXME: the old tables don't seem to have a `won_games` column,
-            # but the new `leaderboard_rating` does.
-            # Could set the new `won_games` to 50% of the total_games,
-            # since this should be the long-term limit anyways...
+            if rating_type is RatingType.GLOBAL:
+                # The old `global_rating` table does not have a `winGames` column.
+                # This should be a decent approximation though.
+                won_games = row[table.c.numGames] // 2
+            else:
+                won_games = row[table.c.winGames]
+
             await conn.execute(
                 "INSERT INTO leaderboard_rating "
-                "(login_id, mean, deviation, total_games, leaderboard_id) "
-                "VALUES (%s, %s, %s, %s, %s);",
+                "(login_id, mean, deviation, total_games, won_games, leaderboard_id) "
+                "VALUES (%s, %s, %s, %s, %s, %s)",
                 player_id,
                 row[table.c.mean],
                 row[table.c.deviation],
                 row[table.c.numGames],
+                won_games,
                 self._rating_type_ids[rating_type.value],
             )
 
@@ -206,8 +217,6 @@ class RatingService:
         """
         Persist computed ratings to the respective players' selected rating
         """
-        # FIXME old_ratings only passed for logging, but might be nice with new
-        # tables. If not used in new tables, throw it out.
         self._logger.info("Saving rating change stats for game %i", game_id)
 
         async with self._db.acquire() as conn:
@@ -220,6 +229,7 @@ class RatingService:
                     old_rating,
                     new_rating,
                 )
+                # FIXME Could also set mean, deviation  to old rating in the following
                 await conn.execute(
                     "UPDATE game_player_stats "
                     "SET after_mean = %s, after_deviation = %s, scoreTime = NOW() "
@@ -227,39 +237,76 @@ class RatingService:
                     (new_rating.mu, new_rating.sigma, game_id, player_id),
                 )
 
-                await self._update_rating_table(
-                    conn, rating_type, player_id, new_rating, outcomes[player_id]
+                gps_rows = await conn.execute(
+                    select([gps_table.c.id]).where(
+                        and_(
+                            gps_table.c.playerId == player_id,
+                            gps_table.c.gameId == game_id,
+                        )
+                    )
+                )
+                gps_row = await gps_rows.fetchone()
+                if gps_row is None:
+                    self._logger.warn(
+                        f"No game_player_stats entry for player {player_id} of game {game_id}."
+                    )
+                    raise EntryNotFoundError
+                game_player_stats_id = gps_row[gps_table.c.id]
+
+                await self._update_rating_tables(
+                    conn,
+                    game_player_stats_id,
+                    rating_type,
+                    player_id,
+                    new_rating,
+                    old_rating,
+                    outcomes[player_id],
                 )
 
                 self._update_player_object(player_id, rating_type, new_rating)
 
-    async def _update_rating_table(
+    async def _update_rating_tables(
         self,
         conn,
+        game_player_stats_id: int,
         rating_type: RatingType,
         player_id: PlayerID,
         new_rating: Rating,
+        old_rating: Rating,
         outcome: GameOutcome,
     ) -> None:
-        # If we are updating the ladder1v1_rating table then we also need to update
-        # the `winGames` column which doesn't exist on the global_rating table
-        table = f"{rating_type.value}_rating"
 
-        if rating_type is RatingType.LADDER_1V1:
-            is_victory = outcome is GameOutcome.VICTORY
-            await conn.execute(
-                "UPDATE ladder1v1_rating "
-                "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1, winGames = winGames + %s "
-                "WHERE id = %s",
-                (new_rating.mu, new_rating.sigma, 1 if is_victory else 0, player_id),
-            )
-        else:
-            await conn.execute(
-                "UPDATE " + table + " "
-                "SET mean = %s, is_active=1, deviation = %s, numGames = numGames + 1 "
-                "WHERE id = %s",
-                (new_rating.mu, new_rating.sigma, player_id),
-            )
+        is_victory = outcome is GameOutcome.VICTORY
+        rating_type_id = self._rating_type_ids[rating_type.value]
+
+        await conn.execute(
+            "INSERT INTO leaderboard_rating_journal "
+            "(game_player_stats_id, leaderboard_id, rating_mean_before, "
+            "rating_deviation_before, rating_mean_after, rating_deviation_after) "
+            "VALUES(%s, %s, %s, %s, %s, %s)",
+            (
+                game_player_stats_id,
+                rating_type_id,
+                old_rating.mu,
+                old_rating.sigma,
+                new_rating.mu,
+                new_rating.sigma,
+            ),
+        )
+
+        await conn.execute(
+            "UPDATE leaderboard_rating "
+            "SET mean = %s, deviation = %s, total_games = total_games + 1, "
+            "won_games = won_games + %s "
+            "WHERE login_id = %s AND leaderboard_id = %s",
+            (
+                new_rating.mu,
+                new_rating.sigma,
+                1 if is_victory else 0,
+                player_id,
+                rating_type_id,
+            ),
+        )
 
     def _update_player_object(
         self, player_id: PlayerID, rating_type: RatingType, new_rating: Rating

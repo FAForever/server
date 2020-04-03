@@ -175,12 +175,12 @@ leaderboard = Table(
 
 leaderboard_rating = Table(
     'leaderboard_rating', metadata,
-    Column('login_id',      Integer,    ForeignKey('login.id')),
-    Column('mean',          Float),
-    Column('deviation',     Float),
-    Column('total_games',   Integer,    nullable=False),
-    Column('won_games',     Integer,    nullable=False),
-    Column('leaderboard_id',Integer,    ForeignKey('leaderboard')),
+    Column('login_id',          Integer,    ForeignKey('login.id')),
+    Column('mean',              Float),
+    Column('deviation',         Float),
+    Column('total_games',       Integer,    nullable=False),
+    Column('won_games',         Integer,    nullable=False),
+    Column('leaderboard_id',    Integer,    ForeignKey('leaderboard')),
 )
 
 leaderboard_rating_journal = Table(

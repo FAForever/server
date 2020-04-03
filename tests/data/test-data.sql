@@ -293,6 +293,12 @@ insert into leaderboard (id, technical_name, name_key, description_key) values
 ;
 
 insert into leaderboard_rating (login_id, mean, deviation, total_games, leaderboard_id) values
+    (1, 2000, 125, 5, 1),
+    (1, 2000, 125, 5, 2),
+    (2, 1500, 75, 2, 1),
+    (2, 1500, 75, 2, 2),
+    (3, 1650, 62.52, 2, 1),
+    (3, 1650, 62.52, 2, 2),
     (50,  1200, 250, 42, 1),
     (50,  1300, 400, 12, 2),
     (52,  1200, 250, 42, 1),
