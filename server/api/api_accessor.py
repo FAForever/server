@@ -26,16 +26,20 @@ class SessionManager:
         self.logger = logging.getLogger()
 
     async def get_session(self) -> Optional[OAuth2Session]:
-        if self.session:
-            return self.session
-
-        try:
+        if not self.session:
             self.session = OAuth2Session(
                 client_id=API_CLIENT_ID,
                 client_secret=API_CLIENT_SECRET,
                 token_url=API_TOKEN_URI
             )
-            await self.session.fetch_token()
+        if not self.session.is_expired():
+            return self.session
+
+        try:
+            if self.session.has_refresh_token():
+                await self.session.refresh_tokens()
+            else:
+                await self.session.fetch_token()
             return self.session
         except MissingTokenError:  # pragma: no cover
             self.logger.error("There was an error while connecting the API - token is missing or invalid")
