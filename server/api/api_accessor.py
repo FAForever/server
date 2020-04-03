@@ -8,22 +8,18 @@ from oauthlib.oauth2.rfc6749.errors import (
 from server.config import (
     API_BASE_URL, API_CLIENT_ID, API_CLIENT_SECRET, API_TOKEN_URI
 )
+from server.decorators import with_logger
 
 from .oauth_session import OAuth2Session
 
-"""
-Uncomment the following line if your API uses HTTP instead of HTTPS
-"""
-# os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
-
+@with_logger
 class SessionManager:
     """
     Garantor for API access
     """
     def __init__(self):
         self.session = None  # Instance of session
-        self.logger = logging.getLogger()
 
     async def get_session(self) -> Optional[OAuth2Session]:
         if not self.session:
@@ -37,22 +33,24 @@ class SessionManager:
 
         try:
             if self.session.has_refresh_token():
+                self._logger.info("Refreshing OAuth token")
                 await self.session.refresh_tokens()
             else:
+                self._logger.info("Fetching new OAuth token")
                 await self.session.fetch_token()
             return self.session
         except MissingTokenError:  # pragma: no cover
-            self.logger.error("There was an error while connecting the API - token is missing or invalid")
+            self._logger.error("There was an error while connecting the API - token is missing or invalid")
         except InsecureTransportError:  # pragma: no cover
-            self.logger.error(
+            self._logger.error(
                 "API (%s,%s) should be HTTPS, not HTTP. Enable OAUTHLIB_INSECURE_TRANSPORT to avoid this warning.",
                 API_BASE_URL,
                 API_TOKEN_URI
             )
         except SSLError:  # pragma: no cover
-            self.logger.error("The certificate verification failed while connecting the API")
+            self._logger.error("The certificate verification failed while connecting the API")
         except Exception as e:  # pragma: no cover
-            self.logger.exception(e)
+            self._logger.exception(e)
 
         # Only reachable if an exception occurred
         self.session = None
