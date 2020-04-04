@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, List
+from typing import Dict, List, Set
 
 import trueskill
 from server.config import FFA_TEAM
@@ -20,7 +20,7 @@ class GameRater(object):
         self,
         players_by_team: Dict[int, List[Player]],
         outcome_by_player: Dict[Player, GameOutcome],
-        rating_type=RatingType.GLOBAL
+        rating_type=RatingType.GLOBAL,
     ):
         self._rating_type = rating_type
         self._outcome_by_player = outcome_by_player
@@ -29,7 +29,8 @@ class GameRater(object):
     def compute_rating(self) -> Dict[Player, Rating]:
         rating_groups = self._get_rating_groups()
         team_outcomes = [
-            self._get_team_outcome(team.keys()) for team in rating_groups
+            set(self._outcome_by_player[player] for player in team)
+            for team in rating_groups
         ]
         ranks = self._ranks_from_team_outcomes(team_outcomes)
 
@@ -45,90 +46,86 @@ class GameRater(object):
         """
         if FFA_TEAM in self._players_by_team:
             number_of_parties = (
-                len(self._players_by_team[FFA_TEAM]) +
-                len(self._players_by_team) - 1
+                len(self._players_by_team[FFA_TEAM]) + len(self._players_by_team) - 1
             )
             if (
                 len(self._players_by_team[FFA_TEAM]) == 2
                 and len(self._players_by_team) == 1
             ):
-                return [{
-                    player: Rating(*player.ratings[self._rating_type])
-                } for player in self._players_by_team[FFA_TEAM]]
+                return [
+                    {player: Rating(*player.ratings[self._rating_type])}
+                    for player in self._players_by_team[FFA_TEAM]
+                ]
             elif number_of_parties != 2:
                 raise GameRatingError(
                     f"Attempted to rate FFA game with other than two parties: {{team: players}} = {self._players_by_team}"
                 )
 
         if len(self._players_by_team) == 2:
-            return [{
-                player: Rating(*player.ratings[self._rating_type])
-                for player in team
-            } for _, team in self._players_by_team.items()]
+            return [
+                {player: Rating(*player.ratings[self._rating_type]) for player in team}
+                for _, team in self._players_by_team.items()
+            ]
         else:
             raise GameRatingError(
                 f"Attempted to rate non-FFA game with other than two teams: {{team: players}} = {self._players_by_team}"
             )
 
-    def _get_team_outcome(self, team: Iterable[Player]) -> GameOutcome:
-        outcomes = set(self._outcome_by_player[player] for player in team)
-        outcomes.discard(GameOutcome.UNKNOWN)
-
-        # Treat conflicting reports as unknown
-        # to make it harder to unrank games by faking reports
-        outcomes.discard(GameOutcome.CONFLICTING)
-
-        if not outcomes:
-            return GameOutcome.UNKNOWN
-        if GameOutcome.VICTORY in outcomes:
-            # One player surviving implies that the entire team won
-            return GameOutcome.VICTORY
-        if len(outcomes) > 1:
-            raise GameRatingError(
-                f"Attempted to rate game where one of the teams has inconsistent outcome. Teams: {self._players_by_team} Outcomes: {self._outcome_by_player}"
-            )
-        else:
-            return outcomes.pop()
-
-    def _ranks_from_team_outcomes(self, team_outcomes: List[GameOutcome]
-                                  ) -> List[int]:
+    @staticmethod
+    def _ranks_from_team_outcomes(team_outcomes: List[Set[GameOutcome]]) -> List[int]:
         """
-        Takes a list of length two containing the GameOutcomes and converts into rank representation for trueskill
-        If any of the GameOutcomes are UNKNOWN, they are assumed to be VICTORY, DEFEAT, or DRAW, whichever is consistent with the other reported outcome.
-        Throws GameRatingError if both outcomes are UNKNOWN
+        Takes a list of length two containing sets of GameOutcomes
+        for individual players on a team
+        and converts into rank representation for trueskill.
+        Throws GameRatingError if outcomes are inconsistent or ambiguous.
         :param team_outcomes: list of GameOutcomes
         :return: list of ranks as to be used with trueskill
         """
-        both_unknown = team_outcomes == [
-            GameOutcome.UNKNOWN, GameOutcome.UNKNOWN
-        ]
-        at_most_one_win = team_outcomes.count(GameOutcome.VICTORY) < 2
-        at_most_one_defeat = team_outcomes.count(GameOutcome.DEFEAT) < 2
-        no_draw = not (
-            GameOutcome.DRAW in team_outcomes
-            or GameOutcome.MUTUAL_DRAW in team_outcomes
-        )
-        both_draw = set(team_outcomes) < {
-            GameOutcome.DRAW, GameOutcome.MUTUAL_DRAW
-        }
-        both_defeat = team_outcomes == [GameOutcome.DEFEAT, GameOutcome.DEFEAT]
+        victory0 = GameOutcome.VICTORY in team_outcomes[0]
+        victory1 = GameOutcome.VICTORY in team_outcomes[1]
+        both_claim_victory = victory0 and victory1
+        someone_claims_victory = victory0 or victory1
+        if both_claim_victory:
+            raise GameRatingError(
+                "Attempted to rate game in which both teams claimed victory. "
+                f" Team outcomes: {team_outcomes}"
+            )
+        elif someone_claims_victory:
+            return [
+                0 if GameOutcome.VICTORY in outcomes else 1
+                for outcomes in team_outcomes
+            ]
 
-        if both_unknown:
-            raise GameRatingError(
-                f"Attempted to rate game with unknown outcome. Teams: {self._players_by_team} Outcomes: {self._outcome_by_player}"
-            )
-        elif no_draw and at_most_one_defeat and at_most_one_win:
-            if GameOutcome.VICTORY in team_outcomes:
-                return [
-                    0 if x is GameOutcome.VICTORY else 1 for x in team_outcomes
-                ]
-            else:
-                return [
-                    1 if x is GameOutcome.DEFEAT else 0 for x in team_outcomes
-                ]
-        elif both_draw or both_defeat:
+        # Now know that no-one has GameOutcome.VICTORY
+        draw0 = (
+            GameOutcome.DRAW in team_outcomes[0]
+            or GameOutcome.MUTUAL_DRAW in team_outcomes[0]
+        )
+        draw1 = (
+            GameOutcome.DRAW in team_outcomes[1]
+            or GameOutcome.MUTUAL_DRAW in team_outcomes[1]
+        )
+        both_claim_draw = draw0 and draw1
+        someone_claims_draw = draw0 or draw1
+        if both_claim_draw:
             return [0, 0]
-        else:
+        elif someone_claims_draw:
             raise GameRatingError(
-                f"Attempted to rate game with inconsistent outcome. Teams: {self._players_by_team} Outcomes by player: {self._outcome_by_player} Outcomes by team: {team_outcomes}"
+                "Attempted to rate game with unilateral draw. "
+                f" Team outcomes: {team_outcomes}"
             )
+
+        # Now know that the only results are DEFEAT or UNKNOWN/CONFLICTING
+        # Unrank if there are any players with unknown result
+        all_outcomes = team_outcomes[0] | team_outcomes[1]
+        if (
+            GameOutcome.UNKNOWN in all_outcomes
+            or GameOutcome.CONFLICTING in all_outcomes
+        ):
+            raise GameRatingError(
+                "Attempted to rate game with ambiguous outcome. "
+                f" Team outcomes: {team_outcomes}"
+            )
+
+        # Otherwise everyone is DEFEAT, we return a draw
+        return [0, 0]
