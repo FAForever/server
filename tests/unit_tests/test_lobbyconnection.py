@@ -19,7 +19,7 @@ from server.ladder_service import LadderService
 from server.lobbyconnection import ClientError, LobbyConnection
 from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
-from server.players import Player, PlayerState
+from server.players import PlayerState
 from server.protocol import DisconnectedError, QDataStreamProtocol
 from server.rating import RatingType
 from server.types import Address
