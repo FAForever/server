@@ -38,8 +38,7 @@ class QDataStreamProtocol(Protocol):
         self._drain_lock = asyncio.Lock()
 
     def is_connected(self) -> bool:
-        # TODO: In python 3.7 and above call writer.is_closing() directly
-        return not self.writer.transport.is_closing()
+        return not self.writer.is_closing()
 
     @staticmethod
     def read_qstring(buffer: bytes, pos: int = 0) -> Tuple[int, str]:

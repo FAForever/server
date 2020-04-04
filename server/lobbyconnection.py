@@ -110,19 +110,22 @@ class LobbyConnection:
         metrics.server_connections.inc()
 
     async def abort(self, logspam=""):
+        self._authenticated = False
         if self.player:
-            self._logger.warning("Client %s dropped. %s" % (self.player.login, logspam))
+            self._logger.warning(
+                "Client %s dropped. %s", self.player.login, logspam
+            )
+            self.player_service.remove_player(self.player)
+            self.player = None
         else:
-            self._logger.warning("Aborting %s. %s" % (self.peer_address.host, logspam))
+            self._logger.warning(
+                "Aborting %s. %s", self.peer_address.host, logspam
+            )
         if self.game_connection:
             await self.game_connection.abort()
             self.game_connection = None
-        self._authenticated = False
-        self.protocol.close()
 
-        if self.player:
-            self.player_service.remove_player(self.player)
-            self.player = None
+        self.protocol.close()
 
     async def ensure_authenticated(self, cmd):
         if not self._authenticated:
@@ -599,12 +602,6 @@ class LobbyConnection:
         if old_player:
             self._logger.debug("player {} already signed in: {}".format(self.player.id, old_player))
             if old_player.lobby_connection is not None:
-                self._logger.debug(
-                    "Removing previous game_connection and player reference of "
-                    "player %s in hope on_connection_lost() wouldn't drop her "
-                    "out of the game",
-                    self.player.id
-                )
                 with contextlib.suppress(DisconnectedError):
                     await old_player.lobby_connection.send_warning(
                         "You have been signed out because you signed in elsewhere.",
@@ -1006,22 +1003,21 @@ class LobbyConnection:
         self._logger.log(TRACE, ">> %s: %s", self.get_user_identifier(), message)
         await self.protocol.send_message(message)
 
-    async def drain(self):
-        # TODO: Remove me, QDataStreamProtocol no longer has a drain method
-        pass
-
     async def on_connection_lost(self):
         async def nop(*args, **kwargs):
             return
-        self.drain = nop
         self.send = nop
         if self.game_connection:
             self._logger.debug(
-                "Lost lobby connection killing game connection for player {}".format(self.game_connection.player.id))
+                "Lost lobby connection killing game connection for player %s",
+                self.game_connection.player.id
+            )
             await self.game_connection.on_connection_lost()
 
         if self.player:
-            self._logger.debug("Lost lobby connection removing player {}".format(self.player.id))
+            self._logger.debug(
+                "Lost lobby connection removing player %s", self.player.id
+            )
             await self.ladder_service.on_connection_lost(self.player)
             self.player_service.remove_player(self.player)
 
