@@ -758,4 +758,4 @@ async def test_single_wrong_report_still_rated_correctly(game: Game, player_fact
         if player_id in winning_ids:
             assert new_rating.mu > old_rating
         else:
-            assert new_rating.my < old_rating
+            assert new_rating.mu < old_rating

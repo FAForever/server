@@ -12,6 +12,7 @@ from .typedefs import (
 import asyncio
 
 from server.db import FAFDatabase
+from server.core import Service
 from server.player_service import PlayerService
 from server.decorators import with_logger
 from server.metrics import rating_service_backlog
@@ -32,7 +33,7 @@ from server.db.models import game_player_stats as gps_table
 
 
 @with_logger
-class RatingService:
+class RatingService(Service):
     """
     Service responsible for calculating and saving trueskill rating updates.
     To avoid race conditions, rating updates from a single game ought to be

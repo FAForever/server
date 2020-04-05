@@ -69,8 +69,6 @@ async def main():
         "database": database,
         "loop": loop,
     })
-    rating_service = RatingService(database, services["player_service"]
-    services["rating_service"] = rating_service
 
     await asyncio.gather(*[
         service.initialize() for service in services.values()
