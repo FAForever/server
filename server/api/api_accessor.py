@@ -1,4 +1,3 @@
-import logging
 from ssl import SSLError
 from typing import Optional
 
@@ -57,6 +56,7 @@ class SessionManager:
         raise ConnectionError
 
 
+@with_logger
 class ApiAccessor:
     def __init__(self):
         self.api_session = SessionManager()
@@ -69,6 +69,8 @@ class ApiAccessor:
             achievement['achievementId'] = achievement.pop('achievement_id')
             achievement['operation'] = achievement.pop('update_type')
 
+        self._logger.debug("Sending achievement data: %s", achievements_data)
+
         return await self.api_patch("achievements/update", achievements_data)
 
     async def update_events(self, events_data, player_id):
@@ -77,6 +79,8 @@ class ApiAccessor:
         for event in events_data:
             event['playerId'] = player_id
             event['eventId'] = event.pop('event_id')
+
+        self._logger.debug("Sending event data: %s", events_data)
 
         return await self.api_patch("events/update", events_data)
 
@@ -87,10 +91,12 @@ class ApiAccessor:
     async def api_patch(self, path, json_data):
         api = await self.api_session.get_session()
         headers = {'Content-type': 'application/json'}
-        return await api.request(
+        status, data = await api.request(
             "PATCH",
             API_BASE_URL + path,
             headers=headers,
-            json=json_data,
-            raise_for_status=True
+            json=json_data
         )
+        if status != 200:
+            self._logger.error("API returned error: [%i] %s", status, data)
+        return (status, data)

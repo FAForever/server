@@ -40,8 +40,7 @@ async def test_api_patch(api_accessor):
         "PATCH",
         API_BASE_URL+'test',
         headers={'Content-type': 'application/json'},
-        json=data,
-        raise_for_status=True
+        json=data
     )
 
     assert result == (200, 'test')
