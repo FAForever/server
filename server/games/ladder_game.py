@@ -16,16 +16,8 @@ class LadderGame(Game):
     def __init__(self, id_, *args, **kwargs):
         super(self.__class__, self).__init__(id_, *args, **kwargs)
         self.game_mode = 'ladder1v1'
+        self._rating_type = RatingType.LADDER_1V1
         self.max_players = 2
-
-    async def rate_game(self):
-        assert self.state is GameState.LIVE or self.state is GameState.ENDED
-
-        if self.validity is not ValidityState.VALID:
-            return
-
-        summary = self._get_rating_summary(RatingType.LADDER_1V1)
-        await self.game_service.send_to_rating_service(summary)
 
     def is_winner(self, player: Player):
         return self.get_player_outcome(player) is GameOutcome.VICTORY

@@ -125,7 +125,8 @@ class Game:
         host: Optional[Player] = None,
         name: str = 'None',
         map_: str = 'SCMP_007',
-        game_mode: str = 'faf'
+        game_mode: str = 'faf',
+        rating_type: RatingType = None,
     ):
         self._db = database
         self._results = GameResults(id_)
@@ -153,6 +154,7 @@ class Game:
         self.desyncs = 0
         self.validity = ValidityState.VALID
         self.game_mode = game_mode
+        self._rating_type = rating_type
         self.state = GameState.INITIALIZING
         self._connections = {}
         self.enforce_rating = False
@@ -466,8 +468,23 @@ class Game:
 
             self.game_service.mark_dirty(self)
 
-    async def rate_game(self):
+    async def _run_pre_rate_validity_checks(self):
         pass
+
+    async def rate_game(self):
+        if self._rating_type is None:
+            return
+
+        if self.state not in (GameState.LIVE, GameState.ENDED):
+            raise GameError("Cannot rate game that has not been launched yet.")
+
+        await self._run_pre_rate_validity_checks()
+
+        if self.validity is not ValidityState.VALID:
+            return
+
+        summary = self._get_rating_summary(self._rating_type)
+        await self.game_service.send_to_rating_service(summary)
 
     async def load_results(self):
         """
