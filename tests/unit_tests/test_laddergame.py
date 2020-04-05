@@ -77,6 +77,10 @@ async def test_rate_game(laddergame: LadderGame, database, game_add_players):
     player_1_old_mean = players[0].ratings[RatingType.LADDER_1V1][0]
     player_2_old_mean = players[1].ratings[RatingType.LADDER_1V1][0]
 
+    # As saved in test-data.sql:
+    before_mean = {1: 2000, 2: 1500}
+    before_deviation = {1: 125, 2: 75}
+
     await laddergame.launch()
     laddergame.launched_at = time.time() - 60*20
     await laddergame.add_result(0, 0, 'victory', 5)
@@ -93,13 +97,13 @@ async def test_rate_game(laddergame: LadderGame, database, game_add_players):
         result = await conn.execute("SELECT mean, deviation, after_mean, after_deviation FROM game_player_stats WHERE gameid = %s", laddergame.id)
         rows = list(await result.fetchall())
 
-    assert rows[0]['mean'] == 1500
-    assert rows[0]['deviation'] == 500
+    assert rows[0]['mean'] == before_mean[players[0].id]
+    assert rows[0]['deviation'] == before_deviation[players[0].id]
     assert rows[0]['after_mean'] > rows[0]['mean']
     assert rows[0]['after_deviation'] < rows[0]['deviation']
 
-    assert rows[1]['mean'] == 1500
-    assert rows[1]['deviation'] == 500
+    assert rows[1]['mean'] == before_mean[players[1].id]
+    assert rows[1]['deviation'] == before_deviation[players[1].id]
     assert rows[1]['after_mean'] < rows[0]['mean']
     assert rows[1]['after_deviation'] < rows[0]['deviation']
 

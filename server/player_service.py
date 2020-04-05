@@ -92,7 +92,7 @@ class PlayerService(Service):
             result = await conn.execute(sql)
             row = await result.fetchone()
             if not row:
-                self._logger.warn(f"Did not find data for player {player.id}")
+                self._logger.warning(f"Did not find data for player {player.id}")
                 return
 
             player.clan = row.get(clan.c.tag)
@@ -110,7 +110,7 @@ class PlayerService(Service):
     async def _fetch_player_rating(self, player, rating_type, conn):
         rating_type_id = self._rating_type_ids.get(rating_type.value)
         if rating_type_id is None:
-            self._logger.warn(f"Did not find rating type {rating_type}")
+            self._logger.warning(f"Did not find rating type {rating_type}")
             raise ValueError(
                 f"Did not find rating type {rating_type}. Make sure the service is initialized."
             )
@@ -144,7 +144,7 @@ class PlayerService(Service):
         elif rating_type is RatingType.LADDER_1V1:
             table = legacy_ladder1v1_rating
         else:
-            self._logger.warn(f"Received ill-formed rating type {rating_type}")
+            self._logger.warning(f"Received ill-formed rating type {rating_type}")
             raise ValueError(f"Unknown rating type {rating_type}.")
 
         sql = select([table.c.mean, table.c.deviation, table.c.numGames]).where(
@@ -159,7 +159,7 @@ class PlayerService(Service):
             )
             player.game_count[rating_type] = row[table.c.numGames]
         else:
-            self._logger.warn(f"Found no rating of type {rating_type} for player {player.id}.")
+            self._logger.warning(f"Found no rating of type {rating_type} for player {player.id}.")
 
 
     def remove_player(self, player: Player):

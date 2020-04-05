@@ -254,7 +254,7 @@ class RatingService:
                 )
                 gps_row = await gps_rows.fetchone()
                 if gps_row is None:
-                    self._logger.warn(
+                    self._logger.warning(
                         f"No game_player_stats entry for player {player_id} of game {game_id}."
                     )
                     raise EntryNotFoundError
@@ -326,7 +326,7 @@ class RatingService:
             return
 
         self._logger.debug(
-            "Sending player rating update for player with id ", player_id
+            "Sending player rating update for player with id %i", player_id
         )
         self._player_service_callback(player_id, rating_type, new_rating)
 

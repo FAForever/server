@@ -210,7 +210,10 @@ async def player_service(database):
 async def rating_service(database, player_service):
     service = RatingService(database, player_service)
     await service.initialize()
-    return service
+
+    yield service
+
+    await service.shutdown()
 
 
 @pytest.fixture
