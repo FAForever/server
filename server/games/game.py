@@ -7,6 +7,7 @@ from collections import defaultdict
 from enum import Enum, unique
 from typing import Any, Dict, Optional, Tuple
 
+import pymysql
 from server.config import FFA_TEAM
 from server.games.game_rater import GameRater
 from server.games.game_results import GameOutcome, GameResult, GameResults
@@ -798,8 +799,14 @@ class Game:
             self._logger.warning("No player options available!")
             return
 
-        async with self._db.acquire() as conn:
-            await conn.execute(query_str, query_args)
+        try:
+            async with self._db.acquire() as conn:
+                await conn.execute(query_str, query_args)
+        except pymysql.MySQLError:
+            self._logger.exception(
+                "Failed to update game_player_stats. Query args %s:", query_args
+            )
+            raise
 
     def sanitize_name(self, name: str) -> str:
         """
