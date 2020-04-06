@@ -93,7 +93,7 @@ async def main():
             nonlocal profiled_count
             nonlocal pr
 
-            if len(player_service) > 1000:
+            if len(services["player_service"]) > 1000:
                 return
             elif profiled_count >= max_count:
                 del pr
@@ -131,7 +131,7 @@ async def main():
         "version": os.environ.get("VERSION") or "dev",
         "python_version": ".".join(map(str, sys.version_info[:3])),
         "start_time": datetime.utcnow().strftime("%m-%d %H:%M"),
-        "game_uid": str(game_service.game_id_counter)
+        "game_uid": str(services["game_service"].game_id_counter)
     })
 
     await done
