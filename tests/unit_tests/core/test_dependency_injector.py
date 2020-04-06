@@ -20,6 +20,10 @@ def test_build_classes(injector):
 
     instances = injector.build_classes({"a": A, "b": B})
 
+    assert instances == {
+        "a": instances["a"],
+        "b": instances["b"]
+    }
     assert isinstance(instances["a"], A)
     assert isinstance(instances["b"], B)
 
@@ -58,6 +62,10 @@ def test_build_classes_kwargs(injector):
 
     instances = injector.build_classes(a=A, b=B)
 
+    assert instances == {
+        "a": instances["a"],
+        "b": instances["b"]
+    }
     assert isinstance(instances["a"], A)
     assert isinstance(instances["b"], B)
 
@@ -70,6 +78,8 @@ def test_build_twice(injector):
     instances = injector.build_classes({"a": A})
     instances2 = injector.build_classes({"a": A})
 
+    assert instances == {"a": instances["a"]}
+    assert instances2 == {"a": instances2["a"]}
     assert instances["a"] is instances2["a"]
 
 
@@ -82,8 +92,8 @@ def test_resolve_dependencies(injector):
     injector.add_injectables({"injected": some_object})
     instances = injector.build_classes({"a": A})
 
+    assert instances == {"a": instances["a"]}
     assert instances["a"].injected is some_object
-    assert "some_object" not in instances
 
 
 def test_resolve_dependencies_kwargs(injector):
@@ -95,8 +105,8 @@ def test_resolve_dependencies_kwargs(injector):
     injector.add_injectables(injected=some_object)
     instances = injector.build_classes({"a": A})
 
+    assert instances == {"a": instances["a"]}
     assert instances["a"].injected is some_object
-    assert "some_object" not in instances
 
 
 def test_resolve_class_dependencies(injector):
@@ -110,6 +120,10 @@ def test_resolve_class_dependencies(injector):
 
     instances = injector.build_classes({"a": A, "b": B})
 
+    assert instances == {
+        "a": instances["a"],
+        "b": instances["b"]
+    }
     assert isinstance(instances["a"], A)
     assert isinstance(instances["b"], B)
     assert instances["b"].a is instances["a"]
@@ -125,8 +139,13 @@ def test_save_instances(injector):
             self.a = a
 
     instances = injector.build_classes({"a": A})
-    instances2 = injector.build_classes({"b": B})
+    instances2 = injector.build_classes({"a": A, "b": B})
 
+    assert instances == {"a": instances["a"]}
+    assert instances2 == {
+        "a": instances2["a"],
+        "b": instances2["b"]
+    }
     assert instances["a"] is instances2["a"]
     assert instances2["b"].a is instances2["a"]
 
