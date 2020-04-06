@@ -2,7 +2,11 @@ import pytest
 from unittest import mock
 from asynctest import CoroutineMock
 
-from server.rating_service.rating_service import RatingService, ServiceNotReadyError
+from server.rating_service.rating_service import (
+    RatingService,
+    ServiceNotReadyError,
+    EntryNotFoundError,
+)
 from server.db import FAFDatabase
 from sqlalchemy import select, and_
 from server.db.models import (
@@ -83,7 +87,15 @@ async def test_enqueue_manual_initialization(
     service._rate.assert_called()
 
 
-async def test_enqueue_initialized_fixture(rating_service, game_rating_summary):
+async def double_initialization_does_not_start_second_worker(rating_service):
+    worker_task_id = id(rating_service._task)
+
+    await rating_service.initialize()
+
+    assert worker_task_id == id(rating_service._task)
+
+
+async def test_enqueue_initialized(rating_service, game_rating_summary):
     service = rating_service
     service._rate = CoroutineMock()
 
@@ -98,6 +110,12 @@ async def test_enqueue_uninitialized(uninitialized_service):
     with pytest.raises(ServiceNotReadyError):
         await service.enqueue(game_rating_summary)
     await service.shutdown()
+
+
+async def test_get_rating_uninitialized(uninitialized_service):
+    service = uninitialized_service
+    with pytest.raises(ServiceNotReadyError):
+        await service._get_player_rating(1, RatingType.GLOBAL)
 
 
 async def test_load_rating_type_ids(uninitialized_service):
@@ -266,6 +284,24 @@ async def test_rating_persistence(semiinitialized_service):
     assert gps_row[game_player_stats.c.after_mean] == after_mean
     assert rating_row[leaderboard_rating.c.mean] == after_mean
     assert journal_row[leaderboard_rating_journal.c.rating_mean_after] == after_mean
+
+
+async def test_rating_persistence_nonexistent_game(semiinitialized_service):
+    # Assumes that game_player_stats has NO entry for player 1 in game 111.
+    service = semiinitialized_service
+    game_id = 111
+    player_id = 1
+    rating_type = RatingType.GLOBAL
+    rating_type_id = service._rating_type_ids[RatingType.GLOBAL.value]
+    old_ratings = {player_id: Rating(1000, 500)}
+    after_mean = 1234
+    new_ratings = {player_id: Rating(after_mean, 400)}
+    outcomes = {player_id: GameOutcome.VICTORY}
+
+    with pytest.raises(EntryNotFoundError):
+        await service._persist_rating_changes(
+            game_id, rating_type, old_ratings, new_ratings, outcomes
+        )
 
 
 async def test_update_player_service(uninitialized_service, player_service):

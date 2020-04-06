@@ -86,7 +86,7 @@ class RatingService(Service):
                 await self._rate(summary)
             except GameRatingError:
                 self._logger.warning("Error rating game %s", summary)
-            except Exception:
+            except Exception:  # pragma: no cover
                 self._logger.exception("Failed rating request %s", summary)
             else:
                 self._logger.debug("Done rating request.")

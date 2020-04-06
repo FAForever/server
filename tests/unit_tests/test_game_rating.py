@@ -152,6 +152,18 @@ async def test_rating_summary_missing_team_raises_game_error(game, players):
         game._get_rating_summary()
 
 
+async def test_rate_game_fails_if_not_launched(custom_game, players):
+    rating_service = custom_game.game_service._rating_service
+    custom_game.state = GameState.LOBBY
+    add_connected_players(custom_game, [players.hosting, players.joining])
+    custom_game.set_player_option(players.hosting.id, "Team", 2)
+    custom_game.set_player_option(players.joining.id, "Team", 3)
+
+    custom_game.enforce_rating = True
+    with pytest.raises(GameError):
+        await custom_game.rate_game()
+
+
 async def test_rate_game_global_ratings(custom_game, players):
     rating_service = custom_game.game_service._rating_service
     custom_game.state = GameState.LOBBY

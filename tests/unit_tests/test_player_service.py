@@ -4,6 +4,8 @@ from mock import Mock
 from server.lobbyconnection import LobbyConnection
 from server.rating import RatingType
 
+from enum import Enum
+
 pytestmark = pytest.mark.asyncio
 
 
@@ -26,6 +28,23 @@ async def test_fetch_player_data_legacy_rating(player_factory, player_service):
     await player_service.fetch_player_data(player)
     assert player.ratings[RatingType.GLOBAL] == (1201, 250)
     assert player.ratings[RatingType.LADDER_1V1] == (1301, 400)
+
+
+async def test_fetch_player_data_garbage_rating_type(player_factory, player_service):
+    player = player_factory(player_id=51)
+
+    class FakeRatingType(Enum):
+        GARBAGE = "garbage"
+
+    with pytest.raises(ValueError):
+        await player_service._fetch_player_rating(
+            player, FakeRatingType.GARBAGE, Mock()
+        )
+
+    with pytest.raises(ValueError):
+        await player_service._fetch_player_legacy_rating(
+            player, FakeRatingType.GARBAGE, Mock()
+        )
 
 
 async def test_fetch_player_data_multiple_avatar(player_factory, player_service):
