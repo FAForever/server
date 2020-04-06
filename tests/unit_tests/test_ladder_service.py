@@ -187,6 +187,81 @@ async def test_start_game_called_on_match(
     ladder_service.start_game.assert_called_once()
 
 
+async def test_start_game_map_selection(
+    ladder_service: LadderService, player_factory
+):
+    p1 = player_factory(
+        ladder_rating=(1500, 500),
+        ladder_games=0,
+    )
+    p2 = player_factory(
+        ladder_rating=(1000, 100),
+        ladder_games=1000,
+    )
+
+    queue = ladder_service.queues["ladder1v1"]
+    queue.map_pools.clear()
+    newbie_map_pool = mock.Mock()
+    full_map_pool = mock.Mock()
+    queue.add_map_pool(newbie_map_pool, None, 500)
+    queue.add_map_pool(full_map_pool, 500, None)
+
+    await ladder_service.start_game(p1, p2)
+
+    newbie_map_pool.choose_map.assert_not_called()
+    full_map_pool.choose_map.assert_called_once()
+
+
+async def test_start_game_map_selection_newbies(
+    ladder_service: LadderService, player_factory
+):
+    p1 = player_factory(
+        ladder_rating=(1500, 500),
+        ladder_games=0,
+    )
+    p2 = player_factory(
+        ladder_rating=(300, 100),
+        ladder_games=1000,
+    )
+
+    queue = ladder_service.queues["ladder1v1"]
+    queue.map_pools.clear()
+    newbie_map_pool = mock.Mock()
+    full_map_pool = mock.Mock()
+    queue.add_map_pool(newbie_map_pool, None, 500)
+    queue.add_map_pool(full_map_pool, 500, None)
+
+    await ladder_service.start_game(p1, p2)
+
+    newbie_map_pool.choose_map.assert_called_once()
+    full_map_pool.choose_map.assert_not_called()
+
+
+async def test_start_game_map_selection_pros(
+    ladder_service: LadderService, player_factory
+):
+    p1 = player_factory(
+        ladder_rating=(2000, 50),
+        ladder_games=1000,
+    )
+    p2 = player_factory(
+        ladder_rating=(1500, 100),
+        ladder_games=1000,
+    )
+
+    queue = ladder_service.queues["ladder1v1"]
+    queue.map_pools.clear()
+    newbie_map_pool = mock.Mock()
+    full_map_pool = mock.Mock()
+    queue.add_map_pool(newbie_map_pool, None, 500)
+    queue.add_map_pool(full_map_pool, 500, None)
+
+    await ladder_service.start_game(p1, p2)
+
+    newbie_map_pool.choose_map.assert_not_called()
+    full_map_pool.choose_map.assert_called_once()
+
+
 async def test_get_ladder_history(ladder_service: LadderService, players, database):
     history = await ladder_service.get_game_history(
         players.hosting,

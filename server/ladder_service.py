@@ -266,9 +266,12 @@ class LadderService(Service):
                     for player in [host, guest]
                 ])
             ))
-            # TODO: Consider new players to have rating 0
             rating = max(
                 player.ratings[RatingType.LADDER_1V1][0]
+                if (
+                    player.game_count[RatingType.LADDER_1V1] >
+                    config.NEWBIE_MIN_GAMES
+                ) else 0
                 for player in (host, guest)
             )
             map_pool = self.queues["ladder1v1"].get_map_pool_for_rating(rating)
