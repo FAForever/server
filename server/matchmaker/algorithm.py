@@ -1,3 +1,4 @@
+import itertools
 import math
 from statistics import mean
 from typing import Dict, Iterable, List, Set, Tuple
@@ -185,7 +186,7 @@ class _MatchingGraph:
         adj_list = {search: [] for search in searches}
 
         # Generate every edge. There are 'len(searches) choose 2' of these.
-        for search, other in subset_pairs(searches):
+        for search, other in itertools.combinations(searches, 2):
             quality = search.quality_with(other)
             if not _MatchingGraph.is_possible_match(search, other, quality):
                 continue
@@ -261,19 +262,3 @@ class _MatchingGraph:
         for search, neighbors in list(graph.items()):
             if not neighbors:
                 del graph[search]
-
-
-def subset_pairs(l: list):
-    """ Generates all possible 2 subsets of `l` as tuples. Each pair of items
-    will show up in only one order and the elements in the pair will be
-    distinct. Note that the number of items generated is `len(l) choose 2`.
-
-    # Example
-    `subset_pairs([1, 2, 3])`
-        yields pairs (1, 2), (1, 3), (2, 3)
-
-    Time complexity: O(n^2)
-    """
-    for i, a in enumerate(l[:-1]):
-        for b in l[i+1:]:
-            yield (a, b)
