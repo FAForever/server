@@ -157,7 +157,7 @@ def make_player(
     return p
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def player_factory():
     def make(
         login=None,
