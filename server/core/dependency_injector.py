@@ -145,7 +145,7 @@ class DependencyInjector(object):
                         param: resolved[param]
                         for param in param_names
                     })
-                else:
+                elif obj_name in classes:
                     instances[obj_name] = resolved[obj_name]
 
                 del dep[obj_name]
