@@ -18,7 +18,6 @@ from server.decorators import with_logger
 from server.metrics import rating_service_backlog
 
 from server.games.game_results import GameOutcome
-from server.games.game import ValidityState
 
 from server.rating import RatingType
 from trueskill import Rating

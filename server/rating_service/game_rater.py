@@ -1,4 +1,4 @@
-from typing import Dict, List, Set
+from typing import Dict, List
 
 import trueskill
 from server.games.game_results import GameOutcome
@@ -6,7 +6,7 @@ from trueskill import Rating
 
 from ..decorators import with_logger
 
-from .typedefs import PlayerID, RatingGroups, GameRatingData
+from .typedefs import PlayerID, GameRatingData
 
 
 class GameRatingError(Exception):
@@ -16,9 +16,7 @@ class GameRatingError(Exception):
 @with_logger
 class GameRater:
     @classmethod
-    def compute_rating(
-        cls, rating_data: GameRatingData
-    ) -> List[Dict[PlayerID, Rating]]:
+    def compute_rating(cls, rating_data: GameRatingData) -> Dict[PlayerID, Rating]:
         rating_groups = [team.ratings for team in rating_data]
         team_outcomes = [team.outcome for team in rating_data]
         ranks = cls._ranks_from_team_outcomes(team_outcomes)

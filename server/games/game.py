@@ -11,9 +11,9 @@ import pymysql
 from server.config import FFA_TEAM
 from server.rating_service.typedefs import GameRatingSummary, TeamRatingSummary
 from server.games.game_results import (
-    GameOutcome, 
-    GameResultReport, 
-    GameResultReports, 
+    GameOutcome,
+    GameResultReport,
+    GameResultReports,
     GameResolver,
     GameResolutionError
 )

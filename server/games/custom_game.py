@@ -1,6 +1,6 @@
 import time
 
-from .game import Game, ValidityState, GameState
+from .game import Game, ValidityState
 from server.rating import RatingType
 
 from server.abc.base_game import InitMode

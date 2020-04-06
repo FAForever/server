@@ -3,7 +3,7 @@ import logging
 from server.abc.base_game import InitMode
 from server.players import Player
 
-from .game import Game, GameOutcome, ValidityState, GameState
+from .game import Game, GameOutcome
 from server.rating import RatingType
 
 logger = logging.getLogger(__name__)
