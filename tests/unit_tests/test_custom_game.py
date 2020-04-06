@@ -1,5 +1,4 @@
 import time
-import asyncio
 
 import pytest
 from server.games import CustomGame

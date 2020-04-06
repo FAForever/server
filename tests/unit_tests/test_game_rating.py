@@ -1,5 +1,4 @@
 import json
-import time
 from collections import namedtuple
 
 import pytest
@@ -8,17 +7,12 @@ from asynctest import CoroutineMock
 from server.rating import RatingType
 from trueskill import Rating
 from server.rating_service.rating_service import RatingService
-from server.rating_service.game_rater import GameRatingError
 
 from server.games.game import Game, GameState, GameError, ValidityState
 from server.games.game_results import GameOutcome
 from server.games.custom_game import CustomGame
 from server.games.ladder_game import LadderGame
-from tests.unit_tests.conftest import (
-    add_connected_player,
-    add_connected_players,
-    make_mock_game_connection,
-)
+from tests.unit_tests.conftest import add_connected_players
 
 pytestmark = pytest.mark.asyncio
 
@@ -141,7 +135,7 @@ def add_players_with_rating(player_factory, game, ratings, teams):
 
 async def report_results(game, message_list):
     """
-    message list of the form 
+    Parameter message_list of the form
     List[(reporter_player_object, army_id_to_report_for, outcome_string, score)]
     """
     for player, army_id, outcome_string, score in message_list:

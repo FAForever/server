@@ -1,7 +1,6 @@
 import pytest
 from unittest import mock
 from asynctest import CoroutineMock
-import asyncio
 
 from server.rating_service.rating_service import RatingService, ServiceNotReadyError
 from server.db import FAFDatabase
@@ -167,7 +166,6 @@ async def test_get_new_player_rating_created(semiinitialized_service):
     service = semiinitialized_service
     player_id = 999
     rating_type = RatingType.LADDER_1V1
-    rating_type_id = 2
 
     db_ratings = await get_all_ratings(service._db, player_id)
     assert len(db_ratings) == 0  # Rating does not exist yet

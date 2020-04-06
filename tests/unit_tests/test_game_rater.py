@@ -1,7 +1,7 @@
 import pytest
 
-from server.rating_service.game_rater import GameRater, GameRatingError
-from server.rating_service.typedefs import GameRatingData, TeamRatingData
+from server.rating_service.game_rater import GameRater
+from server.rating_service.typedefs import TeamRatingData
 from server.games.game_results import GameOutcome
 from server.rating import RatingType
 from trueskill import Rating
@@ -13,8 +13,6 @@ class MockPlayer:
 
 @pytest.fixture
 def rating_data_1v1():
-    game_id = 111
-
     player1_id = 1
     player1_rating = Rating(1500, 500)
     player1_outcome = GameOutcome.VICTORY
@@ -31,8 +29,6 @@ def rating_data_1v1():
 
 @pytest.fixture
 def rating_data_2v2():
-    game_id = 111
-
     player1_id = 1
     player1_rating = Rating(1500, 500)
 

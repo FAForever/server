@@ -1,4 +1,3 @@
-import json
 import logging
 import time
 from typing import Any, List, Tuple
@@ -11,7 +10,6 @@ from server.games import CoopGame, CustomGame
 from server.games.game import (
     Game, GameError, GameState, ValidityState, Victory, VisibilityState
 )
-from server.rating_service.game_rater import GameRatingError
 from server.games.game_results import GameOutcome
 from server.rating import RatingType
 from tests.unit_tests.conftest import (
