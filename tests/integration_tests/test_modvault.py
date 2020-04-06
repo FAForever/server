@@ -54,6 +54,6 @@ async def test_modvault_like(lobby_server):
         'uid': 'FFF',
         'name': 'Mod without icon',
         'version': 1,
-        'author': 'askaholic',
+        'author': 'foo',
         'ui': 1
     }
