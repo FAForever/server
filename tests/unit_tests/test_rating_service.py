@@ -18,7 +18,11 @@ from server.db.models import (
 
 from server.rating import RatingType
 from trueskill import Rating
-from server.rating_service.typedefs import GameRatingSummary, RatingData
+from server.rating_service.typedefs import (
+    GameRatingSummary,
+    TeamRatingSummary,
+    TeamRatingData,
+)
 from server.games.game_results import GameOutcome
 
 
@@ -47,8 +51,14 @@ async def semiinitialized_service(database, player_service):
 
 @pytest.fixture()
 def game_rating_summary():
-    summary_results = [{1: GameOutcome.VICTORY}, {2: GameOutcome.DEFEAT}]
-    return GameRatingSummary(1, RatingType.GLOBAL, summary_results)
+    return GameRatingSummary(
+        1,
+        RatingType.GLOBAL,
+        [
+            TeamRatingSummary(GameOutcome.VICTORY, {1}),
+            TeamRatingSummary(GameOutcome.DEFEAT, {2}),
+        ],
+    )
 
 
 @pytest.fixture()
@@ -56,8 +66,14 @@ def bad_game_rating_summary():
     """
     Should throw a GameRatingError.
     """
-    summary_results = [{1: GameOutcome.VICTORY}, {2: GameOutcome.VICTORY}]
-    return GameRatingSummary(1, RatingType.GLOBAL, summary_results)
+    return GameRatingSummary(
+        1,
+        RatingType.GLOBAL,
+        [
+            TeamRatingSummary(GameOutcome.VICTORY, {1}),
+            TeamRatingSummary(GameOutcome.VICTORY, {2}),
+        ],
+    )
 
 
 async def test_enqueue_manual_initialization(
@@ -166,16 +182,23 @@ async def test_get_rating_data(semiinitialized_service):
     summary = GameRatingSummary(
         game_id,
         RatingType.GLOBAL,
-        [{player1_id: player1_outcome}, {player2_id: player2_outcome}],
+        [
+            TeamRatingSummary(player1_outcome, {player1_id}),
+            TeamRatingSummary(player2_outcome, {player2_id}),
+        ],
     )
 
     rating_data = await service._get_rating_data(summary)
 
-    player1_expected_data = RatingData(player1_outcome, player1_db_rating)
-    player2_expected_data = RatingData(player2_outcome, player2_db_rating)
+    player1_expected_data = TeamRatingData(
+        player1_outcome, {player1_id: player1_db_rating}
+    )
+    player2_expected_data = TeamRatingData(
+        player2_outcome, {player2_id: player2_db_rating}
+    )
 
-    assert rating_data[0] == {player1_id: player1_expected_data}
-    assert rating_data[1] == {player2_id: player2_expected_data}
+    assert rating_data[0] == player1_expected_data
+    assert rating_data[1] == player2_expected_data
 
 
 async def test_rating(semiinitialized_service, game_rating_summary):
@@ -277,7 +300,10 @@ async def test_nonexisting_rating_error_handled(rating_service, game_rating_summ
     service._persist_rating_changes = CoroutineMock()
     service._logger = mock.Mock()
 
-    bad_results = [{999: GameOutcome.VICTORY}, {888: GameOutcome.DEFEAT}]
+    bad_results = [
+        TeamRatingSummary(GameOutcome.VICTORY, {999}),
+        TeamRatingSummary(GameOutcome.DEFEAT, {888}),
+    ]
     bad_summary = GameRatingSummary(1, RatingType.GLOBAL, bad_results)
     await service.enqueue(bad_summary)
     await service.enqueue(game_rating_summary)

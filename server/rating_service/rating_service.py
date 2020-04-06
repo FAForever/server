@@ -1,6 +1,6 @@
 from typing import Dict
 from .typedefs import (
-    RatingData,
+    TeamRatingData,
     GameRatingData,
     GameRatingSummary,
     PlayerID,
@@ -87,7 +87,6 @@ class RatingService(Service):
                 await self._rate(summary)
             except GameRatingError:
                 self._logger.warning("Error rating game %s", summary)
-                await self._persist_rating_error(summary.game_id)
             except RatingNotFoundError:
                 self._logger.warning("Missing rating entry to rate game %s", summary)
             except Exception:
@@ -102,33 +101,37 @@ class RatingService(Service):
 
     async def _rate(self, summary: GameRatingSummary) -> None:
         rating_data = await self._get_rating_data(summary)
-        new_ratings, final_outcomes = GameRater.compute_rating(rating_data)
+        new_ratings = GameRater.compute_rating(rating_data)
+
+        outcome_map = {
+            player_id: team.outcome
+            for team in summary.teams
+            for player_id in team.player_ids
+        }
+
         old_ratings = {
-            player_id: data.rating
+            player_id: rating
             for team in rating_data
-            for player_id, data in team.items()
+            for player_id, rating in team.ratings.items()
         }
         await self._persist_rating_changes(
-            summary.game_id,
-            summary.rating_type,
-            old_ratings,
-            new_ratings,
-            final_outcomes,
+            summary.game_id, summary.rating_type, old_ratings, new_ratings, outcome_map
         )
 
     async def _get_rating_data(self, summary: GameRatingSummary) -> GameRatingData:
         ratings = {}
-        for player_id in (p for team in summary.results for p in team):
-            ratings[player_id] = await self._get_player_rating(
-                player_id, summary.rating_type
-            )
+        for team in summary.teams:
+            for player_id in team.player_ids:
+                ratings[player_id] = await self._get_player_rating(
+                    player_id, summary.rating_type
+                )
 
         return [
-            {
-                player_id: RatingData(outcomes[player_id], ratings[player_id])
-                for player_id in outcomes
-            }
-            for outcomes in summary.results
+            TeamRatingData(
+                team.outcome,
+                {player_id: ratings[player_id] for player_id in team.player_ids},
+            )
+            for team in summary.teams
         ]
 
     async def _get_player_rating(
@@ -330,14 +333,6 @@ class RatingService(Service):
             "Sending player rating update for player with id %i", player_id
         )
         self._player_service_callback(player_id, rating_type, new_rating)
-
-    async def _persist_rating_error(self, game_id: int) -> None:
-        validity_state = ValidityState.UNKNOWN_RESULT
-        async with self._db.acquire() as conn:
-            await conn.execute(
-                "UPDATE game_stats SET validity = %s " "WHERE id = %s",
-                (validity_state.value, game_id),
-            )
 
     async def _join_rating_queue(self) -> None:
         """

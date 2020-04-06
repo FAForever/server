@@ -9,8 +9,14 @@ from typing import Any, Dict, Optional, Tuple, List, Set
 
 import pymysql
 from server.config import FFA_TEAM
-from server.rating_service.typedefs import GameRatingSummary
-from server.games.game_results import GameOutcome, GameResult, GameResults
+from server.rating_service.typedefs import GameRatingSummary, TeamRatingSummary
+from server.games.game_results import (
+    GameOutcome, 
+    GameResultReport, 
+    GameResultReports, 
+    GameResolver,
+    GameResolutionError
+)
 from server.rating import RatingType
 
 from ..abc.base_game import GameConnectionState, InitMode
@@ -129,7 +135,7 @@ class Game:
         rating_type: RatingType = None,
     ):
         self._db = database
-        self._results = GameResults(id_)
+        self._results = GameResultReports(id_)
         self._army_stats = None
         self._players_with_unsent_army_stats = []
         self._game_stats_service = game_stats_service
@@ -324,7 +330,7 @@ class Game:
         except ValueError:
             outcome = GameOutcome.UNKNOWN
 
-        result = GameResult(reporter, army, outcome, score)
+        result = GameResultReport(reporter, army, outcome, score)
         self._results.add(result)
         self._logger.info(
             "%s reported result for army %s: %s %s", reporter, army,
@@ -476,14 +482,19 @@ class Game:
             return
 
         if self.state not in (GameState.LIVE, GameState.ENDED):
-            raise GameError("Cannot rate game that has not been launched yet.")
+            raise GameError("Cannot rate game that has not been launched.")
 
         await self._run_pre_rate_validity_checks()
 
         if self.validity is not ValidityState.VALID:
             return
 
-        summary = self._get_rating_summary(self._rating_type)
+        try:
+            summary = self._get_rating_summary()
+        except GameResolutionError:
+            await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
+            return
+
         await self.game_service.send_to_rating_service(summary)
 
     async def load_results(self):
@@ -491,7 +502,7 @@ class Game:
         Load results from the database
         :return:
         """
-        self._results = await GameResults.from_db(self._db, self.id)
+        self._results = await GameResultReports.from_db(self._db, self.id)
 
     async def persist_results(self):
         """
@@ -528,13 +539,21 @@ class Game:
                 "WHERE `gameId`=%s AND `playerId`=%s", rows
             )
 
-    def _get_rating_summary(self, rating_type: RatingType) -> GameRatingSummary:
+    def _get_rating_summary(self) -> GameRatingSummary:
+        teams = self.get_team_sets()
+        team_player_outcomes = [
+            {self.get_player_outcome(player) for player in team}
+            for team in teams
+        ]
+        team_outcomes = GameResolver.resolve(team_player_outcomes)
+        team_player_ids = [{player.id for player in team} for team in teams]
+
         return GameRatingSummary(
             self.id,
-            rating_type,
+            self._rating_type,
             [
-                {player.id: self.get_player_outcome(player) for player in team}
-                for team in self.get_team_sets()
+                TeamRatingSummary(outcome, player_ids)
+                for outcome, player_ids in zip(team_outcomes, team_player_ids)
             ]
         )
 

@@ -1,20 +1,24 @@
-from typing import Dict, List, NamedTuple, Optional
+from typing import Dict, List, Set, NamedTuple, Optional
 
 from server.games.game_results import GameOutcome
 from server.rating import RatingType
 from trueskill import Rating
 
 PlayerID = int
-SummaryResults = List[Dict[PlayerID, GameOutcome]]
 RatingGroups = List[Dict[PlayerID, Rating]]
 
 
-class RatingData(NamedTuple):
+class TeamRatingData(NamedTuple):
     outcome: GameOutcome
-    rating: Rating
+    ratings: Dict[int, Rating]
 
 
-GameRatingData = List[Dict[PlayerID, RatingData]]
+GameRatingData = List[TeamRatingData]
+
+
+class TeamRatingSummary(NamedTuple):
+    outcome: GameOutcome
+    player_ids: Set[int]
 
 
 class GameRatingSummary(NamedTuple):
@@ -24,12 +28,13 @@ class GameRatingSummary(NamedTuple):
      - game_id: id of the game to rate
      - rating_type: RatingType to (e.g. LADDER_1V1)
      - results: a list of dictionaries mapping player ids to their `GameOutcome`s
+     - teams: a tuple of two TeamRatingSummaries
     Every dictionary in the results list should correspond to a distinct team.
     """
 
     game_id: int
     rating_type: Optional[RatingType]
-    results: SummaryResults
+    teams: List[TeamRatingSummary]
 
 
 class RatingServiceError(Exception):

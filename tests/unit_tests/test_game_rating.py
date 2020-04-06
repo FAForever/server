@@ -84,7 +84,9 @@ def get_persisted_results(mock_service):
 
 @pytest.yield_fixture
 def game(event_loop, database, game_service, game_stats_service):
-    game = Game(42, database, game_service, game_stats_service)
+    game = Game(
+        42, database, game_service, game_stats_service, rating_type=RatingType.GLOBAL
+    )
     yield game
 
 
@@ -153,7 +155,7 @@ async def test_rating_summary_missing_team_raises_game_error(game, players):
     await game.launch()
 
     with pytest.raises(GameError):
-        game._get_rating_summary(RatingType.GLOBAL)
+        game._get_rating_summary()
 
 
 async def test_rate_game_global_ratings(custom_game, players):
