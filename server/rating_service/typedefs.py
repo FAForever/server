@@ -44,9 +44,5 @@ class ServiceNotReadyError(RatingServiceError):
     pass
 
 
-class RatingNotFoundError(RatingServiceError):
-    pass
-
-
 class EntryNotFoundError(RatingServiceError):
     pass

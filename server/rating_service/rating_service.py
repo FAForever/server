@@ -5,7 +5,6 @@ from .typedefs import (
     GameRatingSummary,
     PlayerID,
     ServiceNotReadyError,
-    RatingNotFoundError,
     EntryNotFoundError,
 )
 
@@ -16,6 +15,7 @@ from server.core import Service
 from server.player_service import PlayerService
 from server.decorators import with_logger
 from server.metrics import rating_service_backlog
+import server.config as config
 
 from server.games.game_results import GameOutcome
 
@@ -86,8 +86,6 @@ class RatingService(Service):
                 await self._rate(summary)
             except GameRatingError:
                 self._logger.warning("Error rating game %s", summary)
-            except RatingNotFoundError:
-                self._logger.warning("Missing rating entry to rate game %s", summary)
             except Exception:
                 self._logger.exception("Failed rating request %s", summary)
             else:
@@ -184,9 +182,10 @@ class RatingService(Service):
             row = await result.fetchone()
 
             if not row:
-                raise RatingNotFoundError(
-                    f"Could not find a {rating_type} rating for player {player_id}."
+                new_rating = await self._create_default_rating(
+                    conn, player_id, rating_type
                 )
+                return new_rating
 
             if rating_type is RatingType.GLOBAL:
                 # The old `global_rating` table does not have a `winGames` column.
@@ -208,6 +207,27 @@ class RatingService(Service):
             )
 
             return Rating(row[table.c.mean], row[table.c.deviation])
+
+    async def _create_default_rating(
+        self, conn, player_id: int, rating_type: RatingType
+    ):
+        default_mean = config.START_RATING_MEAN
+        default_deviation = config.START_RATING_DEV
+
+        rating_type_id = self._rating_type_ids.get(rating_type.value)
+        await conn.execute(
+            "INSERT INTO leaderboard_rating "
+            "(login_id, mean, deviation, total_games, won_games, leaderboard_id) "
+            "VALUES (%s, %s, %s, %s, %s, %s)",
+            player_id,
+            default_mean,
+            default_deviation,
+            0,
+            0,
+            rating_type_id,
+        )
+
+        return Rating(default_mean, default_deviation)
 
     async def _persist_rating_changes(
         self,

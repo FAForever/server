@@ -3,11 +3,7 @@ from unittest import mock
 from asynctest import CoroutineMock
 import asyncio
 
-from server.rating_service.rating_service import (
-    RatingService,
-    RatingNotFoundError,
-    ServiceNotReadyError,
-)
+from server.rating_service.rating_service import RatingService, ServiceNotReadyError
 from server.db import FAFDatabase
 from sqlalchemy import select, and_
 from server.db.models import (
@@ -128,6 +124,18 @@ async def test_get_player_rating_ladder(semiinitialized_service):
     assert rating == true_rating
 
 
+async def get_all_ratings(db: FAFDatabase, player_id: int):
+    rating_sql = select(
+        [leaderboard_rating.c.mean, leaderboard_rating.c.deviation]
+    ).where(and_(leaderboard_rating.c.login_id == player_id))
+
+    async with db.acquire() as conn:
+        result = await conn.execute(rating_sql)
+        rows = await result.fetchall()
+
+    return rows
+
+
 async def test_get_player_rating_legacy(semiinitialized_service):
     service = semiinitialized_service
     # Player 51 should have a rating entry in the old `global_rating`
@@ -136,14 +144,8 @@ async def test_get_player_rating_legacy(semiinitialized_service):
     legacy_global_rating = Rating(1201, 250)
     legacy_ladder_rating = Rating(1301, 400)
 
-    rating_sql = select([leaderboard_rating.c.mean]).where(
-        leaderboard_rating.c.login_id == player_id
-    )
-
-    async with service._db.acquire() as conn:
-        result = await conn.execute(rating_sql)
-        rows = await result.fetchall()
-    assert len(rows) == 0  # no new rating entries yet
+    db_ratings = await get_all_ratings(service._db, player_id)
+    assert len(db_ratings) == 0  # no new rating entries yet
 
     rating = await service._get_player_rating(player_id, RatingType.GLOBAL)
     assert rating == legacy_global_rating
@@ -151,20 +153,31 @@ async def test_get_player_rating_legacy(semiinitialized_service):
     rating = await service._get_player_rating(player_id, RatingType.LADDER_1V1)
     assert rating == legacy_ladder_rating
 
-    async with service._db.acquire() as conn:
-        result = await conn.execute(rating_sql)
-        rows = await result.fetchall()
-    assert len(rows) == 2  # new rating entries were created
+    db_ratings = await get_all_ratings(service._db, player_id)
+    assert len(db_ratings) == 2  # new rating entries were created
+    assert db_ratings[0][0] == 1201
+    assert db_ratings[1][0] == 1301
 
 
-async def test_get_new_player_rating(semiinitialized_service):
+async def test_get_new_player_rating_created(semiinitialized_service):
     """
-    What happens if a player doesn't have a rating table entry yet?
+    Upon rating games of players without a rating entry in both new and legacy
+    tables, a new rating entry should be created.
     """
     service = semiinitialized_service
     player_id = 999
-    with pytest.raises(RatingNotFoundError):
-        await service._get_player_rating(player_id, RatingType.LADDER_1V1)
+    rating_type = RatingType.LADDER_1V1
+    rating_type_id = 2
+
+    db_ratings = await get_all_ratings(service._db, player_id)
+    assert len(db_ratings) == 0  # Rating does not exist yet
+
+    await service._get_player_rating(player_id, rating_type)
+
+    db_ratings = await get_all_ratings(service._db, player_id)
+    assert len(db_ratings) == 1  # Rating has been created
+    assert db_ratings[0][0] == 1500
+    assert db_ratings[0][1] == 500
 
 
 async def test_get_rating_data(semiinitialized_service):
@@ -285,27 +298,6 @@ async def test_game_rating_error_handled(
     service._logger = mock.Mock()
 
     await service.enqueue(bad_game_rating_summary)
-    await service.enqueue(game_rating_summary)
-
-    await service._join_rating_queue()
-
-    # first game: error has been logged.
-    service._logger.warning.assert_called()
-    # second game: results have been saved.
-    service._persist_rating_changes.assert_called_once()
-
-
-async def test_nonexisting_rating_error_handled(rating_service, game_rating_summary):
-    service = rating_service
-    service._persist_rating_changes = CoroutineMock()
-    service._logger = mock.Mock()
-
-    bad_results = [
-        TeamRatingSummary(GameOutcome.VICTORY, {999}),
-        TeamRatingSummary(GameOutcome.DEFEAT, {888}),
-    ]
-    bad_summary = GameRatingSummary(1, RatingType.GLOBAL, bad_results)
-    await service.enqueue(bad_summary)
     await service.enqueue(game_rating_summary)
 
     await service._join_rating_queue()
