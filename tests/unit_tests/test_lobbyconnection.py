@@ -958,8 +958,8 @@ async def test_command_game_matchmaking(lobbyconnection):
     lobbyconnection.ladder_service.cancel_search.assert_called_with(lobbyconnection.player)
 
 
-async def test_command_matchmaker_info(lobbyconnection, ladder_service):
-    queue = MatchmakerQueue("test", Mock())
+async def test_command_matchmaker_info(lobbyconnection, ladder_service, queue_factory):
+    queue = queue_factory("test", "test_key")
     queue.timer.next_queue_pop = 1_562_000_000
 
     lobbyconnection.ladder_service.queues = {
@@ -975,6 +975,7 @@ async def test_command_matchmaker_info(lobbyconnection, ladder_service):
         'queues': [
             {
                 'queue_name': 'test',
+                'queue_name_key': 'test_key',
                 'queue_pop_time': '2019-07-01T16:53:20+00:00',
                 'boundary_80s': [],
                 'boundary_75s': []

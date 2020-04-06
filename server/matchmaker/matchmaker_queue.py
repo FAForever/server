@@ -3,12 +3,13 @@ import time
 from collections import OrderedDict, deque
 from concurrent.futures import CancelledError
 from datetime import datetime, timezone
-from typing import Deque, Dict
+from typing import Deque, Dict, List, Optional, Tuple
 
 import server.metrics as metrics
 
 from ..decorators import with_logger
 from .algorithm import make_matches
+from .map_pool import MapPool
 from .pop_timer import PopTimer
 from .search import Match, Search
 
@@ -37,18 +38,43 @@ class MatchmakerSearchTimer:
 class MatchmakerQueue:
     def __init__(
         self,
-        queue_name: str,
-        game_service: "GameService"
+        game_service: "GameService",
+        name: str,
+        name_key: str,
+        featured_mod_id: int = None,
+        leaderboard_id: int = None,
+        map_pools: List[Tuple[MapPool, Optional[int], Optional[int]]] = []
     ):
         self.game_service = game_service
-        self.queue_name = queue_name
+        self.name = name
+        self.name_key = name_key
+        # TODO: Implement me
+        self.featured_mod_id = featured_mod_id
+        # TODO: Implement me
+        self.leaderboard_id = leaderboard_id
+        self.map_pools = {info[0].id: info for info in map_pools}
 
         self.queue: Dict[Search, Search] = OrderedDict()
         self._matches: Deque[Match] = deque()
         self._is_running = True
 
-        self.timer = PopTimer(self.queue_name)
-        self._logger.debug("MatchmakerQueue initialized for %s", queue_name)
+        self.timer = PopTimer(self.name)
+
+    def add_map_pool(
+        self,
+        map_pool: MapPool,
+        min_rating: Optional[int],
+        max_rating: Optional[int]
+    ):
+        self.map_pools[map_pool.id] = (map_pool, min_rating, max_rating)
+
+    def get_map_pool_for_rating(self, rating: int) -> Optional[MapPool]:
+        for map_pool, min_rating, max_rating in self.map_pools.values():
+            if min_rating is not None and rating < min_rating:
+                continue
+            if max_rating is not None and rating > max_rating:
+                continue
+            return map_pool
 
     async def initialize(self):
         asyncio.create_task(self.queue_pop_timer())
@@ -70,23 +96,24 @@ class MatchmakerQueue:
         of time until next queue 'pop' is determined by the number of players
         in the queue.
         """
+        self._logger.debug("MatchmakerQueue initialized for %s", self.name)
         while self._is_running:
             await self.timer.next_pop(lambda: len(self.queue))
 
             await self.find_matches()
 
             number_of_matches = len(self._matches)
-            metrics.matches.labels(self.queue_name).set(number_of_matches)
+            metrics.matches.labels(self.name).set(number_of_matches)
 
             # TODO: Move this into algorithm, then don't need to recalculate quality_with?
             # Probably not a major bottleneck though.
             for search1, search2 in self._matches:
-                metrics.match_quality.labels(self.queue_name).observe(
+                metrics.match_quality.labels(self.name).observe(
                     search1.quality_with(search2)
                 )
 
             number_of_unmatched_searches = len(self.queue)
-            metrics.unmatched_searches.labels(self.queue_name).set(number_of_unmatched_searches)
+            metrics.unmatched_searches.labels(self.name).set(number_of_unmatched_searches)
 
             # Any searches in the queue at this point were unable to find a
             # match this round and will have higher priority next round.
@@ -104,7 +131,7 @@ class MatchmakerQueue:
         assert search is not None
 
         try:
-            with MatchmakerSearchTimer(self.queue_name):
+            with MatchmakerSearchTimer(self.name):
                 self.push(search)
                 await search.await_match()
             self._logger.debug("Search complete: %s", search)
@@ -118,7 +145,7 @@ class MatchmakerQueue:
                 del self.queue[search]
 
     async def find_matches(self) -> None:
-        self._logger.info("Searching for matches: %s", self.queue_name)
+        self._logger.info("Searching for matches: %s", self.name)
 
         if len(self.queue) < 2:
             return
@@ -163,7 +190,8 @@ class MatchmakerQueue:
         Return a fuzzy representation of the searches currently in the queue
         """
         return {
-            'queue_name': self.queue_name,
+            'queue_name': self.name,
+            'queue_name_key': self.name_key,
             'queue_pop_time': datetime.fromtimestamp(self.timer.next_queue_pop, timezone.utc).isoformat(),
             'boundary_80s': [search.boundary_80 for search in self.queue.values()],
             'boundary_75s': [search.boundary_75 for search in self.queue.values()]

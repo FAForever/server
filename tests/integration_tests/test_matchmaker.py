@@ -137,7 +137,7 @@ async def test_game_matchmaking_start(lobby_server, database):
             assert row["place"] is not None
 
 
-@fast_forward(50)
+@fast_forward(100)
 async def test_game_matchmaking_timeout(lobby_server):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
 
@@ -205,6 +205,7 @@ async def test_matchmaker_info_message(lobby_server, mocker):
         'queues': [
             {
                 'queue_name': 'ladder1v1',
+                'queue_name_key': 'ladder1v1',
                 'queue_pop_time': '2019-07-01T16:53:21+00:00',
                 'boundary_80s': [],
                 'boundary_75s': []
@@ -233,6 +234,7 @@ async def test_command_matchmaker_info(lobby_server, mocker):
         'queues': [
             {
                 'queue_name': 'ladder1v1',
+                'queue_name_key': 'ladder1v1',
                 'queue_pop_time': '2019-07-01T16:53:21+00:00',
                 'boundary_80s': [],
                 'boundary_75s': []
