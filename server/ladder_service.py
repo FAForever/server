@@ -1,9 +1,9 @@
 import asyncio
 import contextlib
-import random
 from collections import defaultdict
-from typing import Dict, List, NamedTuple, Set
+from typing import Dict, List, Set
 
+import aiocron
 from server.db import FAFDatabase
 from server.rating import RatingType
 from sqlalchemy import and_, func, select, text
@@ -12,14 +12,18 @@ from .async_functions import gather_without_exceptions
 from .config import config
 from .core import Service
 from .db.models import game_featuredMods, game_player_stats, game_stats
+from .db.models import map as t_map
+from .db.models import (
+    map_pool, map_pool_map_version, map_version, matchmaker_queue,
+    matchmaker_queue_map_pool
+)
 from .decorators import with_logger
 from .game_service import GameService
-from .matchmaker import MatchmakerQueue, Search
+from .itertools import flatten
+from .matchmaker import MapPool, MatchmakerQueue, Search
 from .players import Player, PlayerState
 from .protocol import DisconnectedError
-from .types import GameLaunchOptions
-
-MapDescription = NamedTuple('Map', [("id", int), ("name", str), ("path", str)])
+from .types import GameLaunchOptions, Map
 
 
 @with_logger
@@ -37,18 +41,102 @@ class LadderService(Service):
         self._informed_players: Set[Player] = set()
         self.game_service = game_service
 
+        # Fallback legacy map pool
+        self.ladder_1v1_map_pool = MapPool(0, "ladder1v1")
         # Hardcoded here until it needs to be dynamic
         self.queues = {
-            'ladder1v1': MatchmakerQueue('ladder1v1', game_service)
+            'ladder1v1': MatchmakerQueue(
+                game_service,
+                'ladder1v1',
+                'ladder1v1',
+                map_pools=[(self.ladder_1v1_map_pool, None, None)]
+            )
         }
 
         self.searches: Dict[str, Dict[Player, Search]] = defaultdict(dict)
 
     async def initialize(self) -> None:
+        await self.update_data()
+        self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
         await asyncio.gather(*[
             queue.initialize() for queue in self.queues.values()
         ])
         asyncio.create_task(self.handle_queue_matches())
+
+    async def update_data(self) -> None:
+        async with self._db.acquire() as conn:
+            # Legacy ladder1v1 map pool
+            result = await conn.execute(
+                "SELECT ladder_map.idmap, "
+                "table_map.name, "
+                "table_map.filename "
+                "FROM ladder_map "
+                "INNER JOIN table_map ON table_map.id = ladder_map.idmap"
+            )
+            maps = [
+                Map(row[0], row[1], row[2]) async for row in result
+            ]
+            self.ladder_1v1_map_pool.set_maps(maps)
+
+            # New map pools
+            result = await conn.execute(
+                select([
+                    map_pool.c.id,
+                    map_pool.c.name,
+                    map_version.c.map_id,
+                    map_version.c.filename,
+                    t_map.c.display_name
+                ]).select_from(
+                    map_pool.join(map_pool_map_version)
+                    .join(map_version)
+                    .join(t_map)
+                )
+            )
+            map_pool_maps = {}
+            async for row in result:
+                id_ = row[map_pool.c.id]
+                name = row[map_pool.c.name]
+                if id_ not in map_pool_maps:
+                    map_pool_maps[id_] = (name, list())
+                _, map_list = map_pool_maps[id_]
+                map_list.append(
+                    Map(
+                        row[map_version.c.map_id],
+                        row[t_map.c.display_name],
+                        row[map_version.c.filename]
+                    )
+                )
+
+            # Update the matchmaker queues
+            result = await conn.execute(
+                select([matchmaker_queue, matchmaker_queue_map_pool])
+                .select_from(matchmaker_queue.join(matchmaker_queue_map_pool))
+            )
+
+            queue_names = set()
+            async for row in result:
+                name = row[matchmaker_queue.c.technical_name]
+                if name not in self.queues:
+                    self.queues[name] = MatchmakerQueue(
+                        name=name,
+                        name_key=row[matchmaker_queue.c.name_key],
+                        game_service=self.game_service
+                    )
+                queue = self.queues[name]
+                if name not in queue_names:
+                    queue.map_pools.clear()
+                map_pool_id = row[matchmaker_queue_map_pool.c.map_pool_id]
+                map_pool_name, map_list = map_pool_maps[map_pool_id]
+                queue.add_map_pool(
+                    MapPool(map_pool_id, map_pool_name, map_list),
+                    row[matchmaker_queue_map_pool.c.min_rating],
+                    row[matchmaker_queue_map_pool.c.max_rating]
+                )
+                queue_names.add(name)
+            # Remove queues that don't exist anymore
+            for queue_name in list(self.queues.keys()):
+                if queue_name not in queue_names:
+                    del self.queues[queue_name]
 
     async def start_search(self, initiator: Player, search: Search, queue_name: str):
         # TODO: Consider what happens if players disconnect while starting
@@ -168,7 +256,25 @@ class LadderService(Service):
             host.state = PlayerState.HOSTING
             guest.state = PlayerState.JOINING
 
-            (map_id, map_name, map_path) = await self.choose_map([host, guest])
+            played_map_ids = list(flatten(
+                await asyncio.gather(*[
+                    self.get_game_history(
+                        player,
+                        "ladder1v1",
+                        limit=config.LADDER_ANTI_REPETITION_LIMIT
+                    )
+                    for player in [host, guest]
+                ])
+            ))
+            # TODO: Consider new players to have rating 0
+            rating = max(
+                player.ratings[RatingType.LADDER_1V1][0]
+                for player in (host, guest)
+            )
+            map_pool = self.queues["ladder1v1"].get_map_pool_for_rating(rating)
+            if not map_pool:
+                raise RuntimeError(f"No map pool available for rating {rating}!")
+            (map_id, map_name, map_path) = map_pool.choose_map(played_map_ids)
 
             game = self.game_service.create_game(
                 game_mode='ladder1v1',
@@ -242,33 +348,12 @@ class LadderService(Service):
                     guest.send_message(msg)
                 )
 
-    async def choose_map(self, players: [Player]) -> MapDescription:
-        maps = self.game_service.ladder_maps
-
-        if not maps:
-            self._logger.critical(
-                "Trying to choose a map from an empty map pool!"
-            )
-            raise RuntimeError("Ladder maps not set!")
-
-        recently_played_map_ids = {
-            map_id for player in players
-            for map_id in await self.get_ladder_history(
-                player, limit=config.LADDER_ANTI_REPETITION_LIMIT
-            )
-        }
-        randomized_maps = random.sample(maps, len(maps))
-
-        return next(
-            filter(
-                lambda m: m[0] not in recently_played_map_ids,
-                randomized_maps
-            ),
-            # If all maps were played recently, default to a random one
-            randomized_maps[0]
-        )
-
-    async def get_ladder_history(self, player: Player, limit=3) -> List[int]:
+    async def get_game_history(
+        self,
+        player: Player,
+        mod: str,
+        limit=3
+    ) -> List[int]:
         async with self._db.acquire() as conn:
             query = select([
                 game_stats.c.mapId,
@@ -279,7 +364,7 @@ class LadderService(Service):
                     game_player_stats.c.playerId == player.id,
                     game_stats.c.startTime >=
                     func.now() - text("interval 1 day"),
-                    game_featuredMods.c.gamemod == "ladder1v1"
+                    game_featuredMods.c.gamemod == mod
                 )
             ).order_by(game_stats.c.startTime.desc()).limit(limit)
 

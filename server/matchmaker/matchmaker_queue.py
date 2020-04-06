@@ -41,17 +41,11 @@ class MatchmakerQueue:
         game_service: "GameService",
         name: str,
         name_key: str,
-        featured_mod_id: int = None,
-        leaderboard_id: int = None,
         map_pools: List[Tuple[MapPool, Optional[int], Optional[int]]] = []
     ):
         self.game_service = game_service
         self.name = name
         self.name_key = name_key
-        # TODO: Implement me
-        self.featured_mod_id = featured_mod_id
-        # TODO: Implement me
-        self.leaderboard_id = leaderboard_id
         self.map_pools = {info[0].id: info for info in map_pools}
 
         self.queue: Dict[Search, Search] = OrderedDict()

@@ -48,6 +48,10 @@ DELETE FROM email_domain_blacklist;
 DELETE FROM leaderboard;
 DELETE FROM leaderboard_rating;
 DELETE FROM leaderboard_rating_journal;
+DELETE FROM matchmaker_queue;
+DELETE FROM matchmaker_queue_map_pool;
+DELETE FROM map_pool;
+DELETE FROM map_pool_map_version;
 
 SET FOREIGN_KEY_CHECKS=1;
 
@@ -233,6 +237,24 @@ insert into game_player_stats (gameId, playerId, AI, faction, color, team, place
   (41942, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), NULL),
   (41943, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), 1400),
   (41944, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), 1600);
+
+insert into matchmaker_queue (id, technical_name, featured_mod_id, leaderboard_id, name_key) values
+  (1, "ladder1v1", 1, 1, "matchmaker.ladder1v1");
+
+insert into map_pool (id, name) values
+  (1, "Ladder1v1 season 1: 5-10k"),
+  (2, "Ladder1v1 season 1: all"),
+  (3, "Large maps");
+
+insert into map_pool_map_version (map_pool_id, map_version_id) values
+  (1, 15), (1, 16), (1, 17),
+  (2, 11), (2, 14), (2, 15), (2, 16), (2, 17),
+  (3, 1),  (3, 2),  (3, 3);
+
+insert into matchmaker_queue_map_pool (matchmaker_queue_id, map_pool_id, min_rating, max_rating) values
+  (1, 1, NULL, 800),
+  (1, 2, 800, NULL),
+  (1, 3, 1000, NULL);
 
 insert into friends_and_foes (user_id, subject_id, `status`) values
   (1, 3, 'FOE'),
