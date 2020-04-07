@@ -252,20 +252,6 @@ class RatingService(Service):
                     old_rating,
                     new_rating,
                 )
-                await conn.execute(
-                    game_player_stats.update().where(
-                        and_(
-                            game_player_stats.c.gameId == game_id,
-                            game_player_stats.c.playerId == player_id,
-                        )
-                    ).values(
-                        after_mean=new_rating.mu,
-                        after_deviation=new_rating.sigma,
-                        mean=old_rating.mu,
-                        deviation=old_rating.sigma,
-                        scoreTime=sql_now(),
-                    )
-                )
 
                 gps_rows = await conn.execute(
                     select([game_player_stats]).where(
@@ -282,6 +268,18 @@ class RatingService(Service):
                     )
                     raise EntryNotFoundError
                 game_player_stats_id = gps_row["id"]
+
+                await conn.execute(
+                    game_player_stats.update()
+                    .where(game_player_stats.c.id == game_player_stats_id)
+                    .values(
+                        after_mean=new_rating.mu,
+                        after_deviation=new_rating.sigma,
+                        mean=old_rating.mu,
+                        deviation=old_rating.sigma,
+                        scoreTime=sql_now(),
+                    )
+                )
 
                 await self._update_rating_tables(
                     conn,
@@ -320,16 +318,18 @@ class RatingService(Service):
 
         victory_increment = 1 if outcome is GameOutcome.VICTORY else 0
         await conn.execute(
-            leaderboard_rating.update().where(
+            leaderboard_rating.update()
+            .where(
                 and_(
                     leaderboard_rating.c.login_id == player_id,
                     leaderboard_rating.c.leaderboard_id == rating_type_id,
                 )
-            ).values(
+            )
+            .values(
                 mean=new_rating.mu,
                 deviation=new_rating.sigma,
-                total_games = leaderboard_rating.c.total_games + 1,
-                won_games = leaderboard_rating.c.won_games + victory_increment,
+                total_games=leaderboard_rating.c.total_games + 1,
+                won_games=leaderboard_rating.c.won_games + victory_increment,
             )
         )
 
