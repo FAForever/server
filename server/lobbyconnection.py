@@ -16,6 +16,7 @@ import semver
 import server.metrics as metrics
 from server.db import FAFDatabase
 from sqlalchemy import and_, func, select, text
+from sqlalchemy.sql.functions import now as sql_now
 
 from . import config
 from .abc.base_game import GameConnectionState
@@ -538,9 +539,16 @@ class LobbyConnection:
 
             async with self._db.acquire() as conn:
                 try:
+                    ban_reason = "Auto-banned because of fraudulent login attempt"
+                    ban_level = "GLOBAL"
                     await conn.execute(
-                        "INSERT INTO ban (player_id, author_id, reason, level) VALUES (%s, %s, %s, 'GLOBAL')",
-                        (player_id, player_id, "Auto-banned because of fraudulent login attempt"))
+                        ban.insert().values(
+                            player_id=player_id,
+                            author_id=player_id,
+                            reason=ban_reason,
+                            level=ban_level,
+                        )
+                    )
                 except pymysql.MySQLError as e:
                     raise ClientError('Banning failed: {}'.format(e))
 
@@ -557,12 +565,14 @@ class LobbyConnection:
             metrics.user_logins.labels("success").inc()
 
             await conn.execute(
-                "UPDATE login SET ip = %(ip)s, user_agent = %(user_agent)s, last_login = NOW() WHERE id = %(player_id)s",
-                {
-                    "ip": self.peer_address.host,
-                    "user_agent": self.user_agent,
-                    "player_id": player_id
-                })
+                t_login.update().where(
+                    t_login.c.id == player_id
+                ).values(
+                    ip=self.peer_address.host,
+                    user_agent=self.user_agent,
+                    last_login=sql_now()
+                )
+            )
 
             conforms_policy = await self.check_policy_conformity(
                 player_id, message['unique_id'], self.session,

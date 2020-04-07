@@ -1,5 +1,6 @@
 from sqlalchemy import (
-    TIMESTAMP, Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer,
+    TIMESTAMP, TIME, Boolean, Column,
+    DateTime, Enum, Float, ForeignKey, Integer,
     MetaData, String, Table, Text
 )
 
@@ -103,15 +104,15 @@ game_player_stats = Table(
 
 game_stats = Table(
     'game_stats', metadata,
-    Column('id',        Integer,    primary_key=True),
-    Column('startTime', TIMESTAMP,  nullable=False, server_default="CURRENT_TIMESTAMP"),
+    Column('id',        Integer,        primary_key=True),
+    Column('startTime', TIMESTAMP,      nullable=False, server_default="CURRENT_TIMESTAMP"),
     Column('endTime',   TIMESTAMP),
-    Column('gameType',  Enum(Victory), nullable=False),
-    Column('gameMod',   Integer, ForeignKey('game_featuredMods.id'), nullable=False),
-    Column('host',      Integer,    nullable=False),
+    Column('gameType',  Enum(Victory),  nullable=False),
+    Column('gameMod',   Integer,        ForeignKey('game_featuredMods.id'), nullable=False),
+    Column('host',      Integer,        nullable=False),
     Column('mapId',     Integer),
-    Column('gameName',  String,     nullable=False),
-    Column('validity',  Integer,    nullable=False),
+    Column('gameName',  String,         nullable=False),
+    Column('validity',  Integer,        nullable=False),
 )
 
 global_rating = Table(
@@ -147,6 +148,16 @@ ladder1v1_rating = Table(
     Column('is_active',     Boolean,    nullable=False)
 )
 
+coop_leaderboard = Table(
+    'coop_leaderboard', metadata,
+    Column('id',            Integer,    primary_key=True),
+    Column('mission',       Integer),
+    Column('gameuid',       Integer,    ForeignKey('game_stats')),
+    Column('secondary',     Integer),
+    Column('time',          TIME),
+    Column('player_count',  Integer)
+)
+
 # This is actually a view into the `ban` table with proper handling of ban
 # expiration and revocation
 lobby_ban = Table(
@@ -158,25 +169,38 @@ lobby_ban = Table(
 
 moderation_report = Table(
    'moderation_report', metadata,
-   Column('id', Integer, primary_key=True),
-   Column('reporter_id', ForeignKey('login.id'), nullable=False),
-   Column('report_description', Text),
-   Column('game_id', ForeignKey('game_stats.id'), index=True),
-   Column('report_status', Enum('AWAITING', 'PROCESSING', 'COMPLETED', 'DISCARDED'), nullable=False),
+   Column('id',                     Integer,                        primary_key=True),
+   Column('reporter_id',            ForeignKey('login.id'),         nullable=False),
+   Column('report_description',     Text),
+   Column('game_id',                ForeignKey('game_stats.id'),    index=True),
    Column('game_incident_timecode', String(100)),
-   Column('moderator_notice', Text),
+   Column('moderator_notice',       Text),
    Column('moderator_private_note', Text),
-   Column('last_moderator', ForeignKey('login.id'), index=True),
-   Column('create_time',   TIMESTAMP,  nullable=False),
-   Column('update_time',   TIMESTAMP,  nullable=False)
+   Column('last_moderator',         ForeignKey('login.id'),         index=True),
+   Column('create_time',            TIMESTAMP,                      nullable=False),
+   Column('update_time',            TIMESTAMP,                      nullable=False),
+   Column(
+       'report_status',
+       Enum('AWAITING', 'PROCESSING', 'COMPLETED', 'DISCARDED'),
+       nullable=False
+    )
 )
 
 
 reported_user = Table(
    'reported_user', metadata,
-   Column('id', Integer, primary_key=True),
-   Column('player_id', ForeignKey('login.id'), nullable=False),
-   Column('report_id', ForeignKey('moderation_report.id'), nullable=False),
-   Column('create_time',   TIMESTAMP,  nullable=False),
-   Column('update_time',   TIMESTAMP,  nullable=False)
+   Column('id',             Integer,                            primary_key=True),
+   Column('player_id',      ForeignKey('login.id'),             nullable=False),
+   Column('report_id',      ForeignKey('moderation_report.id'), nullable=False),
+   Column('create_time',    TIMESTAMP,                          nullable=False),
+   Column('update_time',    TIMESTAMP,                          nullable=False)
+)
+
+teamkills = Table(
+    'teamkills', metadata,
+    Column('id',            Integer, primary_key=True),
+    Column('teamkiller',    Integer, ForeignKey('login.id')),
+    Column('victim',        Integer, ForeignKey('login.id')),
+    Column('game_id',       Integer, ForeignKey('game_stats.id')),
+    Column('gametime',      Integer)
 )
