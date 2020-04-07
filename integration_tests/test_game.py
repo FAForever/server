@@ -67,9 +67,6 @@ async def test_custom_game_1v1(test_client):
     # Check that the ratings were updated
     new_ratings = await client1.get_player_ratings("test", "test2")
 
-    assert ratings["test"][0] < new_ratings["test"][0]
-    assert ratings["test2"][0] > new_ratings["test2"][0]
-
     # Now disconnect both players
     for client in (client1, client2):
         await client.send_message({
@@ -77,6 +74,9 @@ async def test_custom_game_1v1(test_client):
             "command": "GameState",
             "args": ["Ended"]
         })
+
+    assert ratings["test"][0] < new_ratings["test"][0]
+    assert ratings["test2"][0] > new_ratings["test2"][0]
 
 
 async def test_custom_game_1v1_bad_result(test_client):
