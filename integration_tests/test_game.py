@@ -80,7 +80,6 @@ async def test_custom_game_1v1(test_client):
 
 
 async def test_custom_game_1v1_bad_result(test_client):
-    """More or less the same as the regression test version"""
     client1, _ = await test_client("test")
     client2, _ = await test_client("test2")
 
@@ -93,9 +92,38 @@ async def test_custom_game_1v1_bad_result(test_client):
         [1, "victory 10"]
     ])
 
+    # Now disconnect both players
+    for client in (client1, client2):
+        await client.send_message({
+            "target": "game",
+            "command": "GameState",
+            "args": ["Ended"]
+        })
+
     # Check that the ratings were NOT updated
     with pytest.raises(asyncio.TimeoutError):
         await client1.get_player_ratings("test", "test2", timeout=3)
+
+
+async def test_custom_game_1v1_game_stats(test_client, json_stats_1v1):
+    client1, _ = await test_client("test")
+    client2, _ = await test_client("test2")
+
+    await client1.read_until_command("game_info")
+    await client2.read_until_command("game_info")
+
+    await simulate_game(client1, client2, results=[
+        [1, "victory 10"],
+        [2, "defeat -10"]
+    ])
+
+    stats = json_stats_1v1("test", "test2")
+    for client in (client1, client2):
+        await client.send_message({
+            "target": "game",
+            "command": "JsonStats",
+            "args": [stats]
+        })
 
     # Now disconnect both players
     for client in (client1, client2):
@@ -104,3 +132,7 @@ async def test_custom_game_1v1_bad_result(test_client):
             "command": "GameState",
             "args": ["Ended"]
         })
+
+    # These may take a while to arrive as the API updates can be slow
+    await client1.read_until_command("updated_achievements", timeout=60)
+    await client2.read_until_command("updated_achievements", timeout=10)
