@@ -24,11 +24,14 @@ from trueskill import Rating
 from .game_rater import GameRater, GameRatingError
 
 from sqlalchemy import select, and_
-from server.db.models import legacy_ladder1v1_rating
-from server.db.models import legacy_global_rating
-from server.db.models import leaderboard_rating
-from server.db.models import leaderboard
-from server.db.models import game_player_stats
+from server.db.models import (
+    legacy_ladder1v1_rating,
+    legacy_global_rating,
+    leaderboard_rating,
+    leaderboard_rating_journal,
+    leaderboard,
+    game_player_stats,
+)
 
 
 @with_logger
@@ -190,42 +193,38 @@ class RatingService(Service):
             if rating_type is RatingType.GLOBAL:
                 # The old `global_rating` table does not have a `winGames` column.
                 # This should be a decent approximation though.
-                won_games = row[table.c.numGames] // 2
+                won_games = row["numGames"] // 2
             else:
-                won_games = row[table.c.winGames]
+                won_games = row["winGames"]
 
-            await conn.execute(
-                "INSERT INTO leaderboard_rating "
-                "(login_id, mean, deviation, total_games, won_games, leaderboard_id) "
-                "VALUES (%s, %s, %s, %s, %s, %s)",
-                player_id,
-                row[table.c.mean],
-                row[table.c.deviation],
-                row[table.c.numGames],
-                won_games,
-                self._rating_type_ids[rating_type.value],
+            insertion_sql = leaderboard_rating.insert().values(
+                login_id=player_id,
+                mean=row["mean"],
+                deviation=row["deviation"],
+                total_games=row["numGames"],
+                won_games=won_games,
+                leaderboard_id=self._rating_type_ids[rating_type.value],
             )
+            await conn.execute(insertion_sql)
 
-            return Rating(row[table.c.mean], row[table.c.deviation])
+            return Rating(row["mean"], row["deviation"])
 
     async def _create_default_rating(
         self, conn, player_id: int, rating_type: RatingType
     ):
         default_mean = config.START_RATING_MEAN
         default_deviation = config.START_RATING_DEV
-
         rating_type_id = self._rating_type_ids.get(rating_type.value)
-        await conn.execute(
-            "INSERT INTO leaderboard_rating "
-            "(login_id, mean, deviation, total_games, won_games, leaderboard_id) "
-            "VALUES (%s, %s, %s, %s, %s, %s)",
-            player_id,
-            default_mean,
-            default_deviation,
-            0,
-            0,
-            rating_type_id,
+
+        insertion_sql = leaderboard_rating.insert().values(
+            login_id=player_id,
+            mean=default_mean,
+            deviation=default_deviation,
+            total_games=0,
+            won_games=0,
+            leaderboard_id=rating_type_id,
         )
+        await conn.execute(insertion_sql)
 
         return Rating(default_mean, default_deviation)
 
@@ -309,20 +308,15 @@ class RatingService(Service):
         is_victory = outcome is GameOutcome.VICTORY
         rating_type_id = self._rating_type_ids[rating_type.value]
 
-        await conn.execute(
-            "INSERT INTO leaderboard_rating_journal "
-            "(game_player_stats_id, leaderboard_id, rating_mean_before, "
-            "rating_deviation_before, rating_mean_after, rating_deviation_after) "
-            "VALUES(%s, %s, %s, %s, %s, %s)",
-            (
-                game_player_stats_id,
-                rating_type_id,
-                old_rating.mu,
-                old_rating.sigma,
-                new_rating.mu,
-                new_rating.sigma,
-            ),
+        insertion_sql = leaderboard_rating_journal.insert().values(
+            game_player_stats_id=game_player_stats_id,
+            leaderboard_id=rating_type_id,
+            rating_mean_before=old_rating.mu,
+            rating_deviation_before=old_rating.sigma,
+            rating_mean_after=new_rating.mu,
+            rating_deviation_after=new_rating.sigma,
         )
+        await conn.execute(insertion_sql)
 
         await conn.execute(
             "UPDATE leaderboard_rating "
