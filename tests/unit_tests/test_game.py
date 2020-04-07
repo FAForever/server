@@ -987,7 +987,7 @@ async def test_report_army_stats_sends_stats_for_defeated_player(
     with open("tests/data/game_stats_simple_win.json", "r") as stats_file:
         stats = stats_file.read()
 
-    await game.report_army_stats(stats)
+    game.report_army_stats(stats)
 
     game._game_stats_service.process_game_stats.assert_called_once_with(
         players[1], game, stats
@@ -1012,7 +1012,7 @@ async def test_partial_stats_not_affecting_rating_persistence(
     game.launched_at = time.time() - 60 * 60
     await game.add_result(0, 0, 'victory', 10)
     await game.add_result(0, 1, 'defeat', -10)
-    await game.report_army_stats({'stats': {'Player 1': {}}})
+    game.report_army_stats("{'stats': {'Player 1': {}}}")
     await game.on_game_end()
 
     assert game.validity is ValidityState.VALID
