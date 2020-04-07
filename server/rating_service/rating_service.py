@@ -24,6 +24,7 @@ from trueskill import Rating
 from .game_rater import GameRater, GameRatingError
 
 from sqlalchemy import select, and_
+from sqlalchemy.sql.functions import now as sql_now
 from server.db.models import (
     legacy_ladder1v1_rating,
     legacy_global_rating,
@@ -252,18 +253,18 @@ class RatingService(Service):
                     new_rating,
                 )
                 await conn.execute(
-                    "UPDATE game_player_stats "
-                    "SET after_mean = %s, after_deviation = %s, "
-                    "mean = %s, deviation = %s, scoreTime = NOW() "
-                    "WHERE gameId = %s AND playerId = %s",
-                    (
-                        new_rating.mu,
-                        new_rating.sigma,
-                        old_rating.mu,
-                        old_rating.sigma,
-                        game_id,
-                        player_id,
-                    ),
+                    game_player_stats.update().where(
+                        and_(
+                            game_player_stats.c.gameId == game_id,
+                            game_player_stats.c.playerId == player_id,
+                        )
+                    ).values(
+                        after_mean=new_rating.mu,
+                        after_deviation=new_rating.sigma,
+                        mean=old_rating.mu,
+                        deviation=old_rating.sigma,
+                        scoreTime=sql_now(),
+                    )
                 )
 
                 gps_rows = await conn.execute(
@@ -305,7 +306,6 @@ class RatingService(Service):
         outcome: GameOutcome,
     ) -> None:
 
-        is_victory = outcome is GameOutcome.VICTORY
         rating_type_id = self._rating_type_ids[rating_type.value]
 
         insertion_sql = leaderboard_rating_journal.insert().values(
@@ -318,18 +318,19 @@ class RatingService(Service):
         )
         await conn.execute(insertion_sql)
 
+        victory_increment = 1 if outcome is GameOutcome.VICTORY else 0
         await conn.execute(
-            "UPDATE leaderboard_rating "
-            "SET mean = %s, deviation = %s, total_games = total_games + 1, "
-            "won_games = won_games + %s "
-            "WHERE login_id = %s AND leaderboard_id = %s",
-            (
-                new_rating.mu,
-                new_rating.sigma,
-                1 if is_victory else 0,
-                player_id,
-                rating_type_id,
-            ),
+            leaderboard_rating.update().where(
+                and_(
+                    leaderboard_rating.c.login_id == player_id,
+                    leaderboard_rating.c.leaderboard_id == rating_type_id,
+                )
+            ).values(
+                mean=new_rating.mu,
+                deviation=new_rating.sigma,
+                total_games = leaderboard_rating.c.total_games + 1,
+                won_games = leaderboard_rating.c.won_games + victory_increment,
+            )
         )
 
     def _update_player_object(
