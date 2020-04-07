@@ -18,6 +18,8 @@ from server.games.game_results import (
 )
 from server.rating import RatingType
 from server.db.models import game_stats, game_player_stats
+from sqlalchemy.sql.functions import now as sql_now
+from sqlalchemy import and_, bindparam
 
 from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
@@ -350,9 +352,11 @@ class Game:
         self.ended = True
         async with self._db.acquire() as conn:
             await conn.execute(
-                "UPDATE game_stats "
-                "SET endTime = NOW() "
-                "WHERE id = %s", (self.id, )
+                game_stats.update().where(
+                    game_stats.c.id == self.id
+                ).values(
+                    endTime = sql_now()
+                )
             )
 
     async def on_game_end(self):
@@ -446,13 +450,26 @@ class Game:
                     "Score for player %s: score %s, outcome %s",
                     player, score, outcome,
                 )
-                rows.append((score, outcome.name.upper(), self.id, player.id))
+                rows.append(
+                    {
+                        "score": score,
+                        "result": outcome.name.upper(),
+                        "game_id": self.id,
+                        "player_id": player.id,
+                    }
+                )
 
-            await conn.execute(
-                "UPDATE game_player_stats "
-                "SET `score`=%s, `scoreTime`=NOW(), `result`=%s "
-                "WHERE `gameId`=%s AND `playerId`=%s", rows
-            )
+            update_statement = game_player_stats.update().where(
+                    and_(
+                        game_player_stats.c.gameId == bindparam("game_id"),
+                        game_player_stats.c.playerId == bindparam("player_id"),
+                    )
+                ).values(
+                    score=bindparam("score"),
+                    scoreTime=sql_now(),
+                    result=bindparam("result"),
+                )
+            await conn.execute(update_statement, rows)
 
     def _get_rating_summary(self) -> GameRatingSummary:
         teams = self.get_team_sets()
@@ -740,8 +757,11 @@ class Game:
         # too quickly.
         async with self._db.acquire() as conn:
             await conn.execute(
-                "UPDATE game_stats SET validity = %s "
-                "WHERE id = %s", (new_validity_state.value, self.id)
+                game_stats.update().where(
+                    game_stats.c.id == self.id
+                ).values(
+                    validity=new_validity_state.value
+                )
             )
 
     def get_army_score(self, army):

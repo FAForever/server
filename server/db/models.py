@@ -119,6 +119,10 @@ game_player_stats = Table(
     Column('after_deviation', Float),
     Column('score',         Integer),
     Column('scoreTime',     TIMESTAMP),
+    Column(
+        'result',
+        Enum('VICTORY', 'DEFEAT', 'DRAW', 'MUTUAL_DRAW', 'UNKNOWN', 'CONFLICTING')
+    )
 )
 
 game_stats = Table(
