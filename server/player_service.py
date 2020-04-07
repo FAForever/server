@@ -82,10 +82,13 @@ class PlayerService(Service):
                 login
                 .outerjoin(clan_membership)
                 .outerjoin(clan)
-                .outerjoin(avatars, onclause=and_(
-                    avatars.c.idUser == login.c.id,
-                    avatars.c.selected == 1
-                ))
+                .outerjoin(
+                    avatars,
+                    onclause=and_(
+                        avatars.c.idUser == login.c.id,
+                        avatars.c.selected == 1
+                    )
+                )
                 .outerjoin(avatars_list)
             ).where(login.c.id == player.id)  # yapf: disable
 
@@ -103,36 +106,36 @@ class PlayerService(Service):
             if url and tooltip:
                 player.avatar = {"url": url, "tooltip": tooltip}
 
-            await self._fetch_player_rating(player, RatingType.GLOBAL, conn)
-            await self._fetch_player_rating(player, RatingType.LADDER_1V1, conn)
+            await self._fetch_player_ratings(player, conn)
 
 
-    async def _fetch_player_rating(self, player, rating_type, conn):
-        rating_type_id = self._rating_type_ids.get(rating_type.value)
-        if rating_type_id is None:
-            self._logger.warning(f"Did not find rating type {rating_type}")
-            raise ValueError(
-                f"Did not find rating type {rating_type}. Make sure the service is initialized."
-            )
-
-        sql = select([leaderboard_rating]).where(
-            and_(
-                leaderboard_rating.c.login_id == player.id,
-                leaderboard_rating.c.leaderboard_id == rating_type_id,
-            )
+    async def _fetch_player_ratings(self, player, conn):
+        sql = select([
+            leaderboard_rating.c.mean,
+            leaderboard_rating.c.deviation,
+            leaderboard_rating.c.total_games,
+            leaderboard.c.technical_name,
+        ]).select_from(
+            leaderboard.join(leaderboard_rating)
+        ).where(
+            leaderboard_rating.c.login_id == player.id
         )
-
         result = await conn.execute(sql)
-        row = await result.fetchone()
+        rows = await result.fetchall()
 
-        if row is not None:
-            player.ratings[rating_type] = (
-                row[leaderboard_rating.c.mean],
-                row[leaderboard_rating.c.deviation],
+        retrieved_ratings = {
+            RatingType[row["technical_name"].upper()]: (
+                (row["mean"], row["deviation"]), row["total_games"]
             )
-            player.game_count[rating_type] = row[leaderboard_rating.c.total_games]
-        else:
-            await self._fetch_player_legacy_rating(player, rating_type, conn)
+            for row in rows
+        }
+        for rating_type, (rating, total_games) in retrieved_ratings.items():
+            player.ratings[rating_type] = rating
+            player.game_count[rating_type] = total_games
+
+        for rating_type in RatingType:
+            if rating_type not in retrieved_ratings:
+                await self._fetch_player_legacy_rating(player, rating_type, conn)
 
     async def _fetch_player_legacy_rating(self, player, rating_type, conn):
         if rating_type is RatingType.GLOBAL:

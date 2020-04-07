@@ -180,13 +180,13 @@ leaderboard_rating = Table(
     Column('deviation',         Float),
     Column('total_games',       Integer,    nullable=False),
     Column('won_games',         Integer,    nullable=False),
-    Column('leaderboard_id',    Integer,    ForeignKey('leaderboard')),
+    Column('leaderboard_id',    Integer,    ForeignKey('leaderboard.id')),
 )
 
 leaderboard_rating_journal = Table(
     'leaderboard_rating_journal', metadata,
     Column('game_player_stats_id',      Integer,    ForeignKey('game_player_stats.id')),
-    Column('leaderboard_id',            Integer,    ForeignKey('leaderboard')),
+    Column('leaderboard_id',            Integer,    ForeignKey('leaderboard.id')),
     Column('rating_mean_before',        Float,      nullable=False),
     Column('rating_mean_after',         Float,      nullable=False),
     Column('rating_deviation_before',   Float,      nullable=False),

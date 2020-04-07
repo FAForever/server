@@ -289,7 +289,7 @@ insert into clan_membership (clan_id, player_id) values
 
 insert into leaderboard (id, technical_name, name_key, description_key) values
     (1, 'global', 'name_key', 'description_key'),
-    (2, 'ladder1v1', 'name_key', 'description_key')
+    (2, 'ladder_1v1', 'name_key', 'description_key')
 ;
 
 insert into leaderboard_rating (login_id, mean, deviation, total_games, leaderboard_id) values

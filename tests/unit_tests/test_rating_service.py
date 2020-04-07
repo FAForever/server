@@ -122,7 +122,7 @@ async def test_load_rating_type_ids(uninitialized_service):
     service = uninitialized_service
     await service._load_rating_type_ids()
 
-    assert service._rating_type_ids == {"global": 1, "ladder1v1": 2}
+    assert service._rating_type_ids == {"global": 1, "ladder_1v1": 2}
 
 
 async def test_get_player_rating_global(semiinitialized_service):

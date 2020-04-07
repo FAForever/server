@@ -37,11 +37,6 @@ async def test_fetch_player_data_garbage_rating_type(player_factory, player_serv
         GARBAGE = "garbage"
 
     with pytest.raises(ValueError):
-        await player_service._fetch_player_rating(
-            player, FakeRatingType.GARBAGE, Mock()
-        )
-
-    with pytest.raises(ValueError):
         await player_service._fetch_player_legacy_rating(
             player, FakeRatingType.GARBAGE, Mock()
         )
