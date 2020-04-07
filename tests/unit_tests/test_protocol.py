@@ -58,20 +58,12 @@ def unix_srv(event_loop):
 
 
 @pytest.fixture
-def unix_protocol(unix_srv, event_loop):
-    (reader, writer) = event_loop.run_until_complete(
-        asyncio.open_unix_connection('/tmp/test.sock')
-    )
+async def unix_protocol(unix_srv):
+    (reader, writer) = await asyncio.open_unix_connection('/tmp/test.sock')
     protocol = QDataStreamProtocol(reader, writer)
     yield protocol
 
-    protocol.close()
-
-
-async def test_close(protocol):
-    protocol.close()
-
-    assert protocol.is_connected() is False
+    await protocol.close()
 
 
 async def test_types():
@@ -173,7 +165,7 @@ async def test_send_connected_attribute(unix_protocol, unix_srv):
 
 
 async def test_send_when_disconnected(protocol):
-    protocol.close()
+    await protocol.close()
 
     assert protocol.is_connected() is False
 

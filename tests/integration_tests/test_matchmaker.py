@@ -180,7 +180,7 @@ async def test_game_matchmaking_cancel(lobby_server):
 async def test_game_matchmaking_disconnect(lobby_server):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
     # One player disconnects before the game has launched
-    proto1.close()
+    await proto1.close()
 
     msg = await read_until_command(proto2, 'game_launch_cancelled')
 

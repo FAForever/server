@@ -93,5 +93,5 @@ class ServerContext:
         finally:
             del self.connections[connection]
             metrics.user_connections.labels(connection.user_agent).dec()
-            protocol.close()
+            await protocol.close()
             await connection.on_connection_lost()

@@ -220,7 +220,6 @@ async def test_server_ban_prevents_hosting(lobby_server, database, command):
         'style': 'error',
         'text': 'You are banned from FAF forever.\n Reason :\n Test live ban'
     }
-    proto.close()
 
 
 @fast_forward(5)

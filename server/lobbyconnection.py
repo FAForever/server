@@ -126,7 +126,7 @@ class LobbyConnection:
             await self.game_connection.abort()
             self.game_connection = None
 
-        self.protocol.close()
+        await self.protocol.close()
 
     async def ensure_authenticated(self, cmd):
         if not self._authenticated:

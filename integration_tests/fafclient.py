@@ -21,11 +21,11 @@ class FAFClient(object):
     def is_connected(self):
         return self.proto and self.proto.is_connected()
 
-    def close(self):
+    async def close(self):
         if not self.is_connected():
             return
 
-        self.proto.close()
+        await self.proto.close()
 
     async def connect(self, host, port):
         self.proto = QDataStreamProtocol(

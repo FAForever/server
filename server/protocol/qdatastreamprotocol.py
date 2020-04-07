@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import contextlib
 import json
 import struct
 from asyncio import StreamReader, StreamWriter
@@ -130,12 +131,14 @@ class QDataStreamProtocol(Protocol):
                 pass
             return message
 
-    def close(self):
+    async def close(self):
         """
         Close writer stream as soon as the buffer has emptied.
         :return:
         """
         self.writer.close()
+        with contextlib.suppress(Exception):
+            await self.writer.wait_closed()
 
     async def drain(self):
         """
@@ -152,7 +155,7 @@ class QDataStreamProtocol(Protocol):
             try:
                 await self.writer.drain()
             except Exception as e:
-                self.close()
+                await self.close()
                 raise DisconnectedError("Protocol connection lost!") from e
 
     async def send_message(self, message: dict):
