@@ -4,7 +4,6 @@ import logging
 import re
 import time
 from collections import defaultdict
-from enum import Enum, unique
 from typing import Any, Dict, Optional, Tuple, List, Set
 
 import pymysql
@@ -18,95 +17,11 @@ from server.games.game_results import (
     GameResolutionError
 )
 from server.rating import RatingType
+from server.db.models import game_stats, game_player_stats
 
 from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
-
-
-@unique
-class GameState(Enum):
-    INITIALIZING = 0
-    LOBBY = 1
-    LIVE = 2
-    ENDED = 3
-
-
-@unique
-class Victory(Enum):
-    DEMORALIZATION = 0
-    DOMINATION = 1
-    ERADICATION = 2
-    SANDBOX = 3
-
-    @staticmethod
-    def from_gpgnet_string(value: str) -> Optional["Victory"]:
-        """
-        :param value: The string to convert from
-
-        :return: Victory or None if the string is not valid
-        """
-        return {
-            "demoralization": Victory.DEMORALIZATION,
-            "domination": Victory.DOMINATION,
-            "eradication": Victory.ERADICATION,
-            "sandbox": Victory.SANDBOX
-        }.get(value)
-
-
-@unique
-class VisibilityState(Enum):
-    PUBLIC = 0
-    FRIENDS = 1
-
-    @staticmethod
-    def from_string(value: str) -> Optional["VisibilityState"]:
-        """
-        :param value: The string to convert from
-
-        :return: VisibilityState or None if the string is not valid
-        """
-        return {
-            "public": VisibilityState.PUBLIC,
-            "friends": VisibilityState.FRIENDS
-        }.get(value)
-
-    def to_string(self) -> Optional[str]:
-        return {
-            VisibilityState.PUBLIC: "public",
-            VisibilityState.FRIENDS: "friends"
-        }.get(self)
-
-
-# Identifiers must be kept in sync with the contents of the invalid_game_reasons table.
-# New reasons added should have a description added to that table. Identifiers should never be
-# reused, and values should never be deleted from invalid_game_reasons.
-@unique
-class ValidityState(Enum):
-    VALID = 0
-    TOO_MANY_DESYNCS = 1
-    WRONG_VICTORY_CONDITION = 2
-    NO_FOG_OF_WAR = 3
-    CHEATS_ENABLED = 4
-    PREBUILT_ENABLED = 5
-    NORUSH_ENABLED = 6
-    BAD_UNIT_RESTRICTIONS = 7
-    BAD_MAP = 8
-    TOO_SHORT = 9
-    BAD_MOD = 10
-    COOP_NOT_RANKED = 11
-    MUTUAL_DRAW = 12
-    SINGLE_PLAYER = 13
-    FFA_NOT_RANKED = 14
-    UNEVEN_TEAMS_NOT_RANKED = 15
-    UNKNOWN_RESULT = 16
-    UNLOCKED_TEAMS = 17
-    MULTI_TEAM = 18
-    HAS_AI_PLAYERS = 19
-    CIVILIANS_REVEALED = 20
-    WRONG_DIFFICULTY = 21
-    EXPANSION_DISABLED = 22
-    SPAWN_NOT_FIXED = 23
-    OTHER_UNRANK = 24
+from .enums import GameState, Victory, VisibilityState, ValidityState
 
 
 class GameError(Exception):
@@ -740,54 +655,62 @@ class Game:
             # In some cases, games can be invalidated while running: we check for those cases when
             # the game ends and update this record as appropriate.
 
+            game_type = str(self.gameOptions.get("Victory").value)
             await conn.execute(
-                "INSERT INTO game_stats(id, gameType, gameMod, `host`, mapId, gameName, validity)"
-                "VALUES(%s, %s, %s, %s, %s, %s, %s)", (
-                    self.id, str(self.gameOptions.get('Victory').value), modId,
-                    self.host.id, self.map_id, self.name, self.validity.value
+                game_stats.insert().values(
+                    id=self.id,
+                    gameType=game_type,
+                    gameMod=modId,
+                    host=self.host.id,
+                    mapId=self.map_id,
+                    gameName=self.name,
+                    validity=self.validity.value,
                 )
             )
 
     async def update_game_player_stats(self):
-        query_str = "INSERT INTO `game_player_stats` " \
-                    "(`gameId`, `playerId`, `faction`, `color`, `team`, `place`, `mean`, `deviation`, `AI`, `score`) " \
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-
         query_args = []
         for player in self.players:
-            player_option = functools.partial(
-                self.get_player_option, player.id
-            )
             options = {
-                key: player_option(key)
-                for key in ['Team', 'StartSpot', 'Color', 'Faction']
+                key: self.get_player_option(player.id, key)
+                for key in ["Team", "StartSpot", "Color", "Faction"]
             }
 
-            def is_observer() -> bool:
-                return (
-                    self._player_options[player.id].get("Team", -1) < 0
-                    or self._player_options[player.id].get("StartSpot", -1) < 0
-                )
-
-            if is_observer():
+            is_observer = (
+                options["Team"] is None
+                or options["Team"] < 0
+                or options["StartSpot"] is None
+                or options["StartSpot"] < 0
+            )
+            if is_observer:
                 continue
 
             if self.game_mode == 'ladder1v1':
-                mean, dev = player.ratings[RatingType.LADDER_1V1]
+                mean, deviation = player.ratings[RatingType.LADDER_1V1]
             else:
-                mean, dev = player.ratings[RatingType.GLOBAL]
+                mean, deviation = player.ratings[RatingType.GLOBAL]
 
-            query_args.append((
-                self.id, str(player.id), options['Faction'], options['Color'],
-                options['Team'], options['StartSpot'], mean, dev, 0, 0
-            ))
+            query_args.append(
+                {
+                    "gameId": self.id,
+                    "playerId": player.id,
+                    "faction": options["Faction"],
+                    "color": options["Color"],
+                    "team": options["Team"],
+                    "place": options["StartSpot"],
+                    "mean": mean,
+                    "deviation": deviation,
+                    "AI": 0,
+                    "score": 0,
+                }
+            )
         if not query_args:
             self._logger.warning("No player options available!")
             return
 
         try:
             async with self._db.acquire() as conn:
-                await conn.execute(query_str, query_args)
+                await conn.execute(game_player_stats.insert().values(query_args))
         except pymysql.MySQLError:
             self._logger.exception(
                 "Failed to update game_player_stats. Query args %s:", query_args
@@ -800,7 +723,7 @@ class Game:
         Avoids the game name to crash the mysql INSERT query by being longer than the column's max size or by
         containing non-latin1 characters
         """
-        return re.sub('[^\x20-\xFF]+', '_', name)[0:128]
+        return re.sub('[^\x20-\xFF]+', '_', name)[:128]
 
     async def mark_invalid(self, new_validity_state: ValidityState):
         self._logger.info(

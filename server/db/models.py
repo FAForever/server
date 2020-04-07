@@ -4,7 +4,7 @@ from sqlalchemy import (
     MetaData, String, Table, Text
 )
 
-from ..games.game import Victory
+from ..games.enums import Victory
 
 metadata = MetaData()
 
