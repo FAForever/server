@@ -24,11 +24,11 @@ from trueskill import Rating
 from .game_rater import GameRater, GameRatingError
 
 from sqlalchemy import select, and_
-from server.db.models import legacy_ladder1v1_rating as legacy_ladder1v1_table
-from server.db.models import legacy_global_rating as legacy_global_table
-from server.db.models import leaderboard_rating as rating_table
-from server.db.models import leaderboard as rating_type_table
-from server.db.models import game_player_stats as gps_table
+from server.db.models import legacy_ladder1v1_rating
+from server.db.models import legacy_global_rating
+from server.db.models import leaderboard_rating
+from server.db.models import leaderboard
+from server.db.models import game_player_stats
 
 
 @with_logger
@@ -59,7 +59,7 @@ class RatingService(Service):
 
     async def _load_rating_type_ids(self):
         async with self._db.acquire() as conn:
-            sql = select([rating_type_table.c.id, rating_type_table.c.technical_name])
+            sql = select([leaderboard])
             result = await conn.execute(sql)
             rows = await result.fetchall()
 
@@ -145,10 +145,10 @@ class RatingService(Service):
             raise ValueError(f"Unknown rating type {rating_type}.")
 
         async with self._db.acquire() as conn:
-            sql = select([rating_table.c.mean, rating_table.c.deviation]).where(
+            sql = select([leaderboard_rating]).where(
                 and_(
-                    rating_table.c.login_id == player_id,
-                    rating_table.c.leaderboard_id == rating_type_id,
+                    leaderboard_rating.c.login_id == player_id,
+                    leaderboard_rating.c.leaderboard_id == rating_type_id,
                 )
             )
 
@@ -158,18 +158,18 @@ class RatingService(Service):
         if not row:
             return await self._get_player_legacy_rating(player_id, rating_type)
 
-        return Rating(row[rating_table.c.mean], row[rating_table.c.deviation])
+        return Rating(row["mean"], row["deviation"])
 
     async def _get_player_legacy_rating(
         self, player_id: int, rating_type: RatingType
     ) -> Rating:
         if rating_type is RatingType.GLOBAL:
-            table = legacy_global_table
+            table = legacy_global_rating
             sql = select([table.c.mean, table.c.deviation, table.c.numGames]).where(
                 table.c.id == player_id
             )
         elif rating_type is RatingType.LADDER_1V1:
-            table = legacy_ladder1v1_table
+            table = legacy_ladder1v1_rating
             sql = select(
                 [table.c.mean, table.c.deviation, table.c.numGames, table.c.winGames]
             ).where(table.c.id == player_id)
@@ -268,10 +268,10 @@ class RatingService(Service):
                 )
 
                 gps_rows = await conn.execute(
-                    select([gps_table.c.id]).where(
+                    select([game_player_stats]).where(
                         and_(
-                            gps_table.c.playerId == player_id,
-                            gps_table.c.gameId == game_id,
+                            game_player_stats.c.playerId == player_id,
+                            game_player_stats.c.gameId == game_id,
                         )
                     )
                 )
@@ -281,7 +281,7 @@ class RatingService(Service):
                         f"No game_player_stats entry for player {player_id} of game {game_id}."
                     )
                     raise EntryNotFoundError
-                game_player_stats_id = gps_row[gps_table.c.id]
+                game_player_stats_id = gps_row["id"]
 
                 await self._update_rating_tables(
                     conn,

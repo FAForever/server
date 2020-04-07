@@ -105,10 +105,7 @@ class GameResultReports(Mapping):
 
         self._logger.info(
             "Multiple outcomes for game %s army %s resolved to %s. Reports are: %s",
-            self._game_id,
-            army,
-            decision,
-            voters,
+            self._game_id, army, decision, voters,
         )
         return decision
 

@@ -115,11 +115,7 @@ class PlayerService(Service):
                 f"Did not find rating type {rating_type}. Make sure the service is initialized."
             )
 
-        sql = select([
-            leaderboard_rating.c.mean,
-            leaderboard_rating.c.deviation,
-            leaderboard_rating.c.total_games
-        ]).where(
+        sql = select([leaderboard_rating]).where(
             and_(
                 leaderboard_rating.c.login_id == player.id,
                 leaderboard_rating.c.leaderboard_id == rating_type_id,
