@@ -27,13 +27,20 @@ async def ladder_service(mocker, database, game_service):
     mocker.patch('server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX', 1)
     ladder_service = LadderService(database, game_service)
     await ladder_service.initialize()
-
     yield ladder_service
-
     await ladder_service.shutdown()
 
 
 @pytest.fixture
+async def party_service(game_service):
+    service = PartyService(game_service)
+    await service.initialize()
+
+    yield service
+
+    await service.shutdown()
+
+
 async def mock_rating(database, mock_players):
     service = RatingService(database, mock_players)
     await service.initialize()
@@ -46,7 +53,7 @@ async def mock_rating(database, mock_players):
 @pytest.fixture
 async def lobby_server(
     event_loop, database, player_service, game_service,
-    geoip_service, ladder_service, rating_service, policy_server
+    geoip_service, ladder_service, rating_service, party_service, policy_server
 ):
     with mock.patch(
         'server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL',
@@ -59,7 +66,7 @@ async def lobby_server(
             player_service=player_service,
             game_service=game_service,
             ladder_service=ladder_service,
-            party_service=PartyService(game_service),
+            party_service=party_service,
             nts_client=None,
             loop=event_loop
         )

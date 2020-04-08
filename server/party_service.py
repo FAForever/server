@@ -1,25 +1,16 @@
-import time
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import Dict, List, Optional, Set
 
+from .core import Service
 from .decorators import with_logger
 from .exceptions import ClientError
 from .game_service import GameService
 from .players import Player
 from .team_matchmaker.player_party import PlayerParty
-
-
-class GroupInvite(NamedTuple):
-    sender: Player
-    recipient: Player
-    party: PlayerParty
-    created_at: float
-
-
-PARTY_INVITE_TIMEOUT = 60 * 60 * 24  # secs
+from .timing import at_interval
 
 
 @with_logger
-class PartyService:
+class PartyService(Service):
     """
     Service responsible for managing the global team matchmaking. Does grouping,
     matchmaking, updates statistics, and launches the games.
@@ -27,11 +18,49 @@ class PartyService:
 
     def __init__(self, game_service: GameService):
         self.game_service = game_service
-        self.player_parties: Dict[Player, PlayerParty] = dict()
-        self._pending_invites: Dict[Tuple[Player, Player], GroupInvite] = dict()
+        self.player_parties: Dict[Player, PlayerParty] = {}
+        self._dirty_parties: Set[PlayerParty] = set()
+
+    async def initialize(self):
+        self._update_task = at_interval(1, self.update_dirties)
+
+    async def shutdown(self):
+        self._update_task.stop()
+
+    async def update_dirties(self):
+        if not self._dirty_parties:
+            return
+
+        dirty_parties = self._dirty_parties
+        self._dirty_parties = set()
+
+        for party in dirty_parties:
+            try:
+                self.write_broadcast_party(party)
+            except Exception:  # pragma: no cover
+                self._logger.exception(
+                    "Unexpected exception while sending party updates!"
+                )
+
+    def write_broadcast_party(self, party, members=None):
+        """
+        Send a party update to all players in the party
+        """
+        if not members:
+            members = iter(party)
+        msg = {
+            "command": "update_party",
+            **party.to_dict()
+        }
+        for member in members:
+            # Will re-encode the message for each player
+            member.player.write_message(msg)
 
     def get_party(self, owner: Player) -> Optional[PlayerParty]:
         return self.player_parties.get(owner)
+
+    def mark_dirty(self, party: PlayerParty):
+        self._dirty_parties.add(party)
 
     def invite_player_to_party(self, sender: Player, recipient: Player):
         """
@@ -46,32 +75,28 @@ class PartyService:
         if party.owner != sender:
             raise ClientError("You do not own this party.", recoverable=True)
 
-        self._pending_invites[(sender, recipient)] = GroupInvite(
-            sender, recipient, party, time.time()
-        )
+        party.add_invited_player(recipient)
         recipient.write_message({
             "command": "party_invite",
             "sender": sender.id
         })
 
     async def accept_invite(self, recipient: Player, sender: Player):
-        if (sender, recipient) not in self._pending_invites:
+        party = self.player_parties.get(sender)
+        if (
+            not party or
+            recipient not in party.invited_players or
+            party.invited_players[recipient].is_expired()
+        ):
+            # TODO: Localize with a proper message
             raise ClientError("You are not invited to that party (anymore)", recoverable=True)
 
         if recipient in self.player_parties:
             await self.leave_party(recipient)
 
-        party = self._pending_invites.pop((sender, recipient)).party
-
-        # TODO: Is it possible for this to fail?
-        assert party == self.player_parties.get(sender)
-        if party != self.player_parties.get(sender):
-            await recipient.send_message({'command': 'party_disbanded'})
-            return
-
         party.add_player(recipient)
         self.player_parties[recipient] = party
-        party.write_broadcast_party()
+        self.mark_dirty(party)
 
     async def kick_player_from_party(self, owner: Player, kicked_player: Player):
         if owner not in self.player_parties:
@@ -91,12 +116,13 @@ class PartyService:
             return
 
         party.remove_player(kicked_player)
-        party.write_broadcast_party()
         del self.player_parties[kicked_player]
 
         # TODO: Pick one of these
         await party.send_party(kicked_player)
         kicked_player.write_message({"command": "kicked_from_party"})
+
+        self.mark_dirty(party)
 
     async def leave_party(self, player: Player):
         if player not in self.player_parties:
@@ -104,11 +130,16 @@ class PartyService:
 
         party = self.player_parties[player]
         party.remove_player(player)
-        party.write_broadcast_party()
+        # TODO: Remove?
         await party.send_party(player)
 
         del self.player_parties[player]
-        await self.remove_disbanded_parties()
+
+        if party.is_disbanded():
+            self.remove_party(party)
+            return
+
+        self.mark_dirty(party)
 
     async def ready_player(self, player: Player):
         if player not in self.player_parties:
@@ -122,7 +153,7 @@ class PartyService:
             return
 
         party.ready_player(player)
-        party.write_broadcast_party()
+        self.mark_dirty(party)
 
     async def unready_player(self, player: Player):
         if player not in self.player_parties:
@@ -136,63 +167,43 @@ class PartyService:
             return
 
         party.unready_player(player)
-        party.write_broadcast_party()
+        self.mark_dirty(party)
 
-    async def set_factions(self, player: Player, factions: List[bool]):
+    def set_factions(self, player: Player, factions: List[bool]):
         if player not in self.player_parties:
             self.player_parties[player] = PlayerParty(player)
             # raise ClientError("You are not in a party.", recoverable=True) TODO can we just create a party here?
 
         party = self.player_parties[player]
         party.set_factions(player, factions)
-        party.write_broadcast_party()
+        self.mark_dirty(party)
 
-    def clear_invites(self):
-        invites = filter(
-            lambda inv: time.time() - inv.created_at >= PARTY_INVITE_TIMEOUT or
-            inv.sender not in self.player_parties,
-            self._pending_invites.values()
-        )
-
-        for invite in list(invites):
-            del self._pending_invites[(invite.sender, invite.recipient)]
-
-    async def remove_party(self, party):
+    def remove_party(self, party):
         # Remove all players who were in the party
-        party_members = map(
-            lambda i: i[0],
-            filter(
-                lambda i: party == i[1],
-                self.player_parties.items()
-            )
-        )
-        for player in list(party_members):
-            del self.player_parties[player]
-
-        # Remove all invites to the party
-        invites = filter(
-            lambda inv: inv.party == party,
-            self._pending_invites.values()
-        )
-        for invite in list(invites):
-            del self._pending_invites[(invite.sender, invite.recipient)]
+        self._logger.info("Removing party: %s", party.members)
+        for member in party:
+            self._logger.info("Removing party for player %s", member.player)
+            if party == self.player_parties.get(member.player):
+                del self.player_parties[member.player]
+            else:
+                self._logger.warning(
+                    "Player %s was in two parties at once!", member.player
+                )
 
         members = party.members
-        party.disband()
+        party.clear()
         # TODO: Send a special "disbanded" command?
-        party.write_broadcast_party(players=members)
+        self.write_broadcast_party(party, members=members)
 
-    async def remove_disbanded_parties(self):
+    def remove_disbanded_parties(self):
         disbanded_parties = filter(
             lambda party: party.is_disbanded(),
             self.player_parties.values()
         )
 
-        for party in list(disbanded_parties):
-            # This will call disband again therefore removing all players and informing them
-            await self.remove_party(party)
-
-        self.clear_invites()
+        for party in disbanded_parties:
+            self._logger.info("Cleaning up disbanded party %s", party)
+            self.remove_party(party)
 
     async def on_player_disconnected(self, player):
         if player in self.player_parties:
