@@ -7,7 +7,8 @@ from sqlalchemy import or_, select, text
 from .abc.base_game import GameConnectionState
 from .config import TRACE
 from .db.models import (
-    login, moderation_report, reported_user, coop_leaderboard, teamkills
+    login, moderation_report, reported_user, coop_leaderboard, teamkills,
+    table_mod, coop_map, mod_stats, mod_version
 )
 from .decorators import with_logger
 from .game_service import GameService
@@ -254,8 +255,13 @@ class GameConnection(GpgNetServerProtocol):
             self.game.mods = {uid: "Unknown sim mod" for uid in uids}
             async with self._db.acquire() as conn:
                 result = await conn.execute(
-                    text("SELECT `uid`, `name` from `table_mod` WHERE `uid` in :ids"),
-                    ids=tuple(uids))
+                    select([
+                        table_mod.c.uid,
+                        table_mod.c.name
+                    ]).where(
+                        table_mod.c.uid.in_(uids)
+                    )
+                )
                 async for row in result:
                     self.game.mods[row["uid"]] = row["name"]
         else:
@@ -305,8 +311,10 @@ class GameConnection(GpgNetServerProtocol):
         async with self._db.acquire() as conn:
             # FIXME: Resolve used map earlier than this
             result = await conn.execute(
-                "SELECT `id` FROM `coop_map` WHERE `filename` = %s",
-                self.game.map_file_path)
+                select([coop_map.c.id]).where(
+                    coop_map.c.filename == self.game.map_file_path
+                )
+            )
             row = await result.fetchone()
             if not row:
                 self._logger.debug("can't find coop map: %s", self.game.map_file_path)
@@ -486,10 +494,14 @@ class GameConnection(GpgNetServerProtocol):
             if len(self.game.mods.keys()) > 0:
                 async with self._db.acquire() as conn:
                     uids = list(self.game.mods.keys())
-                    await conn.execute(text(
-                        """ UPDATE mod_stats s JOIN mod_version v ON v.mod_id = s.mod_id
-                            SET s.times_played = s.times_played + 1 WHERE v.uid in :ids"""),
-                        ids=tuple(uids)
+                    await conn.execute(
+                        mod_stats.update().values(
+                            times_played=mod_stats.c.times_played + 1,
+                        ).where(
+                            mod_version.c.mod_id == mod_stats.c.mod_id
+                        ).where(
+                            mod_version.c.uid.in_(uids)
+                        )
                     )
         elif state == 'Ended':
             await self.on_connection_lost()

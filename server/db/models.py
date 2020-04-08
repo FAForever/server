@@ -235,10 +235,11 @@ table_mod = Table(
 
 mod_stats = Table(
     'mod_stats', metadata,
-    Column('mod_id',    Integer,    ForeignKey('mod.id'), primary_key=True),
-    Column('likes',     Float,      nullable=False),
-    Column('likers',    LONGBLOB,   nullable=False),
-    Column('downloads', Integer,    nullable=False),
+    Column('mod_id',        Integer,    ForeignKey('mod.id'), primary_key=True),
+    Column('likes',         Float,      nullable=False),
+    Column('likers',        LONGBLOB,   nullable=False),
+    Column('downloads',     Integer,    nullable=False),
+    Column('times_played',  Integer),
 )
 
 mod_version = Table(
