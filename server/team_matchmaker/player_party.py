@@ -1,7 +1,18 @@
-from typing import List
+import time
+from typing import List, NamedTuple
 
 from server.players import Player
 from server.team_matchmaker.party_member import PartyMember
+
+PARTY_INVITE_TIMEOUT = 60 * 60 * 24  # secs
+
+
+class GroupInvite(NamedTuple):
+    recipient: Player
+    created_at: float
+
+    def is_expired(self) -> bool:
+        return time.time() - self.created_at >= PARTY_INVITE_TIMEOUT
 
 
 class PlayerParty:
@@ -9,10 +20,14 @@ class PlayerParty:
         self._members = {
             owner: PartyMember(owner)
         }
+        self.invited_players = dict()
         self.owner = owner
 
     def __contains__(self, player: Player) -> bool:
         return player in self._members
+
+    def __iter__(self):
+        return iter(self._members.values())
 
     @property
     def members(self):
@@ -31,7 +46,19 @@ class PlayerParty:
         self._members[player] = PartyMember(player)
 
     def remove_player(self, player: Player):
+        assert player in self._members
+
         del self._members[player]
+        if player == self.owner:
+            self.invited_players.clear()
+
+    def add_invited_player(self, player: Player):
+        self.invited_players[player] = GroupInvite(player, time.time())
+
+    def remove_invited_player(self, player: Player):
+        assert player in self.invited_players
+
+        del self.invited_players[player]
 
     def ready_player(self, player: Player):
         self._members[player].ready = True
@@ -42,27 +69,13 @@ class PlayerParty:
     def set_factions(self, player: Player, factions: List[bool]):
         self._members[player].factions = factions
 
-    def write_broadcast_party(self, players=None):
-        """
-        Send a party update to all players in the party
-        """
-        if not players:
-            players = self.members
-        msg = {
-            "command": "update_party",
-            **self.to_dict()
-        }
-        for member in players:
-            # Will re-encode the message for each player
-            member.player.write_message(msg)
-
     async def send_party(self, player: Player):
         await player.send_message({
             "command": "update_party",
             **self.to_dict()
         })
 
-    def disband(self):
+    def clear(self):
         self._members.clear()
 
     def to_dict(self):

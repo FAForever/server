@@ -825,7 +825,8 @@ class LobbyConnection:
 
         if party is not None:
             busy = False
-            for player in party.members:
+            for member in party:
+                player = member.player
                 if player.state != PlayerState.IDLE:
                     busy = True
                     await self.send({
@@ -1062,10 +1063,11 @@ class LobbyConnection:
         await self.party_service.leave_party(self.player)
 
     async def command_set_party_factions(self, message):
-        if len(message["factions"]) != 4 or not all(isinstance(f, bool) for f in message["factions"]):
-            self.abort("{} sent a wrongly formatted faction selection".format(self.player.login))
+        factions = [bool(f) for f in message["factions"]]
+        if len(message["factions"]) != 4:
+            self.abort(f"{self.player.login} sent a wrongly formatted faction selection")
 
-        self.party_service.set_factions(self.player, message["factions"])
+        self.party_service.set_factions(self.player, factions)
 
     async def send_warning(self, message: str, fatal: bool = False):
         """

@@ -2,6 +2,7 @@ import pytest
 
 from server.players import PlayerState
 from server.protocol import Protocol
+from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until_command
 
@@ -23,14 +24,16 @@ async def accept_party_invite(proto: Protocol, sender_id: int) -> None:
     })
 
 
-async def test_invite_party_workflow(lobby_server):
+@fast_forward(60)
+async def test_invite_party_workflow(lobby_server, party_service):
     """ Simulates the lifecycle of a party.
         1. Player sends party invite
         2. Player accepts party invite
-        3. Player readies up
-        4. Player unreadies
-        5. Player kicks other player from party
-        6. Player leaves party
+        3. Player sets factions
+        4. Player readies up
+        5. Player unreadies
+        6. Player kicks other player from party
+        7. Player leaves party
     """
     test_id, _, proto = await connect_and_sign_in(
         ('test', 'test_password'), lobby_server
@@ -71,8 +74,32 @@ async def test_invite_party_workflow(lobby_server):
             }
         ]
     }
+    # 3. Player sets factions
+    await proto.send_message({
+        'command': 'set_party_factions',
+        'factions': [True, False, False, False]
+    })
+    msg1 = await read_until_command(proto, 'update_party')
+    msg2 = await read_until_command(proto2, 'update_party')
+    assert msg1 == msg2
+    assert msg1 == {
+        'command': 'update_party',
+        'owner': test_id,
+        'members': [
+            {
+                'factions': [True, False, False, False],
+                'player': test_id,
+                'ready': False
+            },
+            {
+                'factions': [True, True, True, True],
+                'player': rhiza_id,
+                'ready': False
+            }
+        ]
+    }
 
-    # 3. Player readies up
+    # 4. Player readies up
     await proto2.send_message({'command': 'ready_party'})
 
     msg1 = await read_until_command(proto, 'update_party')
@@ -83,7 +110,7 @@ async def test_invite_party_workflow(lobby_server):
         'owner': test_id,
         'members': [
             {
-                'factions': [True, True, True, True],
+                'factions': [True, False, False, False],
                 'player': test_id,
                 'ready': False
             },
@@ -95,7 +122,7 @@ async def test_invite_party_workflow(lobby_server):
         ]
     }
 
-    # 4. Player unreadies
+    # 5. Player unreadies
     await proto2.send_message({'command': 'unready_party'})
 
     msg1 = await read_until_command(proto, 'update_party')
@@ -106,7 +133,7 @@ async def test_invite_party_workflow(lobby_server):
         'owner': test_id,
         'members': [
             {
-                'factions': [True, True, True, True],
+                'factions': [True, False, False, False],
                 'player': test_id,
                 'ready': False
             },
@@ -118,7 +145,7 @@ async def test_invite_party_workflow(lobby_server):
         ]
     }
 
-    # 5. Player kicks other player from party
+    # 6. Player kicks other player from party
     await proto.send_message({
         'command': 'kick_player_from_party',
         'kicked_player_id': rhiza_id,
@@ -132,14 +159,14 @@ async def test_invite_party_workflow(lobby_server):
         'owner': test_id,
         'members': [
             {
-                'factions': [True, True, True, True],
+                'factions': [True, False, False, False],
                 'player': test_id,
                 'ready': False
             }
         ]
     }
 
-    # 6. Player leaves party
+    # 7. Player leaves party
     await proto.send_message({'command': 'leave_party'})
 
     msg = await read_until_command(proto, 'update_party')
@@ -148,6 +175,8 @@ async def test_invite_party_workflow(lobby_server):
         'owner': test_id,
         'members': []
     }
+
+    assert party_service.player_parties == {}
 
 
 async def test_invite_non_existent_player(lobby_server):
@@ -167,6 +196,7 @@ async def test_invite_non_existent_player(lobby_server):
     }
 
 
+@fast_forward(60)
 async def test_multiple_invites_same_player(lobby_server):
     test_id, _, proto = await connect_and_sign_in(
         ('test', 'test_password'), lobby_server
@@ -255,6 +285,7 @@ async def test_party_while_queuing(lobby_server):
     assert msg == {'command': 'invalid_state', 'state': PlayerState.SEARCHING_LADDER.value}
 
 
+@fast_forward(60)
 async def test_join_party_after_disband(lobby_server):
     p1_id, _, proto = await connect_and_sign_in(
         ('ladder1', 'ladder1'), lobby_server
