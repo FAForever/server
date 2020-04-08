@@ -269,7 +269,7 @@ class RatingService(Service):
                     raise EntryNotFoundError
                 game_player_stats_id = gps_row["id"]
 
-                await conn.execute(
+                gps_update_sql = (
                     game_player_stats.update()
                     .where(game_player_stats.c.id == game_player_stats_id)
                     .values(
@@ -280,58 +280,41 @@ class RatingService(Service):
                         scoreTime=sql_now(),
                     )
                 )
+                await conn.execute(gps_update_sql)
 
-                await self._update_rating_tables(
-                    conn,
-                    game_player_stats_id,
-                    rating_type,
-                    player_id,
-                    new_rating,
-                    old_rating,
-                    outcomes[player_id],
+                rating_type_id = self._rating_type_ids[rating_type.value]
+
+                journal_insert_sql = leaderboard_rating_journal.insert().values(
+                    game_player_stats_id=game_player_stats_id,
+                    leaderboard_id=rating_type_id,
+                    rating_mean_before=old_rating.mu,
+                    rating_deviation_before=old_rating.sigma,
+                    rating_mean_after=new_rating.mu,
+                    rating_deviation_after=new_rating.sigma,
                 )
+                await conn.execute(journal_insert_sql)
+
+                victory_increment = (
+                    1 if outcomes[player_id] is GameOutcome.VICTORY else 0
+                )
+                rating_update_sql = (
+                    leaderboard_rating.update()
+                    .where(
+                        and_(
+                            leaderboard_rating.c.login_id == player_id,
+                            leaderboard_rating.c.leaderboard_id == rating_type_id,
+                        )
+                    )
+                    .values(
+                        mean=new_rating.mu,
+                        deviation=new_rating.sigma,
+                        total_games=leaderboard_rating.c.total_games + 1,
+                        won_games=leaderboard_rating.c.won_games + victory_increment,
+                    )
+                )
+                await conn.execute(rating_update_sql)
 
                 self._update_player_object(player_id, rating_type, new_rating)
-
-    async def _update_rating_tables(
-        self,
-        conn,
-        game_player_stats_id: int,
-        rating_type: RatingType,
-        player_id: PlayerID,
-        new_rating: Rating,
-        old_rating: Rating,
-        outcome: GameOutcome,
-    ) -> None:
-
-        rating_type_id = self._rating_type_ids[rating_type.value]
-
-        insertion_sql = leaderboard_rating_journal.insert().values(
-            game_player_stats_id=game_player_stats_id,
-            leaderboard_id=rating_type_id,
-            rating_mean_before=old_rating.mu,
-            rating_deviation_before=old_rating.sigma,
-            rating_mean_after=new_rating.mu,
-            rating_deviation_after=new_rating.sigma,
-        )
-        await conn.execute(insertion_sql)
-
-        victory_increment = 1 if outcome is GameOutcome.VICTORY else 0
-        await conn.execute(
-            leaderboard_rating.update()
-            .where(
-                and_(
-                    leaderboard_rating.c.login_id == player_id,
-                    leaderboard_rating.c.leaderboard_id == rating_type_id,
-                )
-            )
-            .values(
-                mean=new_rating.mu,
-                deviation=new_rating.sigma,
-                total_games=leaderboard_rating.c.total_games + 1,
-                won_games=leaderboard_rating.c.won_games + victory_increment,
-            )
-        )
 
     def _update_player_object(
         self, player_id: PlayerID, rating_type: RatingType, new_rating: Rating
