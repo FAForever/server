@@ -3,6 +3,7 @@ from sqlalchemy import (
     DateTime, Enum, Float, ForeignKey, Integer,
     MetaData, String, Table, Text
 )
+from sqlalchemy.dialects.mysql import LONGBLOB
 
 from ..games.game import Victory
 
@@ -158,6 +159,15 @@ coop_leaderboard = Table(
     Column('player_count',  Integer)
 )
 
+coop_map = Table(
+    'coop_map', metadata,
+    Column('id',            Integer,    primary_key=True),
+    Column('type',          Integer,    nullable=False),
+    Column('name',          String),
+    Column('description',   String),
+    Column('filename',      String,     index=True)
+)
+
 # This is actually a view into the `ban` table with proper handling of ban
 # expiration and revocation
 lobby_ban = Table(
@@ -202,5 +212,38 @@ teamkills = Table(
     Column('teamkiller',    Integer, ForeignKey('login.id')),
     Column('victim',        Integer, ForeignKey('login.id')),
     Column('game_id',       Integer, ForeignKey('game_stats.id')),
-    Column('gametime',      Integer)
+    Column('gametime',      Integer),
+)
+
+table_mod = Table(
+    'table_mod', metadata,
+    Column('id',            Integer,    nullable=False),
+    Column('uid',            String,     nullable=False),
+    Column('name',          String,     nullable=False),
+    Column('version',       Integer,    nullable=False),
+    Column('author',        String(100), nullable=False),
+    Column('ui',            Integer),
+    Column('date',          TIMESTAMP,  nullable=False),
+    Column('downloads',     Integer),
+    Column('likes',         Float),
+    Column('played',        Integer),
+    Column('description',   String,     nullable=False),
+    Column('filename',      String,     nullable=False),
+    Column('icon',          String),
+    Column('likers',        LONGBLOB),
+)
+
+mod_stats = Table(
+    'mod_stats', metadata,
+    Column('mod_id',    Integer,    ForeignKey('mod.id'), primary_key=True),
+    Column('likes',     Float,      nullable=False),
+    Column('likers',    LONGBLOB,   nullable=False),
+    Column('downloads', Integer,    nullable=False),
+)
+
+mod_version = Table(
+    'mod_version', metadata,
+    Column('id',        Integer,    primary_key=True),
+    Column('mod_id',    Integer,    nullable=False),
+    Column('uid',       String(40), nullable=False,     index=True),
 )

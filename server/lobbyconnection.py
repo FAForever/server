@@ -22,7 +22,10 @@ from . import config
 from .abc.base_game import GameConnectionState
 from .async_functions import gather_without_exceptions
 from .config import FAF_POLICY_SERVER_BASE_URL, TRACE, TWILIO_TTL
-from .db.models import ban, friends_and_foes, lobby_ban
+from .db.models import (
+    ban, friends_and_foes, lobby_ban, avatars, avatars_list, coop_map,
+    table_mod, mod_stats, mod_version
+)
 from .db.models import login as t_login
 from .decorators import timed, with_logger
 from .game_service import GameService
@@ -198,7 +201,12 @@ class LobbyConnection:
     async def command_coop_list(self, message):
         """ Request for coop map list"""
         async with self._db.acquire() as conn:
-            result = await conn.execute("SELECT name, description, filename, type, id FROM `coop_map`")
+            result = await conn.execute(
+                select([
+                    coop_map.c.name, coop_map.c.description, coop_map.c.filename,
+                    coop_map.c.type, coop_map.c.id
+                ])
+            )
 
             maps = []
             async for row in result:
@@ -310,7 +318,14 @@ class LobbyConnection:
                         self._logger.warning('Administrative action: %s closed client for %s with %s ban (Reason: %s)', self.player, player, duration, reason)
                         async with self._db.acquire() as conn:
                             try:
-                                result = await conn.execute("SELECT reason from lobby_ban WHERE idUser=%s AND expires_at > NOW()", (message['user_id']))
+                                result = await conn.execute(
+                                    select([lobby_ban.c.reason]).where(
+                                        and_(
+                                            lobby_ban.c.idUser == message["user_id"],
+                                            lobby_ban.c.expires_at > sql_now()
+                                        )
+                                    )
+                                )
 
                                 row = await result.fetchone()
                                 if row:
@@ -320,7 +335,6 @@ class LobbyConnection:
                                         self._logger.warning('Tried to ban player with invalid period')
                                         raise ClientError(f"Period '{period}' is not allowed!")
 
-                                    # NOTE: Text formatting in sql string is only ok because we just checked it's value
                                     await conn.execute(
                                         ban.insert().values(
                                             player_id=player.id,
@@ -595,7 +609,10 @@ class LobbyConnection:
             irc_pass = "md5:" + str(m.hexdigest())
 
             try:
-                await conn.execute("UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s", (irc_pass, login))
+                await conn.execute(
+                    "UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s",
+                    (irc_pass, login)
+                )
             except (pymysql.OperationalError, pymysql.ProgrammingError):
                 self._logger.error("Failure updating NickServ password for %s", login)
 
@@ -654,8 +671,13 @@ class LobbyConnection:
         foes = []
         async with self._db.acquire() as conn:
             result = await conn.execute(
-                "SELECT `subject_id`, `status` "
-                "FROM friends_and_foes WHERE user_id = %s", (self.player.id,))
+                select([
+                    friends_and_foes.c.subject_id,
+                    friends_and_foes.c.status
+                ]).where(
+                    friends_and_foes.c.user_id == self.player.id
+                )
+            )
 
             async for row in result:
                 target_id, status = row["subject_id"], row["status"]
@@ -725,8 +747,17 @@ class LobbyConnection:
 
             async with self._db.acquire() as conn:
                 result = await conn.execute(
-                    "SELECT url, tooltip FROM `avatars` "
-                    "LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = %s", (self.player.id,))
+                    select([
+                        avatars_list.c.url,
+                        avatars_list.c.tooltip
+                    ]).select_from(
+                        avatars.outerjoin(
+                            avatars_list
+                        )
+                    ).where(
+                        avatars.c.idUser == self.player.id
+                    )
+                )
 
                 async for row in result:
                     avatar = {"url": row["url"], "tooltip": row["tooltip"]}
@@ -736,16 +767,31 @@ class LobbyConnection:
                     await self.send({"command": "avatar", "avatarlist": avatarList})
 
         elif action == "select":
-            avatar = message['avatar']
+            avatar_url = message['avatar']
 
             async with self._db.acquire() as conn:
                 await conn.execute(
-                    "UPDATE `avatars` SET `selected` = 0 WHERE `idUser` = %s", (self.player.id, ))
-                if avatar is not None:
-                    await conn.execute(
-                        "UPDATE `avatars` SET `selected` = 1 WHERE `idAvatar` ="
-                        "(SELECT id FROM avatars_list WHERE avatars_list.url = %s) and "
-                        "`idUser` = %s", (avatar, self.player.id))
+                    avatars.update().where(
+                        avatars.c.idUser == self.player.id
+                    ).values(
+                        selected=0
+                    )
+                )
+                if avatar_url is None:
+                    return
+                avatar_id = select([avatars_list.c.id]).where(
+                    avatars_list.c.url == avatar_url
+                )
+                await conn.execute(
+                    avatars.update().where(
+                        and_(
+                            avatars.c.idUser == self.player.id,
+                            avatars.c.idAvatar == avatar_id
+                        )
+                    ).values(
+                        selected=1
+                    )
+                )
         else:
             raise KeyError('invalid action')
 
@@ -905,66 +951,121 @@ class LobbyConnection:
 
         async with self._db.acquire() as conn:
             if type == "start":
-                result = await conn.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon FROM table_mod ORDER BY likes DESC LIMIT 100")
+                result = await conn.execute(
+                    select([
+                        table_mod
+                    ]).order_by(
+                        table_mod.c.likes.desc()
+                    ).limit(100)
+                )
 
                 async for row in result:
-                    uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = (row[i] for i in range(12))
                     try:
-                        link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
+                        link = urllib.parse.urljoin(
+                            config.CONTENT_URL, "faf/vault/" + row["filename"]
+                        )
                         thumbstr = ""
-                        if icon:
-                            thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
+                        if row["icon"]:
+                            thumbstr = urllib.parse.urljoin(
+                                config.CONTENT_URL, "faf/vault/mods_thumbs/" 
+                                + urllib.parse.quote(row["icon"])
+                            )
 
-                        out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
-                                   comments=[], description=description, played=played, likes=likes,
-                                   downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
-                                   ui=ui)
+                        out = dict(
+                            command="modvault_info",
+                            thumbnail=thumbstr,
+                            link=link,
+                            bugreports=[],
+                            comments=[],
+                            date=int(row["date"].timestamp()),
+                        )
+                        out.update({
+                            key: row[key]
+                            for key in [
+                                "name", "version", "author", "ui", "downloads",
+                                "description", "played", "likes", "uid"
+                            ]
+                        })
                         await self.send(out)
                     except:
-                        self._logger.error("Error handling table_mod row (uid: {})".format(uid), exc_info=True)
-                        pass
+                        self._logger.error(
+                            "Error handling table_mod row (uid: %s)",
+                            row["uid"], exc_info=True
+                        )
 
             elif type == "like":
                 canLike = True
                 uid = message['uid']
-                result = await conn.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likers FROM `table_mod` WHERE uid = %s LIMIT 1", (uid,))
+                result = await conn.execute(
+                    select([
+                        table_mod
+                    ]).where(
+                        table_mod.c.uid == uid
+                    ).limit(1)
+                )
 
                 row = await result.fetchone()
-                uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = (row[i] for i in range(13))
-                link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
-                thumbstr = ""
-                if icon:
-                    thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
 
-                out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
-                           comments=[], description=description, played=played, likes=likes + 1,
-                           downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
-                           ui=ui)
+                link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + row["filename"])
+
+                thumbstr = ""
+                if row["icon"]:
+                    thumbstr = urllib.parse.urljoin(
+                        config.CONTENT_URL, "faf/vault/mods_thumbs/" 
+                        + urllib.parse.quote(row["icon"])
+                )
+
+                out = dict(
+                    command="modvault_info", 
+                    thumbnail=thumbstr, 
+                    link=link, 
+                    bugreports=[],
+                    comments=[], 
+                    likes=row["likes"] + 1,
+                    date=int(row["date"].timestamp()),
+                )
+                out.update({
+                    key: row[key]
+                    for key in [
+                        "name", "version", "author", "ui", "downloads",
+                        "description", "played", "uid"
+                    ]
+                })
 
                 try:
-                    likers = json.loads(likerList)
+                    likers = json.loads(row["likers"])
                     if self.player.id in likers:
                         canLike = False
                     else:
                         likers.append(self.player.id)
-                except:
+                except Exception:
                     likers = []
 
                 # TODO: Avoid sending all the mod info in the world just because we liked it?
                 if canLike:
                     await conn.execute(
-                        "UPDATE mod_stats s "
-                        "JOIN mod_version v ON v.mod_id = s.mod_id "
-                        "SET s.likes = s.likes + 1, likers=%s WHERE v.uid = %s",
-                        json.dumps(likers), uid)
+                        mod_stats.update().values(
+                            likes=mod_stats.c.likes + 1,
+                            likers=json.dumps(likers)
+                        ).where(
+                            mod_version.c.uid == uid
+                        ).where(
+                            mod_stats.c.mod_id == mod_version.c.mod_id
+                        )
+                    )
                     await self.send(out)
 
             elif type == "download":
                 uid = message["uid"]
                 await conn.execute(
-                    "UPDATE mod_stats s "
-                    "JOIN mod_version v ON v.mod_id = s.mod_id "
-                    "SET downloads=downloads+1 WHERE v.uid = %s", uid)
+                    mod_stats.update().values(
+                        downloads=mod_stats.c.downloads + 1,
+                    ).where(
+                        mod_version.c.uid == uid
+                    ).where(
+                        mod_stats.c.mod_id == mod_version.c.mod_id
+                    )
+                )
             else:
                 raise ValueError('invalid type argument')
 

@@ -57,3 +57,21 @@ async def test_modvault_like(lobby_server):
         'author': 'askaholic',
         'ui': 1
     }
+
+
+async def test_modvault_download(lobby_server):
+    _, _, proto = await connect_and_sign_in(
+        ('test', 'test_password'),
+        lobby_server
+    )
+
+    await read_until_command(proto, 'game_info')
+
+    await proto.send_message({
+        'command': 'modvault',
+        'type': 'download',
+        'uid': 'FFF'
+    })
+
+    # TODO I would like to assert that this increases `mod_stats.c.downloads`,
+    # but that is not reflected in `table_mod`. How are these related?
