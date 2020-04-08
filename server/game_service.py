@@ -10,8 +10,7 @@ from server.games import CoopGame, CustomGame, FeaturedMod, LadderGame
 from server.games.game import Game, GameState, VisibilityState
 from server.matchmaker import MatchmakerQueue
 from server.players import Player
-from server.rating_service.rating_service import RatingService
-from server.rating_service.typedefs import GameRatingSummary
+from server.rating_service import RatingService, GameRatingSummary
 
 
 @with_logger
