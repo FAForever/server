@@ -21,10 +21,7 @@ from . import config
 from .abc.base_game import GameConnectionState
 from .async_functions import gather_without_exceptions
 from .config import FAF_POLICY_SERVER_BASE_URL, TRACE, TWILIO_TTL
-from .db.models import (
-    ban, friends_and_foes, lobby_ban, avatars, avatars_list, coop_map,
-    table_mod, mod_stats, mod_version
-)
+from .db.models import ban, friends_and_foes, lobby_ban, avatars, avatars_list, coop_map
 from .db.models import login as t_login
 from .decorators import timed, with_logger
 from .game_service import GameService
@@ -200,12 +197,7 @@ class LobbyConnection:
     async def command_coop_list(self, message):
         """ Request for coop map list"""
         async with self._db.acquire() as conn:
-            result = await conn.execute(
-                select([
-                    coop_map.c.name, coop_map.c.description, coop_map.c.filename,
-                    coop_map.c.type, coop_map.c.id
-                ])
-            )
+            result = await conn.execute(select([coop_map]))
 
             maps = []
             async for row in result:
@@ -950,119 +942,66 @@ class LobbyConnection:
 
         async with self._db.acquire() as conn:
             if type == "start":
-                result = await conn.execute(
-                    select([
-                        table_mod
-                    ]).order_by(
-                        table_mod.c.likes.desc()
-                    ).limit(100)
-                )
+                result = await conn.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon FROM table_mod ORDER BY likes DESC LIMIT 100")
 
                 async for row in result:
+                    uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = (row[i] for i in range(12))
                     try:
-                        link = urllib.parse.urljoin(
-                            config.CONTENT_URL, "faf/vault/" + row["filename"]
-                        )
+                        link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
                         thumbstr = ""
-                        if row["icon"]:
-                            thumbstr = urllib.parse.urljoin(
-                                config.CONTENT_URL, "faf/vault/mods_thumbs/" 
-                                + urllib.parse.quote(row["icon"])
-                            )
+                        if icon:
+                            thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
 
-                        out = dict(
-                            command="modvault_info",
-                            thumbnail=thumbstr,
-                            link=link,
-                            bugreports=[],
-                            comments=[],
-                            date=int(row["date"].timestamp()),
-                        )
-                        out.update({
-                            key: row[key]
-                            for key in (
-                                "name", "version", "author", "ui", "downloads",
-                                "description", "played", "likes", "uid"
-                            )
-                        })
+                        out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
+                                   comments=[], description=description, played=played, likes=likes,
+                                   downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
+                                   ui=ui)
                         await self.send(out)
                     except:
-                        self._logger.error(
-                            "Error handling table_mod row (uid: %s)",
-                            row["uid"], exc_info=True
-                        )
+                        self._logger.error("Error handling table_mod row (uid: {})".format(uid), exc_info=True)
+                        pass
 
             elif type == "like":
                 canLike = True
                 uid = message['uid']
-                result = await conn.execute(
-                    select([table_mod]).where( table_mod.c.uid == uid).limit(1)
-                )
+                result = await conn.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likers FROM `table_mod` WHERE uid = %s LIMIT 1", (uid,))
 
                 row = await result.fetchone()
-
-                link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + row["filename"])
-
+                uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = (row[i] for i in range(13))
+                link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
                 thumbstr = ""
-                if row["icon"]:
-                    thumbstr = urllib.parse.urljoin(
-                        config.CONTENT_URL, "faf/vault/mods_thumbs/" 
-                        + urllib.parse.quote(row["icon"])
-                )
+                if icon:
+                    thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
 
-                out = dict(
-                    command="modvault_info", 
-                    thumbnail=thumbstr, 
-                    link=link, 
-                    bugreports=[],
-                    comments=[], 
-                    likes=row["likes"] + 1,
-                    date=int(row["date"].timestamp()),
-                )
-                out.update({
-                    key: row[key]
-                    for key in (
-                        "name", "version", "author", "ui", "downloads",
-                        "description", "played", "uid"
-                    )
-                })
+                out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
+                           comments=[], description=description, played=played, likes=likes + 1,
+                           downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
+                           ui=ui)
 
                 try:
-                    likers = json.loads(row["likers"])
+                    likers = json.loads(likerList)
                     if self.player.id in likers:
                         canLike = False
                     else:
                         likers.append(self.player.id)
-                except Exception:
+                except:
                     likers = []
 
                 # TODO: Avoid sending all the mod info in the world just because we liked it?
                 if canLike:
                     await conn.execute(
-                        mod_stats.update().where(
-                            and_(
-                                mod_version.c.uid == uid,
-                                mod_stats.c.mod_id == mod_version.c.mod_id
-                            )
-                        ).values(
-                            likes=mod_stats.c.likes + 1,
-                            likers=json.dumps(likers)
-                        )
-                    )
+                        "UPDATE mod_stats s "
+                        "JOIN mod_version v ON v.mod_id = s.mod_id "
+                        "SET s.likes = s.likes + 1, likers=%s WHERE v.uid = %s",
+                        json.dumps(likers), uid)
                     await self.send(out)
 
             elif type == "download":
                 uid = message["uid"]
                 await conn.execute(
-                    mod_stats.update().where(
-                        and_(
-                            mod_version.c.uid == uid,
-                            mod_stats.c.mod_id == mod_version.c.mod_id
-                        )
-                    ).values(
-                        downloads=mod_stats.c.downloads + 1,
-                    )
-                )
+                    "UPDATE mod_stats s "
+                    "JOIN mod_version v ON v.mod_id = s.mod_id "
+                    "SET downloads=downloads+1 WHERE v.uid = %s", uid)
             else:
                 raise ValueError('invalid type argument')
 

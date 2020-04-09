@@ -3,7 +3,6 @@ from sqlalchemy import (
     DateTime, Enum, Float, ForeignKey, Integer,
     MetaData, String, Table, Text
 )
-from sqlalchemy.dialects.mysql import LONGBLOB
 
 from ..games.game import Victory
 
@@ -192,22 +191,6 @@ moderation_report = Table(
    Column('update_time',            TIMESTAMP,                      nullable=False),
 )
 
-mod_stats = Table(
-    'mod_stats', metadata,
-    Column('mod_id',        Integer,    ForeignKey('mod.id'), primary_key=True),
-    Column('likes',         Float,      nullable=False),
-    Column('likers',        LONGBLOB,   nullable=False),
-    Column('downloads',     Integer,    nullable=False),
-    Column('times_played',  Integer),
-)
-
-mod_version = Table(
-    'mod_version', metadata,
-    Column('id',        Integer,    primary_key=True),
-    Column('mod_id',    Integer,    nullable=False),
-    Column('uid',       String(40), nullable=False,     index=True),
-)
-
 reported_user = Table(
    'reported_user', metadata,
    Column('id',             Integer,                            primary_key=True),
@@ -215,24 +198,6 @@ reported_user = Table(
    Column('report_id',      ForeignKey('moderation_report.id'), nullable=False),
    Column('create_time',    TIMESTAMP,                          nullable=False),
    Column('update_time',    TIMESTAMP,                          nullable=False)
-)
-
-table_mod = Table(
-    'table_mod', metadata,
-    Column('id',            Integer,    nullable=False),
-    Column('uid',            String,     nullable=False),
-    Column('name',          String,     nullable=False),
-    Column('version',       Integer,    nullable=False),
-    Column('author',        String(100), nullable=False),
-    Column('ui',            Integer),
-    Column('date',          TIMESTAMP,  nullable=False),
-    Column('downloads',     Integer),
-    Column('likes',         Float),
-    Column('played',        Integer),
-    Column('description',   String,     nullable=False),
-    Column('filename',      String,     nullable=False),
-    Column('icon',          String),
-    Column('likers',        LONGBLOB),
 )
 
 teamkills = Table(
