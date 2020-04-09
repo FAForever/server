@@ -5,7 +5,6 @@ from .typedefs import (
     GameRatingSummary,
     PlayerID,
     ServiceNotReadyError,
-    EntryNotFoundError,
 )
 
 import asyncio
@@ -265,25 +264,14 @@ class RatingService(Service):
                     new_rating,
                 )
 
-                gps_rows = await conn.execute(
-                    select([game_player_stats]).where(
+                gps_update_sql = (
+                    game_player_stats.update()
+                    .where(
                         and_(
                             game_player_stats.c.playerId == player_id,
                             game_player_stats.c.gameId == game_id,
                         )
                     )
-                )
-                gps_row = await gps_rows.fetchone()
-                if gps_row is None:
-                    self._logger.warning(
-                        f"No game_player_stats entry for player {player_id} of game {game_id}."
-                    )
-                    raise EntryNotFoundError
-                game_player_stats_id = gps_row["id"]
-
-                gps_update_sql = (
-                    game_player_stats.update()
-                    .where(game_player_stats.c.id == game_player_stats_id)
                     .values(
                         after_mean=new_rating.mu,
                         after_deviation=new_rating.sigma,

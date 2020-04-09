@@ -2,11 +2,7 @@ import pytest
 from unittest import mock
 from asynctest import CoroutineMock
 
-from server.rating_service.rating_service import (
-    RatingService,
-    ServiceNotReadyError,
-    EntryNotFoundError,
-)
+from server.rating_service.rating_service import RatingService, ServiceNotReadyError
 from server.db import FAFDatabase
 from sqlalchemy import select, and_
 from server.db.models import (
@@ -296,24 +292,6 @@ async def test_rating_persistence(semiinitialized_service):
     assert gps_row[game_player_stats.c.after_mean] == after_mean
     assert rating_row[leaderboard_rating.c.mean] == after_mean
     assert journal_row[leaderboard_rating_journal.c.rating_mean_after] == after_mean
-
-
-async def test_rating_persistence_nonexistent_game(semiinitialized_service):
-    # Assumes that game_player_stats has NO entry for player 1 in game 111.
-    service = semiinitialized_service
-    game_id = 111
-    player_id = 1
-    rating_type = RatingType.GLOBAL
-    rating_type_id = service._rating_type_ids[RatingType.GLOBAL.value]
-    old_ratings = {player_id: Rating(1000, 500)}
-    after_mean = 1234
-    new_ratings = {player_id: Rating(after_mean, 400)}
-    outcomes = {player_id: GameOutcome.VICTORY}
-
-    with pytest.raises(EntryNotFoundError):
-        await service._persist_rating_changes(
-            game_id, rating_type, old_ratings, new_ratings, outcomes
-        )
 
 
 async def test_update_player_service(uninitialized_service, player_service):
