@@ -12,15 +12,15 @@ import time
 from hashlib import sha1
 from typing import Dict, List
 
-from server.config import COTURN_HOSTS, COTURN_KEYS, TWILIO_TTL
+from server.config import config
 
 
 class CoturnHMAC:
-    def __init__(self, coturn_hosts=COTURN_HOSTS, coturn_keys=COTURN_KEYS):
+    def __init__(self, coturn_hosts=config.COTURN_HOSTS, coturn_keys=config.COTURN_KEYS):
         self.coturn_hosts = coturn_hosts
         self.coturn_keys = coturn_keys
 
-    def server_tokens(self, username='faf-user', ttl=TWILIO_TTL) -> List[Dict]:
+    def server_tokens(self, username='faf-user', ttl=config.TWILIO_TTL) -> List[Dict]:
         servers = []
 
         # See https://github.com/coturn/coturn/wiki/turnserver#turn-rest-api

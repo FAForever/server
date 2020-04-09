@@ -17,12 +17,9 @@ import sys
 from datetime import datetime
 
 import server
-import server.config as config
+from server.config import config
 from docopt import docopt
 from server.api.api_accessor import ApiAccessor
-from server.config import (
-    DB_LOGIN, DB_NAME, DB_PASSWORD, DB_PORT, DB_SERVER, TWILIO_ACCOUNT_SID
-)
 from server.core import create_services
 from server.ice_servers.nts import TwilioNTS
 from server.timing import at_interval
@@ -49,18 +46,18 @@ async def main():
 
     database = server.db.FAFDatabase(loop)
     await database.connect(
-        host=DB_SERVER,
-        port=int(DB_PORT),
-        user=DB_LOGIN,
-        password=DB_PASSWORD,
+        host=config.DB_SERVER,
+        port=int(config.DB_PORT),
+        user=config.DB_LOGIN,
+        password=config.DB_PASSWORD,
         maxsize=10,
-        db=DB_NAME,
+        db=config.DB_NAME,
     )
 
     # Set up services
 
     twilio_nts = None
-    if TWILIO_ACCOUNT_SID:
+    if config.TWILIO_ACCOUNT_SID:
         twilio_nts = TwilioNTS()
     else:
         logger.warning(

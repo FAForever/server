@@ -6,9 +6,8 @@ import asyncio
 from functools import partial
 from typing import Dict, List
 
-from server.config import TWILIO_ACCOUNT_SID, TWILIO_TOKEN, TWILIO_TTL
+from server.config import config
 from twilio.rest import Client as TwilioRestClient
-
 
 class TwilioNTS:
     """
@@ -16,7 +15,7 @@ class TwilioNTS:
 
     Creates new twilio NTS tokens
     """
-    def __init__(self, sid=TWILIO_ACCOUNT_SID, token=TWILIO_TOKEN):
+    def __init__(self, sid=config.TWILIO_ACCOUNT_SID, token=config.TWILIO_TOKEN):
         """
         Constructor
 
@@ -29,7 +28,7 @@ class TwilioNTS:
         self.twilio_token = token
         self.client = TwilioRestClient(self.twilio_account_sid, self.twilio_token)
 
-    async def server_tokens(self, ttl=TWILIO_TTL) -> List[Dict]:
+    async def server_tokens(self, ttl=config.TWILIO_TTL) -> List[Dict]:
         """
         Fetches token from Twilio
 

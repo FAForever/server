@@ -7,7 +7,7 @@ from json import dumps
 
 from aiohttp import web
 
-from . import config
+from .config import config
 from .decorators import with_logger
 from .game_service import GameService
 from .player_service import PlayerService

@@ -11,7 +11,7 @@ import aiohttp
 import geoip2.database
 from maxminddb.errors import InvalidDatabaseError
 
-from . import config
+from .config import config
 from .core import Service
 from .decorators import with_logger
 from .timing import Timer

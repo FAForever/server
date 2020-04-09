@@ -17,10 +17,9 @@ import server.metrics as metrics
 from server.db import FAFDatabase
 from sqlalchemy import and_, func, select, text
 
-from . import config
 from .abc.base_game import GameConnectionState
 from .async_functions import gather_without_exceptions
-from .config import FAF_POLICY_SERVER_BASE_URL, TRACE, TWILIO_TTL
+from .config import config, TRACE
 from .db.models import (
     avatars, avatars_list, ban, coop_map, friends_and_foes, lobby_ban
 )
@@ -492,7 +491,7 @@ class LobbyConnection:
         return True
 
     async def check_policy_conformity(self, player_id, uid_hash, session, ignore_result=False):
-        url = FAF_POLICY_SERVER_BASE_URL + '/verify'
+        url = config.FAF_POLICY_SERVER_BASE_URL + '/verify'
         payload = {
             "player_id": player_id,
             "uid_hash": uid_hash,
@@ -1031,7 +1030,7 @@ class LobbyConnection:
         if not self.player:
             return
 
-        ttl = TWILIO_TTL
+        ttl = config.TWILIO_TTL
         ice_servers = self.coturn_generator.server_tokens(
             username=self.player.id,
             ttl=ttl

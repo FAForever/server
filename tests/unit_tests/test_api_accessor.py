@@ -2,7 +2,7 @@ import pytest
 from asynctest import CoroutineMock
 from mock import Mock
 from server.api.api_accessor import SessionManager
-from server.config import API_BASE_URL
+from server.config import config
 
 pytestmark = pytest.mark.asyncio
 
@@ -27,7 +27,7 @@ async def test_api_get(api_accessor):
     result = await api_accessor.api_get('test')
     api_accessor.api_session.session.request.assert_called_once_with(
         'GET',
-        API_BASE_URL + 'test'
+        config.API_BASE_URL + 'test'
     )
 
     assert result == (200, 'test')
@@ -38,7 +38,7 @@ async def test_api_patch(api_accessor):
     result = await api_accessor.api_patch('test', data)
     api_accessor.api_session.session.request.assert_called_once_with(
         "PATCH",
-        API_BASE_URL+'test',
+        config.API_BASE_URL+'test',
         headers={'Content-type': 'application/json'},
         json=data
     )

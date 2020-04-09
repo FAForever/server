@@ -12,7 +12,7 @@ from typing import Optional
 from prometheus_client import start_http_server
 
 from server.db import FAFDatabase
-from . import config as config
+from .config import config
 from .games.game import GameState, VisibilityState
 from .stats.game_stats_service import GameStatsService
 from .gameconnection import GameConnection
