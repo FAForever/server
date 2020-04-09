@@ -23,8 +23,7 @@ from server.rating import RatingType
 from trueskill import Rating
 from .game_rater import GameRater, GameRatingError
 
-from sqlalchemy import select, and_
-from sqlalchemy.sql.functions import now as sql_now
+from sqlalchemy import select, and_, func
 from server.db.models import (
     legacy_ladder1v1_rating,
     legacy_global_rating,
@@ -192,9 +191,22 @@ class RatingService(Service):
                 return new_rating
 
             if rating_type is RatingType.GLOBAL:
-                # The old `global_rating` table does not have a `winGames` column.
-                # This should be a decent approximation though.
-                won_games = row["numGames"] // 2
+                # The following query counts entries in game_player_stats,
+                # where the rating of the given player improved.
+                # If the concerned game was never rated, after_mean is NULL
+                # and the row is not counted.
+                count_wins_query = (
+                    select([func.count()])
+                    .select_from(game_player_stats)
+                    .where(
+                        and_(
+                            game_player_stats.c.playerId == player_id,
+                            game_player_stats.c.mean < game_player_stats.c.after_mean,
+                        )
+                    )
+                )
+                result_proxy = await conn.execute(count_wins_query)
+                won_games = await result_proxy.scalar()
             else:
                 won_games = row["winGames"]
 
@@ -277,7 +289,7 @@ class RatingService(Service):
                         after_deviation=new_rating.sigma,
                         mean=old_rating.mu,
                         deviation=old_rating.sigma,
-                        scoreTime=sql_now(),
+                        scoreTime=func.now(),
                     )
                 )
                 await conn.execute(gps_update_sql)
@@ -285,12 +297,17 @@ class RatingService(Service):
                 rating_type_id = self._rating_type_ids[rating_type.value]
 
                 journal_insert_sql = leaderboard_rating_journal.insert().values(
-                    game_player_stats_id=game_player_stats_id,
                     leaderboard_id=rating_type_id,
                     rating_mean_before=old_rating.mu,
                     rating_deviation_before=old_rating.sigma,
                     rating_mean_after=new_rating.mu,
                     rating_deviation_after=new_rating.sigma,
+                    game_player_stats_id=select([game_player_stats.c.id]).where(
+                        and_(
+                            game_player_stats.c.playerId == player_id,
+                            game_player_stats.c.gameId == game_id,
+                        )
+                    ),
                 )
                 await conn.execute(journal_insert_sql)
 

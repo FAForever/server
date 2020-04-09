@@ -142,9 +142,9 @@ async def test_get_player_rating_ladder(semiinitialized_service):
 
 
 async def get_all_ratings(db: FAFDatabase, player_id: int):
-    rating_sql = select(
-        [leaderboard_rating.c.mean, leaderboard_rating.c.deviation]
-    ).where(and_(leaderboard_rating.c.login_id == player_id))
+    rating_sql = select([leaderboard_rating]).where(
+        and_(leaderboard_rating.c.login_id == player_id)
+    )
 
     async with db.acquire() as conn:
         result = await conn.execute(rating_sql)
@@ -155,8 +155,8 @@ async def get_all_ratings(db: FAFDatabase, player_id: int):
 
 async def test_get_player_rating_legacy(semiinitialized_service):
     service = semiinitialized_service
-    # Player 51 should have a rating entry in the old `global_rating`
-    # and `ladder1v1_rating` tables but not in `leaderboard_rating`.
+    # Player 51 should have no leaderboard_rating entry
+    # but entries in the legacy global_rating and ladder1v1_rating tables
     player_id = 51
     legacy_global_rating = Rating(1201, 250)
     legacy_ladder_rating = Rating(1301, 400)
@@ -172,8 +172,20 @@ async def test_get_player_rating_legacy(semiinitialized_service):
 
     db_ratings = await get_all_ratings(service._db, player_id)
     assert len(db_ratings) == 2  # new rating entries were created
-    assert db_ratings[0][0] == 1201
-    assert db_ratings[1][0] == 1301
+    assert db_ratings[0]["mean"] == 1201
+    assert db_ratings[1]["mean"] == 1301
+
+
+async def test_get_player_rating_legacy_global_won_games(semiinitialized_service):
+    service = semiinitialized_service
+    # Player 51 should have no leaderboard_rating entry
+    # but three game_player_stats entries
+    # one with increased rating, one with decreased rating, and one unrated.
+    player_id = 51
+    await service._get_player_rating(player_id, RatingType.GLOBAL)
+
+    db_ratings = await get_all_ratings(service._db, player_id)
+    assert db_ratings[0]["won_games"] == 1
 
 
 async def test_get_new_player_rating_created(semiinitialized_service):
@@ -192,8 +204,8 @@ async def test_get_new_player_rating_created(semiinitialized_service):
 
     db_ratings = await get_all_ratings(service._db, player_id)
     assert len(db_ratings) == 1  # Rating has been created
-    assert db_ratings[0][0] == 1500
-    assert db_ratings[0][1] == 500
+    assert db_ratings[0]["mean"] == 1500
+    assert db_ratings[0]["deviation"] == 500
 
 
 async def test_get_rating_data(semiinitialized_service):
