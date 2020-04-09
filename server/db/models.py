@@ -64,6 +64,25 @@ clan_membership = Table(
     Column('update_time',   TIMESTAMP,  nullable=False)
 )
 
+coop_leaderboard = Table(
+    'coop_leaderboard', metadata,
+    Column('id',            Integer,    primary_key=True),
+    Column('mission',       Integer),
+    Column('gameuid',       Integer,    ForeignKey('game_stats')),
+    Column('secondary',     Integer),
+    Column('time',          TIME),
+    Column('player_count',  Integer)
+)
+
+coop_map = Table(
+    'coop_map', metadata,
+    Column('id',            Integer,    primary_key=True),
+    Column('type',          Integer,    nullable=False),
+    Column('name',          String),
+    Column('description',   String),
+    Column('filename',      String,     index=True)
+)
+
 friends_and_foes = Table(
     'friends_and_foes', metadata,
     Column('user_id',       Integer, ForeignKey('login.id')),
@@ -149,25 +168,6 @@ ladder1v1_rating = Table(
     Column('is_active',     Boolean,    nullable=False)
 )
 
-coop_leaderboard = Table(
-    'coop_leaderboard', metadata,
-    Column('id',            Integer,    primary_key=True),
-    Column('mission',       Integer),
-    Column('gameuid',       Integer,    ForeignKey('game_stats')),
-    Column('secondary',     Integer),
-    Column('time',          TIME),
-    Column('player_count',  Integer)
-)
-
-coop_map = Table(
-    'coop_map', metadata,
-    Column('id',            Integer,    primary_key=True),
-    Column('type',          Integer,    nullable=False),
-    Column('name',          String),
-    Column('description',   String),
-    Column('filename',      String,     index=True)
-)
-
 # This is actually a view into the `ban` table with proper handling of ban
 # expiration and revocation
 lobby_ban = Table(
@@ -182,6 +182,7 @@ moderation_report = Table(
    Column('id',                     Integer,                        primary_key=True),
    Column('reporter_id',            ForeignKey('login.id'),         nullable=False),
    Column('report_description',     Text),
+   Column('report_status',          Enum('AWAITING', 'PROCESSING', 'COMPLETED', 'DISCARDED'), nullable=False),
    Column('game_id',                ForeignKey('game_stats.id'),    index=True),
    Column('game_incident_timecode', String(100)),
    Column('moderator_notice',       Text),
@@ -189,13 +190,23 @@ moderation_report = Table(
    Column('last_moderator',         ForeignKey('login.id'),         index=True),
    Column('create_time',            TIMESTAMP,                      nullable=False),
    Column('update_time',            TIMESTAMP,                      nullable=False),
-   Column(
-       'report_status',
-       Enum('AWAITING', 'PROCESSING', 'COMPLETED', 'DISCARDED'),
-       nullable=False
-    )
 )
 
+mod_stats = Table(
+    'mod_stats', metadata,
+    Column('mod_id',        Integer,    ForeignKey('mod.id'), primary_key=True),
+    Column('likes',         Float,      nullable=False),
+    Column('likers',        LONGBLOB,   nullable=False),
+    Column('downloads',     Integer,    nullable=False),
+    Column('times_played',  Integer),
+)
+
+mod_version = Table(
+    'mod_version', metadata,
+    Column('id',        Integer,    primary_key=True),
+    Column('mod_id',    Integer,    nullable=False),
+    Column('uid',       String(40), nullable=False,     index=True),
+)
 
 reported_user = Table(
    'reported_user', metadata,
@@ -204,15 +215,6 @@ reported_user = Table(
    Column('report_id',      ForeignKey('moderation_report.id'), nullable=False),
    Column('create_time',    TIMESTAMP,                          nullable=False),
    Column('update_time',    TIMESTAMP,                          nullable=False)
-)
-
-teamkills = Table(
-    'teamkills', metadata,
-    Column('id',            Integer, primary_key=True),
-    Column('teamkiller',    Integer, ForeignKey('login.id')),
-    Column('victim',        Integer, ForeignKey('login.id')),
-    Column('game_id',       Integer, ForeignKey('game_stats.id')),
-    Column('gametime',      Integer),
 )
 
 table_mod = Table(
@@ -233,18 +235,11 @@ table_mod = Table(
     Column('likers',        LONGBLOB),
 )
 
-mod_stats = Table(
-    'mod_stats', metadata,
-    Column('mod_id',        Integer,    ForeignKey('mod.id'), primary_key=True),
-    Column('likes',         Float,      nullable=False),
-    Column('likers',        LONGBLOB,   nullable=False),
-    Column('downloads',     Integer,    nullable=False),
-    Column('times_played',  Integer),
-)
-
-mod_version = Table(
-    'mod_version', metadata,
-    Column('id',        Integer,    primary_key=True),
-    Column('mod_id',    Integer,    nullable=False),
-    Column('uid',       String(40), nullable=False,     index=True),
+teamkills = Table(
+    'teamkills', metadata,
+    Column('id',            Integer, primary_key=True),
+    Column('teamkiller',    Integer, ForeignKey('login.id')),
+    Column('victim',        Integer, ForeignKey('login.id')),
+    Column('game_id',       Integer, ForeignKey('game_stats.id')),
+    Column('gametime',      Integer),
 )

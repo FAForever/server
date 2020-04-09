@@ -16,7 +16,6 @@ import semver
 import server.metrics as metrics
 from server.db import FAFDatabase
 from sqlalchemy import and_, func, select, text
-from sqlalchemy.sql.functions import now as sql_now
 
 from . import config
 from .abc.base_game import GameConnectionState
@@ -322,7 +321,7 @@ class LobbyConnection:
                                     select([lobby_ban.c.reason]).where(
                                         and_(
                                             lobby_ban.c.idUser == message["user_id"],
-                                            lobby_ban.c.expires_at > sql_now()
+                                            lobby_ban.c.expires_at > func.now()
                                         )
                                     )
                                 )
@@ -584,7 +583,7 @@ class LobbyConnection:
                 ).values(
                     ip=self.peer_address.host,
                     user_agent=self.user_agent,
-                    last_login=sql_now()
+                    last_login=func.now()
                 )
             )
 
@@ -981,10 +980,10 @@ class LobbyConnection:
                         )
                         out.update({
                             key: row[key]
-                            for key in [
+                            for key in (
                                 "name", "version", "author", "ui", "downloads",
                                 "description", "played", "likes", "uid"
-                            ]
+                            )
                         })
                         await self.send(out)
                     except:
@@ -997,11 +996,7 @@ class LobbyConnection:
                 canLike = True
                 uid = message['uid']
                 result = await conn.execute(
-                    select([
-                        table_mod
-                    ]).where(
-                        table_mod.c.uid == uid
-                    ).limit(1)
+                    select([table_mod]).where( table_mod.c.uid == uid).limit(1)
                 )
 
                 row = await result.fetchone()
@@ -1026,10 +1021,10 @@ class LobbyConnection:
                 )
                 out.update({
                     key: row[key]
-                    for key in [
+                    for key in (
                         "name", "version", "author", "ui", "downloads",
                         "description", "played", "uid"
-                    ]
+                    )
                 })
 
                 try:
@@ -1044,13 +1039,14 @@ class LobbyConnection:
                 # TODO: Avoid sending all the mod info in the world just because we liked it?
                 if canLike:
                     await conn.execute(
-                        mod_stats.update().values(
+                        mod_stats.update().where(
+                            and_(
+                                mod_version.c.uid == uid,
+                                mod_stats.c.mod_id == mod_version.c.mod_id
+                            )
+                        ).values(
                             likes=mod_stats.c.likes + 1,
                             likers=json.dumps(likers)
-                        ).where(
-                            mod_version.c.uid == uid
-                        ).where(
-                            mod_stats.c.mod_id == mod_version.c.mod_id
                         )
                     )
                     await self.send(out)
@@ -1058,12 +1054,13 @@ class LobbyConnection:
             elif type == "download":
                 uid = message["uid"]
                 await conn.execute(
-                    mod_stats.update().values(
+                    mod_stats.update().where(
+                        and_(
+                            mod_version.c.uid == uid,
+                            mod_stats.c.mod_id == mod_version.c.mod_id
+                        )
+                    ).values(
                         downloads=mod_stats.c.downloads + 1,
-                    ).where(
-                        mod_version.c.uid == uid
-                    ).where(
-                        mod_stats.c.mod_id == mod_version.c.mod_id
                     )
                 )
             else:
