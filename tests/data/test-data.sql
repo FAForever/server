@@ -301,8 +301,6 @@ insert into leaderboard_rating (login_id, mean, deviation, total_games, leaderbo
     (3, 1650, 62.52, 2, 2),
     (50,  1200, 250, 42, 1),
     (50,  1300, 400, 12, 2),
-    (52,  1200, 250, 42, 1),
-    (52,  1300, 400, 12, 2),
     (100, 1500, 500, 0, 1),
     (100, 1500, 500, 0, 2),
     (101, 1500, 500, 0, 1),
@@ -325,7 +323,6 @@ insert into global_rating (id, mean, deviation, numGames, is_active) values
 insert into ladder1v1_rating (id, mean, deviation, numGames, is_active) values
     (50,  1301, 400, 12, 1),
     (51,  1301, 400, 12, 1),
-    (52,  1301, 400, 12, 1),
     (100, 1501, 500, 0, 1),
     (101, 1501, 500, 0, 1),
     (102, 1501, 500, 0, 1)

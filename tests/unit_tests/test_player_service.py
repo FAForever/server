@@ -30,16 +30,29 @@ async def test_fetch_player_data_legacy_rating(player_factory, player_service):
     assert player.ratings[RatingType.LADDER_1V1] == (1301, 400)
 
 
-async def test_fetch_player_data_garbage_rating_type(player_factory, player_service):
-    player = player_factory(player_id=51)
+async def test_fetch_ratings_nonexistent(player_factory, player_service):
+    player = player_factory(player_id=-1)
+    player_service._logger = Mock()
 
-    class FakeRatingType(Enum):
-        GARBAGE = "garbage"
+    async with player_service._db.acquire() as conn:
+        await player_service._fetch_player_ratings(player, conn)
 
-    with pytest.raises(ValueError):
-        await player_service._fetch_player_legacy_rating(
-            player, FakeRatingType.GARBAGE, Mock()
-        )
+    player_service._logger.info.assert_called_once()
+    assert player.ratings[RatingType.GLOBAL] == (1500, 500)
+
+
+async def test_fetch_ratings_partially_nonexistent(player_factory, player_service):
+    # Player 52 should not have leaderboard_rating entries
+    # and no ladder1v1_rating entry, but a global_rating entry
+    player = player_factory(player_id=52)
+    player_service._logger = Mock()
+
+    async with player_service._db.acquire() as conn:
+        await player_service._fetch_player_ratings(player, conn)
+
+    player_service._logger.info.assert_called_once()
+    assert player.ratings[RatingType.LADDER_1V1] == (1500, 500)
+
 
 
 async def test_fetch_player_data_multiple_avatar(player_factory, player_service):

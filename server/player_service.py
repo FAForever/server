@@ -133,32 +133,48 @@ class PlayerService(Service):
             player.ratings[rating_type] = rating
             player.game_count[rating_type] = total_games
 
-        for rating_type in RatingType:
-            if rating_type not in retrieved_ratings:
-                await self._fetch_player_legacy_rating(player, rating_type, conn)
+        types_not_found = [
+            rating_type for rating_type in RatingType
+            if rating_type not in retrieved_ratings
+        ]
+        await self._fetch_player_legacy_rating(player, types_not_found, conn)
 
-    async def _fetch_player_legacy_rating(self, player, rating_type, conn):
-        if rating_type is RatingType.GLOBAL:
-            table = legacy_global_rating
-        elif rating_type is RatingType.LADDER_1V1:
-            table = legacy_ladder1v1_rating
-        else:
-            self._logger.warning(f"Received ill-formed rating type {rating_type}")
-            raise ValueError(f"Unknown rating type {rating_type}.")
+    async def _fetch_player_legacy_rating(self, player, rating_types, conn):
+        if not rating_types:
+            return
 
-        sql = select([table.c.mean, table.c.deviation, table.c.numGames]).where(
-            table.c.id == player.id
+        sql = select(
+            [legacy_global_rating, legacy_ladder1v1_rating], use_labels=True
+        ).select_from(
+            login.outerjoin(legacy_ladder1v1_rating).outerjoin(legacy_global_rating)
+        ).where(
+            login.c.id == player.id
         )
         result = await conn.execute(sql)
         row = await result.fetchone()
 
-        if row is not None:
+        if row is None:
+            self._logger.info(f"Found no ratings for Player {player.id}.")
+            return
+
+        table_map = {
+            RatingType.GLOBAL: "global_rating_{}",
+            RatingType.LADDER_1V1: "ladder1v1_rating_{}",
+        }
+        for rating_type in rating_types:
+            if rating_type not in table_map:
+                raise ValueError(f"Unknown rating type {rating_type}.")
+
+            table = table_map[rating_type]
+            if row[table.format("mean")] is None:
+                self._logger.info(f"Found no {rating_type} rating for Player {player.id}.")
+                continue
+
+
             player.ratings[rating_type] = (
-                row[table.c.mean], row[table.c.deviation]
+                row[table.format("mean")], row[table.format("deviation")]
             )
-            player.game_count[rating_type] = row[table.c.numGames]
-        else:
-            self._logger.warning(f"Found no rating of type {rating_type} for player {player.id}.")
+            player.game_count[rating_type] = row[table.format("numGames")]
 
 
     def remove_player(self, player: Player):
