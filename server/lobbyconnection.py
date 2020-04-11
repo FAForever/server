@@ -21,7 +21,7 @@ from . import config
 from .abc.base_game import GameConnectionState
 from .async_functions import gather_without_exceptions
 from .config import FAF_POLICY_SERVER_BASE_URL, TRACE, TWILIO_TTL
-from .db.models import ban, friends_and_foes, lobby_ban
+from .db.models import ban, friends_and_foes, lobby_ban, avatars, avatars_list, coop_map
 from .db.models import login as t_login
 from .decorators import timed, with_logger
 from .game_service import GameService
@@ -197,7 +197,7 @@ class LobbyConnection:
     async def command_coop_list(self, message):
         """ Request for coop map list"""
         async with self._db.acquire() as conn:
-            result = await conn.execute("SELECT name, description, filename, type, id FROM `coop_map`")
+            result = await conn.execute(select([coop_map]))
 
             maps = []
             async for row in result:
@@ -309,7 +309,14 @@ class LobbyConnection:
                         self._logger.warning('Administrative action: %s closed client for %s with %s ban (Reason: %s)', self.player, player, duration, reason)
                         async with self._db.acquire() as conn:
                             try:
-                                result = await conn.execute("SELECT reason from lobby_ban WHERE idUser=%s AND expires_at > NOW()", (message['user_id']))
+                                result = await conn.execute(
+                                    select([lobby_ban.c.reason]).where(
+                                        and_(
+                                            lobby_ban.c.idUser == message["user_id"],
+                                            lobby_ban.c.expires_at > func.now()
+                                        )
+                                    )
+                                )
 
                                 row = await result.fetchone()
                                 if row:
@@ -319,7 +326,6 @@ class LobbyConnection:
                                         self._logger.warning('Tried to ban player with invalid period')
                                         raise ClientError(f"Period '{period}' is not allowed!")
 
-                                    # NOTE: Text formatting in sql string is only ok because we just checked it's value
                                     await conn.execute(
                                         ban.insert().values(
                                             player_id=player.id,
@@ -538,9 +544,16 @@ class LobbyConnection:
 
             async with self._db.acquire() as conn:
                 try:
+                    ban_reason = "Auto-banned because of fraudulent login attempt"
+                    ban_level = "GLOBAL"
                     await conn.execute(
-                        "INSERT INTO ban (player_id, author_id, reason, level) VALUES (%s, %s, %s, 'GLOBAL')",
-                        (player_id, player_id, "Auto-banned because of fraudulent login attempt"))
+                        ban.insert().values(
+                            player_id=player_id,
+                            author_id=player_id,
+                            reason=ban_reason,
+                            level=ban_level,
+                        )
+                    )
                 except pymysql.MySQLError as e:
                     raise ClientError('Banning failed: {}'.format(e))
 
@@ -557,12 +570,14 @@ class LobbyConnection:
             metrics.user_logins.labels("success").inc()
 
             await conn.execute(
-                "UPDATE login SET ip = %(ip)s, user_agent = %(user_agent)s, last_login = NOW() WHERE id = %(player_id)s",
-                {
-                    "ip": self.peer_address.host,
-                    "user_agent": self.user_agent,
-                    "player_id": player_id
-                })
+                t_login.update().where(
+                    t_login.c.id == player_id
+                ).values(
+                    ip=self.peer_address.host,
+                    user_agent=self.user_agent,
+                    last_login=func.now()
+                )
+            )
 
             conforms_policy = await self.check_policy_conformity(
                 player_id, message['unique_id'], self.session,
@@ -585,7 +600,10 @@ class LobbyConnection:
             irc_pass = "md5:" + str(m.hexdigest())
 
             try:
-                await conn.execute("UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s", (irc_pass, login))
+                await conn.execute(
+                    "UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s",
+                    (irc_pass, login)
+                )
             except (pymysql.OperationalError, pymysql.ProgrammingError):
                 self._logger.error("Failure updating NickServ password for %s", login)
 
@@ -644,8 +662,13 @@ class LobbyConnection:
         foes = []
         async with self._db.acquire() as conn:
             result = await conn.execute(
-                "SELECT `subject_id`, `status` "
-                "FROM friends_and_foes WHERE user_id = %s", (self.player.id,))
+                select([
+                    friends_and_foes.c.subject_id,
+                    friends_and_foes.c.status
+                ]).where(
+                    friends_and_foes.c.user_id == self.player.id
+                )
+            )
 
             async for row in result:
                 target_id, status = row["subject_id"], row["status"]
@@ -715,8 +738,17 @@ class LobbyConnection:
 
             async with self._db.acquire() as conn:
                 result = await conn.execute(
-                    "SELECT url, tooltip FROM `avatars` "
-                    "LEFT JOIN `avatars_list` ON `idAvatar` = `avatars_list`.`id` WHERE `idUser` = %s", (self.player.id,))
+                    select([
+                        avatars_list.c.url,
+                        avatars_list.c.tooltip
+                    ]).select_from(
+                        avatars.outerjoin(
+                            avatars_list
+                        )
+                    ).where(
+                        avatars.c.idUser == self.player.id
+                    )
+                )
 
                 async for row in result:
                     avatar = {"url": row["url"], "tooltip": row["tooltip"]}
@@ -726,16 +758,31 @@ class LobbyConnection:
                     await self.send({"command": "avatar", "avatarlist": avatarList})
 
         elif action == "select":
-            avatar = message['avatar']
+            avatar_url = message['avatar']
 
             async with self._db.acquire() as conn:
                 await conn.execute(
-                    "UPDATE `avatars` SET `selected` = 0 WHERE `idUser` = %s", (self.player.id, ))
-                if avatar is not None:
-                    await conn.execute(
-                        "UPDATE `avatars` SET `selected` = 1 WHERE `idAvatar` ="
-                        "(SELECT id FROM avatars_list WHERE avatars_list.url = %s) and "
-                        "`idUser` = %s", (avatar, self.player.id))
+                    avatars.update().where(
+                        avatars.c.idUser == self.player.id
+                    ).values(
+                        selected=0
+                    )
+                )
+                if avatar_url is None:
+                    return
+                avatar_id = select([avatars_list.c.id]).where(
+                    avatars_list.c.url == avatar_url
+                )
+                await conn.execute(
+                    avatars.update().where(
+                        and_(
+                            avatars.c.idUser == self.player.id,
+                            avatars.c.idAvatar == avatar_id
+                        )
+                    ).values(
+                        selected=1
+                    )
+                )
         else:
             raise KeyError('invalid action')
 

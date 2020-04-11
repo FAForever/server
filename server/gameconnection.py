@@ -6,7 +6,10 @@ from sqlalchemy import or_, select, text
 
 from .abc.base_game import GameConnectionState
 from .config import TRACE
-from .db.models import login, moderation_report, reported_user
+from .db.models import (
+    login, moderation_report, reported_user,
+    coop_leaderboard, teamkills, coop_map
+)
 from .decorators import with_logger
 from .game_service import GameService
 from .games.game import Game, GameError, GameState, ValidityState, Victory
@@ -303,8 +306,10 @@ class GameConnection(GpgNetServerProtocol):
         async with self._db.acquire() as conn:
             # FIXME: Resolve used map earlier than this
             result = await conn.execute(
-                "SELECT `id` FROM `coop_map` WHERE `filename` = %s",
-                self.game.map_file_path)
+                select([coop_map.c.id]).where(
+                    coop_map.c.filename == self.game.map_file_path
+                )
+            )
             row = await result.fetchone()
             if not row:
                 self._logger.debug("can't find coop map: %s", self.game.map_file_path)
@@ -312,10 +317,13 @@ class GameConnection(GpgNetServerProtocol):
             mission = row["id"]
 
             await conn.execute(
-                """ INSERT INTO `coop_leaderboard`
-                    (`mission`, `gameuid`, `secondary`, `time`, `player_count`)
-                    VALUES (%s, %s, %s, %s, %s)""",
-                (mission, self.game.id, secondary, delta, len(self.game.players))
+                coop_leaderboard.insert().values(
+                    mission=mission,
+                    gameuid=self.game.id,
+                    secondary=secondary,
+                    time=delta,
+                    player_count=len(self.game.players),
+                )
             )
 
     async def handle_json_stats(self, stats):
@@ -412,9 +420,12 @@ class GameConnection(GpgNetServerProtocol):
 
         async with self._db.acquire() as conn:
             await conn.execute(
-                """ INSERT INTO `teamkills` (`teamkiller`, `victim`, `game_id`, `gametime`)
-                    VALUES (%s, %s, %s, %s)""",
-                (teamkiller_id, victim_id, self.game.id, gametime)
+                teamkills.insert().values(
+                    teamkiller=teamkiller_id,
+                    victim=victim_id,
+                    game_id=self.game.id,
+                    gametime=gametime,
+                )
             )
 
     async def handle_ice_message(self, receiver_id, ice_msg):
