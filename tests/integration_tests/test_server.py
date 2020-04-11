@@ -256,3 +256,37 @@ async def test_ice_servers_empty(lobby_server):
         'ice_servers': [],
         'ttl': 86400
     }
+
+
+@fast_forward(100)
+async def test_avatar_select(lobby_server):
+    # This user has multiple avatars in the test data
+    player_id, _, proto = await connect_and_sign_in(
+        ('player_service1', 'player_service1'),
+        lobby_server
+    )
+    await read_until_command(proto, 'game_info')
+
+    await proto.send_message({
+        "command": "avatar", "action": "list_avatar"
+    })
+
+    msg = await read_until_command(proto, "avatar")
+    avatar_list = msg["avatarlist"]
+
+    for avatar in avatar_list:
+        await proto.send_message({
+            "command": "avatar",
+            "action": "select",
+            "avatar": avatar["url"]
+        })
+        msg = await read_until_command(proto, "player_info")
+        assert msg["players"][0]["avatar"] == avatar
+
+    await proto.send_message({
+        "command": "avatar",
+        "action": "select",
+        "avatar": "BOGUS!"
+    })
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(proto, "player_info", timeout=10)

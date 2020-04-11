@@ -21,7 +21,9 @@ from . import config
 from .abc.base_game import GameConnectionState
 from .async_functions import gather_without_exceptions
 from .config import FAF_POLICY_SERVER_BASE_URL, TRACE, TWILIO_TTL
-from .db.models import ban, friends_and_foes, lobby_ban, avatars, avatars_list, coop_map
+from .db.models import (
+    avatars, avatars_list, ban, coop_map, friends_and_foes, lobby_ban
+)
 from .db.models import login as t_login
 from .decorators import timed, with_logger
 from .game_service import GameService
@@ -770,19 +772,31 @@ class LobbyConnection:
                 )
                 if avatar_url is None:
                     return
-                avatar_id = select([avatars_list.c.id]).where(
-                    avatars_list.c.url == avatar_url
+                result = await conn.execute(
+                    select([
+                        avatars_list.c.id, avatars_list.c.tooltip
+                    ]).where(
+                        avatars_list.c.url == avatar_url
+                    )
                 )
+                row = await result.fetchone()
+                if not row:
+                    return
                 await conn.execute(
                     avatars.update().where(
                         and_(
                             avatars.c.idUser == self.player.id,
-                            avatars.c.idAvatar == avatar_id
+                            avatars.c.idAvatar == row[avatars_list.c.id]
                         )
                     ).values(
                         selected=1
                     )
                 )
+                self.player.avatar = {
+                    "url": avatar_url,
+                    "tooltip": row[avatars_list.c.tooltip]
+                }
+                self.player_service.mark_dirty(self.player)
         else:
             raise KeyError('invalid action')
 
