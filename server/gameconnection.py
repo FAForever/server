@@ -327,7 +327,7 @@ class GameConnection(GpgNetServerProtocol):
             )
 
     async def handle_json_stats(self, stats):
-        await self.game.report_army_stats(stats)
+        self.game.report_army_stats(stats)
 
     async def handle_enforce_rating(self):
         self.game.enforce_rating = True

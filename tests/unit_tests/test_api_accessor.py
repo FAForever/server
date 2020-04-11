@@ -10,6 +10,10 @@ pytestmark = pytest.mark.asyncio
 async def test_session_manager(mocker):
     class MockSession(Mock):
         fetch_token = CoroutineMock()
+        refresh_tokens = CoroutineMock()
+
+        is_expired = Mock(return_value=True)
+        has_refresh_token = Mock(return_value=False)
 
     manager = SessionManager()
     mocker.patch('server.api.api_accessor.OAuth2Session', MockSession)
@@ -36,8 +40,7 @@ async def test_api_patch(api_accessor):
         "PATCH",
         API_BASE_URL+'test',
         headers={'Content-type': 'application/json'},
-        json=data,
-        raise_for_status=True
+        json=data
     )
 
     assert result == (200, 'test')

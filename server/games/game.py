@@ -336,9 +336,9 @@ class Game:
             result_type, score
         )
 
-        await self._process_pending_army_stats()
+        self._process_pending_army_stats()
 
-    async def _process_pending_army_stats(self):
+    def _process_pending_army_stats(self):
         for player in self._players_with_unsent_army_stats:
             army = self.get_player_option(player.id, 'Army')
             if army not in self._results:
@@ -346,10 +346,10 @@ class Game:
 
             for result in self._results[army]:
                 if result.outcome is not GameOutcome.UNKNOWN:
-                    await self._process_army_stats_for_player(player)
+                    self._process_army_stats_for_player(player)
                     break
 
-    async def _process_army_stats_for_player(self, player):
+    def _process_army_stats_for_player(self, player):
         try:
             if (
                 self._army_stats is None
@@ -358,8 +358,12 @@ class Game:
                 return
 
             self._players_with_unsent_army_stats.remove(player)
-            await self._game_stats_service.process_game_stats(
-                player, self, self._army_stats
+            # Stat processing contacts the API and can take quite a while so
+            # we don't want to await it
+            asyncio.create_task(
+                self._game_stats_service.process_game_stats(
+                    player, self, self._army_stats
+                )
             )
         except Exception:
             # Never let an error in processing army stats cascade
@@ -416,7 +420,7 @@ class Game:
         ):
             await self.on_game_end()
         else:
-            await self._process_pending_army_stats()
+            self._process_pending_army_stats()
 
     async def check_sim_end(self):
         if self.ended:
@@ -457,7 +461,7 @@ class Game:
 
                 await self.persist_results()
                 await self.rate_game()
-                await self._process_pending_army_stats()
+                self._process_pending_army_stats()
         except Exception:    # pragma: no cover
             self._logger.exception("Error during game end")
         finally:
@@ -870,9 +874,9 @@ class Game:
         rater = GameRater(self.players_by_team, outcome_by_player, rating)
         return rater.compute_rating()
 
-    async def report_army_stats(self, stats):
+    def report_army_stats(self, stats):
         self._army_stats = stats
-        await self._process_pending_army_stats()
+        self._process_pending_army_stats()
 
     def to_dict(self):
         client_state = {

@@ -15,6 +15,7 @@ import asynctest
 import pytest
 from asynctest import CoroutineMock
 from server.api.api_accessor import ApiAccessor
+from server.api.oauth_session import OAuth2Session
 from server.config import DB_LOGIN, DB_PASSWORD, DB_PORT, DB_SERVER, TRACE
 from server.db import FAFDatabase
 from server.game_service import GameService
@@ -241,13 +242,11 @@ def matchmaker_queue(game_service) -> MatchmakerQueue:
 
 @pytest.fixture()
 def api_accessor():
-    class FakeSession:
-        def __init__(self):
-            self.request = CoroutineMock(return_value=(200, 'test'))
-            self.fetch_token = CoroutineMock()
+    session = asynctest.create_autospec(OAuth2Session)
+    session.request.return_value = (200, 'test')
 
     api_accessor = ApiAccessor()
-    api_accessor.api_session.session = FakeSession()
+    api_accessor.api_session.session = session
     return api_accessor
 
 
