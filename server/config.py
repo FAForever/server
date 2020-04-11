@@ -30,8 +30,8 @@ DB_NAME = os.getenv("FAF_DB_NAME", "faf")
 
 API_CLIENT_ID = os.getenv("API_CLIENT_ID", "client_id")
 API_CLIENT_SECRET = os.getenv("API_CLIENT_SECRET", "banana")
-API_TOKEN_URI = os.getenv("API_TOKEN_URI", "http://api.test.faforever.com/oauth/token")
-API_BASE_URL = os.getenv("API_BASE_URL", "http://api.test.faforever.com/")
+API_TOKEN_URI = os.getenv("API_TOKEN_URI", "https://api.test.faforever.com/oauth/token")
+API_BASE_URL = os.getenv("API_BASE_URL", "https://api.test.faforever.com/")
 USE_API = os.getenv("USE_API", 'true').lower() == 'true'
 
 FAF_POLICY_SERVER_BASE_URL = os.getenv("FAF_POLICY_SERVER_BASE_URL", "http://faf-policy-server")

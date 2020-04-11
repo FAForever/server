@@ -58,7 +58,7 @@ class EventService(Service):
             }]
         Else, returns None
         """
-        self._logger.debug("Recording %d events", len(queue))
+        self._logger.info("Recording %d events for player %d", len(queue), player_id)
         try:
             response, content = await self.api_accessor.update_events(queue, player_id)
         except ConnectionError:

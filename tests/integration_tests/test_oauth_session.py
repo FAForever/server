@@ -96,17 +96,6 @@ async def test_fetch_token_bad(oauth2_session):
     assert oauth2_session.refresh_token is None
 
 
-async def test_auto_refresh(oauth2_session):
-    await oauth2_session.fetch_token()
-
-    assert oauth2_session.token == 'the_token'
-
-    oauth2_session.token = 'something_else'
-    # Wait for the auto refresh
-    await asyncio.sleep(0.5)
-    assert oauth2_session.token == 'the_token'
-
-
 async def test_reqest(oauth2_session):
     await oauth2_session.fetch_token()
     resp = await oauth2_session.request('GET', 'http://localhost:8080/endpoint')

@@ -94,7 +94,7 @@ class AchievementService(Service):
 
         Else, it returns None
         """
-        self._logger.debug("Updating %d achievements", len(queue))
+        self._logger.info("Updating %d achievements for player %d", len(queue), player_id)
         try:
             response, content = await self.api_accessor.update_achievements(queue, player_id)
         except ConnectionError:
