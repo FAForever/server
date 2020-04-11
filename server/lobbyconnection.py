@@ -771,12 +771,19 @@ class LobbyConnection:
                     )
                 )
                 if avatar_url is None:
+                    self.player.avatar = None
+                    self.player_service.mark_dirty(self.player)
                     return
                 result = await conn.execute(
                     select([
                         avatars_list.c.id, avatars_list.c.tooltip
-                    ]).where(
-                        avatars_list.c.url == avatar_url
+                    ]).select_from(
+                        avatars.join(avatars_list)
+                    ).where(
+                        and_(
+                            avatars_list.c.url == avatar_url,
+                            avatars.c.idUser == self.player.id
+                        )
                     )
                 )
                 row = await result.fetchone()

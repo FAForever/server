@@ -258,7 +258,7 @@ async def test_ice_servers_empty(lobby_server):
     }
 
 
-@fast_forward(100)
+@fast_forward(30)
 async def test_avatar_select(lobby_server):
     # This user has multiple avatars in the test data
     player_id, _, proto = await connect_and_sign_in(
@@ -266,6 +266,7 @@ async def test_avatar_select(lobby_server):
         lobby_server
     )
     await read_until_command(proto, 'game_info')
+    await read_until_command(proto, 'player_info')
 
     await proto.send_message({
         "command": "avatar", "action": "list_avatar"
@@ -287,6 +288,25 @@ async def test_avatar_select(lobby_server):
         "command": "avatar",
         "action": "select",
         "avatar": "BOGUS!"
+    })
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(proto, "player_info", timeout=10)
+
+
+@fast_forward(20)
+async def test_avatar_select_not_owned(lobby_server):
+    # This user has no avatars
+    _, _, proto = await connect_and_sign_in(
+        ('test', 'test_password'),
+        lobby_server
+    )
+    await read_until_command(proto, 'game_info')
+    await read_until_command(proto, 'player_info')
+
+    await proto.send_message({
+        "command": "avatar",
+        "action": "select",
+        "avatar": "http://content.faforever.com/faf/avatars/UEF.png"
     })
     with pytest.raises(asyncio.TimeoutError):
         await read_until_command(proto, "player_info", timeout=10)
