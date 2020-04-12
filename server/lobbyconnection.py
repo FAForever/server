@@ -763,6 +763,23 @@ class LobbyConnection:
             avatar_url = message['avatar']
 
             async with self._db.acquire() as conn:
+                if avatar_url is not None:
+                    result = await conn.execute(
+                        select([
+                            avatars_list.c.id, avatars_list.c.tooltip
+                        ]).select_from(
+                            avatars.join(avatars_list)
+                        ).where(
+                            and_(
+                                avatars_list.c.url == avatar_url,
+                                avatars.c.idUser == self.player.id
+                            )
+                        )
+                    )
+                    row = await result.fetchone()
+                    if not row:
+                        return
+
                 await conn.execute(
                     avatars.update().where(
                         avatars.c.idUser == self.player.id
@@ -770,39 +787,23 @@ class LobbyConnection:
                         selected=0
                     )
                 )
-                if avatar_url is None:
-                    self.player.avatar = None
-                    self.player_service.mark_dirty(self.player)
-                    return
-                result = await conn.execute(
-                    select([
-                        avatars_list.c.id, avatars_list.c.tooltip
-                    ]).select_from(
-                        avatars.join(avatars_list)
-                    ).where(
-                        and_(
-                            avatars_list.c.url == avatar_url,
-                            avatars.c.idUser == self.player.id
+                self.player.avatar = None
+
+                if avatar_url is not None:
+                    await conn.execute(
+                        avatars.update().where(
+                            and_(
+                                avatars.c.idUser == self.player.id,
+                                avatars.c.idAvatar == row[avatars_list.c.id]
+                            )
+                        ).values(
+                            selected=1
                         )
                     )
-                )
-                row = await result.fetchone()
-                if not row:
-                    return
-                await conn.execute(
-                    avatars.update().where(
-                        and_(
-                            avatars.c.idUser == self.player.id,
-                            avatars.c.idAvatar == row[avatars_list.c.id]
-                        )
-                    ).values(
-                        selected=1
-                    )
-                )
-                self.player.avatar = {
-                    "url": avatar_url,
-                    "tooltip": row[avatars_list.c.tooltip]
-                }
+                    self.player.avatar = {
+                        "url": avatar_url,
+                        "tooltip": row[avatars_list.c.tooltip]
+                    }
                 self.player_service.mark_dirty(self.player)
         else:
             raise KeyError('invalid action')

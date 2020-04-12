@@ -1,7 +1,8 @@
 import asyncio
 
 import pytest
-from server.db.models import ban
+from server.db.models import avatars, avatars_list, ban
+from sqlalchemy import and_, select
 from tests.utils import fast_forward
 
 from .conftest import (
@@ -258,8 +259,21 @@ async def test_ice_servers_empty(lobby_server):
     }
 
 
+async def get_player_selected_avatars(conn, player_id):
+    return await conn.execute(
+        select([avatars.c.id, avatars_list.c.url])
+        .select_from(avatars_list.join(avatars))
+        .where(
+            and_(
+                avatars.c.idUser == player_id,
+                avatars.c.selected == 1,
+            )
+        )
+    )
+
+
 @fast_forward(30)
-async def test_avatar_select(lobby_server):
+async def test_avatar_select(lobby_server, database):
     # This user has multiple avatars in the test data
     player_id, _, proto = await connect_and_sign_in(
         ('player_service1', 'player_service1'),
@@ -284,6 +298,12 @@ async def test_avatar_select(lobby_server):
         msg = await read_until_command(proto, "player_info")
         assert msg["players"][0]["avatar"] == avatar
 
+    async with database.acquire() as conn:
+        result = await get_player_selected_avatars(conn, player_id)
+        assert result.rowcount == 1
+        row = await result.fetchone()
+        assert row[avatars_list.c.url] == avatar["url"]
+
     await proto.send_message({
         "command": "avatar",
         "action": "select",
@@ -292,11 +312,17 @@ async def test_avatar_select(lobby_server):
     with pytest.raises(asyncio.TimeoutError):
         await read_until_command(proto, "player_info", timeout=10)
 
+    async with database.acquire() as conn:
+        result = await get_player_selected_avatars(conn, player_id)
+        assert result.rowcount == 1
+        row = await result.fetchone()
+        assert row[avatars_list.c.url] == avatar["url"]
 
-@fast_forward(20)
-async def test_avatar_select_not_owned(lobby_server):
+
+@fast_forward(30)
+async def test_avatar_select_not_owned(lobby_server, database):
     # This user has no avatars
-    _, _, proto = await connect_and_sign_in(
+    player_id, _, proto = await connect_and_sign_in(
         ('test', 'test_password'),
         lobby_server
     )
@@ -310,3 +336,7 @@ async def test_avatar_select_not_owned(lobby_server):
     })
     with pytest.raises(asyncio.TimeoutError):
         await read_until_command(proto, "player_info", timeout=10)
+
+    async with database.acquire() as conn:
+        result = await get_player_selected_avatars(conn, player_id)
+        assert result.rowcount == 0
