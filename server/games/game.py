@@ -416,7 +416,9 @@ class Game:
         )
 
         if self.state is not GameState.ENDED and (
-            len(self._connections) == 0 or host_left_lobby
+            self.ended or
+            len(self._connections) == 0 or
+            host_left_lobby
         ):
             await self.on_game_end()
         else:

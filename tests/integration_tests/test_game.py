@@ -1,11 +1,10 @@
 import asyncio
-import logging
 
 import pytest
 from server.protocol import QDataStreamProtocol
 from tests.utils import fast_forward
 
-from .conftest import connect_and_sign_in, read_until_command
+from .conftest import connect_and_sign_in, read_until, read_until_command
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
@@ -81,7 +80,7 @@ async def send_player_options(proto, *options):
         })
 
 
-@fast_forward(20)
+@fast_forward(30)
 async def test_game_ended_rates_game(lobby_server):
     host_id, _, host_proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
@@ -110,6 +109,11 @@ async def test_game_ended_rates_game(lobby_server):
         "command": "GameState",
         "args": ["Launching"]
     })
+
+    await read_until(
+        host_proto,
+        lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
+    )
     await host_proto.send_message({
         "target": "game",
         "command": "EnforceRating",
@@ -150,6 +154,114 @@ async def test_game_ended_rates_game(lobby_server):
             "command": "GameState",
             "args": ["Ended"]
         })
+
+    # The game should only be rated once
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(host_proto, "player_info", timeout=10)
+
+
+@fast_forward(60)
+async def test_partial_game_ended_rates_game(lobby_server, tmp_user):
+    """Test that game is rated as soon as all players have either disconnected
+    or sent `GameEnded`"""
+    host_id, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    guests = []
+    for _ in range(3):
+        user = await tmp_user("Guest")
+        guest_id, _, proto = await connect_and_sign_in(
+            user, lobby_server
+        )
+        guests.append((guest_id, user[0], proto))
+
+    await asyncio.gather(*(
+        read_until_command(proto, "game_info")
+        for (_, _, proto) in guests
+    ))
+    ratings = await get_player_ratings(
+        host_proto,
+        "test",
+        *(name for _, name, _ in guests)
+    )
+
+    # Set up the game
+    game_id = await host_game(host_proto)
+    await send_player_options(
+        host_proto,
+        [host_id, "Army", 1],
+        [host_id, "Team", 2],
+    )
+    for i, (guest_id, _, guest_proto) in enumerate(guests):
+        await join_game(guest_proto, game_id)
+        # Set player options
+        await send_player_options(
+            host_proto,
+            [guest_id, "Army", i+2],
+            [guest_id, "Team", 3 if i % 2 == 0 else 2]
+        )
+
+    # Launch game
+    await host_proto.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Launching"]
+    })
+    await read_until(
+        host_proto,
+        lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
+    )
+    await host_proto.send_message({
+        "target": "game",
+        "command": "EnforceRating",
+        "args": []
+    })
+
+    # End the game
+    # Reports results (lazy, just the host reports. This should still work)
+    for result in (
+        [1, "victory 10"],
+        [2, "defeat -10"],
+        [3, "victory 10"],
+        [4, "defeat -10"]
+    ):
+        await host_proto.send_message({
+            "target": "game",
+            "command": "GameResult",
+            "args": result
+        })
+    # Report GameEnded
+    await host_proto.send_message({
+        "target": "game",
+        "command": "GameEnded",
+        "args": []
+    })
+    # Guests disconnect without sending `GameEnded`
+    for i, (_, _, guest_proto) in enumerate(guests):
+        await guest_proto.send_message({
+            "target": "game",
+            "command": "GameState",
+            "args": ["Ended"]
+        })
+
+    # Check that the ratings were updated
+    new_ratings = await get_player_ratings(
+        host_proto,
+        "test",
+        *(name for _, name, _ in guests)
+    )
+
+    assert ratings["test"][0] < new_ratings["test"][0]
+    assert ratings["Guest1"][0] > new_ratings["Guest1"][0]
+    assert ratings["Guest2"][0] < new_ratings["Guest2"][0]
+    assert ratings["Guest3"][0] > new_ratings["Guest3"][0]
+
+    # Now disconnect the host too
+    await host_proto.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Ended"]
+    })
 
     # The game should only be rated once
     with pytest.raises(asyncio.TimeoutError):
