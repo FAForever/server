@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 
 import pytest
 from server.db.models import avatars, avatars_list, ban
@@ -280,7 +281,9 @@ async def test_avatar_select(lobby_server, database):
         lobby_server
     )
     await read_until_command(proto, 'game_info')
-    await read_until_command(proto, 'player_info')
+    # Skip any latent player broadcasts
+    with contextlib.suppress(asyncio.TimeoutError):
+        await read_until_command(proto, 'player_info', timeout=5)
 
     await proto.send_message({
         "command": "avatar", "action": "list_avatar"
@@ -327,7 +330,9 @@ async def test_avatar_select_not_owned(lobby_server, database):
         lobby_server
     )
     await read_until_command(proto, 'game_info')
-    await read_until_command(proto, 'player_info')
+    # Skip any latent player broadcasts
+    with contextlib.suppress(asyncio.TimeoutError):
+        await read_until_command(proto, 'player_info', timeout=5)
 
     await proto.send_message({
         "command": "avatar",
