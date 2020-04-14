@@ -21,7 +21,9 @@ from . import config
 from .abc.base_game import GameConnectionState
 from .async_functions import gather_without_exceptions
 from .config import FAF_POLICY_SERVER_BASE_URL, TRACE, TWILIO_TTL
-from .db.models import ban, friends_and_foes, lobby_ban, avatars, avatars_list, coop_map
+from .db.models import (
+    avatars, avatars_list, ban, coop_map, friends_and_foes, lobby_ban
+)
 from .db.models import login as t_login
 from .decorators import timed, with_logger
 from .game_service import GameService
@@ -761,6 +763,23 @@ class LobbyConnection:
             avatar_url = message['avatar']
 
             async with self._db.acquire() as conn:
+                if avatar_url is not None:
+                    result = await conn.execute(
+                        select([
+                            avatars_list.c.id, avatars_list.c.tooltip
+                        ]).select_from(
+                            avatars.join(avatars_list)
+                        ).where(
+                            and_(
+                                avatars_list.c.url == avatar_url,
+                                avatars.c.idUser == self.player.id
+                            )
+                        )
+                    )
+                    row = await result.fetchone()
+                    if not row:
+                        return
+
                 await conn.execute(
                     avatars.update().where(
                         avatars.c.idUser == self.player.id
@@ -768,21 +787,24 @@ class LobbyConnection:
                         selected=0
                     )
                 )
-                if avatar_url is None:
-                    return
-                avatar_id = select([avatars_list.c.id]).where(
-                    avatars_list.c.url == avatar_url
-                )
-                await conn.execute(
-                    avatars.update().where(
-                        and_(
-                            avatars.c.idUser == self.player.id,
-                            avatars.c.idAvatar == avatar_id
+                self.player.avatar = None
+
+                if avatar_url is not None:
+                    await conn.execute(
+                        avatars.update().where(
+                            and_(
+                                avatars.c.idUser == self.player.id,
+                                avatars.c.idAvatar == row[avatars_list.c.id]
+                            )
+                        ).values(
+                            selected=1
                         )
-                    ).values(
-                        selected=1
                     )
-                )
+                    self.player.avatar = {
+                        "url": avatar_url,
+                        "tooltip": row[avatars_list.c.tooltip]
+                    }
+                self.player_service.mark_dirty(self.player)
         else:
             raise KeyError('invalid action')
 
