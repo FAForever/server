@@ -308,7 +308,7 @@ async def test_handle_action_GameOption(game: Game, game_connection: GameConnect
     game.gameOptions = {"AIReplacement": "Off"}
     await game_connection.handle_action('GameOption', ['Victory', 'sandbox'])
     assert game.gameOptions['Victory'] == Victory.SANDBOX
-    await game_connection.handle_action('GameOption', ['AIReplacement', 'AIReplacementOn'])
+    await game_connection.handle_action('GameOption', ['AIReplacement', 'On'])
     assert game.gameOptions['AIReplacement'] == 'On'
     await game_connection.handle_action('GameOption', ['Slots', '7'])
     assert game.max_players == 7
@@ -317,6 +317,8 @@ async def test_handle_action_GameOption(game: Game, game_connection: GameConnect
     assert game.map_file_path == "maps/some_map.zip"
     await game_connection.handle_action('GameOption', ['Title', 'All welcome'])
     assert game.name == game.sanitize_name('All welcome')
+    await game_connection.handle_action('GameOption', ['ArbitraryKey', 'ArbitraryValue'])
+    assert game.gameOptions['ArbitraryKey'] == 'ArbitraryValue'
 
 
 async def test_json_stats(game_connection: GameConnection, game_stats_service, players, game):
