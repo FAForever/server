@@ -74,6 +74,15 @@ class GameConnection(GpgNetServerProtocol):
     def player(self, val: Player):
         self._player = val
 
+    def is_host(self) -> bool:
+        if not self.game or not self.player:
+            return False
+
+        return (
+            self.player.state == PlayerState.HOSTING and
+            self.player == self.game.host
+        )
+
     async def send(self, message):
         """
         Send a game message to the client.
@@ -210,6 +219,9 @@ class GameConnection(GpgNetServerProtocol):
         self.game.desyncs += 1
 
     async def handle_game_option(self, key, value):
+        if not self.is_host():
+            return
+
         if key == "Victory":
             self.game.gameOptions["Victory"] = Victory.from_gpgnet_string(value)
         else:
@@ -230,6 +242,9 @@ class GameConnection(GpgNetServerProtocol):
         self._mark_dirty()
 
     async def handle_game_mods(self, mode, args):
+        if not self.is_host():
+            return
+
         if mode == "activated":
             # In this case args is the number of mods
             if int(args) == 0:
@@ -251,21 +266,21 @@ class GameConnection(GpgNetServerProtocol):
         self._mark_dirty()
 
     async def handle_player_option(self, player_id, command, value):
-        if self.player.state != PlayerState.HOSTING:
+        if not self.is_host():
             return
 
         self.game.set_player_option(int(player_id), command, value)
         self._mark_dirty()
 
     async def handle_ai_option(self, name, key, value):
-        if self.player.state != PlayerState.HOSTING:
+        if not self.is_host():
             return
 
         self.game.set_ai_option(str(name), key, value)
         self._mark_dirty()
 
     async def handle_clear_slot(self, slot):
-        if self.player.state != PlayerState.HOSTING:
+        if not self.is_host():
             return
 
         self.game.clear_slot(int(slot))

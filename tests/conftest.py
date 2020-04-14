@@ -136,7 +136,7 @@ def make_game(database, uid, players):
     players.hosting.getGame = CoroutineMock(return_value=game)
     players.joining.getGame = CoroutineMock(return_value=game)
     players.peer.getGame = CoroutineMock(return_value=game)
-    game.hostPlayer = players.hosting
+    game.host = players.hosting
     game.init_mode = InitMode.NORMAL_LOBBY
     game.name = "Some game name"
     game.id = uid

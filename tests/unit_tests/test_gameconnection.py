@@ -256,16 +256,38 @@ async def test_handle_action_PlayerOption_malformed_no_raise(game_connection: Ga
     # Shouldn't raise an exception
 
 
+async def test_handle_action_PlayerOption_not_host(
+    game: Game,
+    game_connection: GameConnection,
+    players
+):
+    game_connection.player = players.joining
+    await game_connection.handle_action('PlayerOption', [1, 'Color', 2])
+    game.set_player_option.assert_not_called()
+
+
 async def test_handle_action_GameMods(game: Game, game_connection: GameConnection):
     await game_connection.handle_action('GameMods', ['uids', 'foo baz'])
     assert game.mods == {'baz': 'test-mod2', 'foo': 'test-mod'}
 
 
 async def test_handle_action_GameMods_activated(game: Game, game_connection: GameConnection):
+    game.mods = {"a": "b"}
     await game_connection.handle_action('GameMods', ['activated', 0])
     assert game.mods == {}
     await game_connection.handle_action('GameMods', ['activated', '0'])
     assert game.mods == {}
+
+
+async def test_handle_action_GameMods_not_host(
+    game: Game,
+    game_connection: GameConnection,
+    players
+):
+    game_connection.player = players.joining
+    mods = game.mods
+    await game_connection.handle_action('GameMods', ['uids', 'foo baz'])
+    assert game.mods == mods
 
 
 async def test_handle_action_GameMods_post_launch_updates_played_cache(
@@ -290,11 +312,31 @@ async def test_handle_action_AIOption(game: Game, game_connection: GameConnectio
     game.set_ai_option.assert_called_once_with('QAI', 'StartSpot', 1)
 
 
+async def test_handle_action_AIOption_not_host(
+    game: Game,
+    game_connection: GameConnection,
+    players
+):
+    game_connection.player = players.joining
+    await game_connection.handle_action('AIOption', ['QAI', 'StartSpot', 1])
+    game.set_ai_option.assert_not_called()
+
+
 async def test_handle_action_ClearSlot(game: Game, game_connection: GameConnection):
     await game_connection.handle_action('ClearSlot', [1])
     game.clear_slot.assert_called_once_with(1)
     await game_connection.handle_action('ClearSlot', ['1'])
     game.clear_slot.assert_called_with(1)
+
+
+async def test_handle_action_ClearSlot_not_hots(
+    game: Game,
+    game_connection: GameConnection,
+    players
+):
+    game_connection.player = players.joining
+    await game_connection.handle_action('ClearSlot', [1])
+    game.clear_slot.assert_not_called()
 
 
 async def test_handle_action_GameResult_calls_add_result(game: Game, game_connection: GameConnection):
@@ -319,6 +361,17 @@ async def test_handle_action_GameOption(game: Game, game_connection: GameConnect
     assert game.name == game.sanitize_name('All welcome')
     await game_connection.handle_action('GameOption', ['ArbitraryKey', 'ArbitraryValue'])
     assert game.gameOptions['ArbitraryKey'] == 'ArbitraryValue'
+
+
+async def test_handle_action_GameOption_not_hots(
+    game: Game,
+    game_connection: GameConnection,
+    players
+):
+    game_connection.player = players.joining
+    game.gameOptions = {"Victory": "asdf"}
+    await game_connection.handle_action('GameOption', ['Victory', 'sandbox'])
+    assert game.gameOptions == {"Victory": "asdf"}
 
 
 async def test_json_stats(game_connection: GameConnection, game_stats_service, players, game):
