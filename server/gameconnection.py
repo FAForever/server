@@ -7,8 +7,8 @@ from sqlalchemy import or_, select, text
 from .abc.base_game import GameConnectionState
 from .config import TRACE
 from .db.models import (
-    login, moderation_report, reported_user,
-    coop_leaderboard, teamkills, coop_map
+    coop_leaderboard, coop_map, login, moderation_report, reported_user,
+    teamkills
 )
 from .decorators import with_logger
 from .game_service import GameService
@@ -73,6 +73,15 @@ class GameConnection(GpgNetServerProtocol):
     @player.setter
     def player(self, val: Player):
         self._player = val
+
+    def is_host(self) -> bool:
+        if not self.game or not self.player:
+            return False
+
+        return (
+            self.player.state == PlayerState.HOSTING and
+            self.player == self.game.host
+        )
 
     async def send(self, message):
         """
@@ -210,41 +219,32 @@ class GameConnection(GpgNetServerProtocol):
         self.game.desyncs += 1
 
     async def handle_game_option(self, key, value):
-        if key == 'Victory':
-            self.game.gameOptions['Victory'] = Victory.from_gpgnet_string(value)
-        elif key in self.game.gameOptions:
+        if not self.is_host():
+            return
 
-            """
-            This block about AIReplacement is added because of a mistake in the FAF game patch code
-            that makes "On" and "Off" be "AIReplacementOn" and "AIReplacementOff". The code
-            below removes that extra statement to make it a simple "On" "Off".
-            This block can be removed as soon as the game sends "On" and "Off" instead of
-            "AIReplacementOn" and "AIReplacementOff" to the server as game options.
-            https://github.com/FAForever/fa/issues/2610
-            """
-            if key == "AIReplacement":
-                value = value.replace("AIReplacement", "")
-
+        if key == "Victory":
+            self.game.gameOptions["Victory"] = Victory.from_gpgnet_string(value)
+        else:
             self.game.gameOptions[key] = value
 
         if key == "Slots":
             self.game.max_players = int(value)
-        elif key == 'ScenarioFile':
-            raw = "%r" % value
+        elif key == "ScenarioFile":
+            raw = repr(value)
             self.game.map_scenario_path = \
-                raw.replace('\\', '/').replace('//', '/').replace("'", '')
+                raw.replace("\\", "/").replace("//", "/").replace("'", "")
             self.game.map_file_path = 'maps/{}.zip'.format(
-                self.game.map_scenario_path.split('/')[2].lower()
+                self.game.map_scenario_path.split("/")[2].lower()
             )
-        elif key == 'Title':
+        elif key == "Title":
             self.game.name = self.game.sanitize_name(value)
-        else:
-            self._logger.warning("Ignoring game option: %s", key)
-            return
 
         self._mark_dirty()
 
     async def handle_game_mods(self, mode, args):
+        if not self.is_host():
+            return
+
         if mode == "activated":
             # In this case args is the number of mods
             if int(args) == 0:
@@ -266,21 +266,21 @@ class GameConnection(GpgNetServerProtocol):
         self._mark_dirty()
 
     async def handle_player_option(self, player_id, command, value):
-        if self.player.state != PlayerState.HOSTING:
+        if not self.is_host():
             return
 
         self.game.set_player_option(int(player_id), command, value)
         self._mark_dirty()
 
     async def handle_ai_option(self, name, key, value):
-        if self.player.state != PlayerState.HOSTING:
+        if not self.is_host():
             return
 
         self.game.set_ai_option(str(name), key, value)
         self._mark_dirty()
 
     async def handle_clear_slot(self, slot):
-        if self.player.state != PlayerState.HOSTING:
+        if not self.is_host():
             return
 
         self.game.clear_slot(int(slot))
