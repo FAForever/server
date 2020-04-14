@@ -329,7 +329,7 @@ async def test_handle_action_ClearSlot(game: Game, game_connection: GameConnecti
     game.clear_slot.assert_called_with(1)
 
 
-async def test_handle_action_ClearSlot_not_hots(
+async def test_handle_action_ClearSlot_not_host(
     game: Game,
     game_connection: GameConnection,
     players
@@ -363,7 +363,7 @@ async def test_handle_action_GameOption(game: Game, game_connection: GameConnect
     assert game.gameOptions['ArbitraryKey'] == 'ArbitraryValue'
 
 
-async def test_handle_action_GameOption_not_hots(
+async def test_handle_action_GameOption_not_host(
     game: Game,
     game_connection: GameConnection,
     players

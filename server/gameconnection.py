@@ -230,7 +230,7 @@ class GameConnection(GpgNetServerProtocol):
         if key == "Slots":
             self.game.max_players = int(value)
         elif key == "ScenarioFile":
-            raw = "%r" % value
+            raw = repr(value)
             self.game.map_scenario_path = \
                 raw.replace("\\", "/").replace("//", "/").replace("'", "")
             self.game.map_file_path = 'maps/{}.zip'.format(
