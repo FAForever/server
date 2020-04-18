@@ -2,7 +2,7 @@ import asyncio
 import pytest
 from unittest import mock
 
-import os
+import yaml
 from server import config
 
 from tests.utils import fast_forward
@@ -18,7 +18,7 @@ async def test_configuration_refresh(monkeypatch):
     await service.initialize()
 
     assert config.DB_PASSWORD == "banana"
-    monkeypatch.setenv("FAF_DB_PASSWORD", "apple")
+    monkeypatch.setenv("CONFIGURATION_FILE", "tests/data/refresh_conf.yaml")
     assert config.DB_PASSWORD == "banana"
 
     await asyncio.sleep(15)
