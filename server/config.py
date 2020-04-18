@@ -19,16 +19,21 @@ class ConfigurationStore:
     def __init__(self):
         self.refresh()
 
+        # Constants
+        self.FFA_TEAM = 1
+
     def refresh(self):
-        config_file = os.getenv("CONFIGURATION_FILE", "conf.yaml")
-        with open(config_file, "r") as f:
+        default_file = "default_conf.yaml"
+        with open(default_file) as f:
             config_dict = yaml.safe_load(f)
+
+        config_file = os.getenv("CONFIGURATION_FILE")
+        if config_file is not None:
+            with open(config_file) as f:
+                config_dict.update(yaml.safe_load(f))
 
         for key, value in config_dict.items():
             setattr(self, key.upper(), value)
 
 
 config = ConfigurationStore()
-
-# FIXME
-# need to update readme
