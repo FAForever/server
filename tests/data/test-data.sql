@@ -323,7 +323,7 @@ insert into ban (player_id, author_id, reason, level, expires_at, revoke_time) v
 ;
 
 insert into game_stats (id, startTime, gameType, gameMod, host, mapId, gameName, validity) values
-    (41935, NOW(), '0', 6, 1, 0, 'MapRepetition', 0),
+    (41935, NOW(), '0', 6, 1, NULL, 'MapRepetition', 0),
     (41936, NOW() + interval 1 minute, '0', 6, 1, 1, 'MapRepetition', 0),
     (41937, NOW() + interval 2 minute, '0', 6, 1, 2, 'MapRepetition', 0),
     (41938, NOW() + interval 3 minute, '0', 6, 1, 3, 'MapRepetition', 0),
