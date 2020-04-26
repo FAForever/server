@@ -363,9 +363,9 @@ insert into game_player_stats (gameId, playerId, AI, faction, color, team, place
     (41941, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 6 minute);
 
 insert into game_stats (id, startTime, gameType, gameMod, host, mapId, gameName, validity) values
-    (41942, NOW(), '0', 6, 1, 0, 'OldRatingNull', 0),
-    (41943, NOW(), '0', 6, 1, 0, 'OldRatingLose', 0),
-    (41944, NOW(), '0', 6, 1, 0, 'OldRatingWin', 0);
+    (41942, NOW(), '0', 6, 1, NULL, 'OldRatingNull', 0),
+    (41943, NOW(), '0', 6, 1, NULL, 'OldRatingLose', 0),
+    (41944, NOW(), '0', 6, 1, NULL, 'OldRatingWin', 0);
 
 insert into game_player_stats (gameId, playerId, AI, faction, color, team, place, mean, deviation, scoreTime, after_mean) values
     (41942, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), NULL),
