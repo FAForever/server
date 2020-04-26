@@ -329,7 +329,8 @@ insert into game_stats (id, startTime, gameType, gameMod, host, mapId, gameName,
     (41938, NOW() + interval 3 minute, '0', 6, 1, 3, 'MapRepetition', 0),
     (41939, NOW() + interval 4 minute, '0', 6, 1, 4, 'MapRepetition', 0),
     (41940, NOW() + interval 5 minute, '0', 6, 1, 5, 'MapRepetition', 0),
-    (41941, NOW() + interval 6 minute, '0', 6, 1, 6, 'MapRepetition', 0);
+    (41941, NOW() + interval 6 minute, '0', 6, 1, 6, 'MapRepetition', 0)
+;
 
 insert into game_player_stats (gameId, playerId, AI, faction, color, team, place, mean, deviation, scoreTime) values
     (1, 1, 0, 0, 0, 2, 0, 1500, 500, NOW()),
