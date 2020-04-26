@@ -51,18 +51,132 @@ async def test_server_ban_revoked_or_expired(lobby_server, user):
 
 async def test_server_valid_login(lobby_server):
     proto = await connect_client(lobby_server)
+    await perform_login(proto, ('Rhiza', 'puff_the_magic_dragon'))
+    msg = await proto.read_message()
+    assert msg == {
+        'command': 'welcome',
+        'me': {
+            'clan': '123',
+            'country': '',
+            'global_rating': [1650.0, 62.52],
+            'id': 3,
+            'ladder_rating': [1650.0, 62.52],
+            'login': 'Rhiza',
+            'number_of_games': 2
+        },
+        'id': 3,
+        'login': 'Rhiza'
+    }
+    msg = await proto.read_message()
+    assert msg == {
+        "command": "player_info",
+        "players": [
+            {
+                'clan': '123',
+                'country': '',
+                'global_rating': [1650.0, 62.52],
+                'id': 3,
+                'ladder_rating': [1650.0, 62.52],
+                'login': 'Rhiza',
+                'number_of_games': 2
+            }
+        ]
+    }
+    msg = await proto.read_message()
+    assert msg == {
+        "command": "social",
+        "autojoin": ["#123_clan"],
+        "channels": ["#123_clan"],
+        "friends": [],
+        "foes": [],
+        "power": 0
+    }
+
+
+async def test_server_valid_login_admin(lobby_server):
+    proto = await connect_client(lobby_server)
     await perform_login(proto, ('test', 'test_password'))
     msg = await proto.read_message()
-    assert msg == {'command': 'welcome',
-                   'me': {'clan': '678',
-                          'country': '',
-                          'global_rating': [2000.0, 125.0],
-                          'id': 1,
-                          'ladder_rating': [2000.0, 125.0],
-                          'login': 'test',
-                          'number_of_games': 5},
-                   'id': 1,
-                   'login': 'test'}
+    assert msg == {
+        'command': 'welcome',
+        'me': {
+            'clan': '678',
+            'country': '',
+            'global_rating': [2000.0, 125.0],
+            'id': 1,
+            'ladder_rating': [2000.0, 125.0],
+            'login': 'test',
+            'number_of_games': 5
+        },
+        'id': 1,
+        'login': 'test'
+    }
+    msg = await proto.read_message()
+    assert msg == {
+        "command": "player_info",
+        "players": [
+            {
+                'clan': '678',
+                'country': '',
+                'global_rating': [2000.0, 125.0],
+                'id': 1,
+                'ladder_rating': [2000.0, 125.0],
+                'login': 'test',
+                'number_of_games': 5
+            }
+        ]
+    }
+    msg = await proto.read_message()
+    assert msg == {
+        "command": "social",
+        "autojoin": ["#678_clan"],
+        "channels": ["#678_clan"],
+        "friends": [],
+        "foes": [3],
+        "power": 2
+    }
+
+
+async def test_server_valid_login_moderator(lobby_server):
+    proto = await connect_client(lobby_server)
+    await perform_login(proto, ('moderator', 'moderator'))
+    msg = await proto.read_message()
+    assert msg == {
+        'command': 'welcome',
+        'me': {
+            'country': '',
+            'global_rating': [1500, 500],
+            'id': 20,
+            'ladder_rating': [1500, 500],
+            'login': 'moderator',
+            'number_of_games': 0
+        },
+        'id': 20,
+        'login': 'moderator'
+    }
+    msg = await proto.read_message()
+    assert msg == {
+        "command": "player_info",
+        "players": [
+            {
+                'country': '',
+                'global_rating': [1500, 500],
+                'id': 20,
+                'ladder_rating': [1500, 500],
+                'login': 'moderator',
+                'number_of_games': 0
+            }
+        ]
+    }
+    msg = await proto.read_message()
+    assert msg == {
+        "command": "social",
+        "autojoin": ["#moderators"],
+        "channels": ["#moderators"],
+        "friends": [],
+        "foes": [],
+        "power": 1
+    }
 
 
 @pytest.mark.parametrize("user", [

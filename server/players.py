@@ -1,8 +1,8 @@
 import weakref
 from enum import Enum, unique
 
-from server.rating import PlayerRatings, RatingType, RatingTypeMap
 import server.config as config
+from server.rating import PlayerRatings, RatingType, RatingTypeMap
 
 from .factions import Faction
 from .protocol import DisconnectedError
@@ -33,7 +33,6 @@ class Player:
         ratings=None,
         clan=None,
         game_count=None,
-        permission_group: int = 0,
         lobby_connection: "LobbyConnection" = None
     ):
         self._faction = 0
@@ -62,8 +61,7 @@ class Player:
         self.friends = set()
         self.foes = set()
 
-        self.admin = permission_group >= 2
-        self.mod = permission_group >= 1
+        self.user_groups = set()
 
         self.state = PlayerState.IDLE
 
@@ -133,6 +131,24 @@ class Player:
     @game_connection.deleter
     def game_connection(self):
         self._game_connection = lambda: None
+
+    def power(self):
+        """An artifact of the old permission system. The client still uses this
+        number to determine if a player gets a special category in the user list
+        such as "Moderator"
+        """
+        if self.is_admin():
+            return 2
+        if self.is_moderator():
+            return 1
+
+        return 0
+
+    def is_admin(self) -> bool:
+        return "faf_server_administrators" in self.user_groups
+
+    def is_moderator(self) -> bool:
+        return "faf_moderators_global" in self.user_groups
 
     async def send_message(self, message):
         """

@@ -324,9 +324,8 @@ class LobbyConnection:
                     self.player.login, message_text
                 )
                 await gather_without_exceptions(tasks, Exception)
-
-        if self.player.mod:
-            if action == "join_channel":
+        elif action == "join_channel":
+            if await self.player_service.has_permission_role(self.player, 'ADMIN_JOIN_CHANNEL'):
                 user_ids = message['user_ids']
                 channel = message['channel']
 
@@ -562,13 +561,10 @@ class LobbyConnection:
             except (pymysql.OperationalError, pymysql.ProgrammingError):
                 self._logger.error("Failure updating NickServ password for %s", login)
 
-        # NOTE: permission_group is deprecated. Use permission roles instead
-        permission_group = 0
         self.player = Player(
             login=str(login),
             session=self.session,
             player_id=player_id,
-            permission_group=permission_group,
             lobby_connection=self
         )
 
@@ -637,7 +633,7 @@ class LobbyConnection:
         self.player.foes = set(foes)
 
         channels = []
-        if self.player.mod:
+        if self.player.is_moderator():
             channels.append("#moderators")
 
         if self.player.clan is not None:
@@ -649,7 +645,7 @@ class LobbyConnection:
             "channels": channels,
             "friends": friends,
             "foes": foes,
-            "power": permission_group
+            "power": self.player.power()
         }
         await self.send(json_to_send)
 
