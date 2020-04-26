@@ -208,8 +208,8 @@ async def test_start_game_map_selection(
 
     await ladder_service.start_game(p1, p2)
 
-    newbie_map_pool.choose_map.assert_not_called()
-    full_map_pool.choose_map.assert_called_once()
+    newbie_map_pool.choose_map.assert_called_once()
+    full_map_pool.choose_map.assert_not_called()
 
 
 async def test_start_game_map_selection_newbies(
@@ -264,7 +264,7 @@ async def test_start_game_map_selection_pros(
 
 async def test_get_ladder_history(ladder_service: LadderService, players, database):
     history = await ladder_service.get_game_history(
-        players.hosting,
+        [players.hosting],
         mod="ladder1v1",
         limit=1
     )
@@ -274,7 +274,7 @@ async def test_get_ladder_history(ladder_service: LadderService, players, databa
 
 async def test_get_ladder_history_many_maps(ladder_service: LadderService, players, database):
     history = await ladder_service.get_game_history(
-        players.hosting,
+        [players.hosting],
         mod="ladder1v1",
         limit=4
     )

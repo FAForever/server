@@ -19,7 +19,6 @@ from .db.models import (
 )
 from .decorators import with_logger
 from .game_service import GameService
-from .itertools import flatten
 from .matchmaker import MapPool, MatchmakerQueue, Search
 from .players import Player, PlayerState
 from .protocol import DisconnectedError
@@ -41,9 +40,8 @@ class LadderService(Service):
         self._informed_players: Set[Player] = set()
         self.game_service = game_service
 
-        # Fallback legacy map pool
+        # Fallback legacy map pool and matchmaker queue
         self.ladder_1v1_map_pool = MapPool(0, "ladder1v1")
-        # Hardcoded here until it needs to be dynamic
         self.queues = {
             'ladder1v1': MatchmakerQueue(
                 game_service,
@@ -256,17 +254,12 @@ class LadderService(Service):
             host.state = PlayerState.HOSTING
             guest.state = PlayerState.JOINING
 
-            played_map_ids = list(flatten(
-                await asyncio.gather(*[
-                    self.get_game_history(
-                        player,
-                        "ladder1v1",
-                        limit=config.LADDER_ANTI_REPETITION_LIMIT
-                    )
-                    for player in [host, guest]
-                ])
-            ))
-            rating = max(
+            played_map_ids = await self.get_game_history(
+                [host, guest],
+                "ladder1v1",
+                limit=config.LADDER_ANTI_REPETITION_LIMIT
+            )
+            rating = min(
                 player.ratings[RatingType.LADDER_1V1][0]
                 if (
                     player.game_count[RatingType.LADDER_1V1] >
@@ -353,29 +346,31 @@ class LadderService(Service):
 
     async def get_game_history(
         self,
-        player: Player,
+        players: List[Player],
         mod: str,
         limit=3
     ) -> List[int]:
         async with self._db.acquire() as conn:
-            query = select([
-                game_stats.c.mapId,
-            ]).select_from(
-                game_player_stats.join(game_stats).join(game_featuredMods)
-            ).where(
-                and_(
-                    game_player_stats.c.playerId == player.id,
-                    game_stats.c.startTime >=
-                    func.now() - text("interval 1 day"),
-                    game_featuredMods.c.gamemod == mod
-                )
-            ).order_by(game_stats.c.startTime.desc()).limit(limit)
+            result = []
+            for player in players:
+                query = select([
+                    game_stats.c.mapId,
+                ]).select_from(
+                    game_player_stats.join(game_stats).join(game_featuredMods)
+                ).where(
+                    and_(
+                        game_player_stats.c.playerId == player.id,
+                        game_stats.c.startTime >=
+                        func.now() - text("interval 1 day"),
+                        game_featuredMods.c.gamemod == mod
+                    )
+                ).order_by(game_stats.c.startTime.desc()).limit(limit)
 
-            # Collect all the rows from the ResultProxy
-            return [
+            result.extend([
                 row[game_stats.c.mapId]
                 async for row in await conn.execute(query)
-            ]
+            ])
+        return result
 
     async def on_connection_lost(self, player):
         await self.cancel_search(player)
