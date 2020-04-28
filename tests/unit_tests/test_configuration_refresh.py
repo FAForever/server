@@ -11,18 +11,48 @@ from server.configuration_service import ConfigurationService
 pytestmark = pytest.mark.asyncio
 
 
-@fast_forward(20)
-async def test_configuration_refresh(monkeypatch):
+@pytest.fixture
+async def config_service(monkeypatch):
+    monkeypatch.setenv("CONFIGURATION_FILE", "tests/data/test_conf.yaml")
     service = ConfigurationService()
-    config.CONFIGURATION_REFRESH_TIME = 10
     await service.initialize()
 
+    yield service
+
+    await service.shutdown()
+
+
+@fast_forward(20)
+async def test_configuration_refresh(config_service, monkeypatch):
     assert config.DB_PASSWORD == "banana"
     monkeypatch.setenv("CONFIGURATION_FILE", "tests/data/refresh_conf.yaml")
     assert config.DB_PASSWORD == "banana"
 
-    await asyncio.sleep(15)
+    await asyncio.sleep(3)
 
     assert config.DB_PASSWORD == "apple"
 
-    await service.shutdown()
+
+@fast_forward(20)
+async def test_config_callback_on_change(config_service, monkeypatch):
+    callback = mock.Mock()
+    config.register_callback("DB_PASSWORD", callback)
+    assert config.DB_PASSWORD == "banana"
+
+    monkeypatch.setenv("CONFIGURATION_FILE", "tests/data/refresh_conf.yaml")
+    await asyncio.sleep(10)
+
+    assert config.DB_PASSWORD == "apple"
+    callback.assert_called_once()
+
+
+@fast_forward(20)
+async def test_config_no_callback_without_change(config_service, monkeypatch):
+    callback = mock.Mock()
+    config.register_callback("DB_PASSWORD", callback)
+    assert config.DB_PASSWORD == "banana"
+
+    await asyncio.sleep(10)
+
+    assert config.DB_PASSWORD == "banana"
+    callback.assert_not_called()

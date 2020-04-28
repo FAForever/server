@@ -64,9 +64,7 @@ async def main():
             "Twilio is not set up. You must set TWILIO_ACCOUNT_SID and TWILIO_TOKEN to use the Twilio ICE servers."
         )
 
-    api_accessor = None
-    if config.USE_API:
-        api_accessor = ApiAccessor()
+    api_accessor = ApiAccessor()
 
     services = create_services({
         "api_accessor": api_accessor,
