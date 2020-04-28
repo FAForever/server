@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import yaml
@@ -48,9 +49,14 @@ class ConfigurationStore:
             return
 
         old_value = getattr(self, key)
-        if new_value != old_value:
-            print(f"handle change: {key} {old_value}->{new_value}")
-            self._callbacks[key](old_value, new_value)
+        if new_value == old_value:
+            return
+
+        callback = self._callbacks[key]
+        if asyncio.iscoroutinefunction(callback):
+            asyncio.create_task(callback(old_value, new_value))
+        else:
+            callback(old_value, new_value)
 
 
 config = ConfigurationStore()

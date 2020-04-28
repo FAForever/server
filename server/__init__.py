@@ -51,6 +51,7 @@ stats = None
 logger = logging.getLogger("server")
 
 if config.ENABLE_METRICS:
+    logger.info("Using prometheus on port: {}".format(config.METRICS_PORT))
     start_http_server(config.METRICS_PORT)
 
 

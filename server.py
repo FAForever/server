@@ -41,9 +41,6 @@ async def main():
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
 
-    if config.ENABLE_METRICS:
-        logger.info("Using prometheus on port: {}".format(config.METRICS_PORT))
-
     database = server.db.FAFDatabase(loop)
     await database.connect(
         host=config.DB_SERVER,
@@ -107,6 +104,16 @@ async def main():
         services["player_service"],
         services["game_service"]
     )
+    async def restart_control_server(old_port, new_port):
+        nonlocal ctrl_server
+        nonlocal services
+
+        ctrl_server.shutdown()
+        ctrl_server = await server.run_control_server(
+            services["player_service"],
+            services["game_service"]
+        )
+    config.register_callback("CONTROL_SERVER_PORT", restart_control_server)
 
     lobby_server = await server.run_lobby_server(
         address=('', 8001),
