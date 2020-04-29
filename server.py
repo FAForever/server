@@ -22,6 +22,7 @@ from docopt import docopt
 from server.api.api_accessor import ApiAccessor
 from server.core import create_services
 from server.ice_servers.nts import TwilioNTS
+from server.profiler import profiler_factory
 from server.timing import at_interval
 
 
@@ -73,32 +74,9 @@ async def main():
         service.initialize() for service in services.values()
     ])
 
-    if config.PROFILING_INTERVAL > 0:
-        logger.warning("Profiling enabled! This will create additional load.")
-        import cProfile
-        pr = cProfile.Profile()
-        profiled_count = 0
-        max_count = 300
-
-        @at_interval(config.PROFILING_INTERVAL, loop=loop)
-        async def run_profiler():
-            nonlocal profiled_count
-            nonlocal pr
-
-            if len(services["player_service"]) > 1000:
-                return
-            elif profiled_count >= max_count:
-                del pr
-                return
-
-            logger.info("Starting profiler")
-            pr.enable()
-            await asyncio.sleep(2)
-            pr.disable()
-            profiled_count += 1
-
-            logging.info("Done profiling %i/%i", profiled_count, max_count)
-            pr.dump_stats("profile.txt")
+    make_profiler = profiler_factory(services["player_service"])
+    await make_profiler()
+    config.register_callback("PROFILING_INTERVAL", make_profiler)
 
     ctrl_server = await server.run_control_server(
         services["player_service"],
