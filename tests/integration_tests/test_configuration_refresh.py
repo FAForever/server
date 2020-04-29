@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import pytest
 
 from tests.utils import fast_forward
@@ -27,3 +28,6 @@ async def test_configuration_refresh_callbacks(
     await asyncio.sleep(15)
 
     assert "refreshed" in geoip_service.file_path
+    logger = logging.getLogger()
+    log_level_TRACE = 5
+    assert logger.level == log_level_TRACE

@@ -61,4 +61,12 @@ class ConfigurationStore:
             callback()
 
 
+def set_log_level():
+    logger = logging.getLogger()
+    logger.setLevel(config.LOG_LEVEL)
+
+
 config = ConfigurationStore()
+
+
+config.register_callback("LOG_LEVEL", set_log_level)
