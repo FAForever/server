@@ -27,7 +27,6 @@ class ConfigurationStore:
         self.FFA_TEAM = 1
 
     def refresh(self) -> None:
-        print("refreshing")
         default_file = "default_conf.yaml"
         with open(default_file) as f:
             config_dict = yaml.safe_load(f)
@@ -38,25 +37,28 @@ class ConfigurationStore:
                 config_dict.update(yaml.safe_load(f))
 
         for key, value in config_dict.items():
-            self._handle_change(key.upper(), value)
-            setattr(self, key.upper(), value)
+            self._update(key.upper(), value)
 
     def register_callback(self, key: str, callback: Callable[[Any, Any], None]) -> None:
         self._callbacks[key.upper()] = callback
 
-    def _handle_change(self, key: str, new_value: Any) -> None:
-        if key not in self._callbacks or not hasattr(self, key):
-            return
+    def _update(self, key: str, new_value: Any) -> None:
+        triggers_callback = False
+        if key in self._callbacks and hasattr(self, key):
+            old_value = getattr(self, key)
+            if new_value != old_value:
+                triggers_callback = True
 
-        old_value = getattr(self, key)
-        if new_value == old_value:
+        setattr(self, key, new_value)
+
+        if not triggers_callback:
             return
 
         callback = self._callbacks[key]
         if asyncio.iscoroutinefunction(callback):
-            asyncio.create_task(callback(old_value, new_value))
+            asyncio.create_task(callback())
         else:
-            callback(old_value, new_value)
+            callback()
 
 
 config = ConfigurationStore()

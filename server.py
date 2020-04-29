@@ -104,7 +104,7 @@ async def main():
         services["player_service"],
         services["game_service"]
     )
-    async def restart_control_server(old_port, new_port):
+    async def restart_control_server():
         nonlocal ctrl_server
         nonlocal services
 

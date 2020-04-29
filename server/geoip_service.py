@@ -34,7 +34,7 @@ class GeoIpService(Service):
 
         self.check_geoip_db_file_updated()
 
-        def refresh_file_path(old_path, new_path):
+        def refresh_file_path():
             nonlocal self
             self.file_path = config.GEO_IP_DATABASE_PATH
         config.register_callback("GEO_IP_DATABASE_PATH", refresh_file_path)
