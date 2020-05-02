@@ -7,12 +7,12 @@ from server.decorators import with_logger
 
 
 class GameOutcome(Enum):
-    VICTORY = "victory"
-    DEFEAT = "defeat"
-    DRAW = "draw"
-    MUTUAL_DRAW = "mutual_draw"
-    UNKNOWN = "unknown"
-    CONFLICTING = "conflicting"
+    VICTORY = "VICTORY"
+    DEFEAT = "DEFEAT"
+    DRAW = "DRAW"
+    MUTUAL_DRAW = "MUTUAL_DRAW"
+    UNKNOWN = "UNKNOWN"
+    CONFLICTING = "CONFLICTING"
 
 
 class GameResultReport(NamedTuple):
@@ -164,71 +164,68 @@ class GameResolutionError(Exception):
     pass
 
 
-@with_logger
-class GameResolver:
-    @staticmethod
-    def resolve(team_outcomes: List[Set[GameOutcome]]) -> List[GameOutcome]:
-        """
-        Takes a list of length two containing sets of GameOutcomes
-        for individual players on a team
-        and converts a list of two GameOutcomes,
-        either VICTORY and DEFEAT or DRAW and DRAW.
-        Throws GameResolutionError if outcomes are inconsistent or ambiguous.
-        :param team_outcomes: list of GameOutcomes
-        :return: list of ranks as to be used with trueskill
-        """
-        if len(team_outcomes) != 2:
-            raise GameResolutionError(
-                "Will not resolve game with other than two parties."
-            )
-
-        victory0 = GameOutcome.VICTORY in team_outcomes[0]
-        victory1 = GameOutcome.VICTORY in team_outcomes[1]
-        both_claim_victory = victory0 and victory1
-        someone_claims_victory = victory0 or victory1
-        if both_claim_victory:
-            raise GameResolutionError(
-                "Cannot resolve game in which both teams claimed victory. "
-                f" Team outcomes: {team_outcomes}"
-            )
-        elif someone_claims_victory:
-            return [
-                GameOutcome.VICTORY
-                if GameOutcome.VICTORY in outcomes
-                else GameOutcome.DEFEAT
-                for outcomes in team_outcomes
-            ]
-
-        # Now know that no-one has GameOutcome.VICTORY
-        draw0 = (
-            GameOutcome.DRAW in team_outcomes[0]
-            or GameOutcome.MUTUAL_DRAW in team_outcomes[0]
+def resolve_game(team_outcomes: List[Set[GameOutcome]]) -> List[GameOutcome]:
+    """
+    Takes a list of length two containing sets of GameOutcomes
+    for individual players on a team
+    and converts a list of two GameOutcomes,
+    either VICTORY and DEFEAT or DRAW and DRAW.
+    Throws GameResolutionError if outcomes are inconsistent or ambiguous.
+    :param team_outcomes: list of GameOutcomes
+    :return: list of ranks as to be used with trueskill
+    """
+    if len(team_outcomes) != 2:
+        raise GameResolutionError(
+            "Will not resolve game with other than two parties."
         )
-        draw1 = (
-            GameOutcome.DRAW in team_outcomes[1]
-            or GameOutcome.MUTUAL_DRAW in team_outcomes[1]
+
+    victory0 = GameOutcome.VICTORY in team_outcomes[0]
+    victory1 = GameOutcome.VICTORY in team_outcomes[1]
+    both_claim_victory = victory0 and victory1
+    someone_claims_victory = victory0 or victory1
+    if both_claim_victory:
+        raise GameResolutionError(
+            "Cannot resolve game in which both teams claimed victory. "
+            f" Team outcomes: {team_outcomes}"
         )
-        both_claim_draw = draw0 and draw1
-        someone_claims_draw = draw0 or draw1
-        if both_claim_draw:
-            return [GameOutcome.DRAW, GameOutcome.DRAW]
-        elif someone_claims_draw:
-            raise GameResolutionError(
-                "Cannot resolve game with unilateral draw. "
-                f" Team outcomes: {team_outcomes}"
-            )
+    elif someone_claims_victory:
+        return [
+            GameOutcome.VICTORY
+            if GameOutcome.VICTORY in outcomes
+            else GameOutcome.DEFEAT
+            for outcomes in team_outcomes
+        ]
 
-        # Now know that the only results are DEFEAT or UNKNOWN/CONFLICTING
-        # Unrank if there are any players with unknown result
-        all_outcomes = team_outcomes[0] | team_outcomes[1]
-        if (
-            GameOutcome.UNKNOWN in all_outcomes
-            or GameOutcome.CONFLICTING in all_outcomes
-        ):
-            raise GameResolutionError(
-                "Cannot resolve game with ambiguous outcome. "
-                f" Team outcomes: {team_outcomes}"
-            )
-
-        # Otherwise everyone is DEFEAT, we return a draw
+    # Now know that no-one has GameOutcome.VICTORY
+    draw0 = (
+        GameOutcome.DRAW in team_outcomes[0]
+        or GameOutcome.MUTUAL_DRAW in team_outcomes[0]
+    )
+    draw1 = (
+        GameOutcome.DRAW in team_outcomes[1]
+        or GameOutcome.MUTUAL_DRAW in team_outcomes[1]
+    )
+    both_claim_draw = draw0 and draw1
+    someone_claims_draw = draw0 or draw1
+    if both_claim_draw:
         return [GameOutcome.DRAW, GameOutcome.DRAW]
+    elif someone_claims_draw:
+        raise GameResolutionError(
+            "Cannot resolve game with unilateral draw. "
+            f" Team outcomes: {team_outcomes}"
+        )
+
+    # Now know that the only results are DEFEAT or UNKNOWN/CONFLICTING
+    # Unrank if there are any players with unknown result
+    all_outcomes = team_outcomes[0] | team_outcomes[1]
+    if (
+        GameOutcome.UNKNOWN in all_outcomes
+        or GameOutcome.CONFLICTING in all_outcomes
+    ):
+        raise GameResolutionError(
+            "Cannot resolve game with ambiguous outcome. "
+            f" Team outcomes: {team_outcomes}"
+        )
+
+    # Otherwise everyone is DEFEAT, we return a draw
+    return [GameOutcome.DRAW, GameOutcome.DRAW]

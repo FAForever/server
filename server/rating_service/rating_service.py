@@ -1,35 +1,33 @@
+import asyncio
 from typing import Dict
+
+import aiocron
+import server.config as config
+from server.core import Service
+from server.db import FAFDatabase
+from server.db.models import (
+    game_player_stats,
+    global_rating,
+    ladder1v1_rating,
+    leaderboard,
+    leaderboard_rating,
+    leaderboard_rating_journal,
+)
+from server.decorators import with_logger
+from server.games.game_results import GameOutcome
+from server.metrics import rating_service_backlog
+from server.player_service import PlayerService
+from server.rating import RatingType
+from sqlalchemy import and_, func, select
+from trueskill import Rating
+
+from .game_rater import GameRater, GameRatingError
 from .typedefs import (
-    TeamRatingData,
     GameRatingData,
     GameRatingSummary,
     PlayerID,
     ServiceNotReadyError,
-)
-
-import asyncio
-
-from server.db import FAFDatabase
-from server.core import Service
-from server.player_service import PlayerService
-from server.decorators import with_logger
-from server.metrics import rating_service_backlog
-import server.config as config
-
-from server.games.game_results import GameOutcome
-
-from server.rating import RatingType
-from trueskill import Rating
-from .game_rater import GameRater, GameRatingError
-
-from sqlalchemy import select, and_, func
-from server.db.models import (
-    legacy_ladder1v1_rating,
-    legacy_global_rating,
-    leaderboard_rating,
-    leaderboard_rating_journal,
-    leaderboard,
-    game_player_stats,
+    TeamRatingData,
 )
 
 
@@ -54,12 +52,13 @@ class RatingService(Service):
             self._logger.error("Service already runnning or not properly shut down.")
             return
 
-        await self._load_rating_type_ids()
+        await self.update_data()
+        self._update_cron = aiocron.crontab("*/10 * * * *", func=self.update_data)
         self._accept_input = True
         self._logger.debug("RatingService starting...")
         self._task = asyncio.create_task(self._handle_rating_queue())
 
-    async def _load_rating_type_ids(self):
+    async def update_data(self):
         async with self._db.acquire() as conn:
             sql = select([leaderboard])
             result = await conn.execute(sql)
@@ -166,12 +165,12 @@ class RatingService(Service):
         self, player_id: int, rating_type: RatingType
     ) -> Rating:
         if rating_type is RatingType.GLOBAL:
-            table = legacy_global_rating
+            table = global_rating
             sql = select([table.c.mean, table.c.deviation, table.c.numGames]).where(
                 table.c.id == player_id
             )
         elif rating_type is RatingType.LADDER_1V1:
-            table = legacy_ladder1v1_rating
+            table = ladder1v1_rating
             sql = select(
                 [table.c.mean, table.c.deviation, table.c.numGames, table.c.winGames]
             ).where(table.c.id == player_id)

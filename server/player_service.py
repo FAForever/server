@@ -14,7 +14,7 @@ from .core import Service
 from .db.models import (
     avatars, avatars_list, clan, clan_membership, login
 )
-from .db.models import legacy_global_rating, legacy_ladder1v1_rating, leaderboard, leaderboard_rating
+from .db.models import global_rating, ladder1v1_rating, leaderboard, leaderboard_rating
 
 
 @with_logger
@@ -28,22 +28,12 @@ class PlayerService(Service):
         self.uniqueid_exempt = {}
         self.client_version_info = ('0.0.0', None)
         self._dirty_players = set()
-        self._rating_type_ids = {}
 
     async def initialize(self) -> None:
         await self.update_data()
         self._update_cron = aiocron.crontab(
             '*/10 * * * *', func=self.update_data
         )
-        await self._load_rating_type_ids()
-
-    async def _load_rating_type_ids(self):
-        async with self._db.acquire() as conn:
-            sql = select([leaderboard.c.id, leaderboard.c.technical_name])
-            result = await conn.execute(sql)
-            rows = await result.fetchall()
-
-        self._rating_type_ids = {row["technical_name"]: row["id"] for row in rows}
 
     def __len__(self):
         return len(self._players)
@@ -95,7 +85,7 @@ class PlayerService(Service):
             result = await conn.execute(sql)
             row = await result.fetchone()
             if not row:
-                self._logger.warning(f"Did not find data for player {player.id}")
+                self._logger.warning("Did not find data for player with id %i", player.id)
                 return
 
             player.clan = row.get(clan.c.tag)
@@ -144,9 +134,9 @@ class PlayerService(Service):
             return
 
         sql = select(
-            [legacy_global_rating, legacy_ladder1v1_rating], use_labels=True
+            [global_rating, ladder1v1_rating], use_labels=True
         ).select_from(
-            login.outerjoin(legacy_ladder1v1_rating).outerjoin(legacy_global_rating)
+            login.outerjoin(ladder1v1_rating).outerjoin(global_rating)
         ).where(
             login.c.id == player.id
         )
@@ -154,7 +144,7 @@ class PlayerService(Service):
         row = await result.fetchone()
 
         if row is None:
-            self._logger.info(f"Found no ratings for Player {player.id}.")
+            self._logger.info("Found no ratings for Player with id %i", player.id)
             return
 
         table_map = {
@@ -167,7 +157,10 @@ class PlayerService(Service):
 
             table = table_map[rating_type]
             if row[table.format("mean")] is None:
-                self._logger.info(f"Found no {rating_type} rating for Player {player.id}.")
+                self._logger.info(
+                    "Found no %s ratings for Player with id %i", 
+                    rating_type, player.id
+                )
                 continue
 
 
@@ -197,7 +190,7 @@ class PlayerService(Service):
         player = self.get_player(player_id)
         if player is None:
             self._logger.debug(
-                "Received rating change for player with id %s not in PlayerService.",
+                "Received rating change for player with id %i not in PlayerService.",
                 player_id
             )
             return

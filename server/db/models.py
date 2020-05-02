@@ -5,6 +5,7 @@ from sqlalchemy import (
 )
 
 from ..games.enums import Victory
+from ..games.game_results import GameOutcome
 
 metadata = MetaData()
 
@@ -119,10 +120,7 @@ game_player_stats = Table(
     Column('after_deviation', Float),
     Column('score',         Integer),
     Column('scoreTime',     TIMESTAMP),
-    Column(
-        'result',
-        Enum('VICTORY', 'DEFEAT', 'DRAW', 'MUTUAL_DRAW', 'UNKNOWN', 'CONFLICTING')
-    )
+    Column('result',        Enum(GameOutcome)),
 )
 
 game_stats = Table(
@@ -138,7 +136,7 @@ game_stats = Table(
     Column('validity',  Integer,        nullable=False),
 )
 
-legacy_global_rating = Table(
+global_rating = Table(
     'global_rating', metadata,
     Column('id',        Integer,    ForeignKey('login.id'), primary_key=True),
     Column('mean',      Float),
@@ -161,7 +159,7 @@ login = Table(
     Column('last_login',    TIMESTAMP)
 )
 
-legacy_ladder1v1_rating = Table(
+ladder1v1_rating = Table(
     'ladder1v1_rating', metadata,
     Column('id',            Integer,    ForeignKey('login.id'), primary_key=True),
     Column('mean',          Float),

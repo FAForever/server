@@ -1,6 +1,6 @@
 import pytest
 
-from server.games.game_results import GameResolver, GameOutcome, GameResolutionError
+from server.games.game_results import resolve_game, GameOutcome, GameResolutionError
 
 
 def test_only_rate_with_two_parties():
@@ -9,18 +9,18 @@ def test_only_rate_with_two_parties():
     three_parties = [{GameOutcome.VICTORY}, {GameOutcome.DEFEAT}, {GameOutcome.DEFEAT}]
 
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(one_party)
+        resolve_game(one_party)
 
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(three_parties)
+        resolve_game(three_parties)
 
-    GameResolver.resolve(two_parties)
+    resolve_game(two_parties)
 
 
 def testresolve():
     team_outcomes = [{GameOutcome.VICTORY}, {GameOutcome.DEFEAT}]
 
-    ranks = GameResolver.resolve(team_outcomes)
+    ranks = resolve_game(team_outcomes)
 
     assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
 
@@ -33,87 +33,87 @@ def test_ranks_all_1v1_possibilities():
     """
     team_outcomes = [{GameOutcome.VICTORY}, {GameOutcome.VICTORY}]
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(team_outcomes)
+        resolve_game(team_outcomes)
 
     team_outcomes = [{GameOutcome.VICTORY}, {GameOutcome.DEFEAT}]
-    ranks = GameResolver.resolve(team_outcomes)
+    ranks = resolve_game(team_outcomes)
     assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
 
     team_outcomes = [{GameOutcome.VICTORY}, {GameOutcome.DRAW}]
-    GameResolver.resolve(team_outcomes)
+    resolve_game(team_outcomes)
     assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
 
     team_outcomes = [{GameOutcome.VICTORY}, {GameOutcome.MUTUAL_DRAW}]
-    ranks = GameResolver.resolve(team_outcomes)
+    ranks = resolve_game(team_outcomes)
     assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
 
     team_outcomes = [{GameOutcome.VICTORY}, {GameOutcome.UNKNOWN}]
-    ranks = GameResolver.resolve(team_outcomes)
+    ranks = resolve_game(team_outcomes)
     assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
 
     team_outcomes = [{GameOutcome.VICTORY}, {GameOutcome.CONFLICTING}]
-    ranks = GameResolver.resolve(team_outcomes)
+    ranks = resolve_game(team_outcomes)
     assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
 
     team_outcomes = [{GameOutcome.DEFEAT}, {GameOutcome.DEFEAT}]
-    ranks = GameResolver.resolve(team_outcomes)
+    ranks = resolve_game(team_outcomes)
     assert ranks == [GameOutcome.DRAW, GameOutcome.DRAW]
 
     team_outcomes = [{GameOutcome.DEFEAT}, {GameOutcome.DRAW}]
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(team_outcomes)
+        resolve_game(team_outcomes)
 
     team_outcomes = [{GameOutcome.DEFEAT}, {GameOutcome.MUTUAL_DRAW}]
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(team_outcomes)
+        resolve_game(team_outcomes)
 
     team_outcomes = [{GameOutcome.DEFEAT}, {GameOutcome.UNKNOWN}]
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(team_outcomes)
+        resolve_game(team_outcomes)
 
     team_outcomes = [{GameOutcome.DEFEAT}, {GameOutcome.CONFLICTING}]
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(team_outcomes)
+        resolve_game(team_outcomes)
 
     team_outcomes = [{GameOutcome.DRAW}, {GameOutcome.DRAW}]
-    ranks = GameResolver.resolve(team_outcomes)
+    ranks = resolve_game(team_outcomes)
     assert ranks == [GameOutcome.DRAW, GameOutcome.DRAW]
 
     team_outcomes = [{GameOutcome.DRAW}, {GameOutcome.MUTUAL_DRAW}]
-    ranks = GameResolver.resolve(team_outcomes)
+    ranks = resolve_game(team_outcomes)
     assert ranks == [GameOutcome.DRAW, GameOutcome.DRAW]
 
     team_outcomes = [{GameOutcome.DRAW}, {GameOutcome.UNKNOWN}]
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(team_outcomes)
+        resolve_game(team_outcomes)
 
     team_outcomes = [{GameOutcome.DRAW}, {GameOutcome.CONFLICTING}]
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(team_outcomes)
+        resolve_game(team_outcomes)
 
     team_outcomes = [{GameOutcome.MUTUAL_DRAW}, {GameOutcome.MUTUAL_DRAW}]
-    ranks = GameResolver.resolve(team_outcomes)
+    ranks = resolve_game(team_outcomes)
     assert ranks == [GameOutcome.DRAW, GameOutcome.DRAW]
 
     team_outcomes = [{GameOutcome.MUTUAL_DRAW}, {GameOutcome.UNKNOWN}]
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(team_outcomes)
+        resolve_game(team_outcomes)
 
     team_outcomes = [{GameOutcome.MUTUAL_DRAW}, {GameOutcome.CONFLICTING}]
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(team_outcomes)
+        resolve_game(team_outcomes)
 
     team_outcomes = [{GameOutcome.UNKNOWN}, {GameOutcome.UNKNOWN}]
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(team_outcomes)
+        resolve_game(team_outcomes)
 
     team_outcomes = [{GameOutcome.UNKNOWN}, {GameOutcome.CONFLICTING}]
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(team_outcomes)
+        resolve_game(team_outcomes)
 
     team_outcomes = [{GameOutcome.CONFLICTING}, {GameOutcome.CONFLICTING}]
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(team_outcomes)
+        resolve_game(team_outcomes)
 
 
 def test_team_outcome_ignores_unknown():
@@ -122,7 +122,7 @@ def test_team_outcome_ignores_unknown():
         {GameOutcome.DEFEAT, GameOutcome.UNKNOWN},
     ]
 
-    ranks = GameResolver.resolve(team_outcomes)
+    ranks = resolve_game(team_outcomes)
     assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
 
 
@@ -133,7 +133,7 @@ def test_team_outcome_throws_if_unilateral_draw():
     ]
 
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(team_outcomes)
+        resolve_game(team_outcomes)
 
 
 def test_team_outcome_throws_if_unilateral_mutual_draw():
@@ -143,7 +143,7 @@ def test_team_outcome_throws_if_unilateral_mutual_draw():
     ]
 
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(team_outcomes)
+        resolve_game(team_outcomes)
 
 
 def test_team_outcome_victory_has_priority_over_defeat():
@@ -152,7 +152,7 @@ def test_team_outcome_victory_has_priority_over_defeat():
         {GameOutcome.DEFEAT, GameOutcome.DEFEAT},
     ]
 
-    ranks = GameResolver.resolve(team_outcomes)
+    ranks = resolve_game(team_outcomes)
 
     assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
 
@@ -163,7 +163,7 @@ def test_team_outcome_victory_has_priority_over_draw():
         {GameOutcome.DRAW, GameOutcome.DEFEAT},
     ]
 
-    ranks = GameResolver.resolve(team_outcomes)
+    ranks = resolve_game(team_outcomes)
 
     assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
 
@@ -175,7 +175,7 @@ def test_team_outcome_no_double_victory():
     ]
 
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(team_outcomes)
+        resolve_game(team_outcomes)
 
 
 def test_team_outcome_unranked_if_ambiguous():
@@ -185,4 +185,4 @@ def test_team_outcome_unranked_if_ambiguous():
     ]
 
     with pytest.raises(GameResolutionError):
-        GameResolver.resolve(team_outcomes)
+        resolve_game(team_outcomes)

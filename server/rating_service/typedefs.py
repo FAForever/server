@@ -1,4 +1,4 @@
-from typing import Dict, List, Set, NamedTuple
+from typing import Dict, List, NamedTuple, Set
 
 from server.games.game_results import GameOutcome
 from server.rating import RatingType

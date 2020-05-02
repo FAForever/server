@@ -13,7 +13,7 @@ from server.games.game_results import (
     GameOutcome,
     GameResultReport,
     GameResultReports,
-    GameResolver,
+    resolve_game,
     GameResolutionError
 )
 from server.rating import RatingType
@@ -243,7 +243,7 @@ class Game:
             return
 
         try:
-            outcome = GameOutcome(result_type)
+            outcome = GameOutcome(result_type.upper())
         except ValueError:
             outcome = GameOutcome.UNKNOWN
 
@@ -477,7 +477,7 @@ class Game:
             {self.get_player_outcome(player) for player in team}
             for team in teams
         ]
-        team_outcomes = GameResolver.resolve(team_player_outcomes)
+        team_outcomes = resolve_game(team_player_outcomes)
         team_player_ids = [{player.id for player in team} for team in teams]
 
         return GameRatingSummary(

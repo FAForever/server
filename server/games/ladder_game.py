@@ -15,9 +15,7 @@ class LadderGame(Game):
     init_mode = InitMode.AUTO_LOBBY
 
     def __init__(self, id_, *args, **kwargs):
-        super(self.__class__, self).__init__(
-            id_, *args, **kwargs, rating_type=RatingType.LADDER_1V1
-        )
+        super().__init__(id_, *args, **kwargs, rating_type=RatingType.LADDER_1V1)
         self.game_mode = "ladder1v1"
         self.max_players = 2
 

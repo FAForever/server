@@ -40,7 +40,7 @@ def uninitialized_service(database, player_service):
 @pytest.fixture()
 async def semiinitialized_service(database, player_service):
     service = RatingService(database, player_service)
-    await service._load_rating_type_ids()
+    await service.update_data()
     return service
 
 
@@ -116,7 +116,7 @@ async def test_get_rating_uninitialized(uninitialized_service):
 
 async def test_load_rating_type_ids(uninitialized_service):
     service = uninitialized_service
-    await service._load_rating_type_ids()
+    await service.update_data()
 
     assert service._rating_type_ids == {"global": 1, "ladder_1v1": 2}
 
