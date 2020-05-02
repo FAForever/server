@@ -3,7 +3,7 @@ import time
 from collections import OrderedDict, deque
 from concurrent.futures import CancelledError
 from datetime import datetime, timezone
-from typing import Deque, Dict, List, Optional, Tuple
+from typing import Deque, Dict, Iterable, Optional, Tuple
 
 import server.metrics as metrics
 
@@ -41,7 +41,7 @@ class MatchmakerQueue:
         game_service: "GameService",
         name: str,
         name_key: str,
-        map_pools: List[Tuple[MapPool, Optional[int], Optional[int]]] = []
+        map_pools: Iterable[Tuple[MapPool, Optional[int], Optional[int]]] = ()
     ):
         self.game_service = game_service
         self.name = name

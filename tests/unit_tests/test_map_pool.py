@@ -9,7 +9,7 @@ from server.types import Map
 
 @pytest.fixture(scope="session")
 def map_pool_factory():
-    def make(map_pool_id=0, name="Test Pool", maps=[]):
+    def make(map_pool_id=0, name="Test Pool", maps=()):
         return MapPool(
             map_pool_id=map_pool_id,
             name=name,
