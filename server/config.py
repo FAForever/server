@@ -23,7 +23,7 @@ trueskill.setup(mu=1500, sigma=500, beta=240, tau=10, draw_probability=0.10)
 
 class ConfigurationStore:
     def __init__(self):
-        self._callbacks: Dict[str, Callable[[Any, Any], None]] = {}
+        self._callbacks: Dict[str, Callable] = {}
         self.refresh()
 
     def refresh(self) -> None:

@@ -38,7 +38,7 @@ async def test_api_patch(api_accessor):
     result = await api_accessor.api_patch('test', data)
     api_accessor.api_session.session.request.assert_called_once_with(
         "PATCH",
-        config.API_BASE_URL+'test',
+        config.API_BASE_URL + 'test',
         headers={'Content-type': 'application/json'},
         json=data
     )

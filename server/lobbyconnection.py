@@ -78,7 +78,7 @@ class LobbyConnection:
         self.game_service = game_service
         self.player_service = players
         self.nts_client = nts_client
-        self.coturn_generator = CoturnHMAC()
+        self.coturn_generator = CoturnHMAC(config.COTURN_HOSTS, config.COTURN_KEYS)
         self.ladder_service = ladder_service
         self._authenticated = False
         self.player = None  # type: Player

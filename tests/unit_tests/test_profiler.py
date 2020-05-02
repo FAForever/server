@@ -15,14 +15,16 @@ pytestmark = pytest.mark.asyncio
 async def test_profiler_scheduling():
     mock_player_service = []
     interval = 0.1
-    profiler = Profiler(interval, mock_player_service, max_count=10, outfile=None)
-    profiler._run = CoroutineMock()
+    profiler = Profiler(
+        interval, mock_player_service, duration=0.1, max_count=10, outfile=None
+    )
+    profiler.profiler.enable = mock.Mock()
 
     profiler.start()
     await asyncio.sleep(2)
 
-    assert profiler.current_count == 10
-    assert profiler._run.await_count == 10
+    assert profiler.profile_count == 10
+    assert profiler.profiler.enable.call_count == 10
 
 
 @fast_forward(20)
@@ -37,7 +39,7 @@ async def test_profiler_cancel():
     profiler.cancel()
     await asyncio.sleep(10)
 
-    assert profiler.current_count < 20
+    assert profiler.profile_count < 20
     assert profiler._run.await_count < 20
 
 
@@ -53,7 +55,7 @@ async def test_profiler_immediately_cancelled():
     profiler.cancel()
     await asyncio.sleep(10)
 
-    assert profiler.current_count == 0
+    assert profiler.profile_count == 0
     profiler._run.assert_not_awaited()
 
 

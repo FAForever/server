@@ -19,7 +19,7 @@ class Profiler:
         self.profiler = cProfile.Profile()
         self.interval = interval
         self.duration = duration
-        self.current_count = 0
+        self.profile_count = 0
         self.max_count = max_count
 
         self._player_service = player_service
@@ -40,32 +40,33 @@ class Profiler:
         await asyncio.sleep(self.interval)
 
         if self._running:
-            self.current_count += 1
             try:
                 await self._run()
             except CancelledError:
                 pass
 
-        if self.current_count < self.max_count and self._running:
+        if self.profile_count < self.max_count and self._running:
             self._task = asyncio.create_task(self._next_run())
         else:
             self.cancel()
 
     async def _run(self):
-        if len(self._player_service) > 1000:
+        if len(self._player_service) > 1500:
             self._logger.info(
                 "Refusing to profile under high load %i/%i",
-                self.current_count,
+                self.profile_count,
                 self.max_count,
             )
             return
+
+        self.profile_count += 1
 
         self._logger.info("Starting profiler")
         self.profiler.enable()
         await asyncio.sleep(self.duration)
         self.profiler.disable()
 
-        self._logger.info("Done profiling %i/%i", self.current_count, self.max_count)
+        self._logger.info("Done profiling %i/%i", self.profile_count, self.max_count)
         if self._outfile is not None:
             self.profiler.dump_stats(self._outfile)
 

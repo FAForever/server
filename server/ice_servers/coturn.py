@@ -16,16 +16,11 @@ from server.config import config
 
 
 class CoturnHMAC:
-    def __init__(self, coturn_hosts=None, coturn_keys=None):
-        if coturn_hosts is None:
-            coturn_hosts = config.COTURN_HOSTS
-        if coturn_keys is None:
-            coturn_keys = config.COTURN_KEYS
-
+    def __init__(self, coturn_hosts=[], coturn_keys=[]):
         self.coturn_hosts = coturn_hosts
         self.coturn_keys = coturn_keys
 
-    def server_tokens(self, username='faf-user', ttl=None)-> List[Dict]:
+    def server_tokens(self, username='faf-user', ttl=None) -> List[Dict]:
         if ttl is None:
             ttl = config.TWILIO_TTL
 
