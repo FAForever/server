@@ -12,6 +12,9 @@ TRACE = 5
 logging.addLevelName(TRACE, "TRACE")
 logging.getLogger("aiomeasures").setLevel(logging.INFO)
 
+# Constants
+FFA_TEAM = 1
+
 # Credit to Axle for parameter changes,
 # see: http://forums.faforever.com/viewtopic.php?f=45&t=11698#p119599
 # Optimum values for ladder here, using them for global as well.
@@ -22,9 +25,6 @@ class ConfigurationStore:
     def __init__(self):
         self._callbacks: Dict[str, Callable[[Any, Any], None]] = {}
         self.refresh()
-
-        # Constants
-        self.FFA_TEAM = 1
 
     def refresh(self) -> None:
         default_file = "default_conf.yaml"
@@ -39,7 +39,7 @@ class ConfigurationStore:
         for key, value in config_dict.items():
             self._update(key.upper(), value)
 
-    def register_callback(self, key: str, callback: Callable[[Any, Any], None]) -> None:
+    def register_callback(self, key: str, callback: Callable) -> None:
         self._callbacks[key.upper()] = callback
 
     def _update(self, key: str, new_value: Any) -> None:
@@ -67,6 +67,4 @@ def set_log_level():
 
 
 config = ConfigurationStore()
-
-
 config.register_callback("LOG_LEVEL", set_log_level)

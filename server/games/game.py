@@ -8,7 +8,7 @@ from enum import Enum, unique
 from typing import Any, Dict, Optional, Tuple
 
 import pymysql
-from server.config import config
+from server.config import FFA_TEAM
 from server.games.game_rater import GameRater
 from server.games.game_results import GameOutcome, GameResult, GameResults
 from server.rating import RatingType
@@ -237,7 +237,7 @@ class Game:
         if len(self.players) < 3:
             return False
 
-        return config.FFA_TEAM in self.teams
+        return FFA_TEAM in self.teams
 
     @property
     def is_multi_team(self) -> bool:
@@ -250,7 +250,7 @@ class Game:
     @property
     def is_even(self) -> bool:
         teams = self.team_count()
-        if config.FFA_TEAM in teams:    # someone is in ffa team, all teams need to have 1 player
+        if FFA_TEAM in teams:    # someone is in ffa team, all teams need to have 1 player
             c = 1
             teams.pop(1)
         else:

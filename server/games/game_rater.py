@@ -1,7 +1,7 @@
 from typing import Dict, List, Set
 
 import trueskill
-from server.config import config
+from server.config import FFA_TEAM
 from server.games.game_results import GameOutcome
 from server.players import Player
 from server.rating import RatingType
@@ -44,17 +44,17 @@ class GameRater(object):
         example input: {team1: [p1, p2], team2: [p3, p4]}
         example output: [ {p1: Rating, p2: Rating}, {p3: Rating, p4: Rating} ]
         """
-        if config.FFA_TEAM in self._players_by_team:
+        if FFA_TEAM in self._players_by_team:
             number_of_parties = (
-                len(self._players_by_team[config.FFA_TEAM]) + len(self._players_by_team) - 1
+                len(self._players_by_team[FFA_TEAM]) + len(self._players_by_team) - 1
             )
             if (
-                len(self._players_by_team[config.FFA_TEAM]) == 2
+                len(self._players_by_team[FFA_TEAM]) == 2
                 and len(self._players_by_team) == 1
             ):
                 return [
                     {player: Rating(*player.ratings[self._rating_type])}
-                    for player in self._players_by_team[config.FFA_TEAM]
+                    for player in self._players_by_team[FFA_TEAM]
                 ]
             elif number_of_parties != 2:
                 raise GameRatingError(

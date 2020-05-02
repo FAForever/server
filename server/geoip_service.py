@@ -28,16 +28,16 @@ class GeoIpService(Service):
     """
 
     def __init__(self):
-        self.file_path = config.GEO_IP_DATABASE_PATH
+        self.refresh_file_path()
+        config.register_callback("GEO_IP_DATABASE_PATH", self.refresh_file_path)
+
         self.db = None
         self.db_update_time = None
 
         self.check_geoip_db_file_updated()
 
-        def refresh_file_path():
-            nonlocal self
-            self.file_path = config.GEO_IP_DATABASE_PATH
-        config.register_callback("GEO_IP_DATABASE_PATH", refresh_file_path)
+    def refresh_file_path(self):
+        self.file_path = config.GEO_IP_DATABASE_PATH
 
     async def initialize(self) -> None:
         await self.check_update_geoip_db()

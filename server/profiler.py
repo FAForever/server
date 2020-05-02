@@ -1,16 +1,20 @@
 import asyncio
+from asyncio import CancelledError
 import cProfile
-import logging
 
 from server.config import config
 from server.decorators import with_logger
-from server.timing import at_interval
 
 
 @with_logger
 class Profiler:
     def __init__(
-        self, interval, player_service, duration=2, max_count=300, outfile="profile.txt"
+        self,
+        interval,
+        player_service,
+        duration=2,
+        max_count=300,
+        outfile="server.profile",
     ):
         self.profiler = cProfile.Profile()
         self.interval = interval
@@ -27,19 +31,25 @@ class Profiler:
 
     def start(self):
         self._running = True
+        if self.profiler is None:
+            self.profiler = cProfile.Profile()
         if self._task is None:
-            self._task = asyncio.create_task(Profiler._next_run(self))
+            self._task = asyncio.create_task(self._next_run())
 
     async def _next_run(self):
         await asyncio.sleep(self.interval)
 
-        if not self._running:
-            return
-        self.current_count += 1
-        await self._run()
+        if self._running:
+            self.current_count += 1
+            try:
+                await self._run()
+            except CancelledError:
+                pass
 
         if self.current_count < self.max_count and self._running:
-            self._task = asyncio.create_task(Profiler._next_run(self))
+            self._task = asyncio.create_task(self._next_run())
+        else:
+            self.cancel()
 
     async def _run(self):
         if len(self._player_service) > 1000:
@@ -65,8 +75,11 @@ class Profiler:
             self._task.cancel()
             self._task = None
 
+        del self.profiler
+        self.profiler = None
 
-def profiler_factory(player_service, start=True):
+
+def get_profiler_factory(player_service, start=True):
     async def make():
         """
         Intentionally asynchronous, since it is to be used as an on-change

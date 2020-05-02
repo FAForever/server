@@ -9,6 +9,7 @@ from typing import Dict, List
 from server.config import config
 from twilio.rest import Client as TwilioRestClient
 
+
 class TwilioNTS:
     """
     Twilio NTS Token Service

@@ -1,5 +1,5 @@
 from server.config import config
-from server.profiler import Profiler, profiler_factory
+from server.profiler import Profiler, get_profiler_factory
 
 import asyncio
 import pytest
@@ -72,6 +72,7 @@ async def test_profiler():
     profiler.profiler.dump_stats.assert_called()
 
     profiler.cancel()
+    assert profiler.profiler is None
 
 
 @fast_forward(10)
@@ -80,7 +81,7 @@ async def test_profiler_not_running_under_high_load():
     mock_player_service.__len__.return_value = 2000
     interval = 0.1
     profiler = Profiler(
-        interval, mock_player_service, duration=0.1, max_count=10, outfile="mock.file"
+        interval, mock_player_service, duration=0.1, max_count=30, outfile="mock.file"
     )
     profiler.profiler.dump_stats = mock.Mock()
 
@@ -90,11 +91,26 @@ async def test_profiler_not_running_under_high_load():
     profiler.profiler.dump_stats.assert_not_called()
 
     profiler.cancel()
+    assert profiler.profiler is None
+
+
+@fast_forward(10)
+async def test_profiler_deleted_when_done():
+    mock_player_service = []
+    interval = 0.1
+    profiler = Profiler(
+        interval, mock_player_service, duration=0.1, max_count=10, outfile=None
+    )
+
+    profiler.start()
+    await asyncio.sleep(5)
+
+    assert profiler.profiler is None
 
 
 async def test_profiler_factory():
     mock_player_service = []
-    make_profiler = profiler_factory(mock_player_service, start=False)
+    make_profiler = get_profiler_factory(mock_player_service, start=False)
 
     config.PROFILING_INTERVAL = 10
     config.PROFILING_DURATION = 2
@@ -107,7 +123,7 @@ async def test_profiler_factory():
 
 async def test_profiler_factory_negative_interval():
     mock_player_service = []
-    make_profiler = profiler_factory(mock_player_service)
+    make_profiler = get_profiler_factory(mock_player_service)
 
     config.PROFILING_INTERVAL = -1
 
