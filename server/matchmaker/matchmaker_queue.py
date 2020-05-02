@@ -40,12 +40,10 @@ class MatchmakerQueue:
         self,
         game_service: "GameService",
         name: str,
-        name_key: str,
         map_pools: Iterable[Tuple[MapPool, Optional[int], Optional[int]]] = ()
     ):
         self.game_service = game_service
         self.name = name
-        self.name_key = name_key
         self.map_pools = {info[0].id: info for info in map_pools}
 
         self.queue: Dict[Search, Search] = OrderedDict()
@@ -59,7 +57,7 @@ class MatchmakerQueue:
         map_pool: MapPool,
         min_rating: Optional[int],
         max_rating: Optional[int]
-    ):
+    ) -> None:
         self.map_pools[map_pool.id] = (map_pool, min_rating, max_rating)
 
     def get_map_pool_for_rating(self, rating: int) -> Optional[MapPool]:
@@ -185,7 +183,6 @@ class MatchmakerQueue:
         """
         return {
             'queue_name': self.name,
-            'queue_name_key': self.name_key,
             'queue_pop_time': datetime.fromtimestamp(self.timer.next_queue_pop, timezone.utc).isoformat(),
             'boundary_80s': [search.boundary_80 for search in self.queue.values()],
             'boundary_75s': [search.boundary_75 for search in self.queue.values()]

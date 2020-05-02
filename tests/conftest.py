@@ -238,14 +238,14 @@ async def geoip_service() -> GeoIpService:
 
 @pytest.fixture(scope="session")
 def queue_factory():
-    def make(name="Test Queue", name_key="test_queue"):
-        return MatchmakerQueue(mock.Mock(), name, name_key)
+    def make(name="Test Queue"):
+        return MatchmakerQueue(mock.Mock(), name)
     return make
 
 
 @pytest.fixture
 def matchmaker_queue(game_service) -> MatchmakerQueue:
-    queue = MatchmakerQueue(game_service, "ladder1v1test", "ladder1v1test")
+    queue = MatchmakerQueue(game_service, "ladder1v1test")
     return queue
 
 

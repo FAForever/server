@@ -11,7 +11,10 @@ from tests.utils import fast_forward
 pytestmark = pytest.mark.asyncio
 
 
-async def test_load_from_database(ladder_service):
+async def test_load_from_database(ladder_service, queue_factory):
+    # Insert some outdated data
+    ladder_service.queues["test"] = queue_factory(name="test")
+
     # Data should be the same on each load
     for _ in range(3):
         await ladder_service.update_data()
@@ -187,41 +190,21 @@ async def test_start_game_called_on_match(
     ladder_service.start_game.assert_called_once()
 
 
-async def test_start_game_map_selection(
-    ladder_service: LadderService, player_factory
+@pytest.mark.parametrize("ratings", (
+    (((1500, 500), 0), ((1000, 100), 1000)),
+    (((1500, 500), 0), ((300, 100), 1000)),
+    (((400, 100), 10), ((300, 100), 1000))
+))
+async def test_start_game_map_selection_newbie_pool(
+    ladder_service: LadderService, player_factory, ratings
 ):
     p1 = player_factory(
-        ladder_rating=(1500, 500),
-        ladder_games=0,
+        ladder_rating=ratings[0][0],
+        ladder_games=ratings[0][1],
     )
     p2 = player_factory(
-        ladder_rating=(1000, 100),
-        ladder_games=1000,
-    )
-
-    queue = ladder_service.queues["ladder1v1"]
-    queue.map_pools.clear()
-    newbie_map_pool = mock.Mock()
-    full_map_pool = mock.Mock()
-    queue.add_map_pool(newbie_map_pool, None, 500)
-    queue.add_map_pool(full_map_pool, 500, None)
-
-    await ladder_service.start_game(p1, p2)
-
-    newbie_map_pool.choose_map.assert_called_once()
-    full_map_pool.choose_map.assert_not_called()
-
-
-async def test_start_game_map_selection_newbies(
-    ladder_service: LadderService, player_factory
-):
-    p1 = player_factory(
-        ladder_rating=(1500, 500),
-        ladder_games=0,
-    )
-    p2 = player_factory(
-        ladder_rating=(300, 100),
-        ladder_games=1000,
+        ladder_rating=ratings[1][0],
+        ladder_games=ratings[1][1],
     )
 
     queue = ladder_service.queues["ladder1v1"]

@@ -64,17 +64,17 @@ def test_choose_map_all_maps_played_not_in_pool(map_pool_factory):
 
 def test_choose_map_all_maps_played_returns_least_played(map_pool_factory):
     # Large enough so the test is unlikely to pass by chance
-    NUM_MAPS = 1000
-    LIMIT = 3
+    num_maps = 1000
+    limit = 3
 
     played_map_ids = [
         # Set up player history so map 1 is played the most
-        i + 1 + j for i in range(LIMIT)
-        for j in range(NUM_MAPS) if i + 1 + j <= NUM_MAPS
+        i + 1 + j for i in range(limit)
+        for j in range(num_maps) if i + 1 + j <= num_maps
     ]
 
     maps = [
-        Map(i + 1, "some_map", "maps/some_map.v001.zip") for i in range(NUM_MAPS)
+        Map(i + 1, "some_map", "maps/some_map.v001.zip") for i in range(num_maps)
     ]
     # Shuffle the list so that `choose_map` can't just return the first map
     random.shuffle(maps)

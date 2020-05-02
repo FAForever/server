@@ -1,16 +1,15 @@
 import asyncio
 import contextlib
 from collections import defaultdict
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Tuple
 
 import aiocron
-from server.db import FAFDatabase
-from server.rating import RatingType
 from sqlalchemy import and_, func, select, text
 
 from .async_functions import gather_without_exceptions
 from .config import config
 from .core import Service
+from .db import FAFDatabase
 from .db.models import game_featuredMods, game_player_stats, game_stats
 from .db.models import map as t_map
 from .db.models import (
@@ -22,6 +21,7 @@ from .game_service import GameService
 from .matchmaker import MapPool, MatchmakerQueue, Search
 from .players import Player, PlayerState
 from .protocol import DisconnectedError
+from .rating import RatingType
 from .types import GameLaunchOptions, Map
 
 
@@ -45,8 +45,7 @@ class LadderService(Service):
         self.queues = {
             'ladder1v1': MatchmakerQueue(
                 game_service,
-                'ladder1v1',
-                'ladder1v1',
+                name='ladder1v1',
                 map_pools=[(self.ladder_1v1_map_pool, None, None)]
             )
         }
@@ -64,6 +63,7 @@ class LadderService(Service):
     async def update_data(self) -> None:
         async with self._db.acquire() as conn:
             # Legacy ladder1v1 map pool
+            # TODO: Remove this
             result = await conn.execute(
                 "SELECT ladder_map.idmap, "
                 "table_map.name, "
@@ -71,70 +71,79 @@ class LadderService(Service):
                 "FROM ladder_map "
                 "INNER JOIN table_map ON table_map.id = ladder_map.idmap"
             )
-            maps = [
-                Map(row[0], row[1], row[2]) async for row in result
-            ]
+            maps = [Map(*row) async for row in result]
             self.ladder_1v1_map_pool.set_maps(maps)
 
-            # New map pools
-            result = await conn.execute(
-                select([
-                    map_pool.c.id,
-                    map_pool.c.name,
-                    map_version.c.map_id,
-                    map_version.c.filename,
-                    t_map.c.display_name
-                ]).select_from(
-                    map_pool.join(map_pool_map_version)
-                    .join(map_version)
-                    .join(t_map)
-                )
-            )
-            map_pool_maps = {}
-            async for row in result:
-                id_ = row[map_pool.c.id]
-                name = row[map_pool.c.name]
-                if id_ not in map_pool_maps:
-                    map_pool_maps[id_] = (name, list())
-                _, map_list = map_pool_maps[id_]
-                map_list.append(
-                    Map(
-                        row[map_version.c.map_id],
-                        row[t_map.c.display_name],
-                        row[map_version.c.filename]
-                    )
-                )
+            map_pool_maps = await self.fetch_map_pools(conn)
+            matchmaker_queues = await self.fetch_matchmaker_queues(conn)
 
-            # Update the matchmaker queues
-            result = await conn.execute(
-                select([matchmaker_queue, matchmaker_queue_map_pool])
-                .select_from(matchmaker_queue.join(matchmaker_queue_map_pool))
-            )
-
-            queue_names = set()
-            async for row in result:
-                name = row[matchmaker_queue.c.technical_name]
+            for name, map_pools in matchmaker_queues.items():
                 if name not in self.queues:
                     self.queues[name] = MatchmakerQueue(
                         name=name,
-                        name_key=row[matchmaker_queue.c.name_key],
                         game_service=self.game_service
                     )
                 queue = self.queues[name]
-                if name not in queue_names:
-                    queue.map_pools.clear()
-                map_pool_id = row[matchmaker_queue_map_pool.c.map_pool_id]
-                map_pool_name, map_list = map_pool_maps[map_pool_id]
-                queue.add_map_pool(
-                    MapPool(map_pool_id, map_pool_name, map_list),
-                    row[matchmaker_queue_map_pool.c.min_rating],
-                    row[matchmaker_queue_map_pool.c.max_rating]
-                )
-                queue_names.add(name)
+                queue.map_pools.clear()
+                for map_pool_id, min_rating, max_rating in map_pools:
+                    map_pool_name, map_list = map_pool_maps[map_pool_id]
+                    queue.add_map_pool(
+                        MapPool(map_pool_id, map_pool_name, map_list),
+                        min_rating,
+                        max_rating
+                    )
             # Remove queues that don't exist anymore
             for queue_name in list(self.queues.keys()):
-                if queue_name not in queue_names:
+                if queue_name not in matchmaker_queues:
                     del self.queues[queue_name]
+
+    async def fetch_map_pools(self, conn) -> Dict[int, Tuple[str, List[Map]]]:
+        result = await conn.execute(
+            select([
+                map_pool.c.id,
+                map_pool.c.name,
+                map_version.c.map_id,
+                map_version.c.filename,
+                t_map.c.display_name
+            ]).select_from(
+                map_pool.join(map_pool_map_version)
+                .join(map_version)
+                .join(t_map)
+            )
+        )
+        map_pool_maps: Dict[int, Tuple[str, List[Map]]] = {}
+        async for row in result:
+            id_ = row.id
+            name = row.name
+            if id_ not in map_pool_maps:
+                map_pool_maps[id_] = (name, list())
+            _, map_list = map_pool_maps[id_]
+            map_list.append(
+                Map(row.map_id, row.display_name, row.filename)
+            )
+
+        return map_pool_maps
+
+    async def fetch_matchmaker_queues(self, conn) -> Dict[str, Tuple[int, int, int]]:
+        result = await conn.execute(
+            select([
+                matchmaker_queue.c.technical_name,
+                matchmaker_queue_map_pool.c.map_pool_id,
+                matchmaker_queue_map_pool.c.min_rating,
+                matchmaker_queue_map_pool.c.max_rating
+            ])
+            .select_from(matchmaker_queue.join(matchmaker_queue_map_pool))
+        )
+
+        matchmaker_queues = defaultdict(list)
+        async for row in result:
+            name = row.technical_name
+            matchmaker_queues[name].append((
+                row.map_pool_id,
+                row.min_rating,
+                row.max_rating)
+            )
+        return matchmaker_queues
 
     async def start_search(self, initiator: Player, search: Search, queue_name: str):
         # TODO: Consider what happens if players disconnect while starting
@@ -267,10 +276,10 @@ class LadderService(Service):
                 ) else 0
                 for player in (host, guest)
             )
-            map_pool = self.queues["ladder1v1"].get_map_pool_for_rating(rating)
-            if not map_pool:
+            pool = self.queues["ladder1v1"].get_map_pool_for_rating(rating)
+            if not pool:
                 raise RuntimeError(f"No map pool available for rating {rating}!")
-            (map_id, map_name, map_path) = map_pool.choose_map(played_map_ids)
+            (map_id, map_name, map_path) = pool.choose_map(played_map_ids)
 
             game = self.game_service.create_game(
                 game_mode='ladder1v1',
@@ -367,8 +376,7 @@ class LadderService(Service):
                 ).order_by(game_stats.c.startTime.desc()).limit(limit)
 
             result.extend([
-                row[game_stats.c.mapId]
-                async for row in await conn.execute(query)
+                row.mapId async for row in await conn.execute(query)
             ])
         return result
 

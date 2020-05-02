@@ -959,7 +959,7 @@ async def test_command_game_matchmaking(lobbyconnection):
 
 
 async def test_command_matchmaker_info(lobbyconnection, ladder_service, queue_factory):
-    queue = queue_factory("test", "test_key")
+    queue = queue_factory("test")
     queue.timer.next_queue_pop = 1_562_000_000
 
     lobbyconnection.ladder_service.queues = {
@@ -975,7 +975,6 @@ async def test_command_matchmaker_info(lobbyconnection, ladder_service, queue_fa
         'queues': [
             {
                 'queue_name': 'test',
-                'queue_name_key': 'test_key',
                 'queue_pop_time': '2019-07-01T16:53:20+00:00',
                 'boundary_80s': [],
                 'boundary_75s': []

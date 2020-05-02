@@ -44,7 +44,7 @@ class MapPool(object):
             if count != least_count:
                 break
         else:
-            i += 1
+            i = len(least_common)
 
         available_maps = [self.maps[id_] for id_, _ in least_common[:i]]
         return random.choice(available_maps)
