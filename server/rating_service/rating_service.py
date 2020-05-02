@@ -189,22 +189,7 @@ class RatingService(Service):
                 return new_rating
 
             if rating_type is RatingType.GLOBAL:
-                # The following query counts entries in game_player_stats,
-                # where the rating of the given player improved.
-                # If the concerned game was never rated, after_mean is NULL
-                # and the row is not counted.
-                count_wins_query = (
-                    select([func.count()])
-                    .select_from(game_player_stats)
-                    .where(
-                        and_(
-                            game_player_stats.c.playerId == player_id,
-                            game_player_stats.c.mean < game_player_stats.c.after_mean,
-                        )
-                    )
-                )
-                result_proxy = await conn.execute(count_wins_query)
-                won_games = await result_proxy.scalar()
+                won_games = int(row["numGames"] / 2)
             else:
                 won_games = row["winGames"]
 

@@ -172,18 +172,6 @@ async def test_get_player_rating_legacy(semiinitialized_service):
     assert db_ratings[1]["mean"] == 1301
 
 
-async def test_get_player_rating_legacy_global_won_games(semiinitialized_service):
-    service = semiinitialized_service
-    # Player 51 should have no leaderboard_rating entry
-    # but three game_player_stats entries
-    # one with increased rating, one with decreased rating, and one unrated.
-    player_id = 51
-    await service._get_player_rating(player_id, RatingType.GLOBAL)
-
-    db_ratings = await get_all_ratings(service._db, player_id)
-    assert db_ratings[0]["won_games"] == 1
-
-
 async def test_get_new_player_rating_created(semiinitialized_service):
     """
     Upon rating games of players without a rating entry in both new and legacy
