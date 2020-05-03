@@ -1,9 +1,9 @@
 import asyncio
 import logging
 import os
-import yaml
-
 from typing import Any, Callable, Dict
+
+import yaml
 
 import trueskill
 

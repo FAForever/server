@@ -1,11 +1,11 @@
+import asyncio
+from unittest import mock
+
+import pytest
+
+from asynctest import CoroutineMock
 from server.config import config
 from server.profiler import Profiler, get_profiler_factory
-
-import asyncio
-import pytest
-from unittest import mock
-from asynctest import CoroutineMock
-
 from tests.utils import fast_forward
 
 pytestmark = pytest.mark.asyncio

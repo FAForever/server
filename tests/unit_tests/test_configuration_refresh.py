@@ -1,12 +1,13 @@
 import asyncio
-import pytest
 from unittest import mock
 
+import pytest
 import yaml
-from server import config
 
-from tests.utils import fast_forward
+from asynctest import CoroutineMock
+from server import config
 from server.configuration_service import ConfigurationService
+from tests.utils import fast_forward
 
 pytestmark = pytest.mark.asyncio
 
@@ -20,6 +21,11 @@ async def config_service(monkeypatch):
     yield service
 
     await service.shutdown()
+
+
+async def test_unknown_config_variable():
+    with pytest.raises(KeyError):
+        config["GARBAGE_VARIABLE"]
 
 
 async def test_configuration_refresh(monkeypatch):
@@ -47,14 +53,19 @@ async def test_configuration_refreshes_automatically(config_service, monkeypatch
 @fast_forward(20)
 async def test_config_callback_on_change(config_service, monkeypatch):
     callback = mock.Mock()
+    callback_coroutine = CoroutineMock()
     config.register_callback("DB_PASSWORD", callback)
+    config.register_callback("CONTROL_SERVER_PORT", callback_coroutine)
     assert config["DB_PASSWORD"] == "banana"
+    assert config["CONTROL_SERVER_PORT"] == 4000
 
     monkeypatch.setenv("CONFIGURATION_FILE", "tests/data/refresh_conf.yaml")
     await asyncio.sleep(10)
 
     assert config["DB_PASSWORD"] == "apple"
+    assert config["CONTROL_SERVER_PORT"] == 4001
     callback.assert_called_once()
+    callback_coroutine.assert_awaited_once()
 
 
 @fast_forward(20)

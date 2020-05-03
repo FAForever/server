@@ -2,7 +2,6 @@ import asyncio
 
 from .config import config
 from .core import Service
-
 from .decorators import with_logger
 
 

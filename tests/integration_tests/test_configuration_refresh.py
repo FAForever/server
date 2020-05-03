@@ -1,9 +1,10 @@
 import asyncio
 import logging
+
 import pytest
 
-from tests.utils import fast_forward
 from server.configuration_service import ConfigurationService
+from tests.utils import fast_forward
 
 pytestmark = pytest.mark.asyncio
 

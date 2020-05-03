@@ -26,9 +26,9 @@ class TwilioNTS:
         :param key str: Twilio Auth Token
         """
         if sid is None:
-            sid = config["TWILIO_ACCOUNT_SID"]
+            sid = config["TWILIO_ACCOUNT_SID"]  # pragma: no cover
         if token is None:
-            token = config["TWILIO_TOKEN"]
+            token = config["TWILIO_TOKEN"] # pragma: no cover
 
         self.twilio_account_sid = sid
         self.twilio_token = token
@@ -41,7 +41,7 @@ class TwilioNTS:
         :param ttl - ttl in seconds
         """
         if ttl is None:
-            ttl = config["TWILIO_TTL"]
+            ttl = config["TWILIO_TTL"]  # pragma: no cover
 
         loop = asyncio.get_running_loop()
         token = await loop.run_in_executor(None, partial(self.client.tokens.create, ttl))
