@@ -118,7 +118,7 @@ async def test_profiler_factory():
     config.PROFILING_DURATION = 2
     config.PROFILING_COUNT = 300
 
-    profiler = await make_profiler()
+    profiler = make_profiler()
 
     assert profiler._player_service is mock_player_service
 
@@ -129,6 +129,6 @@ async def test_profiler_factory_negative_interval():
 
     config.PROFILING_INTERVAL = -1
 
-    profiler = await make_profiler()
+    profiler = make_profiler()
 
     assert profiler is None

@@ -1,6 +1,6 @@
 import asyncio
-from asyncio import CancelledError
 import cProfile
+from asyncio import CancelledError
 
 from server.config import config
 from server.decorators import with_logger
@@ -81,12 +81,7 @@ class Profiler:
 
 
 def get_profiler_factory(player_service, start=True):
-    async def make():
-        """
-        Intentionally asynchronous, since it is to be used as an on-change
-        hook for `config.PROFILING_INTERVAL`, and coroutines will first be run
-        after _all_ config variables have been loaded.
-        """
+    def make():
         if (
             config.PROFILING_INTERVAL <= 0
             or config.PROFILING_DURATION <= 0
