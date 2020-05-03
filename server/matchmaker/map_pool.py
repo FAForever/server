@@ -39,12 +39,10 @@ class MapPool(object):
 
         least_common = counter.most_common()[::-1]
         least_count = least_common[0][1]
-        # Find the index of one past the last map with lowest count
+        # Trim off the maps with higher play counts
         for i, (_, count) in enumerate(least_common):
             if count != least_count:
+                least_common = least_common[:i]
                 break
-        else:
-            i = len(least_common)
 
-        available_maps = [self.maps[id_] for id_, _ in least_common[:i]]
-        return random.choice(available_maps)
+        return self.maps[random.choice(least_common)[0]]

@@ -63,7 +63,7 @@ class LadderService(Service):
     async def update_data(self) -> None:
         async with self._db.acquire() as conn:
             # Legacy ladder1v1 map pool
-            # TODO: Remove this
+            # TODO: Remove this https://github.com/FAForever/server/issues/581
             result = await conn.execute(
                 "SELECT ladder_map.idmap, "
                 "table_map.name, "
@@ -111,7 +111,7 @@ class LadderService(Service):
                 .join(t_map)
             )
         )
-        map_pool_maps: Dict[int, Tuple[str, List[Map]]] = {}
+        map_pool_maps = {}
         async for row in result:
             id_ = row.id
             name = row.name
@@ -141,8 +141,8 @@ class LadderService(Service):
             matchmaker_queues[name].append((
                 row.map_pool_id,
                 row.min_rating,
-                row.max_rating)
-            )
+                row.max_rating
+            ))
         return matchmaker_queues
 
     async def start_search(self, initiator: Player, search: Search, queue_name: str):
@@ -279,7 +279,7 @@ class LadderService(Service):
             pool = self.queues["ladder1v1"].get_map_pool_for_rating(rating)
             if not pool:
                 raise RuntimeError(f"No map pool available for rating {rating}!")
-            (map_id, map_name, map_path) = pool.choose_map(played_map_ids)
+            map_id, map_name, map_path = pool.choose_map(played_map_ids)
 
             game = self.game_service.create_game(
                 game_mode='ladder1v1',
