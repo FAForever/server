@@ -33,11 +33,11 @@ logging.getLogger().setLevel(TRACE)
 def pytest_addoption(parser):
     parser.addoption('--aiodebug', action='store_true', default=False,
                      help='Enable asyncio debugging')
-    parser.addoption('--mysql_host', action='store', default=config.DB_SERVER, help='mysql host to use for test database')
-    parser.addoption('--mysql_username', action='store', default=config.DB_LOGIN, help='mysql username to use for test database')
-    parser.addoption('--mysql_password', action='store', default=config.DB_PASSWORD, help='mysql password to use for test database')
+    parser.addoption('--mysql_host', action='store', default=config["DB_SERVER"], help='mysql host to use for test database')
+    parser.addoption('--mysql_username', action='store', default=config["DB_LOGIN"], help='mysql username to use for test database')
+    parser.addoption('--mysql_password', action='store', default=config["DB_PASSWORD"], help='mysql password to use for test database')
     parser.addoption('--mysql_database', action='store', default='faf_test', help='mysql database to use for tests')
-    parser.addoption('--mysql_port',     action='store', default=int(config.DB_PORT), help='mysql port to use for tests')
+    parser.addoption('--mysql_port',     action='store', default=int(config["DB_PORT"]), help='mysql port to use for tests')
 
 
 def pytest_configure(config):

@@ -254,7 +254,7 @@ class LadderService(Service):
         recently_played_map_ids = {
             map_id for player in players
             for map_id in await self.get_ladder_history(
-                player, limit=config.LADDER_ANTI_REPETITION_LIMIT
+                player, limit=config["LADDER_ANTI_REPETITION_LIMIT"]
             )
         }
         randomized_maps = random.sample(maps, len(maps))

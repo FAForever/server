@@ -43,7 +43,12 @@ def st_searches_list(draw, min_players=1, max_players=10, max_size=30):
 
 @pytest.fixture
 def p(player_factory):
-    def make(mean: int, deviation: int, ladder_games: int = config.NEWBIE_MIN_GAMES+1, name=None):
+    def make(
+        mean: int, 
+        deviation: int, 
+        ladder_games: int = config["NEWBIE_MIN_GAMES"]+1, 
+        name=None
+    ):
         """Make a player with the given ratings"""
         player = player_factory(
             ladder_rating=(mean, deviation),

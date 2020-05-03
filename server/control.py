@@ -63,7 +63,7 @@ async def run_control_server(
     Initialize the http control server
     """
     host = socket.gethostbyname(socket.gethostname())
-    port = config.CONTROL_SERVER_PORT
+    port = config["CONTROL_SERVER_PORT"]
 
     ctrl_server = ControlServer(game_service, player_service, host, port)
     await ctrl_server.start()

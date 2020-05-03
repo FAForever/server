@@ -22,7 +22,7 @@ class CoturnHMAC:
 
     def server_tokens(self, username='faf-user', ttl=None) -> List[Dict]:
         if ttl is None:
-            ttl = config.TWILIO_TTL
+            ttl = config["TWILIO_TTL"]
 
         servers = []
 

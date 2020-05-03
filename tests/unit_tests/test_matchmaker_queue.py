@@ -15,7 +15,7 @@ pytestmark = pytest.mark.asyncio
 
 @pytest.fixture
 def player_factory(player_factory):
-    return functools.partial(player_factory, ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+    return functools.partial(player_factory, ladder_games=(config["NEWBIE_MIN_GAMES"] + 1))
 
 
 @pytest.fixture
@@ -25,7 +25,7 @@ def matchmaker_players(player_factory):
            player_factory('Zoidberg', player_id=3, ladder_rating=(1300, 175)), \
            player_factory('QAI', player_id=4, ladder_rating=(2350, 125)), \
            player_factory('Rhiza', player_id=5, ladder_rating=(1200, 175)), \
-           player_factory('Newbie', player_id=6, ladder_rating=(1200, 175), ladder_games=config.NEWBIE_MIN_GAMES - 1)
+           player_factory('Newbie', player_id=6, ladder_rating=(1200, 175), ladder_games=config["NEWBIE_MIN_GAMES"] - 1)
 
 
 @pytest.fixture
@@ -171,7 +171,7 @@ async def test_search_expansion_controlled_by_failed_matching_attempts(matchmake
 
     s1.register_failed_matching_attempt()
     assert e1 == s1.search_expansion
-    assert e1 == config.LADDER_SEARCH_EXPANSION_MAX
+    assert e1 == config["LADDER_SEARCH_EXPANSION_MAX"]
 
 
 async def test_search_await(matchmaker_players):
@@ -188,24 +188,24 @@ async def test_queue_time_until_next_pop():
     t1 = PopTimer("test_1")
     t2 = PopTimer("test_2")
 
-    assert t1.time_until_next_pop(0, 0) == config.QUEUE_POP_TIME_MAX
+    assert t1.time_until_next_pop(0, 0) == config["QUEUE_POP_TIME_MAX"]
     # If the desired number of players is not reached within the maximum waiting
     # time, then the next round must wait for the maximum allowed time as well.
     a1 = t1.time_until_next_pop(
-        num_queued=config.QUEUE_POP_DESIRED_PLAYERS - 1,
-        time_queued=config.QUEUE_POP_TIME_MAX
+        num_queued=config["QUEUE_POP_DESIRED_PLAYERS"] - 1,
+        time_queued=config["QUEUE_POP_TIME_MAX"]
     )
-    assert a1 == config.QUEUE_POP_TIME_MAX
+    assert a1 == config["QUEUE_POP_TIME_MAX"]
 
     # If there are more players than expected, the time should drop
     a2 = t1.time_until_next_pop(
-        num_queued=config.QUEUE_POP_DESIRED_PLAYERS * 2,
-        time_queued=config.QUEUE_POP_TIME_MAX
+        num_queued=config["QUEUE_POP_DESIRED_PLAYERS"] * 2,
+        time_queued=config["QUEUE_POP_TIME_MAX"]
     )
     assert a2 < a1
 
     # Make sure that queue moving averages are calculated independently
-    assert t2.time_until_next_pop(0, 0) == config.QUEUE_POP_TIME_MAX
+    assert t2.time_until_next_pop(0, 0) == config["QUEUE_POP_TIME_MAX"]
 
 
 async def test_queue_pop_time_moving_average_size():
@@ -217,11 +217,11 @@ async def test_queue_pop_time_moving_average_size():
     # The rate should be extremely high, meaning the pop time should be low
     assert t1.time_until_next_pop(100, 1) < 1
 
-    for _ in range(config.QUEUE_POP_TIME_MOVING_AVG_SIZE):
+    for _ in range(config["QUEUE_POP_TIME_MOVING_AVG_SIZE"]):
         t1.time_until_next_pop(0, 100)
 
     # The rate should be extremely low, meaning the pop time should be high
-    assert t1.time_until_next_pop(0, 100) == config.QUEUE_POP_TIME_MAX
+    assert t1.time_until_next_pop(0, 100) == config["QUEUE_POP_TIME_MAX"]
 
 
 @fast_forward(3)

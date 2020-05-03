@@ -81,24 +81,19 @@ class Profiler:
 
 
 def get_profiler_factory(player_service, start=True):
-    async def make():
-        """
-        Intentionally asynchronous, since it is to be used as an on-change
-        hook for `config.PROFILING_INTERVAL`, and coroutines will first be run
-        after _all_ config variables have been loaded.
-        """
+    def make():
         if (
-            config.PROFILING_INTERVAL <= 0
-            or config.PROFILING_DURATION <= 0
-            or config.PROFILING_COUNT <= 0
+            config["PROFILING_INTERVAL"] <= 0
+            or config["PROFILING_DURATION"] <= 0
+            or config["PROFILING_COUNT"] <= 0
         ):
             return
 
         profiler = Profiler(
-            config.PROFILING_INTERVAL,
+            config["PROFILING_INTERVAL"],
             player_service,
-            duration=config.PROFILING_DURATION,
-            max_count=config.PROFILING_COUNT,
+            duration=config["PROFILING_DURATION"],
+            max_count=config["PROFILING_COUNT"],
         )
         if start:
             profiler.start()  # pragma: no cover

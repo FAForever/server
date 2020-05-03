@@ -50,13 +50,18 @@ class Search:
         Returns an adjusted mean with a simple linear interpolation between current mean and a specified base mean
         """
         mean, dev = player.ratings[RatingType.LADDER_1V1]
-        adjusted_mean = ((config.NEWBIE_MIN_GAMES - player.game_count[RatingType.LADDER_1V1]) * config.NEWBIE_BASE_MEAN
-                         + player.game_count[RatingType.LADDER_1V1] * mean) / config.NEWBIE_MIN_GAMES
+        adjusted_mean = (
+            (
+                (config["NEWBIE_MIN_GAMES"] - player.game_count[RatingType.LADDER_1V1])
+                * config["NEWBIE_BASE_MEAN"]
+                + player.game_count[RatingType.LADDER_1V1] * mean
+            ) / config["NEWBIE_MIN_GAMES"]
+        )
         return adjusted_mean, dev
 
     @staticmethod
     def _is_ladder_newbie(player: Player) -> bool:
-        return player.game_count[RatingType.LADDER_1V1] <= config.NEWBIE_MIN_GAMES
+        return player.game_count[RatingType.LADDER_1V1] <= config["NEWBIE_MIN_GAMES"]
 
     def is_ladder1v1_search(self) -> bool:
         return self.rating_type is RatingType.LADDER_1V1
@@ -73,13 +78,13 @@ class Search:
 
     def has_no_top_player(self) -> bool:
         max_rating = max(map(lambda rating_tuple: rating_tuple[0], self.ratings))
-        return max_rating < config.TOP_PLAYER_MIN_RATING
+        return max_rating < config["TOP_PLAYER_MIN_RATING"]
 
     @property
     def ratings(self):
         ratings = []
         for player, rating in zip(self.players, self.raw_ratings):
-            # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
+            # New players (less than config["NEWBIE_MIN_GAMES"] games) match against less skilled opponents
             if self._is_ladder_newbie(player):
                 rating = self.adjusted_rating(player)
             ratings.append(rating)
@@ -123,8 +128,8 @@ class Search:
         """
 
         return min(
-            self._failed_matching_attempts * config.LADDER_SEARCH_EXPANSION_STEP,
-            config.LADDER_SEARCH_EXPANSION_MAX
+            self._failed_matching_attempts * config["LADDER_SEARCH_EXPANSION_STEP"],
+            config["LADDER_SEARCH_EXPANSION_MAX"]
         )
 
     def register_failed_matching_attempt(self):

@@ -799,7 +799,7 @@ async def test_command_ice_servers(
     lobbyconnection.protocol.send_message.assert_called_once_with({
         "command": "ice_servers",
         "ice_servers": ["coturn_tokens", "twilio_tokens"],
-        "ttl": config.TWILIO_TTL
+        "ttl": config["TWILIO_TTL"]
     })
 
 
@@ -1010,7 +1010,7 @@ async def test_connection_lost_send(lobbyconnection, mock_protocol):
 
 async def test_check_policy_conformity(lobbyconnection, policy_server):
     host, port = policy_server
-    config.FAF_POLICY_SERVER_BASE_URL = f"http://{host}:{port}"
+    config["FAF_POLICY_SERVER_BASE_URL"] = f"http://{host}:{port}"
 
     honest = await lobbyconnection.check_policy_conformity(1, "honest", session=100)
     assert honest is True
@@ -1018,7 +1018,7 @@ async def test_check_policy_conformity(lobbyconnection, policy_server):
 
 async def test_check_policy_conformity_fraudulent(lobbyconnection, policy_server, database):
     host, port = policy_server
-    config.FAF_POLICY_SERVER_BASE_URL = f"http://{host}:{port}"
+    config["FAF_POLICY_SERVER_BASE_URL"] = f"http://{host}:{port}"
 
     # 42 is not a valid player ID which should cause a SQL constraint error
     lobbyconnection.abort = CoroutineMock()
@@ -1043,7 +1043,7 @@ async def test_check_policy_conformity_fraudulent(lobbyconnection, policy_server
 
 async def test_check_policy_conformity_fatal(lobbyconnection, policy_server):
     host, port = policy_server
-    config.FAF_POLICY_SERVER_BASE_URL = f"http://{host}:{port}"
+    config["FAF_POLICY_SERVER_BASE_URL"] = f"http://{host}:{port}"
 
     for result in ('vm', 'already_associated', 'fraudulent'):
         lobbyconnection.abort = CoroutineMock()

@@ -37,7 +37,7 @@ class GeoIpService(Service):
         self.check_geoip_db_file_updated()
 
     def refresh_file_path(self):
-        self.file_path = config.GEO_IP_DATABASE_PATH
+        self.file_path = config["GEO_IP_DATABASE_PATH"]
 
     async def initialize(self) -> None:
         await self.check_update_geoip_db()
@@ -76,7 +76,7 @@ class GeoIpService(Service):
         """
             Check if the geoip database is old and update it if so.
         """
-        if not config.GEO_IP_LICENSE_KEY:
+        if not config["GEO_IP_LICENSE_KEY"]:
             self._logger.warning(
                 "GEO_IP_LICENSE_KEY not set! Unable to download GeoIP database!"
             )
@@ -89,7 +89,7 @@ class GeoIpService(Service):
             )
             delta = datetime.now() - date_modified
 
-            if delta.days > config.GEO_IP_DATABASE_MAX_AGE_DAYS:
+            if delta.days > config["GEO_IP_DATABASE_MAX_AGE_DAYS"]:
                 self._logger.info("Geoip database is out of date")
                 await self.download_geoip_db()
         except FileNotFoundError:    # pragma: no cover
@@ -111,15 +111,15 @@ class GeoIpService(Service):
             Download the geoip database to a file. If the downloaded file is not
         a valid gzip file, then it does NOT overwrite the old file.
         """
-        assert config.GEO_IP_LICENSE_KEY is not None
+        assert config["GEO_IP_LICENSE_KEY"] is not None
 
         self._logger.info("Downloading new geoip database")
 
         # Download new file to a temp location
         temp_file_path = "/tmp/geoip.mmdb.tar.gz"
         await self._download_file(
-            config.GEO_IP_DATABASE_URL,
-            config.GEO_IP_LICENSE_KEY,
+            config["GEO_IP_DATABASE_URL"],
+            config["GEO_IP_LICENSE_KEY"],
             temp_file_path
         )
 
