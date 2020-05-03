@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-from typing import Any, Callable, Dict
+from typing import Callable, Dict
 
 import yaml
 
