@@ -78,7 +78,7 @@ class LobbyConnection:
         self.game_service = game_service
         self.player_service = players
         self.nts_client = nts_client
-        self.coturn_generator = CoturnHMAC(config["COTURN_HOSTS"], config["COTURN_KEYS"])
+        self.coturn_generator = CoturnHMAC(config.COTURN_HOSTS, config.COTURN_KEYS)
         self.ladder_service = ladder_service
         self._authenticated = False
         self.player = None  # type: Player
@@ -430,14 +430,10 @@ class LobbyConnection:
 
         # New accounts are prevented from playing if they didn't link to steam
 
-        if config["FORCE_STEAM_LINK"] and not steamid and create_time.timestamp() > config["FORCE_STEAM_LINK_AFTER_DATE"]:
+        if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() > config.FORCE_STEAM_LINK_AFTER_DATE:
             self._logger.debug('Rejected login from new user: %s, %s, %s', player_id, username, self.session)
             raise ClientError(
-                "Unfortunately, you must currently link your account to Steam "
-                "in order to play Forged Alliance Forever. You can do so on "
-                "<a href='{steamlink_url}'>{steamlink_url}</a>.".format(
-                    steamlink_url=config["WWW_URL"] + '/account/link'
-                ),
+                "Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on <a href='{steamlink_url}'>{steamlink_url}</a>.".format(steamlink_url=config.WWW_URL + '/account/link'),
                 recoverable=False)
 
         self._logger.debug("Login from: %s, %s, %s", player_id, username, self.session)
@@ -469,7 +465,7 @@ class LobbyConnection:
                 "Some features might not work as expected. "
                 "If you experience any problems please download the latest "
                 "version of the official client from "
-                f'<a href="{config["WWW_URL"]}">{config["WWW_URL"]}</a>'
+                f'<a href="{config.WWW_URL}">{config.WWW_URL}</a>'
             )
 
         if not self._version or not self.user_agent:
@@ -495,7 +491,7 @@ class LobbyConnection:
         return True
 
     async def check_policy_conformity(self, player_id, uid_hash, session, ignore_result=False):
-        url = config["FAF_POLICY_SERVER_BASE_URL"] + '/verify'
+        url = config.FAF_POLICY_SERVER_BASE_URL + '/verify'
         payload = {
             "player_id": player_id,
             "uid_hash": uid_hash,
@@ -525,27 +521,19 @@ class LobbyConnection:
                     "positive."
                 )
             })
-            url = config["WWW_URL"]
-            await self.send_warning(
-                "Your computer seems to be a virtual machine.<br><br> "
-                "In order to log in from a VM, you have to link your account to Steam: "
-                f"<a href='{url}/account/link'>{url}/account/link</a>.<br>"
-                "If you need an exception, please contact an admin "
-                "or moderator on the forums",
-                fatal=True
-            )
+            await self.send_warning("Your computer seems to be a virtual machine.<br><br>In order to "
+                                    "log in from a VM, you have to link your account to Steam: <a href='" +
+                                    config.WWW_URL + "/account/link'>" +
+                                    config.WWW_URL + "/account/link</a>.<br>If you need an exception, please contact an "
+                                                     "admin or moderator on the forums", fatal=True)
 
         if response.get('result', '') == 'already_associated':
             self._logger.warning("UID hit: %d: %s", player_id, uid_hash)
-            url = config["WWW_URL"]
-            await self.send_warning(
-                "Your computer is already associated with another FAF account.<br><br>"
-                "In order to log in with an additional account, you have to link it to Steam: "
-                f"<a href='{url}/account/link'>{url}/account/link</a>.<br>"
-                "If you need an exception, please contact an admin "
-                "or moderator on the forums",
-                fatal=True
-            )
+            await self.send_warning("Your computer is already associated with another FAF account.<br><br>In order to "
+                                    "log in with an additional account, you have to link it to Steam: <a href='" +
+                                    config.WWW_URL + "/account/link'>" +
+                                    config.WWW_URL + "/account/link</a>.<br>If you need an exception, please contact an "
+                                                     "admin or moderator on the forums", fatal=True)
             return False
 
         if response.get('result', '') == 'fraudulent':
@@ -980,10 +968,10 @@ class LobbyConnection:
                 async for row in result:
                     uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = (row[i] for i in range(12))
                     try:
-                        link = urllib.parse.urljoin(config["CONTENT_URL"], "faf/vault/" + filename)
+                        link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
                         thumbstr = ""
                         if icon:
-                            thumbstr = urllib.parse.urljoin(config["CONTENT_URL"], "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
+                            thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
 
                         out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
                                    comments=[], description=description, played=played, likes=likes,
@@ -1001,10 +989,10 @@ class LobbyConnection:
 
                 row = await result.fetchone()
                 uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = (row[i] for i in range(13))
-                link = urllib.parse.urljoin(config["CONTENT_URL"], "faf/vault/" + filename)
+                link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
                 thumbstr = ""
                 if icon:
-                    thumbstr = urllib.parse.urljoin(config["CONTENT_URL"], "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
+                    thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
 
                 out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
                            comments=[], description=description, played=played, likes=likes + 1,
@@ -1042,7 +1030,7 @@ class LobbyConnection:
         if not self.player:
             return
 
-        ttl = config["TWILIO_TTL"]
+        ttl = config.TWILIO_TTL
         ice_servers = self.coturn_generator.server_tokens(
             username=self.player.id,
             ttl=ttl

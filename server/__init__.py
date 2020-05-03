@@ -51,9 +51,9 @@ DIRTY_REPORT_INTERVAL = 1  # Seconds
 stats = None
 logger = logging.getLogger("server")
 
-if config["ENABLE_METRICS"]:
-    logger.info("Using prometheus on port: %i", config["METRICS_PORT"])
-    start_http_server(config["METRICS_PORT"])
+if config.ENABLE_METRICS:
+    logger.info("Using prometheus on port: %i", config.METRICS_PORT)
+    start_http_server(config.METRICS_PORT)
 
 
 PING_MSG = QDataStreamProtocol.pack_message('PING')

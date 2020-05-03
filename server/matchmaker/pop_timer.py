@@ -28,12 +28,12 @@ class PopTimer(object):
     def __init__(self, queue_name: str):
         self.queue_name = queue_name
         # Set up deque's for calculating a moving average
-        self.last_queue_amounts: Deque[int] = deque(maxlen=config["QUEUE_POP_TIME_MOVING_AVG_SIZE"])
-        self.last_queue_times: Deque[float] = deque(maxlen=config["QUEUE_POP_TIME_MOVING_AVG_SIZE"])
+        self.last_queue_amounts: Deque[int] = deque(maxlen=config.QUEUE_POP_TIME_MOVING_AVG_SIZE)
+        self.last_queue_times: Deque[float] = deque(maxlen=config.QUEUE_POP_TIME_MOVING_AVG_SIZE)
 
         self._last_queue_pop = time()
         # Optimistically schedule first pop for half of the max pop time
-        self.next_queue_pop = self._last_queue_pop + (config["QUEUE_POP_TIME_MAX"] / 2)
+        self.next_queue_pop = self._last_queue_pop + (config.QUEUE_POP_TIME_MAX / 2)
 
     async def next_pop(self, get_num_players: Callable[[], int]):
         """ Wait for the timer to pop. get_num_players needs to return the current
@@ -61,7 +61,7 @@ class PopTimer(object):
 
         total_players = sum(self.last_queue_amounts)
         if total_players == 0:
-            return config["QUEUE_POP_TIME_MAX"]
+            return config.QUEUE_POP_TIME_MAX
 
         total_times = sum(self.last_queue_times)
         if total_times:
@@ -71,12 +71,12 @@ class PopTimer(object):
             )
 
         # Obtained by solving $ NUM_PLAYERS = rate * time $ for time.
-        next_pop_time = config["QUEUE_POP_DESIRED_PLAYERS"] * total_times / total_players
-        if next_pop_time > config["QUEUE_POP_TIME_MAX"]:
+        next_pop_time = config.QUEUE_POP_DESIRED_PLAYERS * total_times / total_players
+        if next_pop_time > config.QUEUE_POP_TIME_MAX:
             self._logger.warning(
                 "Required time (%.2fs) for %s is larger than max pop time (%ds). "
                 "Consider increasing the max pop time",
-                next_pop_time, self.queue_name, config["QUEUE_POP_TIME_MAX"]
+                next_pop_time, self.queue_name, config.QUEUE_POP_TIME_MAX
             )
-            return config["QUEUE_POP_TIME_MAX"]
+            return config.QUEUE_POP_TIME_MAX
         return next_pop_time

@@ -101,7 +101,7 @@ class GameStatsService(Service):
         self._lowest_acu_health(_count(blueprint_stats, lambda x: x.get('lowest_health', 0), *ACUS), survived, a_queue)
         self._highscore(scored_highest, number_of_humans, a_queue)
 
-        if config["USE_API"]:
+        if config.USE_API:
             updated_achievements = await self._achievement_service.execute_batch_update(player.id, a_queue)
 
             if updated_achievements is None:

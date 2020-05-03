@@ -20,7 +20,7 @@ class ConfigurationService(Service):
         while True:
             self._logger.info("Refreshing configuration variables")
             self._store.refresh()
-            await asyncio.sleep(self._store["CONFIGURATION_REFRESH_TIME"])
+            await asyncio.sleep(self._store.CONFIGURATION_REFRESH_TIME)
 
     async def shutdown(self) -> None:
         if self._task is not None:

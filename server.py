@@ -44,18 +44,18 @@ async def main():
 
     database = server.db.FAFDatabase(loop)
     await database.connect(
-        host=config["DB_SERVER"],
-        port=int(config["DB_PORT"]),
-        user=config["DB_LOGIN"],
-        password=config["DB_PASSWORD"],
+        host=config.DB_SERVER,
+        port=int(config.DB_PORT),
+        user=config.DB_LOGIN,
+        password=config.DB_PASSWORD,
         maxsize=10,
-        db=config["DB_NAME"],
+        db=config.DB_NAME,
     )
 
     # Set up services
 
     twilio_nts = None
-    if config["TWILIO_ACCOUNT_SID"]:
+    if config.TWILIO_ACCOUNT_SID:
         twilio_nts = TwilioNTS()
     else:
         logger.warning(
@@ -138,6 +138,6 @@ if __name__ == '__main__':
         )
     )
     logger.addHandler(stderr_handler)
-    logger.setLevel(config["LOG_LEVEL"])
+    logger.setLevel(config.LOG_LEVEL)
 
     asyncio.run(main())

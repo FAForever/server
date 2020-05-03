@@ -114,11 +114,11 @@ async def test_profiler_factory():
     mock_player_service = []
     make_profiler = get_profiler_factory(mock_player_service, start=False)
 
-    config["PROFILING_INTERVAL"] = 10
-    config["PROFILING_DURATION"] = 2
-    config["PROFILING_COUNT"] = 300
+    config.PROFILING_INTERVAL = 10
+    config.PROFILING_DURATION = 2
+    config.PROFILING_COUNT = 300
 
-    profiler = make_profiler()
+    profiler = await make_profiler()
 
     assert profiler._player_service is mock_player_service
 
@@ -127,8 +127,8 @@ async def test_profiler_factory_negative_interval():
     mock_player_service = []
     make_profiler = get_profiler_factory(mock_player_service)
 
-    config["PROFILING_INTERVAL"] = -1
+    config.PROFILING_INTERVAL = -1
 
-    profiler = make_profiler()
+    profiler = await make_profiler()
 
     assert profiler is None
