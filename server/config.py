@@ -31,36 +31,45 @@ class ConfigurationStore:
         self.PROFILING_COUNT = 300
         self.PROFILING_DURATION = 2
         self.PROFILING_INTERVAL = -1
+
         self.CONTROL_SERVER_PORT = 4000
         self.METRICS_PORT = 8011
         self.ENABLE_METRICS = False
+
         self.DB_SERVER = "127.0.0.1"
         self.DB_PORT = 3306
         self.DB_LOGIN = "root"
         self.DB_PASSWORD = "banana"
         self.DB_NAME = "faf"
+
         self.API_CLIENT_ID = "client_id"
         self.API_CLIENT_SECRET = "banana"
         self.API_TOKEN_URI = "https://api.test.faforever.com/oauth/token"
         self.API_BASE_URL = "https://api.test.faforever.com/"
         self.USE_API = True
+
         self.WWW_URL = "https://www.faforever.com"
         self.CONTENT_URL = "http://content.faforever.com"
         self.FAF_POLICY_SERVER_BASE_URL = "http://faf-policy-server"
+
         self.FORCE_STEAM_LINK_AFTER_DATE = 1536105599  # 5 september 2018 by default
         self.FORCE_STEAM_LINK = False
+
         self.NEWBIE_BASE_MEAN = 500
         self.NEWBIE_MIN_GAMES = 10
         self.TOP_PLAYER_MIN_RATING = 1600
+
         self.TWILIO_ACCOUNT_SID = ""
         self.TWILIO_TOKEN = ""
         self.TWILIO_TTL = 86400
         self.COTURN_HOSTS = []
         self.COTURN_KEYS = []
+
         self.GEO_IP_DATABASE_PATH = "GeoLite2-Country.mmdb"
         self.GEO_IP_DATABASE_URL = "https://download.maxmind.com/app/geoip_download"
         self.GEO_IP_LICENSE_KEY = ""
         self.GEO_IP_DATABASE_MAX_AGE_DAYS = 22
+
         self.LADDER_ANTI_REPETITION_LIMIT = 3
         self.LADDER_SEARCH_EXPANSION_MAX = 0.25
         self.LADDER_SEARCH_EXPANSION_STEP = 0.05

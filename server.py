@@ -23,7 +23,6 @@ from server.api.api_accessor import ApiAccessor
 from server.core import create_services
 from server.ice_servers.nts import TwilioNTS
 from server.profiler import get_profiler_factory
-from server.timing import at_interval
 
 
 async def main():
@@ -75,18 +74,19 @@ async def main():
     ])
 
     make_profiler = get_profiler_factory(services["player_service"])
-    await make_profiler()
+    make_profiler()
     config.register_callback("PROFILING_INTERVAL", make_profiler)
 
     ctrl_server = await server.run_control_server(
         services["player_service"],
         services["game_service"]
     )
+
     async def restart_control_server():
         nonlocal ctrl_server
         nonlocal services
 
-        ctrl_server.shutdown()
+        await ctrl_server.shutdown()
         ctrl_server = await server.run_control_server(
             services["player_service"],
             services["game_service"]
