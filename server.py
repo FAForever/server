@@ -75,6 +75,8 @@ async def main():
 
     profiler = Profiler(services["player_service"])
     profiler.refresh()
+    config.register_callback("PROFILING_COUNT", profiler.refresh)
+    config.register_callback("PROFILING_DURATION", profiler.refresh)
     config.register_callback("PROFILING_INTERVAL", profiler.refresh)
 
     ctrl_server = await server.run_control_server(
