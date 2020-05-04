@@ -6,7 +6,7 @@ from typing import List, Optional, Tuple
 from server.rating import RatingType
 from trueskill import Rating, quality
 
-from .. import config
+from ..config import config
 from ..decorators import with_logger
 from ..players import Player
 

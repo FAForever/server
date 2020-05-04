@@ -5,7 +5,7 @@ from typing import Callable, Deque
 
 import server.metrics as metrics
 
-from .. import config
+from ..config import config
 from ..decorators import with_logger
 
 

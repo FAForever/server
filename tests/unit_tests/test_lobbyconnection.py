@@ -1010,49 +1010,43 @@ async def test_connection_lost_send(lobbyconnection, mock_protocol):
 
 async def test_check_policy_conformity(lobbyconnection, policy_server):
     host, port = policy_server
-    with mock.patch(
-        'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
-        f'http://{host}:{port}'
-    ):
-        honest = await lobbyconnection.check_policy_conformity(1, "honest", session=100)
-        assert honest is True
+    config.FAF_POLICY_SERVER_BASE_URL = f"http://{host}:{port}"
+
+    honest = await lobbyconnection.check_policy_conformity(1, "honest", session=100)
+    assert honest is True
 
 
 async def test_check_policy_conformity_fraudulent(lobbyconnection, policy_server, database):
     host, port = policy_server
-    with mock.patch(
-        'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
-        f'http://{host}:{port}'
-    ):
-        # 42 is not a valid player ID which should cause a SQL constraint error
-        lobbyconnection.abort = CoroutineMock()
-        with pytest.raises(ClientError):
-            await lobbyconnection.check_policy_conformity(42, "fraudulent", session=100)
+    config.FAF_POLICY_SERVER_BASE_URL = f"http://{host}:{port}"
 
-        lobbyconnection.abort = CoroutineMock()
-        player_id = 200
-        honest = await lobbyconnection.check_policy_conformity(player_id, "fraudulent", session=100)
-        assert honest is False
-        lobbyconnection.abort.assert_called_once()
+    # 42 is not a valid player ID which should cause a SQL constraint error
+    lobbyconnection.abort = CoroutineMock()
+    with pytest.raises(ClientError):
+        await lobbyconnection.check_policy_conformity(42, "fraudulent", session=100)
 
-        # Check that the user has a ban entry in the database
-        async with database.acquire() as conn:
-            result = await conn.execute(select([ban.c.reason]).where(
-                ban.c.player_id == player_id
-            ))
-            rows = await result.fetchall()
-            assert rows is not None
-            assert rows[-1][ban.c.reason] == "Auto-banned because of fraudulent login attempt"
+    lobbyconnection.abort = CoroutineMock()
+    player_id = 200
+    honest = await lobbyconnection.check_policy_conformity(player_id, "fraudulent", session=100)
+    assert honest is False
+    lobbyconnection.abort.assert_called_once()
+
+    # Check that the user has a ban entry in the database
+    async with database.acquire() as conn:
+        result = await conn.execute(select([ban.c.reason]).where(
+            ban.c.player_id == player_id
+        ))
+        rows = await result.fetchall()
+        assert rows is not None
+        assert rows[-1][ban.c.reason] == "Auto-banned because of fraudulent login attempt"
 
 
 async def test_check_policy_conformity_fatal(lobbyconnection, policy_server):
     host, port = policy_server
-    with mock.patch(
-        'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
-        f'http://{host}:{port}'
-    ):
-        for result in ('vm', 'already_associated', 'fraudulent'):
-            lobbyconnection.abort = CoroutineMock()
-            honest = await lobbyconnection.check_policy_conformity(1, result, session=100)
-            assert honest is False
-            lobbyconnection.abort.assert_called_once()
+    config.FAF_POLICY_SERVER_BASE_URL = f"http://{host}:{port}"
+
+    for result in ('vm', 'already_associated', 'fraudulent'):
+        lobbyconnection.abort = CoroutineMock()
+        honest = await lobbyconnection.check_policy_conformity(1, result, session=100)
+        assert honest is False
+        lobbyconnection.abort.assert_called_once()

@@ -9,7 +9,7 @@ from server.rating import RatingType
 from sqlalchemy import and_, func, select, text
 
 from .async_functions import gather_without_exceptions
-from .config import LADDER_ANTI_REPETITION_LIMIT
+from .config import config
 from .core import Service
 from .db.models import game_featuredMods, game_player_stats, game_stats
 from .decorators import with_logger
@@ -254,7 +254,7 @@ class LadderService(Service):
         recently_played_map_ids = {
             map_id for player in players
             for map_id in await self.get_ladder_history(
-                player, limit=LADDER_ANTI_REPETITION_LIMIT
+                player, limit=config.LADDER_ANTI_REPETITION_LIMIT
             )
         }
         randomized_maps = random.sample(maps, len(maps))

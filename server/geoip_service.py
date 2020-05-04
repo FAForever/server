@@ -11,7 +11,7 @@ import aiohttp
 import geoip2.database
 from maxminddb.errors import InvalidDatabaseError
 
-from . import config
+from .config import config
 from .core import Service
 from .decorators import with_logger
 from .timing import Timer
@@ -28,11 +28,16 @@ class GeoIpService(Service):
     """
 
     def __init__(self):
-        self.file_path = config.GEO_IP_DATABASE_PATH
+        self.refresh_file_path()
+        config.register_callback("GEO_IP_DATABASE_PATH", self.refresh_file_path)
+
         self.db = None
         self.db_update_time = None
 
         self.check_geoip_db_file_updated()
+
+    def refresh_file_path(self):
+        self.file_path = config.GEO_IP_DATABASE_PATH
 
     async def initialize(self) -> None:
         await self.check_update_geoip_db()

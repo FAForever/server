@@ -12,7 +12,7 @@ from typing import Optional
 from prometheus_client import start_http_server
 
 from server.db import FAFDatabase
-from . import config as config
+from .config import config
 from .games.game import GameState, VisibilityState
 from .stats.game_stats_service import GameStatsService
 from .gameconnection import GameConnection
@@ -20,6 +20,7 @@ from .ice_servers.nts import TwilioNTS
 from .lobbyconnection import LobbyConnection
 from .protocol import QDataStreamProtocol
 from .servercontext import ServerContext
+from .configuration_service import ConfigurationService  # noqa: F401
 from .geoip_service import GeoIpService
 from .player_service import PlayerService
 from .game_service import GameService
@@ -51,6 +52,7 @@ stats = None
 logger = logging.getLogger("server")
 
 if config.ENABLE_METRICS:
+    logger.info("Using prometheus on port: %i", config.METRICS_PORT)
     start_http_server(config.METRICS_PORT)
 
 

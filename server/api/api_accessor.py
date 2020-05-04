@@ -4,9 +4,7 @@ from typing import Optional
 from oauthlib.oauth2.rfc6749.errors import (
     InsecureTransportError, MissingTokenError
 )
-from server.config import (
-    API_BASE_URL, API_CLIENT_ID, API_CLIENT_SECRET, API_TOKEN_URI
-)
+from server.config import config
 from server.decorators import with_logger
 
 from .oauth_session import OAuth2Session
@@ -23,9 +21,9 @@ class SessionManager:
     async def get_session(self) -> Optional[OAuth2Session]:
         if not self.session:
             self.session = OAuth2Session(
-                client_id=API_CLIENT_ID,
-                client_secret=API_CLIENT_SECRET,
-                token_url=API_TOKEN_URI
+                client_id=config.API_CLIENT_ID,
+                client_secret=config.API_CLIENT_SECRET,
+                token_url=config.API_TOKEN_URI
             )
         if not self.session.is_expired():
             return self.session
@@ -43,8 +41,8 @@ class SessionManager:
         except InsecureTransportError:  # pragma: no cover
             self._logger.error(
                 "API (%s,%s) should be HTTPS, not HTTP. Enable OAUTHLIB_INSECURE_TRANSPORT to avoid this warning.",
-                API_BASE_URL,
-                API_TOKEN_URI
+                config.API_BASE_URL,
+                config.API_TOKEN_URI
             )
         except SSLError:  # pragma: no cover
             self._logger.error("The certificate verification failed while connecting the API")
@@ -86,14 +84,14 @@ class ApiAccessor:
 
     async def api_get(self, path):
         api = await self.api_session.get_session()
-        return await api.request('GET', API_BASE_URL + path)
+        return await api.request('GET', config.API_BASE_URL + path)
 
     async def api_patch(self, path, json_data):
         api = await self.api_session.get_session()
         headers = {'Content-type': 'application/json'}
         status, data = await api.request(
             "PATCH",
-            API_BASE_URL + path,
+            config.API_BASE_URL + path,
             headers=headers,
             json=json_data
         )

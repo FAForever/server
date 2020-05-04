@@ -1,6 +1,6 @@
 import json
 
-from server import config
+from server.config import config
 from server.core import Service
 from server.games import Game
 from server.games.game_results import GameOutcome

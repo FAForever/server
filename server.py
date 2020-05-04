@@ -17,15 +17,12 @@ import sys
 from datetime import datetime
 
 import server
-import server.config as config
+from server.config import config
 from docopt import docopt
 from server.api.api_accessor import ApiAccessor
-from server.config import (
-    DB_LOGIN, DB_NAME, DB_PASSWORD, DB_PORT, DB_SERVER, TWILIO_ACCOUNT_SID
-)
 from server.core import create_services
 from server.ice_servers.nts import TwilioNTS
-from server.timing import at_interval
+from server.profiler import Profiler
 
 
 async def main():
@@ -44,32 +41,27 @@ async def main():
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
 
-    if config.ENABLE_METRICS:
-        logger.info("Using prometheus on port: {}".format(config.METRICS_PORT))
-
     database = server.db.FAFDatabase(loop)
     await database.connect(
-        host=DB_SERVER,
-        port=int(DB_PORT),
-        user=DB_LOGIN,
-        password=DB_PASSWORD,
+        host=config.DB_SERVER,
+        port=int(config.DB_PORT),
+        user=config.DB_LOGIN,
+        password=config.DB_PASSWORD,
         maxsize=10,
-        db=DB_NAME,
+        db=config.DB_NAME,
     )
 
     # Set up services
 
     twilio_nts = None
-    if TWILIO_ACCOUNT_SID:
+    if config.TWILIO_ACCOUNT_SID:
         twilio_nts = TwilioNTS()
     else:
         logger.warning(
             "Twilio is not set up. You must set TWILIO_ACCOUNT_SID and TWILIO_TOKEN to use the Twilio ICE servers."
         )
 
-    api_accessor = None
-    if config.USE_API:
-        api_accessor = ApiAccessor()
+    api_accessor = ApiAccessor()
 
     services = create_services({
         "api_accessor": api_accessor,
@@ -81,37 +73,27 @@ async def main():
         service.initialize() for service in services.values()
     ])
 
-    if config.PROFILING_INTERVAL > 0:
-        logger.warning("Profiling enabled! This will create additional load.")
-        import cProfile
-        pr = cProfile.Profile()
-        profiled_count = 0
-        max_count = 300
-
-        @at_interval(config.PROFILING_INTERVAL, loop=loop)
-        async def run_profiler():
-            nonlocal profiled_count
-            nonlocal pr
-
-            if len(services["player_service"]) > 1000:
-                return
-            elif profiled_count >= max_count:
-                del pr
-                return
-
-            logger.info("Starting profiler")
-            pr.enable()
-            await asyncio.sleep(2)
-            pr.disable()
-            profiled_count += 1
-
-            logging.info("Done profiling %i/%i", profiled_count, max_count)
-            pr.dump_stats("profile.txt")
+    profiler = Profiler(services["player_service"])
+    profiler.refresh()
+    config.register_callback("PROFILING_COUNT", profiler.refresh)
+    config.register_callback("PROFILING_DURATION", profiler.refresh)
+    config.register_callback("PROFILING_INTERVAL", profiler.refresh)
 
     ctrl_server = await server.run_control_server(
         services["player_service"],
         services["game_service"]
     )
+
+    async def restart_control_server():
+        nonlocal ctrl_server
+        nonlocal services
+
+        await ctrl_server.shutdown()
+        ctrl_server = await server.run_control_server(
+            services["player_service"],
+            services["game_service"]
+        )
+    config.register_callback("CONTROL_SERVER_PORT", restart_control_server)
 
     lobby_server = await server.run_lobby_server(
         address=('', 8001),

@@ -29,9 +29,21 @@ Check if the container is running with
 
 If you cannot find `faf-server` in the list, run `docker run` without `-d` to see what happens.
 
-If you have a different root password, database name then the default (see [config.py](https://github.com/FAForever/server/blob/develop/server/config.py#L43)), you must pass it over the environment parameter of docker, e.g.
+## Configuration
 
-    docker run --link faf-db:db -p 8001:8001 -p 30351:30351 -e FAF_DB_PASSWORD=<wanted_password> -e FAF_DB_NAME=<db_name> faf-server
+If you have for example a different root password or database name than the default
+`DB_PASSWORD` and `DB_NAME` entries in
+[config.py](https://github.com/FAForever/server/blob/develop/server/config.py),
+you should provide a custom configuration file.
+This file will be used for all variables that it defines
+while the default values of `config.py` still apply for those it doesn't.
+To use your custom configuration file, pass its location as an environment
+variable to docker:
+
+    docker run --link faf-db:db -p 8001:8001 -p 30351:30351 -e CONFIGURATION_FILE=<path> faf-server
+
+You can find an example configuration file under
+[tests/data/test_config.yaml](https://github.com/FAForever/server/blob/develop/tests/data/test_config.yaml).
 
 # Contributing
 

@@ -37,7 +37,7 @@ async def lobby_server(
     geoip_service, ladder_service, policy_server
 ):
     with mock.patch(
-        'server.lobbyconnection.FAF_POLICY_SERVER_BASE_URL',
+        'server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL',
         f'http://{policy_server.host}:{policy_server.port}'
     ):
         ctx = await run_lobby_server(
