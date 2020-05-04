@@ -97,8 +97,15 @@ class ConfigurationStore:
 
         config_file = os.getenv("CONFIGURATION_FILE")
         if config_file is not None:
-            with open(config_file) as f:
-                new_values.update(yaml.safe_load(f))
+            try:
+                with open(config_file) as f:
+                    new_values.update(yaml.safe_load(f))
+            except FileNotFoundError:
+                self._logger.info("No configuration file found at %s", config_file)
+            except TypeError:
+                self._logger.info(
+                    "Configuration file at %s appears to be empty", config_file
+                )
 
         triggered_callback_keys = tuple(
             key

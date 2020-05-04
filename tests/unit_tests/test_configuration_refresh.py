@@ -34,6 +34,26 @@ async def test_configuration_refresh(monkeypatch):
     assert config.DB_PASSWORD == "apple"
 
 
+async def test_config_refresh_file_not_found(monkeypatch):
+    config.refresh()
+    assert config.DB_PASSWORD == "banana"
+
+    monkeypatch.setenv("CONFIGURATION_FILE", "tests/data/nonexistent_conf.yaml")
+    config.refresh()
+
+    assert config.DB_PASSWORD == "banana"
+
+
+async def test_config_refresh_empty_file(monkeypatch):
+    config.refresh()
+    assert config.DB_PASSWORD == "banana"
+
+    monkeypatch.setenv("CONFIGURATION_FILE", "tests/data/empty_conf.yaml")
+    config.refresh()
+
+    assert config.DB_PASSWORD == "banana"
+
+
 @fast_forward(20)
 async def test_configuration_refresh(config_service, monkeypatch):
     assert config.DB_PASSWORD == "banana"
