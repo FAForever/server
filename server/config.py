@@ -7,6 +7,8 @@ import yaml
 
 import trueskill
 
+from .decorators import with_logger
+
 # Logging setup
 TRACE = 5
 logging.addLevelName(TRACE, "TRACE")
@@ -21,6 +23,7 @@ FFA_TEAM = 1
 trueskill.setup(mu=1500, sigma=500, beta=240, tau=10, draw_probability=0.10)
 
 
+@with_logger
 class ConfigurationStore:
     def __init__(self):
         """
@@ -105,8 +108,13 @@ class ConfigurationStore:
             and getattr(self, key) != new_values[key]
         )
 
-        for key, value in new_values.items():
-            setattr(self, key, value)
+        for key, new_value in new_values.items():
+            old_value = getattr(self, key, None)
+            if new_value != old_value:
+                self._logger.info(
+                    "New value for %s: %s -> %s", key, old_value, new_value
+                )
+            setattr(self, key, new_value)
 
         for key in triggered_callback_keys:
             self._dispatch_callback(key)
