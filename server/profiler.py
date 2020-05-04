@@ -10,13 +10,13 @@ from server.decorators import with_logger
 class Profiler:
     def __init__(
         self,
-        interval,
         player_service,
-        duration=2,
-        max_count=300,
+        interval=config.PROFILING_INTERVAL,
+        duration=config.PROFILING_DURATION,
+        max_count=config.PROFILING_COUNT,
         outfile="server.profile",
     ):
-        self.profiler = cProfile.Profile()
+        self.profiler = None
         self.interval = interval
         self.duration = duration
         self.profile_count = 0
@@ -27,9 +27,18 @@ class Profiler:
 
         self._running = False
         self._task = None
-        self._loop = asyncio.get_running_loop()
 
-    def start(self):
+    def refresh(self):
+        self.interval = config.PROFILING_INTERVAL
+        self.duration = config.PROFILING_DURATION
+        self.max_count = config.PROFILING_COUNT
+        self.profile_count = 0
+
+        self.cancel()
+        if self.interval > 0 and self.duration > 0 and self.max_count > 0:
+            self._start()
+
+    def _start(self):
         self._running = True
         if self.profiler is None:
             self.profiler = cProfile.Profile()
@@ -78,25 +87,3 @@ class Profiler:
 
         del self.profiler
         self.profiler = None
-
-
-def get_profiler_factory(player_service, start=True):
-    def make():
-        if (
-            config.PROFILING_INTERVAL <= 0
-            or config.PROFILING_DURATION <= 0
-            or config.PROFILING_COUNT <= 0
-        ):
-            return
-
-        profiler = Profiler(
-            config.PROFILING_INTERVAL,
-            player_service,
-            duration=config.PROFILING_DURATION,
-            max_count=config.PROFILING_COUNT,
-        )
-        if start:
-            profiler.start()  # pragma: no cover
-        return profiler
-
-    return make

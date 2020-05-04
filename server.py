@@ -22,7 +22,7 @@ from docopt import docopt
 from server.api.api_accessor import ApiAccessor
 from server.core import create_services
 from server.ice_servers.nts import TwilioNTS
-from server.profiler import get_profiler_factory
+from server.profiler import Profiler
 
 
 async def main():
@@ -73,9 +73,9 @@ async def main():
         service.initialize() for service in services.values()
     ])
 
-    make_profiler = get_profiler_factory(services["player_service"])
-    make_profiler()
-    config.register_callback("PROFILING_INTERVAL", make_profiler)
+    profiler = Profiler(services["player_service"])
+    profiler.refresh()
+    config.register_callback("PROFILING_INTERVAL", profiler.refresh)
 
     ctrl_server = await server.run_control_server(
         services["player_service"],
