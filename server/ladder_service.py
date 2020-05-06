@@ -269,11 +269,7 @@ class LadderService(Service):
                 limit=config.LADDER_ANTI_REPETITION_LIMIT
             )
             rating = min(
-                player.ratings[RatingType.LADDER_1V1][0]
-                if (
-                    player.game_count[RatingType.LADDER_1V1] >
-                    config.NEWBIE_MIN_GAMES
-                ) else 0
+                newbie_adjusted_ladder_mean(player)
                 for player in (host, guest)
             )
             pool = self.queues["ladder1v1"].get_map_pool_for_rating(rating)
@@ -388,3 +384,11 @@ class LadderService(Service):
     async def shutdown(self):
         for queue in self.queues.values():
             queue.shutdown()
+
+
+def newbie_adjusted_ladder_mean(player: Player):
+    """Get ladder rating mean with new player's always returning a mean of 0"""
+    if player.game_count[RatingType.LADDER_1V1] > config.NEWBIE_MIN_GAMES:
+        return player.ratings[RatingType.LADDER_1V1][0]
+    else:
+        return 0
