@@ -6,7 +6,7 @@ import pytest
 import mock
 from server.config import config
 from server.decorators import with_logger
-from server.messagequeue_service import MessageQueueService
+from server.message_queue_service import MessageQueueService
 
 pytestmark = pytest.mark.asyncio
 
