@@ -51,6 +51,11 @@ class ConfigurationStore:
         self.API_BASE_URL = "https://api.test.faforever.com/"
         self.USE_API = True
 
+        self.MQ_USER = "faf-lobby"
+        self.MQ_PASSWORD = "banana"
+        self.MQ_PORT = 5672
+        self.MQ_VHOST = "/faf-lobby"
+
         self.WWW_URL = "https://www.faforever.com"
         self.CONTENT_URL = "http://content.faforever.com"
         self.FAF_POLICY_SERVER_BASE_URL = "http://faf-policy-server"

@@ -16,13 +16,13 @@ env:
     - FAF_DB_VERSION="v93"
 
 before_install:
-  - sudo /etc/init.d/mysql stop
   - git clone https://github.com/FAForever/db.git faf-db
       && pushd faf-db
       && git checkout "${FAF_DB_VERSION}"
       && ./ci/bootstrap.sh
       && popd
   - docker exec -i faf-db mysql -uroot -pbanana faf -e "select * from login;"
+  - .ci/init-rabbitmq.sh
   - python -m pip install pipenv
 
 install:
