@@ -2,7 +2,7 @@ import asyncio
 from typing import Dict
 
 import aiocron
-import server.config as config
+from server.config import config
 from server.core import Service
 from server.db import FAFDatabase
 from server.db.models import (

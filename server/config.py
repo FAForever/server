@@ -22,7 +22,6 @@ FFA_TEAM = 1
 # Optimum values for ladder here, using them for global as well.
 trueskill.setup(mu=1500, sigma=500, beta=240, tau=10, draw_probability=0.10)
 
-<<<<<<< HEAD
 
 @with_logger
 class ConfigurationStore:
