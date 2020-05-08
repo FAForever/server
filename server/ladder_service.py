@@ -87,6 +87,13 @@ class LadderService(Service):
                 queue.map_pools.clear()
                 for map_pool_id, min_rating, max_rating in map_pools:
                     map_pool_name, map_list = map_pool_maps[map_pool_id]
+                    if not map_list:
+                        self._logger.warning(
+                            "Map pool '%s' is empty! Some %s games will "
+                            "likely fail to start!",
+                            map_pool_name,
+                            name
+                        )
                     queue.add_map_pool(
                         MapPool(map_pool_id, map_pool_name, map_list),
                         min_rating,
@@ -106,9 +113,9 @@ class LadderService(Service):
                 map_version.c.filename,
                 t_map.c.display_name
             ]).select_from(
-                map_pool.join(map_pool_map_version)
-                .join(map_version)
-                .join(t_map)
+                map_pool.outerjoin(map_pool_map_version)
+                .outerjoin(map_version)
+                .outerjoin(t_map)
             )
         )
         map_pool_maps = {}
@@ -118,9 +125,10 @@ class LadderService(Service):
             if id_ not in map_pool_maps:
                 map_pool_maps[id_] = (name, list())
             _, map_list = map_pool_maps[id_]
-            map_list.append(
-                Map(row.map_id, row.display_name, row.filename)
-            )
+            if row.map_id:
+                map_list.append(
+                    Map(row.map_id, row.display_name, row.filename)
+                )
 
         return map_pool_maps
 
