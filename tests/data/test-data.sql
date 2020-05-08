@@ -239,7 +239,7 @@ insert into game_player_stats (gameId, playerId, AI, faction, color, team, place
   (41944, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), 1600);
 
 insert into matchmaker_queue (id, technical_name, featured_mod_id, leaderboard_id, name_key) values
-  (1, "ladder1v1", 1, 1, "matchmaker.ladder1v1");
+  (1, "ladder1v1", 6, 2, "matchmaker.ladder1v1");
 
 insert into map_pool (id, name) values
   (1, "Ladder1v1 season 1: 5-10k"),

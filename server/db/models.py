@@ -1,7 +1,6 @@
 from sqlalchemy import (
-    TIMESTAMP, TIME, Boolean, Column,
-    DateTime, Enum, Float, ForeignKey, Integer,
-    MetaData, String, Table, Text
+    TIME, TIMESTAMP, Boolean, Column, DateTime, Enum, Float, ForeignKey,
+    Integer, MetaData, String, Table, Text
 )
 
 from ..games.enums import Victory
@@ -203,6 +202,7 @@ lobby_ban = Table(
     Column('reason',        Text,       nullable=False),
     Column('expires_at',    DateTime)
 )
+
 
 map = Table(
     'map', metadata,

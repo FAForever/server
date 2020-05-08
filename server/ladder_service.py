@@ -256,6 +256,7 @@ class LadderService(Service):
                 )
 
     async def start_game(self, host: Player, guest: Player):
+        # TODO: Get game_mode from queue
         try:
             self._logger.debug(
                 "Starting ladder game between %s and %s", host, guest
@@ -365,8 +366,10 @@ class LadderService(Service):
                 ).where(
                     and_(
                         game_player_stats.c.playerId == player.id,
-                        game_stats.c.startTime >=
-                        func.now() - text("interval 1 day"),
+                        game_stats.c.startTime >= func.DATE_SUB(
+                            func.now(),
+                            text("interval 1 day")
+                        ),
                         game_featuredMods.c.gamemod == mod
                     )
                 ).order_by(game_stats.c.startTime.desc()).limit(limit)

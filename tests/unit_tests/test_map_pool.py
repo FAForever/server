@@ -68,7 +68,7 @@ def test_choose_map_all_maps_played_returns_least_played(map_pool_factory):
     limit = 3
 
     played_map_ids = [
-        # Set up player history so map 1 is played the most
+        # Set up player history so map 1 is played the least
         i + 1 + j for i in range(limit)
         for j in range(num_maps) if i + 1 + j <= num_maps
     ]
