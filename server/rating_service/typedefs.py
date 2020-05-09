@@ -25,10 +25,8 @@ class GameRatingSummary(NamedTuple):
     Holds minimal information needed to rate a game.
     Fields:
      - game_id: id of the game to rate
-     - rating_type: RatingType to (e.g. LADDER_1V1)
-     - results: a list of dictionaries mapping player ids to their `GameOutcome`s
-     - teams: a tuple of two TeamRatingSummaries
-    Every dictionary in the results list should correspond to a distinct team.
+     - rating_type: RatingType (e.g. LADDER_1V1)
+     - teams: a list of two TeamRatingSummaries
     """
 
     game_id: int

@@ -1,5 +1,8 @@
 from enum import Enum, unique
-from typing import Optional
+from typing import Dict, NamedTuple, Optional
+
+from server.games.game_results import GameOutcome
+from server.rating import RatingType
 
 
 @unique
@@ -86,3 +89,56 @@ class ValidityState(Enum):
     EXPANSION_DISABLED = 22
     SPAWN_NOT_FIXED = 23
     OTHER_UNRANK = 24
+
+
+class BasicGameInfo(NamedTuple):
+    """
+    Holds basic information about a game that does not change after launch.
+    Fields:
+     - game_id: id of the game
+     - rating_type: RatingType (e.g. LADDER_1V1)
+     - teams: a dictionary mapping player IDs to their team IDs
+    """
+
+    game_id: int
+    rating_type: RatingType
+    map_id: int
+    game_mode: str
+    team_assignments: Dict[int, int]
+
+    def to_dict(self):
+        return {
+            "game_id": self.game_id,
+            "rating_type": self.rating_type.name,
+            "map_id": self.map_id,
+            "featured_mod": self.game_mode,
+            "teams": self.team_assignments,
+        }
+
+
+class EndedGameInfo(NamedTuple):
+    """
+    Holds the outcome of an ended game.
+    Fields:
+     - game: BasicGameInfo with static information
+     - validity: ValidityState (e.g. VALID or TOO_SHORT)
+     - outcomes: a dictionary mapping player IDs to the resolved outcome of
+       their team
+    """
+
+    game: BasicGameInfo
+    validity: ValidityState
+    outcomes: Dict[int, GameOutcome]
+
+    def to_dict(self):
+        base = self.game.to_dict()
+        base.update(
+            {
+                "validity": self.validity.name,
+                "outcomes": {
+                    player_id: outcome.name
+                    for player_id, outcome in self.outcomes.items()
+                },
+            }
+        )
+        return base

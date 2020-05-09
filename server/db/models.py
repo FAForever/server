@@ -3,7 +3,7 @@ from sqlalchemy import (
     Integer, MetaData, String, Table, Text
 )
 
-from ..games.enums import Victory
+from ..games.typedefs import Victory
 from ..games.game_results import GameOutcome
 
 metadata = MetaData()

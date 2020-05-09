@@ -19,7 +19,10 @@ from sqlalchemy.sql.functions import now as sql_now
 
 from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
-from .enums import GameState, ValidityState, Victory, VisibilityState
+from .typedefs import (
+    BasicGameInfo, EndedGameInfo, GameState, ValidityState, Victory,
+    VisibilityState
+)
 
 
 class GameError(Exception):
@@ -105,10 +108,10 @@ class Game:
 
     @property
     def armies(self):
-        return frozenset({
+        return frozenset(
             self.get_player_option(player.id, 'Army')
             for player in self.players
-        })
+        )
 
     @property
     def is_mutually_agreed_draw(self) -> bool:
@@ -147,10 +150,10 @@ class Game:
         """
         A set of all teams of this game's players.
         """
-        return frozenset({
+        return frozenset(
             self.get_player_option(player.id, 'Team')
             for player in self.players
-        })
+        )
 
     @property
     def is_ffa(self) -> bool:
@@ -386,7 +389,7 @@ class Game:
     async def _run_pre_rate_validity_checks(self):
         pass
 
-    async def rate_game(self):
+    async def rate_game(self) -> GameEndedInfo:
         if self._rating_type is None:
             return
 
@@ -395,18 +398,29 @@ class Game:
 
         await self._run_pre_rate_validity_checks()
 
-        if self.validity is not ValidityState.VALID:
-            return
+        basic_info = self.get_basic_info()
+        player_outcomes = {
+            player_id: GameOutcome.UNKNOWN
+            for player_id in basic_info.team_assignments
+        }
 
-        try:
-            summary = self._get_rating_summary()
-        except GameResolutionError:
-            await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
-            return
+        if self.validity is ValidityState.VALID:
+            try:
+                summary = self._get_rating_summary()
+            except GameResolutionError:
+                await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
+            else:
+                await self.game_service.send_to_rating_service(summary)
+                player_outcomes = {
+                    player_id : team.outcome
+                    for team in summary.teams
+                    for player_id in team.player_ids
+                }
 
-        await self.game_service.send_to_rating_service(summary)
+        game_info = EndedGameInfo(basic_info, self.validity, player_outcomes)
+        await self.game_service.publish_game_results(game_info)
+        return game_info
 
-        await self.game_service.publish_game_results({})
 
     async def load_results(self):
         """
@@ -479,6 +493,18 @@ class Game:
                 TeamRatingSummary(outcome, player_ids)
                 for outcome, player_ids in zip(team_outcomes, team_player_ids)
             ]
+        )
+
+    def get_basic_info(self) -> BasicGameInfo:
+        return BasicGameInfo(
+            self.id,
+            self._rating_type,
+            self.map_id,
+            self.game_mode,
+            {
+                player.id: self.get_player_option(player.id, "Team") 
+                for player in self.players
+            },
         )
 
     def set_player_option(self, player_id: int, key: str, value: Any):

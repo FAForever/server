@@ -8,10 +8,11 @@ from server.db import FAFDatabase
 from server.decorators import with_logger
 from server.games import CoopGame, CustomGame, FeaturedMod, LadderGame
 from server.games.game import Game, GameState, VisibilityState
+from server.games.typedefs import EndedGameInfo
 from server.matchmaker import MatchmakerQueue
-from server.players import Player
-from server.rating_service import RatingService, GameRatingSummary
 from server.message_queue_service import MessageQueueService
+from server.players import Player
+from server.rating_service import GameRatingSummary, RatingService
 
 
 @with_logger
@@ -218,9 +219,9 @@ class GameService(Service):
     async def send_to_rating_service(self, summary: GameRatingSummary):
         await self._rating_service.enqueue(summary)
 
-    async def publish_game_results(self, game_results):
+    async def publish_game_results(self, game_results: EndedGameInfo):
         self._message_queue_service.publish(
             "game_results",
             "game.results",
-            game_results
+            game_results.to_dict()
         )
