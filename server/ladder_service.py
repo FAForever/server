@@ -101,7 +101,11 @@ class LadderService(Service):
                     )
             # Remove queues that don't exist anymore
             for queue_name in list(self.queues.keys()):
+                if queue_name == "ladder1v1":
+                    # TODO: Remove me. Legacy queue fallback
+                    continue
                 if queue_name not in matchmaker_queues:
+                    await self.queues[queue_name].shutdown()
                     del self.queues[queue_name]
 
     async def fetch_map_pools(self, conn) -> Dict[int, Tuple[str, List[Map]]]:
