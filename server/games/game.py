@@ -406,6 +406,8 @@ class Game:
 
         await self.game_service.send_to_rating_service(summary)
 
+        await self.game_service.publish_game_results({})
+
     async def load_results(self):
         """
         Load results from the database

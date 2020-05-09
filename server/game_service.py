@@ -11,6 +11,7 @@ from server.games.game import Game, GameState, VisibilityState
 from server.matchmaker import MatchmakerQueue
 from server.players import Player
 from server.rating_service import RatingService, GameRatingSummary
+from server.message_queue_service import MessageQueueService
 
 
 @with_logger
@@ -24,6 +25,7 @@ class GameService(Service):
         player_service,
         game_stats_service,
         rating_service: RatingService,
+        message_queue_service: MessageQueueService
     ):
         self._db = database
         self._dirty_games = set()
@@ -31,6 +33,7 @@ class GameService(Service):
         self.player_service = player_service
         self.game_stats_service = game_stats_service
         self._rating_service = rating_service
+        self._message_queue_service = message_queue_service
         self.game_id_counter = 0
 
         # Populated below in really_update_static_ish_data.
@@ -51,6 +54,8 @@ class GameService(Service):
         self._update_cron = aiocron.crontab(
             '*/10 * * * *', func=self.update_data
         )
+
+        await self._message_queue_service.declare_exchange("game_results")
 
     async def initialise_game_counter(self):
         async with self._db.acquire() as conn:
@@ -212,3 +217,10 @@ class GameService(Service):
 
     async def send_to_rating_service(self, summary: GameRatingSummary):
         await self._rating_service.enqueue(summary)
+
+    async def publish_game_results(self, game_results):
+        self._message_queue_service.publish(
+            "game_results",
+            "game.results",
+            game_results
+        )

@@ -11,8 +11,9 @@ import logging
 from typing import Iterable
 from unittest import mock
 
-import asynctest
 import pytest
+
+import asynctest
 from asynctest import CoroutineMock
 from server.api.api_accessor import ApiAccessor
 from server.api.oauth_session import OAuth2Session
@@ -22,6 +23,7 @@ from server.game_service import GameService
 from server.geoip_service import GeoIpService
 from server.lobbyconnection import LobbyConnection
 from server.matchmaker import MatchmakerQueue
+from server.message_queue_service import MessageQueueService
 from server.player_service import PlayerService
 from server.players import Player, PlayerState
 from server.rating import RatingType
@@ -227,14 +229,26 @@ async def rating_service(database, player_service):
 
     await service.shutdown()
 
+@pytest.fixture
+async def message_queue_service():
+    service = MessageQueueService()
+    await service.initialize()
+
+    yield service
+
+    await service.shutdown()
 
 @pytest.fixture
-async def game_service(database, player_service, game_stats_service, rating_service):
+async def game_service(
+    database, player_service, game_stats_service,
+    rating_service, message_queue_service
+):
     game_service = GameService(
         database,
         player_service,
         game_stats_service,
-        rating_service
+        rating_service,
+        message_queue_service,
     )
     await game_service.initialize()
     return game_service
