@@ -245,7 +245,7 @@ class LadderService(Service):
                     "style": "info",
                     "text": (
                         "The system is still learning you.<b><br><br>The "
-                        f"learning phase is {progress}% complete<b>"
+                        f"learning phase is {progress:.0f}% complete<b>"
                     )
                 })
 

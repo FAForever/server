@@ -268,3 +268,46 @@ async def test_get_ladder_history_many_maps(ladder_service: LadderService, playe
     )
 
     assert history == [6, 5, 4, 3]
+
+
+async def test_inform_player_message(
+    ladder_service: LadderService,
+    player_factory
+):
+    player = player_factory(ladder_rating=(1500, 500))
+    player.send_message = CoroutineMock()
+
+    await ladder_service.inform_player(player)
+
+    player.send_message.assert_called_once_with({
+        "command": "notice",
+        "style": "info",
+        "text": (
+            "<i>Welcome to the matchmaker</i><br><br><b>Until "
+            "you've played enough games for the system to learn "
+            "your skill level, you'll be matched randomly.</b><br>"
+            "Afterwards, you'll be more reliably matched up with "
+            "people of your skill level: so don't worry if your "
+            "first few games are uneven. This will improve as you "
+            "play!</b>"
+        )
+    })
+
+
+async def test_inform_player_message_2(
+    ladder_service: LadderService,
+    player_factory
+):
+    player = player_factory(ladder_rating=(1500, 400.1235))
+    player.send_message = CoroutineMock()
+
+    await ladder_service.inform_player(player)
+
+    player.send_message.assert_called_once_with({
+        "command": "notice",
+        "style": "info",
+        "text": (
+            "The system is still learning you.<b><br><br>"
+            "The learning phase is 40% complete<b>"
+        )
+    })
