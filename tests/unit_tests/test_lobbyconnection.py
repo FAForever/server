@@ -410,7 +410,7 @@ async def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
 
 
 async def test_abort(mocker, lobbyconnection):
-    lobbyconnection.protocol.close = mock.Mock()
+    lobbyconnection.protocol.close = CoroutineMock()
     await lobbyconnection.abort()
 
     lobbyconnection.protocol.close.assert_any_call()

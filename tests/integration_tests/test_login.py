@@ -24,8 +24,6 @@ async def test_server_invalid_login(lobby_server):
     msg = await proto.read_message()
     assert msg == auth_failed_msg
 
-    proto.close()
-
 
 @pytest.mark.parametrize("user", [
     ("Dostya", "vodka"),
@@ -39,7 +37,6 @@ async def test_server_ban(lobby_server, user):
         'command': 'notice',
         'style': 'error',
         'text': 'You are banned from FAF forever.\n Reason :\n Test permanent ban'}
-    proto.close()
 
 
 @pytest.mark.parametrize('user', ['ban_revoked', 'ban_expired'])

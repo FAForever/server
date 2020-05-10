@@ -103,7 +103,7 @@ async def test_game_info_broadcast_on_connection_error(
             _, _, proto = await connect_and_sign_in(player, lobby_server)
             await read_until_command(proto, "game_info")
             await asyncio.sleep(0.1)
-            proto.close()
+            await proto.close()
 
     async def do_dc_players():
         await asyncio.gather(*(
@@ -119,7 +119,7 @@ async def test_game_info_broadcast_on_connection_error(
 
     # Wait for games to be cleaned up
     for proto in host_protos:
-        proto.close()
+        await proto.close()
     await ladder_service.shutdown()
 
     # Wait for games to time out if they need to
