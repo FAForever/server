@@ -133,6 +133,5 @@ async def test_custom_game_1v1_game_stats(test_client, json_stats_1v1):
             "args": ["Ended"]
         })
 
-    # These may take a while to arrive as the API updates can be slow
-    await client1.read_until_command("updated_achievements", timeout=60)
-    await client2.read_until_command("updated_achievements", timeout=10)
+    await client1.read_until_command("updated_achievements", timeout=10)
+    await client2.read_until_command("updated_achievements", timeout=2)
