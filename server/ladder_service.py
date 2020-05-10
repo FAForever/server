@@ -130,7 +130,7 @@ class LadderService(Service):
             if id_ not in map_pool_maps:
                 map_pool_maps[id_] = (name, list())
             _, map_list = map_pool_maps[id_]
-            if row.map_id:
+            if row.map_id is not None:
                 map_list.append(
                     Map(row.map_id, row.display_name, row.filename)
                 )
