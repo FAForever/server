@@ -101,6 +101,17 @@ async def test_validate_game_settings_coop(coop_game: Game):
     assert coop_game.validity is ValidityState.VALID
 
 
+async def test_missing_teams_marked_invalid(game: Game, game_add_players):
+    game.state = GameState.LOBBY
+    player_id = 5
+    game_add_players(game, player_id, team=2)
+    del game._player_options[player_id]["Team"]
+
+    await game.validate_game_settings()
+
+    assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
+
+
 async def check_game_settings(
     game: Game, settings: List[Tuple[str, Any, ValidityState]]
 ):
@@ -838,15 +849,6 @@ async def test_is_even_ffa(game: Game, game_add_players):
     game.state = GameState.LOBBY
     # Team 1 is the special "-" team
     game_add_players(game, 5, team=1)
-
-    assert game.is_even
-
-
-async def test_is_even_missing_teams_allowed(game: Game, game_add_players):
-    game.state = GameState.LOBBY
-    player_id = 5
-    game_add_players(game, player_id, team=1)
-    del game._player_options[player_id]["Team"]
 
     assert game.is_even
 

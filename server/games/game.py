@@ -179,13 +179,7 @@ class Game:
          - Returns True if there are zero teams.
          - Returns False if there is a single team.
         """
-        # FIXME: explicitly allowing a team to be set to None here.
-        # All players with team `None` are considered on one team.
-        # This is what code in production does and allows to launch games where
-        # players are missing the "Team" option.
-        # (Rating code will later raise an Error if players are missing that option.)
-        # Is this intentional?
-        teams = self.get_team_sets(allow_missing_team=True)
+        teams = self.get_team_sets()
         if len(teams) == 0:
             return True
         if len(teams) == 1:
@@ -194,12 +188,12 @@ class Game:
         team_sizes = set(len(team) for team in teams)
         return len(team_sizes) == 1
 
-    def get_team_sets(self, allow_missing_team=False) -> List[Set[Player]]:
+    def get_team_sets(self) -> List[Set[Player]]:
         """
         Returns a list of teams represented as sets of players.
         Note that FFA players will be separated into individual teams.
         """
-        if not allow_missing_team and None in self.teams:
+        if None in self.teams:
             raise GameError(
                 "Missing team for at least one player. (player, team): {}"
                 .format([(player, self.get_player_option(player.id, 'Team'))
@@ -607,7 +601,7 @@ class Game:
         """
         Checks which only apply to the faf or ladder1v1 mode
         """
-        if not self.is_even:
+        if None in self.teams or not self.is_even:
             await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
             return
 
