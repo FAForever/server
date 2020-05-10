@@ -33,8 +33,8 @@ async def simulate_game(host, *guests, results=[]):
         "command": "EnforceRating"
     })
 
-    for client in all_clients:
-        for result in results:
+    for result in results:
+        for client in all_clients:
             await client.send_message({
                 "target": "game",
                 "command": "GameResult",
