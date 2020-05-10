@@ -71,7 +71,6 @@ def get_persisted_results(mock_service):
     if args is None:
         return PersistedResults(None, {}, {})
 
-    # TODO why does this need to be args[0]?
     game_id, rating_type, old_ratings, new_ratings, outcomes = args[0]
     return PersistedResults(rating_type, new_ratings, outcomes)
 

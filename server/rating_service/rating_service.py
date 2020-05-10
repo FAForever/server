@@ -146,7 +146,9 @@ class RatingService(Service):
             raise ValueError(f"Unknown rating type {rating_type}.")
 
         async with self._db.acquire() as conn:
-            sql = select([leaderboard_rating]).where(
+            sql = select(
+                [leaderboard_rating.c.mean, leaderboard_rating.c.deviation]
+            ).where(
                 and_(
                     leaderboard_rating.c.login_id == player_id,
                     leaderboard_rating.c.leaderboard_id == rating_type_id,

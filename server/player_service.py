@@ -134,7 +134,12 @@ class PlayerService(Service):
             return
 
         sql = select(
-            [global_rating, ladder1v1_rating], use_labels=True
+            [
+                global_rating.c.mean, global_rating.c.deviation,
+                global_rating.c.numGames,
+                ladder1v1_rating.c.mean, ladder1v1_rating.c.deviation,
+                ladder1v1_rating.c.numGames,
+            ], use_labels=True
         ).select_from(
             login.outerjoin(ladder1v1_rating).outerjoin(global_rating)
         ).where(
