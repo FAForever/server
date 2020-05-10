@@ -71,42 +71,43 @@ class LadderService(Service):
                 "FROM ladder_map "
                 "INNER JOIN table_map ON table_map.id = ladder_map.idmap"
             )
-            maps = [Map(*row) async for row in result]
+            maps = [Map(*row.as_tuple()) async for row in result]
+
             self.ladder_1v1_map_pool.set_maps(maps)
 
             map_pool_maps = await self.fetch_map_pools(conn)
             matchmaker_queues = await self.fetch_matchmaker_queues(conn)
 
-            for name, map_pools in matchmaker_queues.items():
-                if name not in self.queues:
-                    self.queues[name] = MatchmakerQueue(
-                        name=name,
-                        game_service=self.game_service
+        for name, map_pools in matchmaker_queues.items():
+            if name not in self.queues:
+                self.queues[name] = MatchmakerQueue(
+                    name=name,
+                    game_service=self.game_service
+                )
+            queue = self.queues[name]
+            queue.map_pools.clear()
+            for map_pool_id, min_rating, max_rating in map_pools:
+                map_pool_name, map_list = map_pool_maps[map_pool_id]
+                if not map_list:
+                    self._logger.warning(
+                        "Map pool '%s' is empty! Some %s games will "
+                        "likely fail to start!",
+                        map_pool_name,
+                        name
                     )
-                queue = self.queues[name]
-                queue.map_pools.clear()
-                for map_pool_id, min_rating, max_rating in map_pools:
-                    map_pool_name, map_list = map_pool_maps[map_pool_id]
-                    if not map_list:
-                        self._logger.warning(
-                            "Map pool '%s' is empty! Some %s games will "
-                            "likely fail to start!",
-                            map_pool_name,
-                            name
-                        )
-                    queue.add_map_pool(
-                        MapPool(map_pool_id, map_pool_name, map_list),
-                        min_rating,
-                        max_rating
-                    )
-            # Remove queues that don't exist anymore
-            for queue_name in list(self.queues.keys()):
-                if queue_name == "ladder1v1":
-                    # TODO: Remove me. Legacy queue fallback
-                    continue
-                if queue_name not in matchmaker_queues:
-                    await self.queues[queue_name].shutdown()
-                    del self.queues[queue_name]
+                queue.add_map_pool(
+                    MapPool(map_pool_id, map_pool_name, map_list),
+                    min_rating,
+                    max_rating
+                )
+        # Remove queues that don't exist anymore
+        for queue_name in list(self.queues.keys()):
+            if queue_name == "ladder1v1":
+                # TODO: Remove me. Legacy queue fallback
+                continue
+            if queue_name not in matchmaker_queues:
+                self.queues[queue_name].shutdown()
+                del self.queues[queue_name]
 
     async def fetch_map_pools(self, conn) -> Dict[int, Tuple[str, List[Map]]]:
         result = await conn.execute(

@@ -4,8 +4,9 @@ from unittest import mock
 import pytest
 from asynctest import CoroutineMock, exhaust_callbacks
 from server import LadderService
-from server.matchmaker import Search
+from server.matchmaker import MapPool, Search
 from server.players import PlayerState
+from server.types import Map
 from tests.utils import fast_forward
 
 pytestmark = pytest.mark.asyncio
@@ -24,6 +25,10 @@ async def test_load_from_database(ladder_service, queue_factory):
         queue = ladder_service.queues["ladder1v1"]
         assert queue.name == "ladder1v1"
         assert len(queue.map_pools) == 3
+        assert list(ladder_service.ladder_1v1_map_pool.maps.values()) == [
+            Map(id=1, name='SCMP_001', path='maps/scmp_001.zip'),
+            Map(id=2, name='SCMP_002', path='maps/scmp_002.zip')
+        ]
 
 
 async def test_start_game(ladder_service: LadderService, player_factory):

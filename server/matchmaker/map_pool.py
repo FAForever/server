@@ -16,6 +16,7 @@ class MapPool(object):
     ):
         self.id = map_pool_id
         self.name = name
+        self.maps = None
         self.set_maps(maps)
 
     def set_maps(self, maps: Iterable[Map]) -> None:
@@ -46,3 +47,6 @@ class MapPool(object):
                 break
 
         return self.maps[random.choice(least_common)[0]]
+
+    def __repr__(self):
+        return f"MapPool({self.id}, {self.name}, {list(self.maps.values())})"
