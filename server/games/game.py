@@ -13,7 +13,6 @@ from server.games.game_results import (
     resolve_game
 )
 from server.rating import RatingType
-from server.rating_service.typedefs import GameRatingSummary, TeamRatingSummary
 from sqlalchemy import and_, bindparam
 from sqlalchemy.sql.functions import now as sql_now
 
@@ -375,7 +374,10 @@ class Game:
                     return
 
                 await self.persist_results()
-                await self.rate_game()
+
+                game_results = await self.resolve_game_results()
+                await self.game_service.publish_game_results(game_results)
+
                 self._process_pending_army_stats()
         except Exception:    # pragma: no cover
             self._logger.exception("Error during game end")
@@ -389,37 +391,28 @@ class Game:
     async def _run_pre_rate_validity_checks(self):
         pass
 
-    async def rate_game(self) -> GameEndedInfo:
-        if self._rating_type is None:
-            return
-
+    async def resolve_game_results(self) -> EndedGameInfo:
         if self.state not in (GameState.LIVE, GameState.ENDED):
             raise GameError("Cannot rate game that has not been launched.")
 
         await self._run_pre_rate_validity_checks()
 
         basic_info = self.get_basic_info()
-        player_outcomes = {
-            player_id: GameOutcome.UNKNOWN
-            for player_id in basic_info.team_assignments
-        }
+        team_outcomes = [GameOutcome.UNKNOWN for _ in basic_info.teams]
 
         if self.validity is ValidityState.VALID:
             try:
-                summary = self._get_rating_summary()
+                team_player_partial_outcomes = [
+                    {self.get_player_outcome(player) for player in team}
+                    for team in basic_info.teams
+                ]
+                team_outcomes = resolve_game(team_player_partial_outcomes)
             except GameResolutionError:
                 await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
-            else:
-                await self.game_service.send_to_rating_service(summary)
-                player_outcomes = {
-                    player_id : team.outcome
-                    for team in summary.teams
-                    for player_id in team.player_ids
-                }
 
-        game_info = EndedGameInfo(basic_info, self.validity, player_outcomes)
-        await self.game_service.publish_game_results(game_info)
-        return game_info
+        return EndedGameInfo.from_basic(
+            basic_info, self.validity, team_outcomes
+        )
 
 
     async def load_results(self):
@@ -477,34 +470,13 @@ class Game:
                 )
             await conn.execute(update_statement, rows)
 
-    def _get_rating_summary(self) -> GameRatingSummary:
-        teams = self.get_team_sets()
-        team_player_outcomes = [
-            {self.get_player_outcome(player) for player in team}
-            for team in teams
-        ]
-        team_outcomes = resolve_game(team_player_outcomes)
-        team_player_ids = [{player.id for player in team} for team in teams]
-
-        return GameRatingSummary(
-            self.id,
-            self._rating_type,
-            [
-                TeamRatingSummary(outcome, player_ids)
-                for outcome, player_ids in zip(team_outcomes, team_player_ids)
-            ]
-        )
-
     def get_basic_info(self) -> BasicGameInfo:
         return BasicGameInfo(
             self.id,
             self._rating_type,
             self.map_id,
             self.game_mode,
-            {
-                player.id: self.get_player_option(player.id, "Team") 
-                for player in self.players
-            },
+            self.get_team_sets(),
         )
 
     def set_player_option(self, player_id: int, key: str, value: Any):

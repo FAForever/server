@@ -15,6 +15,7 @@ from server.db.models import (
 )
 from server.decorators import with_logger
 from server.games.game_results import GameOutcome
+from server.games.typedefs import EndedGameInfo
 from server.metrics import rating_service_backlog
 from server.player_service import PlayerService
 from server.rating import RatingType
@@ -66,13 +67,14 @@ class RatingService(Service):
 
         self._rating_type_ids = {row["technical_name"]: row["id"] for row in rows}
 
-    async def enqueue(self, summary: GameRatingSummary) -> None:
+    async def enqueue(self, game_info: Dict) -> None:
         if not self._accept_input:
-            self._logger.warning("Dropped rating request %s", summary)
+            self._logger.warning("Dropped rating request %s", game_info)
             raise ServiceNotReadyError(
                 "RatingService not yet initialized or shutting down."
             )
 
+        summary = GameRatingSummary.from_game_info_dict(game_info)
         self._logger.debug("Queued up rating request %s", summary)
         await self._queue.put(summary)
         rating_service_backlog.set(self._queue.qsize())

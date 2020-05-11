@@ -1,10 +1,10 @@
 import time
 
-from .game import Game, ValidityState
-from server.rating import RatingType
-
 from server.abc.base_game import InitMode
 from server.decorators import with_logger
+from server.rating import RatingType
+
+from .game import Game, ValidityState
 
 
 @with_logger

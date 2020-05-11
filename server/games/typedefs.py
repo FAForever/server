@@ -1,7 +1,8 @@
 from enum import Enum, unique
-from typing import Dict, NamedTuple, Optional
+from typing import Dict, List, NamedTuple, Optional, Set
 
 from server.games.game_results import GameOutcome
+from server.players import Player
 from server.rating import RatingType
 
 
@@ -97,48 +98,80 @@ class BasicGameInfo(NamedTuple):
     Fields:
      - game_id: id of the game
      - rating_type: RatingType (e.g. LADDER_1V1)
-     - teams: a dictionary mapping player IDs to their team IDs
+     - map_id: id of the map used
+     - game_mode: name of the featured mod
     """
 
     game_id: int
-    rating_type: RatingType
+    rating_type: Optional[RatingType]
     map_id: int
     game_mode: str
-    team_assignments: Dict[int, int]
+    teams: List[Set[Player]]
 
-    def to_dict(self):
-        return {
-            "game_id": self.game_id,
-            "rating_type": self.rating_type.name,
-            "map_id": self.map_id,
-            "featured_mod": self.game_mode,
-            "teams": self.team_assignments,
-        }
+
+class TeamRatingSummary(NamedTuple):
+    outcome: GameOutcome
+    player_ids: Set[int]
 
 
 class EndedGameInfo(NamedTuple):
     """
     Holds the outcome of an ended game.
     Fields:
-     - game: BasicGameInfo with static information
+     - game_id: id of the game
+     - rating_type: RatingType (e.g. LADDER_1V1)
+     - map_id: id of the map used
+     - game_mode: name of the featured mod
      - validity: ValidityState (e.g. VALID or TOO_SHORT)
-     - outcomes: a dictionary mapping player IDs to the resolved outcome of
-       their team
+     - team_summaries: a list of TeamRatingSummaries containing IDs of players
+       on the team and the team's outcome
     """
 
-    game: BasicGameInfo
+    game_id: int
+    rating_type: Optional[RatingType]
+    map_id: int
+    game_mode: str
     validity: ValidityState
-    outcomes: Dict[int, GameOutcome]
+    team_summaries: List[TeamRatingSummary]
+
+    @classmethod
+    def from_basic(
+        cls,
+        basic_info: BasicGameInfo,
+        validity: ValidityState,
+        team_outcomes: List[GameOutcome],
+    ) -> "EndedGameInfo":
+        if len(basic_info.teams) != len(team_outcomes):
+            raise ValueError(
+                "Team sets of basic_info and team outcomes must refer to the "
+                "same number of teams in the same order."
+            )
+
+        return cls(
+            basic_info.game_id,
+            basic_info.rating_type,
+            basic_info.map_id,
+            basic_info.game_mode,
+            validity,
+            [
+                TeamRatingSummary(outcome, set(player.id for player in team))
+                for outcome, team in zip(team_outcomes, basic_info.teams)
+            ],
+        )
 
     def to_dict(self):
-        base = self.game.to_dict()
-        base.update(
-            {
-                "validity": self.validity.name,
-                "outcomes": {
-                    player_id: outcome.name
-                    for player_id, outcome in self.outcomes.items()
-                },
-            }
-        )
-        return base
+        return {
+            "game_id": self.game_id,
+            "rating_type": self.rating_type.name if self.rating_type is not
+            None else "None",
+            "map_id": self.map_id,
+            "featured_mod": self.game_mode,
+            "validity": self.validity.name,
+            "teams": [
+                {
+                    "outcome": team_summary.outcome.name,
+                    "player_ids": list(team_summary.player_ids),
+                }
+                for team_summary in self.team_summaries
+            ],
+        }

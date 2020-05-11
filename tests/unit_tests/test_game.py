@@ -4,6 +4,7 @@ from typing import Any, List, Tuple
 from unittest import mock
 
 import pytest
+
 from asynctest import CoroutineMock
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import CoopGame, CustomGame
@@ -23,7 +24,7 @@ pytestmark = pytest.mark.asyncio
 
 @pytest.yield_fixture
 def game(event_loop, database, game_service, game_stats_service):
-    game = Game(42, database, game_service, game_stats_service)
+    game = Game(42, database, game_service, game_stats_service, rating_type=RatingType.GLOBAL)
     yield game
 
 
@@ -454,20 +455,18 @@ async def test_game_get_player_outcome_ignores_unknown_results(
     assert game.get_player_outcome(players[1]) is GameOutcome.UNKNOWN
 
 
-async def test_on_game_end_does_not_call_rate_game_for_single_player(game):
-    game.rate_game = CoroutineMock()
+async def test_on_game_end_single_player_gives_unknown_result(game):
     game.state = GameState.LIVE
     game.launched_at = time.time()
 
     await game.on_game_end()
     assert game.state is GameState.ENDED
-    game.rate_game.assert_not_called()
+    assert game.validity is ValidityState.UNKNOWN_RESULT
 
 
-async def test_on_game_end_calls_rate_game_with_two_players(
+async def test_on_game_end_two_players_is_valid(
     game, game_add_players
 ):
-    game.rate_game = CoroutineMock()
     game.state = GameState.LOBBY
     game_add_players(game, 2)
 
@@ -479,8 +478,6 @@ async def test_on_game_end_calls_rate_game_with_two_players(
 
     await game.on_game_end()
     assert game.state is GameState.ENDED
-    game.rate_game.assert_any_call()
-
     assert game.validity is ValidityState.VALID
 
 
@@ -861,3 +858,31 @@ async def test_team_sets_missing_team_disallowed(game: Game, game_add_players):
 
     with pytest.raises(GameError):
         assert game.get_team_sets()
+
+
+async def test_game_results(game: Game, players):
+    game.state = GameState.LOBBY
+    host_id = players.hosting.id
+    join_id = players.joining.id
+    add_connected_players(game, [players.hosting, players.joining])
+    game.set_player_option(players.hosting.id, 'Team', 1)
+    game.set_player_option(players.joining.id, 'Team', 1)
+
+    await game.launch()
+    await game.add_result(host_id, 0, "victory", 1)
+    await game.add_result(join_id, 1, "defeat", 0)
+
+    game_results =  await game.resolve_game_results()
+    result_dict = game_results.to_dict()
+
+    assert result_dict["validity"] == "VALID"
+    assert result_dict["rating_type"] == "GLOBAL"
+    assert len(result_dict["teams"]) == 2
+    print(result_dict)
+    for team in result_dict["teams"]:
+        assert team["outcome"] == (
+            "VICTORY" if team["player_ids"] == [host_id]
+            else "DEFEAT"
+        )
+    assert result_dict["game_id"] == game.id
+    assert result_dict["map_id"] == game.map_id

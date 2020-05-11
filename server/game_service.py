@@ -8,7 +8,7 @@ from server.db import FAFDatabase
 from server.decorators import with_logger
 from server.games import CoopGame, CustomGame, FeaturedMod, LadderGame
 from server.games.game import Game, GameState, VisibilityState
-from server.games.typedefs import EndedGameInfo
+from server.games.typedefs import EndedGameInfo, ValidityState
 from server.matchmaker import MatchmakerQueue
 from server.message_queue_service import MessageQueueService
 from server.players import Player
@@ -216,12 +216,16 @@ class GameService(Service):
     def __contains__(self, item):
         return item in self._games
 
-    async def send_to_rating_service(self, summary: GameRatingSummary):
-        await self._rating_service.enqueue(summary)
-
     async def publish_game_results(self, game_results: EndedGameInfo):
-        self._message_queue_service.publish(
+        await self._message_queue_service.publish(
             "game_results",
             "game.results",
             game_results.to_dict()
         )
+
+        # To be removed when rating service starts listening to message queue
+        if (
+            game_results.validity is ValidityState.VALID
+            and game_results.rating_type is not None
+        ):
+            await self._rating_service.enqueue(game_results.to_dict())

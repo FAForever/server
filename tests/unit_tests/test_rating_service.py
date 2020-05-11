@@ -1,30 +1,28 @@
-import pytest
 from unittest import mock
+
+import pytest
+
 from asynctest import CoroutineMock
-
-from server.rating_service.rating_service import RatingService, ServiceNotReadyError
 from server.db import FAFDatabase
-from sqlalchemy import select, and_
 from server.db.models import (
-    leaderboard_rating,
-    game_player_stats,
-    leaderboard_rating_journal,
-)
-
-from server.rating import RatingType
-from trueskill import Rating
-from server.rating_service.typedefs import (
-    GameRatingSummary,
-    TeamRatingSummary,
-    TeamRatingData,
+    game_player_stats, leaderboard_rating, leaderboard_rating_journal
 )
 from server.games.game_results import GameOutcome
-
+from server.games.typedefs import (
+    EndedGameInfo, TeamRatingSummary, ValidityState
+)
+from server.rating import RatingType
+from server.rating_service.rating_service import (
+    RatingService, ServiceNotReadyError
+)
+from server.rating_service.typedefs import GameRatingSummary, TeamRatingData
+from sqlalchemy import and_, select
+from trueskill import Rating
 
 pytestmark = pytest.mark.asyncio
 
 
-@pytest.fixture()
+@pytest.fixture
 async def rating_service(database, player_service):
     service = RatingService(database, player_service)
     await service.initialize()
@@ -32,19 +30,19 @@ async def rating_service(database, player_service):
     service.kill()
 
 
-@pytest.fixture()
+@pytest.fixture
 def uninitialized_service(database, player_service):
     return RatingService(database, player_service)
 
 
-@pytest.fixture()
+@pytest.fixture
 async def semiinitialized_service(database, player_service):
     service = RatingService(database, player_service)
     await service.update_data()
     return service
 
 
-@pytest.fixture()
+@pytest.fixture
 def game_rating_summary():
     return GameRatingSummary(
         1,
@@ -56,14 +54,32 @@ def game_rating_summary():
     )
 
 
-@pytest.fixture()
-def bad_game_rating_summary():
+@pytest.fixture
+def game_info():
+    return EndedGameInfo(
+        1,
+        RatingType.GLOBAL,
+        1,
+        "faf",
+        ValidityState.VALID,
+        [
+            TeamRatingSummary(GameOutcome.VICTORY, {1}),
+            TeamRatingSummary(GameOutcome.DEFEAT, {2}),
+        ],
+    )
+
+
+@pytest.fixture
+def bad_game_info():
     """
     Should throw a GameRatingError.
     """
-    return GameRatingSummary(
+    return EndedGameInfo(
         1,
         RatingType.GLOBAL,
+        1,
+        "faf",
+        ValidityState.VALID,
         [
             TeamRatingSummary(GameOutcome.VICTORY, {1}),
             TeamRatingSummary(GameOutcome.VICTORY, {2}),
@@ -71,13 +87,11 @@ def bad_game_rating_summary():
     )
 
 
-async def test_enqueue_manual_initialization(
-    uninitialized_service, game_rating_summary
-):
+async def test_enqueue_manual_initialization(uninitialized_service, game_info):
     service = uninitialized_service
     await service.initialize()
     service._rate = CoroutineMock()
-    await service.enqueue(game_rating_summary)
+    await service.enqueue(game_info.to_dict())
     await service.shutdown()
 
     service._rate.assert_called()
@@ -91,20 +105,20 @@ async def double_initialization_does_not_start_second_worker(rating_service):
     assert worker_task_id == id(rating_service._task)
 
 
-async def test_enqueue_initialized(rating_service, game_rating_summary):
+async def test_enqueue_initialized(rating_service, game_info):
     service = rating_service
     service._rate = CoroutineMock()
 
-    await service.enqueue(game_rating_summary)
+    await service.enqueue(game_info.to_dict())
     await service.shutdown()
 
     service._rate.assert_called()
 
 
-async def test_enqueue_uninitialized(uninitialized_service):
+async def test_enqueue_uninitialized(uninitialized_service, game_info):
     service = uninitialized_service
     with pytest.raises(ServiceNotReadyError):
-        await service.enqueue(game_rating_summary)
+        await service.enqueue(game_info.to_dict())
     await service.shutdown()
 
 
@@ -302,15 +316,13 @@ async def test_update_player_service_failure_warning(uninitialized_service):
     service._logger.warning.assert_called()
 
 
-async def test_game_rating_error_handled(
-    rating_service, game_rating_summary, bad_game_rating_summary
-):
+async def test_game_rating_error_handled(rating_service, game_info, bad_game_info):
     service = rating_service
     service._persist_rating_changes = CoroutineMock()
     service._logger = mock.Mock()
 
-    await service.enqueue(bad_game_rating_summary)
-    await service.enqueue(game_rating_summary)
+    await service.enqueue(bad_game_info.to_dict())
+    await service.enqueue(game_info.to_dict())
 
     await service._join_rating_queue()
 
