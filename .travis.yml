@@ -13,7 +13,7 @@ before_install:
   - sudo /etc/init.d/mysql stop
   - git clone https://github.com/FAForever/faf-stack.git faf-stack
       && pushd faf-stack
-      && git checkout v20.4.18
+      && git checkout v20.5.9.3
       && export $(egrep -v '^#' .env.template | xargs)
       && cp -r config.template config
       && ./scripts/init-db.sh
