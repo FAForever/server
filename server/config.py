@@ -60,6 +60,8 @@ class ConfigurationStore:
 
         self.NEWBIE_BASE_MEAN = 500
         self.NEWBIE_MIN_GAMES = 10
+        self.START_RATING_MEAN = 1500
+        self.START_RATING_DEV = 500
         self.TOP_PLAYER_MIN_RATING = 1600
 
         self.TWILIO_ACCOUNT_SID = ""

@@ -4,7 +4,8 @@ from sqlalchemy import (
     MetaData, String, Table, Text
 )
 
-from ..games.game import Victory
+from ..games.enums import Victory
+from ..games.game_results import GameOutcome
 
 metadata = MetaData()
 
@@ -119,6 +120,7 @@ game_player_stats = Table(
     Column('after_deviation', Float),
     Column('score',         Integer),
     Column('scoreTime',     TIMESTAMP),
+    Column('result',        Enum(GameOutcome)),
 )
 
 game_stats = Table(
@@ -165,6 +167,32 @@ ladder1v1_rating = Table(
     Column('numGames',      Integer,    nullable=False),
     Column('winGames',      Integer,    nullable=False),
     Column('is_active',     Boolean,    nullable=False)
+)
+
+leaderboard = Table(
+    'leaderboard', metadata,
+    Column('id',                Integer, primary_key=True),
+    Column('technical_name',    String, nullable=False, unique=True),
+)
+
+leaderboard_rating = Table(
+    'leaderboard_rating', metadata,
+    Column('login_id',          Integer,    ForeignKey('login.id')),
+    Column('mean',              Float),
+    Column('deviation',         Float),
+    Column('total_games',       Integer,    nullable=False),
+    Column('won_games',         Integer,    nullable=False),
+    Column('leaderboard_id',    Integer,    ForeignKey('leaderboard.id')),
+)
+
+leaderboard_rating_journal = Table(
+    'leaderboard_rating_journal', metadata,
+    Column('game_player_stats_id',      Integer,    ForeignKey('game_player_stats.id')),
+    Column('leaderboard_id',            Integer,    ForeignKey('leaderboard.id')),
+    Column('rating_mean_before',        Float,      nullable=False),
+    Column('rating_mean_after',         Float,      nullable=False),
+    Column('rating_deviation_before',   Float,      nullable=False),
+    Column('rating_deviation_after',    Float,      nullable=False),
 )
 
 # This is actually a view into the `ban` table with proper handling of ban

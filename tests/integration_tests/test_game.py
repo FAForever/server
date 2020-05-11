@@ -99,8 +99,14 @@ async def test_game_ended_rates_game(lobby_server):
         host_proto,
         [host_id, "Army", 1],
         [host_id, "Team", 1],
+        [host_id, "StartSpot", 0],
+        [host_id, "Faction", 1],
+        [host_id, "Color", 1],
         [guest_id, "Army", 2],
-        [guest_id, "Team", 1]
+        [guest_id, "Team", 1],
+        [guest_id, "StartSpot", 1],
+        [guest_id, "Faction", 1],
+        [guest_id, "Color", 2],
     )
 
     # Launch game

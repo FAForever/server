@@ -10,6 +10,7 @@ from server.games import CoopGame, CustomGame, FeaturedMod, LadderGame
 from server.games.game import Game, GameState, VisibilityState
 from server.matchmaker import MatchmakerQueue
 from server.players import Player
+from server.rating_service import RatingService, GameRatingSummary
 
 
 @with_logger
@@ -22,12 +23,14 @@ class GameService(Service):
         database: FAFDatabase,
         player_service,
         game_stats_service,
+        rating_service: RatingService,
     ):
         self._db = database
         self._dirty_games = set()
         self._dirty_queues = set()
         self.player_service = player_service
         self.game_stats_service = game_stats_service
+        self._rating_service = rating_service
         self.game_id_counter = 0
 
         # Populated below in really_update_static_ish_data.
@@ -218,3 +221,6 @@ class GameService(Service):
 
     def __contains__(self, item):
         return item in self._games
+
+    async def send_to_rating_service(self, summary: GameRatingSummary):
+        await self._rating_service.enqueue(summary)

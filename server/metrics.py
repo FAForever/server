@@ -98,3 +98,11 @@ active_games = Gauge(
     "but are still in the game_service.",
     ["game_mode", "game_state"],
 )
+
+
+# ==============
+# Rating Service
+# ==============
+rating_service_backlog = Gauge(
+    "server_rating_service_backlog", "Number of games remaining to be rated",
+)

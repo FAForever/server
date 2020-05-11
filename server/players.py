@@ -2,6 +2,7 @@ import weakref
 from enum import Enum, unique
 
 from server.rating import PlayerRatings, RatingType, RatingTypeMap
+import server.config as config
 
 from .factions import Faction
 from .protocol import DisconnectedError
@@ -43,7 +44,9 @@ class Player:
         # The player_id of the user in the `login` table of the database.
         self.session = session
 
-        self.ratings = PlayerRatings(default=(1500, 500))
+        self.ratings = PlayerRatings(
+            default=(config.START_RATING_MEAN, config.START_RATING_DEV)
+        )
         if ratings is not None:
             self.ratings.update(ratings)
 

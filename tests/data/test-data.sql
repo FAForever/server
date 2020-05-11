@@ -1,7 +1,3 @@
--- ================================================
--- Contents of old FAForever/db/test-data.sql below
--- ================================================
-
 -- DUMMY DATA ONLY, FOR USE IN UNIT TESTS
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -49,6 +45,9 @@ DELETE FROM name_history;
 DELETE FROM user_group_assignment;
 DELETE FROM login;
 DELETE FROM email_domain_blacklist;
+DELETE FROM leaderboard;
+DELETE FROM leaderboard_rating;
+DELETE FROM leaderboard_rating_journal;
 
 SET FOREIGN_KEY_CHECKS=1;
 
@@ -266,8 +265,6 @@ INSERT INTO ladder_division_score (season, user_id, league, score, games) VALUES
 INSERT INTO email_domain_blacklist VALUES ('spam.org');
 
 -- ================================================
--- Contents of old FAForever/db/test-data.sql above
--- ================================================
 -- Contents of old tests/data/test-data.sql below
 -- ================================================
 
@@ -290,22 +287,45 @@ delete from clan_membership where player_id = 50;
 insert into clan_membership (clan_id, player_id) values
     (1, 50);
 
-insert into global_rating (id, mean, deviation, numGames, is_active) values
-    (50,  1200, 250, 42, 1),
-    (51,  1200, 250, 42, 1),
-    (52,  1200, 250, 42, 1),
-    (100, 1500, 500, 0, 1),
-    (101, 1500, 500, 0, 1),
-    (102, 1500, 500, 0, 1)
+insert into leaderboard (id, technical_name, name_key, description_key) values
+    (1, 'global', 'name_key', 'description_key'),
+    (2, 'ladder_1v1', 'name_key', 'description_key')
 ;
 
-insert into ladder1v1_rating (id, mean, deviation, numGames, is_active) values
-    (50,  1300, 400, 12, 1),
-    (51,  1300, 400, 12, 1),
-    (52,  1300, 400, 12, 1),
+insert into leaderboard_rating (login_id, mean, deviation, total_games, leaderboard_id) values
+    (1, 2000, 125, 5, 1),
+    (1, 2000, 125, 5, 2),
+    (2, 1500, 75, 2, 1),
+    (2, 1500, 75, 2, 2),
+    (3, 1650, 62.52, 2, 1),
+    (3, 1650, 62.52, 2, 2),
+    (50,  1200, 250, 42, 1),
+    (50,  1300, 400, 12, 2),
     (100, 1500, 500, 0, 1),
+    (100, 1500, 500, 0, 2),
     (101, 1500, 500, 0, 1),
-    (102, 1500, 500, 0, 1)
+    (101, 1500, 500, 0, 2),
+    (102, 1500, 500, 0, 1),
+    (102, 1500, 500, 0, 2)
+;
+
+-- legacy table for global rating
+insert into global_rating (id, mean, deviation, numGames, is_active) values
+    (50,  1201, 250, 42, 1),
+    (51,  1201, 250, 42, 1),
+    (52,  1201, 250, 42, 1),
+    (100, 1501, 500, 0, 1),
+    (101, 1501, 500, 0, 1),
+    (102, 1501, 500, 0, 1)
+;
+
+-- legacy table for ladder rating
+insert into ladder1v1_rating (id, mean, deviation, numGames, is_active) values
+    (50,  1301, 400, 12, 1),
+    (51,  1301, 400, 12, 1),
+    (100, 1501, 500, 0, 1),
+    (101, 1501, 500, 0, 1),
+    (102, 1501, 500, 0, 1)
 ;
 
 insert into avatars (idUser, idAvatar, selected) values
@@ -329,7 +349,8 @@ insert into game_stats (id, startTime, gameType, gameMod, host, mapId, gameName,
     (41938, NOW() + interval 3 minute, '0', 6, 1, 3, 'MapRepetition', 0),
     (41939, NOW() + interval 4 minute, '0', 6, 1, 4, 'MapRepetition', 0),
     (41940, NOW() + interval 5 minute, '0', 6, 1, 5, 'MapRepetition', 0),
-    (41941, NOW() + interval 6 minute, '0', 6, 1, 6, 'MapRepetition', 0);
+    (41941, NOW() + interval 6 minute, '0', 6, 1, 6, 'MapRepetition', 0)
+;
 
 insert into game_player_stats (gameId, playerId, AI, faction, color, team, place, mean, deviation, scoreTime) values
     (1, 1, 0, 0, 0, 2, 0, 1500, 500, NOW()),
@@ -340,6 +361,16 @@ insert into game_player_stats (gameId, playerId, AI, faction, color, team, place
     (41939, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 4 minute),
     (41940, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 5 minute),
     (41941, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 6 minute);
+
+insert into game_stats (id, startTime, gameType, gameMod, host, mapId, gameName, validity) values
+    (41942, NOW(), '0', 6, 1, NULL, 'OldRatingNull', 0),
+    (41943, NOW(), '0', 6, 1, NULL, 'OldRatingLose', 0),
+    (41944, NOW(), '0', 6, 1, NULL, 'OldRatingWin', 0);
+
+insert into game_player_stats (gameId, playerId, AI, faction, color, team, place, mean, deviation, scoreTime, after_mean) values
+    (41942, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), NULL),
+    (41943, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), 1400),
+    (41944, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), 1600);
 
 delete from friends_and_foes where user_id = 1 and subject_id = 2;
 insert into friends_and_foes (user_id, subject_id, status) values

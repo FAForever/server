@@ -7,7 +7,8 @@ from trueskill import Rating
 # migrated.
 class RatingType(Enum):
     GLOBAL = "global"
-    LADDER_1V1 = "ladder1v1"
+    LADDER_1V1 = "ladder_1v1"
+
 
 
 class RatingTypeMap(MutableMapping):

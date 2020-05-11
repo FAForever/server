@@ -23,9 +23,11 @@ from server.geoip_service import GeoIpService
 from server.lobbyconnection import LobbyConnection
 from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
+from server.rating_service.rating_service import RatingService
 from server.players import Player, PlayerState
 from server.rating import RatingType
 from tests.utils import MockDatabase
+
 
 logging.getLogger().setLevel(TRACE)
 
@@ -205,11 +207,22 @@ async def player_service(database):
 
 
 @pytest.fixture
-async def game_service(database, player_service, game_stats_service):
+async def rating_service(database, player_service):
+    service = RatingService(database, player_service)
+    await service.initialize()
+
+    yield service
+
+    await service.shutdown()
+
+
+@pytest.fixture
+async def game_service(database, player_service, game_stats_service, rating_service):
     game_service = GameService(
         database,
         player_service,
-        game_stats_service
+        game_stats_service,
+        rating_service
     )
     await game_service.initialize()
     return game_service

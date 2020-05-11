@@ -11,10 +11,12 @@ from server.decorators import with_logger
 class CustomGame(Game):
     init_mode = InitMode.NORMAL_LOBBY
 
-    async def rate_game(self):
+    def __init__(self, id_, *args, **kwargs):
+        super(self.__class__, self).__init__(
+            id_, *args, **kwargs, rating_type=RatingType.GLOBAL
+        )
+
+    async def _run_pre_rate_validity_checks(self):
         limit = len(self.players) * 60
         if not self.enforce_rating and time.time() - self.launched_at < limit:
             await self.mark_invalid(ValidityState.TOO_SHORT)
-        if self.validity == ValidityState.VALID:
-            new_ratings = self.compute_rating(RatingType.GLOBAL)
-            await self.persist_rating_change_stats(new_ratings, RatingType.GLOBAL)
