@@ -301,9 +301,10 @@ class LobbyConnection:
         elif action == "closelobby":
             if await self.player_service.has_permission_role(self.player, 'ADMIN_KICK_SERVER'):
                 player = self.player_service[message['user_id']]
-                if player:
+                if player and player.lobby_connection is not None:
                     self._logger.warning('Administrative action: %s closed client for %s', self.player, player)
-                    await player.lobby_connection.kick()
+                    with contextlib.suppress(DisconnectedError):
+                        await player.lobby_connection.kick()
 
         elif action == "broadcast":
             message_text = message.get('message')
