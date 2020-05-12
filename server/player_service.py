@@ -7,14 +7,14 @@ from server.db import FAFDatabase
 from server.decorators import with_logger
 from server.players import Player
 from server.rating import RatingType
-from trueskill import Rating
 from sqlalchemy import and_, select
+from trueskill import Rating
 
 from .core import Service
 from .db.models import (
-    avatars, avatars_list, clan, clan_membership, login
+    avatars, avatars_list, clan, clan_membership, global_rating,
+    ladder1v1_rating, leaderboard, leaderboard_rating, login
 )
-from .db.models import global_rating, ladder1v1_rating, leaderboard, leaderboard_rating
 
 
 @with_logger
@@ -98,7 +98,6 @@ class PlayerService(Service):
 
             await self._fetch_player_ratings(player, conn)
 
-
     async def _fetch_player_ratings(self, player, conn):
         sql = select([
             leaderboard_rating.c.mean,
@@ -163,7 +162,7 @@ class PlayerService(Service):
             table = table_map[rating_type]
             if row[table.format("mean")] is None:
                 self._logger.info(
-                    "Found no %s ratings for Player with id %i", 
+                    "Found no %s ratings for Player with id %i",
                     rating_type, player.id
                 )
                 continue
