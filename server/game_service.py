@@ -36,9 +36,6 @@ class GameService(Service):
         # A set of mod ids that are allowed in ranked games (everyone loves caching)
         self.ranked_mods = set()
 
-        # The ladder map pool. Each entry is an (id, name, filename) tuple.
-        self.ladder_maps = set()
-
         # Temporary proxy for the ladder service
         self.ladder_service = None
 
@@ -87,15 +84,6 @@ class GameService(Service):
 
             # Turn resultset into a list of uids
             self.ranked_mods = set(map(lambda x: x[0], rows))
-
-            # Load all ladder maps
-            result = await conn.execute(
-                "SELECT ladder_map.idmap, "
-                "table_map.name, "
-                "table_map.filename "
-                "FROM ladder_map "
-                "INNER JOIN table_map ON table_map.id = ladder_map.idmap")
-            self.ladder_maps = [(row[0], row[1], row[2]) async for row in result]
 
     @property
     def dirty_games(self):

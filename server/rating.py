@@ -1,5 +1,6 @@
-from enum import Enum
 from collections.abc import MutableMapping
+from enum import Enum
+
 from trueskill import Rating
 
 
@@ -8,7 +9,6 @@ from trueskill import Rating
 class RatingType(Enum):
     GLOBAL = "global"
     LADDER_1V1 = "ladder1v1"
-
 
 class RatingTypeMap(MutableMapping):
     def __init__(self, default):

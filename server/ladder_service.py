@@ -1,25 +1,28 @@
 import asyncio
 import contextlib
-import random
 from collections import defaultdict
-from typing import Dict, List, NamedTuple, Set
+from typing import Dict, List, Set, Tuple
 
-from server.db import FAFDatabase
-from server.rating import RatingType
+import aiocron
 from sqlalchemy import and_, func, select, text
 
 from .async_functions import gather_without_exceptions
 from .config import config
 from .core import Service
+from .db import FAFDatabase
 from .db.models import game_featuredMods, game_player_stats, game_stats
+from .db.models import map as t_map
+from .db.models import (
+    map_pool, map_pool_map_version, map_version, matchmaker_queue,
+    matchmaker_queue_map_pool
+)
 from .decorators import with_logger
 from .game_service import GameService
-from .matchmaker import MatchmakerQueue, Search
+from .matchmaker import MapPool, MatchmakerQueue, Search
 from .players import Player, PlayerState
 from .protocol import DisconnectedError
-from .types import GameLaunchOptions
-
-MapDescription = NamedTuple('Map', [("id", int), ("name", str), ("path", str)])
+from .rating import RatingType
+from .types import GameLaunchOptions, Map
 
 
 @with_logger
@@ -37,18 +40,123 @@ class LadderService(Service):
         self._informed_players: Set[Player] = set()
         self.game_service = game_service
 
-        # Hardcoded here until it needs to be dynamic
+        # Fallback legacy map pool and matchmaker queue
+        self.ladder_1v1_map_pool = MapPool(0, "ladder1v1")
         self.queues = {
-            'ladder1v1': MatchmakerQueue('ladder1v1', game_service)
+            'ladder1v1': MatchmakerQueue(
+                game_service,
+                name='ladder1v1',
+                map_pools=[(self.ladder_1v1_map_pool, None, None)]
+            )
         }
 
         self.searches: Dict[str, Dict[Player, Search]] = defaultdict(dict)
 
     async def initialize(self) -> None:
+        await self.update_data()
+        self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
         await asyncio.gather(*[
             queue.initialize() for queue in self.queues.values()
         ])
         asyncio.create_task(self.handle_queue_matches())
+
+    async def update_data(self) -> None:
+        async with self._db.acquire() as conn:
+            # Legacy ladder1v1 map pool
+            # TODO: Remove this https://github.com/FAForever/server/issues/581
+            result = await conn.execute(
+                "SELECT ladder_map.idmap, "
+                "table_map.name, "
+                "table_map.filename "
+                "FROM ladder_map "
+                "INNER JOIN table_map ON table_map.id = ladder_map.idmap"
+            )
+            maps = [Map(*row.as_tuple()) async for row in result]
+
+            self.ladder_1v1_map_pool.set_maps(maps)
+
+            map_pool_maps = await self.fetch_map_pools(conn)
+            matchmaker_queues = await self.fetch_matchmaker_queues(conn)
+
+        for name, map_pools in matchmaker_queues.items():
+            if name not in self.queues:
+                self.queues[name] = MatchmakerQueue(
+                    name=name,
+                    game_service=self.game_service
+                )
+            queue = self.queues[name]
+            queue.map_pools.clear()
+            for map_pool_id, min_rating, max_rating in map_pools:
+                map_pool_name, map_list = map_pool_maps[map_pool_id]
+                if not map_list:
+                    self._logger.warning(
+                        "Map pool '%s' is empty! Some %s games will "
+                        "likely fail to start!",
+                        map_pool_name,
+                        name
+                    )
+                queue.add_map_pool(
+                    MapPool(map_pool_id, map_pool_name, map_list),
+                    min_rating,
+                    max_rating
+                )
+        # Remove queues that don't exist anymore
+        for queue_name in list(self.queues.keys()):
+            if queue_name == "ladder1v1":
+                # TODO: Remove me. Legacy queue fallback
+                continue
+            if queue_name not in matchmaker_queues:
+                self.queues[queue_name].shutdown()
+                del self.queues[queue_name]
+
+    async def fetch_map_pools(self, conn) -> Dict[int, Tuple[str, List[Map]]]:
+        result = await conn.execute(
+            select([
+                map_pool.c.id,
+                map_pool.c.name,
+                map_version.c.map_id,
+                map_version.c.filename,
+                t_map.c.display_name
+            ]).select_from(
+                map_pool.outerjoin(map_pool_map_version)
+                .outerjoin(map_version)
+                .outerjoin(t_map)
+            )
+        )
+        map_pool_maps = {}
+        async for row in result:
+            id_ = row.id
+            name = row.name
+            if id_ not in map_pool_maps:
+                map_pool_maps[id_] = (name, list())
+            _, map_list = map_pool_maps[id_]
+            if row.map_id is not None:
+                map_list.append(
+                    Map(row.map_id, row.display_name, row.filename)
+                )
+
+        return map_pool_maps
+
+    async def fetch_matchmaker_queues(self, conn) -> Dict[str, Tuple[int, int, int]]:
+        result = await conn.execute(
+            select([
+                matchmaker_queue.c.technical_name,
+                matchmaker_queue_map_pool.c.map_pool_id,
+                matchmaker_queue_map_pool.c.min_rating,
+                matchmaker_queue_map_pool.c.max_rating
+            ])
+            .select_from(matchmaker_queue.join(matchmaker_queue_map_pool))
+        )
+
+        matchmaker_queues = defaultdict(list)
+        async for row in result:
+            name = row.technical_name
+            matchmaker_queues[name].append((
+                row.map_pool_id,
+                row.min_rating,
+                row.max_rating
+            ))
+        return matchmaker_queues
 
     async def start_search(self, initiator: Player, search: Search, queue_name: str):
         # TODO: Consider what happens if players disconnect while starting
@@ -137,7 +245,7 @@ class LadderService(Service):
                     "style": "info",
                     "text": (
                         "The system is still learning you.<b><br><br>The "
-                        f"learning phase is {progress}% complete<b>"
+                        f"learning phase is {progress:.0f}% complete<b>"
                     )
                 })
 
@@ -161,6 +269,7 @@ class LadderService(Service):
                 )
 
     async def start_game(self, host: Player, guest: Player):
+        # TODO: Get game_mode from queue
         try:
             self._logger.debug(
                 "Starting ladder game between %s and %s", host, guest
@@ -168,7 +277,19 @@ class LadderService(Service):
             host.state = PlayerState.HOSTING
             guest.state = PlayerState.JOINING
 
-            (map_id, map_name, map_path) = await self.choose_map([host, guest])
+            played_map_ids = await self.get_game_history(
+                [host, guest],
+                "ladder1v1",
+                limit=config.LADDER_ANTI_REPETITION_LIMIT
+            )
+            rating = min(
+                newbie_adjusted_ladder_mean(player)
+                for player in (host, guest)
+            )
+            pool = self.queues["ladder1v1"].get_map_pool_for_rating(rating)
+            if not pool:
+                raise RuntimeError(f"No map pool available for rating {rating}!")
+            map_id, map_name, map_path = pool.choose_map(played_map_ids)
 
             game = self.game_service.create_game(
                 game_mode='ladder1v1',
@@ -242,52 +363,34 @@ class LadderService(Service):
                     guest.send_message(msg)
                 )
 
-    async def choose_map(self, players: [Player]) -> MapDescription:
-        maps = self.game_service.ladder_maps
-
-        if not maps:
-            self._logger.critical(
-                "Trying to choose a map from an empty map pool!"
-            )
-            raise RuntimeError("Ladder maps not set!")
-
-        recently_played_map_ids = {
-            map_id for player in players
-            for map_id in await self.get_ladder_history(
-                player, limit=config.LADDER_ANTI_REPETITION_LIMIT
-            )
-        }
-        randomized_maps = random.sample(maps, len(maps))
-
-        return next(
-            filter(
-                lambda m: m[0] not in recently_played_map_ids,
-                randomized_maps
-            ),
-            # If all maps were played recently, default to a random one
-            randomized_maps[0]
-        )
-
-    async def get_ladder_history(self, player: Player, limit=3) -> List[int]:
+    async def get_game_history(
+        self,
+        players: List[Player],
+        mod: str,
+        limit=3
+    ) -> List[int]:
         async with self._db.acquire() as conn:
-            query = select([
-                game_stats.c.mapId,
-            ]).select_from(
-                game_player_stats.join(game_stats).join(game_featuredMods)
-            ).where(
-                and_(
-                    game_player_stats.c.playerId == player.id,
-                    game_stats.c.startTime >=
-                    func.now() - text("interval 1 day"),
-                    game_featuredMods.c.gamemod == "ladder1v1"
-                )
-            ).order_by(game_stats.c.startTime.desc()).limit(limit)
+            result = []
+            for player in players:
+                query = select([
+                    game_stats.c.mapId,
+                ]).select_from(
+                    game_player_stats.join(game_stats).join(game_featuredMods)
+                ).where(
+                    and_(
+                        game_player_stats.c.playerId == player.id,
+                        game_stats.c.startTime >= func.DATE_SUB(
+                            func.now(),
+                            text("interval 1 day")
+                        ),
+                        game_featuredMods.c.gamemod == mod
+                    )
+                ).order_by(game_stats.c.startTime.desc()).limit(limit)
 
-            # Collect all the rows from the ResultProxy
-            return [
-                row[game_stats.c.mapId]
-                async for row in await conn.execute(query)
-            ]
+            result.extend([
+                row.mapId async for row in await conn.execute(query)
+            ])
+        return result
 
     async def on_connection_lost(self, player):
         await self.cancel_search(player)
@@ -297,3 +400,11 @@ class LadderService(Service):
     async def shutdown(self):
         for queue in self.queues.values():
             queue.shutdown()
+
+
+def newbie_adjusted_ladder_mean(player: Player):
+    """Get ladder rating mean with new player's always returning a mean of 0"""
+    if player.game_count[RatingType.LADDER_1V1] > config.NEWBIE_MIN_GAMES:
+        return player.ratings[RatingType.LADDER_1V1][0]
+    else:
+        return 0

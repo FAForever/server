@@ -6,14 +6,14 @@ from concurrent.futures import CancelledError, TimeoutError
 
 import pytest
 import server.config as config
-from server.matchmaker import PopTimer, Search
+from hypothesis import given
+from hypothesis import strategies as st
+from server.matchmaker import MapPool, PopTimer, Search
 from server.rating import RatingType
 from tests.utils import fast_forward
 
-pytestmark = pytest.mark.asyncio
 
-
-@pytest.fixture
+@pytest.fixture(scope="session")
 def player_factory(player_factory):
     return functools.partial(player_factory, ladder_games=(config.NEWBIE_MIN_GAMES + 1))
 
@@ -37,13 +37,13 @@ def matchmaker_players_all_match(player_factory):
            player_factory('Rhiza', player_id=5, ladder_rating=(1500, 50))
 
 
-async def test_is_ladder_newbie(matchmaker_players):
+def test_is_ladder_newbie(matchmaker_players):
     pro, _, _, _, _, newbie = matchmaker_players
     assert Search._is_ladder_newbie(pro) is False
     assert Search._is_ladder_newbie(newbie)
 
 
-async def test_is_single_newbie(matchmaker_players):
+def test_is_single_newbie(matchmaker_players):
     pro, _, _, _, _, newbie = matchmaker_players
 
     single_newbie = Search([newbie])
@@ -59,94 +59,94 @@ async def test_is_single_newbie(matchmaker_players):
     assert two_mixed.is_single_ladder_newbie() is False
 
 
-async def test_newbies_have_adjusted_rating(matchmaker_players):
+def test_newbies_have_adjusted_rating(matchmaker_players):
     pro, _, _, _, _, newbie = matchmaker_players
     s1, s6 = Search([pro]), Search([newbie])
     assert s1.ratings[0] == pro.ratings[RatingType.LADDER_1V1]
     assert s6.ratings[0] != newbie.ratings[RatingType.LADDER_1V1]
 
 
-async def test_search_threshold(matchmaker_players):
+def test_search_threshold(matchmaker_players):
     s = Search([matchmaker_players[0]])
     assert s.match_threshold <= 1
     assert s.match_threshold >= 0
 
 
-async def test_search_threshold_of_single_old_players_is_high(player_factory):
+def test_search_threshold_of_single_old_players_is_high(player_factory):
     old_player = player_factory('experienced_player', ladder_rating=(1500, 50))
     s = Search([old_player])
     assert s.match_threshold >= 0.6
 
 
-async def test_search_threshold_of_team_old_players_is_high(player_factory):
+def test_search_threshold_of_team_old_players_is_high(player_factory):
     old_player = player_factory('experienced_player', ladder_rating=(1500, 50))
     another_old_player = player_factory('another experienced_player', ladder_rating=(1600, 60))
     s = Search([old_player, another_old_player])
     assert s.match_threshold >= 0.6
 
 
-async def test_search_threshold_of_single_new_players_is_low(player_factory):
+def test_search_threshold_of_single_new_players_is_low(player_factory):
     new_player = player_factory('new_player', ladder_rating=(1500, 500), ladder_games=1)
     s = Search([new_player])
     assert s.match_threshold <= 0.4
 
 
-async def test_search_threshold_of_team_new_players_is_low(player_factory):
+def test_search_threshold_of_team_new_players_is_low(player_factory):
     new_player = player_factory('new_player', ladder_rating=(1500, 500), ladder_games=1)
     another_new_player = player_factory('another_new_player', ladder_rating=(1450, 450), ladder_games=1)
     s = Search([new_player, another_new_player])
     assert s.match_threshold <= 0.4
 
 
-async def test_search_quality_equivalence(matchmaker_players):
+def test_search_quality_equivalence(matchmaker_players):
     p1, _, _, p4, _, _ = matchmaker_players
     s1, s4 = Search([p1]), Search([p4])
     assert s1.quality_with(s4) == s4.quality_with(s1)
 
 
-async def test_search_quality(matchmaker_players):
+def test_search_quality(matchmaker_players):
     p1, _, p3, _, p5, p6 = matchmaker_players
     s1, s3, s5, s6 = Search([p1]), Search([p3]), Search([p5]), Search([p6])
     assert s3.quality_with(s5) > 0.7 and s1.quality_with(s6) < 0.2
 
 
-async def test_search_match(matchmaker_players):
+def test_search_match(matchmaker_players):
     p1, _, _, p4, _, _ = matchmaker_players
     s1, s4 = Search([p1]), Search([p4])
     assert s1.matches_with(s4)
 
 
-async def test_search_threshold_low_enough_to_play_yourself(matchmaker_players):
+def test_search_threshold_low_enough_to_play_yourself(matchmaker_players):
     for player in matchmaker_players:
         s = Search([player])
         assert s.matches_with(s)
 
 
-async def test_search_team_match(matchmaker_players):
+def test_search_team_match(matchmaker_players):
     p1, p2, p3, p4, _, _ = matchmaker_players
     s1, s4 = Search([p1, p3]), Search([p2, p4])
     assert s1.matches_with(s4)
 
 
-async def test_search_team_not_match(matchmaker_players):
+def test_search_team_not_match(matchmaker_players):
     p1, p2, p3, p4, _, _ = matchmaker_players
     s1, s4 = Search([p1, p4]), Search([p2, p3])
     assert not s1.matches_with(s4)
 
 
-async def test_search_no_match(matchmaker_players):
+def test_search_no_match(matchmaker_players):
     p1, p2, _, _, _, _ = matchmaker_players
     s1, s2 = Search([p1]), Search([p2])
     assert not s1.matches_with(s2)
 
 
-async def test_search_no_match_wrong_type(matchmaker_players):
+def test_search_no_match_wrong_type(matchmaker_players):
     p1, _, _, _, _, _ = matchmaker_players
     s1 = Search([p1])
     assert not s1.matches_with(42)
 
 
-async def test_search_boundaries(matchmaker_players):
+def test_search_boundaries(matchmaker_players):
     p1 = matchmaker_players[0]
     s1 = Search([p1])
     assert p1.ratings[RatingType.LADDER_1V1][0] > s1.boundary_80[0]
@@ -155,7 +155,7 @@ async def test_search_boundaries(matchmaker_players):
     assert p1.ratings[RatingType.LADDER_1V1][0] < s1.boundary_75[1]
 
 
-async def test_search_expansion_controlled_by_failed_matching_attempts(matchmaker_players, mocker):
+def test_search_expansion_controlled_by_failed_matching_attempts(matchmaker_players, mocker):
     p1 = matchmaker_players[0]
     s1 = Search([p1])
 
@@ -174,6 +174,7 @@ async def test_search_expansion_controlled_by_failed_matching_attempts(matchmake
     assert e1 == config.LADDER_SEARCH_EXPANSION_MAX
 
 
+@pytest.mark.asyncio
 async def test_search_await(matchmaker_players):
     p1, p2, _, _, _, _ = matchmaker_players
     s1, s2 = Search([p1]), Search([p2])
@@ -184,7 +185,7 @@ async def test_search_await(matchmaker_players):
     assert await_coro.done()
 
 
-async def test_queue_time_until_next_pop():
+def test_queue_time_until_next_pop():
     t1 = PopTimer("test_1")
     t2 = PopTimer("test_2")
 
@@ -208,7 +209,7 @@ async def test_queue_time_until_next_pop():
     assert t2.time_until_next_pop(0, 0) == config.QUEUE_POP_TIME_MAX
 
 
-async def test_queue_pop_time_moving_average_size():
+def test_queue_pop_time_moving_average_size():
     t1 = PopTimer("test_1")
 
     for _ in range(100):
@@ -224,7 +225,83 @@ async def test_queue_pop_time_moving_average_size():
     assert t1.time_until_next_pop(0, 100) == config.QUEUE_POP_TIME_MAX
 
 
+@given(rating=st.integers())
+def test_queue_map_pools_empty(queue_factory, rating):
+    queue = queue_factory()
+    assert queue.get_map_pool_for_rating(rating) is None
+
+
+@given(rating=st.integers())
+def test_queue_map_pools_any_range(queue_factory, rating):
+    queue = queue_factory()
+    map_pool = MapPool(0, "pool")
+    queue.add_map_pool(map_pool, None, None)
+
+    assert queue.get_map_pool_for_rating(rating) is map_pool
+
+
+@given(rating=st.integers(), low=st.integers())
+def test_queue_map_pools_lower_bound(queue_factory, rating, low):
+    queue = queue_factory()
+    map_pool = MapPool(0, "pool")
+    queue.add_map_pool(map_pool, low, None)
+
+    if rating < low:
+        assert queue.get_map_pool_for_rating(rating) is None
+    else:
+        assert queue.get_map_pool_for_rating(rating) is map_pool
+
+
+@given(rating=st.integers(), high=st.integers())
+def test_queue_map_pools_upper_bound(queue_factory, rating, high):
+    queue = queue_factory()
+    map_pool = MapPool(0, "pool")
+    queue.add_map_pool(map_pool, None, high)
+
+    if rating > high:
+        assert queue.get_map_pool_for_rating(rating) is None
+    else:
+        assert queue.get_map_pool_for_rating(rating) is map_pool
+
+
+@given(rating=st.integers(), low=st.integers(), high=st.integers())
+def test_queue_map_pools_bound(queue_factory, rating, low, high):
+    queue = queue_factory()
+    map_pool = MapPool(0, "pool")
+    queue.add_map_pool(map_pool, low, high)
+
+    if low <= rating <= high:
+        assert queue.get_map_pool_for_rating(rating) is map_pool
+    else:
+        assert queue.get_map_pool_for_rating(rating) is None
+
+
+@given(
+    rating=st.integers(),
+    low1=st.integers(),
+    high1=st.integers(),
+    low2=st.integers(),
+    high2=st.integers()
+)
+def test_queue_multiple_map_pools(
+    queue_factory, rating, low1, high1, low2, high2
+):
+    queue = queue_factory()
+    map_pool1 = MapPool(0, "pool1")
+    map_pool2 = MapPool(1, "pool2")
+    queue.add_map_pool(map_pool1, low1, high1)
+    queue.add_map_pool(map_pool2, low2, high2)
+
+    if low1 <= rating <= high1:
+        assert queue.get_map_pool_for_rating(rating) is map_pool1
+    elif low2 <= rating <= high2:
+        assert queue.get_map_pool_for_rating(rating) is map_pool2
+    else:
+        assert queue.get_map_pool_for_rating(rating) is None
+
+
 @fast_forward(3)
+@pytest.mark.asyncio
 async def test_queue_matches(matchmaker_queue):
     matches = [random.randrange(0, 1 << 20) for _ in range(20)]
     matchmaker_queue._matches = deque(matches)
@@ -239,6 +316,7 @@ async def test_queue_matches(matchmaker_queue):
     assert collected_matches == matches
 
 
+@pytest.mark.asyncio
 async def test_shutdown_matchmaker(matchmaker_queue):
     matchmaker_queue.shutdown()
     # Verify that no matches are yielded after shutdown is called
@@ -246,6 +324,7 @@ async def test_shutdown_matchmaker(matchmaker_queue):
         assert False
 
 
+@pytest.mark.asyncio
 async def test_queue_many(matchmaker_queue, player_factory):
     p1, p2, p3 = player_factory('Dostya', ladder_rating=(2200, 150)), \
                  player_factory('Brackman', ladder_rating=(1500, 150)), \
@@ -265,6 +344,7 @@ async def test_queue_many(matchmaker_queue, player_factory):
     assert s3.is_matched
 
 
+@pytest.mark.asyncio
 async def test_queue_race(matchmaker_queue, player_factory):
     p1, p2, p3 = player_factory('Dostya', ladder_rating=(2300, 150)), \
                  player_factory('Brackman', ladder_rating=(2200, 150)), \
@@ -287,6 +367,7 @@ async def test_queue_race(matchmaker_queue, player_factory):
     assert len(matchmaker_queue.queue) == 0
 
 
+@pytest.mark.asyncio
 async def test_queue_cancel(matchmaker_queue, matchmaker_players):
     # Turn list of players into map from ids to players.
 
@@ -302,6 +383,7 @@ async def test_queue_cancel(matchmaker_queue, matchmaker_players):
     assert not s2.is_matched
 
 
+@pytest.mark.asyncio
 async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
     # Turn list of players into map from ids to players.
     p0, p1, p2, p3, _ = matchmaker_players_all_match

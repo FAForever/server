@@ -69,7 +69,6 @@ def game_stats_service():
 async def ladder_service(
     mocker,
     database,
-    event_loop,
     game_service: GameService,
 ):
     mocker.patch('server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX', 1)

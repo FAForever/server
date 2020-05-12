@@ -1,7 +1,6 @@
 from sqlalchemy import (
-    TIMESTAMP, TIME, Boolean, Column,
-    DateTime, Enum, Float, ForeignKey, Integer,
-    MetaData, String, Table, Text
+    TIME, TIMESTAMP, Boolean, Column, DateTime, Enum, Float, ForeignKey,
+    Integer, MetaData, String, Table, Text
 )
 
 from ..games.game import Victory
@@ -150,7 +149,7 @@ login = Table(
     Column('password',      String,     nullable=False),
     Column('email',         String,     nullable=False, unique=True),
     Column('ip',            String),
-    Column('steamid',       Integer,     unique=True),
+    Column('steamid',       Integer,    unique=True),
     Column('create_time',   TIMESTAMP,  nullable=False),
     Column('update_time',   TIMESTAMP,  nullable=False),
     Column('user_agent',    String),
@@ -174,6 +173,69 @@ lobby_ban = Table(
     Column('idUser',        Integer,    ForeignKey('login.id'), primary_key=True),
     Column('reason',        Text,       nullable=False),
     Column('expires_at',    DateTime)
+)
+
+
+map = Table(
+    'map', metadata,
+    Column('id',            Integer,        primary_key=True),
+    Column('display_name',  String(100),    nullable=False),
+    Column('map_type',      String(15),     nullable=False),
+    Column('battle_type',   String(15),     nullable=False),
+    Column('author',        Integer,        ForeignKey('login.id')),
+    Column('average_review_score', Float,   nullable=False),
+    Column('reviews',       Integer,        nullable=False),
+    Column('create_time',   TIMESTAMP,      nullable=False),
+    Column('update_time',   TIMESTAMP,      nullable=False)
+)
+
+map_pool = Table(
+    'map_pool', metadata,
+    Column('id',            Integer,        primary_key=True),
+    Column('name',          String(255),    nullable=False),
+    Column('create_time',   TIMESTAMP,      nullable=False),
+    Column('update_time',   TIMESTAMP,      nullable=False)
+)
+
+map_pool_map_version = Table(
+    'map_pool_map_version', metadata,
+    Column('map_pool_id',       Integer, ForeignKey('map_pool.id'),     nullable=False),
+    Column('map_version_id',    Integer, ForeignKey('map_version.id'),  nullable=False),
+)
+
+map_version = Table(
+    'map_version', metadata,
+    Column('id',            Integer,        primary_key=True),
+    Column('description',   Text),
+    Column('max_players',   Integer,        nullable=False),
+    Column('width',         Integer,        nullable=False),
+    Column('height',        Integer,        nullable=False),
+    Column('version',       Integer,        nullable=False),
+    Column('filename',      String(200),    nullable=False),
+    Column('ranked',        Boolean,        nullable=False),
+    Column('hidden',        Boolean,        nullable=False),
+    Column('map_id',        ForeignKey('map.id'), nullable=False),
+    Column('create_time', TIMESTAMP,        nullable=False),
+    Column('update_time', TIMESTAMP,        nullable=False),
+)
+
+matchmaker_queue = Table(
+    'matchmaker_queue', metadata,
+    Column('id',                Integer,        primary_key=True),
+    Column('technical_name',    String(255),    nullable=False, unique=True),
+    Column('featured_mod_id',   Integer,        ForeignKey('game_featuredMods.id'), nullable=False),
+    Column('leaderboard_id',    Integer,        ForeignKey('leaderboard.id'),       nullable=False),
+    Column('name_key',          String(255),    nullable=False),
+    Column('create_time',   TIMESTAMP,      nullable=False),
+    Column('update_time',   TIMESTAMP,      nullable=False)
+)
+
+matchmaker_queue_map_pool = Table(
+    'matchmaker_queue_map_pool', metadata,
+    Column('matchmaker_queue_id',   Integer,    ForeignKey('matchmaker_queue.id'),  nullable=False),
+    Column('map_pool_id',           Integer,    ForeignKey('map_pool.id'),          nullable=False),
+    Column('min_rating',            Integer),
+    Column('max_rating',            Integer),
 )
 
 moderation_report = Table(

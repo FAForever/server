@@ -19,7 +19,7 @@ from sqlalchemy import and_, func, select, text
 
 from .abc.base_game import GameConnectionState
 from .async_functions import gather_without_exceptions
-from .config import config, TRACE
+from .config import TRACE, config
 from .db.models import (
     avatars, avatars_list, ban, coop_map, friends_and_foes, lobby_ban
 )

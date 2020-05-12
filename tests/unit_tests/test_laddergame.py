@@ -1,18 +1,23 @@
-import pytest
 import time
 
-from sqlalchemy import text
+import pytest
 from server.games import LadderGame
 from server.games.game import GameState, ValidityState
-from tests.unit_tests.test_game import add_connected_players
 from server.rating import RatingType
+from sqlalchemy import text
+from tests.unit_tests.test_game import add_connected_players
 
 pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture()
 def laddergame(database, game_service, game_stats_service):
-    return LadderGame(465312, database, game_service, game_stats_service)
+    return LadderGame(
+        id_=465312,
+        database=database,
+        game_service=game_service,
+        game_stats_service=game_stats_service
+    )
 
 
 async def test_results_ranked_by_victory(laddergame, players):
