@@ -1,29 +1,25 @@
 import asyncio
-import functools
 import logging
 import re
 import time
 from collections import defaultdict
-from typing import Any, Dict, Optional, Tuple, List, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pymysql
 from server.config import FFA_TEAM
-from server.rating_service.typedefs import GameRatingSummary, TeamRatingSummary
+from server.db.models import game_player_stats, game_stats
 from server.games.game_results import (
-    GameOutcome,
-    GameResultReport,
-    GameResultReports,
-    resolve_game,
-    GameResolutionError
+    GameOutcome, GameResolutionError, GameResultReport, GameResultReports,
+    resolve_game
 )
 from server.rating import RatingType
-from server.db.models import game_stats, game_player_stats
-from sqlalchemy.sql.functions import now as sql_now
+from server.rating_service.typedefs import GameRatingSummary, TeamRatingSummary
 from sqlalchemy import and_, bindparam
+from sqlalchemy.sql.functions import now as sql_now
 
 from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
-from .enums import GameState, Victory, VisibilityState, ValidityState
+from .enums import GameState, ValidityState, Victory, VisibilityState
 
 
 class GameError(Exception):
@@ -49,7 +45,7 @@ class Game:
         name: str = 'None',
         map_: str = 'SCMP_007',
         game_mode: str = 'faf',
-        rating_type: RatingType = None,
+        rating_type: Optional[RatingType] = None,
     ):
         self._db = database
         self._results = GameResultReports(id_)

@@ -3,23 +3,37 @@ from unittest import mock
 
 import pytest
 from asynctest import CoroutineMock, exhaust_callbacks
-from server import GameService, LadderService
-from server.matchmaker import Search
+from server import LadderService
+from server.matchmaker import MapPool, Search
 from server.players import PlayerState
+from server.types import Map
 from tests.utils import fast_forward
 
 pytestmark = pytest.mark.asyncio
 
 
-async def test_start_game(
-    ladder_service: LadderService,
-    game_service: GameService,
-    player_factory
-):
+async def test_load_from_database(ladder_service, queue_factory):
+    # Insert some outdated data
+    ladder_service.queues["test"] = queue_factory(name="test")
+
+    # Data should be the same on each load
+    for _ in range(3):
+        await ladder_service.update_data()
+
+        assert len(ladder_service.queues) == 1
+
+        queue = ladder_service.queues["ladder1v1"]
+        assert queue.name == "ladder1v1"
+        assert len(queue.map_pools) == 3
+        assert list(ladder_service.ladder_1v1_map_pool.maps.values()) == [
+            Map(id=1, name='SCMP_001', path='maps/scmp_001.zip'),
+            Map(id=2, name='SCMP_002', path='maps/scmp_002.zip')
+        ]
+
+
+async def test_start_game(ladder_service: LadderService, player_factory):
     p1 = player_factory('Dostya', player_id=1, with_lobby_connection=True)
     p2 = player_factory('Rhiza', player_id=2, with_lobby_connection=True)
-
-    game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
 
     with mock.patch('server.games.game.Game.await_hosted', CoroutineMock()):
         await ladder_service.start_game(p1, p2)
@@ -29,15 +43,9 @@ async def test_start_game(
 
 
 @fast_forward(120)
-async def test_start_game_timeout(
-    ladder_service: LadderService,
-    game_service: GameService,
-    player_factory
-):
+async def test_start_game_timeout(ladder_service: LadderService, player_factory):
     p1 = player_factory('Dostya', player_id=1, with_lobby_connection=True)
     p2 = player_factory('Rhiza', player_id=2, with_lobby_connection=True)
-
-    game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
 
     await ladder_service.start_game(p1, p2)
 
@@ -187,53 +195,119 @@ async def test_start_game_called_on_match(
     ladder_service.start_game.assert_called_once()
 
 
-async def test_choose_map(ladder_service: LadderService):
-    ladder_service.get_ladder_history = CoroutineMock(
-        return_value=[1, 2, 3]
+@pytest.mark.parametrize("ratings", (
+    (((1500, 500), 0), ((1000, 100), 1000)),
+    (((1500, 500), 0), ((300, 100), 1000)),
+    (((400, 100), 10), ((300, 100), 1000))
+))
+async def test_start_game_map_selection_newbie_pool(
+    ladder_service: LadderService, player_factory, ratings
+):
+    p1 = player_factory(
+        ladder_rating=ratings[0][0],
+        ladder_games=ratings[0][1],
+    )
+    p2 = player_factory(
+        ladder_rating=ratings[1][0],
+        ladder_games=ratings[1][1],
     )
 
-    ladder_service.game_service.ladder_maps = [
-        (1, "some_map", "maps/some_map.v001.zip"),
-        (2, "some_map", "maps/some_map.v001.zip"),
-        (3, "some_map", "maps/some_map.v001.zip"),
-        (4, "CHOOSE_ME", "maps/choose_me.v001.zip"),
-    ]
+    queue = ladder_service.queues["ladder1v1"]
+    queue.map_pools.clear()
+    newbie_map_pool = mock.Mock()
+    full_map_pool = mock.Mock()
+    queue.add_map_pool(newbie_map_pool, None, 500)
+    queue.add_map_pool(full_map_pool, 500, None)
 
-    chosen_map = await ladder_service.choose_map([None])
+    await ladder_service.start_game(p1, p2)
 
-    # Make the probability very low that the test passes because we got lucky
-    for _ in range(20):
-        assert chosen_map == (4, "CHOOSE_ME", "maps/choose_me.v001.zip")
+    newbie_map_pool.choose_map.assert_called_once()
+    full_map_pool.choose_map.assert_not_called()
 
 
-async def test_choose_map_all_maps_played(ladder_service: LadderService):
-    ladder_service.get_ladder_history = CoroutineMock(
-        return_value=[1, 2, 3]
+async def test_start_game_map_selection_pros(
+    ladder_service: LadderService, player_factory
+):
+    p1 = player_factory(
+        ladder_rating=(2000, 50),
+        ladder_games=1000,
+    )
+    p2 = player_factory(
+        ladder_rating=(1500, 100),
+        ladder_games=1000,
     )
 
-    ladder_service.game_service.ladder_maps = [
-        (1, "some_map", "maps/some_map.v001.zip"),
-        (2, "some_map", "maps/some_map.v001.zip"),
-        (3, "some_map", "maps/some_map.v001.zip"),
-    ]
+    queue = ladder_service.queues["ladder1v1"]
+    queue.map_pools.clear()
+    newbie_map_pool = mock.Mock()
+    full_map_pool = mock.Mock()
+    queue.add_map_pool(newbie_map_pool, None, 500)
+    queue.add_map_pool(full_map_pool, 500, None)
 
-    chosen_map = await ladder_service.choose_map([None])
+    await ladder_service.start_game(p1, p2)
 
-    assert chosen_map is not None
-
-
-async def test_choose_map_raises_on_empty_map_pool(ladder_service: LadderService):
-    ladder_service.game_service.ladder_maps = []
-
-    with pytest.raises(RuntimeError):
-        await ladder_service.choose_map([])
+    newbie_map_pool.choose_map.assert_not_called()
+    full_map_pool.choose_map.assert_called_once()
 
 
 async def test_get_ladder_history(ladder_service: LadderService, players, database):
-    history = await ladder_service.get_ladder_history(players.hosting, limit=1)
+    history = await ladder_service.get_game_history(
+        [players.hosting],
+        mod="ladder1v1",
+        limit=1
+    )
+
     assert history == [6]
 
 
 async def test_get_ladder_history_many_maps(ladder_service: LadderService, players, database):
-    history = await ladder_service.get_ladder_history(players.hosting, limit=4)
+    history = await ladder_service.get_game_history(
+        [players.hosting],
+        mod="ladder1v1",
+        limit=4
+    )
+
     assert history == [6, 5, 4, 3]
+
+
+async def test_inform_player_message(
+    ladder_service: LadderService,
+    player_factory
+):
+    player = player_factory(ladder_rating=(1500, 500))
+    player.send_message = CoroutineMock()
+
+    await ladder_service.inform_player(player)
+
+    player.send_message.assert_called_once_with({
+        "command": "notice",
+        "style": "info",
+        "text": (
+            "<i>Welcome to the matchmaker</i><br><br><b>Until "
+            "you've played enough games for the system to learn "
+            "your skill level, you'll be matched randomly.</b><br>"
+            "Afterwards, you'll be more reliably matched up with "
+            "people of your skill level: so don't worry if your "
+            "first few games are uneven. This will improve as you "
+            "play!</b>"
+        )
+    })
+
+
+async def test_inform_player_message_2(
+    ladder_service: LadderService,
+    player_factory
+):
+    player = player_factory(ladder_rating=(1500, 400.1235))
+    player.send_message = CoroutineMock()
+
+    await ladder_service.inform_player(player)
+
+    player.send_message.assert_called_once_with({
+        "command": "notice",
+        "style": "info",
+        "text": (
+            "The system is still learning you.<b><br><br>"
+            "The learning phase is 40% complete<b>"
+        )
+    })

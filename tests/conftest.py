@@ -157,7 +157,7 @@ def make_player(
     return p
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def player_factory():
     def make(
         login=None,
@@ -236,9 +236,16 @@ async def geoip_service() -> GeoIpService:
     return service
 
 
+@pytest.fixture(scope="session")
+def queue_factory():
+    def make(name="Test Queue"):
+        return MatchmakerQueue(mock.Mock(), name)
+    return make
+
+
 @pytest.fixture
 def matchmaker_queue(game_service) -> MatchmakerQueue:
-    queue = MatchmakerQueue("ladder1v1test", game_service)
+    queue = MatchmakerQueue(game_service, "ladder1v1test")
     return queue
 
 
