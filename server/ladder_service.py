@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import itertools
 import re
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
@@ -356,25 +357,17 @@ class LadderService(Service):
             game.init_mode = InitMode.AUTO_LOBBY
             game.map_file_path = map_path
 
-            for i, player in enumerate(all_players):
-                i += 1  # Game options are 1-indexed
+            for i, player in enumerate(alternate(team1, team2)):
+                if player is None:
+                    continue
+                # FA uses lua and lua arrays are 1-indexed
+                slot = i + 1
+                # 2 if even, 3 if odd
+                team = (i % 2) + 2
                 player.game = game
 
-                # Configure game options
                 game.set_player_option(player.id, 'Faction', player.faction.value)
-
-            for i, player in enumerate(team1):
-                # Team 1 gets odd numbered start spots
-                slot = 2 * i + 1
-                game.set_player_option(player.id, 'Team', 2)
-                game.set_player_option(player.id, 'StartSpot', slot)
-                game.set_player_option(player.id, 'Army', slot)
-                game.set_player_option(player.id, 'Color', slot)
-
-            for i, player in enumerate(team2):
-                # Team 2 gets even numbered start spots
-                slot = 2 * (i + 1)
-                game.set_player_option(player.id, 'Team', 3)
+                game.set_player_option(player.id, 'Team', team)
                 game.set_player_option(player.id, 'StartSpot', slot)
                 game.set_player_option(player.id, 'Army', slot)
                 game.set_player_option(player.id, 'Color', slot)
@@ -503,3 +496,15 @@ def newbie_adjusted_ladder_mean(player: Player):
         return player.ratings[RatingType.LADDER_1V1][0]
     else:
         return 0
+
+
+def alternate(iter1, iter2):
+    """
+    Merge elements from two iterables, inserting None if one iterable is shorter.
+
+    # Example
+    list(alternate([1, 2, 3], ["a", "b"])) == [1, "a", 2, "b", 3, None]
+    """
+    for i, j in itertools.zip_longest(iter1, iter2):
+        yield i
+        yield j
