@@ -74,9 +74,10 @@ class LadderService(Service):
     async def initialize(self) -> None:
         await self.update_data()
         self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
-        await asyncio.gather(*[
-            queue.initialize() for queue in self.queues.values()
-        ])
+
+        # TODO: Starting hardcoded queues here
+        for queue in self.queues.values():
+            queue.initialize()
         self.start_queue_handlers()
 
     async def update_data(self) -> None:
@@ -99,11 +100,15 @@ class LadderService(Service):
 
         for name, map_pools in matchmaker_queues.items():
             if name not in self.queues:
-                self.queues[name] = MatchmakerQueue(
+                queue = MatchmakerQueue(
                     name=name,
                     game_service=self.game_service
                 )
-            queue = self.queues[name]
+                self.queues[name] = queue
+                queue.initialize()
+                asyncio.ensure_future(self.handle_queue_matches(queue))
+            else:
+                queue = self.queues[name]
             queue.map_pools.clear()
             for map_pool_id, min_rating, max_rating in map_pools:
                 map_pool_name, map_list = map_pool_maps[map_pool_id]

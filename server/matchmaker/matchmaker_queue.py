@@ -72,7 +72,7 @@ class MatchmakerQueue:
                 continue
             return map_pool
 
-    async def initialize(self):
+    def initialize(self):
         asyncio.create_task(self.queue_pop_timer())
 
     async def iter_matches(self):
