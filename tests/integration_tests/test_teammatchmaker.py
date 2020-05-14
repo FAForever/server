@@ -1,6 +1,7 @@
 import asyncio
 
 import pytest
+
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until_command
@@ -67,8 +68,7 @@ async def test_game_matchmaking(lobby_server):
     for msg in msgs:
         assert msg["init_mode"] == 1
         assert "None" not in msg["name"]
-        # TODO: Make a 'ladder2v2' mod?
-        assert msg["mod"] == "ladder2v2"
+        assert msg["mod"] == "faf"
         assert msg["expected_players"] == 4
         assert msg["team"] in (2, 3)
         assert msg["map_position"] in (1, 2, 3, 4)

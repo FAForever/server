@@ -48,16 +48,20 @@ class LadderService(Service):
         self.queues = {
             'ladder1v1': MatchmakerQueue(
                 game_service,
-                name='ladder1v1',
+                name="ladder1v1",
+                featured_mod="ladder1v1",
+                leaderboard_id=2,
                 map_pools=[(self.ladder_1v1_map_pool, None, None)]
             ),
             'ladder2v2': MatchmakerQueue(
                 game_service=game_service,
-                name='ladder2v2',
+                name="ladder2v2",
+                featured_mod="faf",
+                leaderboard_id=1,  # TODO: Changeme (1 is global)
                 min_team_size=2,
                 max_team_size=2,
                 map_pools=[(
-                    MapPool("ladder2v2", [
+                    MapPool(0, "ladder2v2", [
                         Map(566, "Fields of Isis", "maps/scmp_015.zip"),
                         Map(568, "Syrtis Major", "maps/scmp_017.zip"),
                         Map(577, "Vya-3 Protectorate", "maps/scmp_026.zip"),
@@ -96,12 +100,14 @@ class LadderService(Service):
             self.ladder_1v1_map_pool.set_maps(maps)
 
             map_pool_maps = await self.fetch_map_pools(conn)
-            matchmaker_queues = await self.fetch_matchmaker_queues(conn)
+            db_queues = await self.fetch_matchmaker_queues(conn)
 
-        for name, map_pools in matchmaker_queues.items():
+        for name, info in db_queues.items():
             if name not in self.queues:
                 queue = MatchmakerQueue(
                     name=name,
+                    featured_mod=info["mod"],
+                    leaderboard_id=info["leaderboard_id"],
                     game_service=self.game_service
                 )
                 self.queues[name] = queue
@@ -110,7 +116,7 @@ class LadderService(Service):
             else:
                 queue = self.queues[name]
             queue.map_pools.clear()
-            for map_pool_id, min_rating, max_rating in map_pools:
+            for map_pool_id, min_rating, max_rating in info["map_pools"]:
                 map_pool_name, map_list = map_pool_maps[map_pool_id]
                 if not map_list:
                     self._logger.warning(
@@ -129,7 +135,7 @@ class LadderService(Service):
             if queue_name in ("ladder1v1", "ladder2v2"):
                 # TODO: Remove me. Legacy queue fallback
                 continue
-            if queue_name not in matchmaker_queues:
+            if queue_name not in db_queues:
                 self.queues[queue_name].shutdown()
                 del self.queues[queue_name]
 
@@ -161,21 +167,29 @@ class LadderService(Service):
 
         return map_pool_maps
 
-    async def fetch_matchmaker_queues(self, conn) -> Dict[str, Tuple[int, int, int]]:
+    async def fetch_matchmaker_queues(self, conn):
         result = await conn.execute(
             select([
                 matchmaker_queue.c.technical_name,
+                matchmaker_queue.c.leaderboard_id,
                 matchmaker_queue_map_pool.c.map_pool_id,
                 matchmaker_queue_map_pool.c.min_rating,
-                matchmaker_queue_map_pool.c.max_rating
+                matchmaker_queue_map_pool.c.max_rating,
+                game_featuredMods.c.gamemod
             ])
-            .select_from(matchmaker_queue.join(matchmaker_queue_map_pool))
+            .select_from(
+                matchmaker_queue
+                .join(matchmaker_queue_map_pool)
+                .join(game_featuredMods)
+            )
         )
-
-        matchmaker_queues = defaultdict(list)
+        matchmaker_queues = defaultdict(lambda: defaultdict(list))
         async for row in result:
             name = row.technical_name
-            matchmaker_queues[name].append((
+            info = matchmaker_queues[name]
+            info["mod"] = row.gamemod
+            info["leaderboard_id"] = row.leaderboard_id
+            info["map_pools"].append((
                 row.map_pool_id,
                 row.min_rating,
                 row.max_rating
@@ -197,7 +211,7 @@ class LadderService(Service):
         for player in search.players:
             player.state = PlayerState.SEARCHING_LADDER
 
-            # For now, inform_player is only designed for ladder1v1
+            # FIXME: For now, inform_player is only designed for ladder1v1
             if queue_name == "ladder1v1":
                 tasks.append(self.inform_player(player))
 
@@ -317,7 +331,7 @@ class LadderService(Service):
                     for player in s1.players + s2.players
                 ])
                 asyncio.create_task(
-                    self.start_game(s1.players, s2.players, queue.name)
+                    self.start_game(s1.players, s2.players, queue)
                 )
             except Exception as e:
                 self._logger.exception(
@@ -325,10 +339,14 @@ class LadderService(Service):
                     s1, s2, e
                 )
 
-    async def start_game(self, team1: List[Player], team2: List[Player], queue_name: str):
-        # TODO: Get game_mode from queue
+    async def start_game(
+        self,
+        team1: List[Player],
+        team2: List[Player],
+        queue: MatchmakerQueue
+    ):
         self._logger.debug(
-            "Starting %s game between %s and %s", queue_name, team1, team2
+            "Starting %s game between %s and %s", queue.name, team1, team2
         )
         try:
             host = team1[0]
@@ -341,21 +359,20 @@ class LadderService(Service):
 
             played_map_ids = await self.get_game_history(
                 all_players,
-                "ladder1v1",
+                "ladder1v1",  # FIXME: Use reference to matchmaker queue instead
                 limit=config.LADDER_ANTI_REPETITION_LIMIT
             )
             rating = min(
                 newbie_adjusted_ladder_mean(player)
                 for player in all_players
             )
-            pool = self.queues["ladder1v1"].get_map_pool_for_rating(rating)
+            pool = queue.get_map_pool_for_rating(rating)
             if not pool:
                 raise RuntimeError(f"No map pool available for rating {rating}!")
             map_id, map_name, map_path = pool.choose_map(played_map_ids)
 
-            # TODO: Different game mode for team matchmaker?
             game = self.game_service.create_game(
-                game_mode=queue_name,
+                game_mode=queue.featured_mod,
                 host=host,
                 name=game_name(team1, team2)
             )

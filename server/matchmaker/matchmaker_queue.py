@@ -40,12 +40,16 @@ class MatchmakerQueue:
         self,
         game_service: "GameService",
         name: str,
+        featured_mod: str,
+        leaderboard_id: int,
         min_team_size=1,
         max_team_size=1,
         map_pools: Iterable[Tuple[MapPool, Optional[int], Optional[int]]] = ()
     ):
         self.game_service = game_service
         self.name = name
+        self.featured_mod = featured_mod
+        self.leaderboard_id = leaderboard_id
         self.min_team_size = min_team_size
         self.max_team_size = max_team_size
         self.map_pools = {info[0].id: info for info in map_pools}

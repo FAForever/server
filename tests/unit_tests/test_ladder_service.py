@@ -5,6 +5,7 @@ import pytest
 
 from asynctest import CoroutineMock, exhaust_callbacks
 from server import GameService, LadderService
+from server.db.models import matchmaker_queue, matchmaker_queue_map_pool
 from server.ladder_service import game_name
 from server.matchmaker import Search
 from server.players import PlayerState
@@ -34,27 +35,58 @@ async def test_load_from_database(ladder_service, queue_factory):
         ]
 
 
+async def test_load_from_database_new_data(ladder_service, database):
+    async with database.acquire() as conn:
+        result = await conn.execute(matchmaker_queue.insert().values(
+            technical_name="test",
+            featured_mod_id=1,
+            leaderboard_id=1,
+            name_key="test.name"
+        ))
+        await conn.execute(matchmaker_queue_map_pool.insert().values(
+            matchmaker_queue_id=result.lastrowid,
+            map_pool_id=1
+        ))
+
+    await ladder_service.update_data()
+
+    test_queue = ladder_service.queues["test"]
+
+    assert test_queue.name == "test"
+    assert test_queue._is_running
+    # Queue pop times are 1 second for tests
+    test_queue.find_matches = CoroutineMock()
+    await asyncio.sleep(1.5)
+
+    test_queue.find_matches.assert_called()
+
+
 async def test_start_game_1v1(
     ladder_service: LadderService,
     game_service: GameService,
-    player_factory
+    player_factory,
 ):
+    queue = ladder_service.queues["ladder1v1"]
     p1 = player_factory("Dostya", player_id=1, with_lobby_connection=True)
     p2 = player_factory("Rhiza", player_id=2, with_lobby_connection=True)
 
     with mock.patch('server.games.game.Game.await_hosted', CoroutineMock()):
-        await ladder_service.start_game([p1], [p2], "ladder1v1")
+        await ladder_service.start_game([p1], [p2], queue)
 
     assert p1.lobby_connection.launch_game.called
     assert p2.lobby_connection.launch_game.called
 
 
 @fast_forward(120)
-async def test_start_game_timeout(ladder_service: LadderService, player_factory):
+async def test_start_game_timeout(
+    ladder_service: LadderService,
+    player_factory,
+):
+    queue = ladder_service.queues["ladder1v1"]
     p1 = player_factory('Dostya', player_id=1, with_lobby_connection=True)
     p2 = player_factory('Rhiza', player_id=2, with_lobby_connection=True)
 
-    await ladder_service.start_game([p1], [p2], "ladder1v1")
+    await ladder_service.start_game([p1], [p2], queue)
 
     p1.lobby_connection.send.assert_called_once_with({"command": "match_cancelled"})
     p2.lobby_connection.send.assert_called_once_with({"command": "match_cancelled"})
@@ -64,8 +96,11 @@ async def test_start_game_timeout(ladder_service: LadderService, player_factory)
 
 
 async def test_start_game_with_teams(
-    ladder_service: LadderService, game_service: GameService, player_factory
+    ladder_service: LadderService,
+    game_service: GameService,
+    player_factory,
 ):
+    queue = ladder_service.queues["ladder2v2"]
     p1 = player_factory("Dostya", player_id=1, with_lobby_connection=True)
     p2 = player_factory("Rhiza", player_id=2, with_lobby_connection=True)
     p3 = player_factory("QAI", player_id=3, with_lobby_connection=True)
@@ -74,7 +109,7 @@ async def test_start_game_with_teams(
     game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
 
     with mock.patch('server.games.game.Game.await_hosted', CoroutineMock()):
-        await ladder_service.start_game([p1, p3], [p2, p4], "ladder2v2")
+        await ladder_service.start_game([p1, p3], [p2, p4], queue)
 
     assert p1.lobby_connection.launch_game.called
     assert p2.lobby_connection.launch_game.called
@@ -339,7 +374,9 @@ async def test_start_game_called_on_match(
     (((400, 100), 10), ((300, 100), 1000))
 ))
 async def test_start_game_map_selection_newbie_pool(
-    ladder_service: LadderService, player_factory, ratings
+    ladder_service: LadderService,
+    player_factory,
+    ratings
 ):
     p1 = player_factory(
         ladder_rating=ratings[0][0],
@@ -357,7 +394,7 @@ async def test_start_game_map_selection_newbie_pool(
     queue.add_map_pool(newbie_map_pool, None, 500)
     queue.add_map_pool(full_map_pool, 500, None)
 
-    await ladder_service.start_game([p1], [p2], "ladder1v1")
+    await ladder_service.start_game([p1], [p2], queue)
 
     newbie_map_pool.choose_map.assert_called_once()
     full_map_pool.choose_map.assert_not_called()
@@ -382,7 +419,7 @@ async def test_start_game_map_selection_pros(
     queue.add_map_pool(newbie_map_pool, None, 500)
     queue.add_map_pool(full_map_pool, 500, None)
 
-    await ladder_service.start_game([p1], [p2], "ladder1v1")
+    await ladder_service.start_game([p1], [p2], queue)
 
     newbie_map_pool.choose_map.assert_not_called()
     full_map_pool.choose_map.assert_called_once()
