@@ -1,8 +1,8 @@
 import itertools
 import math
 import random
+import statistics as stats
 from collections import OrderedDict
-from statistics import mean
 from typing import (
     Dict, Iterable, Iterator, List, Optional, Set, Tuple, TypeVar
 )
@@ -273,10 +273,7 @@ class _MatchingGraph:
 def avg_mean(search: Search) -> float:
     """ Get the average of all trueskill means for a search counting means with
     high deviation as 0. """
-    return mean(map(
-        lambda r: r[0] if r[1] < 250 else 0,
-        search.ratings
-    ))
+    return stats.mean(mean if dev < 250 else 0 for mean, dev in search.ratings)
 
 
 def rotate(l: List[T], amount: int) -> List[T]:

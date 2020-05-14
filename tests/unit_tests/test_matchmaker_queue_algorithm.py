@@ -6,6 +6,7 @@ import pytest
 
 from hypothesis import given, settings
 from hypothesis import strategies as st
+
 from server import config
 from server.matchmaker import Search, algorithm
 from server.rating import RatingType

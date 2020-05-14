@@ -4,8 +4,9 @@ import math
 import time
 from typing import List, Optional, Tuple
 
-from server.rating import RatingType
 from trueskill import Rating, quality
+
+from server.rating import RatingType
 
 from ..config import config
 from ..decorators import with_logger
@@ -223,7 +224,6 @@ class Search:
     def cancel(self):
         """
         Cancel searching for a match
-        :return:
         """
         self._match.cancel()
 
@@ -301,7 +301,6 @@ class CombinedSearch(Search):
     def cancel(self):
         """
         Cancel searching for a match
-        :return:
         """
         for s in self.searches:
             s.cancel()

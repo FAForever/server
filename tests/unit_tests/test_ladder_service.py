@@ -4,6 +4,7 @@ from unittest import mock
 import pytest
 
 from asynctest import CoroutineMock, exhaust_callbacks
+
 from server import GameService, LadderService
 from server.db.models import matchmaker_queue, matchmaker_queue_map_pool
 from server.ladder_service import game_name
