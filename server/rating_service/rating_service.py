@@ -2,32 +2,26 @@ import asyncio
 from typing import Dict
 
 import aiocron
+from sqlalchemy import and_, func, select
+from trueskill import Rating
+
 from server.config import config
 from server.core import Service
 from server.db import FAFDatabase
 from server.db.models import (
-    game_player_stats,
-    global_rating,
-    ladder1v1_rating,
-    leaderboard,
-    leaderboard_rating,
-    leaderboard_rating_journal,
+    game_player_stats, global_rating, ladder1v1_rating, leaderboard,
+    leaderboard_rating, leaderboard_rating_journal
 )
 from server.decorators import with_logger
 from server.games.game_results import GameOutcome
 from server.metrics import rating_service_backlog
 from server.player_service import PlayerService
-from server.rating import RatingType
-from sqlalchemy import and_, func, select
-from trueskill import Rating
+from server.rating import RatingType, RatingTypeMap
 
 from .game_rater import GameRater, GameRatingError
 from .typedefs import (
-    GameRatingData,
-    GameRatingSummary,
-    PlayerID,
-    ServiceNotReadyError,
-    TeamRatingData,
+    GameRatingData, GameRatingSummary, PlayerID, ServiceNotReadyError,
+    TeamRatingData
 )
 
 
@@ -65,6 +59,7 @@ class RatingService(Service):
             rows = await result.fetchall()
 
         self._rating_type_ids = {row["technical_name"]: row["id"] for row in rows}
+        RatingTypeMap._rating_id_map.update(self._rating_type_ids)
 
     async def enqueue(self, game_info: Dict) -> None:
         if not self._accept_input:
