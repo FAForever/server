@@ -50,6 +50,7 @@ class Game:
         map_: str = 'SCMP_007',
         game_mode: str = 'faf',
         rating_type: Optional[RatingType] = None,
+        max_players: int = 12
     ):
         self._db = database
         self._results = GameResultReports(id_)
@@ -65,7 +66,7 @@ class Game:
         )
         self.id = id_
         self.visibility = VisibilityState.PUBLIC
-        self.max_players = 12
+        self.max_players = max_players
         self.host = host
         self.name = self.sanitize_name(name)
         self.map_id = None

@@ -7,8 +7,8 @@ from asynctest import CoroutineMock, exhaust_callbacks
 
 from server import GameService, LadderService
 from server.db.models import matchmaker_queue, matchmaker_queue_map_pool
+from server.games import LadderGame
 from server.ladder_service import game_name
-from server.matchmaker import Search
 from server.players import PlayerState
 from server.types import Map
 from tests.utils import fast_forward
@@ -74,8 +74,13 @@ async def test_start_game_1v1(
     with mock.patch('server.games.game.Game.await_hosted', CoroutineMock()):
         await ladder_service.start_game([p1], [p2], queue)
 
+    game = game_service[game_service.game_id_counter]
+
     assert p1.lobby_connection.launch_game.called
     assert p2.lobby_connection.launch_game.called
+    assert isinstance(game, LadderGame)
+    assert game._rating_type == queue.leaderboard_id
+    assert game.max_players == 2
 
 
 @fast_forward(120)
@@ -112,10 +117,15 @@ async def test_start_game_with_teams(
     with mock.patch('server.games.game.Game.await_hosted', CoroutineMock()):
         await ladder_service.start_game([p1, p3], [p2, p4], queue)
 
+    game = game_service[game_service.game_id_counter]
+
     assert p1.lobby_connection.launch_game.called
     assert p2.lobby_connection.launch_game.called
     assert p3.lobby_connection.launch_game.called
     assert p4.lobby_connection.launch_game.called
+    assert isinstance(game, LadderGame)
+    assert game._rating_type == queue.leaderboard_id
+    assert game.max_players == 4
 
 
 async def test_inform_player(ladder_service: LadderService, player_factory):

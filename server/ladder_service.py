@@ -21,6 +21,7 @@ from .db.models import (
 )
 from .decorators import with_logger
 from .game_service import GameService
+from .games import LadderGame
 from .matchmaker import MapPool, MatchmakerQueue, Search
 from .players import Player, PlayerState
 from .protocol import DisconnectedError
@@ -361,9 +362,12 @@ class LadderService(Service):
             map_id, map_name, map_path = pool.choose_map(played_map_ids)
 
             game = self.game_service.create_game(
+                game_class=LadderGame,
                 game_mode=queue.featured_mod,
                 host=host,
-                name=game_name(team1, team2)
+                name=game_name(team1, team2),
+                rating_type=queue.leaderboard_id,
+                max_players=len(all_players)
             )
             game.init_mode = InitMode.AUTO_LOBBY
             game.map_file_path = map_path

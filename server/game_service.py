@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Dict, List, Optional, Union, ValuesView
+from typing import Dict, List, Optional, Type, Union, ValuesView
 
 import aiocron
 
@@ -14,7 +14,6 @@ from .matchmaker import MatchmakerQueue
 from .message_queue_service import MessageQueueService
 from .players import Player
 from .rating_service import RatingService
-from .types import Map
 
 
 @with_logger
@@ -119,17 +118,19 @@ class GameService(Service):
     def create_game(
         self,
         game_mode: str,
+        game_class: Type[Game] = None,
         visibility=VisibilityState.PUBLIC,
         host: Optional[Player] = None,
         name: Optional[str] = None,
         mapname: Optional[str] = None,
-        password: Optional[str] = None
+        password: Optional[str] = None,
+        **kwargs
     ):
         """
         Main entrypoint for creating new games
         """
         game_id = self.create_uid()
-        args = {
+        game_args = {
             "database": self._db,
             "id_": game_id,
             "host": host,
@@ -139,15 +140,17 @@ class GameService(Service):
             "game_service": self,
             "game_stats_service": self.game_stats_service
         }
+        game_args.update(kwargs)
 
-        game_class = {
-            'ladder1v1':    LadderGame,
-            'coop':         CoopGame,
-            'faf':          CustomGame,
-            'fafbeta':      CustomGame,
-            'equilibrium':  CustomGame
-        }.get(game_mode, Game)
-        game = game_class(**args)
+        if not game_class:
+            game_class = {
+                'ladder1v1':    LadderGame,
+                'coop':         CoopGame,
+                'faf':          CustomGame,
+                'fafbeta':      CustomGame,
+                'equilibrium':  CustomGame
+            }.get(game_mode, Game)
+        game = game_class(**game_args)
 
         self._games[game_id] = game
 
