@@ -2,13 +2,14 @@ import asyncio
 from typing import Optional, Set, ValuesView
 
 import aiocron
+from sqlalchemy import and_, select
+from trueskill import Rating
+
 import server.metrics as metrics
 from server.db import FAFDatabase
 from server.decorators import with_logger
 from server.players import Player
 from server.rating import RatingType
-from sqlalchemy import and_, select
-from trueskill import Rating
 
 from .core import Service
 from .db.models import (

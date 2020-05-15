@@ -13,9 +13,10 @@ import aiohttp
 import humanize
 import pymysql
 import semver
+from sqlalchemy import and_, func, select, text
+
 import server.metrics as metrics
 from server.db import FAFDatabase
-from sqlalchemy import and_, func, select, text
 
 from .abc.base_game import GameConnectionState, InitMode
 from .async_functions import gather_without_exceptions
@@ -842,14 +843,8 @@ class LobbyConnection:
             # Faction can be either the name (e.g. 'uef') or the enum value (e.g. 1)
             self.player.faction = message['faction']
 
-            if mod == "ladder1v1":
-                search = Search([self.player])
-            else:
-                # TODO: Put player parties here
-                # TODO: Set rating_type appropriately
-                search = Search([self.player])
-
-            await self.ladder_service.start_search(self.player, search, queue_name=mod)
+            # TODO: Put player parties here
+            await self.ladder_service.start_search(self.player, queue_name=mod)
 
     async def command_game_host(self, message):
         assert isinstance(self.player, Player)

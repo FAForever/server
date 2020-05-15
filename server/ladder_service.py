@@ -188,16 +188,13 @@ class LadderService(Service):
             ))
         return matchmaker_queues
 
-    async def start_search(
-        self,
-        initiator: Player,
-        search: Search,
-        queue_name: str
-    ):
+    async def start_search(self, initiator: Player, queue_name: str):
         # TODO: Consider what happens if players disconnect while starting
         # search. Will need a message to inform other players in the search
         # that it has been cancelled.
         self._cancel_existing_searches(initiator, queue_name)
+        queue = self.queues[queue_name]
+        search = Search([initiator], rating_type=queue.leaderboard_id)
 
         tasks = []
         for player in search.players:
@@ -228,7 +225,7 @@ class LadderService(Service):
             "%s is searching for '%s': %s", initiator, queue_name, search
         )
 
-        asyncio.create_task(self.queues[queue_name].search(search))
+        asyncio.create_task(queue.search(search))
 
     async def cancel_search(
         self,

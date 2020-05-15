@@ -248,10 +248,9 @@ async def test_start_and_cancel_search(
 ):
     p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500), ladder_games=0)
 
-    search = Search([p1])
-
-    await ladder_service.start_search(p1, search, 'ladder1v1')
+    await ladder_service.start_search(p1, 'ladder1v1')
     await exhaust_callbacks(event_loop)
+    search = ladder_service.searches["ladder1v1"][p1]
 
     assert p1.state == PlayerState.SEARCHING_LADDER
     assert ladder_service.queues['ladder1v1'].queue[search]
@@ -276,18 +275,16 @@ async def test_start_search_cancels_previous_search(
         with_lobby_connection=True
     )
 
-    search1 = Search([p1])
-
-    await ladder_service.start_search(p1, search1, 'ladder1v1')
+    await ladder_service.start_search(p1, 'ladder1v1')
     await exhaust_callbacks(event_loop)
+    search1 = ladder_service.searches["ladder1v1"][p1]
 
     assert p1.state == PlayerState.SEARCHING_LADDER
     assert ladder_service.queues['ladder1v1'].queue[search1]
 
-    search2 = Search([p1])
-
-    await ladder_service.start_search(p1, search2, 'ladder1v1')
+    await ladder_service.start_search(p1, 'ladder1v1')
     await exhaust_callbacks(event_loop)
+    search2 = ladder_service.searches["ladder1v1"][p1]
 
     assert p1.state == PlayerState.SEARCHING_LADDER
     assert search1.is_cancelled
@@ -299,10 +296,9 @@ async def test_cancel_all_searches(ladder_service: LadderService,
                                    player_factory, event_loop):
     p1 = player_factory(login="Dostya", player_id=1, ladder_rating=(1500, 500), ladder_games=0)
 
-    search = Search([p1])
-
-    await ladder_service.start_search(p1, search, 'ladder1v1')
+    await ladder_service.start_search(p1, 'ladder1v1')
     await exhaust_callbacks(event_loop)
+    search = ladder_service.searches["ladder1v1"][p1]
 
     assert p1.state == PlayerState.SEARCHING_LADDER
     assert ladder_service.queues['ladder1v1'].queue[search]
@@ -319,11 +315,10 @@ async def test_cancel_twice(ladder_service: LadderService, player_factory):
     p1 = player_factory(login="Dostya", player_id=1, ladder_rating=(1500, 500), ladder_games=0)
     p2 = player_factory(login="Brackman", player_id=2, ladder_rating=(2000, 500), ladder_games=0)
 
-    search = Search([p1])
-    search2 = Search([p2])
-
-    await ladder_service.start_search(p1, search, 'ladder1v1')
-    await ladder_service.start_search(p2, search2, 'ladder1v1')
+    await ladder_service.start_search(p1, 'ladder1v1')
+    search = ladder_service.searches["ladder1v1"][p1]
+    await ladder_service.start_search(p2, 'ladder1v1')
+    search2 = ladder_service.searches["ladder1v1"][p2]
 
     searches = ladder_service._cancel_existing_searches(p1)
     assert search.is_cancelled
@@ -360,8 +355,8 @@ async def test_start_game_called_on_match(
     ladder_service.start_game = CoroutineMock()
     ladder_service.inform_player = CoroutineMock()
 
-    await ladder_service.start_search(p1, Search([p1]), 'ladder1v1')
-    await ladder_service.start_search(p2, Search([p2]), 'ladder1v1')
+    await ladder_service.start_search(p1, 'ladder1v1')
+    await ladder_service.start_search(p2, 'ladder1v1')
 
     await asyncio.sleep(2)
 

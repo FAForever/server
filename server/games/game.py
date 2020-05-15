@@ -7,6 +7,9 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pymysql
+from sqlalchemy import and_, bindparam
+from sqlalchemy.sql.functions import now as sql_now
+
 from server.config import FFA_TEAM
 from server.db.models import game_player_stats, game_stats
 from server.games.game_results import (
@@ -14,8 +17,6 @@ from server.games.game_results import (
     resolve_game
 )
 from server.rating import RatingType
-from sqlalchemy import and_, bindparam
-from sqlalchemy.sql.functions import now as sql_now
 
 from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
@@ -76,7 +77,7 @@ class Game:
         self.desyncs = 0
         self.validity = ValidityState.VALID
         self.game_mode = game_mode
-        self._rating_type = rating_type
+        self._rating_type = rating_type or RatingType.GLOBAL
         self.state = GameState.INITIALIZING
         self._connections = {}
         self.enforce_rating = False
@@ -702,10 +703,9 @@ class Game:
             if is_observer:
                 continue
 
-            if self.game_mode == 'ladder1v1':
-                mean, deviation = player.ratings[RatingType.LADDER_1V1]
-            else:
-                mean, deviation = player.ratings[RatingType.GLOBAL]
+            # DEPRECATED: Rating changes are persisted by the rating service
+            # in the `leaderboard_rating_journal` table.
+            mean, deviation = player.ratings[self._rating_type]
 
             query_args.append(
                 {
