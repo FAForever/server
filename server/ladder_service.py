@@ -53,23 +53,13 @@ class LadderService(Service):
                 leaderboard_id=2,
                 map_pools=[(self.ladder_1v1_map_pool, None, None)]
             ),
-            'ladder2v2': MatchmakerQueue(
+            'tmm2v2': MatchmakerQueue(
                 game_service=game_service,
-                name="ladder2v2",
+                name="tmm2v2",
                 featured_mod="faf",
                 leaderboard_id=1,  # TODO: Changeme (1 is global)
                 min_team_size=2,
-                max_team_size=2,
-                map_pools=[(
-                    MapPool(0, "ladder2v2", [
-                        Map(566, "Fields of Isis", "maps/scmp_015.zip"),
-                        Map(568, "Syrtis Major", "maps/scmp_017.zip"),
-                        Map(577, "Vya-3 Protectorate", "maps/scmp_026.zip"),
-                        Map(585, "High Noon", "maps/scmp_034.zip"),
-                    ]),
-                    None,
-                    None
-                )]
+                max_team_size=2
             )
         }
 
@@ -115,6 +105,8 @@ class LadderService(Service):
                 asyncio.ensure_future(self.handle_queue_matches(queue))
             else:
                 queue = self.queues[name]
+                queue.featured_mod = info["mod"]
+                queue.leaderboard_id = info["leaderboard_id"]
             queue.map_pools.clear()
             for map_pool_id, min_rating, max_rating in info["map_pools"]:
                 map_pool_name, map_list = map_pool_maps[map_pool_id]
@@ -132,7 +124,7 @@ class LadderService(Service):
                 )
         # Remove queues that don't exist anymore
         for queue_name in list(self.queues.keys()):
-            if queue_name in ("ladder1v1", "ladder2v2"):
+            if queue_name in ("ladder1v1", "tmm2v2"):
                 # TODO: Remove me. Legacy queue fallback
                 continue
             if queue_name not in db_queues:

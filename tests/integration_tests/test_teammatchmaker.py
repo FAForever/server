@@ -28,7 +28,7 @@ async def queue_players_for_matchmaking(lobby_server):
             "command": "game_matchmaking",
             "state": "start",
             "faction": "uef",
-            "mod": "ladder2v2"
+            "mod": "tmm2v2"
         })
         for proto in protos
     ])

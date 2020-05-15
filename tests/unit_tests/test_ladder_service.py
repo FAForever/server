@@ -101,7 +101,7 @@ async def test_start_game_with_teams(
     game_service: GameService,
     player_factory,
 ):
-    queue = ladder_service.queues["ladder2v2"]
+    queue = ladder_service.queues["tmm2v2"]
     p1 = player_factory("Dostya", player_id=1, with_lobby_connection=True)
     p2 = player_factory("Rhiza", player_id=2, with_lobby_connection=True)
     p3 = player_factory("QAI", player_id=3, with_lobby_connection=True)
