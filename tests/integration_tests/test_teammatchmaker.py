@@ -41,7 +41,34 @@ async def queue_players_for_matchmaking(lobby_server):
     return protos
 
 
-@fast_forward(5)
+@fast_forward(10)
+async def test_info_message(lobby_server):
+    _, _, proto = await connect_and_sign_in(
+        ("ladder1", "ladder1"), lobby_server
+    )
+
+    await read_until_command(proto, "game_info")
+
+    await proto.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef",
+        "mod": "tmm2v2"
+    })
+
+    msg = await read_until_command(proto, "matchmaker_info")
+
+    assert msg["queues"]
+    for queue in msg["queues"]:
+        boundaries = queue["boundary_80s"]
+
+        if queue["queue_name"] == "tmm2v2":
+            assert boundaries == [(1300, 1700)]
+        else:
+            assert boundaries == []
+
+
+@fast_forward(10)
 async def test_game_matchmaking(lobby_server):
     protos = await queue_players_for_matchmaking(lobby_server)
 
@@ -75,7 +102,7 @@ async def test_game_matchmaking(lobby_server):
         assert msg["faction"] == 1
 
 
-@fast_forward(50)
+@fast_forward(60)
 async def test_game_matchmaking_timeout(lobby_server):
     protos = await queue_players_for_matchmaking(lobby_server)
 

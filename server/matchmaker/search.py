@@ -61,6 +61,7 @@ class Search:
         return player.game_count[RatingType.LADDER_1V1] <= config.NEWBIE_MIN_GAMES
 
     def is_ladder1v1_search(self) -> bool:
+        # FIXME: rating_type might be a leaderboard_id (int)
         return self.rating_type is RatingType.LADDER_1V1
 
     def is_single_party(self) -> bool:
@@ -82,7 +83,7 @@ class Search:
         ratings = []
         for player, rating in zip(self.players, self.raw_ratings):
             # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
-            if self._is_ladder_newbie(player):
+            if self.is_ladder1v1_search() and self._is_ladder_newbie(player):
                 rating = self.adjusted_rating(player)
             ratings.append(rating)
         return ratings
@@ -202,7 +203,7 @@ class Search:
         self._logger.info("Matched %s with %s", self.players, other.players)
 
         for player, raw_rating in zip(self.players, self.raw_ratings):
-            if self._is_ladder_newbie(player):
+            if self.is_ladder1v1_search() and self._is_ladder_newbie(player):
                 mean, dev = raw_rating
                 adjusted_mean = self.adjusted_rating(player)
                 self._logger.info('Adjusted mean rating for {player} with {ladder_games} games from {mean} to {adjusted_mean}'.format(
