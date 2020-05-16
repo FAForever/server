@@ -156,13 +156,21 @@ class RatingService(Service):
             result = await conn.execute(sql)
             row = await result.fetchone()
 
-        if not row:
-            return await self._get_player_legacy_rating(player_id, rating_type)
+            if not row:
+                try:
+                    return await self._get_player_legacy_rating(
+                        conn, player_id, rating_type
+                    )
+                except ValueError:
+                    new_rating = await self._create_default_rating(
+                        conn, player_id, rating_type
+                    )
+                    return new_rating
 
         return Rating(row["mean"], row["deviation"])
 
     async def _get_player_legacy_rating(
-        self, player_id: int, rating_type: RatingType
+        self, conn, player_id: int, rating_type: RatingType
     ) -> Rating:
         if rating_type == RatingType.GLOBAL:
             table = global_rating
@@ -177,33 +185,31 @@ class RatingService(Service):
         else:
             raise ValueError(f"Unknown rating type {rating_type}.")
 
-        async with self._db.acquire() as conn:
+        result = await conn.execute(sql)
+        row = await result.fetchone()
 
-            result = await conn.execute(sql)
-            row = await result.fetchone()
-
-            if not row:
-                new_rating = await self._create_default_rating(
-                    conn, player_id, rating_type
-                )
-                return new_rating
-
-            if rating_type == RatingType.GLOBAL:
-                won_games = int(row["numGames"] / 2)
-            else:
-                won_games = row["winGames"]
-
-            insertion_sql = leaderboard_rating.insert().values(
-                login_id=player_id,
-                mean=row["mean"],
-                deviation=row["deviation"],
-                total_games=row["numGames"],
-                won_games=won_games,
-                leaderboard_id=self._rating_type_ids[rating_type],
+        if not row:
+            new_rating = await self._create_default_rating(
+                conn, player_id, rating_type
             )
-            await conn.execute(insertion_sql)
+            return new_rating
 
-            return Rating(row["mean"], row["deviation"])
+        if rating_type == RatingType.GLOBAL:
+            won_games = int(row["numGames"] / 2)
+        else:
+            won_games = row["winGames"]
+
+        insertion_sql = leaderboard_rating.insert().values(
+            login_id=player_id,
+            mean=row["mean"],
+            deviation=row["deviation"],
+            total_games=row["numGames"],
+            won_games=won_games,
+            leaderboard_id=self._rating_type_ids[rating_type],
+        )
+        await conn.execute(insertion_sql)
+
+        return Rating(row["mean"], row["deviation"])
 
     async def _create_default_rating(
         self, conn, player_id: int, rating_type: RatingType
