@@ -2,6 +2,7 @@ import asyncio
 
 import aiohttp
 import pytest
+
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until_command
@@ -14,6 +15,8 @@ def listify(obj: dict):
     for k, v in obj.items():
         if isinstance(v, tuple):
             obj[k] = list(v)
+        elif isinstance(v, dict):
+            obj[k] = listify(v)
     return obj
 
 

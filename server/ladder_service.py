@@ -13,7 +13,9 @@ from .async_functions import gather_without_exceptions
 from .config import config
 from .core import Service
 from .db import FAFDatabase
-from .db.models import game_featuredMods, game_player_stats, game_stats
+from .db.models import (
+    game_featuredMods, game_player_stats, game_stats, leaderboard
+)
 from .db.models import map as t_map
 from .db.models import (
     map_pool, map_pool_map_version, map_version, matchmaker_queue,
@@ -51,14 +53,14 @@ class LadderService(Service):
                 game_service,
                 name="ladder1v1",
                 featured_mod="ladder1v1",
-                leaderboard_id=2,
+                rating_type=RatingType.LADDER_1V1,
                 map_pools=[(self.ladder_1v1_map_pool, None, None)]
             ),
             'tmm2v2': MatchmakerQueue(
                 game_service=game_service,
                 name="tmm2v2",
                 featured_mod="faf",
-                leaderboard_id=1,  # TODO: Changeme (1 is global)
+                rating_type=RatingType.GLOBAL,  # TODO: Changeme
                 min_team_size=2,
                 max_team_size=2
             )
@@ -98,7 +100,7 @@ class LadderService(Service):
                 queue = MatchmakerQueue(
                     name=name,
                     featured_mod=info["mod"],
-                    leaderboard_id=info["leaderboard_id"],
+                    rating_type=info["rating_type"],
                     game_service=self.game_service
                 )
                 self.queues[name] = queue
@@ -107,7 +109,7 @@ class LadderService(Service):
             else:
                 queue = self.queues[name]
                 queue.featured_mod = info["mod"]
-                queue.leaderboard_id = info["leaderboard_id"]
+                queue.rating_type = info["rating_type"]
             queue.map_pools.clear()
             for map_pool_id, min_rating, max_rating in info["map_pools"]:
                 map_pool_name, map_list = map_pool_maps[map_pool_id]
@@ -164,16 +166,17 @@ class LadderService(Service):
         result = await conn.execute(
             select([
                 matchmaker_queue.c.technical_name,
-                matchmaker_queue.c.leaderboard_id,
                 matchmaker_queue_map_pool.c.map_pool_id,
                 matchmaker_queue_map_pool.c.min_rating,
                 matchmaker_queue_map_pool.c.max_rating,
-                game_featuredMods.c.gamemod
+                game_featuredMods.c.gamemod,
+                leaderboard.c.technical_name.label("rating_type")
             ])
             .select_from(
                 matchmaker_queue
                 .join(matchmaker_queue_map_pool)
                 .join(game_featuredMods)
+                .join(leaderboard)
             )
         )
         matchmaker_queues = defaultdict(lambda: defaultdict(list))
@@ -181,7 +184,7 @@ class LadderService(Service):
             name = row.technical_name
             info = matchmaker_queues[name]
             info["mod"] = row.gamemod
-            info["leaderboard_id"] = row.leaderboard_id
+            info["rating_type"] = row.rating_type
             info["map_pools"].append((
                 row.map_pool_id,
                 row.min_rating,
@@ -195,7 +198,7 @@ class LadderService(Service):
         # that it has been cancelled.
         self._cancel_existing_searches(initiator, queue_name)
         queue = self.queues[queue_name]
-        search = Search([initiator], rating_type=queue.leaderboard_id)
+        search = Search([initiator], rating_type=queue.rating_type)
 
         tasks = []
         for player in search.players:
@@ -366,7 +369,7 @@ class LadderService(Service):
                 game_mode=queue.featured_mod,
                 host=host,
                 name=game_name(team1, team2),
-                rating_type=queue.leaderboard_id,
+                rating_type=queue.rating_type,
                 max_players=len(all_players)
             )
             game.init_mode = InitMode.AUTO_LOBBY

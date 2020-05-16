@@ -3,8 +3,9 @@ from collections import namedtuple
 from unittest import mock
 
 import pytest
-
 from asynctest import CoroutineMock
+from trueskill import Rating
+
 from server.games.custom_game import CustomGame
 from server.games.game import Game, GameError, GameState, ValidityState
 from server.games.game_results import GameOutcome
@@ -12,7 +13,6 @@ from server.games.ladder_game import LadderGame
 from server.rating import RatingType
 from server.rating_service.rating_service import RatingService
 from tests.unit_tests.conftest import add_connected_players
-from trueskill import Rating
 
 pytestmark = pytest.mark.asyncio
 
@@ -209,7 +209,7 @@ async def test_on_game_end_ladder_ratings(ladder_game, players):
 
 
 async def test_on_game_end_rating_type_not_set(game, players):
-    game._rating_type = None
+    game.rating_type = None
     game._logger.exception = mock.Mock()
     rating_service = game.game_service._rating_service
     game.state = GameState.LOBBY
@@ -228,7 +228,7 @@ async def test_on_game_end_rating_type_not_set(game, players):
 
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(game.game_service._rating_service)
+    results = get_persisted_results(rating_service)
     assert results.rating_type is None
     assert results.ratings == {}
 

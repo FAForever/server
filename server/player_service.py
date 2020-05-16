@@ -121,7 +121,7 @@ class PlayerService(Service):
         rows = await result.fetchall()
 
         retrieved_ratings = {
-            RatingType[row["technical_name"].upper()]: (
+            row["technical_name"]: (
                 (row["mean"], row["deviation"]), row["total_games"]
             )
             for row in rows
@@ -132,7 +132,7 @@ class PlayerService(Service):
 
         types_not_found = [
             rating_type for rating_type in RatingType
-            if rating_type not in retrieved_ratings
+            if rating_type.value not in retrieved_ratings
         ]
         await self._fetch_player_legacy_rating(player, types_not_found, conn)
 

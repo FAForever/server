@@ -79,7 +79,7 @@ async def test_start_game_1v1(
     assert p1.lobby_connection.launch_game.called
     assert p2.lobby_connection.launch_game.called
     assert isinstance(game, LadderGame)
-    assert game._rating_type == queue.leaderboard_id
+    assert game.rating_type == queue.rating_type
     assert game.max_players == 2
 
 
@@ -124,7 +124,7 @@ async def test_start_game_with_teams(
     assert p3.lobby_connection.launch_game.called
     assert p4.lobby_connection.launch_game.called
     assert isinstance(game, LadderGame)
-    assert game._rating_type == queue.leaderboard_id
+    assert game.rating_type == queue.rating_type
     assert game.max_players == 4
 
 

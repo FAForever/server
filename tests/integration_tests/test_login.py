@@ -51,36 +51,37 @@ async def test_server_ban_revoked_or_expired(lobby_server, user):
 
 async def test_server_valid_login(lobby_server):
     proto = await connect_client(lobby_server)
-    await perform_login(proto, ('Rhiza', 'puff_the_magic_dragon'))
+    await perform_login(proto, ("Rhiza", "puff_the_magic_dragon"))
     msg = await proto.read_message()
-    assert msg == {
-        'command': 'welcome',
-        'me': {
-            'clan': '123',
-            'country': '',
-            'global_rating': [1650.0, 62.52],
-            'id': 3,
-            'ladder_rating': [1650.0, 62.52],
-            'login': 'Rhiza',
-            'number_of_games': 2
+    me = {
+        "id": 3,
+        "login": "Rhiza",
+        "clan": "123",
+        "country": "",
+        "ratings": {
+            "global": {
+                "rating": [1650.0, 62.52],
+                "number_of_games": 2
+            },
+            "ladder_1v1": {
+                "rating": [1650.0, 62.52],
+                "number_of_games": 2
+            }
         },
-        'id': 3,
-        'login': 'Rhiza'
+        "global_rating": [1650.0, 62.52],
+        "ladder_rating": [1650.0, 62.52],
+        "number_of_games": 2
+    }
+    assert msg == {
+        "command": "welcome",
+        "me": me,
+        "id": 3,
+        "login": "Rhiza"
     }
     msg = await proto.read_message()
     assert msg == {
         "command": "player_info",
-        "players": [
-            {
-                'clan': '123',
-                'country': '',
-                'global_rating': [1650.0, 62.52],
-                'id': 3,
-                'ladder_rating': [1650.0, 62.52],
-                'login': 'Rhiza',
-                'number_of_games': 2
-            }
-        ]
+        "players": [me]
     }
     msg = await proto.read_message()
     assert msg == {
@@ -95,36 +96,37 @@ async def test_server_valid_login(lobby_server):
 
 async def test_server_valid_login_admin(lobby_server):
     proto = await connect_client(lobby_server)
-    await perform_login(proto, ('test', 'test_password'))
+    await perform_login(proto, ("test", "test_password"))
     msg = await proto.read_message()
-    assert msg == {
-        'command': 'welcome',
-        'me': {
-            'clan': '678',
-            'country': '',
-            'global_rating': [2000.0, 125.0],
-            'id': 1,
-            'ladder_rating': [2000.0, 125.0],
-            'login': 'test',
-            'number_of_games': 5
+    me = {
+        "id": 1,
+        "login": "test",
+        "clan": "678",
+        "country": "",
+        "ratings": {
+            "global": {
+                "rating": [2000.0, 125.0],
+                "number_of_games": 5
+            },
+            "ladder_1v1": {
+                "rating": [2000.0, 125.0],
+                "number_of_games": 5
+            }
         },
-        'id': 1,
-        'login': 'test'
+        "global_rating": [2000.0, 125.0],
+        "ladder_rating": [2000.0, 125.0],
+        "number_of_games": 5,
+    }
+    assert msg == {
+        "command": "welcome",
+        "me": me,
+        "id": 1,
+        "login": "test"
     }
     msg = await proto.read_message()
     assert msg == {
         "command": "player_info",
-        "players": [
-            {
-                'clan': '678',
-                'country': '',
-                'global_rating': [2000.0, 125.0],
-                'id': 1,
-                'ladder_rating': [2000.0, 125.0],
-                'login': 'test',
-                'number_of_games': 5
-            }
-        ]
+        "players": [me]
     }
     msg = await proto.read_message()
     assert msg == {
@@ -139,34 +141,36 @@ async def test_server_valid_login_admin(lobby_server):
 
 async def test_server_valid_login_moderator(lobby_server):
     proto = await connect_client(lobby_server)
-    await perform_login(proto, ('moderator', 'moderator'))
+    await perform_login(proto, ("moderator", "moderator"))
     msg = await proto.read_message()
-    assert msg == {
-        'command': 'welcome',
-        'me': {
-            'country': '',
-            'global_rating': [1500, 500],
-            'id': 20,
-            'ladder_rating': [1500, 500],
-            'login': 'moderator',
-            'number_of_games': 0
+    me = {
+        "id": 20,
+        "login": "moderator",
+        "country": "",
+        "ratings": {
+            "global": {
+                "rating": [1500, 500],
+                "number_of_games": 0
+            },
+            "ladder_1v1": {
+                "rating": [1500, 500],
+                "number_of_games": 0
+            }
         },
-        'id': 20,
-        'login': 'moderator'
+        "global_rating": [1500, 500],
+        "ladder_rating": [1500, 500],
+        "number_of_games": 0
+    }
+    assert msg == {
+        "command": "welcome",
+        "me": me,
+        "id": 20,
+        "login": "moderator"
     }
     msg = await proto.read_message()
     assert msg == {
         "command": "player_info",
-        "players": [
-            {
-                'country': '',
-                'global_rating': [1500, 500],
-                'id': 20,
-                'ladder_rating': [1500, 500],
-                'login': 'moderator',
-                'number_of_games': 0
-            }
-        ]
+        "players": [me]
     }
     msg = await proto.read_message()
     assert msg == {

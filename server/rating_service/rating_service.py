@@ -58,8 +58,10 @@ class RatingService(Service):
             result = await conn.execute(sql)
             rows = await result.fetchall()
 
-        self._rating_type_ids = {row["technical_name"]: row["id"] for row in rows}
-        RatingTypeMap._rating_id_map.update(self._rating_type_ids)
+        self._rating_type_ids = RatingTypeMap(
+            None,
+            ((row["technical_name"], row["id"]) for row in rows)
+        )
 
     async def enqueue(self, game_info: Dict) -> None:
         if not self._accept_input:
@@ -137,7 +139,7 @@ class RatingService(Service):
             )
             raise ServiceNotReadyError("RatingService not yet initialized.")
 
-        rating_type_id = self._rating_type_ids.get(rating_type.value)
+        rating_type_id = self._rating_type_ids.get(rating_type)
         if rating_type_id is None:
             raise ValueError(f"Unknown rating type {rating_type}.")
 
@@ -162,12 +164,12 @@ class RatingService(Service):
     async def _get_player_legacy_rating(
         self, player_id: int, rating_type: RatingType
     ) -> Rating:
-        if rating_type is RatingType.GLOBAL:
+        if rating_type == RatingType.GLOBAL:
             table = global_rating
             sql = select([table.c.mean, table.c.deviation, table.c.numGames]).where(
                 table.c.id == player_id
             )
-        elif rating_type is RatingType.LADDER_1V1:
+        elif rating_type == RatingType.LADDER_1V1:
             table = ladder1v1_rating
             sql = select(
                 [table.c.mean, table.c.deviation, table.c.numGames, table.c.winGames]
@@ -186,7 +188,7 @@ class RatingService(Service):
                 )
                 return new_rating
 
-            if rating_type is RatingType.GLOBAL:
+            if rating_type == RatingType.GLOBAL:
                 won_games = int(row["numGames"] / 2)
             else:
                 won_games = row["winGames"]
@@ -197,7 +199,7 @@ class RatingService(Service):
                 deviation=row["deviation"],
                 total_games=row["numGames"],
                 won_games=won_games,
-                leaderboard_id=self._rating_type_ids[rating_type.value],
+                leaderboard_id=self._rating_type_ids[rating_type],
             )
             await conn.execute(insertion_sql)
 
@@ -208,7 +210,7 @@ class RatingService(Service):
     ):
         default_mean = config.START_RATING_MEAN
         default_deviation = config.START_RATING_DEV
-        rating_type_id = self._rating_type_ids.get(rating_type.value)
+        rating_type_id = self._rating_type_ids.get(rating_type)
 
         insertion_sql = leaderboard_rating.insert().values(
             login_id=player_id,
@@ -264,7 +266,7 @@ class RatingService(Service):
                 )
                 await conn.execute(gps_update_sql)
 
-                rating_type_id = self._rating_type_ids[rating_type.value]
+                rating_type_id = self._rating_type_ids[rating_type]
 
                 journal_insert_sql = leaderboard_rating_journal.insert().values(
                     leaderboard_id=rating_type_id,

@@ -5,13 +5,7 @@ from server.rating import PlayerRatings, RatingType
 
 @pytest.fixture
 def ratings():
-    PlayerRatings.clear()
-    return PlayerRatings(default=(1500, 500))
-
-
-@pytest.fixture(scope="session")
-def persistent_ratings():
-    return PlayerRatings(default=(1500, 500))
+    return PlayerRatings(lambda: (1500, 500))
 
 
 def test_rating_type_default(ratings):
@@ -19,13 +13,15 @@ def test_rating_type_default(ratings):
         assert ratings[rating_type] == (1500, 500)
 
 
-def test_rating_type_invalid(ratings):
-    for key in ("invalid", 0):
-        with pytest.raises(KeyError):
-            ratings[key]
+def test_str_keys(ratings):
+    ratings["global"] = (1000, 10)
+
+    assert ratings[RatingType.GLOBAL] == ratings["global"] == (1000, 10)
 
 
-@pytest.mark.asyncio
-async def test_int_keys(persistent_ratings, rating_service):
-    for key in (1, 2, 3, "global", "ladder_1v1", "tmm_2v2"):
-        assert persistent_ratings[key] == (1500, 500)
+def test_key_type(ratings):
+    ratings[RatingType.GLOBAL]
+    ratings[RatingType.LADDER_1V1]
+
+    assert ratings == {"global": (1500, 500), "ladder_1v1": (1500, 500)}
+    assert list(ratings) == ["global", "ladder_1v1"]

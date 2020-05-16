@@ -78,7 +78,7 @@ class Game:
         self.desyncs = 0
         self.validity = ValidityState.VALID
         self.game_mode = game_mode
-        self._rating_type = rating_type or RatingType.GLOBAL
+        self.rating_type = rating_type or RatingType.GLOBAL
         self.state = GameState.INITIALIZING
         self._connections = {}
         self.enforce_rating = False
@@ -425,7 +425,6 @@ class Game:
             basic_info, self.validity, team_outcomes, commander_kills
         )
 
-
     async def load_results(self):
         """
         Load results from the database
@@ -484,7 +483,7 @@ class Game:
     def get_basic_info(self) -> BasicGameInfo:
         return BasicGameInfo(
             self.id,
-            self._rating_type,
+            self.rating_type,
             self.map_id,
             self.game_mode,
             list(self.mods.keys()),
@@ -706,7 +705,7 @@ class Game:
 
             # DEPRECATED: Rating changes are persisted by the rating service
             # in the `leaderboard_rating_journal` table.
-            mean, deviation = player.ratings[self._rating_type]
+            mean, deviation = player.ratings[self.rating_type]
 
             query_args.append(
                 {

@@ -914,7 +914,7 @@ class LobbyConnection:
         self.player.game = game
         cmd = {
             "command": "game_launch",
-            "args": ["/numgames", self.player.game_count[RatingType.GLOBAL]],
+            "args": ["/numgames", self.player.game_count[game.rating_type]],
             "uid": game.id,
             "mod": game.game_mode,
             # Following parameters may not be used by the client yet. They are

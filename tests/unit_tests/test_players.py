@@ -2,12 +2,12 @@ import gc
 from unittest import mock
 
 import pytest
+from trueskill import Rating
 
 from server.factions import Faction
 from server.players import Player
 from server.protocol import DisconnectedError
 from server.rating import RatingType
-from trueskill import Rating
 
 
 def test_ratings():
@@ -65,21 +65,33 @@ def test_unlink_weakref():
 
 
 def test_serialize():
-    p = Player(player_id=42,
-               login='Something',
-               ratings={
-                   RatingType.GLOBAL: (1234, 68),
-                   RatingType.LADDER_1V1: (1500, 230),
-               },
-               clan='TOAST',
-               game_count={RatingType.GLOBAL: 542})
+    p = Player(
+        player_id=42,
+        login="Something",
+        ratings={
+           RatingType.GLOBAL: (1234, 68),
+           RatingType.LADDER_1V1: (1500, 230),
+        },
+        clan="TOAST",
+        game_count={RatingType.GLOBAL: 542}
+    )
     assert p.to_dict() == {
-                    "id": 42,
-                    "login": 'Something',
-                    "global_rating": (1234, 68),
-                    "ladder_rating": (1500, 230),
-                    "number_of_games": 542,
-                    "clan": 'TOAST'
+        "id": 42,
+        "login": "Something",
+        "clan": "TOAST",
+        "ratings": {
+            "global": {
+                "rating": (1234, 68),
+                "number_of_games": 542
+            },
+            "ladder_1v1": {
+                "rating": (1500, 230),
+                "number_of_games": 0
+            }
+        },
+        "global_rating": (1234, 68),
+        "ladder_rating": (1500, 230),
+        "number_of_games": 542,
     }
 
 

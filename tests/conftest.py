@@ -15,6 +15,7 @@ import pytest
 
 import asynctest
 from asynctest import CoroutineMock
+
 from server.api.api_accessor import ApiAccessor
 from server.api.oauth_session import OAuth2Session
 from server.config import TRACE, config
@@ -269,13 +270,13 @@ def queue_factory():
         mod="ladder1v1",
         min_team_size=1,
         max_team_size=1,
-        leaderboard_id=1
+        rating_type=RatingType.GLOBAL
     ):
         return MatchmakerQueue(
             game_service=mock.Mock(),
             name=name,
             featured_mod=mod,
-            leaderboard_id=leaderboard_id,
+            rating_type=rating_type,
             min_team_size=min_team_size,
             max_team_size=max_team_size
         )

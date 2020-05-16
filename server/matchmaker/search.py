@@ -61,8 +61,7 @@ class Search:
         return player.game_count[RatingType.LADDER_1V1] <= config.NEWBIE_MIN_GAMES
 
     def is_ladder1v1_search(self) -> bool:
-        # FIXME: rating_type might be a leaderboard_id (int)
-        return self.rating_type is RatingType.LADDER_1V1
+        return self.rating_type == RatingType.LADDER_1V1
 
     def is_single_party(self) -> bool:
         return len(self.players) == 1
