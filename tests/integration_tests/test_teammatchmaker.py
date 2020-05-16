@@ -4,7 +4,8 @@ import pytest
 
 from tests.utils import fast_forward
 
-from .conftest import connect_and_sign_in, read_until_command
+from .conftest import connect_and_sign_in, read_until, read_until_command
+from .test_game import get_player_ratings, send_player_options
 
 pytestmark = pytest.mark.asyncio
 
@@ -18,6 +19,7 @@ async def queue_players_for_matchmaking(lobby_server):
         for i in range(1, 5)
     ])
     protos = [proto for _, _, proto in res]
+    ids = [id_ for id_, _, _ in res]
 
     await asyncio.gather(*[
         read_until_command(proto, "game_info") for proto in protos
@@ -38,7 +40,24 @@ async def queue_players_for_matchmaking(lobby_server):
         read_until_command(proto, "match_found") for proto in protos
     ])
 
-    return protos
+    return protos, ids
+
+
+async def client_response(proto):
+    msg = await read_until_command(proto, "game_launch")
+    # Ensures that the game enters the `LOBBY` state
+    await proto.send_message({
+        "command": "GameState",
+        "target": "game",
+        "args": ["Idle"]
+    })
+    # Ensures that the game is considered hosted
+    await proto.send_message({
+        "command": "GameState",
+        "target": "game",
+        "args": ["Lobby"]
+    })
+    return msg
 
 
 @fast_forward(10)
@@ -70,23 +89,7 @@ async def test_info_message(lobby_server):
 
 @fast_forward(10)
 async def test_game_matchmaking(lobby_server):
-    protos = await queue_players_for_matchmaking(lobby_server)
-
-    async def client_response(proto):
-        msg = await read_until_command(proto, "game_launch")
-        # Ensures that the game enters the `LOBBY` state
-        await proto.send_message({
-            "command": "GameState",
-            "target": "game",
-            "args": ["Idle"]
-        })
-        # Ensures that the game is considered hosted
-        await proto.send_message({
-            "command": "GameState",
-            "target": "game",
-            "args": ["Lobby"]
-        })
-        return msg
+    protos, _ = await queue_players_for_matchmaking(lobby_server)
 
     msgs = await asyncio.gather(*[client_response(proto) for proto in protos])
 
@@ -104,9 +107,68 @@ async def test_game_matchmaking(lobby_server):
 
 @fast_forward(60)
 async def test_game_matchmaking_timeout(lobby_server):
-    protos = await queue_players_for_matchmaking(lobby_server)
+    protos, _ = await queue_players_for_matchmaking(lobby_server)
 
     # We don't send the `GameState: Lobby` command so the game should time out
     await asyncio.gather(*[
         read_until_command(proto, "match_cancelled") for proto in protos
     ])
+
+
+@fast_forward(60)
+async def test_game_ratings(lobby_server):
+    protos, ids = await queue_players_for_matchmaking(lobby_server)
+
+    msgs = await asyncio.gather(*[client_response(proto) for proto in protos])
+    # Configure. Just send options for all players so we don't need to worry
+    # about who is the host.
+    for proto in protos:
+        for player_id, msg in zip(ids, msgs):
+            slot = msg["map_position"]
+            await send_player_options(
+                proto,
+                [player_id, "Army", slot],
+                [player_id, "Color", slot],
+                [player_id, "Faction", msg["faction"]],
+                [player_id, "StartSpot", slot],
+                [player_id, "Team", msg["team"]],
+            )
+    # Launch
+    await asyncio.gather(*[proto.send_message({
+        "command": "GameState",
+        "target": "game",
+        "args": ["Launching"]
+    }) for proto in protos])
+
+    await asyncio.gather(*[read_until(
+        proto,
+        lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
+    ) for proto in protos])
+
+    # Report results
+    for proto in protos:
+        for result in (
+            [1, "victory 10"],
+            [2, "defeat -10"],
+            [3, "victory 10"],
+            [4, "defeat -10"]
+        ):
+            await proto.send_message({
+                "target": "game",
+                "command": "GameResult",
+                "args": result
+            })
+    for proto in protos:
+        await proto.send_message({
+            "target": "game",
+            "command": "GameEnded",
+            "args": []
+        })
+
+    new_ratings = await get_player_ratings(
+        protos[0],
+        *[f"ladder{i}" for i in range(1, 5)],
+        rating_type="tmm_2v2"
+    )
+    for _, rating in new_ratings.items():
+        assert rating != (1500, 500)
