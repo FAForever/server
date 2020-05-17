@@ -217,10 +217,16 @@ class GameService(Service):
         return item in self._games
 
     async def publish_game_results(self, game_results: EndedGameInfo):
+        result_dict = game_results.to_dict()
         await self._message_queue_service.publish(
             "game_results",
-            "game.results",
-            game_results.to_dict()
+            ".".join([
+                "results",
+                result_dict["rating_type"],
+                result_dict["featured_mod"],
+                result_dict["validity"],
+            ]),
+            result_dict,
         )
 
         # To be removed when rating service starts listening to message queue
@@ -228,4 +234,4 @@ class GameService(Service):
             game_results.validity is ValidityState.VALID
             and game_results.rating_type is not None
         ):
-            await self._rating_service.enqueue(game_results.to_dict())
+            await self._rating_service.enqueue(result_dict)
