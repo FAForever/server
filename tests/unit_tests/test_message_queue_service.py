@@ -26,10 +26,10 @@ class Consumer:
         exchange = await channel.declare_exchange(
             "test_exchange", aio_pika.ExchangeType.TOPIC
         )
-        self.queue = await channel.declare_queue("test_queue", durable=True)
+        self.queue = await channel.declare_queue("test_queue", exclusive=True)
 
         await self.queue.bind(exchange, routing_key="#")
-        self.consumer_tag = await self.queue.consume(self.callback, exclusive=True)
+        self.consumer_tag = await self.queue.consume(self.callback)
 
     def callback(self, message):
         self._logger.debug("Received message %r", message)
@@ -94,7 +94,6 @@ async def test_consumer_receives(mq_service, consumer):
 
     await mq_service.publish(exchange_name, routing_key, payload, delivery_mode)
 
-    previous_message_count = consumer.callback_count()
     await asyncio.sleep(0.1)
 
-    assert consumer.callback_count() == previous_message_count + 1
+    assert consumer.callback_count() == 1
