@@ -800,16 +800,6 @@ async def test_game_outcomes_conflicting(game: Game, database, players):
     # No guarantees on scores for conflicting results.
 
 
-async def test_victory_conditions():
-    conds = [("demoralization", Victory.DEMORALIZATION),
-             ("domination", Victory.DOMINATION),
-             ("eradication", Victory.ERADICATION),
-             ("sandbox", Victory.SANDBOX)]
-
-    for string_value, enum_value in conds:
-        assert Victory.from_gpgnet_string(string_value) == enum_value
-
-
 async def test_visibility_states():
     states = [("public", VisibilityState.PUBLIC),
               ("friends", VisibilityState.FRIENDS)]

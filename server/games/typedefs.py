@@ -21,20 +21,6 @@ class Victory(Enum):
     ERADICATION = 2
     SANDBOX = 3
 
-    @staticmethod
-    def from_gpgnet_string(value: str) -> Optional["Victory"]:
-        """
-        :param value: The string to convert from
-
-        :return: Victory or None if the string is not valid
-        """
-        return {
-            "demoralization": Victory.DEMORALIZATION,
-            "domination": Victory.DOMINATION,
-            "eradication": Victory.ERADICATION,
-            "sandbox": Victory.SANDBOX,
-        }.get(value)
-
 
 @unique
 class VisibilityState(Enum):

@@ -58,8 +58,6 @@ async def lobby_server(
             player_service=player_service,
             game_service=game_service,
             ladder_service=ladder_service,
-            rating_service=rating_service,
-            message_queue_service=message_queue_service,
             nts_client=None,
             loop=event_loop,
         )

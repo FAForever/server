@@ -20,14 +20,13 @@ from .ice_servers.nts import TwilioNTS
 from .lobbyconnection import LobbyConnection
 from .protocol import QDataStreamProtocol
 from .servercontext import ServerContext
-from .configuration_service import ConfigurationService  # noqa: F401
-from .message_queue_service import MessageQueueService  # noqa: F401
+from .configuration_service import ConfigurationService   # noqa: F401
+from .message_queue_service import MessageQueueService    # noqa: F401
+from .rating_service.rating_service import RatingService  # noqa: F401
 from .geoip_service import GeoIpService
 from .player_service import PlayerService
 from .game_service import GameService
 from .ladder_service import LadderService
-from .rating_service.rating_service import RatingService
-from .message_queue_service import MessageQueueService
 from .control import run_control_server
 from .timing import at_interval
 
@@ -71,8 +70,6 @@ async def run_lobby_server(
     nts_client: Optional[TwilioNTS],
     geoip_service: GeoIpService,
     ladder_service: LadderService,
-    rating_service: RatingService,
-    message_queue_service: MessageQueueService,
     loop,
 ) -> ServerContext:
     """
