@@ -16,18 +16,17 @@ import pytest
 from asynctest import CoroutineMock
 from server.api.api_accessor import ApiAccessor
 from server.api.oauth_session import OAuth2Session
-from server.config import config, TRACE
+from server.config import TRACE, config
 from server.db import FAFDatabase
 from server.game_service import GameService
 from server.geoip_service import GeoIpService
 from server.lobbyconnection import LobbyConnection
 from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
-from server.rating_service.rating_service import RatingService
 from server.players import Player, PlayerState
 from server.rating import RatingType
+from server.rating_service.rating_service import RatingService
 from tests.utils import MockDatabase
-
 
 logging.getLogger().setLevel(TRACE)
 
@@ -46,55 +45,68 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
     )
-
-
-@pytest.fixture
-def mock_database(database):
-    return database
-
-
-@pytest.fixture
-def database(request, event_loop):
-    return _database(request, event_loop, True)
+    config.addinivalue_line(
+        "filterwarnings", "ignore:Function 'semver.compare':DeprecationWarning"
+    )
 
 
 @pytest.fixture(scope='session', autouse=True)
-def global_database(request):
-    return _database(request, asyncio.get_event_loop(), False)
+async def test_data(request):
+    db = await global_database(request)
+    with open('tests/data/test-data.sql') as f:
+        async with db.acquire() as conn:
+            await conn.execute(f.read())
+
+    await db.close()
 
 
-def _database(request, event_loop, is_local):
+async def global_database(request):
     def opt(val):
         return request.config.getoption(val)
-    host, user, pw, db, port = opt('--mysql_host'), opt('--mysql_username'), opt('--mysql_password'), opt('--mysql_database'), opt('--mysql_port')
-    fdb = FAFDatabase(event_loop) if not is_local else MockDatabase(event_loop)
-
-    db_fut = event_loop.create_task(
-        fdb.connect(
-            host=host,
-            user=user,
-            password=pw or None,
-            port=port,
-            db=db
-        )
+    host, user, pw, name, port = (
+        opt('--mysql_host'),
+        opt('--mysql_username'),
+        opt('--mysql_password'),
+        opt('--mysql_database'),
+        opt('--mysql_port')
     )
-    event_loop.run_until_complete(db_fut)
+    db = FAFDatabase(asyncio.get_running_loop())
 
-    def fin():
-        event_loop.run_until_complete(fdb.close())
-    request.addfinalizer(fin)
+    await db.connect(
+        host=host,
+        user=user,
+        password=pw or None,
+        port=port,
+        db=name
+    )
 
-    return fdb
+    return db
 
 
-@pytest.fixture(scope='session', autouse=True)
-def test_data(global_database):
-    async def load_data():
-        with open('tests/data/test-data.sql') as f:
-            async with global_database.acquire() as conn:
-                await conn.execute(f.read())
+@pytest.fixture
+async def database(request, event_loop):
+    def opt(val):
+        return request.config.getoption(val)
+    host, user, pw, name, port = (
+        opt('--mysql_host'),
+        opt('--mysql_username'),
+        opt('--mysql_password'),
+        opt('--mysql_database'),
+        opt('--mysql_port')
+    )
+    db = MockDatabase(event_loop)
 
-    asyncio.get_event_loop().run_until_complete(load_data())
+    await db.connect(
+        host=host,
+        user=user,
+        password=pw or None,
+        port=port,
+        db=name
+    )
+
+    yield db
+
+    await db.close()
 
 
 @pytest.fixture

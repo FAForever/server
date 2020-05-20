@@ -137,7 +137,7 @@ async def test_game_matchmaking_start(lobby_server, database):
             assert row["place"] is not None
 
 
-@fast_forward(100)
+@fast_forward(120)
 async def test_game_matchmaking_timeout(lobby_server):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
 
