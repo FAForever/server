@@ -76,7 +76,7 @@ Run
 
     $ pipenv run tests
 
-(or `sudo pipenv run tests`, 
+(or `sudo pipenv run tests`,
 if some tests error with `Permission denied`)
 ## Other tools
 
