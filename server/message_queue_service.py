@@ -34,7 +34,7 @@ class MessageQueueService(Service):
             ),
             loop=asyncio.get_running_loop(),
         )
-        self._channel = await self._connection.channel()
+        self._channel = await self._connection.channel(publisher_confirms=False)
         self._logger.debug("Connected to RabbitMQ %r", self._connection)
 
     async def declare_exchange(
@@ -57,6 +57,7 @@ class MessageQueueService(Service):
         payload: Dict,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
     ) -> None:
+
         exchange = self._exchanges.get(exchange_name)
         if exchange is None:
             raise KeyError(f"Unknown exchange {exchange_name}.")
@@ -64,7 +65,9 @@ class MessageQueueService(Service):
         message = aio_pika.Message(
             json.dumps(payload).encode(), delivery_mode=delivery_mode
         )
-        await exchange.publish(message, routing_key=routing)
-        self._logger.debug(
-            "Published message %s to %s/%s", payload, exchange_name, routing
-        )
+
+        async with self._channel.transaction():
+            await exchange.publish(message, routing_key=routing)
+            self._logger.debug(
+                "Published message %s to %s/%s", payload, exchange_name, routing
+            )
