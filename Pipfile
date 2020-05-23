@@ -1,5 +1,5 @@
 [scripts]
-devserver = "env LOG_LEVEL=TRACE python server.py"
+devserver = "env CONFIGURATION_FILE=dev-config.yml python server.py"
 tests = "scripts/run_tests_with_coverage.sh"
 integration = "py.test -o testpaths=integration_tests"
 vulture = "vulture server.py server/ --sort-by-size"
