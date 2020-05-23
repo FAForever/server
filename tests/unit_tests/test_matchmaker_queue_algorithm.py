@@ -152,6 +152,8 @@ def test_match_graph_will_not_include_matches_below_threshold_quality(player_fac
     }
 
 
+# https://github.com/HypothesisWorks/hypothesis/issues/377
+@pytest.mark.filterwarnings("ignore:.*'caplog' fixture")
 @pytest.mark.parametrize("build_func", (
     algorithm._MatchingGraph.build_full,
     algorithm._MatchingGraph.build_fast
@@ -169,6 +171,8 @@ def test_matching_graph_symmetric(caplog, build_func, searches):
             assert (search, quality) in graph[other]
 
 
+# https://github.com/HypothesisWorks/hypothesis/issues/377
+@pytest.mark.filterwarnings("ignore:.*'caplog' fixture")
 @pytest.mark.parametrize("build_func", (
     algorithm._MatchingGraph.build_full,
     algorithm._MatchingGraph.build_fast
