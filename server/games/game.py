@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import re
 import time
@@ -51,7 +52,7 @@ class Game:
     ):
         self._db = database
         self._results = GameResultReports(id_)
-        self._army_stats = None
+        self._army_stats_list = []
         self._players_with_unsent_army_stats = []
         self._game_stats_service = game_stats_service
         self.game_service = game_service
@@ -262,7 +263,7 @@ class Game:
     def _process_army_stats_for_player(self, player):
         try:
             if (
-                self._army_stats is None
+                len(self._army_stats_list) == 0
                 or self.gameOptions["CheatsEnabled"] != "false"
             ):
                 return
@@ -272,7 +273,7 @@ class Game:
             # we don't want to await it
             asyncio.create_task(
                 self._game_stats_service.process_game_stats(
-                    player, self, self._army_stats
+                    player, self, self._army_stats_list
                 )
             )
         except Exception:
@@ -410,8 +411,16 @@ class Game:
             except GameResolutionError:
                 await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
 
+        try:
+            commander_kills = {
+                army_stats["name"]: army_stats["units"]["cdr"]["kills"]
+                for army_stats in self._army_stats_list
+            }
+        except KeyError:
+            commander_kills = {}
+
         return EndedGameInfo.from_basic(
-            basic_info, self.validity, team_outcomes
+            basic_info, self.validity, team_outcomes, commander_kills
         )
 
 
@@ -765,8 +774,8 @@ class Game:
 
         return self._results.outcome(army)
 
-    def report_army_stats(self, stats):
-        self._army_stats = stats
+    def report_army_stats(self, stats_json):
+        self._army_stats_list = json.loads(stats_json)["stats"]
         self._process_pending_army_stats()
 
     def to_dict(self):

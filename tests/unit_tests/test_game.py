@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 from typing import Any, List, Tuple
@@ -680,7 +681,7 @@ async def test_report_army_stats_sends_stats_for_defeated_player(
     game.report_army_stats(stats)
 
     game._game_stats_service.process_game_stats.assert_called_once_with(
-        players[1], game, stats
+        players[1], game, json.loads(stats)["stats"]
     )
 
 
@@ -702,7 +703,7 @@ async def test_partial_stats_not_affecting_rating_persistence(
     game.launched_at = time.time() - 60 * 60
     await game.add_result(0, 0, 'victory', 10)
     await game.add_result(0, 1, 'defeat', -10)
-    game.report_army_stats("{'stats': {'Player 1': {}}}")
+    game.report_army_stats('{"stats": []}')
     await game.on_game_end()
 
     # await game being rated
@@ -878,3 +879,26 @@ async def test_game_results(game: Game, players):
     assert result_dict["map_id"] == game.map_id
     assert result_dict["featured_mod"] == "faf"
     assert result_dict["sim_mod_ids"] == []
+
+
+async def test_game_results_commander_kills(
+    game: Game, game_add_players
+):
+    game.state = GameState.LOBBY
+    players = game_add_players(game, 2)
+
+    await game.launch()
+    await game.add_result(0, 1, "defeat", 0)
+
+    with open("tests/data/game_stats_simple_win.json", "r") as stats_file:
+        stats = stats_file.read()
+
+    game.report_army_stats(stats)
+
+    game_results =  await game.resolve_game_results()
+    result_dict = game_results.to_dict()
+
+    assert result_dict["commander_kills"] == {
+        "TestUser": 1,
+        "TestUser2": 0,
+    }

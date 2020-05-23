@@ -1,6 +1,7 @@
 import time
 
 import pytest
+
 from server.games import CustomGame
 from server.games.game import GameState, ValidityState
 from server.rating import RatingType

@@ -1,11 +1,15 @@
+import json
 from unittest.mock import Mock
 
-import asynctest
 import pytest
+
+import asynctest
 from asynctest import CoroutineMock
 from server.factions import Faction
 from server.games import Game
-from server.games.game_results import GameOutcome, GameResultReport, GameResultReports
+from server.games.game_results import (
+    GameOutcome, GameResultReport, GameResultReports
+)
 from server.lobbyconnection import LobbyConnection
 from server.stats import achievement_service as ach
 from server.stats import event_service as ev
@@ -113,7 +117,7 @@ async def test_process_game_stats(
 ):
 
     with open("tests/data/game_stats_full_example.json", "r") as stats_file:
-        stats = stats_file.read()
+        stats = json.loads(stats_file.read())["stats"]
 
     mock_lconn = asynctest.create_autospec(LobbyConnection)
     player.lobby_connection = mock_lconn
@@ -243,7 +247,7 @@ async def test_process_game_stats_single_player(
     game_stats_service, player, game, achievement_service, event_service
 ):
     with open("tests/data/game_stats_single_player.json", "r") as stats_file:
-        stats = stats_file.read()
+        stats = json.loads(stats_file.read())["stats"]
 
     await game_stats_service.process_game_stats(player, game, stats)
     assert len(achievement_service.mock_calls) == 0
@@ -254,7 +258,7 @@ async def test_process_game_stats_ai_game(
     game_stats_service, player, game, achievement_service, event_service
 ):
     with open("tests/data/game_stats_ai_game.json", "r") as stats_file:
-        stats = stats_file.read()
+        stats = json.loads(stats_file.read())["stats"]
 
     await game_stats_service.process_game_stats(player, game, stats)
     assert len(achievement_service.mock_calls) == 0
@@ -267,7 +271,7 @@ async def test_process_game_won_ladder1v1(
     game.game_mode = 'ladder1v1'
 
     with open("tests/data/game_stats_simple_win.json", "r") as stats_file:
-        stats = stats_file.read()
+        stats = json.loads(stats_file.read())["stats"]
 
     await game_stats_service.process_game_stats(player, game, stats)
 
@@ -644,7 +648,7 @@ async def test_process_game_stats_abort_processing_if_no_army_result(
     game_stats_service, game, player, achievement_service, event_service
 ):
     with open("tests/data/game_stats_full_example.json", "r") as stats_file:
-        stats = stats_file.read()
+        stats = json.loads(stats_file.read())["stats"]
 
     game._results = GameResultReports(1)
 

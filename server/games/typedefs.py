@@ -119,6 +119,7 @@ class EndedGameInfo(NamedTuple):
     map_id: int
     game_mode: str
     mods: List[int]
+    commander_kills: Dict[str, int]
     validity: ValidityState
     team_summaries: List[TeamRatingSummary]
 
@@ -128,6 +129,7 @@ class EndedGameInfo(NamedTuple):
         basic_info: BasicGameInfo,
         validity: ValidityState,
         team_outcomes: List[GameOutcome],
+        commander_kills: Dict[str, int],
     ) -> "EndedGameInfo":
         if len(basic_info.teams) != len(team_outcomes):
             raise ValueError(
@@ -141,6 +143,7 @@ class EndedGameInfo(NamedTuple):
             basic_info.map_id,
             basic_info.game_mode,
             basic_info.mods,
+            commander_kills,
             validity,
             [
                 TeamRatingSummary(outcome, set(player.id for player in team))
@@ -157,6 +160,7 @@ class EndedGameInfo(NamedTuple):
             "map_id": self.map_id,
             "featured_mod": self.game_mode,
             "sim_mod_ids": self.mods,
+            "commander_kills": self.commander_kills,
             "validity": self.validity.name,
             "teams": [
                 {

@@ -60,6 +60,7 @@ def game_info():
         1,
         "faf",
         [],
+        {},
         ValidityState.VALID,
         [
             TeamRatingSummary(GameOutcome.VICTORY, {1}),
@@ -79,6 +80,7 @@ def bad_game_info():
         1,
         "faf",
         [],
+        {},
         ValidityState.VALID,
         [
             TeamRatingSummary(GameOutcome.VICTORY, {1}),

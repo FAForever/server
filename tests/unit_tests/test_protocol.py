@@ -6,6 +6,7 @@ from socket import socketpair
 from unittest import mock
 
 import pytest
+
 from server.protocol import DisconnectedError, QDataStreamProtocol
 from tests.utils import fast_forward
 

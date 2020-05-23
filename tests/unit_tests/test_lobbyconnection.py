@@ -2,8 +2,9 @@ from hashlib import sha256
 from unittest import mock
 from unittest.mock import Mock
 
-import asynctest
 import pytest
+
+import asynctest
 from aiohttp import web
 from asynctest import CoroutineMock
 from server import GameState, VisibilityState, config

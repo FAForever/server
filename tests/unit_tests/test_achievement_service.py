@@ -1,9 +1,10 @@
-from unittest.mock import Mock, MagicMock
+from unittest.mock import MagicMock, Mock
 
 import pytest
+
+from asynctest import CoroutineMock
 from server.api.api_accessor import ApiAccessor, SessionManager
 from server.stats.achievement_service import AchievementService
-from asynctest import CoroutineMock
 
 pytestmark = pytest.mark.asyncio
 

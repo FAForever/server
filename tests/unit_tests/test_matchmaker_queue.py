@@ -5,6 +5,7 @@ from collections import deque
 from concurrent.futures import CancelledError, TimeoutError
 
 import pytest
+
 import server.config as config
 from hypothesis import given
 from hypothesis import strategies as st
