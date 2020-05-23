@@ -145,3 +145,15 @@ async def test_incorrect_vhost(mocker):
 
     await service.initialize()
     service._logger.warning.assert_called()
+
+
+async def test_reconnect(mq_service):
+    await mq_service.declare_exchange("test_topic", aio_pika.ExchangeType.TOPIC)
+    await mq_service.declare_exchange("test_direct", aio_pika.ExchangeType.DIRECT)
+
+    await mq_service.reconnect()
+
+    assert "test_topic" in mq_service._exchanges
+    assert mq_service._exchange_types["test_topic"] == aio_pika.ExchangeType.TOPIC
+    assert "test_direct" in mq_service._exchanges
+    assert mq_service._exchange_types["test_direct"] == aio_pika.ExchangeType.DIRECT

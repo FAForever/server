@@ -18,6 +18,12 @@ class MessageQueueService(Service):
         self._connection = None
         self._channel = None
         self._exchanges = {}
+        self._exchange_types = {}
+
+        config.register_callback("MQ_USER", self.reconnect)
+        config.register_callback("MQ_PASSWORD", self.reconnect)
+        config.register_callback("MQ_VHOST", self.reconnect)
+        config.register_callback("MQ_PORT", self.reconnect)
 
     async def initialize(self) -> None:
         if self._connection is not None:
@@ -68,6 +74,7 @@ class MessageQueueService(Service):
         )
 
         self._exchanges[exchange_name] = new_exchange
+        self._exchange_types[exchange_name] = exchange_type
 
     async def shutdown(self) -> None:
         if self._connection is not None:
@@ -99,3 +106,10 @@ class MessageQueueService(Service):
             self._logger.debug(
                 "Published message %s to %s/%s", payload, exchange_name, routing
             )
+
+    async def reconnect(self) -> None:
+        await self.shutdown()
+        await self.initialize()
+
+        for exchange_name in list(self._exchanges.keys()):
+            self.declare_exchange(exchange_name, self._exchange_types[exchange_name])
