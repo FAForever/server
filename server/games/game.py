@@ -476,6 +476,7 @@ class Game:
             self._rating_type,
             self.map_id,
             self.game_mode,
+            list(self.mods.keys()),
             self.get_team_sets(),
         )
 

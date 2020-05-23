@@ -876,3 +876,5 @@ async def test_game_results(game: Game, players):
         )
     assert result_dict["game_id"] == game.id
     assert result_dict["map_id"] == game.map_id
+    assert result_dict["featured_mod"] == "faf"
+    assert result_dict["sim_mod_ids"] == []

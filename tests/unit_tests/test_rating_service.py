@@ -5,16 +5,14 @@ import pytest
 from asynctest import CoroutineMock
 from server.db import FAFDatabase
 from server.db.models import (
-    game_player_stats, leaderboard_rating, leaderboard_rating_journal
+    game_player_stats,
+    leaderboard_rating,
+    leaderboard_rating_journal,
 )
 from server.games.game_results import GameOutcome
-from server.games.typedefs import (
-    EndedGameInfo, TeamRatingSummary, ValidityState
-)
+from server.games.typedefs import EndedGameInfo, TeamRatingSummary, ValidityState
 from server.rating import RatingType
-from server.rating_service.rating_service import (
-    RatingService, ServiceNotReadyError
-)
+from server.rating_service.rating_service import RatingService, ServiceNotReadyError
 from server.rating_service.typedefs import GameRatingSummary, TeamRatingData
 from sqlalchemy import and_, select
 from trueskill import Rating
@@ -61,6 +59,7 @@ def game_info():
         RatingType.GLOBAL,
         1,
         "faf",
+        [],
         ValidityState.VALID,
         [
             TeamRatingSummary(GameOutcome.VICTORY, {1}),
@@ -79,6 +78,7 @@ def bad_game_info():
         RatingType.GLOBAL,
         1,
         "faf",
+        [],
         ValidityState.VALID,
         [
             TeamRatingSummary(GameOutcome.VICTORY, {1}),

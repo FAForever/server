@@ -92,6 +92,7 @@ class BasicGameInfo(NamedTuple):
     rating_type: Optional[RatingType]
     map_id: int
     game_mode: str
+    mods: List[int]
     teams: List[Set[Player]]
 
 
@@ -117,6 +118,7 @@ class EndedGameInfo(NamedTuple):
     rating_type: Optional[RatingType]
     map_id: int
     game_mode: str
+    mods: List[int]
     validity: ValidityState
     team_summaries: List[TeamRatingSummary]
 
@@ -138,6 +140,7 @@ class EndedGameInfo(NamedTuple):
             basic_info.rating_type,
             basic_info.map_id,
             basic_info.game_mode,
+            basic_info.mods,
             validity,
             [
                 TeamRatingSummary(outcome, set(player.id for player in team))
@@ -148,10 +151,12 @@ class EndedGameInfo(NamedTuple):
     def to_dict(self):
         return {
             "game_id": self.game_id,
-            "rating_type": self.rating_type.name if self.rating_type is not
-            None else "None",
+            "rating_type": self.rating_type.name
+            if self.rating_type is not None
+            else "None",
             "map_id": self.map_id,
             "featured_mod": self.game_mode,
+            "sim_mod_ids": self.mods,
             "validity": self.validity.name,
             "teams": [
                 {
