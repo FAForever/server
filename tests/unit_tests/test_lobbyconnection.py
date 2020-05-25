@@ -352,16 +352,19 @@ async def test_command_game_join_uid_as_str(mocker,
     lobbyconnection.protocol.send_message.assert_called_with(expected_reply)
 
 
-async def test_command_game_join_without_password(lobbyconnection,
-                                                  database,
-                                                  game_service,
-                                                  test_game_info,
-                                                  players,
-                                                  game_stats_service):
+async def test_command_game_join_without_password(
+    lobbyconnection,
+    database,
+    game_service,
+    test_game_info,
+    players,
+    game_stats_service
+):
     lobbyconnection.send = CoroutineMock()
     lobbyconnection.game_service = game_service
-    game = mock.create_autospec(Game(42, database, game_service, game_stats_service))
+    game = mock.create_autospec(Game)
     game.state = GameState.LOBBY
+    game.init_mode = InitMode.NORMAL_LOBBY
     game.password = 'password'
     game.game_mode = 'faf'
     game.id = 42
@@ -374,14 +377,19 @@ async def test_command_game_join_without_password(lobbyconnection,
         "command": "game_join",
         **test_game_info
     })
-    lobbyconnection.send.assert_called_once_with(
-        dict(command="notice", style="info", text="Bad password (it's case sensitive)"))
+    lobbyconnection.send.assert_called_once_with({
+        "command": "notice",
+        "style": "info",
+        "text": "Bad password (it's case sensitive)."
+    })
 
 
-async def test_command_game_join_game_not_found(lobbyconnection,
-                                                game_service,
-                                                test_game_info,
-                                                players):
+async def test_command_game_join_game_not_found(
+    lobbyconnection,
+    game_service,
+    test_game_info,
+    players
+):
     lobbyconnection.send = CoroutineMock()
     lobbyconnection.game_service = game_service
     lobbyconnection.player = players.hosting
@@ -391,8 +399,38 @@ async def test_command_game_join_game_not_found(lobbyconnection,
         "command": "game_join",
         **test_game_info
     })
-    lobbyconnection.send.assert_called_once_with(
-        dict(command="notice", style="info", text="The host has left the game"))
+    lobbyconnection.send.assert_called_once_with({
+        "command": "notice",
+        "style": "info",
+        "text": "The host has left the game."
+    })
+
+
+async def test_command_game_join_game_bad_init_mode(
+    lobbyconnection,
+    game_service,
+    test_game_info,
+    players
+):
+    lobbyconnection.send = CoroutineMock()
+    lobbyconnection.game_service = game_service
+    game = mock.create_autospec(Game)
+    game.state = GameState.LOBBY
+    game.init_mode = InitMode.AUTO_LOBBY
+    game.id = 42
+    game_service._games[42] = game
+    lobbyconnection.player = players.hosting
+    test_game_info['uid'] = 42
+
+    await lobbyconnection.on_message_received({
+        "command": "game_join",
+        **test_game_info
+    })
+    lobbyconnection.send.assert_called_once_with({
+        "command": "notice",
+        "style": "error",
+        "text": "The game cannot be joined in this way."
+    })
 
 
 async def test_command_game_host_calls_host_game_invalid_title(lobbyconnection,
