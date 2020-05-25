@@ -192,20 +192,24 @@ class PlayerService(Service):
     async def has_permission_role(self, player: Player, role_name: str) -> bool:
         async with self._db.acquire() as conn:
             result = await conn.execute(
-                select([group_permission_assignment.c.group_id])
+                select([group_permission.c.id])
                 .select_from(
-                    group_permission
+                    user_group_assignment
                     .join(group_permission_assignment, onclause=(
-                        group_permission.c.id ==
-                        group_permission_assignment.c.permission_id
+                        user_group_assignment.c.group_id ==
+                        group_permission_assignment.c.group_id
                     ))
+                    .join(group_permission)
                 )
-                .where(group_permission.c.technical_name == role_name)
+                .where(
+                    and_(
+                        user_group_assignment.c.user_id == player.id,
+                        group_permission.c.technical_name == role_name
+                    )
+                )
             )
-            async for row in result:
-                if row.group_id in player.user_groups:
-                    return True
-            return False
+            row = await result.fetchone()
+            return row is not None
 
     def is_uniqueid_exempt(self, user_id: int) -> bool:
         return user_id in self.uniqueid_exempt
