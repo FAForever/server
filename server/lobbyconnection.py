@@ -288,10 +288,15 @@ class LobbyConnection:
         action = message['action']
 
         if action == "closeFA":
-            if await self.player_service.has_permission_role(self.player, 'ADMIN_KICK_SERVER'):
+            if await self.player_service.has_permission_role(
+                self.player, 'ADMIN_KICK_SERVER'
+            ):
                 player = self.player_service[message['user_id']]
                 if player:
-                    self._logger.warning('Administrative action: %s closed game for %s', self.player, player)
+                    self._logger.info(
+                        'Administrative action: %s closed game for %s',
+                        self.player, player
+                    )
                     with contextlib.suppress(DisconnectedError):
                         await player.send_message({
                             "command": "notice",
@@ -299,10 +304,15 @@ class LobbyConnection:
                         })
 
         elif action == "closelobby":
-            if await self.player_service.has_permission_role(self.player, 'ADMIN_KICK_SERVER'):
+            if await self.player_service.has_permission_role(
+                self.player, 'ADMIN_KICK_SERVER'
+            ):
                 player = self.player_service[message['user_id']]
                 if player and player.lobby_connection is not None:
-                    self._logger.warning('Administrative action: %s closed client for %s', self.player, player)
+                    self._logger.info(
+                        'Administrative action: %s closed client for %s',
+                        self.player, player
+                    )
                     with contextlib.suppress(DisconnectedError):
                         await player.lobby_connection.kick()
 
@@ -310,7 +320,9 @@ class LobbyConnection:
             message_text = message.get('message')
             if not message_text:
                 return
-            if await self.player_service.has_permission_role(self.player, 'ADMIN_BROADCAST_MESSAGE'):
+            if await self.player_service.has_permission_role(
+                self.player, 'ADMIN_BROADCAST_MESSAGE'
+            ):
                 tasks = []
                 for player in self.player_service:
                     # Check if object still exists:
@@ -326,7 +338,9 @@ class LobbyConnection:
                 )
                 await gather_without_exceptions(tasks, Exception)
         elif action == "join_channel":
-            if await self.player_service.has_permission_role(self.player, 'ADMIN_JOIN_CHANNEL'):
+            if await self.player_service.has_permission_role(
+                self.player, 'ADMIN_JOIN_CHANNEL'
+            ):
                 user_ids = message['user_ids']
                 channel = message['channel']
 
