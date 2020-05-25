@@ -124,7 +124,6 @@ class LobbyConnection:
             )
         if self.game_connection:
             await self.game_connection.abort()
-            self.game_connection = None
 
         await self.protocol.close()
 
