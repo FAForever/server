@@ -1,8 +1,9 @@
 import asyncio
 
 import pytest
-from server.db.models import game_player_stats
 from sqlalchemy import select
+
+from server.db.models import game_player_stats
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until, read_until_command
@@ -193,33 +194,38 @@ async def test_game_matchmaking_disconnect(lobby_server):
 
 @fast_forward(10)
 async def test_matchmaker_info_message(lobby_server, mocker):
-    mocker.patch('server.matchmaker.pop_timer.time', return_value=1_562_000_000)
+    mocker.patch("server.matchmaker.pop_timer.time", return_value=1_562_000_000)
 
     _, _, proto = await connect_and_sign_in(
-        ('ladder1', 'ladder1'),
+        ("ladder1", "ladder1"),
         lobby_server
     )
-    # Because the mocking hasn't taken effect on the first message we need to
+    # Because the mocking hasn"t taken effect on the first message we need to
     # wait for the second message
-    msg = await read_until_command(proto, 'matchmaker_info')
-    msg = await read_until_command(proto, 'matchmaker_info')
+    msg = await read_until_command(proto, "matchmaker_info")
+    msg = await read_until_command(proto, "matchmaker_info")
 
-    assert 'queues' in msg
-    for queue in msg['queues']:
-        del queue['queue_name']
+    assert "queues" in msg
+    for queue in msg["queues"]:
+        assert "queue_name" in queue
+        assert "team_size" in queue
+
+        del queue["queue_name"]
+        del queue["team_size"]
+
         assert queue == {
-            'queue_pop_time': '2019-07-01T16:53:21+00:00',
-            'boundary_80s': [],
-            'boundary_75s': []
+            "queue_pop_time": "2019-07-01T16:53:21+00:00",
+            "boundary_80s": [],
+            "boundary_75s": []
         }
 
 
 @fast_forward(10)
 async def test_command_matchmaker_info(lobby_server, mocker):
-    mocker.patch('server.matchmaker.pop_timer.time', return_value=1_562_000_000)
+    mocker.patch("server.matchmaker.pop_timer.time", return_value=1_562_000_000)
 
     _, _, proto = await connect_and_sign_in(
-        ('ladder1', 'ladder1'),
+        ("ladder1", "ladder1"),
         lobby_server
     )
 
@@ -229,13 +235,18 @@ async def test_command_matchmaker_info(lobby_server, mocker):
 
     await proto.send_message({"command": "matchmaker_info"})
     msg = await read_until_command(proto, "matchmaker_info")
-    assert 'queues' in msg
-    for queue in msg['queues']:
-        del queue['queue_name']
+    assert "queues" in msg
+    for queue in msg["queues"]:
+        assert "queue_name" in queue
+        assert "team_size" in queue
+
+        del queue["queue_name"]
+        del queue["team_size"]
+
         assert queue == {
-            'queue_pop_time': '2019-07-01T16:53:21+00:00',
-            'boundary_80s': [],
-            'boundary_75s': []
+            "queue_pop_time": "2019-07-01T16:53:21+00:00",
+            "boundary_80s": [],
+            "boundary_75s": []
         }
 
 

@@ -268,8 +268,7 @@ def queue_factory():
     def make(
         name="Test Queue",
         mod="ladder1v1",
-        min_team_size=1,
-        max_team_size=1,
+        team_size=1,
         rating_type=RatingType.GLOBAL
     ):
         return MatchmakerQueue(
@@ -277,15 +276,14 @@ def queue_factory():
             name=name,
             featured_mod=mod,
             rating_type=rating_type,
-            min_team_size=min_team_size,
-            max_team_size=max_team_size
+            team_size=team_size,
         )
     return make
 
 
 @pytest.fixture
 def matchmaker_queue(game_service) -> MatchmakerQueue:
-    queue = MatchmakerQueue(game_service, "ladder1v1test", 6, 2)
+    queue = MatchmakerQueue(game_service, "ladder1v1test", "ladder1v1", 2)
     return queue
 
 

@@ -43,16 +43,14 @@ class MatchmakerQueue:
         name: str,
         featured_mod: str,
         rating_type: RatingType,
-        min_team_size=1,
-        max_team_size=1,
+        team_size: int = 1,
         map_pools: Iterable[Tuple[MapPool, Optional[int], Optional[int]]] = ()
     ):
         self.game_service = game_service
         self.name = name
         self.featured_mod = featured_mod
         self.rating_type = rating_type
-        self.min_team_size = min_team_size
-        self.max_team_size = max_team_size
+        self.team_size = team_size
         self.map_pools = {info[0].id: info for info in map_pools}
 
         self.queue: Dict[Search, Search] = OrderedDict()
@@ -148,7 +146,7 @@ class MatchmakerQueue:
     async def find_matches(self) -> None:
         self._logger.info("Searching for matches: %s", self.name)
 
-        if len(self.queue) < 2 * self.min_team_size:
+        if len(self.queue) < 2 * self.team_size:
             return
 
         searches = self.find_teams()
@@ -164,22 +162,19 @@ class MatchmakerQueue:
     def find_teams(self) -> List[Search]:
         searches = []
         unmatched = list(self.queue.values())
-        for size in reversed(range(self.min_team_size, self.max_team_size + 1)):
-            need_team = []
-            for search in unmatched:
-                if len(search.players) == size:
-                    searches.append(search)
-                else:
-                    need_team.append(search)
-
-            if all(len(s.players) == 1 for s in need_team):
-                teams, unmatched = make_teams_from_single(need_team, size)
+        need_team = []
+        for search in unmatched:
+            if len(search.players) == self.team_size:
+                searches.append(search)
             else:
-                teams, unmatched = make_teams(need_team, size)
-            searches.extend(teams)
+                need_team.append(search)
 
-            if not unmatched:
-                break
+        if all(len(s.players) == 1 for s in need_team):
+            teams, unmatched = make_teams_from_single(need_team, self.team_size)
+        else:
+            teams, unmatched = make_teams(need_team, self.team_size)
+        searches.extend(teams)
+
         return searches
 
     def push(self, search: Search):
@@ -214,10 +209,13 @@ class MatchmakerQueue:
         Return a fuzzy representation of the searches currently in the queue
         """
         return {
-            'queue_name': self.name,
-            'queue_pop_time': datetime.fromtimestamp(self.timer.next_queue_pop, timezone.utc).isoformat(),
-            'boundary_80s': [search.boundary_80 for search in self.queue.values()],
-            'boundary_75s': [search.boundary_75 for search in self.queue.values()]
+            "queue_name": self.name,
+            "queue_pop_time": datetime.fromtimestamp(
+                self.timer.next_queue_pop, timezone.utc
+            ).isoformat(),
+            "team_size": self.team_size,
+            "boundary_80s": [search.boundary_80 for search in self.queue.values()],
+            "boundary_75s": [search.boundary_75 for search in self.queue.values()]
         }
 
     def __repr__(self):

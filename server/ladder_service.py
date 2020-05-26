@@ -61,8 +61,7 @@ class LadderService(Service):
                 name="tmm2v2",
                 featured_mod="faf",
                 rating_type=RatingType.GLOBAL,  # TODO: Changeme
-                min_team_size=2,
-                max_team_size=2
+                team_size=2,
             )
         }
 

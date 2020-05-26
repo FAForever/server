@@ -7,6 +7,8 @@ import pytest
 import asynctest
 from aiohttp import web
 from asynctest import CoroutineMock
+from sqlalchemy import and_, select
+
 from server import GameState, VisibilityState, config
 from server.abc.base_game import InitMode
 from server.db.models import ban, friends_and_foes
@@ -17,13 +19,11 @@ from server.geoip_service import GeoIpService
 from server.ice_servers.nts import TwilioNTS
 from server.ladder_service import LadderService
 from server.lobbyconnection import ClientError, LobbyConnection
-from server.matchmaker import MatchmakerQueue
 from server.player_service import PlayerService
 from server.players import PlayerState
 from server.protocol import DisconnectedError, QDataStreamProtocol
 from server.rating import RatingType
 from server.types import Address
-from sqlalchemy import and_, select
 
 pytestmark = pytest.mark.asyncio
 
@@ -840,17 +840,18 @@ async def test_command_matchmaker_info(lobbyconnection, ladder_service, queue_fa
     }
     lobbyconnection.send = CoroutineMock()
     await lobbyconnection.on_message_received({
-        'command': 'matchmaker_info'
+        "command": "matchmaker_info"
     })
 
     lobbyconnection.send.assert_called_with({
-        'command': 'matchmaker_info',
-        'queues': [
+        "command": "matchmaker_info",
+        "queues": [
             {
-                'queue_name': 'test',
-                'queue_pop_time': '2019-07-01T16:53:20+00:00',
-                'boundary_80s': [],
-                'boundary_75s': []
+                "queue_name": "test",
+                "queue_pop_time": "2019-07-01T16:53:20+00:00",
+                "team_size": 1,
+                "boundary_80s": [],
+                "boundary_75s": []
             }
         ]
     })
