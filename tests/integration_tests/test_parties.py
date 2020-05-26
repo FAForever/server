@@ -151,8 +151,7 @@ async def test_invite_party_workflow(lobby_server, party_service):
     })
 
     msg1 = await read_until_command(proto, 'update_party')
-    msg2 = await read_until_command(proto2, 'update_party')
-    assert msg1 == msg2
+    await read_until_command(proto2, 'kicked_from_party')
     assert msg1 == {
         'command': 'update_party',
         'owner': test_id,
