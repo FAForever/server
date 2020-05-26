@@ -102,9 +102,6 @@ class PartyService(Service):
         if owner not in self.player_parties:
             raise ClientError("You are not in a party.", recoverable=True)
 
-        if kicked_player not in self.player_parties:
-            raise ClientError("That player is not in a party.", recoverable=True)
-
         party = self.player_parties[owner]
 
         if party.owner != owner:
@@ -118,8 +115,6 @@ class PartyService(Service):
         party.remove_player(kicked_player)
         del self.player_parties[kicked_player]
 
-        # TODO: Pick one of these
-        await party.send_party(kicked_player)
         kicked_player.write_message({"command": "kicked_from_party"})
 
         self.mark_dirty(party)
@@ -143,7 +138,7 @@ class PartyService(Service):
 
     async def ready_player(self, player: Player):
         if player not in self.player_parties:
-            raise ClientError("You are not in a party.", recoverable=True)
+            self.player_parties[player] = PlayerParty(player)
 
         party = self.player_parties[player]
 
@@ -157,7 +152,7 @@ class PartyService(Service):
 
     async def unready_player(self, player: Player):
         if player not in self.player_parties:
-            raise ClientError("You are not in a party.", recoverable=True)
+            self.player_parties[player] = PlayerParty(player)
 
         party = self.player_parties[player]
 
@@ -172,7 +167,6 @@ class PartyService(Service):
     def set_factions(self, player: Player, factions: List[bool]):
         if player not in self.player_parties:
             self.player_parties[player] = PlayerParty(player)
-            # raise ClientError("You are not in a party.", recoverable=True) TODO can we just create a party here?
 
         party = self.player_parties[player]
         party.set_factions(player, factions)

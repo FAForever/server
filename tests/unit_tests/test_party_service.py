@@ -43,6 +43,7 @@ async def test_invite_player_to_party(party_service, player_factory):
     receiver = player_factory(player_id=2)
 
     party_service.invite_player_to_party(sender, receiver)
+    assert party_service.player_parties[sender]
 
 
 async def test_accept_invite(party_service, player_factory):
@@ -123,8 +124,8 @@ async def test_kick_player_not_in_party(party_service, player_factory):
 
     party_service.invite_player_to_party(sender, receiver)
 
-    with pytest.raises(ClientError):
-        await party_service.kick_player_from_party(sender, receiver)
+    await party_service.kick_player_from_party(sender, receiver)
+    sender.send_message.assert_called_once()
 
 
 async def test_kick_player_not_owner(party_service, player_factory):
@@ -267,8 +268,9 @@ async def test_ready_player_twice_messages(party_service, player_factory):
 async def test_ready_player_nonexistent(party_service, player_factory):
     player = player_factory(player_id=1)
 
-    with pytest.raises(ClientError):
-        await party_service.ready_player(player)
+    await party_service.ready_player(player)
+
+    assert party_service.player_parties[player]
 
 
 async def test_unready_player(party_service, player_factory):
@@ -333,8 +335,9 @@ async def test_unready_player_twice_messages(party_service, player_factory):
 async def test_unready_player_nonexistent(party_service, player_factory):
     player = player_factory(player_id=1)
 
-    with pytest.raises(ClientError):
-        await party_service.unready_player(player)
+    await party_service.unready_player(player)
+
+    assert party_service.player_parties[player]
 
 
 async def test_set_factions(party_service, player_factory):
