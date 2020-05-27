@@ -25,6 +25,7 @@ humanize = ">=2.6.0"
 aiomysql = {editable = true, git = "https://github.com/aio-libs/aiomysql"}
 pyyaml = "*"
 aio_pika = "*"
+pyjwt = {version = "*", extras = ["crypto"]}
 
 [dev-packages]
 pytest = "*"

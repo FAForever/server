@@ -6,15 +6,19 @@ import asyncio
 import contextlib
 import hashlib
 import json
+import os
 import random
 import urllib.parse
 import urllib.request
+from base64 import b64encode
 from datetime import datetime
 from functools import wraps
 from typing import Optional
 
 import aiohttp
+import jwt
 import pymysql
+from jwt import InvalidTokenError
 from sqlalchemy import and_, func, select
 
 import server.metrics as metrics
@@ -121,7 +125,15 @@ class LobbyConnection:
 
     async def ensure_authenticated(self, cmd):
         if not self._authenticated:
-            if cmd not in ["hello", "ask_session", "create_account", "ping", "pong", "Bottleneck"]:  # Bottleneck is sent by the game during reconnect
+            if cmd not in (
+                "ask_session",
+                "auth",
+                "Bottleneck"  # Bottleneck is sent by the game during reconnect
+                "create_account",
+                "hello",
+                "ping",
+                "pong",
+            ):
                 metrics.unauth_messages.labels(cmd).inc()
                 await self.abort("Message invalid for unauthenticated connection: %s" % cmd)
                 return False
@@ -501,6 +513,37 @@ class LobbyConnection:
             return False
 
         return response.get("result", "") == "honest"
+
+    async def command_auth(self, message):
+        pub_key = config._API_JWT_PUBLIC_KEY_VALUE
+        token = message["token"]
+        unique_id = message["unique_id"]
+
+        try:
+            token = jwt.decode(token, pub_key, algorithms="RS256")
+            player_id = token["user_id"]
+        except (InvalidTokenError, KeyError):
+            raise AuthenticationError("Token signature was invalid")
+
+        new_irc_password = b64encode(os.urandom(30)).decode()
+        await self.send({
+            "command": "irc_password",
+            "password": new_irc_password
+        })
+
+        async with self._db.acquire() as conn:
+            result = await conn.execute(
+                select([t_login.c.login, t_login.c.steamid])
+                .where(t_login.c.id == player_id)
+            )
+            row = await result.fetchone()
+
+            username = row[t_login.c.login]
+            steamid = row[t_login.c.steamid]
+
+        await self.on_player_login(
+            player_id, username, new_irc_password, steamid, unique_id
+        )
 
     async def command_hello(self, message):
         login = message["login"].strip()
