@@ -65,16 +65,11 @@ class PlayerService(Service):
     async def fetch_player_data(self, player):
         async with self._db.acquire() as conn:
             result = await conn.execute(
-                select([
-                    user_group.c.technical_name,
-                    user_group.c.id
-                ])
+                select([user_group.c.technical_name])
                 .select_from(user_group_assignment.join(user_group))
                 .where(user_group_assignment.c.user_id == player.id)
             )
-            player.user_groups = {
-                entry async for row in result for entry in row.as_tuple()
-            }
+            player.user_groups = {row.technical_name async for row in result}
 
             sql = select([
                 avatars_list.c.url,
