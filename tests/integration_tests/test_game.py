@@ -5,6 +5,7 @@ from server.protocol import QDataStreamProtocol
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until, read_until_command
+from .test_matchmaker import queue_players_for_matchmaking
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
@@ -162,8 +163,10 @@ async def test_game_ended_rates_game(lobby_server):
 
 @fast_forward(60)
 async def test_partial_game_ended_rates_game(lobby_server, tmp_user):
-    """Test that game is rated as soon as all players have either disconnected
-    or sent `GameEnded`"""
+    """
+    Test that game is rated as soon as all players have either disconnected
+    or sent `GameEnded`
+    """
     host_id, _, host_proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
@@ -266,3 +269,41 @@ async def test_partial_game_ended_rates_game(lobby_server, tmp_user):
     # The game should only be rated once
     with pytest.raises(asyncio.TimeoutError):
         await read_until_command(host_proto, "player_info", timeout=10)
+
+
+@fast_forward(15)
+async def test_ladder_game_not_joinable(lobby_server):
+    """
+    We should not be able to join AUTO_LOBBY games using the `game_join` command.
+    """
+    _, _, test_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+    await read_until_command(test_proto, "game_info")
+
+    msg = await read_until_command(proto1, "game_launch")
+    await proto1.send_message({
+        'command': 'GameState',
+        'target': 'game',
+        'args': ['Idle']
+    })
+    await proto1.send_message({
+        'command': 'GameState',
+        'target': 'game',
+        'args': ['Lobby']
+    })
+
+    game_uid = msg["uid"]
+
+    await test_proto.send_message({
+        "command": "game_join",
+        "uid": game_uid
+    })
+
+    msg = await read_until_command(test_proto, "notice", timeout=5)
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "The game cannot be joined in this way."
+    }
