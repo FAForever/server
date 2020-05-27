@@ -17,7 +17,7 @@ import server.metrics as metrics
 from server.db import FAFDatabase
 from sqlalchemy import and_, func, select, text
 
-from .abc.base_game import GameConnectionState
+from .abc.base_game import GameConnectionState, InitMode
 from .async_functions import gather_without_exceptions
 from .config import TRACE, config
 from .db.models import (
@@ -828,7 +828,7 @@ class LobbyConnection:
             await self.send({
                 "command": "notice",
                 "style": "info",
-                "text": "The host has left the game"
+                "text": "The host has left the game."
             })
             return
 
@@ -841,11 +841,14 @@ class LobbyConnection:
             })
             return
 
+        if game.init_mode != InitMode.NORMAL_LOBBY:
+            raise ClientError("The game cannot be joined in this way.")
+
         if game.password != password:
             await self.send({
                 "command": "notice",
                 "style": "info",
-                "text": "Bad password (it's case sensitive)"
+                "text": "Bad password (it's case sensitive)."
             })
             return
 
