@@ -57,6 +57,12 @@ class ConfigurationStore:
         self.API_TOKEN_URI = "https://api.test.faforever.com/oauth/token"
         self.API_BASE_URL = "https://api.test.faforever.com/"
         self.USE_API = True
+        # Always set this key. It can be either the public key its self, or a
+        # path pointing to a pub key file.
+        self.API_JWT_PUBLIC_KEY = ""
+        # Resolved public key. If API_JWT_PUBLIC_KEY is a file path then this
+        # will contain the contents of that file.
+        self._API_JWT_PUBLIC_KEY_VALUE = ""
 
         self.MQ_USER = "faf-python-server"
         self.MQ_PASSWORD = "banana"
@@ -160,5 +166,18 @@ def set_log_level():
     logger.setLevel(config.LOG_LEVEL)
 
 
+def read_api_pub_key():
+    pub_key = config.API_JWT_PUBLIC_KEY
+
+    is_key = pub_key.startswith("-----BEGIN") or pub_key.startswith("ssh-rsa")
+
+    if pub_key and not is_key:  # pragma: no cover
+        with open(pub_key) as f:
+            config._API_JWT_PUBLIC_KEY_VALUE = f.read()
+    else:
+        config._API_JWT_PUBLIC_KEY_VALUE = pub_key
+
+
 config = ConfigurationStore()
 config.register_callback("LOG_LEVEL", set_log_level)
+config.register_callback("API_JWT_PUBLIC_KEY", read_api_pub_key)

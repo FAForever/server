@@ -2,6 +2,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import textwrap
 from collections import defaultdict
 from typing import Any, Callable, Dict, Tuple
 from unittest import mock
@@ -71,6 +72,32 @@ async def broadcast_service(
 
 
 @pytest.fixture
+def api_priv_key():
+    return textwrap.dedent("""
+    -----BEGIN RSA PRIVATE KEY-----
+    MIIBOgIBAAJBANcXbVA8c7jMb8LVSQTp7G/YAiEPi2be8k9XTqcis6QHLCw6ELh0
+    r8bOOkeRSUGLXja91NzJmh2Jvx/bwLhd1G0CAwEAAQJAHWPjGPKZsWel4c55AsXf
+    +8xdRh00pCLUo0i/w5C3UTM1fWv/8yMCSYO/th/L0/rc4kVvIOm8GOw/3zcyp6FK
+    dQIhAPbFBovMEDF3Tco7EiX90rVw+NgT8VoJxJACBr7R6lLjAiEA3yMQQqdpkeDA
+    z1zerZrzRG1Pn/OO5RCWTn3/ffIdzG8CIGUVpG7TsrZwpp72v6JsbUoB8w2gbbdy
+    VOCg096K4q/9AiEAkvEuRhalSPGvR18rLTw7MzahFv53fZWcxffnhnMo+HUCIH6t
+    GIuKi+gOWMYjXKLNRR34uxhTAvBcdZr8VBcPHSwj
+    -----END RSA PRIVATE KEY-----
+    """)
+
+
+@pytest.fixture
+def api_pub_key():
+    config._API_JWT_PUBLIC_KEY_VALUE = textwrap.dedent("""
+    -----BEGIN PUBLIC KEY-----
+    MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBANcXbVA8c7jMb8LVSQTp7G/YAiEPi2be
+    8k9XTqcis6QHLCw6ELh0r8bOOkeRSUGLXja91NzJmh2Jvx/bwLhd1G0CAwEAAQ==
+    -----END PUBLIC KEY-----
+    """)
+    return config._API_JWT_PUBLIC_KEY_VALUE
+
+
+@pytest.fixture
 async def lobby_server(
     event_loop,
     database,
@@ -82,7 +109,8 @@ async def lobby_server(
     rating_service,
     message_queue_service,
     party_service,
-    policy_server
+    policy_server,
+    api_pub_key
 ):
     with mock.patch(
         "server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL",
