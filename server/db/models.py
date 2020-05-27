@@ -142,6 +142,24 @@ global_rating = Table(
     Column('is_active', Boolean,    nullable=False),
 )
 
+group_permission = Table(
+    'group_permission', metadata,
+    Column('id',                Integer,        primary_key=True),
+    Column('technical_name',    String(100),    nullable=False),
+    Column('name_key',          String(100),    nullable=False),
+    Column('create_time',       TIMESTAMP,      nullable=False),
+    Column('update_time',       TIMESTAMP,      nullable=False),
+)
+
+group_permission_assignment = Table(
+    'group_permission_assignment', metadata,
+    Column('id',            Integer,        primary_key=True),
+    Column('group_id',      ForeignKey('user_group.id'),        nullable=False),
+    Column('permission_id', ForeignKey('group_permission.id'),  nullable=False),
+    Column('create_time',   TIMESTAMP,      nullable=False),
+    Column('update_time',   TIMESTAMP,      nullable=False),
+)
+
 login = Table(
     'login', metadata,
     Column('id',            Integer,    primary_key=True),
@@ -269,4 +287,24 @@ teamkills = Table(
     Column('victim',        Integer, ForeignKey('login.id')),
     Column('game_id',       Integer, ForeignKey('game_stats.id')),
     Column('gametime',      Integer),
+)
+
+user_group = Table(
+    'user_group', metadata,
+    Column('id',                Integer,        primary_key=True),
+    Column('technical_name',    String(100),    nullable=False),
+    Column('parent_group_id',   ForeignKey('user_group.id')),
+    Column('public',            Boolean,        nullable=False),
+    Column('name_key',          String(100),    nullable=False),
+    Column('create_time',       TIMESTAMP,      nullable=False),
+    Column('update_time',       TIMESTAMP,      nullable=False)
+)
+
+user_group_assignment = Table(
+    'user_group_assignment', metadata,
+    Column('id',            Integer,    primary_key=True),
+    Column('user_id',       ForeignKey('login.id'),         nullable=False),
+    Column('group_id',      ForeignKey('user_group.id'),    nullable=False),
+    Column('create_time',   TIMESTAMP,  nullable=False),
+    Column('update_time',   TIMESTAMP,  nullable=False)
 )

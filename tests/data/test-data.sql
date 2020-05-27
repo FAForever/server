@@ -67,6 +67,7 @@ insert into login (id, login, email, password, steamid, create_time) values
   (4, 'No_UID', 'uid@uef.example.com', SHA2('his_pw', 256), null, '2000-01-01 00:00:00'),
   (5, 'postman', 'postman@postman.com', SHA2('postman', 256), null, '2000-01-01 00:00:00'),
   (10,  'friends', 'friends@example.com', SHA2('friends', 256),  null, '2000-01-01 00:00:00'),
+  (20,  'moderator', 'moderator@example.com', SHA2('moderator', 256), null, '2000-01-01 00:00:00'),
   (50,  'player_service1', 'ps1@example.com', SHA2('player_service1', 256), null, '2000-01-01 00:00:00'),
   (51,  'player_service2', 'ps2@example.com', SHA2('player_service2', 256), null,  '2000-01-01 00:00:00'),
   (52,  'player_service3', 'ps3@example.com', SHA2('player_service3', 256), null, '2000-01-01 00:00:00'),
@@ -94,6 +95,7 @@ insert into name_history (id, change_time, user_id, previous_name) values
 insert into lobby_admin (user_id, `group`) values (1,2);
 insert into user_group_assignment(user_id, group_id)  values (1, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'));
 insert into user_group_assignment(user_id, group_id)  values (2, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
+insert into user_group_assignment(user_id, group_id)  values (20, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
 
 insert into leaderboard (id, technical_name, name_key, description_key) values
   (1, "global", "leaderboard.global.name", "leaderboard.global.desc"),
