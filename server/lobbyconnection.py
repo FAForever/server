@@ -153,6 +153,7 @@ class LobbyConnection:
             await handler(message)
 
         except AuthenticationError as ex:
+            metrics.user_logins.labels("failure").inc()
             await self.send({
                 "command": "authentication_failed",
                 "text": ex.message
@@ -375,7 +376,6 @@ class LobbyConnection:
         auth_error_message = "Login not found or password incorrect. They are case sensitive."
         row = await result.fetchone()
         if not row:
-            metrics.user_logins.labels("failure").inc()
             raise AuthenticationError(auth_error_message)
 
         player_id = row[t_login.c.id]
@@ -387,7 +387,6 @@ class LobbyConnection:
         ban_expiry = row[lobby_ban.c.expires_at]
 
         if dbPassword != password:
-            metrics.user_logins.labels("failure").inc()
             raise AuthenticationError(auth_error_message)
 
         now = datetime.utcnow()
@@ -403,8 +402,6 @@ class LobbyConnection:
             raise ClientError(
                 'Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on <a href="{steamlink_url}">{steamlink_url}</a>.'.format(steamlink_url=config.WWW_URL + "/account/link"),
                 recoverable=False)
-
-        self._logger.debug("Login from: %s, %s, %s", player_id, username, self.session)
 
         return player_id, real_username, steamid
 
@@ -508,11 +505,41 @@ class LobbyConnection:
     async def command_hello(self, message):
         login = message["login"].strip()
         password = message["password"]
+        unique_id = message["unique_id"]
 
         async with self._db.acquire() as conn:
-            player_id, login, steamid = await self.check_user_login(conn, login, password)
-            metrics.user_logins.labels("success").inc()
+            player_id, username, steamid = await self.check_user_login(
+                conn, login, password
+            )
 
+        await self.on_player_login(
+            player_id, username, password, steamid, unique_id
+        )
+
+    async def on_player_login(
+        self,
+        player_id: int,
+        username: str,
+        password: str,
+        steamid: int,
+        unique_id: str
+    ):
+        conforms_policy = await self.check_policy_conformity(
+            player_id, unique_id, self.session,
+            ignore_result=(
+                steamid is not None or
+                self.player_service.is_uniqueid_exempt(player_id)
+            )
+        )
+        if not conforms_policy:
+            return
+
+        self._logger.debug(
+            "Login from: %s, %s, %s", player_id, username, self.session
+        )
+        metrics.user_logins.labels("success").inc()
+
+        async with self._db.acquire() as conn:
             await conn.execute(
                 t_login.update().where(
                     t_login.c.id == player_id
@@ -522,37 +549,10 @@ class LobbyConnection:
                     last_login=func.now()
                 )
             )
-
-            conforms_policy = await self.check_policy_conformity(
-                player_id, message["unique_id"], self.session,
-                ignore_result=(
-                    steamid is not None or
-                    self.player_service.is_uniqueid_exempt(player_id)
-                )
-            )
-            if not conforms_policy:
-                return
-
-            # Update the user's IRC registration (why the fuck is this here?!)
-            m = hashlib.md5()
-            m.update(password.encode())
-            passwordmd5 = m.hexdigest()
-            m = hashlib.md5()
-            # Since the password is hashed on the client, what we get at this point is really
-            # md5(md5(sha256(password))). This is entirely insane.
-            m.update(passwordmd5.encode())
-            irc_pass = "md5:" + str(m.hexdigest())
-
-            try:
-                await conn.execute(
-                    "UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s",
-                    (irc_pass, login)
-                )
-            except (pymysql.OperationalError, pymysql.ProgrammingError):
-                self._logger.error("Failure updating NickServ password for %s", login)
+            await self.update_irc_password(conn, username, password)
 
         self.player = Player(
-            login=str(login),
+            login=username,
             session=self.session,
             player_id=player_id,
             lobby_connection=self
@@ -588,7 +588,7 @@ class LobbyConnection:
 
             # For backwards compatibility for old clients. For now.
             "id": self.player.id,
-            "login": login
+            "login": username
         })
 
         # Tell player about everybody online. This must happen after "welcome".
@@ -644,6 +644,24 @@ class LobbyConnection:
         await self.send(json_to_send)
 
         await self.send_game_list()
+
+    async def update_irc_password(self, conn, login, password):
+        m = hashlib.md5()
+        m.update(password.encode())
+        passwordmd5 = m.hexdigest()
+        m = hashlib.md5()
+        # Since the password is hashed on the client, what we get at this point
+        # is really md5(md5(sha256(password))). This is entirely insane.
+        m.update(passwordmd5.encode())
+        irc_pass = "md5:" + str(m.hexdigest())
+
+        try:
+            await conn.execute(
+                "UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s",
+                (irc_pass, login)
+            )
+        except (pymysql.OperationalError, pymysql.ProgrammingError):
+            self._logger.error("Failure updating NickServ password for %s", login)
 
     async def command_restore_game_session(self, message):
         assert self.player is not None
