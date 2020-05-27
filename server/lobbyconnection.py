@@ -287,75 +287,42 @@ class LobbyConnection:
     async def command_admin(self, message):
         action = message['action']
 
-        if self.player.admin:
-            if action == "closeFA":
+        if action == "closeFA":
+            if await self.player_service.has_permission_role(
+                self.player, 'ADMIN_KICK_SERVER'
+            ):
                 player = self.player_service[message['user_id']]
                 if player:
-                    self._logger.warning('Administrative action: %s closed game for %s', self.player, player)
+                    self._logger.info(
+                        'Administrative action: %s closed game for %s',
+                        self.player, player
+                    )
                     with contextlib.suppress(DisconnectedError):
                         await player.send_message({
                             "command": "notice",
                             "style": "kill",
                         })
 
-            elif action == "closelobby":
+        elif action == "closelobby":
+            if await self.player_service.has_permission_role(
+                self.player, 'ADMIN_KICK_SERVER'
+            ):
                 player = self.player_service[message['user_id']]
-                ban_fail = None
-                if player:
-                    if 'ban' in message:
-                        reason = message['ban'].get('reason', 'Unspecified')
-                        duration = int(message['ban'].get('duration', 1))
-                        period = message['ban'].get('period', 'SECOND').upper()
+                if player and player.lobby_connection is not None:
+                    self._logger.info(
+                        'Administrative action: %s closed client for %s',
+                        self.player, player
+                    )
+                    with contextlib.suppress(DisconnectedError):
+                        await player.lobby_connection.kick()
 
-                        self._logger.warning('Administrative action: %s closed client for %s with %s ban (Reason: %s)', self.player, player, duration, reason)
-                        async with self._db.acquire() as conn:
-                            try:
-                                result = await conn.execute(
-                                    select([lobby_ban.c.reason]).where(
-                                        and_(
-                                            lobby_ban.c.idUser == message["user_id"],
-                                            lobby_ban.c.expires_at > func.now()
-                                        )
-                                    )
-                                )
-
-                                row = await result.fetchone()
-                                if row:
-                                    ban_fail = row[0]
-                                else:
-                                    if period not in ["SECOND", "DAY", "WEEK", "MONTH"]:
-                                        self._logger.warning('Tried to ban player with invalid period')
-                                        raise ClientError(f"Period '{period}' is not allowed!")
-
-                                    await conn.execute(
-                                        ban.insert().values(
-                                            player_id=player.id,
-                                            author_id=self.player.id,
-                                            reason=reason,
-                                            expires_at=func.date_add(
-                                                func.now(),
-                                                text(f"interval :duration {period}")
-                                            ),
-                                            level='GLOBAL'
-                                        ),
-                                        duration=duration
-                                    )
-
-                            except pymysql.MySQLError as e:
-                                raise ClientError('Your ban attempt upset the database: {}'.format(e))
-                    else:
-                        self._logger.warning('Administrative action: %s closed client for %s', self.player, player)
-                    if player.lobby_connection is not None:
-                        with contextlib.suppress(DisconnectedError):
-                            await player.lobby_connection.kick()
-                    if ban_fail:
-                        raise ClientError("Kicked the player, but he was already banned!")
-
-            elif action == "broadcast":
-                message_text = message.get('message')
-                if not message_text:
-                    return
-
+        elif action == "broadcast":
+            message_text = message.get('message')
+            if not message_text:
+                return
+            if await self.player_service.has_permission_role(
+                self.player, 'ADMIN_BROADCAST_MESSAGE'
+            ):
                 tasks = []
                 for player in self.player_service:
                     # Check if object still exists:
@@ -370,9 +337,10 @@ class LobbyConnection:
                     self.player.login, message_text
                 )
                 await gather_without_exceptions(tasks, Exception)
-
-        if self.player.mod:
-            if action == "join_channel":
+        elif action == "join_channel":
+            if await self.player_service.has_permission_role(
+                self.player, 'ADMIN_JOIN_CHANNEL'
+            ):
                 user_ids = message['user_ids']
                 channel = message['channel']
 
@@ -608,12 +576,10 @@ class LobbyConnection:
             except (pymysql.OperationalError, pymysql.ProgrammingError):
                 self._logger.error("Failure updating NickServ password for %s", login)
 
-        permission_group = self.player_service.get_permission_group(player_id)
         self.player = Player(
             login=str(login),
             session=self.session,
             player_id=player_id,
-            permission_group=permission_group,
             lobby_connection=self
         )
 
@@ -682,13 +648,20 @@ class LobbyConnection:
         self.player.foes = set(foes)
 
         channels = []
-        if self.player.mod:
+        if self.player.is_moderator():
             channels.append("#moderators")
 
         if self.player.clan is not None:
-            channels.append("#%s_clan" % self.player.clan)
+            channels.append(f"#{self.player.clan}_clan")
 
-        json_to_send = {"command": "social", "autojoin": channels, "channels": channels, "friends": friends, "foes": foes, "power": permission_group}
+        json_to_send = {
+            "command": "social",
+            "autojoin": channels,
+            "channels": channels,
+            "friends": friends,
+            "foes": foes,
+            "power": self.player.power()
+        }
         await self.send(json_to_send)
 
         await self.send_game_list()
