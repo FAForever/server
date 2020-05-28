@@ -23,7 +23,6 @@ before_install:
 
 install:
   - pipenv sync --dev
-  - cp faf-server.example.pem faf-server.pem
   - docker build --build-arg TRAVIS_TAG -t faf-python-server .
 
 script:
