@@ -1,6 +1,5 @@
 import asyncio
 import contextlib
-import hashlib
 import json
 import os
 import random
@@ -9,6 +8,7 @@ import urllib.request
 from base64 import b64encode
 from datetime import datetime
 from functools import wraps
+from hashlib import md5
 from typing import Optional
 
 import aiohttp
@@ -678,14 +678,10 @@ class LobbyConnection:
         await self.send_game_list()
 
     async def update_irc_password(self, conn, login, password):
-        m = hashlib.md5()
-        m.update(password.encode())
-        passwordmd5 = m.hexdigest()
-        m = hashlib.md5()
+        passwordmd5 = md5(password.encode()).hexdigest()
         # Since the password is hashed on the client, what we get at this point
         # is really md5(md5(sha256(password))). This is entirely insane.
-        m.update(passwordmd5.encode())
-        irc_pass = "md5:" + str(m.hexdigest())
+        irc_pass = "md5:" + md5(passwordmd5.encode()).hexdigest()
 
         try:
             await conn.execute(
