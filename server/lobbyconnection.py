@@ -9,7 +9,7 @@ import os
 import random
 import urllib.parse
 import urllib.request
-from base64 import b64encode
+from binascii import hexlify
 from datetime import datetime
 from functools import wraps
 from hashlib import md5
@@ -525,7 +525,7 @@ class LobbyConnection:
         except (InvalidTokenError, KeyError):
             raise AuthenticationError("Token signature was invalid")
 
-        new_irc_password = b64encode(os.urandom(30)).decode()
+        new_irc_password = hexlify(os.urandom(16)).decode()
         await self.send({
             "command": "irc_password",
             "password": new_irc_password
