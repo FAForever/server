@@ -8,17 +8,25 @@ pytestmark = pytest.mark.asyncio
 
 async def simulate_game(host, *guests, results=[]):
     all_clients = [host] + list(guests)
+    await simulate_game_launch(host, *guests)
+
+    await simulate_result_reports(host, *guests, results=results)
+
+    # Report GameEnded
+    for client in all_clients:
+        await client.send_gpg_command("GameState", "Ended")
+
+
+async def simulate_game_launch(host, *guests):
+    all_clients = [host] + list(guests)
     game_id = await host.host_game()
     await host.configure_joining_player(host.player_id, 1)
     for guest in guests:
         await guest.join_game(game_id)
         await host.configure_joining_player(guest.player_id, 2)
 
-    await host.send_message({
-        "target": "game",
-        "command": "GameState",
-        "args": ["Launching"]
-    })
+    await host.send_gpg_command("GameState", "Launching")
+
     for client in all_clients:
         await client.read_until(
             lambda msg: (
@@ -28,26 +36,15 @@ async def simulate_game(host, *guests, results=[]):
             )
         )
 
-    await host.send_message({
-        "target": "game",
-        "command": "EnforceRating"
-    })
+
+async def simulate_result_reports(host, *guests, results=[]):
+    all_clients = [host] + list(guests)
+
+    await host.send_gpg_command("EnforceRating")
 
     for result in results:
         for client in all_clients:
-            await client.send_message({
-                "target": "game",
-                "command": "GameResult",
-                "args": result
-            })
-
-    # Report GameEnded
-    for client in all_clients:
-        await client.send_message({
-            "target": "game",
-            "command": "GameEnded",
-            "args": []
-        })
+            await client.send_gpg_command("GameResult", *result)
 
 
 async def test_custom_game_1v1(test_client):
@@ -69,11 +66,7 @@ async def test_custom_game_1v1(test_client):
 
     # Now disconnect both players
     for client in (client1, client2):
-        await client.send_message({
-            "target": "game",
-            "command": "GameState",
-            "args": ["Ended"]
-        })
+        await client.send_gpg_command("GameState", "Ended")
 
     assert ratings["test"][0] < new_ratings["test"][0]
     assert ratings["test2"][0] > new_ratings["test2"][0]
@@ -94,11 +87,7 @@ async def test_custom_game_1v1_bad_result(test_client):
 
     # Now disconnect both players
     for client in (client1, client2):
-        await client.send_message({
-            "target": "game",
-            "command": "GameState",
-            "args": ["Ended"]
-        })
+        await client.send_gpg_command("GameState", "Ended")
 
     # Check that the ratings were NOT updated
     with pytest.raises(asyncio.TimeoutError):
