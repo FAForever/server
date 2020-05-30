@@ -124,3 +124,35 @@ async def test_custom_game_1v1_game_stats(test_client, json_stats_1v1):
 
     await client1.read_until_command("updated_achievements", timeout=10)
     await client2.read_until_command("updated_achievements", timeout=2)
+
+
+async def test_custom_game_1v1_extra_gameresults(test_client):
+    """Clients can send bad game results when a player leaves the game early"""
+    client1, _ = await test_client("test")
+    client2, _ = await test_client("test2")
+
+    await client1.read_until_command("game_info")
+    await client2.read_until_command("game_info")
+    ratings = await client1.get_player_ratings("test", "test2")
+
+    await simulate_game_launch(client1, client2)
+
+    # Just for testing purposes
+    await client1.send_gpg_command("EnforceRating")
+
+    # One player leaves prematurely
+    await client1.send_gpg_command("GameState", "Ended")
+    await client1.send_gpg_command("GameResult", 2, "defeat -10")
+
+    await client2.send_gpg_command("GameResult", 1, "defeat -10")
+    await client2.send_gpg_command("GameResult", 2, "victory 10")
+    await client2.send_gpg_command("GameEnded")
+
+    # Check that the ratings were updated
+    new_ratings = await client1.get_player_ratings("test", "test2")
+
+    # Now disconnect the other player
+    await client2.send_gpg_command("GameState", "Ended")
+
+    assert ratings["test"][0] > new_ratings["test"][0]
+    assert ratings["test2"][0] < new_ratings["test2"][0]
