@@ -38,7 +38,7 @@ def pytest_addoption(parser):
     parser.addoption('--mysql_username', action='store', default=config.DB_LOGIN, help='mysql username to use for test database')
     parser.addoption('--mysql_password', action='store', default=config.DB_PASSWORD, help='mysql password to use for test database')
     parser.addoption('--mysql_database', action='store', default='faf_test', help='mysql database to use for tests')
-    parser.addoption('--mysql_port',     action='store', default=int(config.DB_PORT), help='mysql port to use for tests')
+    parser.addoption('--mysql_port', action='store', default=int(config.DB_PORT), help='mysql port to use for tests')
 
 
 def pytest_configure(config):
@@ -48,6 +48,9 @@ def pytest_configure(config):
     config.addinivalue_line(
         "filterwarnings", "ignore:Function 'semver.compare':DeprecationWarning"
     )
+
+    # make flake8 less verbose
+    logging.getLogger("flake8").setLevel(logging.WARNING)
 
 
 @pytest.fixture(scope='session', autouse=True)
