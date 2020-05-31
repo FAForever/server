@@ -43,7 +43,7 @@ variable to docker:
     docker run --link faf-db:db -p 8001:8001 -p 30351:30351 -e CONFIGURATION_FILE=<path> faf-server
 
 You can find an example configuration file under
-[tests/data/test_config.yaml](https://github.com/FAForever/server/blob/develop/tests/data/test_config.yaml).
+[tests/data/test_conf.yaml](https://github.com/FAForever/server/blob/develop/tests/data/test_conf.yaml).
 
 # Contributing
 
