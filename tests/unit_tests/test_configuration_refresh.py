@@ -2,7 +2,6 @@ import asyncio
 from unittest import mock
 
 import pytest
-import yaml
 from asynctest import CoroutineMock
 
 from server import config
@@ -55,17 +54,6 @@ async def test_config_refresh_empty_file(monkeypatch):
 
 
 @fast_forward(20)
-async def test_configuration_refresh(config_service, monkeypatch):
-    assert config.DB_PASSWORD == "banana"
-    monkeypatch.setenv("CONFIGURATION_FILE", "tests/data/refresh_conf.yaml")
-    assert config.DB_PASSWORD == "banana"
-
-    await asyncio.sleep(3)
-
-    assert config.DB_PASSWORD == "apple"
-
-
-@fast_forward(20)
 async def test_config_callback_on_change(config_service, monkeypatch):
     callback = mock.Mock()
     callback_coroutine = CoroutineMock()
@@ -93,3 +81,9 @@ async def test_config_no_callback_without_change(config_service, monkeypatch):
 
     assert config.DB_PASSWORD == "banana"
     callback.assert_not_called()
+
+
+async def test_config_api_key_value(config_service):
+    config.refresh()
+
+    assert config._api_jwt_public_key_value == "This is a sample file\n"

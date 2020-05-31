@@ -88,13 +88,13 @@ def api_priv_key():
 
 @pytest.fixture
 def api_pub_key():
-    config._API_JWT_PUBLIC_KEY_VALUE = textwrap.dedent("""
+    config._api_jwt_public_key_value = textwrap.dedent("""
     -----BEGIN PUBLIC KEY-----
     MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBANcXbVA8c7jMb8LVSQTp7G/YAiEPi2be
     8k9XTqcis6QHLCw6ELh0r8bOOkeRSUGLXja91NzJmh2Jvx/bwLhd1G0CAwEAAQ==
     -----END PUBLIC KEY-----
     """)
-    return config._API_JWT_PUBLIC_KEY_VALUE
+    return config._api_jwt_public_key_value
 
 
 @pytest.fixture
