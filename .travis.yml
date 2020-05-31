@@ -11,31 +11,38 @@ dist: bionic
 services:
   - docker
 
-before_install:
-  - sudo /etc/init.d/mysql stop
-  - git clone https://github.com/FAForever/faf-stack.git faf-stack
-      && pushd faf-stack
-      && git checkout v20.5.9.3
-      && export $(egrep -v '^#' .env.template | xargs)
-      && cp -r config.template config
-      && ./scripts/init-db.sh
-      && popd
-  - docker exec -i faf-db mysql -uroot -pbanana faf -e "select * from login;"
-  - python -m pip install pipenv
+jobs:
+  include:
+    - name: flake8
+      install: pip install flake8
+      script: flake8 .
 
-install:
-  - pipenv sync --dev
-  - docker build --build-arg TRAVIS_TAG -t faf-python-server .
+    - name: tests
+      before_install:
+        - sudo /etc/init.d/mysql stop
+        - git clone https://github.com/FAForever/faf-stack.git faf-stack
+            && pushd faf-stack
+            && git checkout v20.5.9.3
+            && export $(egrep -v '^#' .env.template | xargs)
+            && cp -r config.template config
+            && ./scripts/init-db.sh
+            && popd
+        - docker exec -i faf-db mysql -uroot -pbanana faf -e "select * from login;"
+        - python -m pip install pipenv
 
-script:
-  - scripts/run_tests_with_coverage.sh
-  - sed -i.bak s#/code/#$(pwd)/#g .coverage
-  - coveralls
+      install:
+        - pipenv sync --dev
+        - docker build --build-arg TRAVIS_TAG -t faf-python-server .
 
-after_success:
-  - export REPO=faforever/faf-python-server
-  - if [ -n "${TRAVIS_TAG}" ]; then
-      docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}";
-      docker tag faf-python-server ${REPO}:${TRAVIS_TAG};
-      docker push ${REPO};
-    fi
+      script:
+        - scripts/run_tests_with_coverage.sh
+        - sed -i.bak s#/code/#$(pwd)/#g .coverage
+        - coveralls
+
+      after_success:
+        - export REPO=faforever/faf-python-server
+        - if [ -n "${TRAVIS_TAG}" ]; then
+            docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}";
+            docker tag faf-python-server ${REPO}:${TRAVIS_TAG};
+            docker push ${REPO};
+          fi
