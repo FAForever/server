@@ -313,3 +313,92 @@ async def test_ladder_game_not_joinable(lobby_server):
         "style": "error",
         "text": "The game cannot be joined in this way."
     }
+
+
+@fast_forward(30)
+async def test_gamestate_ended_clears_references(
+    lobby_server,
+    game_service,
+    player_service
+):
+    test_id, _, test_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    rhiza_id, _, rhiza_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(test_proto, "game_info")
+    await read_until_command(rhiza_proto, "game_info")
+
+    # Set up the game
+    game_id = await host_game(test_proto)
+    await join_game(rhiza_proto, game_id)
+    # Set player options
+    await send_player_options(
+        test_proto,
+        [test_id, "Army", 1],
+        [test_id, "Team", 1],
+        [test_id, "StartSpot", 1],
+        [test_id, "Faction", 1],
+        [test_id, "Color", 1],
+        [rhiza_id, "Army", 2],
+        [rhiza_id, "Team", 1],
+        [rhiza_id, "StartSpot", 2],
+        [rhiza_id, "Faction", 1],
+        [rhiza_id, "Color", 1],
+    )
+
+    # Launch game
+    await test_proto.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Launching"]
+    })
+
+    game = game_service[game_id]
+
+    assert len(game.connections) == 2
+
+    test = player_service[test_id]
+    rhiza = player_service[rhiza_id]
+
+    # Player leaves and sends results after
+    await rhiza_proto.send_message({
+        "command": "GameState",
+        "target": "game",
+        "args": ["Ended"]
+    })
+    await rhiza_proto.send_message({
+        "command": "GameResult",
+        "target": "game",
+        "args": [1, "victory 10"]
+    })
+    await asyncio.sleep(0.1)
+    assert rhiza.game_connection is None
+    assert len(game.connections) == 1
+    assert len(game._results) == 0
+
+    # Player sends results first and then leaves
+    await test_proto.send_message({
+        "command": "GameResult",
+        "target": "game",
+        "args": [2, "victory 10"]
+    })
+    await test_proto.send_message({
+        "command": "GameState",
+        "target": "game",
+        "args": ["Ended"]
+    })
+
+    await read_until(
+        test_proto,
+        lambda msg: msg["command"] == "game_info" and msg["state"] == "closed"
+    )
+    assert test.game_connection is None
+    assert len(game.connections) == 0
+    assert len(game._results) == 1
+
+    assert game_id not in game_service
+
+    assert test.lobby_connection.game_connection is None
+    assert rhiza.lobby_connection.game_connection is None

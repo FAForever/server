@@ -572,6 +572,8 @@ class GameConnection(GpgNetServerProtocol):
             await self.game.remove_game_connection(self)
             self._mark_dirty()
             self.player.state = PlayerState.IDLE
+            if self.player.lobby_connection:
+                self.player.lobby_connection.game_connection = None
             del self.player.game
             del self.player.game_connection
         except Exception as ex:  # pragma: no cover

@@ -153,3 +153,10 @@ class FAFClient(object):
                 for player_info in msg["players"]
             })
         return ratings
+
+    async def send_gpg_command(self, command, *args):
+        await self.send_message({
+            "target": "game",
+            "command": command,
+            "args": args
+        })
