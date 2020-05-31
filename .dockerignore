@@ -1,1 +1,12 @@
 faf-stack*
+
+# Hidden files
+.*
+
+# Development files
+*tests
+scripts
+dev-config.yml
+__pycache__
+*.mmdb
+*.bak
