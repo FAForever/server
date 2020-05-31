@@ -515,7 +515,7 @@ class LobbyConnection:
         return response.get("result", "") == "honest"
 
     async def command_auth(self, message):
-        pub_key = config._API_JWT_PUBLIC_KEY_VALUE
+        pub_key = config._api_jwt_public_key_value
         token = message["token"]
         unique_id = message["unique_id"]
 
