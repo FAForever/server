@@ -7,14 +7,14 @@ RUN apt-get install -y --no-install-recommends \
     apt-get clean
 RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-COPY Pipfile Pipfile
+WORKDIR /code/
 COPY Pipfile.lock Pipfile.lock
+COPY Pipfile Pipfile
 
 RUN python3 -m pip install pipenv
 RUN pipenv install --ignore-pipfile --system --deploy
 
 ADD . /code/
-WORKDIR /code/
 
 ARG TRAVIS_TAG
 ENV VERSION=$TRAVIS_TAG

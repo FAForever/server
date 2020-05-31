@@ -1,7 +1,6 @@
 # Project Files
 passwords.py
 faf-server.pem
-/test-data.sql
 GeoLite2-Country.mmdb
 
 # Generated files
