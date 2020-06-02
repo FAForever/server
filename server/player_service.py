@@ -113,7 +113,7 @@ class PlayerService(Service):
         rows = await result.fetchall()
 
         retrieved_ratings = {
-            RatingType[row["technical_name"].upper()]: (
+            row["technical_name"]: (
                 (row["mean"], row["deviation"]), row["total_games"]
             )
             for row in rows
