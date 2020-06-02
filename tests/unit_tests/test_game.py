@@ -885,7 +885,7 @@ async def test_game_results_commander_kills(
     game: Game, game_add_players
 ):
     game.state = GameState.LOBBY
-    players = game_add_players(game, 2)
+    game_add_players(game, 2)
 
     await game.launch()
     await game.add_result(0, 1, "defeat", 0)

@@ -14,6 +14,10 @@ from .decorators import with_logger
 @with_logger
 class MessageQueueService(Service):
     def __init__(self) -> None:
+        """
+        Service handling connection to the message queue
+        and providing an interface to publish messages.
+        """
         self._logger.info("Message queue service created.")
         self._connection = None
         self._channel = None

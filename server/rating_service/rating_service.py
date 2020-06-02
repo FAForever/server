@@ -15,7 +15,6 @@ from server.db.models import (
 )
 from server.decorators import with_logger
 from server.games.game_results import GameOutcome
-from server.games.typedefs import EndedGameInfo
 from server.metrics import rating_service_backlog
 from server.player_service import PlayerService
 from server.rating import RatingType

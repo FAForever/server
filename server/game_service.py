@@ -12,7 +12,7 @@ from server.games.typedefs import EndedGameInfo, ValidityState
 from server.matchmaker import MatchmakerQueue
 from server.message_queue_service import MessageQueueService
 from server.players import Player
-from server.rating_service import GameRatingSummary, RatingService
+from server.rating_service import RatingService
 
 
 @with_logger
