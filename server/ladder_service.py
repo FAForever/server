@@ -6,7 +6,7 @@ from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
 
 import aiocron
-from sqlalchemy import and_, func, select, text
+from sqlalchemy import and_, func, select, text, true
 
 from .abc.base_game import InitMode
 from .async_functions import gather_without_exceptions
@@ -55,13 +55,6 @@ class LadderService(Service):
                 featured_mod="ladder1v1",
                 rating_type=RatingType.LADDER_1V1,
                 map_pools=[(self.ladder_1v1_map_pool, None, None)]
-            ),
-            'tmm2v2': MatchmakerQueue(
-                game_service=game_service,
-                name="tmm2v2",
-                featured_mod="faf",
-                rating_type=RatingType.GLOBAL,  # TODO: Changeme
-                team_size=2,
             )
         }
 
@@ -100,6 +93,7 @@ class LadderService(Service):
                     name=name,
                     featured_mod=info["mod"],
                     rating_type=info["rating_type"],
+                    team_size=info["team_size"],
                     game_service=self.game_service
                 )
                 self.queues[name] = queue
@@ -109,6 +103,7 @@ class LadderService(Service):
                 queue = self.queues[name]
                 queue.featured_mod = info["mod"]
                 queue.rating_type = info["rating_type"]
+                queue.team_size = info["team_size"]
             queue.map_pools.clear()
             for map_pool_id, min_rating, max_rating in info["map_pools"]:
                 map_pool_name, map_list = map_pool_maps[map_pool_id]
@@ -126,7 +121,7 @@ class LadderService(Service):
                 )
         # Remove queues that don't exist anymore
         for queue_name in list(self.queues.keys()):
-            if queue_name in ("ladder1v1", "tmm2v2"):
+            if queue_name == "ladder1v1":
                 # TODO: Remove me. Legacy queue fallback
                 continue
             if queue_name not in db_queues:
@@ -165,6 +160,7 @@ class LadderService(Service):
         result = await conn.execute(
             select([
                 matchmaker_queue.c.technical_name,
+                matchmaker_queue.c.team_size,
                 matchmaker_queue_map_pool.c.map_pool_id,
                 matchmaker_queue_map_pool.c.min_rating,
                 matchmaker_queue_map_pool.c.max_rating,
@@ -176,7 +172,7 @@ class LadderService(Service):
                 .join(matchmaker_queue_map_pool)
                 .join(game_featuredMods)
                 .join(leaderboard)
-            )
+            ).where(matchmaker_queue.c.enabled == true())
         )
         matchmaker_queues = defaultdict(lambda: defaultdict(list))
         async for row in result:
@@ -184,6 +180,7 @@ class LadderService(Service):
             info = matchmaker_queues[name]
             info["mod"] = row.gamemod
             info["rating_type"] = row.rating_type
+            info["team_size"] = row.team_size
             info["map_pools"].append((
                 row.map_pool_id,
                 row.min_rating,
