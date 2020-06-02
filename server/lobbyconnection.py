@@ -13,7 +13,7 @@ import aiohttp
 import humanize
 import pymysql
 import semver
-from sqlalchemy import and_, func, select, text
+from sqlalchemy import and_, func, select
 
 import server.metrics as metrics
 from server.db import FAFDatabase
@@ -33,11 +33,9 @@ from .geoip_service import GeoIpService
 from .ice_servers.coturn import CoturnHMAC
 from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
-from .matchmaker import Search
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, QDataStreamProtocol
-from .rating import RatingType
 from .types import Address, GameLaunchOptions
 
 PONG_MSG = QDataStreamProtocol.pack_message("PONG")

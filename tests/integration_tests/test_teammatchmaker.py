@@ -172,3 +172,73 @@ async def test_game_ratings(lobby_server):
     )
     for _, rating in new_ratings.items():
         assert rating != (1500, 500)
+
+
+@fast_forward(60)
+async def test_game_ratings_initialized_based_on_global(lobby_server):
+    _, _, proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+
+    msg = await read_until_command(proto, "player_info")
+    assert msg == {
+        "command": "player_info",
+        "players": [
+            {
+                "id": 1,
+                "login": "test",
+                "clan": "678",
+                "country": "",
+                "ratings": {
+                    "global": {
+                        "rating": [2000.0, 125.0],
+                        "number_of_games": 5
+                    },
+                    "ladder_1v1": {
+                        "rating": [2000.0, 125.0],
+                        "number_of_games": 5
+                    }
+                },
+                "global_rating": [2000.0, 125.0],
+                "ladder_rating": [2000.0, 125.0],
+                "number_of_games": 5,
+            }
+        ]
+    }
+
+    await proto.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef",
+        "mod": "tmm2v2"
+    })
+
+    msg = await read_until_command(proto, "player_info")
+    assert msg == {
+        "command": "player_info",
+        "players": [
+            {
+                "id": 1,
+                "login": "test",
+                "clan": "678",
+                "country": "",
+                "ratings": {
+                    "global": {
+                        "rating": [2000.0, 125.0],
+                        "number_of_games": 5
+                    },
+                    "ladder_1v1": {
+                        "rating": [2000.0, 125.0],
+                        "number_of_games": 5
+                    },
+                    "tmm_2v2": {
+                        "rating": [2000.0, 250.0],
+                        "number_of_games": 0
+                    }
+                },
+                "global_rating": [2000.0, 125.0],
+                "ladder_rating": [2000.0, 125.0],
+                "number_of_games": 5,
+            }
+        ]
+    }

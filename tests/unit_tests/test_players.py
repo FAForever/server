@@ -16,10 +16,12 @@ def test_ratings():
     assert p.ratings[RatingType.GLOBAL] == (1500, 20)
     p.ratings[RatingType.GLOBAL] = Rating(1700, 20)
     assert p.ratings[RatingType.GLOBAL] == (1700, 20)
+    assert p.ratings["tmm_2v2"] == (1700, 170)
     p.ratings[RatingType.LADDER_1V1] = (1200, 20)
     assert p.ratings[RatingType.LADDER_1V1] == (1200, 20)
     p.ratings[RatingType.LADDER_1V1] = Rating(1200, 20)
     assert p.ratings[RatingType.LADDER_1V1] == (1200, 20)
+    assert p.ratings["Something completely different"] == (1500, 500)
 
 
 def test_faction():
