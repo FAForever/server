@@ -213,7 +213,10 @@ async def test_game_ratings_initialized_based_on_global(lobby_server):
         "mod": "tmm2v2"
     })
 
-    msg = await read_until_command(proto, "player_info")
+    msg = await read_until(proto, lambda msg: (
+        msg["command"] == "player_info" and
+        "tmm_2v2" in msg["players"][0]["ratings"]
+    ))
     assert msg == {
         "command": "player_info",
         "players": [
