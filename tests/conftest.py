@@ -8,6 +8,7 @@ these should be put in the ``conftest.py'' relative to it.
 
 import asyncio
 import logging
+import subprocess
 from typing import Iterable
 from unittest import mock
 
@@ -229,8 +230,14 @@ async def rating_service(database, player_service):
 
     await service.shutdown()
 
+@pytest.fixture(scope="session")
+def ensure_rabbitmq_is_running():
+    subprocess.call(".ci/init-rabbitmq.sh")
+    yield
+    subprocess.call(".ci/teardown-rabbitmq.sh")
+
 @pytest.fixture
-async def message_queue_service():
+async def message_queue_service(ensure_rabbitmq_is_running):
     service = MessageQueueService()
     await service.initialize()
 

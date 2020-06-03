@@ -44,7 +44,7 @@ class Consumer:
 
 
 @pytest.fixture
-async def mq_service():
+async def mq_service(ensure_rabbitmq_is_running):
     service = MessageQueueService()
     await service.initialize()
 
@@ -56,7 +56,7 @@ async def mq_service():
 
 
 @pytest.fixture
-async def consumer():
+async def consumer(ensure_rabbitmq_is_running):
     consumer = Consumer()
     await consumer.initialize()
 
@@ -65,7 +65,7 @@ async def consumer():
     await consumer.shutdown()
 
 
-async def test_initialize():
+async def test_initialize(ensure_rabbitmq_is_running):
     service = MessageQueueService()
     await service.initialize()
     await service.shutdown()
@@ -80,7 +80,7 @@ async def test_publish(mq_service):
     await mq_service.publish(exchange_name, routing_key, payload, delivery_mode)
 
 
-async def test_publish_wrong_exchange(mq_service):
+async def test_publish_wrong_exchange(mq_service, ensure_rabbitmq_is_running):
     bad_exchange = "nonexistent_exchange"
     with pytest.raises(KeyError):
         await mq_service.publish(bad_exchange, "", {})
@@ -99,7 +99,7 @@ async def test_consumer_receives(mq_service, consumer):
     assert consumer.callback_count() == 1
 
 
-async def test_incorrect_credentials(mocker):
+async def test_incorrect_credentials(mocker, ensure_rabbitmq_is_running):
     mocker.patch("server.message_queue_service.config.MQ_PASSWORD", "bad_password")
     service = MessageQueueService()
     service._logger = mock.Mock()
@@ -120,7 +120,7 @@ async def test_incorrect_credentials(mocker):
     await service.shutdown()
 
 
-async def test_incorrect_username(mocker):
+async def test_incorrect_username(mocker, ensure_rabbitmq_is_running):
     mocker.patch("server.message_queue_service.config.MQ_USER", "bad_user")
     service = MessageQueueService()
     service._logger = mock.Mock()
@@ -129,7 +129,7 @@ async def test_incorrect_username(mocker):
     service._logger.warning.assert_called()
 
 
-async def test_incorrect_port(mocker):
+async def test_incorrect_port(mocker, ensure_rabbitmq_is_running):
     mocker.patch("server.message_queue_service.config.MQ_PORT", 1)
     service = MessageQueueService()
     service._logger = mock.Mock()
@@ -138,7 +138,7 @@ async def test_incorrect_port(mocker):
     service._logger.warning.assert_called()
 
 
-async def test_incorrect_vhost(mocker):
+async def test_incorrect_vhost(mocker, ensure_rabbitmq_is_running):
     mocker.patch("server.message_queue_service.config.MQ_VHOST", "bad_vhost")
     service = MessageQueueService()
     service._logger = mock.Mock()
@@ -147,7 +147,7 @@ async def test_incorrect_vhost(mocker):
     service._logger.warning.assert_called()
 
 
-async def test_reconnect(mq_service):
+async def test_reconnect(mq_service, ensure_rabbitmq_is_running):
     await mq_service.declare_exchange("test_topic", aio_pika.ExchangeType.TOPIC)
     await mq_service.declare_exchange("test_direct", aio_pika.ExchangeType.DIRECT)
 

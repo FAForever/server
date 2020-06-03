@@ -22,7 +22,6 @@ before_install:
       && ./ci/bootstrap.sh
       && popd
   - docker exec -i faf-db mysql -uroot -pbanana faf -e "select * from login;"
-  - .ci/init-rabbitmq.sh
   - python -m pip install pipenv
 
 install:
