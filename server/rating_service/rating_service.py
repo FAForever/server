@@ -162,10 +162,9 @@ class RatingService(Service):
                         conn, player_id, rating_type
                     )
                 except ValueError:
-                    new_rating = await self._create_default_rating(
+                    return await self._create_default_rating(
                         conn, player_id, rating_type
                     )
-                    return new_rating
 
         return Rating(row["mean"], row["deviation"])
 
@@ -189,10 +188,9 @@ class RatingService(Service):
         row = await result.fetchone()
 
         if not row:
-            new_rating = await self._create_default_rating(
+            return await self._create_default_rating(
                 conn, player_id, rating_type
             )
-            return new_rating
 
         if rating_type == RatingType.GLOBAL:
             won_games = int(row["numGames"] / 2)

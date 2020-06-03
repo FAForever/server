@@ -271,13 +271,15 @@ class _MatchingGraph:
 
 
 def avg_mean(search: Search) -> float:
-    """ Get the average of all trueskill means for a search counting means with
-    high deviation as 0. """
+    """
+    Get the average of all trueskill means for a search counting means with
+    high deviation as 0.
+    """
     return stats.mean(mean if dev < 250 else 0 for mean, dev in search.ratings)
 
 
-def rotate(l: List[T], amount: int) -> List[T]:
-    return l[amount:] + l[:amount]
+def rotate(list_: List[T], amount: int) -> List[T]:
+    return list_[amount:] + list_[:amount]
 
 
 def make_teams_from_single(
@@ -289,9 +291,16 @@ def make_teams_from_single(
     parties).
 
     Tries to put players of similar skill on the same team as long as there are
-    enough such players to form at least 2 teams. If there are not enough enough
+    enough such players to form at least 2 teams. If there are not enough
     similar players for two teams, then distributes similarly rated players
     accross different teams.
+
+    # Algorithm
+    1. Group players into "buckets" by rating. This is a sort of heuristic for
+        determining which players have similar rating.
+    2. Create as many games as possible within each bucket.
+    3. Create games from remaining players by balancing teams with players from
+        different buckets.
     """
     assert all(len(s.players) == 1 for s in searches)
 
@@ -331,6 +340,15 @@ def make_teams_from_single(
 
 
 def _make_buckets(searches: List[Search]) -> Buckets:
+    """
+    Group players together by similar rating.
+
+    # Algorithm
+    1. Choose a random player as the "pivot".
+    2. Find all players with rating within 100 pts of this player and place
+        them in a bucket.
+    3. Repeat with remaining players.
+    """
     remaining = list(map(lambda s: (s, avg_mean(s)), searches))
     buckets: Buckets = {}
 
@@ -387,9 +405,12 @@ def make_teams(
     searches: List[Search],
     size: int
 ) -> Tuple[List[Search], List[Search]]:
-    """ Tries to group as many searches together into teams of the given size as
+    """
+    Tries to group as many searches together into teams of the given size as
     possible. Returns the new grouped searches, and the remaining searches that
     were not succesfully grouped.
+
+    Does not try to balance teams so it should be used only as a last resort.
     """
 
     searches_by_size = _make_searches_by_size(searches)
@@ -407,7 +428,9 @@ def make_teams(
 
 
 def _make_searches_by_size(searches: List[Search]) -> Dict[int, Set[Search]]:
-    """ Creates a lookup table indexed by number of players in the search """
+    """
+    Creates a lookup table indexed by number of players in the search.
+    """
 
     searches_by_size: Dict[int, Set[Search]] = OrderedDict()
 
@@ -422,10 +445,14 @@ def _make_searches_by_size(searches: List[Search]) -> Dict[int, Set[Search]]:
 
 
 def _make_team_for_search(
-    search: Search, searches_by_size: Dict[int, Set[Search]], size
+    search: Search,
+    searches_by_size: Dict[int, Set[Search]],
+    size: int
 ) -> Optional[Search]:
-    """ Match this search with other searches to create a new team of `size`
-    members. """
+    """
+    Match this search with other searches to create a new team of `size`
+    members.
+    """
 
     num_players = len(search.players)
     if search not in searches_by_size[num_players]:
@@ -455,10 +482,13 @@ def _make_team_for_search(
 
 
 def _uncombine(
-    search: Search, searches_by_size: Dict[int, Set[Search]]
-):
-    """ Adds all of the searches in search back to their respective spots in
-    `searches_by_size`. """
+    search: Search,
+    searches_by_size: Dict[int, Set[Search]]
+) -> None:
+    """
+    Adds all of the searches in search back to their respective spots in
+    `searches_by_size`.
+    """
 
     if not isinstance(search, CombinedSearch):
         searches_by_size[len(search.players)].add(search)
