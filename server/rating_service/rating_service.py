@@ -6,28 +6,22 @@ from server.config import config
 from server.core import Service
 from server.db import FAFDatabase
 from server.db.models import (
-    game_player_stats,
-    global_rating,
-    ladder1v1_rating,
-    leaderboard,
-    leaderboard_rating,
-    leaderboard_rating_journal,
+    game_featuredMods, game_player_stats, game_stats, global_rating,
+    ladder1v1_rating, leaderboard, leaderboard_rating,
+    leaderboard_rating_journal
 )
 from server.decorators import with_logger
 from server.games.game_results import GameOutcome
 from server.metrics import rating_service_backlog
 from server.player_service import PlayerService
 from server.rating import RatingType
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, false, func, select, text
 from trueskill import Rating
 
 from .game_rater import GameRater, GameRatingError
 from .typedefs import (
-    GameRatingData,
-    GameRatingSummary,
-    PlayerID,
-    ServiceNotReadyError,
-    TeamRatingData,
+    GameRatingData, GameRatingSummary, PlayerID, ServiceNotReadyError,
+    TeamRatingData
 )
 
 
@@ -193,7 +187,9 @@ class RatingService(Service):
             if rating_type is RatingType.GLOBAL:
                 won_games = int(row["numGames"] / 2)
             else:
-                won_games = row["winGames"]
+                won_games = await self._get_ladder_rating_won_games(
+                    conn, player_id
+                )
 
             insertion_sql = leaderboard_rating.insert().values(
                 login_id=player_id,
@@ -225,6 +221,53 @@ class RatingService(Service):
         await conn.execute(insertion_sql)
 
         return Rating(default_mean, default_deviation)
+
+    async def _get_ladder_rating_won_games(self, conn, player_id: int):
+        # Get all games with "ladder1v1" featured mod
+        result = await conn.execute(
+            select([func.count()])
+            .select_from(
+                game_stats.join(game_player_stats).join(game_featuredMods)
+            )
+            .where(game_featuredMods.c.gamemod == "ladder1v1")
+            .where(game_player_stats.c.playerId == player_id)
+            .where(game_player_stats.c.score == 1)
+        )
+        row = await result.fetchone()
+        ladder_1v1_wins = row[0] if row else 0
+
+        # Get all ladder games played before the featured mod was added
+        result = await conn.execute(
+            select([func.count()])
+            .select_from(
+                game_stats.join(game_player_stats).join(game_featuredMods)
+            )
+            .where(game_player_stats.c.playerId == player_id)
+            .where(game_featuredMods.c.gamemod == "faf")
+            .where(game_player_stats.c.score == 1)
+            .where(game_stats.c.startTime < '2014-03-22 12:59:25')
+            .where(game_stats.c.gameName.collate("utf8mb4_bin").like("% Vs %"))
+            .where(
+                select([func.count()])
+                .select_from(game_player_stats)
+                .where(game_player_stats.c.gameId == game_stats.c.id)
+                .correlate(game_stats)
+                .as_scalar() == 2
+            )
+            .where(
+                select([func.count()])
+                .select_from(game_player_stats)
+                .where(game_player_stats.c.gameId == game_stats.c.id)
+                .where(game_player_stats.c.AI == false())
+                .where(game_player_stats.c.color.in_((1, 2)))
+                .where(game_player_stats.c.score.in_((-1, 0, 1)))
+                .correlate(game_stats)
+                .as_scalar() == 2
+            )
+        )
+        ladder_1v1_wins += row[0] if row else 0
+
+        return ladder_1v1_wins
 
     async def _persist_rating_changes(
         self,
