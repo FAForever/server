@@ -555,7 +555,12 @@ def test_make_teams_1(player_factory):
         [player_factory(name="p10")],
         [player_factory(name="p11")]
     ]
-    do_test_make_teams(teams, 3, 2, {1})
+    do_test_make_teams(
+        teams,
+        team_size=3,
+        total_unmatched=2,
+        unmatched_sizes={1}
+    )
 
 
 def test_make_teams_2(player_factory):
@@ -568,14 +573,24 @@ def test_make_teams_2(player_factory):
         [player_factory(name="p10")],
         [player_factory(name="p11")]
     ]
-    do_test_make_teams(teams, 2, 1, {3})
+    do_test_make_teams(
+        teams,
+        team_size=2,
+        total_unmatched=1,
+        unmatched_sizes={3}
+    )
 
 
 def test_make_teams_3(player_factory):
     teams = [
         [player_factory(name=f"p{i+1}")] for i in range(9)
     ]
-    do_test_make_teams(teams, 4, 1, {1})
+    do_test_make_teams(
+        teams,
+        team_size=4,
+        total_unmatched=1,
+        unmatched_sizes={1}
+    )
 
 
 def test_make_teams_4(player_factory):
@@ -583,7 +598,12 @@ def test_make_teams_4(player_factory):
     teams += [[player_factory(), player_factory()] for i in range(5)]
     teams += [[player_factory(), player_factory(), player_factory()] for i in range(15)]
     teams += [[player_factory(), player_factory(), player_factory(), player_factory()] for i in range(4)]
-    do_test_make_teams(teams, 4, 7, {3, 2})
+    do_test_make_teams(
+        teams,
+        team_size=4,
+        total_unmatched=7,
+        unmatched_sizes={3, 2}
+    )
 
 
 def test_make_teams_5(player_factory):
@@ -592,7 +612,12 @@ def test_make_teams_5(player_factory):
         [player_factory(name="p4"), player_factory(name="p5")],
         [player_factory(name="p6"), player_factory(name="p7")],
     ]
-    do_test_make_teams(teams, 4, 1, {3})
+    do_test_make_teams(
+        teams,
+        team_size=4,
+        total_unmatched=1,
+        unmatched_sizes={3}
+    )
 
 
 def do_test_make_teams(teams, team_size, total_unmatched, unmatched_sizes):
