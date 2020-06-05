@@ -338,7 +338,7 @@ class LadderService(Service):
                 if not hosted:
                     raise TimeoutError("Host left lobby")
             finally:
-                # TODO: Once the client supports `game_launch_cancelled`, don't
+                # TODO: Once the client supports `match_cancelled`, don't
                 # send `launch_game` to the client if the host timed out. Until
                 # then, failing to send `launch_game` will cause the client to
                 # think it is searching for ladder, even though the server has
@@ -356,7 +356,7 @@ class LadderService(Service):
             self._logger.debug("Ladder game launched successfully")
         except Exception:
             self._logger.exception("Failed to start ladder game!")
-            msg = {"command": "game_launch_cancelled"}
+            msg = {"command": "match_cancelled"}
             with contextlib.suppress(DisconnectedError):
                 await asyncio.gather(
                     host.send_message(msg),
