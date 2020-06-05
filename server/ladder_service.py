@@ -172,6 +172,11 @@ class LadderService(Service):
             if queue_name == "ladder1v1":
                 tasks.append(self.inform_player(player))
 
+            tasks.append(player.send_message({
+                "command": "search_started",
+                "queue": queue_name
+            }))
+
         try:
             await asyncio.gather(*tasks)
         except DisconnectedError:
