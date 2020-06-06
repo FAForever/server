@@ -220,12 +220,7 @@ class GameService(Service):
         result_dict = game_results.to_dict()
         await self._message_queue_service.publish(
             "game_results",
-            ".".join([
-                "results",
-                result_dict["rating_type"],
-                result_dict["featured_mod"],
-                result_dict["validity"],
-            ]),
+            "success.gameResults.create",
             result_dict,
         )
 
