@@ -77,6 +77,18 @@ class ValidityState(Enum):
     OTHER_UNRANK = 24
 
 
+class FeaturedModType():
+    """
+    String constants for featured mod technical_name
+    """
+
+    COOP = "coop"
+    EQUILIBRIUM = "equilibrium"
+    FAF = "faf"
+    FAFBETA = "fafbeta"
+    LADDER_1V1 = "ladder1v1"
+
+
 class BasicGameInfo(NamedTuple):
     """
     Holds basic information about a game that does not change after launch.

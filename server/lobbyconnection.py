@@ -28,7 +28,7 @@ from .db.models import login as t_login
 from .decorators import timed, with_logger
 from .game_service import GameService
 from .gameconnection import GameConnection
-from .games import GameState, VisibilityState
+from .games import FeaturedModType, GameState, VisibilityState
 from .geoip_service import GeoIpService
 from .ice_servers.coturn import CoturnHMAC
 from .ice_servers.nts import TwilioNTS
@@ -870,7 +870,7 @@ class LobbyConnection:
             })
             return
 
-        mod = message.get('mod') or 'faf'
+        mod = message.get('mod') or FeaturedModType.FAF
         mapname = message.get('mapname') or 'scmp_007'
         password = message.get('password')
         game_mode = mod.lower()

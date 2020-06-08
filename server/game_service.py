@@ -7,7 +7,9 @@ from . import metrics
 from .core import Service
 from .db import FAFDatabase
 from .decorators import with_logger
-from .games import CoopGame, CustomGame, FeaturedMod, LadderGame
+from .games import (
+    CoopGame, CustomGame, FeaturedMod, FeaturedModType, LadderGame
+)
 from .games.game import Game, GameState, VisibilityState
 from .games.typedefs import EndedGameInfo, ValidityState
 from .matchmaker import MatchmakerQueue
@@ -144,11 +146,11 @@ class GameService(Service):
 
         if not game_class:
             game_class = {
-                'ladder1v1':    LadderGame,
-                'coop':         CoopGame,
-                'faf':          CustomGame,
-                'fafbeta':      CustomGame,
-                'equilibrium':  CustomGame
+                FeaturedModType.LADDER_1V1:   LadderGame,
+                FeaturedModType.COOP:         CoopGame,
+                FeaturedModType.FAF:          CustomGame,
+                FeaturedModType.FAFBETA:      CustomGame,
+                FeaturedModType.EQUILIBRIUM:  CustomGame
             }.get(game_mode, Game)
         game = game_class(**game_args)
 

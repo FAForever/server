@@ -5,6 +5,7 @@ from server.players import Player
 from server.rating import RatingType
 
 from .game import Game, GameOutcome
+from .typedefs import FeaturedModType
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ class LadderGame(Game):
 
     def __init__(self, id_, *args, **kwargs):
         new_kwargs = {
-            "game_mode": "ladder1v1",
+            "game_mode": FeaturedModType.LADDER_1V1,
             "rating_type": RatingType.LADDER_1V1,
             "max_players": 2
         }

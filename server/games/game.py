@@ -21,8 +21,8 @@ from server.rating import RatingType
 from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
 from .typedefs import (
-    BasicGameInfo, EndedGameInfo, GameState, ValidityState, Victory,
-    VisibilityState
+    BasicGameInfo, EndedGameInfo, FeaturedModType, GameState, ValidityState,
+    Victory, VisibilityState
 )
 
 
@@ -48,7 +48,7 @@ class Game:
         host: Optional[Player] = None,
         name: str = 'None',
         map_: str = 'SCMP_007',
-        game_mode: str = 'faf',
+        game_mode: str = FeaturedModType.FAF,
         rating_type: Optional[str] = None,
         max_players: int = 12
     ):
@@ -101,7 +101,7 @@ class Game:
 
     async def timeout_game(self):
         # coop takes longer to set up
-        tm = 30 if self.game_mode != 'coop' else 60
+        tm = 30 if self.game_mode != FeaturedModType.COOP else 60
         await asyncio.sleep(tm)
         if self.state is GameState.INITIALIZING:
             self._is_hosted.set_exception(TimeoutError("Game setup timed out"))
@@ -574,9 +574,9 @@ class Game:
         if await self._validate_game_options(valid_options) is False:
             return
 
-        if self.game_mode in ('faf', 'ladder1v1'):
+        if self.game_mode in (FeaturedModType.FAF, FeaturedModType.LADDER_1V1):
             await self._validate_faf_game_settings()
-        elif self.game_mode == 'coop':
+        elif self.game_mode == FeaturedModType.COOP:
             await self._validate_coop_game_settings()
 
     async def _validate_game_options(

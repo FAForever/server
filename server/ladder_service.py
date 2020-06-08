@@ -23,7 +23,7 @@ from .db.models import (
 )
 from .decorators import with_logger
 from .game_service import GameService
-from .games import LadderGame
+from .games import FeaturedModType, LadderGame
 from .matchmaker import MapPool, MatchmakerQueue, Search
 from .players import Player, PlayerState
 from .protocol import DisconnectedError
@@ -52,7 +52,7 @@ class LadderService(Service):
             'ladder1v1': MatchmakerQueue(
                 game_service,
                 name="ladder1v1",
-                featured_mod="ladder1v1",
+                featured_mod=FeaturedModType.LADDER_1V1,
                 rating_type=RatingType.LADDER_1V1,
                 map_pools=[(self.ladder_1v1_map_pool, None, None)]
             )
@@ -348,7 +348,8 @@ class LadderService(Service):
 
             played_map_ids = await self.get_game_history(
                 all_players,
-                "ladder1v1",  # FIXME: Use reference to matchmaker queue instead
+                # FIXME: Use reference to matchmaker queue instead
+                FeaturedModType.LADDER_1V1,
                 limit=config.LADDER_ANTI_REPETITION_LIMIT
             )
             rating = min(
