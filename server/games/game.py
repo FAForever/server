@@ -49,7 +49,7 @@ class Game:
         name: str = 'None',
         map_: str = 'SCMP_007',
         game_mode: str = 'faf',
-        rating_type: Optional[RatingType] = None,
+        rating_type: Optional[str] = None,
         max_players: int = 12
     ):
         self._db = database

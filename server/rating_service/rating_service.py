@@ -131,7 +131,7 @@ class RatingService(Service):
         ]
 
     async def _get_player_rating(
-        self, player_id: int, rating_type: RatingType
+        self, player_id: int, rating_type: str
     ) -> Rating:
         if self._rating_type_ids is None:
             self._logger.warning(
@@ -169,7 +169,7 @@ class RatingService(Service):
         return Rating(row["mean"], row["deviation"])
 
     async def _get_player_legacy_rating(
-        self, conn, player_id: int, rating_type: RatingType
+        self, conn, player_id: int, rating_type: str
     ) -> Rating:
         if rating_type == RatingType.GLOBAL:
             table = global_rating
@@ -210,7 +210,7 @@ class RatingService(Service):
         return Rating(row["mean"], row["deviation"])
 
     async def _create_default_rating(
-        self, conn, player_id: int, rating_type: RatingType
+        self, conn, player_id: int, rating_type: str
     ):
         default_mean = config.START_RATING_MEAN
         default_deviation = config.START_RATING_DEV
@@ -231,7 +231,7 @@ class RatingService(Service):
     async def _persist_rating_changes(
         self,
         game_id: int,
-        rating_type: RatingType,
+        rating_type: str,
         old_ratings: Dict[PlayerID, Rating],
         new_ratings: Dict[PlayerID, Rating],
         outcomes: Dict[PlayerID, GameOutcome],

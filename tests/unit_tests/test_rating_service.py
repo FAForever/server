@@ -263,7 +263,7 @@ async def test_rating_persistence(semiinitialized_service):
     game_id = 1
     player_id = 1
     rating_type = RatingType.GLOBAL
-    rating_type_id = service._rating_type_ids[RatingType.GLOBAL.value]
+    rating_type_id = service._rating_type_ids[RatingType.GLOBAL]
     old_ratings = {player_id: Rating(1000, 500)}
     after_mean = 1234
     new_ratings = {player_id: Rating(after_mean, 400)}

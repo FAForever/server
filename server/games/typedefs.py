@@ -3,7 +3,6 @@ from typing import Dict, List, NamedTuple, Optional, Set
 
 from server.games.game_results import GameOutcome
 from server.players import Player
-from server.rating import RatingType
 
 
 @unique
@@ -83,13 +82,13 @@ class BasicGameInfo(NamedTuple):
     Holds basic information about a game that does not change after launch.
     Fields:
      - game_id: id of the game
-     - rating_type: RatingType (e.g. LADDER_1V1)
+     - rating_type: str (e.g. "ladder1v1")
      - map_id: id of the map used
      - game_mode: name of the featured mod
     """
 
     game_id: int
-    rating_type: Optional[RatingType]
+    rating_type: Optional[str]
     map_id: int
     game_mode: str
     mods: List[int]
@@ -106,7 +105,7 @@ class EndedGameInfo(NamedTuple):
     Holds the outcome of an ended game.
     Fields:
      - game_id: id of the game
-     - rating_type: RatingType (e.g. LADDER_1V1)
+     - rating_type: str (e.g. "ladder1v1")
      - map_id: id of the map used
      - game_mode: name of the featured mod
      - validity: ValidityState (e.g. VALID or TOO_SHORT)
@@ -115,7 +114,7 @@ class EndedGameInfo(NamedTuple):
     """
 
     game_id: int
-    rating_type: Optional[RatingType]
+    rating_type: Optional[str]
     map_id: int
     game_mode: str
     mods: List[int]
@@ -154,7 +153,7 @@ class EndedGameInfo(NamedTuple):
     def to_dict(self):
         return {
             "game_id": self.game_id,
-            "rating_type": self.rating_type.name
+            "rating_type": self.rating_type
             if self.rating_type is not None
             else "None",
             "map_id": self.map_id,

@@ -131,8 +131,10 @@ class PlayerService(Service):
             player.game_count[rating_type] = total_games
 
         types_not_found = [
-            rating_type for rating_type in RatingType
-            if rating_type.value not in retrieved_ratings
+            rating_type for rating_type in (
+                RatingType.GLOBAL, RatingType.LADDER_1V1
+            )
+            if rating_type not in retrieved_ratings
         ]
         await self._fetch_player_legacy_rating(player, types_not_found, conn)
 
@@ -214,7 +216,7 @@ class PlayerService(Service):
         return self._players.get(player_id)
 
     def signal_player_rating_change(
-        self, player_id: int, rating_type: RatingType, new_rating: Rating
+        self, player_id: int, rating_type: str, new_rating: Rating
     ) -> None:
         player = self.get_player(player_id)
         if player is None:

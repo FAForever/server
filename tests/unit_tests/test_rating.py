@@ -9,7 +9,7 @@ def ratings():
 
 
 def test_rating_type_default(ratings):
-    for rating_type in RatingType:
+    for rating_type in (RatingType.GLOBAL, RatingType.LADDER_1V1):
         assert ratings[rating_type] == (1500, 500)
 
 

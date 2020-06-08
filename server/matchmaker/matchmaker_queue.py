@@ -8,7 +8,6 @@ from typing import Deque, Dict, Iterable, List, Optional, Tuple
 import server.metrics as metrics
 
 from ..decorators import with_logger
-from ..rating import RatingType
 from .algorithm import make_matches, make_teams, make_teams_from_single
 from .map_pool import MapPool
 from .pop_timer import PopTimer
@@ -42,7 +41,7 @@ class MatchmakerQueue:
         game_service: "GameService",
         name: str,
         featured_mod: str,
-        rating_type: RatingType,
+        rating_type: str,
         team_size: int = 1,
         map_pools: Iterable[Tuple[MapPool, Optional[int], Optional[int]]] = ()
     ):
