@@ -81,8 +81,13 @@ class MessageQueueService(Service):
         self._exchange_types[exchange_name] = exchange_type
 
     async def shutdown(self) -> None:
+        if self._channel is not None:
+            await self._channel.close()
+            self._channel = None
+
         if self._connection is not None:
             await self._connection.close()
+            self._connection = None
 
     async def publish(
         self,
@@ -116,4 +121,4 @@ class MessageQueueService(Service):
         await self.initialize()
 
         for exchange_name in list(self._exchanges.keys()):
-            self.declare_exchange(exchange_name, self._exchange_types[exchange_name])
+            await self.declare_exchange(exchange_name, self._exchange_types[exchange_name])
