@@ -48,9 +48,9 @@ __all__ = (
     'control',
     'abc',
     'protocol',
-    ConfigurationService,
-    MessageQueueService,
-    RatingService
+    'ConfigurationService',
+    'MessageQueueService',
+    'RatingService'
 )
 
 DIRTY_REPORT_INTERVAL = 1  # Seconds
