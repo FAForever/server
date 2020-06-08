@@ -223,10 +223,9 @@ class GameConnection(GpgNetServerProtocol):
             return
 
         if key == "Victory":
-            try:
-                self.game.gameOptions["Victory"] = Victory[value.upper()]
-            except KeyError:
-                self.game.gameOptions["Victory"] = None
+            self.game.gameOptions["Victory"] = Victory.__members__.get(
+                value.upper(), None
+            )
         else:
             self.game.gameOptions[key] = value
 

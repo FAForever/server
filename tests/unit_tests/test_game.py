@@ -869,7 +869,7 @@ async def test_game_results(game: Game, players):
     assert result_dict["validity"] == "VALID"
     assert result_dict["rating_type"] == "GLOBAL"
     assert len(result_dict["teams"]) == 2
-    print(result_dict)
+
     for team in result_dict["teams"]:
         assert team["outcome"] == (
             "VICTORY" if team["player_ids"] == [host_id]

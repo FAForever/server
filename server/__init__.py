@@ -20,9 +20,9 @@ from .ice_servers.nts import TwilioNTS
 from .lobbyconnection import LobbyConnection
 from .protocol import QDataStreamProtocol
 from .servercontext import ServerContext
-from .configuration_service import ConfigurationService   # noqa: F401
-from .message_queue_service import MessageQueueService    # noqa: F401
-from .rating_service.rating_service import RatingService  # noqa: F401
+from .configuration_service import ConfigurationService
+from .message_queue_service import MessageQueueService
+from .rating_service.rating_service import RatingService
 from .geoip_service import GeoIpService
 from .player_service import PlayerService
 from .game_service import GameService
@@ -47,7 +47,10 @@ __all__ = (
     'game_service',
     'control',
     'abc',
-    'protocol'
+    'protocol',
+    ConfigurationService,
+    MessageQueueService,
+    RatingService
 )
 
 DIRTY_REPORT_INTERVAL = 1  # Seconds

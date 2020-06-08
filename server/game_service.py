@@ -224,7 +224,7 @@ class GameService(Service):
             result_dict,
         )
 
-        # To be removed when rating service starts listening to message queue
+        # TODO: Remove when rating service starts listening to message queue
         if (
             game_results.validity is ValidityState.VALID
             and game_results.rating_type is not None

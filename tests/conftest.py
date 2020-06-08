@@ -8,7 +8,6 @@ these should be put in the ``conftest.py'' relative to it.
 
 import asyncio
 import logging
-import subprocess
 from typing import Iterable
 from unittest import mock
 

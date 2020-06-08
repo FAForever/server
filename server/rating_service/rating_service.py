@@ -79,7 +79,7 @@ class RatingService(Service):
         rating_service_backlog.set(self._queue.qsize())
 
     async def _handle_rating_queue(self) -> None:
-        self._logger.info("RatingService started!")
+        self._logger.debug("RatingService started!")
         while self._accept_input or not self._queue.empty():
             summary = await self._queue.get()
             self._logger.debug("Now rating request %s", summary)
@@ -96,7 +96,7 @@ class RatingService(Service):
             self._queue.task_done()
             rating_service_backlog.set(self._queue.qsize())
 
-        self._logger.info("RatingService stopped.")
+        self._logger.debug("RatingService stopped.")
 
     async def _rate(self, summary: GameRatingSummary) -> None:
         rating_data = await self._get_rating_data(summary)
@@ -238,7 +238,7 @@ class RatingService(Service):
         """
         Persist computed ratings to the respective players' selected rating
         """
-        self._logger.info("Saving rating change stats for game %i", game_id)
+        self._logger.debug("Saving rating change stats for game %i", game_id)
 
         async with self._db.acquire() as conn:
             for player_id, new_rating in new_ratings.items():

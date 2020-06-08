@@ -6,7 +6,7 @@ import aio_pika
 from aio_pika import DeliveryMode, ExchangeType
 from aio_pika.exceptions import ProbableAuthenticationError
 
-from .config import config
+from .config import config, TRACE
 from .core import Service
 from .decorators import with_logger
 
@@ -18,7 +18,7 @@ class MessageQueueService(Service):
         Service handling connection to the message queue
         and providing an interface to publish messages.
         """
-        self._logger.info("Message queue service created.")
+        self._logger.debug("Message queue service created.")
         self._connection = None
         self._channel = None
         self._exchanges = {}
@@ -112,8 +112,8 @@ class MessageQueueService(Service):
 
         async with self._channel.transaction():
             await exchange.publish(message, routing_key=routing)
-            self._logger.debug(
-                "Published message %s to %s/%s", payload, exchange_name, routing
+            self._logger.log(
+                TRACE, "Published message %s to %s/%s", payload, exchange_name, routing
             )
 
     async def reconnect(self) -> None:
@@ -121,4 +121,6 @@ class MessageQueueService(Service):
         await self.initialize()
 
         for exchange_name in list(self._exchanges.keys()):
-            await self.declare_exchange(exchange_name, self._exchange_types[exchange_name])
+            await self.declare_exchange(
+                exchange_name, self._exchange_types[exchange_name]
+            )
