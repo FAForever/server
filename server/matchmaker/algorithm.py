@@ -355,7 +355,7 @@ def _make_buckets(searches: List[Search]) -> Buckets:
     while remaining:
         # Choose a pivot
         pivot, mean = random.choice(remaining)
-        low, high = mean - 50, mean + 50
+        low, high = mean - 100, mean + 100
 
         # Partition remaining based on how close their means are
         bucket, not_bucket = [], []
