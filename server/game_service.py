@@ -56,7 +56,7 @@ class GameService(Service):
             '*/10 * * * *', func=self.update_data
         )
 
-        await self._message_queue_service.declare_exchange("game_results")
+        await self._message_queue_service.declare_exchange("faf-rabbitmq")
 
     async def initialise_game_counter(self):
         async with self._db.acquire() as conn:
@@ -219,7 +219,7 @@ class GameService(Service):
     async def publish_game_results(self, game_results: EndedGameInfo):
         result_dict = game_results.to_dict()
         await self._message_queue_service.publish(
-            "game_results",
+            "faf-rabbitmq",
             "success.gameResults.create",
             result_dict,
         )
