@@ -18,7 +18,7 @@ async def queue_player_for_matchmaking(user, lobby_server):
         'state': 'start',
         'faction': 'uef'
     })
-    await read_until_command(proto, 'search_started')
+    await read_until_command(proto, 'search_info')
 
     return proto
 
@@ -40,7 +40,7 @@ async def queue_players_for_matchmaking(lobby_server):
         'state': 'start',
         'faction': 1  # Python client sends factions as numbers
     })
-    await read_until_command(proto2, 'search_started')
+    await read_until_command(proto2, 'search_info')
 
     # If the players did not match, this will fail due to a timeout error
     await read_until_command(proto1, 'match_found')
@@ -170,10 +170,11 @@ async def test_game_matchmaking_cancel(lobby_server):
     })
 
     # The server should respond with a matchmaking stop message
-    msg = await read_until_command(proto, 'game_matchmaking')
+    msg = await read_until_command(proto, 'search_info')
 
     assert msg == {
-        'command': 'game_matchmaking',
+        'command': 'search_info',
+        'queue': 'ladder1v1',
         'state': 'stop',
     }
 
@@ -284,3 +285,41 @@ async def test_matchmaker_info_message_on_cancel(lobby_server):
 
     assert msg["queues"][0]["queue_name"] == "ladder1v1"
     assert len(msg["queues"][0]["boundary_80s"]) == 0
+
+
+@fast_forward(10)
+async def test_search_info_messages(lobby_server):
+    _, _, proto = await connect_and_sign_in(
+        ("ladder1", "ladder1"),
+        lobby_server
+    )
+    await read_until_command(proto, "game_info")
+
+    # Start searching
+    await proto.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef"
+    })
+    msg = await read_until_command(proto, "search_info")
+    assert msg == {
+        "command": "search_info",
+        "queue": "ladder1v1",
+        "state": "start"
+    }
+    # TODO: Join a second queue here
+
+    # Stop searching
+    await proto.send_message({
+        "command": "game_matchmaking",
+        "state": "stop",
+    })
+    msg = await read_until_command(proto, "search_info")
+    assert msg == {
+        "command": "search_info",
+        "queue": "ladder1v1",
+        "state": "stop"
+    }
+
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(proto, "search_info", timeout=5)
