@@ -538,8 +538,8 @@ class LobbyConnection:
             )
             row = await result.fetchone()
 
-            username = row[t_login.c.login]
-            steamid = row[t_login.c.steamid]
+            username = row.login
+            steamid = row.steamid
 
         await self.on_player_login(
             player_id, username, new_irc_password, steamid, unique_id
@@ -689,10 +689,10 @@ class LobbyConnection:
         await self.send_game_list()
 
     async def update_irc_password(self, conn, login, password):
-        passwordmd5 = md5(password.encode()).hexdigest()
         # Since the password is hashed on the client, what we get at this point
         # is really md5(md5(sha256(password))). This is entirely insane.
-        irc_pass = "md5:" + md5(passwordmd5.encode()).hexdigest()
+        temp = md5(password.encode()).hexdigest()
+        irc_pass = "md5:" + md5(temp.encode()).hexdigest()
 
         try:
             await conn.execute(
