@@ -57,8 +57,9 @@ class ConfigurationStore:
         self.API_TOKEN_URI = "https://api.test.faforever.com/oauth/token"
         self.API_BASE_URL = "https://api.test.faforever.com/"
         self.USE_API = True
-        # Always set this key. It can be either the public key itself, or a
-        # path pointing to a pub key file.
+        # A path pointing to a pub key file.
+        self.API_JWT_PUBLIC_KEY_FILE = ""
+        # For setting the public key directly. Takes precedence over ..._FILE
         self.API_JWT_PUBLIC_KEY = ""
         # Resolved public key. If API_JWT_PUBLIC_KEY is a file path then this
         # will contain the contents of that file.
@@ -167,19 +168,16 @@ def set_log_level():
 
 
 def read_api_pub_key():
-    pub_key = config.API_JWT_PUBLIC_KEY
-
-    is_key = pub_key.startswith("-----BEGIN") or pub_key.startswith("ssh-rsa")
-
-    if pub_key and not is_key:  # pragma: no cover
-        with open(pub_key) as f:
+    if config.API_JWT_PUBLIC_KEY:
+        config._api_jwt_public_key_value = config.API_JWT_PUBLIC_KEY
+    elif config.API_JWT_PUBLIC_KEY_FILE:
+        with open(config.API_JWT_PUBLIC_KEY_FILE) as f:
             config._api_jwt_public_key_value = f.read()
-    else:
-        config._api_jwt_public_key_value = pub_key
 
 
 config = ConfigurationStore()
 config.register_callback("LOG_LEVEL", set_log_level)
+config.register_callback("API_JWT_PUBLIC_KEY_FILE", read_api_pub_key)
 config.register_callback("API_JWT_PUBLIC_KEY", read_api_pub_key)
 
 read_api_pub_key()
