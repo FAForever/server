@@ -1,7 +1,7 @@
 import asyncio
 import contextlib
 from collections import defaultdict
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import aiocron
 from sqlalchemy import and_, func, select, text
@@ -158,11 +158,16 @@ class LadderService(Service):
             ))
         return matchmaker_queues
 
-    async def start_search(self, initiator: Player, search: Search, queue_name: str):
+    async def start_search(
+        self,
+        initiator: Player,
+        search: Search,
+        queue_name: str
+    ):
         # TODO: Consider what happens if players disconnect while starting
         # search. Will need a message to inform other players in the search
         # that it has been cancelled.
-        self._cancel_existing_searches(initiator)
+        self._cancel_existing_searches(initiator, queue_name)
 
         tasks = []
         for player in search.players:
@@ -171,6 +176,12 @@ class LadderService(Service):
             # For now, inform_player is only designed for ladder1v1
             if queue_name == "ladder1v1":
                 tasks.append(self.inform_player(player))
+
+            tasks.append(player.send_message({
+                "command": "search_info",
+                "queue": queue_name,
+                "state": "start"
+            }))
 
         try:
             await asyncio.gather(*tasks)
@@ -189,33 +200,52 @@ class LadderService(Service):
 
         asyncio.create_task(self.queues[queue_name].search(search))
 
-    async def cancel_search(self, initiator: Player):
-        searches = self._cancel_existing_searches(initiator)
+    async def cancel_search(
+        self,
+        initiator: Player,
+        queue_name: Optional[str] = None
+    ):
+        searches = self._cancel_existing_searches(initiator, queue_name)
 
         tasks = []
-        for search in searches:
+        for queue_name, search in searches:
             for player in search.players:
+                # FIXME: This is wrong for multiqueueing
                 if player.state == PlayerState.SEARCHING_LADDER:
                     player.state = PlayerState.IDLE
 
                 if player.lobby_connection is not None:
                     tasks.append(player.send_message({
-                        "command": "game_matchmaking",
+                        "command": "search_info",
+                        "queue": queue_name,
                         "state": "stop"
                     }))
             self._logger.info(
-                "%s stopped searching for ladder: %s", player, search
+                "%s stopped searching for %s: %s", initiator, queue_name, search
             )
 
         await gather_without_exceptions(tasks, DisconnectedError)
 
-    def _cancel_existing_searches(self, initiator: Player) -> List[Search]:
+    def _cancel_existing_searches(
+        self,
+        initiator: Player,
+        queue_name: Optional[str] = None
+    ) -> List[Tuple[str, Search]]:
+        """
+        Cancel search for a specific queue, or all searches if `queue_name` is
+        None.
+        """
+        if queue_name:
+            queue_names = [queue_name]
+        else:
+            queue_names = list(self.queues)
+
         searches = []
-        for queue_name in self.queues:
+        for queue_name in queue_names:
             search = self.searches[queue_name].get(initiator)
             if search:
                 search.cancel()
-                searches.append(search)
+                searches.append((queue_name, search))
                 del self.searches[queue_name][initiator]
         return searches
 
@@ -338,7 +368,7 @@ class LadderService(Service):
                 if not hosted:
                     raise TimeoutError("Host left lobby")
             finally:
-                # TODO: Once the client supports `game_launch_cancelled`, don't
+                # TODO: Once the client supports `match_cancelled`, don't
                 # send `launch_game` to the client if the host timed out. Until
                 # then, failing to send `launch_game` will cause the client to
                 # think it is searching for ladder, even though the server has
@@ -356,7 +386,7 @@ class LadderService(Service):
             self._logger.debug("Ladder game launched successfully")
         except Exception:
             self._logger.exception("Failed to start ladder game!")
-            msg = {"command": "game_launch_cancelled"}
+            msg = {"command": "match_cancelled"}
             with contextlib.suppress(DisconnectedError):
                 await asyncio.gather(
                     host.send_message(msg),

@@ -18,6 +18,7 @@ async def queue_player_for_matchmaking(user, lobby_server):
         'state': 'start',
         'faction': 'uef'
     })
+    await read_until_command(proto, 'search_info')
 
     return proto
 
@@ -39,6 +40,7 @@ async def queue_players_for_matchmaking(lobby_server):
         'state': 'start',
         'faction': 1  # Python client sends factions as numbers
     })
+    await read_until_command(proto2, 'search_info')
 
     # If the players did not match, this will fail due to a timeout error
     await read_until_command(proto1, 'match_found')
@@ -145,11 +147,11 @@ async def test_game_matchmaking_timeout(lobby_server):
     msg2 = await read_until_command(proto2, 'game_launch')
     # LEGACY BEHAVIOUR: The host does not respond with the appropriate GameState
     # so the match is cancelled. However, the client does not know how to
-    # handle `game_launch_cancelled` messages so we still send `game_launch` to
+    # handle `match_cancelled` messages so we still send `game_launch` to
     # prevent the client from showing that it is searching when it really isn't.
     msg1 = await read_until_command(proto1, 'game_launch')
-    await read_until_command(proto2, 'game_launch_cancelled')
-    await read_until_command(proto1, 'game_launch_cancelled')
+    await read_until_command(proto2, 'match_cancelled')
+    await read_until_command(proto1, 'match_cancelled')
 
     assert msg1['uid'] == msg2['uid']
     assert msg1['mod'] == 'ladder1v1'
@@ -168,10 +170,11 @@ async def test_game_matchmaking_cancel(lobby_server):
     })
 
     # The server should respond with a matchmaking stop message
-    msg = await read_until_command(proto, 'game_matchmaking')
+    msg = await read_until_command(proto, 'search_info')
 
     assert msg == {
-        'command': 'game_matchmaking',
+        'command': 'search_info',
+        'queue': 'ladder1v1',
         'state': 'stop',
     }
 
@@ -182,9 +185,9 @@ async def test_game_matchmaking_disconnect(lobby_server):
     # One player disconnects before the game has launched
     await proto1.close()
 
-    msg = await read_until_command(proto2, 'game_launch_cancelled')
+    msg = await read_until_command(proto2, 'match_cancelled')
 
-    assert msg == {'command': 'game_launch_cancelled'}
+    assert msg == {'command': 'match_cancelled'}
 
 
 @fast_forward(100)
@@ -282,3 +285,41 @@ async def test_matchmaker_info_message_on_cancel(lobby_server):
 
     assert msg["queues"][0]["queue_name"] == "ladder1v1"
     assert len(msg["queues"][0]["boundary_80s"]) == 0
+
+
+@fast_forward(10)
+async def test_search_info_messages(lobby_server):
+    _, _, proto = await connect_and_sign_in(
+        ("ladder1", "ladder1"),
+        lobby_server
+    )
+    await read_until_command(proto, "game_info")
+
+    # Start searching
+    await proto.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef"
+    })
+    msg = await read_until_command(proto, "search_info")
+    assert msg == {
+        "command": "search_info",
+        "queue": "ladder1v1",
+        "state": "start"
+    }
+    # TODO: Join a second queue here
+
+    # Stop searching
+    await proto.send_message({
+        "command": "game_matchmaking",
+        "state": "stop",
+    })
+    msg = await read_until_command(proto, "search_info")
+    assert msg == {
+        "command": "search_info",
+        "queue": "ladder1v1",
+        "state": "stop"
+    }
+
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(proto, "search_info", timeout=5)
