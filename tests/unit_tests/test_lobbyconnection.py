@@ -824,7 +824,10 @@ async def test_command_game_matchmaking(lobbyconnection):
         'state': 'stop'
     })
 
-    lobbyconnection.ladder_service.cancel_search.assert_called_with(lobbyconnection.player)
+    lobbyconnection.ladder_service.cancel_search.assert_called_with(
+        lobbyconnection.player,
+        "ladder1v1"
+    )
 
 
 async def test_command_matchmaker_info(lobbyconnection, ladder_service, queue_factory):
