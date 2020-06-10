@@ -19,7 +19,7 @@ API_CLIENT_SECRET: "banana"
 API_TOKEN_URI: "https://api.test.faforever.com/oauth/token"
 API_BASE_URL: "https://api.test.faforever.com/"
 USE_API: true
-API_JWT_PUBLIC_KEY: "tests/data/test-api-key.pub"
+API_JWT_PUBLIC_KEY_FILE: "tests/data/test-api-key.pub"
 
 WWW_URL: "https://www.faforever.com"
 CONTENT_URL: "http://content.faforever.com"
