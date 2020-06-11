@@ -511,8 +511,16 @@ def test_make_teams_single_2v2_small_pool(player_factory):
 
     # Try a bunch of times so it is unlikely to pass by chance
     for _ in range(20):
-        searches = [Search([player_factory(1000, 10, name=f"p{i}")]) for i in range(2)]
-        searches += [Search([player_factory(500, 10, name=f"r{i}")]) for i in range(2)]
+        searches = [
+            Search(
+                [player_factory(random.gauss(1000, 5), 10, name=f"p{i}")]
+            ) for i in range(2)
+        ]
+        searches += [
+            Search(
+                [player_factory(random.gauss(500, 5), 10, name=f"r{i}")]
+            ) for i in range(2)
+        ]
         matched, non_matched = algorithm.make_teams_from_single(searches, size=2)
 
         assert matched != []
@@ -521,11 +529,11 @@ def test_make_teams_single_2v2_small_pool(player_factory):
         for search in matched:
             p1, p2 = search.players
             # Order doesn't matter
-            if p1.ratings[RatingType.LADDER_1V1] == (1000, 10):
-                assert p2.ratings[RatingType.LADDER_1V1] == (500, 10)
+            if p1.ratings[RatingType.LADDER_1V1][0] > 900:
+                assert p2.ratings[RatingType.LADDER_1V1][0] < 600
             else:
-                assert p1.ratings[RatingType.LADDER_1V1] == (500, 10)
-                assert p2.ratings[RatingType.LADDER_1V1] == (1000, 10)
+                assert p1.ratings[RatingType.LADDER_1V1][0] < 600
+                assert p2.ratings[RatingType.LADDER_1V1][0] > 900
 
 
 def test_make_buckets_performance(bench, player_factory):
