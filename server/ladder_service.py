@@ -363,26 +363,19 @@ class LadderService(Service):
                     map_position=1
                 )
             )
-            try:
-                hosted = await game.await_hosted()
-                if not hosted:
-                    raise TimeoutError("Host left lobby")
-            finally:
-                # TODO: Once the client supports `match_cancelled`, don't
-                # send `launch_game` to the client if the host timed out. Until
-                # then, failing to send `launch_game` will cause the client to
-                # think it is searching for ladder, even though the server has
-                # already removed it from the queue.
+            hosted = await game.await_hosted()
+            if not hosted:
+                raise TimeoutError("Host left lobby")
 
-                # TODO: Graceful handling of NoneType errors due to disconnect
-                await guest.lobby_connection.launch_game(
-                    game,
-                    is_host=False,
-                    options=options._replace(
-                        faction=guest.faction,
-                        map_position=2
-                    )
+            # TODO: Graceful handling of NoneType errors due to disconnect
+            await guest.lobby_connection.launch_game(
+                game,
+                is_host=False,
+                options=options._replace(
+                    faction=guest.faction,
+                    map_position=2
                 )
+            )
             self._logger.debug("Ladder game launched successfully")
         except Exception:
             self._logger.exception("Failed to start ladder game!")
