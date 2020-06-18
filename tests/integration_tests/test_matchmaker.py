@@ -1,10 +1,10 @@
 import asyncio
-from concurrent.futures._base import TimeoutError
+from concurrent.futures._base import TimeoutError as FuturesTimeoutError
 
 import pytest
+from sqlalchemy import select
 
 from server.db.models import game_player_stats
-from sqlalchemy import select
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until, read_until_command
@@ -157,7 +157,7 @@ async def test_game_matchmaking_timeout(lobby_server):
         timeout=60
     )
     assert guest_launch_or_cancel_msg['command'] == 'match_cancelled'
-    with pytest.raises(TimeoutError):
+    with pytest.raises(FuturesTimeoutError):
         await read_until_command(guest_proto, 'game_launch')
 
 
