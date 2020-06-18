@@ -1,6 +1,8 @@
 import asyncio
+from concurrent.futures._base import TimeoutError
 
 import pytest
+
 from server.db.models import game_player_stats
 from sqlalchemy import select
 from tests.utils import fast_forward
@@ -141,21 +143,22 @@ async def test_game_matchmaking_start(lobby_server, database):
 
 @fast_forward(120)
 async def test_game_matchmaking_timeout(lobby_server):
-    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+    # The player that queued first will be the host
+    host_proto, guest_proto = await queue_players_for_matchmaking(lobby_server)
 
-    # The player that queued last will be the host
-    msg2 = await read_until_command(proto2, 'game_launch')
-    # LEGACY BEHAVIOUR: The host does not respond with the appropriate GameState
-    # so the match is cancelled. However, the client does not know how to
-    # handle `match_cancelled` messages so we still send `game_launch` to
-    # prevent the client from showing that it is searching when it really isn't.
-    msg1 = await read_until_command(proto1, 'game_launch')
-    await read_until_command(proto2, 'match_cancelled')
-    await read_until_command(proto1, 'match_cancelled')
+    # Host receives launch and cancel
+    host_launch_msg = await read_until_command(host_proto, 'game_launch')
+    await read_until_command(host_proto, 'match_cancelled')
+    assert host_launch_msg['mod'] == 'ladder1v1'
 
-    assert msg1['uid'] == msg2['uid']
-    assert msg1['mod'] == 'ladder1v1'
-    assert msg2['mod'] == 'ladder1v1'
+    # Guest receives only cancel
+    guest_launch_or_cancel_msg = await asyncio.wait_for(
+        read_until(guest_proto, lambda msg: msg.get('command') in ['game_launch', 'match_cancelled']),
+        timeout=60
+    )
+    assert guest_launch_or_cancel_msg['command'] == 'match_cancelled'
+    with pytest.raises(TimeoutError):
+        await read_until_command(guest_proto, 'game_launch')
 
 
 async def test_game_matchmaking_cancel(lobby_server):
