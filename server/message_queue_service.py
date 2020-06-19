@@ -47,17 +47,19 @@ class MessageQueueService(Service):
                 loop=asyncio.get_running_loop(),
             )
         except ConnectionError:
-            self._logger.warning("Unable to connect to RabbitMQ. Is it running?")
+            self._logger.warning("Unable to connect to RabbitMQ. Is it running?", exc_info=True)
             return
         except ProbableAuthenticationError:
             self._logger.warning(
-                "Unable to connect to RabbitMQ. Incorrect credentials?"
+                "Unable to connect to RabbitMQ. Incorrect credentials?",
+                exc_info=True
             )
             return
         except Exception as e:
             self._logger.warning(
                 "Unable to connect to RabbitMQ due to unhandled excpetion %s. Incorrect vhost?",
                 e,
+                exc_info=True
             )
             return
 
