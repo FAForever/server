@@ -13,6 +13,7 @@ from .decorators import with_logger
 TRACE = 5
 logging.addLevelName(TRACE, "TRACE")
 logging.getLogger("aiomeasures").setLevel(logging.INFO)
+logging.getLogger("aio_pika").setLevel(logging.INFO)
 
 # Constants
 FFA_TEAM = 1
