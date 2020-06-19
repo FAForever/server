@@ -53,6 +53,7 @@ class ConfigurationStore:
 
         self.MQ_USER = "faf-lobby"
         self.MQ_PASSWORD = "banana"
+        self.MQ_SERVER = "127.0.0.1"
         self.MQ_PORT = 5672
         self.MQ_VHOST = "/faf-lobby"
 

@@ -27,6 +27,7 @@ class MessageQueueService(Service):
         config.register_callback("MQ_USER", self.reconnect)
         config.register_callback("MQ_PASSWORD", self.reconnect)
         config.register_callback("MQ_VHOST", self.reconnect)
+        config.register_callback("MQ_SERVER", self.reconnect)
         config.register_callback("MQ_PORT", self.reconnect)
 
     async def initialize(self) -> None:
@@ -38,10 +39,11 @@ class MessageQueueService(Service):
     async def _connect(self) -> None:
         try:
             self._connection = await aio_pika.connect_robust(
-                "amqp://{user}:{password}@localhost:{port}/{vhost}".format(
+                "amqp://{user}:{password}@{server}:{port}/{vhost}".format(
                     user=config.MQ_USER,
                     password=config.MQ_PASSWORD,
                     vhost=config.MQ_VHOST,
+                    server=config.MQ_SERVER,
                     port=config.MQ_PORT,
                 ),
                 loop=asyncio.get_running_loop(),
