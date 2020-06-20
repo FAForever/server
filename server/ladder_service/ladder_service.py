@@ -6,8 +6,10 @@ import json
 import random
 import re
 import statistics
+import weakref
 from collections import defaultdict
-from typing import Awaitable, Callable, Optional
+from datetime import timedelta
+from typing import Awaitable, Callable, Iterable, Optional
 
 import aiocron
 import humanize
@@ -40,11 +42,14 @@ from server.ladder_service.violation_service import ViolationService
 from server.matchmaker import (
     MapPool,
     MatchmakerQueue,
+    MatchOffer,
+    OfferTimeoutError,
     OnMatchedCallback,
     Search
 )
 from server.metrics import MatchLaunch
 from server.players import Player, PlayerState
+from server.timing import datetime_now
 from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap
 
 
@@ -68,6 +73,11 @@ class LadderService(Service):
         self.violation_service = violation_service
 
         self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
+        # NOTE: We are using a WeakValueDictionary to store the player -> offer
+        # associations so that we don't need to write any cleanup code. The
+        # values will automatically be deleted from the dictionary when the
+        # MatchOffer object is garbage collected / deleted.
+        self._match_offers = weakref.WeakValueDictionary()
         self._allow_new_searches = True
 
     async def initialize(self) -> None:
@@ -467,12 +477,54 @@ class LadderService(Service):
 
                 self._clear_search(player, queue.name)
 
-            asyncio.create_task(self.start_game(s1.players, s2.players, queue))
+            asyncio.create_task(self.confirm_match(s1, s2, queue))
         except Exception:
             self._logger.exception(
                 "Error processing match between searches %s, and %s",
                 s1, s2
             )
+
+    async def confirm_match(
+        self,
+        s1: Search,
+        s2: Search,
+        queue: MatchmakerQueue
+    ):
+        try:
+            all_players = s1.players + s2.players
+
+            offer = self.create_match_offer(all_players)
+            offer.write_broadcast_update()
+            await offer.wait_ready()
+        except OfferTimeoutError:
+            unready_players = list(offer.get_unready_players())
+            assert unready_players, "Unready players should be non-empty if offer timed out"
+
+            self._logger.info(
+                "Match failed to start. Some players did not ready up in time: %s",
+                [player.login for player in unready_players]
+            )
+            self._cancel_match(all_players)
+
+            # TODO: Unmatch and return to queue
+
+            self.violation_service.register_violations(unready_players)
+
+        await self.start_game(s1.players, s2.players, queue)
+
+    def create_match_offer(self, players: Iterable[Player]):
+        offer = MatchOffer(
+            players,
+            datetime_now() + timedelta(seconds=config.MATCH_OFFER_TIME)
+        )
+        for player in players:
+            self._match_offers[player] = offer
+        return offer
+
+    def ready_player(self, player: Player):
+        offer = self._match_offers.get(player)
+        if offer is not None:
+            offer.ready_player(player)
 
     def start_game(
         self,
@@ -607,12 +659,7 @@ class LadderService(Service):
             if game:
                 await game.on_game_finish()
 
-            game_id = game.id if game else None
-            msg = {"command": "match_cancelled", "game_id": game_id}
-            for player in all_players:
-                if player.state == PlayerState.STARTING_AUTOMATCH:
-                    player.state = PlayerState.IDLE
-                player.write_message(msg)
+            self._cancel_match(all_players, game)
 
             if abandoning_players:
                 self._logger.info(
@@ -620,6 +667,20 @@ class LadderService(Service):
                     abandoning_players
                 )
                 self.violation_service.register_violations(abandoning_players)
+
+    def _cancel_match(
+        self,
+        players: list[Player],
+        game: Optional[LadderGame] = None,
+    ):
+        msg = {"command": "match_cancelled"}
+        if game:
+            msg["game_id"] = game.id
+
+        for player in players:
+            if player.state == PlayerState.STARTING_AUTOMATCH:
+                player.state = PlayerState.IDLE
+            player.write_message(msg)
 
     async def launch_match(
         self,

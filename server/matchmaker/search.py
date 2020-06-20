@@ -226,6 +226,9 @@ class Search:
                 )
         self._match.set_result(other)
 
+    def unmatch(self):
+        self._match = asyncio.Future()
+
     async def await_match(self):
         """
         Wait for this search to complete

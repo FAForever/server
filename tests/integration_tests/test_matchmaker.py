@@ -23,6 +23,7 @@ from .test_game import (
     queue_players_for_matchmaking,
     queue_temp_players_for_matchmaking,
     read_until_launched,
+    read_until_match,
     send_player_options
 )
 
@@ -31,6 +32,7 @@ from .test_game import (
 async def test_game_launch_message(lobby_server):
     _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
 
+    await asyncio.gather(*[read_until_match(proto) for proto in (proto1, proto2)])
     msg1 = await read_until_command(proto1, "game_launch")
     await open_fa(proto1)
     msg2 = await read_until_command(proto2, "game_launch")
@@ -67,6 +69,7 @@ async def test_game_launch_message_map_generator(lobby_server):
         queue_name="neroxis1v1"
     )
 
+    await asyncio.gather(*[read_until_match(proto) for proto in (proto1, proto2)])
     msg1 = await read_until_command(proto1, "game_launch")
     await open_fa(proto1)
     msg2 = await read_until_command(proto2, "game_launch")
@@ -87,6 +90,7 @@ async def test_game_launch_message_game_options(lobby_server, tmp_user):
         queue_name="gameoptions"
     )
 
+    await asyncio.gather(*[read_until_match(proto) for proto in protos])
     msgs = await asyncio.gather(*[
         client_response(proto) for _, proto in protos
     ])
@@ -103,6 +107,7 @@ async def test_game_launch_message_game_options(lobby_server, tmp_user):
 async def test_game_matchmaking_start(lobby_server, database):
     host_id, host, guest_id, guest = await queue_players_for_matchmaking(lobby_server)
 
+    await asyncio.gather(*[read_until_match(proto) for proto in (host, guest)])
     # The player that queued last will be the host
     msg = await read_until_command(host, "game_launch")
     game_id = msg["uid"]
@@ -166,8 +171,9 @@ async def test_game_matchmaking_start(lobby_server, database):
 
 @fast_forward(15)
 async def test_game_matchmaking_start_while_matched(lobby_server):
-    _, proto1, _, _ = await queue_players_for_matchmaking(lobby_server)
+    _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
 
+    await asyncio.gather(*[read_until_match(proto) for proto in (proto1, proto2)])
     # Trying to queue again after match was found should generate an error
     await proto1.send_message({
         "command": "game_matchmaking",
@@ -182,6 +188,7 @@ async def test_game_matchmaking_start_while_matched(lobby_server):
 async def test_game_matchmaking_timeout(lobby_server, game_service):
     _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
 
+    await asyncio.gather(*[read_until_match(proto) for proto in (proto1, proto2)])
     msg1 = await idle_response(proto1, timeout=120)
     await read_until_command(proto2, "match_cancelled", timeout=120)
     await read_until_command(proto1, "match_cancelled", timeout=120)
@@ -229,6 +236,7 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
 async def test_game_matchmaking_timeout_guest(lobby_server, game_service):
     _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
 
+    await asyncio.gather(*[read_until_match(proto) for proto in (proto1, proto2)])
     msg1, msg2 = await asyncio.gather(
         client_response(proto1),
         client_response(proto2)
@@ -305,10 +313,12 @@ async def test_game_matchmaking_cancel(lobby_server):
         await read_until_command(proto, "search_info", timeout=5)
 
 
-@fast_forward(50)
+@fast_forward(120)
 async def test_game_matchmaking_disconnect(lobby_server):
     _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
+
     # One player disconnects before the game has launched
+    await asyncio.gather(*[read_until_match(proto) for proto in (proto1, proto2)])
     await proto1.close()
 
     msg = await read_until_command(proto2, "match_cancelled", timeout=120)
@@ -316,12 +326,26 @@ async def test_game_matchmaking_disconnect(lobby_server):
     assert msg == {"command": "match_cancelled", "game_id": 41956}
 
 
+@fast_forward(120)
+async def test_game_matchmaking_disconnect_no_accept(lobby_server):
+    _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
+
+    # One player disconnects before the game has launched
+    await read_until_command(proto1, "match_found", timeout=30)
+    await proto1.close()
+
+    msg = await read_until_command(proto2, "match_cancelled", timeout=120)
+
+    assert msg == {"command": "match_cancelled"}
+
+
 @pytest.mark.flaky
 @fast_forward(130)
 async def test_game_matchmaking_close_fa_and_requeue(lobby_server):
     _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
 
-    _, _ = await asyncio.gather(
+    await asyncio.gather(*[read_until_match(proto) for proto in (proto1, proto2)])
+    await asyncio.gather(
         client_response(proto1),
         client_response(proto2)
     )
@@ -365,6 +389,10 @@ async def test_anti_map_repetition(lobby_server):
     for _ in range(20):
         ret = await queue_players_for_matchmaking(lobby_server)
         player1_id, proto1, player2_id, proto2 = ret
+        await asyncio.gather(
+            read_until_match(proto1),
+            read_until_match(proto2)
+        )
         msg1, msg2 = await asyncio.gather(
             client_response(proto1),
             client_response(proto2)

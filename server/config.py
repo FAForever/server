@@ -146,7 +146,7 @@ class ConfigurationStore:
         # The method for choosing map pool rating
         # Can be "mean", "min", or "max"
         self.MAP_POOL_RATING_SELECTION = "mean"
-        # The maximum amount of time in seconds to wait between pops
+        # The maximum amount of time (in seconds) to wait between pops.
         self.QUEUE_POP_TIME_MAX = 90
         # The number of possible matches we would like to have when the queue
         # pops. The queue pop time will be adjusted based on the current rate of
@@ -154,6 +154,9 @@ class ConfigurationStore:
         self.QUEUE_POP_DESIRED_MATCHES = 2.5
         # How many previous queue sizes to consider
         self.QUEUE_POP_TIME_MOVING_AVG_SIZE = 5
+        # Amount of time (in seconds) that players have to accept a match
+        # before it will time out.
+        self.MATCH_OFFER_TIME = 20
 
         self._defaults = {
             key: value for key, value in vars(self).items() if key.isupper()

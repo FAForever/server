@@ -828,6 +828,13 @@ async def test_start_game_called_on_match(
     search1 = ladder_service._searches[p1]["ladder1v1"]
 
     await search1.await_match()
+    # Wait for offer to be created
+    await asyncio.sleep(1)
+
+    ladder_service.ready_player(p1)
+    ladder_service.ready_player(p2)
+
+    await asyncio.sleep(1)
 
     ladder_service.write_rating_progress.assert_called()
     ladder_service.start_game.assert_called_once()

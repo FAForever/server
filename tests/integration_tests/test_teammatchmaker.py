@@ -13,6 +13,7 @@ from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until, read_until_command
 from .test_game import (
+    accept_match,
     client_response,
     get_player_ratings,
     idle_response,
@@ -62,11 +63,19 @@ async def queue_players_for_matchmaking(lobby_server):
         read_until_command(proto, "match_found", timeout=30) for proto in protos
     ])
 
+    await asyncio.gather(*[
+        proto.send_message({
+            "command": "match_ready",
+        })
+        for proto in protos
+    ])
+
     return protos, ids
 
 
 async def matchmaking_client_response(proto):
     await read_until_command(proto, "match_found", timeout=30)
+    await accept_match(proto)
     return await client_response(proto)
 
 
@@ -148,6 +157,7 @@ async def test_game_matchmaking_multiqueue(lobby_server):
         })
         for proto in protos
     ])
+    await read_until_command(protos[0], "match_found", timeout=30)
     msg = await read_until_command(
         protos[0],
         "search_info",
@@ -155,7 +165,19 @@ async def test_game_matchmaking_multiqueue(lobby_server):
     )
     assert msg["state"] == "stop"
 
-    msgs = await asyncio.gather(*[client_response(proto) for proto in protos])
+    # Since `match_found` comes before `search_info` we can't use
+    # `matchmaking_client_response` for the first player.
+    async def _accept_and_respond(proto):
+        await accept_match(proto)
+        return await client_response(proto)
+
+    msgs = await asyncio.gather(
+        _accept_and_respond(protos[0]),
+        *[
+            matchmaking_client_response(proto)
+            for proto in protos[1:]
+        ]
+    )
 
     uid = set(msg["uid"] for msg in msgs)
     assert len(uid) == 1
@@ -353,6 +375,7 @@ async def test_game_matchmaking_multiqueue_timeout(lobby_server):
     )
     assert msg["state"] == "stop"
 
+    await asyncio.gather(*[accept_match(proto) for proto in protos])
     await client_response(protos[0])
     await idle_response(protos[1])
 

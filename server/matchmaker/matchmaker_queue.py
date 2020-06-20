@@ -175,7 +175,7 @@ class MatchmakerQueue:
         proposed_matches, unmatched_searches = await loop.run_in_executor(
             None,
             self.matchmaker.find,
-            searches,
+            (search for search in searches if not search.done()),
             self.team_size,
             self.rating_peak,
         )
