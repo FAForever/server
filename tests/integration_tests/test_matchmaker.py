@@ -184,6 +184,45 @@ async def test_game_matchmaking_start_while_matched(lobby_server):
     assert msg["text"].startswith("Can't join a queue while ladder1 is in")
 
 
+@fast_forward(100)
+async def test_game_matchmaking_search_after_timeout(lobby_server):
+    _, proto1 = await queue_player_for_matchmaking(
+        ("ladder1", "ladder1"),
+        lobby_server,
+        "ladder1v1"
+    )
+    _, proto2 = await queue_player_for_matchmaking(
+        ("ladder2", "ladder2"),
+        lobby_server,
+        "ladder1v1"
+    )
+
+    await read_until_command(proto1, "match_info")
+    await read_until_command(proto2, "match_info")
+
+    # Only player 1 readies up
+    await proto1.send_message({"command": "match_ready"})
+
+    await read_until_command(proto1, "match_info", timeout=5)
+    await read_until_command(proto2, "match_info")
+
+    # So the match times out
+    await read_until_command(proto1, "match_cancelled", timeout=40)
+    await read_until_command(proto2, "match_cancelled")
+
+    # Player 2 joins the queue again
+    await proto2.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "seraphim",
+        "mod": "ladder1v1"
+    })
+
+    # The players should match
+    await read_until_command(proto1, "match_info")
+    await read_until_command(proto2, "match_info")
+
+
 @fast_forward(120)
 async def test_game_matchmaking_timeout(lobby_server, game_service):
     _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)

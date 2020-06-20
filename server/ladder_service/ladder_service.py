@@ -496,6 +496,8 @@ class LadderService(Service):
             offer = self.create_match_offer(all_players)
             offer.write_broadcast_update()
             await offer.wait_ready()
+
+            await self.start_game(s1.players, s2.players, queue)
         except OfferTimeoutError:
             unready_players = list(offer.get_unready_players())
             assert unready_players, "Unready players should be non-empty if offer timed out"
@@ -506,11 +508,24 @@ class LadderService(Service):
             )
             self._cancel_match(all_players)
 
-            # TODO: Unmatch and return to queue
+            # Return any player that accepted the match back to the queue
+            # TODO: make this work with parties
+            for search in (s1, s2):
+                for player in search.players:
+                    if player in unready_players:
+                        self.cancel_search(player)
+                    else:
+                        search.unmatch()
+                        player.state = PlayerState.SEARCHING_LADDER
+                        asyncio.create_task(queue.search(search))
 
             self.violation_service.register_violations(unready_players)
 
-        await self.start_game(s1.players, s2.players, queue)
+        except Exception as e:
+            self._logger.exception(
+                "Error processing match between searches %s, and %s: %s",
+                s1, s2, e
+            )
 
     def create_match_offer(self, players: Iterable[Player]):
         offer = MatchOffer(
