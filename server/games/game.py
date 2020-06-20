@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import re
 import time
@@ -13,13 +14,15 @@ from server.games.game_results import (
     resolve_game
 )
 from server.rating import RatingType
-from server.rating_service.typedefs import GameRatingSummary, TeamRatingSummary
 from sqlalchemy import and_, bindparam
 from sqlalchemy.sql.functions import now as sql_now
 
 from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
-from .enums import GameState, ValidityState, Victory, VisibilityState
+from .typedefs import (
+    BasicGameInfo, EndedGameInfo, GameState, ValidityState, Victory,
+    VisibilityState
+)
 
 
 class GameError(Exception):
@@ -49,7 +52,7 @@ class Game:
     ):
         self._db = database
         self._results = GameResultReports(id_)
-        self._army_stats = None
+        self._army_stats_list = []
         self._players_with_unsent_army_stats = []
         self._game_stats_service = game_stats_service
         self.game_service = game_service
@@ -105,10 +108,10 @@ class Game:
 
     @property
     def armies(self):
-        return frozenset({
+        return frozenset(
             self.get_player_option(player.id, 'Army')
             for player in self.players
-        })
+        )
 
     @property
     def is_mutually_agreed_draw(self) -> bool:
@@ -147,10 +150,10 @@ class Game:
         """
         A set of all teams of this game's players.
         """
-        return frozenset({
+        return frozenset(
             self.get_player_option(player.id, 'Team')
             for player in self.players
-        })
+        )
 
     @property
     def is_ffa(self) -> bool:
@@ -260,7 +263,7 @@ class Game:
     def _process_army_stats_for_player(self, player):
         try:
             if (
-                self._army_stats is None
+                len(self._army_stats_list) == 0
                 or self.gameOptions["CheatsEnabled"] != "false"
             ):
                 return
@@ -270,7 +273,7 @@ class Game:
             # we don't want to await it
             asyncio.create_task(
                 self._game_stats_service.process_game_stats(
-                    player, self, self._army_stats
+                    player, self, self._army_stats_list
                 )
             )
         except Exception:
@@ -372,7 +375,10 @@ class Game:
                     return
 
                 await self.persist_results()
-                await self.rate_game()
+
+                game_results = await self.resolve_game_results()
+                await self.game_service.publish_game_results(game_results)
+
                 self._process_pending_army_stats()
         except Exception:    # pragma: no cover
             self._logger.exception("Error during game end")
@@ -386,25 +392,37 @@ class Game:
     async def _run_pre_rate_validity_checks(self):
         pass
 
-    async def rate_game(self):
-        if self._rating_type is None:
-            return
-
+    async def resolve_game_results(self) -> EndedGameInfo:
         if self.state not in (GameState.LIVE, GameState.ENDED):
             raise GameError("Cannot rate game that has not been launched.")
 
         await self._run_pre_rate_validity_checks()
 
-        if self.validity is not ValidityState.VALID:
-            return
+        basic_info = self.get_basic_info()
+        team_outcomes = [GameOutcome.UNKNOWN for _ in basic_info.teams]
+
+        if self.validity is ValidityState.VALID:
+            try:
+                team_player_partial_outcomes = [
+                    {self.get_player_outcome(player) for player in team}
+                    for team in basic_info.teams
+                ]
+                team_outcomes = resolve_game(team_player_partial_outcomes)
+            except GameResolutionError:
+                await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
 
         try:
-            summary = self._get_rating_summary()
-        except GameResolutionError:
-            await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
-            return
+            commander_kills = {
+                army_stats["name"]: army_stats["units"]["cdr"]["kills"]
+                for army_stats in self._army_stats_list
+            }
+        except KeyError:
+            commander_kills = {}
 
-        await self.game_service.send_to_rating_service(summary)
+        return EndedGameInfo.from_basic(
+            basic_info, self.validity, team_outcomes, commander_kills
+        )
+
 
     async def load_results(self):
         """
@@ -461,22 +479,14 @@ class Game:
                 )
             await conn.execute(update_statement, rows)
 
-    def _get_rating_summary(self) -> GameRatingSummary:
-        teams = self.get_team_sets()
-        team_player_outcomes = [
-            {self.get_player_outcome(player) for player in team}
-            for team in teams
-        ]
-        team_outcomes = resolve_game(team_player_outcomes)
-        team_player_ids = [{player.id for player in team} for team in teams]
-
-        return GameRatingSummary(
+    def get_basic_info(self) -> BasicGameInfo:
+        return BasicGameInfo(
             self.id,
             self._rating_type,
-            [
-                TeamRatingSummary(outcome, player_ids)
-                for outcome, player_ids in zip(team_outcomes, team_player_ids)
-            ]
+            self.map_id,
+            self.game_mode,
+            list(self.mods.keys()),
+            self.get_team_sets(),
         )
 
     def set_player_option(self, player_id: int, key: str, value: Any):
@@ -764,8 +774,8 @@ class Game:
 
         return self._results.outcome(army)
 
-    def report_army_stats(self, stats):
-        self._army_stats = stats
+    def report_army_stats(self, stats_json):
+        self._army_stats_list = json.loads(stats_json)["stats"]
         self._process_pending_army_stats()
 
     def to_dict(self):

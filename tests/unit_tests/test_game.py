@@ -1,9 +1,11 @@
+import json
 import logging
 import time
 from typing import Any, List, Tuple
 from unittest import mock
 
 import pytest
+
 from asynctest import CoroutineMock
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import CoopGame, CustomGame
@@ -23,7 +25,7 @@ pytestmark = pytest.mark.asyncio
 
 @pytest.yield_fixture
 def game(event_loop, database, game_service, game_stats_service):
-    game = Game(42, database, game_service, game_stats_service)
+    game = Game(42, database, game_service, game_stats_service, rating_type=RatingType.GLOBAL)
     yield game
 
 
@@ -454,20 +456,18 @@ async def test_game_get_player_outcome_ignores_unknown_results(
     assert game.get_player_outcome(players[1]) is GameOutcome.UNKNOWN
 
 
-async def test_on_game_end_does_not_call_rate_game_for_single_player(game):
-    game.rate_game = CoroutineMock()
+async def test_on_game_end_single_player_gives_unknown_result(game):
     game.state = GameState.LIVE
     game.launched_at = time.time()
 
     await game.on_game_end()
     assert game.state is GameState.ENDED
-    game.rate_game.assert_not_called()
+    assert game.validity is ValidityState.UNKNOWN_RESULT
 
 
-async def test_on_game_end_calls_rate_game_with_two_players(
+async def test_on_game_end_two_players_is_valid(
     game, game_add_players
 ):
-    game.rate_game = CoroutineMock()
     game.state = GameState.LOBBY
     game_add_players(game, 2)
 
@@ -479,8 +479,6 @@ async def test_on_game_end_calls_rate_game_with_two_players(
 
     await game.on_game_end()
     assert game.state is GameState.ENDED
-    game.rate_game.assert_any_call()
-
     assert game.validity is ValidityState.VALID
 
 
@@ -683,7 +681,7 @@ async def test_report_army_stats_sends_stats_for_defeated_player(
     game.report_army_stats(stats)
 
     game._game_stats_service.process_game_stats.assert_called_once_with(
-        players[1], game, stats
+        players[1], game, json.loads(stats)["stats"]
     )
 
 
@@ -705,7 +703,7 @@ async def test_partial_stats_not_affecting_rating_persistence(
     game.launched_at = time.time() - 60 * 60
     await game.add_result(0, 0, 'victory', 10)
     await game.add_result(0, 1, 'defeat', -10)
-    game.report_army_stats("{'stats': {'Player 1': {}}}")
+    game.report_army_stats('{"stats": []}')
     await game.on_game_end()
 
     # await game being rated
@@ -803,16 +801,6 @@ async def test_game_outcomes_conflicting(game: Game, database, players):
     # No guarantees on scores for conflicting results.
 
 
-async def test_victory_conditions():
-    conds = [("demoralization", Victory.DEMORALIZATION),
-             ("domination", Victory.DOMINATION),
-             ("eradication", Victory.ERADICATION),
-             ("sandbox", Victory.SANDBOX)]
-
-    for string_value, enum_value in conds:
-        assert Victory.from_gpgnet_string(string_value) == enum_value
-
-
 async def test_visibility_states():
     states = [("public", VisibilityState.PUBLIC),
               ("friends", VisibilityState.FRIENDS)]
@@ -861,3 +849,56 @@ async def test_team_sets_missing_team_disallowed(game: Game, game_add_players):
 
     with pytest.raises(GameError):
         assert game.get_team_sets()
+
+
+async def test_game_results(game: Game, players):
+    game.state = GameState.LOBBY
+    host_id = players.hosting.id
+    join_id = players.joining.id
+    add_connected_players(game, [players.hosting, players.joining])
+    game.set_player_option(players.hosting.id, 'Team', 1)
+    game.set_player_option(players.joining.id, 'Team', 1)
+
+    await game.launch()
+    await game.add_result(host_id, 0, "victory", 1)
+    await game.add_result(join_id, 1, "defeat", 0)
+
+    game_results =  await game.resolve_game_results()
+    result_dict = game_results.to_dict()
+
+    assert result_dict["validity"] == "VALID"
+    assert result_dict["rating_type"] == "GLOBAL"
+    assert len(result_dict["teams"]) == 2
+
+    for team in result_dict["teams"]:
+        assert team["outcome"] == (
+            "VICTORY" if team["player_ids"] == [host_id]
+            else "DEFEAT"
+        )
+    assert result_dict["game_id"] == game.id
+    assert result_dict["map_id"] == game.map_id
+    assert result_dict["featured_mod"] == "faf"
+    assert result_dict["sim_mod_ids"] == []
+
+
+async def test_game_results_commander_kills(
+    game: Game, game_add_players
+):
+    game.state = GameState.LOBBY
+    game_add_players(game, 2)
+
+    await game.launch()
+    await game.add_result(0, 1, "defeat", 0)
+
+    with open("tests/data/game_stats_simple_win.json", "r") as stats_file:
+        stats = stats_file.read()
+
+    game.report_army_stats(stats)
+
+    game_results =  await game.resolve_game_results()
+    result_dict = game_results.to_dict()
+
+    assert result_dict["commander_kills"] == {
+        "TestUser": 1,
+        "TestUser2": 0,
+    }

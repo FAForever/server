@@ -1,4 +1,5 @@
 import pytest
+
 from asynctest import CoroutineMock
 from server.async_functions import gather_without_exceptions
 

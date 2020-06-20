@@ -16,7 +16,6 @@ env:
     - FAF_DB_VERSION="v93"
 
 before_install:
-  - sudo /etc/init.d/mysql stop
   - git clone https://github.com/FAForever/db.git faf-db
       && pushd faf-db
       && git checkout "${FAF_DB_VERSION}"

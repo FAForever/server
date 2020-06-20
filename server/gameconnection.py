@@ -223,7 +223,9 @@ class GameConnection(GpgNetServerProtocol):
             return
 
         if key == "Victory":
-            self.game.gameOptions["Victory"] = Victory.from_gpgnet_string(value)
+            self.game.gameOptions["Victory"] = Victory.__members__.get(
+                value.upper(), None
+            )
         else:
             self.game.gameOptions[key] = value
 
@@ -505,6 +507,7 @@ class GameConnection(GpgNetServerProtocol):
         self.finished_sim = True
         await self.game.check_sim_end()
 
+        # FIXME Move this into check_sim_end
         if self.game.ended:
             await self.game.on_game_end()
 

@@ -1,7 +1,7 @@
 from collections import Counter, defaultdict
 from collections.abc import Mapping
 from enum import Enum
-from typing import NamedTuple, Set, List
+from typing import List, NamedTuple, Set
 
 from server.decorators import with_logger
 

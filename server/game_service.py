@@ -8,9 +8,11 @@ from server.db import FAFDatabase
 from server.decorators import with_logger
 from server.games import CoopGame, CustomGame, FeaturedMod, LadderGame
 from server.games.game import Game, GameState, VisibilityState
+from server.games.typedefs import EndedGameInfo, ValidityState
 from server.matchmaker import MatchmakerQueue
+from server.message_queue_service import MessageQueueService
 from server.players import Player
-from server.rating_service import RatingService, GameRatingSummary
+from server.rating_service import RatingService
 
 
 @with_logger
@@ -24,6 +26,7 @@ class GameService(Service):
         player_service,
         game_stats_service,
         rating_service: RatingService,
+        message_queue_service: MessageQueueService
     ):
         self._db = database
         self._dirty_games = set()
@@ -31,6 +34,7 @@ class GameService(Service):
         self.player_service = player_service
         self.game_stats_service = game_stats_service
         self._rating_service = rating_service
+        self._message_queue_service = message_queue_service
         self.game_id_counter = 0
 
         # Populated below in really_update_static_ish_data.
@@ -51,6 +55,8 @@ class GameService(Service):
         self._update_cron = aiocron.crontab(
             '*/10 * * * *', func=self.update_data
         )
+
+        await self._message_queue_service.declare_exchange("faf-rabbitmq")
 
     async def initialise_game_counter(self):
         async with self._db.acquire() as conn:
@@ -210,5 +216,17 @@ class GameService(Service):
     def __contains__(self, item):
         return item in self._games
 
-    async def send_to_rating_service(self, summary: GameRatingSummary):
-        await self._rating_service.enqueue(summary)
+    async def publish_game_results(self, game_results: EndedGameInfo):
+        result_dict = game_results.to_dict()
+        await self._message_queue_service.publish(
+            "faf-rabbitmq",
+            "success.gameResults.create",
+            result_dict,
+        )
+
+        # TODO: Remove when rating service starts listening to message queue
+        if (
+            game_results.validity is ValidityState.VALID
+            and game_results.rating_type is not None
+        ):
+            await self._rating_service.enqueue(result_dict)

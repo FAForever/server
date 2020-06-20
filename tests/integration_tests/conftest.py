@@ -44,8 +44,8 @@ async def mock_rating(database, mock_players):
 
 @pytest.fixture
 async def lobby_server(
-    event_loop, database, player_service, game_service,
-    geoip_service, ladder_service, rating_service, policy_server
+    event_loop, database, player_service, game_service, geoip_service,
+    ladder_service, rating_service, message_queue_service, policy_server
 ):
     with mock.patch(
         'server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL',
@@ -59,7 +59,7 @@ async def lobby_server(
             game_service=game_service,
             ladder_service=ladder_service,
             nts_client=None,
-            loop=event_loop
+            loop=event_loop,
         )
         player_service.is_uniqueid_exempt = lambda id: True
 

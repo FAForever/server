@@ -1,4 +1,4 @@
-import json
+from typing import List
 
 from server.config import config
 from server.core import Service
@@ -18,13 +18,13 @@ class GameStatsService(Service):
         self._event_service = event_service
         self._achievement_service = achievement_service
 
-    async def process_game_stats(self, player: Player, game: Game, stats_json):
+    async def process_game_stats(self, player: Player, game: Game, army_stats_list: List):
         stats = None
         number_of_humans = 0
         highest_score = 0
         highest_scorer = None
 
-        for army_stats in json.loads(stats_json)['stats']:
+        for army_stats in army_stats_list:
             if army_stats['type'] == 'AI' and army_stats['name'] != 'civilian':
                 self._logger.debug("Ignoring AI game reported by %s", player.login)
                 return

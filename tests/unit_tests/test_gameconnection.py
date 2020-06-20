@@ -1,8 +1,9 @@
 import asyncio
 from unittest import mock
 
-import asynctest
 import pytest
+
+import asynctest
 from asynctest import CoroutineMock, exhaust_callbacks
 from server import GameConnection
 from server.abc.base_game import GameConnectionState

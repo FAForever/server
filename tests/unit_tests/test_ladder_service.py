@@ -2,6 +2,7 @@ import asyncio
 from unittest import mock
 
 import pytest
+
 from asynctest import CoroutineMock, exhaust_callbacks
 from server import LadderService
 from server.matchmaker import Search

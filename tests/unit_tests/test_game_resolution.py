@@ -1,6 +1,8 @@
 import pytest
 
-from server.games.game_results import resolve_game, GameOutcome, GameResolutionError
+from server.games.game_results import (
+    GameOutcome, GameResolutionError, resolve_game
+)
 
 
 def test_only_rate_with_two_parties():

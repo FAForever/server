@@ -24,6 +24,7 @@ twilio = "*"
 humanize = "*"
 aiomysql = {editable = true, git = "https://github.com/aio-libs/aiomysql"}
 pyyaml = "*"
+aio_pika = "*"
 
 [dev-packages]
 pytest = "*"

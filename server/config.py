@@ -13,6 +13,7 @@ from .decorators import with_logger
 TRACE = 5
 logging.addLevelName(TRACE, "TRACE")
 logging.getLogger("aiomeasures").setLevel(logging.INFO)
+logging.getLogger("aio_pika").setLevel(logging.INFO)
 
 # Constants
 FFA_TEAM = 1
@@ -50,6 +51,12 @@ class ConfigurationStore:
         self.API_TOKEN_URI = "https://api.test.faforever.com/oauth/token"
         self.API_BASE_URL = "https://api.test.faforever.com/"
         self.USE_API = True
+
+        self.MQ_USER = "faf-lobby"
+        self.MQ_PASSWORD = "banana"
+        self.MQ_SERVER = "127.0.0.1"
+        self.MQ_PORT = 5672
+        self.MQ_VHOST = "/faf-lobby"
 
         self.WWW_URL = "https://www.faforever.com"
         self.CONTENT_URL = "http://content.faforever.com"

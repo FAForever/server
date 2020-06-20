@@ -1,4 +1,5 @@
 import pytest
+
 from asynctest import CoroutineMock
 from mock import Mock
 from server.api.api_accessor import SessionManager

@@ -2,6 +2,7 @@ import gc
 from unittest import mock
 
 import pytest
+
 from server.factions import Faction
 from server.players import Player
 from server.protocol import DisconnectedError

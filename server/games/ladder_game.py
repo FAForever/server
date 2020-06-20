@@ -2,9 +2,9 @@ import logging
 
 from server.abc.base_game import InitMode
 from server.players import Player
+from server.rating import RatingType
 
 from .game import Game, GameOutcome
-from server.rating import RatingType
 
 logger = logging.getLogger(__name__)
 

@@ -1,10 +1,11 @@
-import asynctest
+from enum import Enum
+
 import pytest
+
+import asynctest
 from mock import Mock
 from server.lobbyconnection import LobbyConnection
 from server.rating import RatingType
-
-from enum import Enum
 
 pytestmark = pytest.mark.asyncio
 

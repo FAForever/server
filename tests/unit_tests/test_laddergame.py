@@ -1,6 +1,7 @@
 import time
 
 import pytest
+
 from server.db.models import leaderboard_rating
 from server.games import LadderGame
 from server.games.game import GameState, ValidityState

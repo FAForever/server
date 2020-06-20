@@ -1,8 +1,7 @@
 import logging
-
 from unittest import mock
 
-from server.decorators import with_logger, timed
+from server.decorators import timed, with_logger
 
 
 def test_with_logger():
