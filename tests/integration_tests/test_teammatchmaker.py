@@ -30,7 +30,7 @@ async def queue_players_for_matchmaking(lobby_server):
             "command": "game_matchmaking",
             "state": "start",
             "faction": "uef",
-            "mod": "tmm2v2"
+            "queue_name": "tmm2v2"
         })
         for proto in protos
     ])

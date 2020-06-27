@@ -826,14 +826,16 @@ class LobbyConnection:
         await self.launch_game(game, is_host=False)
 
     async def command_game_matchmaking(self, message):
-        mod = str(message.get('mod', 'ladder1v1'))
+        queue_name = str(
+            message.get('queue_name') or message.get('mod', 'ladder1v1')
+        )
         state = str(message['state'])
 
         if self._attempted_connectivity_test:
             raise ClientError("Cannot host game. Please update your client to the newest version.")
 
         if state == "stop":
-            await self.ladder_service.cancel_search(self.player, mod)
+            await self.ladder_service.cancel_search(self.player, queue_name)
             return
 
         if state == "start":
@@ -842,7 +844,10 @@ class LobbyConnection:
             self.player.faction = message['faction']
 
             # TODO: Put player parties here
-            await self.ladder_service.start_search(self.player, queue_name=mod)
+            await self.ladder_service.start_search(
+                self.player,
+                queue_name=queue_name
+            )
 
     async def command_game_host(self, message):
         assert isinstance(self.player, Player)
