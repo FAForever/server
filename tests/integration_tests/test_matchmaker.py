@@ -176,7 +176,7 @@ async def test_game_matchmaking_cancel(lobby_server):
 
     assert msg == {
         'command': 'search_info',
-        'queue': 'ladder1v1',
+        'queue_name': 'ladder1v1',
         'state': 'stop',
     }
 
@@ -304,7 +304,7 @@ async def test_search_info_messages(lobby_server):
     msg = await read_until_command(proto, "search_info")
     assert msg == {
         "command": "search_info",
-        "queue": "ladder1v1",
+        "queue_name": "ladder1v1",
         "state": "start"
     }
     # TODO: Join a second queue here
@@ -317,7 +317,7 @@ async def test_search_info_messages(lobby_server):
     msg = await read_until_command(proto, "search_info")
     assert msg == {
         "command": "search_info",
-        "queue": "ladder1v1",
+        "queue_name": "ladder1v1",
         "state": "stop"
     }
 

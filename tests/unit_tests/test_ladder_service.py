@@ -2,7 +2,6 @@ import asyncio
 from unittest import mock
 
 import pytest
-
 from asynctest import CoroutineMock, exhaust_callbacks
 
 from server import GameService, LadderService
@@ -179,7 +178,7 @@ async def test_search_info_message(
 
     msg = {
         "command": "search_info",
-        "queue": "ladder1v1",
+        "queue_name": "ladder1v1",
         "state": "start"
     }
     p1.send_message.assert_called_once_with(msg)
@@ -193,7 +192,7 @@ async def test_search_info_message(
 
     msg = {
         "command": "search_info",
-        "queue": "tmm2v2",
+        "queue_name": "tmm2v2",
         "state": "start"
     }
     p1.send_message.assert_called_once_with(msg)
@@ -207,12 +206,12 @@ async def test_search_info_message(
     call_args = [
         mock.call({
             "command": "search_info",
-            "queue": "ladder1v1",
+            "queue_name": "ladder1v1",
             "state": "stop"
         }),
         mock.call({
             "command": "search_info",
-            "queue": "tmm2v2",
+            "queue_name": "tmm2v2",
             "state": "stop"
         }),
     ]

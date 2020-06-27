@@ -206,7 +206,7 @@ class LadderService(Service):
 
             tasks.append(player.send_message({
                 "command": "search_info",
-                "queue": queue_name,
+                "queue_name": queue_name,
                 "state": "start"
             }))
 
@@ -244,7 +244,7 @@ class LadderService(Service):
                 if player.lobby_connection is not None:
                     tasks.append(player.send_message({
                         "command": "search_info",
-                        "queue": queue_name,
+                        "queue_name": queue_name,
                         "state": "stop"
                     }))
             self._logger.info(
