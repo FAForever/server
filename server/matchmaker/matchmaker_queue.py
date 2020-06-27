@@ -212,10 +212,11 @@ class MatchmakerQueue:
             "queue_pop_time": datetime.fromtimestamp(
                 self.timer.next_queue_pop, timezone.utc
             ).isoformat(),
-            "team_size": self.team_size,
             "num_players": sum(len(search.players) for search in self.queue.values()),
             "boundary_80s": [search.boundary_80 for search in self.queue.values()],
-            "boundary_75s": [search.boundary_75 for search in self.queue.values()]
+            "boundary_75s": [search.boundary_75 for search in self.queue.values()],
+            # TODO: Remove, the client should query the API for this
+            "team_size": self.team_size,
         }
 
     def __repr__(self):
