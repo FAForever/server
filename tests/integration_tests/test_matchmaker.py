@@ -209,15 +209,11 @@ async def test_matchmaker_info_message(lobby_server, mocker):
     for queue in msg["queues"]:
         assert "queue_name" in queue
         assert "team_size" in queue
+        assert "num_players" in queue
 
-        del queue["queue_name"]
-        del queue["team_size"]
-
-        assert queue == {
-            "queue_pop_time": "2019-07-01T16:53:21+00:00",
-            "boundary_80s": [],
-            "boundary_75s": []
-        }
+        assert queue["queue_pop_time"] == "2019-07-01T16:53:21+00:00"
+        assert queue["boundary_80s"] == []
+        assert queue["boundary_75s"] == []
 
 
 @fast_forward(10)
@@ -239,15 +235,11 @@ async def test_command_matchmaker_info(lobby_server, mocker):
     for queue in msg["queues"]:
         assert "queue_name" in queue
         assert "team_size" in queue
+        assert "num_players" in queue
 
-        del queue["queue_name"]
-        del queue["team_size"]
-
-        assert queue == {
-            "queue_pop_time": "2019-07-01T16:53:21+00:00",
-            "boundary_80s": [],
-            "boundary_75s": []
-        }
+        assert queue["queue_pop_time"] == "2019-07-01T16:53:21+00:00"
+        assert queue["boundary_80s"] == []
+        assert queue["boundary_75s"] == []
 
 
 @fast_forward(10)
