@@ -3,8 +3,8 @@ from unittest import mock
 
 import pytest
 import yaml
-
 from asynctest import CoroutineMock
+
 from server import config
 from server.configuration_service import ConfigurationService
 from tests.utils import fast_forward

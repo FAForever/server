@@ -6,7 +6,7 @@ import aio_pika
 from aio_pika import DeliveryMode, ExchangeType
 from aio_pika.exceptions import ProbableAuthenticationError
 
-from .config import config, TRACE
+from .config import TRACE, config
 from .core import Service
 from .decorators import with_logger
 

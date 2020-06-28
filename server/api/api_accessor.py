@@ -2,8 +2,10 @@ from ssl import SSLError
 from typing import Optional
 
 from oauthlib.oauth2.rfc6749.errors import (
-    InsecureTransportError, MissingTokenError
+    InsecureTransportError,
+    MissingTokenError
 )
+
 from server.config import config
 from server.decorators import with_logger
 

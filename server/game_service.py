@@ -8,7 +8,11 @@ from .core import Service
 from .db import FAFDatabase
 from .decorators import with_logger
 from .games import (
-    CoopGame, CustomGame, FeaturedMod, FeaturedModType, LadderGame
+    CoopGame,
+    CustomGame,
+    FeaturedMod,
+    FeaturedModType,
+    LadderGame
 )
 from .games.game import Game, GameState, VisibilityState
 from .games.typedefs import EndedGameInfo, ValidityState

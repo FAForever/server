@@ -1,8 +1,8 @@
 from unittest.mock import Mock
 
 import pytest
-
 from asynctest import CoroutineMock
+
 from server.api.api_accessor import ApiAccessor
 from server.stats.event_service import EventService
 

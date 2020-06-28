@@ -11,9 +11,8 @@ import logging
 from typing import Iterable
 from unittest import mock
 
-import pytest
-
 import asynctest
+import pytest
 from asynctest import CoroutineMock
 
 from server.api.api_accessor import ApiAccessor

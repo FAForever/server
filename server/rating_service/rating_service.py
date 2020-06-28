@@ -9,8 +9,12 @@ from server.config import config
 from server.core import Service
 from server.db import FAFDatabase
 from server.db.models import (
-    game_player_stats, global_rating, ladder1v1_rating, leaderboard,
-    leaderboard_rating, leaderboard_rating_journal
+    game_player_stats,
+    global_rating,
+    ladder1v1_rating,
+    leaderboard,
+    leaderboard_rating,
+    leaderboard_rating_journal
 )
 from server.decorators import with_logger
 from server.games.game_results import GameOutcome
@@ -20,7 +24,10 @@ from server.rating import RatingType, RatingTypeMap
 
 from .game_rater import GameRater, GameRatingError
 from .typedefs import (
-    GameRatingData, GameRatingSummary, PlayerID, ServiceNotReadyError,
+    GameRatingData,
+    GameRatingSummary,
+    PlayerID,
+    ServiceNotReadyError,
     TeamRatingData
 )
 

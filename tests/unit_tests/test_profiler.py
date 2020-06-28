@@ -2,8 +2,8 @@ import asyncio
 from unittest import mock
 
 import pytest
-
 from asynctest import CoroutineMock
+
 from server.config import config
 from server.profiler import Profiler
 from tests.utils import fast_forward

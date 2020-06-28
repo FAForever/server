@@ -1,10 +1,10 @@
 import pytest
+from trueskill import Rating
 
 from server.games.game_results import GameOutcome
 from server.rating import RatingType
 from server.rating_service.game_rater import GameRater
 from server.rating_service.typedefs import TeamRatingData
-from trueskill import Rating
 
 
 class MockPlayer:

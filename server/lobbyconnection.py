@@ -22,7 +22,12 @@ from .abc.base_game import GameConnectionState, InitMode
 from .async_functions import gather_without_exceptions
 from .config import TRACE, config
 from .db.models import (
-    avatars, avatars_list, ban, coop_map, friends_and_foes, lobby_ban
+    avatars,
+    avatars_list,
+    ban,
+    coop_map,
+    friends_and_foes,
+    lobby_ban
 )
 from .db.models import login as t_login
 from .decorators import timed, with_logger

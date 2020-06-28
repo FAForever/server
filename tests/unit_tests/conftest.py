@@ -2,10 +2,10 @@ from contextlib import AbstractContextManager
 from time import perf_counter
 from unittest import mock
 
-import pytest
-
 import asynctest
+import pytest
 from asynctest import CoroutineMock
+
 from server import GameStatsService
 from server.game_service import GameService
 from server.gameconnection import GameConnection, GameConnectionState

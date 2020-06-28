@@ -13,9 +13,19 @@ from server.rating import RatingType
 
 from .core import Service
 from .db.models import (
-    avatars, avatars_list, clan, clan_membership, global_rating,
-    group_permission, group_permission_assignment, ladder1v1_rating,
-    leaderboard, leaderboard_rating, login, user_group, user_group_assignment
+    avatars,
+    avatars_list,
+    clan,
+    clan_membership,
+    global_rating,
+    group_permission,
+    group_permission_assignment,
+    ladder1v1_rating,
+    leaderboard,
+    leaderboard_rating,
+    login,
+    user_group,
+    user_group_assignment
 )
 
 

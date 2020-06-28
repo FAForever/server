@@ -14,11 +14,17 @@ from .config import config
 from .core import Service
 from .db import FAFDatabase
 from .db.models import (
-    game_featuredMods, game_player_stats, game_stats, leaderboard
+    game_featuredMods,
+    game_player_stats,
+    game_stats,
+    leaderboard
 )
 from .db.models import map as t_map
 from .db.models import (
-    map_pool, map_pool_map_version, map_version, matchmaker_queue,
+    map_pool,
+    map_pool_map_version,
+    map_version,
+    matchmaker_queue,
     matchmaker_queue_map_pool
 )
 from .decorators import with_logger

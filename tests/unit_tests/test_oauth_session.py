@@ -1,10 +1,11 @@
 import time
 
 import pytest
-
 from oauthlib.oauth2.rfc6749.errors import (
-    InsecureTransportError, MissingTokenError
+    InsecureTransportError,
+    MissingTokenError
 )
+
 from server.api.oauth_session import OAuth2Session
 
 

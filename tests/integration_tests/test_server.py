@@ -2,12 +2,16 @@ import asyncio
 import contextlib
 
 import pytest
-from server.db.models import avatars, avatars_list, ban
 from sqlalchemy import and_, select
+
+from server.db.models import avatars, avatars_list, ban
 from tests.utils import fast_forward
 
 from .conftest import (
-    connect_and_sign_in, connect_client, perform_login, read_until,
+    connect_and_sign_in,
+    connect_client,
+    perform_login,
+    read_until,
     read_until_command
 )
 

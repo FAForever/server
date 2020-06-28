@@ -1,10 +1,21 @@
 from sqlalchemy import (
-    TIME, TIMESTAMP, Boolean, Column, DateTime, Enum, Float, ForeignKey,
-    Integer, MetaData, String, Table, Text
+    TIME,
+    TIMESTAMP,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    Text
 )
 
-from ..games.typedefs import Victory
 from ..games.game_results import GameOutcome
+from ..games.typedefs import Victory
 
 metadata = MetaData()
 

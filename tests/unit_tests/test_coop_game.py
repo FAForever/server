@@ -1,6 +1,6 @@
+import mock
 import pytest
 
-import mock
 from server.games import CoopGame
 
 pytestmark = pytest.mark.asyncio
