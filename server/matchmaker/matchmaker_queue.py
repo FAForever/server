@@ -3,12 +3,12 @@ import time
 from collections import OrderedDict, deque
 from concurrent.futures import CancelledError
 from datetime import datetime, timezone
-from typing import Deque, Dict, Iterable, Optional, Tuple
+from typing import Deque, Dict, Iterable, List, Optional, Tuple
 
 import server.metrics as metrics
 
 from ..decorators import with_logger
-from .algorithm import make_matches
+from .algorithm import make_matches, make_teams, make_teams_from_single
 from .map_pool import MapPool
 from .pop_timer import PopTimer
 from .search import Match, Search
@@ -40,10 +40,16 @@ class MatchmakerQueue:
         self,
         game_service: "GameService",
         name: str,
+        featured_mod: str,
+        rating_type: str,
+        team_size: int = 1,
         map_pools: Iterable[Tuple[MapPool, Optional[int], Optional[int]]] = ()
     ):
         self.game_service = game_service
         self.name = name
+        self.featured_mod = featured_mod
+        self.rating_type = rating_type
+        self.team_size = team_size
         self.map_pools = {info[0].id: info for info in map_pools}
 
         self.queue: Dict[Search, Search] = OrderedDict()
@@ -68,7 +74,7 @@ class MatchmakerQueue:
                 continue
             return map_pool
 
-    async def initialize(self):
+    def initialize(self):
         asyncio.create_task(self.queue_pop_timer())
 
     async def iter_matches(self):
@@ -139,16 +145,36 @@ class MatchmakerQueue:
     async def find_matches(self) -> None:
         self._logger.info("Searching for matches: %s", self.name)
 
-        if len(self.queue) < 2:
+        if len(self.queue) < 2 * self.team_size:
             return
+
+        searches = self.find_teams()
 
         # Call self.match on all matches and filter out the ones that were cancelled
         loop = asyncio.get_running_loop()
         new_matches = filter(
             lambda m: self.match(m[0], m[1]),
-            await loop.run_in_executor(None, make_matches, self.queue.values())
+            await loop.run_in_executor(None, make_matches, searches)
         )
         self._matches.extend(new_matches)
+
+    def find_teams(self) -> List[Search]:
+        searches = []
+        unmatched = list(self.queue.values())
+        need_team = []
+        for search in unmatched:
+            if len(search.players) == self.team_size:
+                searches.append(search)
+            else:
+                need_team.append(search)
+
+        if all(len(s.players) == 1 for s in need_team):
+            teams, unmatched = make_teams_from_single(need_team, self.team_size)
+        else:
+            teams, unmatched = make_teams(need_team, self.team_size)
+        searches.extend(teams)
+
+        return searches
 
     def push(self, search: Search):
         """ Push the given search object onto the queue """
@@ -182,10 +208,15 @@ class MatchmakerQueue:
         Return a fuzzy representation of the searches currently in the queue
         """
         return {
-            'queue_name': self.name,
-            'queue_pop_time': datetime.fromtimestamp(self.timer.next_queue_pop, timezone.utc).isoformat(),
-            'boundary_80s': [search.boundary_80 for search in self.queue.values()],
-            'boundary_75s': [search.boundary_75 for search in self.queue.values()]
+            "queue_name": self.name,
+            "queue_pop_time": datetime.fromtimestamp(
+                self.timer.next_queue_pop, timezone.utc
+            ).isoformat(),
+            "num_players": sum(len(search.players) for search in self.queue.values()),
+            "boundary_80s": [search.boundary_80 for search in self.queue.values()],
+            "boundary_75s": [search.boundary_75 for search in self.queue.values()],
+            # TODO: Remove, the client should query the API for this
+            "team_size": self.team_size,
         }
 
     def __repr__(self):

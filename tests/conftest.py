@@ -15,6 +15,7 @@ import pytest
 
 import asynctest
 from asynctest import CoroutineMock
+
 from server.api.api_accessor import ApiAccessor
 from server.api.oauth_session import OAuth2Session
 from server.config import TRACE, config
@@ -264,14 +265,25 @@ async def geoip_service() -> GeoIpService:
 
 @pytest.fixture(scope="session")
 def queue_factory():
-    def make(name="Test Queue"):
-        return MatchmakerQueue(mock.Mock(), name)
+    def make(
+        name="Test Queue",
+        mod="ladder1v1",
+        team_size=1,
+        rating_type=RatingType.GLOBAL
+    ):
+        return MatchmakerQueue(
+            game_service=mock.Mock(),
+            name=name,
+            featured_mod=mod,
+            rating_type=rating_type,
+            team_size=team_size,
+        )
     return make
 
 
 @pytest.fixture
 def matchmaker_queue(game_service) -> MatchmakerQueue:
-    queue = MatchmakerQueue(game_service, "ladder1v1test")
+    queue = MatchmakerQueue(game_service, "ladder1v1test", "ladder1v1", 2)
     return queue
 
 

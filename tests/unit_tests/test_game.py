@@ -5,8 +5,9 @@ from typing import Any, List, Tuple
 from unittest import mock
 
 import pytest
-
 from asynctest import CoroutineMock
+from trueskill import Rating
+
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import CoopGame, CustomGame
 from server.games.game import (
@@ -18,7 +19,6 @@ from tests.unit_tests.conftest import (
     add_connected_player, add_connected_players, make_mock_game_connection
 )
 from tests.utils import fast_forward
-from trueskill import Rating
 
 pytestmark = pytest.mark.asyncio
 
@@ -863,11 +863,11 @@ async def test_game_results(game: Game, players):
     await game.add_result(host_id, 0, "victory", 1)
     await game.add_result(join_id, 1, "defeat", 0)
 
-    game_results =  await game.resolve_game_results()
+    game_results = await game.resolve_game_results()
     result_dict = game_results.to_dict()
 
     assert result_dict["validity"] == "VALID"
-    assert result_dict["rating_type"] == "GLOBAL"
+    assert result_dict["rating_type"] == "global"
     assert len(result_dict["teams"]) == 2
 
     for team in result_dict["teams"]:

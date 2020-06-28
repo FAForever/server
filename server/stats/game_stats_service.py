@@ -2,7 +2,7 @@ from typing import List
 
 from server.config import config
 from server.core import Service
-from server.games import Game
+from server.games import FeaturedModType, Game
 from server.games.game_results import GameOutcome
 from server.players import Player
 from server.stats.achievement_service import *
@@ -66,7 +66,7 @@ class GameStatsService(Service):
         unit_stats = stats['units']
         scored_highest = highest_scorer == player.login
 
-        if survived and game.game_mode == 'ladder1v1':
+        if survived and game.game_mode == FeaturedModType.LADDER_1V1:
             self._unlock(ACH_FIRST_SUCCESS, a_queue)
 
         self._increment(ACH_NOVICE, 1, a_queue)

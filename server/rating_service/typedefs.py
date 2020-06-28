@@ -1,9 +1,10 @@
 from typing import Dict, List, NamedTuple
 
+from trueskill import Rating
+
 from server.games.game_results import GameOutcome
 from server.games.typedefs import TeamRatingSummary
 from server.rating import RatingType
-from trueskill import Rating
 
 PlayerID = int
 
@@ -21,12 +22,12 @@ class GameRatingSummary(NamedTuple):
     Holds minimal information needed to rate a game.
     Fields:
      - game_id: id of the game to rate
-     - rating_type: RatingType (e.g. LADDER_1V1)
+     - rating_type: str (e.g. "ladder1v1")
      - teams: a list of two TeamRatingSummaries
     """
 
     game_id: int
-    rating_type: RatingType
+    rating_type: str
     teams: List[TeamRatingSummary]
 
     @classmethod
@@ -36,7 +37,7 @@ class GameRatingSummary(NamedTuple):
 
         return cls(
             game_info["game_id"],
-            getattr(RatingType, game_info["rating_type"]),
+            game_info["rating_type"],
             [
                 TeamRatingSummary(
                     getattr(GameOutcome, summary["outcome"]), set(summary["player_ids"])

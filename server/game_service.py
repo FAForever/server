@@ -1,18 +1,21 @@
 from collections import Counter
-from typing import Dict, List, Optional, Union, ValuesView
+from typing import Dict, List, Optional, Type, Union, ValuesView
 
 import aiocron
-import server.metrics as metrics
-from server.core import Service
-from server.db import FAFDatabase
-from server.decorators import with_logger
-from server.games import CoopGame, CustomGame, FeaturedMod, LadderGame
-from server.games.game import Game, GameState, VisibilityState
-from server.games.typedefs import EndedGameInfo, ValidityState
-from server.matchmaker import MatchmakerQueue
-from server.message_queue_service import MessageQueueService
-from server.players import Player
-from server.rating_service import RatingService
+
+from . import metrics
+from .core import Service
+from .db import FAFDatabase
+from .decorators import with_logger
+from .games import (
+    CoopGame, CustomGame, FeaturedMod, FeaturedModType, LadderGame
+)
+from .games.game import Game, GameState, VisibilityState
+from .games.typedefs import EndedGameInfo, ValidityState
+from .matchmaker import MatchmakerQueue
+from .message_queue_service import MessageQueueService
+from .players import Player
+from .rating_service import RatingService
 
 
 @with_logger
@@ -42,9 +45,6 @@ class GameService(Service):
 
         # A set of mod ids that are allowed in ranked games (everyone loves caching)
         self.ranked_mods = set()
-
-        # Temporary proxy for the ladder service
-        self.ladder_service = None
 
         # The set of active games
         self._games: Dict[int, Game] = dict()
@@ -120,17 +120,19 @@ class GameService(Service):
     def create_game(
         self,
         game_mode: str,
+        game_class: Type[Game] = None,
         visibility=VisibilityState.PUBLIC,
         host: Optional[Player] = None,
         name: Optional[str] = None,
         mapname: Optional[str] = None,
-        password: Optional[str] = None
+        password: Optional[str] = None,
+        **kwargs
     ):
         """
         Main entrypoint for creating new games
         """
         game_id = self.create_uid()
-        args = {
+        game_args = {
             "database": self._db,
             "id_": game_id,
             "host": host,
@@ -140,15 +142,17 @@ class GameService(Service):
             "game_service": self,
             "game_stats_service": self.game_stats_service
         }
+        game_args.update(kwargs)
 
-        game_class = {
-            'ladder1v1':    LadderGame,
-            'coop':         CoopGame,
-            'faf':          CustomGame,
-            'fafbeta':      CustomGame,
-            'equilibrium':  CustomGame
-        }.get(game_mode, Game)
-        game = game_class(**args)
+        if not game_class:
+            game_class = {
+                FeaturedModType.LADDER_1V1:   LadderGame,
+                FeaturedModType.COOP:         CoopGame,
+                FeaturedModType.FAF:          CustomGame,
+                FeaturedModType.FAFBETA:      CustomGame,
+                FeaturedModType.EQUILIBRIUM:  CustomGame
+            }.get(game_mode, Game)
+        game = game_class(**game_args)
 
         self._games[game_id] = game
 

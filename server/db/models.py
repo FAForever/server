@@ -272,6 +272,8 @@ matchmaker_queue = Table(
     Column('featured_mod_id',   Integer,        ForeignKey('game_featuredMods.id'), nullable=False),
     Column('leaderboard_id',    Integer,        ForeignKey('leaderboard.id'),       nullable=False),
     Column('name_key',          String(255),    nullable=False),
+    Column('team_size',         Integer,        nullable=False),
+    Column('enabled',           Boolean,        nullable=False),
     Column('create_time',   TIMESTAMP,      nullable=False),
     Column('update_time',   TIMESTAMP,      nullable=False)
 )

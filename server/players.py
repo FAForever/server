@@ -1,7 +1,7 @@
 import weakref
 from enum import Enum, unique
 
-import server.config as config
+from server.config import config
 from server.rating import PlayerRatings, RatingType, RatingTypeMap
 
 from .factions import Faction
@@ -44,12 +44,12 @@ class Player:
         self.session = session
 
         self.ratings = PlayerRatings(
-            default=(config.START_RATING_MEAN, config.START_RATING_DEV)
+            lambda: (config.START_RATING_MEAN, config.START_RATING_DEV)
         )
         if ratings is not None:
             self.ratings.update(ratings)
 
-        self.game_count = RatingTypeMap(0)
+        self.game_count = RatingTypeMap(int)
         if game_count is not None:
             self.game_count.update(game_count)
 
@@ -176,12 +176,20 @@ class Player:
                 filter_none, (
                     ('id', self.id),
                     ('login', self.login),
-                    ('global_rating', self.ratings[RatingType.GLOBAL]),
-                    ('ladder_rating', self.ratings[RatingType.LADDER_1V1]),
-                    ('number_of_games', self.game_count[RatingType.GLOBAL]),
                     ('avatar', self.avatar),
                     ('country', self.country),
                     ('clan', self.clan),
+                    ('ratings', {
+                        rating_type: {
+                            "rating": self.ratings[rating_type],
+                            "number_of_games": self.game_count[rating_type]
+                        }
+                        for rating_type in self.ratings
+                    }),
+                    # Deprecated
+                    ('global_rating', self.ratings[RatingType.GLOBAL]),
+                    ('ladder_rating', self.ratings[RatingType.LADDER_1V1]),
+                    ('number_of_games', self.game_count[RatingType.GLOBAL]),
                 )
             )
         )

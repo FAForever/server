@@ -1,6 +1,7 @@
 import asyncio
 
 import pytest
+
 from server.protocol import QDataStreamProtocol
 from tests.utils import fast_forward
 
@@ -57,7 +58,7 @@ async def join_game(proto: QDataStreamProtocol, uid: int):
     await asyncio.sleep(0.5)
 
 
-async def get_player_ratings(proto, *names):
+async def get_player_ratings(proto, *names, rating_type="global"):
     """
     Wait for `player_info` messages until all player names have been found.
     Then return a dictionary containing all those players ratings
@@ -66,7 +67,7 @@ async def get_player_ratings(proto, *names):
     while set(ratings.keys()) != set(names):
         msg = await read_until_command(proto, "player_info")
         ratings.update({
-            player_info["login"]: player_info["global_rating"]
+            player_info["login"]: player_info["ratings"][rating_type]["rating"]
             for player_info in msg["players"]
         })
     return ratings
@@ -167,7 +168,7 @@ async def test_game_ended_rates_game(lobby_server):
         await read_until_command(host_proto, "player_info", timeout=10)
 
 
-@fast_forward(60)
+@fast_forward(100)
 async def test_partial_game_ended_rates_game(lobby_server, tmp_user):
     """
     Test that game is rated as soon as all players have either disconnected

@@ -13,9 +13,10 @@ import aiohttp
 import humanize
 import pymysql
 import semver
+from sqlalchemy import and_, func, select
+
 import server.metrics as metrics
 from server.db import FAFDatabase
-from sqlalchemy import and_, func, select, text
 
 from .abc.base_game import GameConnectionState, InitMode
 from .async_functions import gather_without_exceptions
@@ -27,16 +28,14 @@ from .db.models import login as t_login
 from .decorators import timed, with_logger
 from .game_service import GameService
 from .gameconnection import GameConnection
-from .games import GameState, VisibilityState
+from .games import FeaturedModType, GameState, VisibilityState
 from .geoip_service import GeoIpService
 from .ice_servers.coturn import CoturnHMAC
 from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
-from .matchmaker import Search
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, QDataStreamProtocol
-from .rating import RatingType
 from .types import Address, GameLaunchOptions
 
 PONG_MSG = QDataStreamProtocol.pack_message("PONG")
@@ -827,14 +826,16 @@ class LobbyConnection:
         await self.launch_game(game, is_host=False)
 
     async def command_game_matchmaking(self, message):
-        mod = str(message.get('mod', 'ladder1v1'))
+        queue_name = str(
+            message.get('queue_name') or message.get('mod', 'ladder1v1')
+        )
         state = str(message['state'])
 
         if self._attempted_connectivity_test:
             raise ClientError("Cannot host game. Please update your client to the newest version.")
 
         if state == "stop":
-            await self.ladder_service.cancel_search(self.player, mod)
+            await self.ladder_service.cancel_search(self.player, queue_name)
             return
 
         if state == "start":
@@ -842,13 +843,11 @@ class LobbyConnection:
             # Faction can be either the name (e.g. 'uef') or the enum value (e.g. 1)
             self.player.faction = message['faction']
 
-            if mod == "ladder1v1":
-                search = Search([self.player])
-            else:
-                # TODO: Put player parties here
-                search = Search([self.player])
-
-            await self.ladder_service.start_search(self.player, search, queue_name=mod)
+            # TODO: Put player parties here
+            await self.ladder_service.start_search(
+                self.player,
+                queue_name=queue_name
+            )
 
     async def command_game_host(self, message):
         assert isinstance(self.player, Player)
@@ -876,7 +875,7 @@ class LobbyConnection:
             })
             return
 
-        mod = message.get('mod') or 'faf'
+        mod = message.get('mod') or FeaturedModType.FAF
         mapname = message.get('mapname') or 'scmp_007'
         password = message.get('password')
         game_mode = mod.lower()
@@ -918,7 +917,7 @@ class LobbyConnection:
         self.player.game = game
         cmd = {
             "command": "game_launch",
-            "args": ["/numgames", self.player.game_count[RatingType.GLOBAL]],
+            "args": ["/numgames", self.player.game_count[game.rating_type]],
             "uid": game.id,
             "mod": game.game_mode,
             # Following parameters may not be used by the client yet. They are
@@ -955,7 +954,6 @@ class LobbyConnection:
                         await self.send(out)
                     except:
                         self._logger.error("Error handling table_mod row (uid: {})".format(uid), exc_info=True)
-                        pass
 
             elif type == "like":
                 canLike = True

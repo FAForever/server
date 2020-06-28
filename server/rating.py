@@ -1,45 +1,49 @@
-from collections.abc import MutableMapping
-from enum import Enum
+from typing import DefaultDict, Tuple, TypeVar, Union
 
 from trueskill import Rating
 
 
 # Values correspond to legacy table names. This will be fixed when db gets
 # migrated.
-class RatingType(Enum):
+class RatingType():
     GLOBAL = "global"
     LADDER_1V1 = "ladder_1v1"
 
 
-class RatingTypeMap(MutableMapping):
-    def __init__(self, default):
-        MutableMapping.__init__(self)
-        self._back = {}
+K = Union[RatingType, str]
+V = TypeVar("V")
 
-        for rtype in RatingType:
-            self[rtype] = default
 
-    def __getitem__(self, key: RatingType):
-        return self._back[key]
+class RatingTypeMap(DefaultDict[K, V]):
+    """
+    A thin wrapper around `defaultdict` which stores RatingType keys as strings.
+    """
+    def __init__(self, default_factory, *args, **kwargs):
+        super().__init__(default_factory, *args, **kwargs)
 
-    def __setitem__(self, key: RatingType, value):
-        self._back[key] = value
-
-    def __delitem__(self, key: RatingType):
-        del self._back[key]
-
-    def __iter__(self):
-        return iter(self._back)
-
-    def __len__(self):
-        return len(self._back)
+        # Initialize defaults for enumerated rating types
+        for rating in (RatingType.GLOBAL, RatingType.LADDER_1V1):
+            self.__getitem__(rating)
 
 
 # Only used to coerce rating type.
-class PlayerRatings(RatingTypeMap):
-    def __setitem__(self, key: RatingType, value):
+class PlayerRatings(RatingTypeMap[Tuple[float, float]]):
+    def __setitem__(self, key: K, value: Tuple[float, float]) -> None:
         if isinstance(value, Rating):
             val = (value.mu, value.sigma)
         else:
             val = value
-        self._back[key] = val
+        super().__setitem__(key, val)
+
+    def __getitem__(self, key: K) -> Tuple[float, float]:
+        if key == "tmm_2v2" and key not in self:
+            mean, dev = self[RatingType.GLOBAL]
+            if dev > 250:
+                tmm_2v2_rating = (mean, dev)
+            else:
+                tmm_2v2_rating = (mean, min(dev + 150, 250))
+
+            self[key] = tmm_2v2_rating
+            return tmm_2v2_rating
+        else:
+            return super().__getitem__(key)

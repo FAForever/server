@@ -1,16 +1,21 @@
 import asyncio
 import contextlib
+import itertools
+import re
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
 
 import aiocron
-from sqlalchemy import and_, func, select, text
+from sqlalchemy import and_, func, select, text, true
 
+from .abc.base_game import InitMode
 from .async_functions import gather_without_exceptions
 from .config import config
 from .core import Service
 from .db import FAFDatabase
-from .db.models import game_featuredMods, game_player_stats, game_stats
+from .db.models import (
+    game_featuredMods, game_player_stats, game_stats, leaderboard
+)
 from .db.models import map as t_map
 from .db.models import (
     map_pool, map_pool_map_version, map_version, matchmaker_queue,
@@ -18,6 +23,7 @@ from .db.models import (
 )
 from .decorators import with_logger
 from .game_service import GameService
+from .games import FeaturedModType, LadderGame
 from .matchmaker import MapPool, MatchmakerQueue, Search
 from .players import Player, PlayerState
 from .protocol import DisconnectedError
@@ -45,7 +51,9 @@ class LadderService(Service):
         self.queues = {
             'ladder1v1': MatchmakerQueue(
                 game_service,
-                name='ladder1v1',
+                name="ladder1v1",
+                featured_mod=FeaturedModType.LADDER_1V1,
+                rating_type=RatingType.LADDER_1V1,
                 map_pools=[(self.ladder_1v1_map_pool, None, None)]
             )
         }
@@ -55,10 +63,11 @@ class LadderService(Service):
     async def initialize(self) -> None:
         await self.update_data()
         self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
-        await asyncio.gather(*[
-            queue.initialize() for queue in self.queues.values()
-        ])
-        asyncio.create_task(self.handle_queue_matches())
+
+        # TODO: Starting hardcoded queues here
+        for queue in self.queues.values():
+            queue.initialize()
+        self.start_queue_handlers()
 
     async def update_data(self) -> None:
         async with self._db.acquire() as conn:
@@ -76,17 +85,27 @@ class LadderService(Service):
             self.ladder_1v1_map_pool.set_maps(maps)
 
             map_pool_maps = await self.fetch_map_pools(conn)
-            matchmaker_queues = await self.fetch_matchmaker_queues(conn)
+            db_queues = await self.fetch_matchmaker_queues(conn)
 
-        for name, map_pools in matchmaker_queues.items():
+        for name, info in db_queues.items():
             if name not in self.queues:
-                self.queues[name] = MatchmakerQueue(
+                queue = MatchmakerQueue(
                     name=name,
+                    featured_mod=info["mod"],
+                    rating_type=info["rating_type"],
+                    team_size=info["team_size"],
                     game_service=self.game_service
                 )
-            queue = self.queues[name]
+                self.queues[name] = queue
+                queue.initialize()
+                asyncio.ensure_future(self.handle_queue_matches(queue))
+            else:
+                queue = self.queues[name]
+                queue.featured_mod = info["mod"]
+                queue.rating_type = info["rating_type"]
+                queue.team_size = info["team_size"]
             queue.map_pools.clear()
-            for map_pool_id, min_rating, max_rating in map_pools:
+            for map_pool_id, min_rating, max_rating in info["map_pools"]:
                 map_pool_name, map_list = map_pool_maps[map_pool_id]
                 if not map_list:
                     self._logger.warning(
@@ -105,7 +124,7 @@ class LadderService(Service):
             if queue_name == "ladder1v1":
                 # TODO: Remove me. Legacy queue fallback
                 continue
-            if queue_name not in matchmaker_queues:
+            if queue_name not in db_queues:
                 self.queues[queue_name].shutdown()
                 del self.queues[queue_name]
 
@@ -137,49 +156,57 @@ class LadderService(Service):
 
         return map_pool_maps
 
-    async def fetch_matchmaker_queues(self, conn) -> Dict[str, Tuple[int, int, int]]:
+    async def fetch_matchmaker_queues(self, conn):
         result = await conn.execute(
             select([
                 matchmaker_queue.c.technical_name,
+                matchmaker_queue.c.team_size,
                 matchmaker_queue_map_pool.c.map_pool_id,
                 matchmaker_queue_map_pool.c.min_rating,
-                matchmaker_queue_map_pool.c.max_rating
+                matchmaker_queue_map_pool.c.max_rating,
+                game_featuredMods.c.gamemod,
+                leaderboard.c.technical_name.label("rating_type")
             ])
-            .select_from(matchmaker_queue.join(matchmaker_queue_map_pool))
+            .select_from(
+                matchmaker_queue
+                .join(matchmaker_queue_map_pool)
+                .join(game_featuredMods)
+                .join(leaderboard)
+            ).where(matchmaker_queue.c.enabled == true())
         )
-
-        matchmaker_queues = defaultdict(list)
+        matchmaker_queues = defaultdict(lambda: defaultdict(list))
         async for row in result:
             name = row.technical_name
-            matchmaker_queues[name].append((
+            info = matchmaker_queues[name]
+            info["mod"] = row.gamemod
+            info["rating_type"] = row.rating_type
+            info["team_size"] = row.team_size
+            info["map_pools"].append((
                 row.map_pool_id,
                 row.min_rating,
                 row.max_rating
             ))
         return matchmaker_queues
 
-    async def start_search(
-        self,
-        initiator: Player,
-        search: Search,
-        queue_name: str
-    ):
+    async def start_search(self, initiator: Player, queue_name: str):
         # TODO: Consider what happens if players disconnect while starting
         # search. Will need a message to inform other players in the search
         # that it has been cancelled.
         self._cancel_existing_searches(initiator, queue_name)
+        queue = self.queues[queue_name]
+        search = Search([initiator], rating_type=queue.rating_type)
 
         tasks = []
         for player in search.players:
             player.state = PlayerState.SEARCHING_LADDER
 
-            # For now, inform_player is only designed for ladder1v1
+            # FIXME: For now, inform_player is only designed for ladder1v1
             if queue_name == "ladder1v1":
                 tasks.append(self.inform_player(player))
 
             tasks.append(player.send_message({
                 "command": "search_info",
-                "queue": queue_name,
+                "queue_name": queue_name,
                 "state": "start"
             }))
 
@@ -198,7 +225,7 @@ class LadderService(Service):
             "%s is searching for '%s': %s", initiator, queue_name, search
         )
 
-        asyncio.create_task(self.queues[queue_name].search(search))
+        asyncio.create_task(queue.search(search))
 
     async def cancel_search(
         self,
@@ -217,7 +244,7 @@ class LadderService(Service):
                 if player.lobby_connection is not None:
                     tasks.append(player.send_message({
                         "command": "search_info",
-                        "queue": queue_name,
+                        "queue_name": queue_name,
                         "state": "stop"
                     }))
             self._logger.info(
@@ -279,89 +306,106 @@ class LadderService(Service):
                     )
                 })
 
-    async def handle_queue_matches(self):
-        async for s1, s2 in self.queues["ladder1v1"].iter_matches():
+    def start_queue_handlers(self):
+        for queue in self.queues.values():
+            asyncio.ensure_future(self.handle_queue_matches(queue))
+
+    async def handle_queue_matches(self, queue: MatchmakerQueue):
+        async for s1, s2 in queue.iter_matches():
             try:
-                assert len(s1.players) == 1
-                assert len(s2.players) == 1
-                p1, p2 = s1.players[0], s2.players[0]
-                msg = {"command": "match_found", "queue": "ladder1v1"}
+                msg = {"command": "match_found", "queue": queue.name}
                 # TODO: Handle disconnection with a client supported message
-                await asyncio.gather(
-                    p1.send_message(msg),
-                    p2.send_message(msg)
+                await asyncio.gather(*[
+                    player.send_message(msg)
+                    for player in s1.players + s2.players
+                ])
+                asyncio.create_task(
+                    self.start_game(s1.players, s2.players, queue)
                 )
-                asyncio.create_task(self.start_game(p1, p2))
             except Exception as e:
                 self._logger.exception(
                     "Error processing match between searches %s, and %s: %s",
                     s1, s2, e
                 )
 
-    async def start_game(self, host: Player, guest: Player):
-        # TODO: Get game_mode from queue
+    async def start_game(
+        self,
+        team1: List[Player],
+        team2: List[Player],
+        queue: MatchmakerQueue
+    ):
+        self._logger.debug(
+            "Starting %s game between %s and %s", queue.name, team1, team2
+        )
         try:
-            self._logger.debug(
-                "Starting ladder game between %s and %s", host, guest
-            )
+            host = team1[0]
+            all_players = team1 + team2
+            all_guests = all_players[1:]
+
             host.state = PlayerState.HOSTING
-            guest.state = PlayerState.JOINING
+            for guest in all_guests:
+                guest.state = PlayerState.JOINING
 
             played_map_ids = await self.get_game_history(
-                [host, guest],
-                "ladder1v1",
+                all_players,
+                # FIXME: Use reference to matchmaker queue instead
+                FeaturedModType.LADDER_1V1,
                 limit=config.LADDER_ANTI_REPETITION_LIMIT
             )
             rating = min(
                 newbie_adjusted_ladder_mean(player)
-                for player in (host, guest)
+                for player in all_players
             )
-            pool = self.queues["ladder1v1"].get_map_pool_for_rating(rating)
+            pool = queue.get_map_pool_for_rating(rating)
             if not pool:
                 raise RuntimeError(f"No map pool available for rating {rating}!")
             map_id, map_name, map_path = pool.choose_map(played_map_ids)
 
             game = self.game_service.create_game(
-                game_mode='ladder1v1',
+                game_class=LadderGame,
+                game_mode=queue.featured_mod,
                 host=host,
-                name=f"{host.login} Vs {guest.login}"
+                name=game_name(team1, team2),
+                rating_type=queue.rating_type,
+                max_players=len(all_players)
             )
-
-            host.game = game
-            guest.game = game
-
+            game.init_mode = InitMode.AUTO_LOBBY
             game.map_file_path = map_path
 
-            game.set_player_option(host.id, 'StartSpot', 1)
-            game.set_player_option(guest.id, 'StartSpot', 2)
-            game.set_player_option(host.id, 'Army', 1)
-            game.set_player_option(guest.id, 'Army', 2)
-            game.set_player_option(host.id, 'Faction', host.faction.value)
-            game.set_player_option(guest.id, 'Faction', guest.faction.value)
-            game.set_player_option(host.id, 'Color', 1)
-            game.set_player_option(guest.id, 'Color', 2)
+            for i, player in enumerate(alternate(team1, team2)):
+                if player is None:
+                    continue
+                # FA uses lua and lua arrays are 1-indexed
+                slot = i + 1
+                # 2 if even, 3 if odd
+                team = (i % 2) + 2
+                player.game = game
 
-            # Remembering that "Team 1" corresponds to "-": the non-team.
-            game.set_player_option(host.id, 'Team', 1)
-            game.set_player_option(guest.id, 'Team', 1)
+                game.set_player_option(player.id, 'Faction', player.faction.value)
+                game.set_player_option(player.id, 'Team', team)
+                game.set_player_option(player.id, 'StartSpot', slot)
+                game.set_player_option(player.id, 'Army', slot)
+                game.set_player_option(player.id, 'Color', slot)
 
-            mapname = map_path[5:-4]
+            mapname = re.match('maps/(.+).zip', map_path).group(1)
             # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
             # Really in the future, just send a better description
             self._logger.debug("Starting ladder game: %s", game)
-            # Options shared by guest and host
+            # Options shared by all players
             options = GameLaunchOptions(
                 mapname=mapname,
-                team=1,
-                expected_players=2,
+                expected_players=len(all_players),
             )
-            await host.lobby_connection.launch_game(
-                game,
-                is_host=True,
-                options=options._replace(
-                    faction=host.faction,
-                    map_position=1
+
+            def game_options(player: Player) -> GameLaunchOptions:
+                return options._replace(
+                    team=game.get_player_option(player.id, "Team"),
+                    faction=player.faction,
+                    map_position=game.get_player_option(player.id, "StartSpot")
                 )
+
+            await host.lobby_connection.launch_game(
+                game, is_host=True, options=game_options(host)
             )
             try:
                 hosted = await game.await_hosted()
@@ -375,23 +419,21 @@ class LadderService(Service):
                 # already removed it from the queue.
 
                 # TODO: Graceful handling of NoneType errors due to disconnect
-                await guest.lobby_connection.launch_game(
-                    game,
-                    is_host=False,
-                    options=options._replace(
-                        faction=guest.faction,
-                        map_position=2
+                await asyncio.gather(*[
+                    guest.lobby_connection.launch_game(
+                        game, is_host=False, options=game_options(guest)
                     )
-                )
+                    for guest in all_guests
+                ])
+                # TODO: Wait for players to join here
             self._logger.debug("Ladder game launched successfully")
         except Exception:
             self._logger.exception("Failed to start ladder game!")
             msg = {"command": "match_cancelled"}
             with contextlib.suppress(DisconnectedError):
-                await asyncio.gather(
-                    host.send_message(msg),
-                    guest.send_message(msg)
-                )
+                await asyncio.gather(*[
+                    player.send_message(msg) for player in all_players
+                ])
 
     async def get_game_history(
         self,
@@ -432,9 +474,52 @@ class LadderService(Service):
             queue.shutdown()
 
 
+def game_name(*teams: List[Player]) -> str:
+    """
+    Generate a game name based on the players.
+    """
+
+    return " Vs ".join(_team_name(team) for team in teams)
+
+
+def _team_name(team: List[Player]) -> str:
+    """
+    Generate a team name based on the players. If all players are in the
+    same clan, use their clan tag, otherwise use the name of the first
+    player.
+    """
+    assert team
+
+    player_1_name = team[0].login
+
+    if len(team) == 1:
+        return player_1_name
+
+    clans = {player.clan for player in team}
+
+    if len(clans) == 1:
+        name = clans.pop() or player_1_name
+    else:
+        name = player_1_name
+
+    return f"Team {name}"
+
+
 def newbie_adjusted_ladder_mean(player: Player):
     """Get ladder rating mean with new player's always returning a mean of 0"""
     if player.game_count[RatingType.LADDER_1V1] > config.NEWBIE_MIN_GAMES:
         return player.ratings[RatingType.LADDER_1V1][0]
     else:
         return 0
+
+
+def alternate(iter1, iter2):
+    """
+    Merge elements from two iterables, inserting None if one iterable is shorter.
+
+    # Example
+    list(alternate([1, 2, 3], ["a", "b"])) == [1, "a", 2, "b", 3, None]
+    """
+    for i, j in itertools.zip_longest(iter1, iter2):
+        yield i
+        yield j

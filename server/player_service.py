@@ -2,13 +2,14 @@ import asyncio
 from typing import Optional, Set, ValuesView
 
 import aiocron
+from sqlalchemy import and_, select
+from trueskill import Rating
+
 import server.metrics as metrics
 from server.db import FAFDatabase
 from server.decorators import with_logger
 from server.players import Player
 from server.rating import RatingType
-from sqlalchemy import and_, select
-from trueskill import Rating
 
 from .core import Service
 from .db.models import (
@@ -120,7 +121,7 @@ class PlayerService(Service):
         rows = await result.fetchall()
 
         retrieved_ratings = {
-            RatingType[row["technical_name"].upper()]: (
+            row["technical_name"]: (
                 (row["mean"], row["deviation"]), row["total_games"]
             )
             for row in rows
@@ -130,7 +131,9 @@ class PlayerService(Service):
             player.game_count[rating_type] = total_games
 
         types_not_found = [
-            rating_type for rating_type in RatingType
+            rating_type for rating_type in (
+                RatingType.GLOBAL, RatingType.LADDER_1V1
+            )
             if rating_type not in retrieved_ratings
         ]
         await self._fetch_player_legacy_rating(player, types_not_found, conn)
@@ -213,7 +216,7 @@ class PlayerService(Service):
         return self._players.get(player_id)
 
     def signal_player_rating_change(
-        self, player_id: int, rating_type: RatingType, new_rating: Rating
+        self, player_id: int, rating_type: str, new_rating: Rating
     ) -> None:
         player = self.get_player(player_id)
         if player is None:

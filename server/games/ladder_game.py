@@ -5,6 +5,7 @@ from server.players import Player
 from server.rating import RatingType
 
 from .game import Game, GameOutcome
+from .typedefs import FeaturedModType
 
 logger = logging.getLogger(__name__)
 
@@ -15,9 +16,13 @@ class LadderGame(Game):
     init_mode = InitMode.AUTO_LOBBY
 
     def __init__(self, id_, *args, **kwargs):
-        super().__init__(id_, *args, **kwargs, rating_type=RatingType.LADDER_1V1)
-        self.game_mode = "ladder1v1"
-        self.max_players = 2
+        new_kwargs = {
+            "game_mode": FeaturedModType.LADDER_1V1,
+            "rating_type": RatingType.LADDER_1V1,
+            "max_players": 2
+        }
+        new_kwargs.update(kwargs)
+        super().__init__(id_, *args, **new_kwargs)
 
     def is_winner(self, player: Player):
         return self.get_player_outcome(player) is GameOutcome.VICTORY

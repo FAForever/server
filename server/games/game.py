@@ -7,6 +7,9 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pymysql
+from sqlalchemy import and_, bindparam
+from sqlalchemy.sql.functions import now as sql_now
+
 from server.config import FFA_TEAM
 from server.db.models import game_player_stats, game_stats
 from server.games.game_results import (
@@ -14,14 +17,12 @@ from server.games.game_results import (
     resolve_game
 )
 from server.rating import RatingType
-from sqlalchemy import and_, bindparam
-from sqlalchemy.sql.functions import now as sql_now
 
 from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
 from .typedefs import (
-    BasicGameInfo, EndedGameInfo, GameState, ValidityState, Victory,
-    VisibilityState
+    BasicGameInfo, EndedGameInfo, FeaturedModType, GameState, ValidityState,
+    Victory, VisibilityState
 )
 
 
@@ -47,8 +48,9 @@ class Game:
         host: Optional[Player] = None,
         name: str = 'None',
         map_: str = 'SCMP_007',
-        game_mode: str = 'faf',
-        rating_type: Optional[RatingType] = None,
+        game_mode: str = FeaturedModType.FAF,
+        rating_type: Optional[str] = None,
+        max_players: int = 12
     ):
         self._db = database
         self._results = GameResultReports(id_)
@@ -64,7 +66,7 @@ class Game:
         )
         self.id = id_
         self.visibility = VisibilityState.PUBLIC
-        self.max_players = 12
+        self.max_players = max_players
         self.host = host
         self.name = self.sanitize_name(name)
         self.map_id = None
@@ -76,7 +78,7 @@ class Game:
         self.desyncs = 0
         self.validity = ValidityState.VALID
         self.game_mode = game_mode
-        self._rating_type = rating_type
+        self.rating_type = rating_type or RatingType.GLOBAL
         self.state = GameState.INITIALIZING
         self._connections = {}
         self.enforce_rating = False
@@ -99,7 +101,7 @@ class Game:
 
     async def timeout_game(self):
         # coop takes longer to set up
-        tm = 30 if self.game_mode != 'coop' else 60
+        tm = 30 if self.game_mode != FeaturedModType.COOP else 60
         await asyncio.sleep(tm)
         if self.state is GameState.INITIALIZING:
             self._is_hosted.set_exception(TimeoutError("Game setup timed out"))
@@ -348,7 +350,7 @@ class Game:
                 game_stats.update().where(
                     game_stats.c.id == self.id
                 ).values(
-                    endTime = sql_now()
+                    endTime=sql_now()
                 )
             )
 
@@ -423,7 +425,6 @@ class Game:
             basic_info, self.validity, team_outcomes, commander_kills
         )
 
-
     async def load_results(self):
         """
         Load results from the database
@@ -482,7 +483,7 @@ class Game:
     def get_basic_info(self) -> BasicGameInfo:
         return BasicGameInfo(
             self.id,
-            self._rating_type,
+            self.rating_type,
             self.map_id,
             self.game_mode,
             list(self.mods.keys()),
@@ -573,9 +574,9 @@ class Game:
         if await self._validate_game_options(valid_options) is False:
             return
 
-        if self.game_mode in ('faf', 'ladder1v1'):
+        if self.game_mode in (FeaturedModType.FAF, FeaturedModType.LADDER_1V1):
             await self._validate_faf_game_settings()
-        elif self.game_mode == 'coop':
+        elif self.game_mode == FeaturedModType.COOP:
             await self._validate_coop_game_settings()
 
     async def _validate_game_options(
@@ -702,10 +703,9 @@ class Game:
             if is_observer:
                 continue
 
-            if self.game_mode == 'ladder1v1':
-                mean, deviation = player.ratings[RatingType.LADDER_1V1]
-            else:
-                mean, deviation = player.ratings[RatingType.GLOBAL]
+            # DEPRECATED: Rating changes are persisted by the rating service
+            # in the `leaderboard_rating_journal` table.
+            mean, deviation = player.ratings[self.rating_type]
 
             query_args.append(
                 {

@@ -71,7 +71,9 @@ insert into login (id, login, email, password, steamid, create_time) values
   (52,  'player_service3', 'ps3@example.com', SHA2('player_service3', 256), null, '2000-01-01 00:00:00'),
   (100, 'ladder1', 'ladder1@example.com', SHA2('ladder1', 256), null, '2000-01-01 00:00:00'),
   (101, 'ladder2', 'ladder2@example.com', SHA2('ladder2', 256), null, '2000-01-01 00:00:00'),
-  (102, 'ladder_ban', 'ladder_ban@example.com', SHA2('ladder_ban', 256), null, '2000-01-01 00:00:00'),
+  (102, 'ladder3', 'ladder3@example.com', SHA2('ladder3', 256), null, '2000-01-01 00:00:00'),
+  (103, 'ladder4', 'ladder4@example.com', SHA2('ladder4', 256), null, '2000-01-01 00:00:00'),
+  (104, 'ladder_ban', 'ladder_ban@example.com', SHA2('ladder_ban', 256), null, '2000-01-01 00:00:00'),
   (200, 'banme', 'banme@example.com', SHA2('banme', 256), null, '2000-01-01 00:00:00'),
   (201, 'ban_revoked', 'ban_revoked@example.com', SHA2('ban_revoked', 256), null, '2000-01-01 00:00:00'),
   (202, 'ban_expired', 'ban_expired@example.com', SHA2('ban_expired', 256), null, '2000-01-01 00:00:00'),
@@ -97,24 +99,25 @@ insert into user_group_assignment(user_id, group_id)  values (20, (SELECT id fro
 
 insert into leaderboard (id, technical_name, name_key, description_key) values
   (1, "global", "leaderboard.global.name", "leaderboard.global.desc"),
-  (2, "ladder_1v1", "leaderboard.ladder_1v1.name", "leaderboard.ladder_1v1.desc");
+  (2, "ladder_1v1", "leaderboard.ladder_1v1.name", "leaderboard.ladder_1v1.desc"),
+  (3, "tmm_2v2", "leaderboard.tmm_2v2.name", "leaderboard.tmm_2v2.desc");
 
 
 insert into leaderboard_rating (login_id, mean, deviation, total_games, leaderboard_id) values
-    (1, 2000, 125, 5, 1),
-    (1, 2000, 125, 5, 2),
-    (2, 1500, 75, 2, 1),
-    (2, 1500, 75, 2, 2),
-    (3, 1650, 62.52, 2, 1),
-    (3, 1650, 62.52, 2, 2),
-    (50,  1200, 250, 42, 1),
-    (50,  1300, 400, 12, 2),
-    (100, 1500, 500, 0, 1),
-    (100, 1500, 500, 0, 2),
-    (101, 1500, 500, 0, 1),
-    (101, 1500, 500, 0, 2),
-    (102, 1500, 500, 0, 1),
-    (102, 1500, 500, 0, 2)
+  (1, 2000, 125, 5, 1),
+  (1, 2000, 125, 5, 2),
+  (2, 1500, 75, 2, 1),
+  (2, 1500, 75, 2, 2),
+  (3, 1650, 62.52, 2, 1),
+  (3, 1650, 62.52, 2, 2),
+  (50,  1200, 250, 42, 1),
+  (50,  1300, 400, 12, 2),
+  (100, 1500, 500, 0, 1),
+  (100, 1500, 500, 0, 2),
+  (101, 1500, 500, 0, 1),
+  (101, 1500, 500, 0, 2),
+  (102, 1500, 500, 0, 1),
+  (102, 1500, 500, 0, 2)
 ;
 
 -- legacy table for global rating
@@ -240,8 +243,10 @@ insert into game_player_stats (gameId, playerId, AI, faction, color, team, place
   (41943, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), 1400),
   (41944, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), 1600);
 
-insert into matchmaker_queue (id, technical_name, featured_mod_id, leaderboard_id, name_key) values
-  (1, "ladder1v1", 6, 2, "matchmaker.ladder1v1");
+insert into matchmaker_queue (id, technical_name, featured_mod_id, leaderboard_id, name_key, team_size, enabled) values
+  (1, "ladder1v1", 6, 2, "matchmaker.ladder1v1", 1, true),
+  (2, "tmm2v2", 1, 3, "matchmaker.tmm2v2", 2, true),
+  (3, "disabled", 1, 1, "matchmaker.disabled", 4, false);
 
 insert into map_pool (id, name) values
   (1, "Ladder1v1 season 1: 5-10k"),
@@ -256,7 +261,8 @@ insert into map_pool_map_version (map_pool_id, map_version_id) values
 insert into matchmaker_queue_map_pool (matchmaker_queue_id, map_pool_id, min_rating, max_rating) values
   (1, 1, NULL, 800),
   (1, 2, 800, NULL),
-  (1, 3, 1000, NULL);
+  (1, 3, 1000, NULL),
+  (2, 3, NULL, NULL);
 
 insert into friends_and_foes (user_id, subject_id, `status`) values
   (1, 3, 'FOE'),

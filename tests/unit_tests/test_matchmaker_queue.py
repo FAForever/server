@@ -9,7 +9,7 @@ import pytest
 import server.config as config
 from hypothesis import given
 from hypothesis import strategies as st
-from server.matchmaker import MapPool, PopTimer, Search
+from server.matchmaker import CombinedSearch, MapPool, PopTimer, Search
 from server.rating import RatingType
 from tests.utils import fast_forward
 
@@ -184,6 +184,17 @@ async def test_search_await(matchmaker_players):
     s1.match(s2)
     await asyncio.wait_for(await_coro, 1)
     assert await_coro.done()
+
+
+def test_combined_search_attributes(matchmaker_players):
+    p1, p2, p3, _, _, _ = matchmaker_players
+    search = CombinedSearch(Search([p1, p2]), Search([p3]))
+    assert search.players == [p1, p2, p3]
+    assert search.raw_ratings == [
+        p1.ratings[RatingType.LADDER_1V1],
+        p2.ratings[RatingType.LADDER_1V1],
+        p3.ratings[RatingType.LADDER_1V1]
+    ]
 
 
 def test_queue_time_until_next_pop():

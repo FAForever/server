@@ -2,11 +2,12 @@ from hashlib import sha256
 from unittest import mock
 from unittest.mock import Mock
 
-import pytest
-
 import asynctest
+import pytest
 from aiohttp import web
 from asynctest import CoroutineMock
+from sqlalchemy import and_, select
+
 from server import GameState, VisibilityState, config
 from server.abc.base_game import InitMode
 from server.db.models import ban, friends_and_foes
@@ -17,13 +18,12 @@ from server.geoip_service import GeoIpService
 from server.ice_servers.nts import TwilioNTS
 from server.ladder_service import LadderService
 from server.lobbyconnection import ClientError, LobbyConnection
-from server.matchmaker import MatchmakerQueue
+from server.matchmaker import Search
 from server.player_service import PlayerService
 from server.players import PlayerState
 from server.protocol import DisconnectedError, QDataStreamProtocol
 from server.rating import RatingType
 from server.types import Address
-from sqlalchemy import and_, select
 
 pytestmark = pytest.mark.asyncio
 
@@ -831,26 +831,45 @@ async def test_command_game_matchmaking(lobbyconnection):
     )
 
 
-async def test_command_matchmaker_info(lobbyconnection, ladder_service, queue_factory):
-    queue = queue_factory("test")
+async def test_command_matchmaker_info(
+    lobbyconnection,
+    ladder_service,
+    queue_factory,
+    player_factory
+):
+    queue = queue_factory("test", rating_type=RatingType.LADDER_1V1)
     queue.timer.next_queue_pop = 1_562_000_000
+    queue.push(Search([
+        player_factory(player_id=1, ladder_rating=(2000, 100), ladder_games=200),
+    ]))
+    queue.push(Search([
+        player_factory(player_id=2, ladder_rating=(500, 120), ladder_games=100),
+        player_factory(player_id=3, ladder_rating=(1500, 500), ladder_games=0),
+    ]))
+    queue.push(Search([
+        player_factory(player_id=4, ladder_rating=(1000, 100), ladder_games=500),
+        player_factory(player_id=5, ladder_rating=(1300, 100), ladder_games=200),
+        player_factory(player_id=6, ladder_rating=(2000, 100), ladder_games=1000),
+    ]))
 
     lobbyconnection.ladder_service.queues = {
         "test": queue
     }
     lobbyconnection.send = CoroutineMock()
     await lobbyconnection.on_message_received({
-        'command': 'matchmaker_info'
+        "command": "matchmaker_info"
     })
 
     lobbyconnection.send.assert_called_with({
-        'command': 'matchmaker_info',
-        'queues': [
+        "command": "matchmaker_info",
+        "queues": [
             {
-                'queue_name': 'test',
-                'queue_pop_time': '2019-07-01T16:53:20+00:00',
-                'boundary_80s': [],
-                'boundary_75s': []
+                "queue_name": "test",
+                "queue_pop_time": "2019-07-01T16:53:20+00:00",
+                "team_size": 1,
+                "num_players": 6,
+                "boundary_80s": [(1800, 2200), (300, 700), (800, 1200)],
+                "boundary_75s": [(1900, 2100), (400, 600), (900, 1100)]
             }
         ]
     })

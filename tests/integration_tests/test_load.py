@@ -142,4 +142,9 @@ async def test_backpressure_handling(lobby_server, caplog):
     proto.reader._limit = 0
 
     with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(write_without_reading(proto), timeout=10)
+        await asyncio.wait_for(
+            # Due to some bizzare interaction, cancellation can hang so we
+            # prevent it with `shield`
+            asyncio.shield(write_without_reading(proto)),
+            timeout=10
+        )

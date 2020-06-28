@@ -4,6 +4,7 @@ import pytest
 
 import asynctest
 from mock import Mock
+
 from server.lobbyconnection import LobbyConnection
 from server.rating import RatingType
 

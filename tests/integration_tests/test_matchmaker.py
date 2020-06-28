@@ -1,8 +1,9 @@
 import asyncio
 
 import pytest
-from server.db.models import game_player_stats
 from sqlalchemy import select
+
+from server.db.models import game_player_stats
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until, read_until_command
@@ -69,7 +70,8 @@ async def test_game_launch_message(lobby_server):
     assert msg1['uid'] == msg2['uid']
     assert msg1['mod'] == msg2['mod'] == 'ladder1v1'
     assert msg1['mapname'] == msg2['mapname']
-    assert msg1['team'] == msg2['team'] == 1
+    assert msg1['team'] == 2
+    assert msg2['team'] == 3
     assert msg1['faction'] == msg2['faction'] == 1  # faction 1 is uef
     assert msg1['expected_players'] == msg2['expected_players'] == 2
     assert msg1['map_position'] == 1
@@ -174,7 +176,7 @@ async def test_game_matchmaking_cancel(lobby_server):
 
     assert msg == {
         'command': 'search_info',
-        'queue': 'ladder1v1',
+        'queue_name': 'ladder1v1',
         'state': 'stop',
     }
 
@@ -190,38 +192,36 @@ async def test_game_matchmaking_disconnect(lobby_server):
     assert msg == {'command': 'match_cancelled'}
 
 
-@fast_forward(100)
+@fast_forward(10)
 async def test_matchmaker_info_message(lobby_server, mocker):
-    mocker.patch('server.matchmaker.pop_timer.time', return_value=1_562_000_000)
+    mocker.patch("server.matchmaker.pop_timer.time", return_value=1_562_000_000)
 
     _, _, proto = await connect_and_sign_in(
-        ('ladder1', 'ladder1'),
+        ("ladder1", "ladder1"),
         lobby_server
     )
-    # Because the mocking hasn't taken effect on the first message we need to
+    # Because the mocking hasn"t taken effect on the first message we need to
     # wait for the second message
-    msg = await read_until_command(proto, 'matchmaker_info')
-    msg = await read_until_command(proto, 'matchmaker_info')
+    msg = await read_until_command(proto, "matchmaker_info")
+    msg = await read_until_command(proto, "matchmaker_info")
 
-    assert msg == {
-        'command': 'matchmaker_info',
-        'queues': [
-            {
-                'queue_name': 'ladder1v1',
-                'queue_pop_time': '2019-07-01T16:53:21+00:00',
-                'boundary_80s': [],
-                'boundary_75s': []
-            }
-        ]
-    }
+    assert "queues" in msg
+    for queue in msg["queues"]:
+        assert "queue_name" in queue
+        assert "team_size" in queue
+        assert "num_players" in queue
+
+        assert queue["queue_pop_time"] == "2019-07-01T16:53:21+00:00"
+        assert queue["boundary_80s"] == []
+        assert queue["boundary_75s"] == []
 
 
 @fast_forward(10)
 async def test_command_matchmaker_info(lobby_server, mocker):
-    mocker.patch('server.matchmaker.pop_timer.time', return_value=1_562_000_000)
+    mocker.patch("server.matchmaker.pop_timer.time", return_value=1_562_000_000)
 
     _, _, proto = await connect_and_sign_in(
-        ('ladder1', 'ladder1'),
+        ("ladder1", "ladder1"),
         lobby_server
     )
 
@@ -231,17 +231,15 @@ async def test_command_matchmaker_info(lobby_server, mocker):
 
     await proto.send_message({"command": "matchmaker_info"})
     msg = await read_until_command(proto, "matchmaker_info")
-    assert msg == {
-        'command': 'matchmaker_info',
-        'queues': [
-            {
-                'queue_name': 'ladder1v1',
-                'queue_pop_time': '2019-07-01T16:53:21+00:00',
-                'boundary_80s': [],
-                'boundary_75s': []
-            }
-        ]
-    }
+    assert "queues" in msg
+    for queue in msg["queues"]:
+        assert "queue_name" in queue
+        assert "team_size" in queue
+        assert "num_players" in queue
+
+        assert queue["queue_pop_time"] == "2019-07-01T16:53:21+00:00"
+        assert queue["boundary_80s"] == []
+        assert queue["boundary_75s"] == []
 
 
 @fast_forward(10)
@@ -265,11 +263,13 @@ async def test_matchmaker_info_message_on_cancel(lobby_server):
             # Update message because a new player joined the queue
             msg = await read_until_command(proto, 'matchmaker_info')
 
-            if not msg["queues"][0]["boundary_80s"]:
+            queue_message = next(
+                q for q in msg["queues"] if q["queue_name"] == "ladder1v1"
+            )
+            if not queue_message["boundary_80s"]:
                 continue
 
-            assert msg["queues"][0]["queue_name"] == "ladder1v1"
-            assert len(msg["queues"][0]["boundary_80s"]) == 1
+            assert len(queue_message["boundary_80s"]) == 1
 
             return
 
@@ -283,8 +283,8 @@ async def test_matchmaker_info_message_on_cancel(lobby_server):
     # Update message because we left the queue
     msg = await read_until_command(proto, 'matchmaker_info')
 
-    assert msg["queues"][0]["queue_name"] == "ladder1v1"
-    assert len(msg["queues"][0]["boundary_80s"]) == 0
+    queue_message = next(q for q in msg["queues"] if q["queue_name"] == "ladder1v1")
+    assert len(queue_message["boundary_80s"]) == 0
 
 
 @fast_forward(10)
@@ -304,7 +304,7 @@ async def test_search_info_messages(lobby_server):
     msg = await read_until_command(proto, "search_info")
     assert msg == {
         "command": "search_info",
-        "queue": "ladder1v1",
+        "queue_name": "ladder1v1",
         "state": "start"
     }
     # TODO: Join a second queue here
@@ -317,7 +317,7 @@ async def test_search_info_messages(lobby_server):
     msg = await read_until_command(proto, "search_info")
     assert msg == {
         "command": "search_info",
-        "queue": "ladder1v1",
+        "queue_name": "ladder1v1",
         "state": "stop"
     }
 
