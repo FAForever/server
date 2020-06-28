@@ -4,6 +4,7 @@ from unittest import mock
 
 import pytest
 from asynctest import CoroutineMock, exhaust_callbacks
+
 from server import ServerContext
 from server.lobbyconnection import LobbyConnection
 from server.protocol import DisconnectedError, QDataStreamProtocol

@@ -4,7 +4,14 @@ import random
 import statistics as stats
 from collections import OrderedDict
 from typing import (
-    Dict, Iterable, Iterator, List, Optional, Set, Tuple, TypeVar
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar
 )
 
 from ..decorators import with_logger

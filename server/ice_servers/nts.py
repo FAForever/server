@@ -6,8 +6,9 @@ import asyncio
 from functools import partial
 from typing import Dict, List
 
-from server.config import config
 from twilio.rest import Client as TwilioRestClient
+
+from server.config import config
 
 
 class TwilioNTS:

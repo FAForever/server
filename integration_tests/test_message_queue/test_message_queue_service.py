@@ -1,9 +1,8 @@
 import asyncio
 
 import aio_pika
-import pytest
-
 import mock
+import pytest
 
 from server.config import config
 from server.decorators import with_logger

@@ -13,7 +13,10 @@ from sqlalchemy.sql.functions import now as sql_now
 from server.config import FFA_TEAM
 from server.db.models import game_player_stats, game_stats
 from server.games.game_results import (
-    GameOutcome, GameResolutionError, GameResultReport, GameResultReports,
+    GameOutcome,
+    GameResolutionError,
+    GameResultReport,
+    GameResultReports,
     resolve_game
 )
 from server.rating import RatingType
@@ -21,8 +24,13 @@ from server.rating import RatingType
 from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
 from .typedefs import (
-    BasicGameInfo, EndedGameInfo, FeaturedModType, GameState, ValidityState,
-    Victory, VisibilityState
+    BasicGameInfo,
+    EndedGameInfo,
+    FeaturedModType,
+    GameState,
+    ValidityState,
+    Victory,
+    VisibilityState
 )
 
 

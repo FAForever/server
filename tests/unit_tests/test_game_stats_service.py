@@ -1,14 +1,16 @@
 import json
 from unittest.mock import Mock
 
-import pytest
-
 import asynctest
+import pytest
 from asynctest import CoroutineMock
+
 from server.factions import Faction
 from server.games import Game
 from server.games.game_results import (
-    GameOutcome, GameResultReport, GameResultReports
+    GameOutcome,
+    GameResultReport,
+    GameResultReports
 )
 from server.lobbyconnection import LobbyConnection
 from server.stats import achievement_service as ach

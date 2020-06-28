@@ -9,6 +9,7 @@ import asynctest
 import pytest
 from aiohttp import web
 from asynctest import exhaust_callbacks
+
 from server import GameService, run_control_server, run_lobby_server
 from server.db.models import login
 from server.ladder_service import LadderService

@@ -1,9 +1,9 @@
 import random
 
 import pytest
-
 from hypothesis import given
 from hypothesis import strategies as st
+
 from server.matchmaker import MapPool
 from server.types import Map
 

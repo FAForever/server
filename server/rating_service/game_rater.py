@@ -1,8 +1,9 @@
 from typing import Dict, List
 
 import trueskill
-from server.games.game_results import GameOutcome
 from trueskill import Rating
+
+from server.games.game_results import GameOutcome
 
 from ..decorators import with_logger
 from .typedefs import GameRatingData, PlayerID

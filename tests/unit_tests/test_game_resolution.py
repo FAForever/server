@@ -1,7 +1,9 @@
 import pytest
 
 from server.games.game_results import (
-    GameOutcome, GameResolutionError, resolve_game
+    GameOutcome,
+    GameResolutionError,
+    resolve_game
 )
 
 

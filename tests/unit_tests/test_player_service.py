@@ -1,8 +1,7 @@
 from enum import Enum
 
-import pytest
-
 import asynctest
+import pytest
 from mock import Mock
 
 from server.lobbyconnection import LobbyConnection

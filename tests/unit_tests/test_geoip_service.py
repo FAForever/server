@@ -10,9 +10,9 @@ from time import time
 from unittest.mock import Mock
 
 import pytest
+from aiohttp import web
 
 import server.config
-from aiohttp import web
 from server.geoip_service import GeoIpService
 
 pytestmark = pytest.mark.asyncio

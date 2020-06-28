@@ -3,9 +3,8 @@ import logging
 import os
 from typing import Callable, Dict
 
-import yaml
-
 import trueskill
+import yaml
 
 from .decorators import with_logger
 

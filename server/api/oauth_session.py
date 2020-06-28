@@ -4,7 +4,8 @@ from typing import Dict
 
 import aiohttp
 from oauthlib.oauth2.rfc6749.errors import (
-    InsecureTransportError, MissingTokenError
+    InsecureTransportError,
+    MissingTokenError
 )
 
 

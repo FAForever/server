@@ -11,12 +11,19 @@ from trueskill import Rating
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import CoopGame, CustomGame
 from server.games.game import (
-    Game, GameError, GameState, ValidityState, Victory, VisibilityState
+    Game,
+    GameError,
+    GameState,
+    ValidityState,
+    Victory,
+    VisibilityState
 )
 from server.games.game_results import GameOutcome
 from server.rating import RatingType
 from tests.unit_tests.conftest import (
-    add_connected_player, add_connected_players, make_mock_game_connection
+    add_connected_player,
+    add_connected_players,
+    make_mock_game_connection
 )
 from tests.utils import fast_forward
 
