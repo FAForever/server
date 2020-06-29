@@ -32,17 +32,14 @@ def mock_server(event_loop):
 
 
 @pytest.fixture
-def mock_context(event_loop, request, mock_server):
-    ctx = ServerContext(lambda: mock_server, name='TestServer')
-
-    def fin():
-        ctx.close()
-    request.addfinalizer(fin)
-    return event_loop.run_until_complete(ctx.listen('127.0.0.1', None)), ctx
+async def mock_context(mock_server):
+    ctx = ServerContext("TestServer", lambda: mock_server)
+    yield await ctx.listen("127.0.0.1", None), ctx
+    ctx.close()
 
 
 @pytest.fixture
-def context(event_loop, request):
+async def context():
     def make_connection() -> LobbyConnection:
         return LobbyConnection(
             database=mock.Mock(),
@@ -53,12 +50,9 @@ def context(event_loop, request):
             ladder_service=mock.Mock()
         )
 
-    ctx = ServerContext(make_connection, name='TestServer')
-
-    def fin():
-        ctx.close()
-    request.addfinalizer(fin)
-    return event_loop.run_until_complete(ctx.listen('127.0.0.1', None)), ctx
+    ctx = ServerContext("TestServer", make_connection)
+    yield await ctx.listen("127.0.0.1", None), ctx
+    ctx.close()
 
 
 async def test_serverside_abort(event_loop, mock_context, mock_server):

@@ -13,7 +13,7 @@ from asynctest import exhaust_callbacks
 from server import GameService, run_control_server, run_lobby_server
 from server.db.models import login
 from server.ladder_service import LadderService
-from server.protocol import QDataStreamProtocol
+from server.protocol import Protocol, QDataStreamProtocol
 from server.rating_service.rating_service import RatingService
 
 
@@ -146,7 +146,7 @@ async def connect_client(server) -> QDataStreamProtocol:
 
 
 async def perform_login(
-    proto: QDataStreamProtocol, credentials: Tuple[str, str]
+    proto: Protocol, credentials: Tuple[str, str]
 ) -> None:
     login, pw = credentials
     pw_hash = hashlib.sha256(pw.encode('utf-8'))
@@ -161,7 +161,7 @@ async def perform_login(
 
 
 async def read_until(
-    proto: QDataStreamProtocol, pred: Callable[[Dict[str, Any]], bool]
+    proto: Protocol, pred: Callable[[Dict[str, Any]], bool]
 ) -> Dict[str, Any]:
     while True:
         msg = await proto.read_message()
@@ -174,7 +174,7 @@ async def read_until(
 
 
 async def read_until_command(
-    proto: QDataStreamProtocol,
+    proto: Protocol,
     command: str,
     timeout: float = 60
 ) -> Dict[str, Any]:

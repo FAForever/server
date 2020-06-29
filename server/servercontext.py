@@ -1,10 +1,12 @@
 import asyncio
+from typing import Callable, Dict, Type
 
 import server.metrics as metrics
 
 from .config import TRACE
 from .decorators import with_logger
-from .protocol import QDataStreamProtocol
+from .lobbyconnection import LobbyConnection
+from .protocol import Protocol, QDataStreamProtocol
 from .types import Address
 
 
@@ -14,13 +16,19 @@ class ServerContext:
     Base class for managing connections and holding state about them.
     """
 
-    def __init__(self, connection_factory, name='Unknown server'):
+    def __init__(
+        self,
+        name: str,
+        connection_factory: Callable[[], LobbyConnection],
+        protocol_class: Type[Protocol] = QDataStreamProtocol,
+    ):
         super().__init__()
         self.name = name
         self._server = None
         self._connection_factory = connection_factory
-        self.connections = {}
+        self.connections: Dict[LobbyConnection, Protocol] = {}
         self._logger.debug("%s initialized", self)
+        self.protocol_class = protocol_class
 
     def __repr__(self):
         return "ServerContext({})".format(self.name)
@@ -49,14 +57,14 @@ class ServerContext:
     def __contains__(self, connection):
         return connection in self.connections.keys()
 
-    def write_broadcast(self, message, validate_fn=lambda a: True):
+    def write_broadcast(self, message, validate_fn=lambda _: True):
         self._logger.log(TRACE, "]]: %s", message)
         self.write_broadcast_raw(
-            QDataStreamProtocol.encode_message(message),
+            self.protocol_class.encode_message(message),
             validate_fn
         )
 
-    def write_broadcast_raw(self, data, validate_fn=lambda a: True):
+    def write_broadcast_raw(self, data, validate_fn=lambda _: True):
         metrics.server_broadcasts.inc()
         for conn, proto in self.connections.items():
             try:
@@ -69,7 +77,7 @@ class ServerContext:
 
     async def client_connected(self, stream_reader, stream_writer):
         self._logger.debug("%s: Client connected", self)
-        protocol = QDataStreamProtocol(stream_reader, stream_writer)
+        protocol = self.protocol_class(stream_reader, stream_writer)
         connection = self._connection_factory()
         self.connections[connection] = protocol
 

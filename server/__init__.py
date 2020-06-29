@@ -7,7 +7,7 @@ Copyright (c) 2015-2016 Michael Søndergaard <sheeo@faforever.com>
 Distributed under GPLv3, see license.txt
 """
 import logging
-from typing import Optional
+from typing import Optional, Tuple, Type
 
 from prometheus_client import start_http_server
 
@@ -18,14 +18,14 @@ from .configuration_service import ConfigurationService
 from .control import run_control_server
 from .game_service import GameService
 from .gameconnection import GameConnection
-from .games.game import GameState, VisibilityState
+from .games import GameState, VisibilityState
 from .geoip_service import GeoIpService
 from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
 from .lobbyconnection import LobbyConnection
 from .message_queue_service import MessageQueueService
 from .player_service import PlayerService
-from .protocol import QDataStreamProtocol
+from .protocol import Protocol, QDataStreamProtocol
 from .rating_service.rating_service import RatingService
 from .servercontext import ServerContext
 from .stats.game_stats_service import GameStatsService
@@ -62,11 +62,8 @@ if config.ENABLE_METRICS:
     start_http_server(config.METRICS_PORT)
 
 
-PING_MSG = QDataStreamProtocol.pack_message('PING')
-
-
 async def run_lobby_server(
-    address: (str, int),
+    address: Tuple[str, int],
     database: FAFDatabase,
     player_service: PlayerService,
     game_service: GameService,
@@ -74,6 +71,7 @@ async def run_lobby_server(
     geoip_service: GeoIpService,
     ladder_service: LadderService,
     loop,
+    protocol_class: Type[Protocol] = QDataStreamProtocol,
 ) -> ServerContext:
     """
     Run the lobby server
@@ -139,9 +137,11 @@ async def run_lobby_server(
             except Exception:
                 logger.exception("Error writing game_info %s", game.id)
 
+    ping_msg = protocol_class.encode_message({"command": "ping"})
+
     @at_interval(45, loop=loop)
     def ping_broadcast():
-        ctx.write_broadcast_raw(PING_MSG)
+        ctx.write_broadcast_raw(ping_msg)
 
     def make_connection() -> LobbyConnection:
         return LobbyConnection(
@@ -153,6 +153,7 @@ async def run_lobby_server(
             ladder_service=ladder_service
         )
 
-    ctx = ServerContext(make_connection, name="LobbyServer")
+    ctx = ServerContext("LobbyServer", make_connection, protocol_class)
+
     await ctx.listen(*address)
     return ctx

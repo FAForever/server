@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from server.protocol import QDataStreamProtocol
+from server.protocol import Protocol
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until, read_until_command
@@ -12,7 +12,7 @@ from .test_matchmaker import queue_players_for_matchmaking
 pytestmark = pytest.mark.asyncio
 
 
-async def host_game(proto: QDataStreamProtocol) -> int:
+async def host_game(proto: Protocol) -> int:
     await proto.send_message({
         "command": "game_host",
         "mod": "faf",
@@ -36,7 +36,7 @@ async def host_game(proto: QDataStreamProtocol) -> int:
     return game_id
 
 
-async def join_game(proto: QDataStreamProtocol, uid: int):
+async def join_game(proto: Protocol, uid: int):
     await proto.send_message({
         "command": "game_join",
         "uid": uid

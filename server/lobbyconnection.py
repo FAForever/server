@@ -39,10 +39,8 @@ from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
 from .player_service import PlayerService
 from .players import Player, PlayerState
-from .protocol import DisconnectedError, QDataStreamProtocol
+from .protocol import DisconnectedError, Protocol
 from .types import Address, GameLaunchOptions
-
-PONG_MSG = QDataStreamProtocol.pack_message("PONG")
 
 
 class ClientError(Exception):
@@ -88,7 +86,7 @@ class LobbyConnection:
         self.game_connection = None  # type: GameConnection
         self.peer_address = None  # type: Optional[Address]
         self.session = int(random.randrange(0, 4294967295))
-        self.protocol = None
+        self.protocol: Protocol = None
         self.user_agent = None
         self._version = None
 
@@ -108,7 +106,7 @@ class LobbyConnection:
         return str(self.session)
 
     @asyncio.coroutine
-    def on_connection_made(self, protocol: QDataStreamProtocol, peername: Address):
+    def on_connection_made(self, protocol: Protocol, peername: Address):
         self.protocol = protocol
         self.peer_address = peername
         metrics.server_connections.inc()
@@ -189,7 +187,7 @@ class LobbyConnection:
             await self.abort("Error processing command")
 
     async def command_ping(self, msg):
-        await self.protocol.send_raw(PONG_MSG)
+        await self.send({"command": "pong"})
 
     async def command_pong(self, msg):
         pass
