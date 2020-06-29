@@ -1038,13 +1038,14 @@ class LobbyConnection:
             await self.abort(message)
 
     async def send(self, message):
-        """
+        """Send a message and wait for it to be sent."""
+        self.write(message)
+        await self.protocol.drain()
 
-        :param message:
-        :return:
-        """
+    def write(self, message):
+        """Write a message into the send buffer."""
         self._logger.log(TRACE, ">> %s: %s", self.get_user_identifier(), message)
-        await self.protocol.send_message(message)
+        self.protocol.write_message(message)
 
     async def on_connection_lost(self):
         async def nop(*args, **kwargs):
