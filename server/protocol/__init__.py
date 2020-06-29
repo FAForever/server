@@ -1,11 +1,11 @@
 from .gpgnet import GpgNetClientProtocol, GpgNetServerProtocol
-from .protocol import Protocol
-from .qdatastreamprotocol import DisconnectedError, QDataStreamProtocol
+from .protocol import DisconnectedError, Protocol
+from .qdatastream import QDataStreamProtocol
 
 __all__ = (
-    'DisconnectedError',
-    'QDataStreamProtocol',
-    'Protocol',
-    'GpgNetClientProtocol',
-    'GpgNetServerProtocol'
+    "DisconnectedError",
+    "GpgNetClientProtocol",
+    "GpgNetServerProtocol",
+    "Protocol",
+    "QDataStreamProtocol",
 )
