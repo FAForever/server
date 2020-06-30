@@ -585,7 +585,7 @@ async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection):
 
     lobbyconnection.protocol.send_message.assert_any_call({
         "command": "avatar",
-        "avatarlist": [{'url': 'http://content.faforever.com/faf/avatars/qai2.png', 'tooltip': 'QAI'}, {'url': 'http://content.faforever.com/faf/avatars/UEF.png', 'tooltip': 'UEF'}]
+        "avatarlist": [{'url': 'https://content.faforever.com/faf/avatars/qai2.png', 'tooltip': 'QAI'}, {'url': 'https://content.faforever.com/faf/avatars/UEF.png', 'tooltip': 'UEF'}]
     })
 
 
@@ -595,7 +595,7 @@ async def test_command_avatar_select(mocker, database, lobbyconnection: LobbyCon
     await lobbyconnection.on_message_received({
         'command': 'avatar',
         'action': 'select',
-        'avatar': "http://content.faforever.com/faf/avatars/qai2.png"
+        'avatar': "https://content.faforever.com/faf/avatars/qai2.png"
     })
 
     async with database.acquire() as conn:
