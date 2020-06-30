@@ -668,11 +668,12 @@ class Game:
                 "WHERE lower(filename) = lower(%s)", (self.map_file_path, )
             )
             row = await result.fetchone()
+            is_generated = self.map_file_path.startswith("neroxis_map_generator")
 
             if row:
                 self.map_id = row['id']
 
-            if (not row or not row['ranked']) and self.validity is ValidityState.VALID:
+            if (not row or not row['ranked']) and self.validity is ValidityState.VALID and not is_generated:
                 await self.mark_invalid(ValidityState.BAD_MAP)
 
             modId = self.game_service.featured_mods[self.game_mode].id
