@@ -668,6 +668,7 @@ class Game:
                 "WHERE lower(filename) = lower(%s)", (self.map_file_path, )
             )
             row = await result.fetchone()
+            is_generated = False
             if self.map_file_path:
                 is_generated = "neroxis_map_generator" in self.map_file_path
 
