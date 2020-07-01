@@ -1,13 +1,17 @@
 import asyncio
 import contextlib
 
-from server.db import FAFDatabase
 from sqlalchemy import or_, select, text
+
+from server.db import FAFDatabase
 
 from .abc.base_game import GameConnectionState
 from .config import TRACE
 from .db.models import (
-    coop_leaderboard, coop_map, login, teamkills
+    coop_leaderboard,
+    coop_map,
+    login,
+    teamkills
 )
 from .decorators import with_logger
 from .game_service import GameService
@@ -15,7 +19,9 @@ from .games.game import Game, GameError, GameState, ValidityState, Victory
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import (
-    DisconnectedError, GpgNetServerProtocol, QDataStreamProtocol
+    DisconnectedError,
+    GpgNetServerProtocol,
+    QDataStreamProtocol
 )
 
 
