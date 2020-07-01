@@ -667,8 +667,8 @@ class Game:
                 "SELECT id, ranked FROM map_version "
                 "WHERE lower(filename) = lower(%s)", (self.map_file_path, )
             )
+            row = await result.fetchone()
 
-        row = await result.fetchone()
         is_generated = (self.map_file_path and "neroxis_map_generator" in self.map_file_path)
 
         if row:

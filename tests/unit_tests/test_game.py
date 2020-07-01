@@ -155,6 +155,9 @@ async def test_generated_map_is_rated(game, game_add_players):
     game.map_file_path = 'maps/neroxis_map_generator_1.0.0_1234.zip'
     game_add_players(game, 2, team=1)
     await game.launch()
+    await game.add_result(0, 1, 'victory', 5)
+    game.launched_at = time.time() - 60 * 20  # seconds
+    await game.on_game_end()
     assert game.validity == ValidityState.VALID
 
 
@@ -163,6 +166,9 @@ async def test_unranked_generated_map_not_rated(game, game_add_players):
     game.map_file_path = 'maps/neroxis_map_generator_sneaky_map.zip'
     game_add_players(game, 2, team=1)
     await game.launch()
+    await game.add_result(0, 1, 'victory', 5)
+    game.launched_at = time.time() - 60 * 20  # seconds
+    await game.on_game_end()
     assert game.validity == ValidityState.BAD_MAP
 
 
