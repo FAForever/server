@@ -11,8 +11,6 @@ from .db.models import (
     coop_leaderboard,
     coop_map,
     login,
-    moderation_report,
-    reported_user,
     teamkills
 )
 from .decorators import with_logger
@@ -347,67 +345,12 @@ class GameConnection(GpgNetServerProtocol):
 
             :param gametime: seconds of gametime when kill happened
             :param reporter_id: reporter id
-            :param reporter_name: reporter nickname
+            :param reporter_name: reporter nickname (for debug purpose only)
             :param teamkiller_id: teamkiller id
-            :param teamkiller_name: teamkiller nickname - Used as a failsafe in case ID is wrong
+            :param teamkiller_name: teamkiller nickname (for debug purpose only)
         """
 
-        async with self._db.acquire() as conn:
-            # Sometime the game sends a wrong ID - but a correct player name
-            # We need to make sure the player ID is correct before pursuing
-
-            check = await conn.execute(select([login.c.id]).where(
-                or_(
-                    login.c.id == teamkiller_id,
-                    login.c.login == teamkiller_name
-                )
-            ))
-
-            row = await check.fetchone()
-            if not row:
-                self._logger.debug(
-                    "Discarded teamkill report with unknown reported player %s[%s]",
-                    teamkiller_id, teamkiller_name
-                )
-                return
-
-            verified_teamkiller_id = row[login.c.id]
-
-            # The reporter's ID also needs to be checked the exact same way
-            # for the same reasons
-
-            check = await conn.execute(select([login.c.id]).where(
-                or_(
-                    login.c.id == reporter_id,
-                    login.c.login == reporter_name
-                )
-            ))
-
-            row = await check.fetchone()
-            if not row:
-                self._logger.debug(
-                    "Discarded teamkill report with unknown reporter %s[%s]",
-                    reporter_id, reporter_name
-                )
-                return
-
-            verified_reporter_id = row[login.c.id]
-
-            insert = moderation_report.insert().values(
-                reporter_id=verified_reporter_id,
-                game_id=self.game.id,
-                game_incident_timecode=gametime,
-                report_description=f"Auto-generated teamkill report from {reporter_name}",
-            )
-
-            result = await conn.execute(insert)
-
-            await conn.execute(
-                reported_user.insert().values(
-                    player_id=verified_teamkiller_id,
-                    report_id=result.lastrowid
-                )
-            )
+        pass
 
     async def handle_teamkill_happened(self, gametime, victim_id, victim_name, teamkiller_id, teamkiller_name):
         """

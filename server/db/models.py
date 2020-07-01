@@ -297,30 +297,6 @@ matchmaker_queue_map_pool = Table(
     Column('max_rating',            Integer),
 )
 
-moderation_report = Table(
-   'moderation_report', metadata,
-   Column('id',                     Integer,                        primary_key=True),
-   Column('reporter_id',            ForeignKey('login.id'),         nullable=False),
-   Column('report_description',     Text),
-   Column('report_status',          Enum('AWAITING', 'PROCESSING', 'COMPLETED', 'DISCARDED'), nullable=False),
-   Column('game_id',                ForeignKey('game_stats.id'),    index=True),
-   Column('game_incident_timecode', String(100)),
-   Column('moderator_notice',       Text),
-   Column('moderator_private_note', Text),
-   Column('last_moderator',         ForeignKey('login.id'),         index=True),
-   Column('create_time',            TIMESTAMP,                      nullable=False),
-   Column('update_time',            TIMESTAMP,                      nullable=False),
-)
-
-reported_user = Table(
-   'reported_user', metadata,
-   Column('id',             Integer,                            primary_key=True),
-   Column('player_id',      ForeignKey('login.id'),             nullable=False),
-   Column('report_id',      ForeignKey('moderation_report.id'), nullable=False),
-   Column('create_time',    TIMESTAMP,                          nullable=False),
-   Column('update_time',    TIMESTAMP,                          nullable=False)
-)
-
 teamkills = Table(
     'teamkills', metadata,
     Column('id',            Integer, primary_key=True),
