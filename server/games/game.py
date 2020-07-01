@@ -667,23 +667,26 @@ class Game:
                 "SELECT id, ranked FROM map_version "
                 "WHERE lower(filename) = lower(%s)", (self.map_file_path, )
             )
-            row = await result.fetchone()
-            is_generated = (self.map_file_path and "neroxis_map_generator" in self.map_file_path)
 
-            if row:
-                self.map_id = row['id']
+        row = await result.fetchone()
+        is_generated = (self.map_file_path and "neroxis_map_generator" in self.map_file_path)
 
-            if (self.validity is ValidityState.VALID and
-               ((row and not row.ranked) or (not row and not is_generated))):
-                await self.mark_invalid(ValidityState.BAD_MAP)
+        if row:
+            self.map_id = row['id']
 
-            modId = self.game_service.featured_mods[self.game_mode].id
+        if (self.validity is ValidityState.VALID and
+           ((row and not row.ranked) or (not row and not is_generated))):
+            await self.mark_invalid(ValidityState.BAD_MAP)
 
-            # Write out the game_stats record.
-            # In some cases, games can be invalidated while running: we check for those cases when
-            # the game ends and update this record as appropriate.
+        modId = self.game_service.featured_mods[self.game_mode].id
 
-            game_type = str(self.gameOptions.get("Victory").value)
+        # Write out the game_stats record.
+        # In some cases, games can be invalidated while running: we check for those cases when
+        # the game ends and update this record as appropriate.
+
+        game_type = str(self.gameOptions.get("Victory").value)
+
+        async with self._db.acquire() as conn:
             await conn.execute(
                 game_stats.insert().values(
                     id=self.id,
