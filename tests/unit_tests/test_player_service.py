@@ -18,7 +18,7 @@ async def test_fetch_player_data(player_factory, player_service):
     assert player.game_count[RatingType.GLOBAL] == 42
     assert player.ratings[RatingType.LADDER_1V1] == (1300, 400)
     assert player.clan == '123'
-    assert player.avatar == {'url': 'http://content.faforever.com/faf/avatars/UEF.png', 'tooltip': 'UEF'}
+    assert player.avatar == {'url': 'https://content.faforever.com/faf/avatars/UEF.png', 'tooltip': 'UEF'}
 
 
 async def test_fetch_player_data_legacy_rating(player_factory, player_service):
@@ -61,10 +61,10 @@ async def test_fetch_player_data_multiple_avatar(player_factory, player_service)
     player2 = player_factory(player_id=52)
 
     await player_service.fetch_player_data(player1)
-    assert player1.avatar == {'url': 'http://content.faforever.com/faf/avatars/UEF.png', 'tooltip': 'UEF'}
+    assert player1.avatar == {'url': 'https://content.faforever.com/faf/avatars/UEF.png', 'tooltip': 'UEF'}
 
     await player_service.fetch_player_data(player2)
-    assert player2.avatar == {'url': 'http://content.faforever.com/faf/avatars/qai2.png', 'tooltip': 'QAI'}
+    assert player2.avatar == {'url': 'https://content.faforever.com/faf/avatars/qai2.png', 'tooltip': 'QAI'}
 
 
 async def test_fetch_player_data_no_avatar_or_clan(player_factory, player_service):
