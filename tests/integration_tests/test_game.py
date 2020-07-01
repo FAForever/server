@@ -401,6 +401,7 @@ async def test_gamestate_ended_clears_references(
         test_proto,
         lambda msg: msg["command"] == "game_info" and msg["state"] == "closed"
     )
+    await asyncio.sleep(0.1)
     assert test.game_connection is None
     assert len(game.connections) == 0
     assert len(game._results) == 1
