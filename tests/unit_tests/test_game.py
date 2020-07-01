@@ -150,6 +150,22 @@ async def test_ffa_not_rated(game, game_add_players):
     assert game.validity == ValidityState.FFA_NOT_RANKED
 
 
+async def test_generated_map_is_rated(game, game_add_players):
+    game.state = GameState.LOBBY
+    game.map_file_path = 'maps/neroxis_map_generator_1.0.0_1234.zip'
+    game_add_players(game, 2, team=1)
+    await game.launch()
+    assert game.validity == ValidityState.VALID
+
+
+async def test_unranked_generated_map_not_rated(game, game_add_players):
+    game.state = GameState.LOBBY
+    game.map_file_path = 'maps/neroxis_map_generator_sneaky_map.zip'
+    game_add_players(game, 2, team=1)
+    await game.launch()
+    assert game.validity == ValidityState.BAD_MAP
+
+
 async def test_two_player_ffa_is_rated(game, game_add_players):
     game.state = GameState.LOBBY
     game_add_players(game, 2, team=1)

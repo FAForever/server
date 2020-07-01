@@ -177,7 +177,8 @@ insert into map (id, display_name, map_type, battle_type, author) values
   (12, 'SCMP_012', 'FFA', 'skirmish', 3),
   (13, 'SCMP_013', 'FFA', 'skirmish', 3),
   (14, 'SCMP_014', 'FFA', 'skirmish', 3),
-  (15, 'SCMP_015', 'FFA', 'skirmish', 3);
+  (15, 'SCMP_015', 'FFA', 'skirmish', 3),
+  (16, 'neroxis_map_generator_sneaky_map', 'FFA', 'skirmish', 1);
 
 insert into map_version (id, description, max_players, width, height, version, filename, hidden, map_id) values
   (1, 'SCMP 001', 8, 1024, 1024, 1, 'maps/scmp_001.zip', 0, 1),
@@ -197,6 +198,9 @@ insert into map_version (id, description, max_players, width, height, version, f
   (15, 'SCMP 015', 8, 512, 512, 1, 'maps/scmp_015.zip', 0, 15),
   (16, 'SCMP 015', 8, 512, 512, 2, 'maps/scmp_015.v0002.zip', 0, 15),
   (17, 'SCMP 015', 8, 512, 512, 3, 'maps/scmp_015.v0003.zip', 0, 15);
+
+insert into map_version (id, description, max_players, width, height, version, filename, hidden, ranked, map_id) values
+  (18, 'Sneaky_Map', 8, 512, 512, 1, "maps/neroxis_map_generator_sneaky_map.zip", 0, 0, 16);
 
 insert into ladder_map (id, idmap) values
   (1,1),
