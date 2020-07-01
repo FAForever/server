@@ -180,26 +180,24 @@ insert into map (id, display_name, map_type, battle_type, author) values
   (15, 'SCMP_015', 'FFA', 'skirmish', 3),
   (16, 'neroxis_map_generator_sneaky_map', 'FFA', 'skirmish', 1);
 
-insert into map_version (id, description, max_players, width, height, version, filename, hidden, map_id) values
-  (1, 'SCMP 001', 8, 1024, 1024, 1, 'maps/scmp_001.zip', 0, 1),
-  (2, 'SCMP 002', 8, 1024, 1024, 1, 'maps/scmp_002.zip', 0, 2),
-  (3, 'SCMP 003', 8, 1024, 1024, 1, 'maps/scmp_003.zip', 0, 3),
-  (4, 'SCMP 004', 8, 1024, 1024, 1, 'maps/scmp_004.zip', 0, 4),
-  (5, 'SCMP 005', 8, 2048, 2048, 1, 'maps/scmp_005.zip', 0, 5),
-  (6, 'SCMP 006', 8, 1024, 1024, 1, 'maps/scmp_006.zip', 0, 6),
-  (7, 'SCMP 007', 8, 512, 512, 1, 'maps/scmp_007.zip', 0, 7),
-  (8, 'SCMP 008', 8, 1024, 1024, 1, 'maps/scmp_008.zip', 0, 8),
-  (9, 'SCMP 009', 8, 1024, 1024, 1, 'maps/scmp_009.zip', 0, 9),
-  (10, 'SCMP 010', 8, 1024, 1024, 1, 'maps/scmp_010.zip', 0, 10),
-  (11, 'SCMP 011', 8, 2048, 2048, 1, 'maps/scmp_011.zip', 0, 11),
-  (12, 'SCMP 012', 8, 256, 256, 1, 'maps/scmp_012.zip', 0, 12),
-  (13, 'SCMP 013', 8, 256, 256, 1, 'maps/scmp_013.zip', 0, 13),
-  (14, 'SCMP 014', 8, 1024, 1024, 1, 'maps/scmp_014.zip', 0, 14),
-  (15, 'SCMP 015', 8, 512, 512, 1, 'maps/scmp_015.zip', 0, 15),
-  (16, 'SCMP 015', 8, 512, 512, 2, 'maps/scmp_015.v0002.zip', 0, 15),
-  (17, 'SCMP 015', 8, 512, 512, 3, 'maps/scmp_015.v0003.zip', 0, 15);
-
 insert into map_version (id, description, max_players, width, height, version, filename, hidden, ranked, map_id) values
+  (1, 'SCMP 001', 8, 1024, 1024, 1, 'maps/scmp_001.zip', 0, 1, 1),
+  (2, 'SCMP 002', 8, 1024, 1024, 1, 'maps/scmp_002.zip', 0, 1, 2),
+  (3, 'SCMP 003', 8, 1024, 1024, 1, 'maps/scmp_003.zip', 0, 1, 3),
+  (4, 'SCMP 004', 8, 1024, 1024, 1, 'maps/scmp_004.zip', 0, 1, 4),
+  (5, 'SCMP 005', 8, 2048, 2048, 1, 'maps/scmp_005.zip', 0, 1, 5),
+  (6, 'SCMP 006', 8, 1024, 1024, 1, 'maps/scmp_006.zip', 0, 1, 6),
+  (7, 'SCMP 007', 8, 512, 512, 1, 'maps/scmp_007.zip', 0, 1, 7),
+  (8, 'SCMP 008', 8, 1024, 1024, 1, 'maps/scmp_008.zip', 0, 1, 8),
+  (9, 'SCMP 009', 8, 1024, 1024, 1, 'maps/scmp_009.zip', 0, 1, 9),
+  (10, 'SCMP 010', 8, 1024, 1024, 1, 'maps/scmp_010.zip', 0, 1, 10),
+  (11, 'SCMP 011', 8, 2048, 2048, 1, 'maps/scmp_011.zip', 0, 1, 11),
+  (12, 'SCMP 012', 8, 256, 256, 1, 'maps/scmp_012.zip', 0, 1, 12),
+  (13, 'SCMP 013', 8, 256, 256, 1, 'maps/scmp_013.zip', 0, 1, 13),
+  (14, 'SCMP 014', 8, 1024, 1024, 1, 'maps/scmp_014.zip', 0, 1, 14),
+  (15, 'SCMP 015', 8, 512, 512, 1, 'maps/scmp_015.zip', 0, 1, 15),
+  (16, 'SCMP 015', 8, 512, 512, 2, 'maps/scmp_015.v0002.zip', 0, 1, 15),
+  (17, 'SCMP 015', 8, 512, 512, 3, 'maps/scmp_015.v0003.zip', 0, 1, 15),
   (18, 'Sneaky_Map', 8, 512, 512, 1, "maps/neroxis_map_generator_sneaky_map.zip", 0, 0, 16);
 
 insert into ladder_map (id, idmap) values
