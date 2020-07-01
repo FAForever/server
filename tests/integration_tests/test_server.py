@@ -340,7 +340,7 @@ async def test_avatar_select_not_owned(lobby_server, database):
     await proto.send_message({
         "command": "avatar",
         "action": "select",
-        "avatar": "http://content.faforever.com/faf/avatars/UEF.png"
+        "avatar": "https://content.faforever.com/faf/avatars/UEF.png"
     })
     with pytest.raises(asyncio.TimeoutError):
         await read_until_command(proto, "player_info", timeout=10)

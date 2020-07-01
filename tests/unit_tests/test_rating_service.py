@@ -205,7 +205,7 @@ async def test_get_new_player_rating_created(semiinitialized_service):
     tables, a new rating entry should be created.
     """
     service = semiinitialized_service
-    player_id = 999
+    player_id = 300
     rating_type = RatingType.LADDER_1V1
 
     db_ratings = await get_all_ratings(service._db, player_id)
