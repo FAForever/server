@@ -1,6 +1,6 @@
 [scripts]
-devserver = "env CONFIGURATION_FILE=dev-config.yml python server.py"
-tests = "scripts/run_tests_with_coverage.sh"
+devserver = "python server.py --configuration-file dev-config.yml"
+tests = "py.test --cov-report term-missing --cov=server --mysql_database=faf -o testpaths=tests"
 integration = "py.test -o testpaths=integration_tests"
 vulture = "vulture server.py server/ --sort-by-size"
 

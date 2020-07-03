@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
 Usage:
-    server.py [--nodb | --db TYPE]
+    server.py [--configuration-file FILE]
 
 Options:
-    --nodb      Don't use a database (Use a mock.Mock). Caution: Will break things.
-    --db TYPE   Use TYPE database driver [default: QMYSQL]
+    --configuration-file FILE    Load config variables from FILE
 """
 
 import asyncio
@@ -131,6 +130,9 @@ async def main():
 
 if __name__ == '__main__':
     args = docopt(__doc__, version='FAF Server')
+    config_file = args.get("--configuration-file")
+    if config_file:
+        os.environ["CONFIGURATION_FILE"] = config_file
 
     logger = logging.getLogger()
     stderr_handler = logging.StreamHandler()
