@@ -29,7 +29,7 @@ install:
   - docker build --build-arg TRAVIS_TAG -t faf-python-server .
 
 script:
-  - scripts/run_tests_with_coverage.sh
+  - pipenv run tests
   - sed -i.bak s#/code/#$(pwd)/#g .coverage
   - coveralls
 

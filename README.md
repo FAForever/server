@@ -1,49 +1,10 @@
 # FA Forever - Server
+![python](https://img.shields.io/badge/python-3.7-blue)
+[![Build Status](https://travis-ci.org/FAForever/server.svg?branch=develop)](https://travis-ci.org/FAForever/server)
+[![Coveralls Status](https://img.shields.io/coveralls/FAForever/server/develop.svg)](https://coveralls.io/github/FAForever/server)
+[![semver](https://img.shields.io/badge/license-GPLv3-blue)](license.txt)
 
 This is the source code for the [Forged Alliance Forever](http://www.faforever.com/) server.
-
-master|develop
- ------------ | -------------
-[![Build Status](https://travis-ci.org/FAForever/server.svg?branch=master)](https://travis-ci.org/FAForever/server) | [![Build Status](https://travis-ci.org/FAForever/server.svg?branch=develop)](https://travis-ci.org/FAForever/server)
-[![Coveralls Status](https://img.shields.io/coveralls/FAForever/server/master.svg)](https://coveralls.io/github/FAForever/server) | [![Coveralls Status](https://img.shields.io/coveralls/FAForever/server/develop.svg)](https://coveralls.io/github/FAForever/server)
-
-## Installation
-
-Install [docker](https://www.docker.com).
-
-Follow the steps to get [faf-db](https://github.com/FAForever/db) setup, the following assumes the db container is called `faf-db` and the database is called `faf` and the root password is `banana`.
-
-
-The server needs an RSA key to decode uniqueid messages, we've provided an example key in the repo as `faf-server.example.pem`. The server expects this to be named `faf-server.pem` at runtime, so first copy this
-
-    cp faf-server.example.pem faf-server.pem
-
-Then use Docker to build and run the server as follows
-
-    docker build -t faf-server .
-    docker run --link faf-db:db -p 8001:8001 -p 30351:30351 faf-server
-
-Check if the container is running with
-
-    docker ps
-
-If you cannot find `faf-server` in the list, run `docker run` without `-d` to see what happens.
-
-## Configuration
-
-If you have for example a different root password or database name than the default
-`DB_PASSWORD` and `DB_NAME` entries in
-[config.py](https://github.com/FAForever/server/blob/develop/server/config.py),
-you should provide a custom configuration file.
-This file will be used for all variables that it defines
-while the default values of `config.py` still apply for those it doesn't.
-To use your custom configuration file, pass its location as an environment
-variable to docker:
-
-    docker run --link faf-db:db -p 8001:8001 -p 30351:30351 -e CONFIGURATION_FILE=<path> faf-server
-
-You can find an example configuration file under
-[tests/data/test_conf.yaml](https://github.com/FAForever/server/blob/develop/tests/data/test_conf.yaml).
 
 # Contributing
 
@@ -57,36 +18,72 @@ Use the normal git conventions for commit messages, with the following rules:
 
 ## Setting up for development
 
-First make sure you have an instance of `faf-db` running as described in the
-installation section. Then install the dependencies to a virtual environment
-using pipenv:
+First make sure you have an instance of [faf-db](https://github.com/FAForever/db) setup. Then install the dependencies to a virtual environment
+using pipenv by running:
 
-    $ pipenv install --dev
+    $ pipenv sync --dev
 
-You can start the server in development mode with:
+You can then start the server in development mode with:
 
     $ pipenv run devserver
 
-**Note** *The pipenv scripts are not meant for production deployment. For
-deployment use `faf-stack`*
+You will see some exception trace when the server fails to connect to RabbitMQ,
+but this is fine. The server is fully functional without RabbitMQ.
+
+**Note** *The pipenv scripts are NOT meant for production deployment. For
+deployment use `faf-stack`.*
 
 ## Running the tests
 
-Run
+To run the unit tests:
 
     $ pipenv run tests
 
-(or `sudo pipenv run tests`,
-if some tests error with `Permission denied`)
+There are also some integration tests which simulate real traffic to the test
+server.
+
+    $ pipenv run integration
+
 ## Other tools
 
 You can check for possible unused code with `vulture` by running:
 
     $ pipenv run vulture
 
-# License
+## Building with Docker
 
-GPLv3. See the [license](license.txt) file.
+The recommended way to deploy the server is with
+[faf-stack](https://github.com/FAForever/faf-stack). However, you can also
+build the docker image manually.
+
+Follow the steps to get [faf-db](https://github.com/FAForever/db) setup, the following assumes the db container is called `faf-db` and the database is called `faf` and the root password is `banana`.
+
+Then use Docker to build and run the server as follows
+
+    $ docker build -t faf-server .
+    $ docker run --link faf-db:db -p 8001:8001 -d faf-server
+
+Check if the container is running with
+
+    $ docker ps
+
+If you cannot find `faf-server` in the list, run `docker run` without `-d` to see what happens.
+
+### Configuration
+
+If you have for example a different root password or database name than the default
+`DB_PASSWORD` and `DB_NAME` entries in
+[config.py](https://github.com/FAForever/server/blob/develop/server/config.py),
+you should provide a custom configuration file.
+This file will be used for all variables that it defines
+while the default values of `config.py` still apply for those it doesn't.
+To use your custom configuration file, pass its location as an environment
+variable to docker:
+
+    $ docker run --link faf-db:db -p 8001:8001 -e CONFIGURATION_FILE=<path> faf-server
+
+You can find an example configuration file under
+[tests/data/test_conf.yaml](https://github.com/FAForever/server/blob/develop/tests/data/test_conf.yaml).
 
 # Network Protocol
 
