@@ -77,19 +77,6 @@ class LadderService(Service):
 
     async def update_data(self) -> None:
         async with self._db.acquire() as conn:
-            # Legacy ladder1v1 map pool
-            # TODO: Remove this https://github.com/FAForever/server/issues/581
-            result = await conn.execute(
-                "SELECT ladder_map.idmap, "
-                "table_map.name, "
-                "table_map.filename "
-                "FROM ladder_map "
-                "INNER JOIN table_map ON table_map.id = ladder_map.idmap"
-            )
-            maps = [Map(*row.as_tuple()) async for row in result]
-
-            self.ladder_1v1_map_pool.set_maps(maps)
-
             map_pool_maps = await self.fetch_map_pools(conn)
             db_queues = await self.fetch_matchmaker_queues(conn)
 

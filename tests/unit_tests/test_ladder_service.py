@@ -29,10 +29,6 @@ async def test_load_from_database(ladder_service, queue_factory):
         queue = ladder_service.queues["ladder1v1"]
         assert queue.name == "ladder1v1"
         assert len(queue.map_pools) == 3
-        assert list(ladder_service.ladder_1v1_map_pool.maps.values()) == [
-            Map(id=1, name='SCMP_001', path='maps/scmp_001.zip'),
-            Map(id=2, name='SCMP_002', path='maps/scmp_002.zip')
-        ]
 
 
 async def test_load_from_database_new_data(ladder_service, database):
