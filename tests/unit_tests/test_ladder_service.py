@@ -9,7 +9,6 @@ from server.db.models import matchmaker_queue, matchmaker_queue_map_pool
 from server.games import LadderGame
 from server.ladder_service import game_name
 from server.players import PlayerState
-from server.types import Map
 from tests.utils import fast_forward
 
 pytestmark = pytest.mark.asyncio
