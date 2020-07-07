@@ -51,6 +51,7 @@ class LadderService(Service):
         self._db = database
         self._informed_players: Set[Player] = set()
         self.game_service = game_service
+
         # Matchmaker queue
         self.queues = {
             'ladder1v1': MatchmakerQueue(
@@ -60,12 +61,17 @@ class LadderService(Service):
                 rating_type=RatingType.LADDER_1V1
             )
         }
+
         self.searches: Dict[str, Dict[Player, Search]] = defaultdict(dict)
 
     async def initialize(self) -> None:
         await self.update_data()
         self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
 
+        # TODO: Starting hardcoded queues here
+        for queue in self.queues.values():
+            queue.initialize()
+        self.start_queue_handlers()
 
     async def update_data(self) -> None:
         async with self._db.acquire() as conn:
