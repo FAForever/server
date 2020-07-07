@@ -51,29 +51,21 @@ class LadderService(Service):
         self._db = database
         self._informed_players: Set[Player] = set()
         self.game_service = game_service
-
-        # Fallback legacy map pool and matchmaker queue
-        self.ladder_1v1_map_pool = MapPool(0, "ladder1v1")
+        # Matchmaker queue
         self.queues = {
             'ladder1v1': MatchmakerQueue(
                 game_service,
                 name="ladder1v1",
                 featured_mod=FeaturedModType.LADDER_1V1,
-                rating_type=RatingType.LADDER_1V1,
-                map_pools=[(self.ladder_1v1_map_pool, None, None)]
+                rating_type=RatingType.LADDER_1V1
             )
         }
-
         self.searches: Dict[str, Dict[Player, Search]] = defaultdict(dict)
 
     async def initialize(self) -> None:
         await self.update_data()
         self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
 
-        # TODO: Starting hardcoded queues here
-        for queue in self.queues.values():
-            queue.initialize()
-        self.start_queue_handlers()
 
     async def update_data(self) -> None:
         async with self._db.acquire() as conn:
