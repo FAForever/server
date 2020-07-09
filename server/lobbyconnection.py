@@ -1,7 +1,6 @@
 import asyncio
 import contextlib
 import hashlib
-import html
 import json
 import random
 import urllib.parse
@@ -868,7 +867,7 @@ class LobbyConnection:
             await self.abort("{} sent a nonsense visibility code: {}".format(self.player.login, message.get('visibility')))
             return
 
-        title = html.escape(message.get('title') or f"{self.player.login}'s game")
+        title = message.get('title') or f"{self.player.login}'s game"
 
         try:
             title.encode('ascii')
