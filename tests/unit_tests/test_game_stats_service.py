@@ -479,6 +479,15 @@ async def test_faction_played_seraphim_died(
     assert len(achievement_service.mock_calls) == 0
 
 
+async def test_killed_acus_none_and_survived(game_stats_service, achievement_service, event_service, unit_stats):
+    unit_stats['cdr']['kills'] = 0
+
+    game_stats_service._killed_acus(unit_stats, True, [])
+
+    assert len(achievement_service.mock_calls) == 0
+    assert len(event_service.mock_calls) == 0
+
+
 async def test_killed_acus_one_and_survived(
     game_stats_service, achievement_service, event_service, unit_stats
 ):
@@ -519,6 +528,16 @@ async def test_killed_acus_one_and_died(
     assert len(achievement_service.mock_calls) == 1
     assert len(event_service.mock_calls) == 0
 
+
+async def test_killed_acus_three_and_died(game_stats_service, achievement_service, event_service, unit_stats):
+    unit_stats['cdr']['kills'] = 3
+    unit_stats['cdr']['lost'] = 1
+
+    game_stats_service._killed_acus(unit_stats, False, [])
+    achievement_service.increment.assert_called_once_with(ach.ACH_DONT_MESS_WITH_ME, 3, [])
+
+    assert len(achievement_service.mock_calls) == 1
+    assert len(event_service.mock_calls) == 0
 
 async def test_built_salvations_one_and_died(
     game_stats_service, player, achievement_service, event_service
