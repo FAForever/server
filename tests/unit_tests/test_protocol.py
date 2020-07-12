@@ -1,14 +1,13 @@
 import asyncio
 import json
 import struct
-from asyncio import StreamReader
 from socket import socketpair
-from unittest import mock
 
 import pytest
+from hypothesis import example, given, settings
+from hypothesis import strategies as st
 
 from server.protocol import DisconnectedError, QDataStreamProtocol
-from tests.utils import fast_forward
 
 pytestmark = pytest.mark.asyncio
 
@@ -67,6 +66,18 @@ async def unix_protocol(unix_srv):
     await protocol.close()
 
 
+def st_messages():
+    """Strategy for generating internal message dictionaries"""
+    return st.dictionaries(
+        keys=st.text(),
+        values=st.one_of(
+            st.integers(),
+            st.text(),
+            st.lists(st.one_of(st.integers(), st.text()))
+        )
+    )
+
+
 async def test_types():
     with pytest.raises(NotImplementedError):
         QDataStreamProtocol.pack_message({"Not": ["a", "string"]})
@@ -111,15 +122,39 @@ async def test_unpacks_evil_qstring(protocol, reader):
     assert message == {'command': 'ask_session'}
 
 
-async def test_pack_unpack(protocol, reader):
-    message = {
-        "Some": "crazy",
-        "Message": ["message", 10],
-        "with": 1000
-    }
+@pytest.mark.filterwarnings("ignore:.*'(protocol|reader)' fixture")
+@given(message=st_messages())
+@example(message={
+    "Some": "crazy",
+    "Message": ["message", 10],
+    "with": 1000
+})
+@settings(max_examples=300)
+async def test_QDataStreamProtocol_pack_unpack(protocol, reader, message):
     reader.feed_data(QDataStreamProtocol.pack_message(json.dumps(message)))
 
     assert message == await protocol.read_message()
+
+
+@given(message=st_messages())
+@example(message={
+    "Some": "crazy",
+    "Message": ["message", 10],
+    "with": 1000
+})
+async def test_QDataStreamProtocol_deterministic(message):
+    assert (
+        QDataStreamProtocol.encode_message(message) ==
+        QDataStreamProtocol.encode_message(message) ==
+        QDataStreamProtocol.encode_message(message)
+    )
+
+
+async def test_QDataStreamProtocol_encode_ping_pong():
+    assert QDataStreamProtocol.encode_message({"command": "ping"}) == \
+        b"\x00\x00\x00\x0c\x00\x00\x00\x08\x00P\x00I\x00N\x00G"
+    assert QDataStreamProtocol.encode_message({"command": "pong"}) == \
+        b"\x00\x00\x00\x0c\x00\x00\x00\x08\x00P\x00O\x00N\x00G"
 
 
 async def test_send_message_simultaneous_writes(unix_protocol):
@@ -171,7 +206,10 @@ async def test_send_when_disconnected(protocol):
     assert protocol.is_connected() is False
 
     with pytest.raises(DisconnectedError):
-        await protocol.send_message(["some message"])
+        await protocol.send_message({"some": "message"})
 
     with pytest.raises(DisconnectedError):
-        await protocol.send_messages([["some message"], ["some other message"]])
+        await protocol.send_messages([
+            {"some": "message"},
+            {"some": "other message"}
+        ])

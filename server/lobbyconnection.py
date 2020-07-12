@@ -39,10 +39,8 @@ from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
 from .player_service import PlayerService
 from .players import Player, PlayerState
-from .protocol import DisconnectedError, QDataStreamProtocol
+from .protocol import DisconnectedError, Protocol
 from .types import Address, GameLaunchOptions
-
-PONG_MSG = QDataStreamProtocol.pack_message("PONG")
 
 
 class ClientError(Exception):
@@ -88,7 +86,7 @@ class LobbyConnection:
         self.game_connection = None  # type: GameConnection
         self.peer_address = None  # type: Optional[Address]
         self.session = int(random.randrange(0, 4294967295))
-        self.protocol = None
+        self.protocol: Protocol = None
         self.user_agent = None
         self._version = None
 
@@ -108,7 +106,7 @@ class LobbyConnection:
         return str(self.session)
 
     @asyncio.coroutine
-    def on_connection_made(self, protocol: QDataStreamProtocol, peername: Address):
+    def on_connection_made(self, protocol: Protocol, peername: Address):
         self.protocol = protocol
         self.peer_address = peername
         metrics.server_connections.inc()
@@ -189,7 +187,7 @@ class LobbyConnection:
             await self.abort("Error processing command")
 
     async def command_ping(self, msg):
-        await self.protocol.send_raw(PONG_MSG)
+        await self.send({"command": "pong"})
 
     async def command_pong(self, msg):
         pass
@@ -203,6 +201,13 @@ class LobbyConnection:
             result = await conn.execute(select([coop_map]))
 
             maps = []
+            campaigns = [
+                "FA Campaign",
+                "Aeon Vanilla Campaign",
+                "Cybran Vanilla Campaign",
+                "UEF Vanilla Campaign",
+                "Custom Missions"
+            ]
             async for row in result:
                 json_to_send = {
                     "command": "coop_info",
@@ -211,13 +216,6 @@ class LobbyConnection:
                     "filename": row["filename"],
                     "featured_mod": "coop"
                 }
-                campaigns = [
-                    "FA Campaign",
-                    "Aeon Vanilla Campaign",
-                    "Cybran Vanilla Campaign",
-                    "UEF Vanilla Campaign",
-                    "Custom Missions"
-                ]
                 if row["type"] < len(campaigns):
                     json_to_send["type"] = campaigns[row["type"]]
                 else:
@@ -1040,13 +1038,14 @@ class LobbyConnection:
             await self.abort(message)
 
     async def send(self, message):
-        """
+        """Send a message and wait for it to be sent."""
+        self.write(message)
+        await self.protocol.drain()
 
-        :param message:
-        :return:
-        """
+    def write(self, message):
+        """Write a message into the send buffer."""
         self._logger.log(TRACE, ">> %s: %s", self.get_user_identifier(), message)
-        await self.protocol.send_message(message)
+        self.protocol.write_message(message)
 
     async def on_connection_lost(self):
         async def nop(*args, **kwargs):

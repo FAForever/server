@@ -70,7 +70,11 @@ server_connections = Counter(
     "Total number of connections to the lobby as per lobbyconnection.on_connection_made",
 )
 
-sent_messages = Counter("server_messages_total", "Total number of Messages sent")
+sent_messages = Counter(
+    "server_messages_total",
+    "Total number of Messages sent",
+    ["protocol"]
+)
 
 unauth_messages = Counter(
     "server_messages_unauthenticated_total",

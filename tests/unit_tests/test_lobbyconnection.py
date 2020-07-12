@@ -292,6 +292,7 @@ async def test_command_game_join_calls_join_game(mocker,
                                                  test_game_info,
                                                  players,
                                                  game_stats_service):
+    lobbyconnection.send = CoroutineMock()
     lobbyconnection.game_service = game_service
     game = Game(42, database, game_service, game_stats_service)
     game.state = GameState.LOBBY
@@ -315,7 +316,7 @@ async def test_command_game_join_calls_join_game(mocker,
         "name": "Test Game Name",
         "init_mode": InitMode.NORMAL_LOBBY.value,
     }
-    lobbyconnection.protocol.send_message.assert_called_with(expected_reply)
+    lobbyconnection.send.assert_called_with(expected_reply)
 
 
 async def test_command_game_join_uid_as_str(mocker,
@@ -325,6 +326,7 @@ async def test_command_game_join_uid_as_str(mocker,
                                             test_game_info,
                                             players,
                                             game_stats_service):
+    lobbyconnection.send = CoroutineMock()
     lobbyconnection.game_service = game_service
     game = Game(42, database, game_service, game_stats_service)
     game.state = GameState.LOBBY
@@ -348,7 +350,7 @@ async def test_command_game_join_uid_as_str(mocker,
         'name': 'Test Game Name',
         'init_mode': InitMode.NORMAL_LOBBY.value,
     }
-    lobbyconnection.protocol.send_message.assert_called_with(expected_reply)
+    lobbyconnection.send.assert_called_with(expected_reply)
 
 
 async def test_command_game_join_without_password(
@@ -459,10 +461,11 @@ async def test_send_game_list(mocker, database, lobbyconnection, game_stats_serv
                    mock.create_autospec(Game(22, database, mock.Mock(), game_stats_service))
 
     games.open_games = [game1, game2]
+    lobbyconnection.send = CoroutineMock()
 
     await lobbyconnection.send_game_list()
 
-    lobbyconnection.protocol.send_message.assert_any_call({
+    lobbyconnection.send.assert_any_call({
         'command': 'game_info',
         'games': [game1.to_dict(), game2.to_dict()]
     })
@@ -576,6 +579,7 @@ async def test_game_subscription(lobbyconnection: LobbyConnection):
 
 
 async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection):
+    lobbyconnection.send = CoroutineMock()
     lobbyconnection.player.id = 2  # Dostya test user
 
     await lobbyconnection.on_message_received({
@@ -583,7 +587,7 @@ async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection):
         'action': 'list_avatar'
     })
 
-    lobbyconnection.protocol.send_message.assert_any_call({
+    lobbyconnection.send.assert_any_call({
         "command": "avatar",
         "avatarlist": [{'url': 'https://content.faforever.com/faf/avatars/qai2.png', 'tooltip': 'QAI'}, {'url': 'https://content.faforever.com/faf/avatars/UEF.png', 'tooltip': 'UEF'}]
     })
@@ -652,6 +656,7 @@ async def test_command_ice_servers(
     lobbyconnection: LobbyConnection,
     mock_nts_client
 ):
+    lobbyconnection.send = CoroutineMock()
     lobbyconnection.coturn_generator.server_tokens = Mock(
         return_value=["coturn_tokens"]
     )
@@ -660,7 +665,7 @@ async def test_command_ice_servers(
     await lobbyconnection.on_message_received({"command": "ice_servers"})
 
     mock_nts_client.server_tokens.assert_called_once()
-    lobbyconnection.protocol.send_message.assert_called_once_with({
+    lobbyconnection.send.assert_called_once_with({
         "command": "ice_servers",
         "ice_servers": ["coturn_tokens", "twilio_tokens"],
         "ttl": config.TWILIO_TTL
@@ -739,6 +744,7 @@ async def test_broadcast_connection_error(lobbyconnection: LobbyConnection, play
 
 async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnection: LobbyConnection, mocker):
     del lobbyconnection.player.game_connection
+    lobbyconnection.send = CoroutineMock()
     lobbyconnection.player.state = PlayerState.IDLE
     await lobbyconnection.on_message_received({
         'command': 'restore_game_session',
@@ -748,7 +754,7 @@ async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnecti
     assert not lobbyconnection.player.game_connection
     assert lobbyconnection.player.state == PlayerState.IDLE
 
-    lobbyconnection.protocol.send_message.assert_any_call({
+    lobbyconnection.send.assert_any_call({
         "command": "notice",
         "style": "info",
         "text": "The game you were connected to does no longer exist"
@@ -765,6 +771,7 @@ async def test_game_connection_not_restored_if_game_state_prohibits(
     database
 ):
     del lobbyconnection.player.game_connection
+    lobbyconnection.send = CoroutineMock()
     lobbyconnection.player.state = PlayerState.IDLE
     lobbyconnection.game_service = game_service
     game = mock.create_autospec(Game(42, database, game_service, game_stats_service))
@@ -782,7 +789,7 @@ async def test_game_connection_not_restored_if_game_state_prohibits(
     assert not lobbyconnection.game_connection
     assert lobbyconnection.player.state == PlayerState.IDLE
 
-    lobbyconnection.protocol.send_message.assert_any_call({
+    lobbyconnection.send.assert_any_call({
         "command": "notice",
         "style": "info",
         "text": "The game you were connected to is no longer available"

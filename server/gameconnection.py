@@ -18,11 +18,7 @@ from .game_service import GameService
 from .games.game import Game, GameError, GameState, ValidityState, Victory
 from .player_service import PlayerService
 from .players import Player, PlayerState
-from .protocol import (
-    DisconnectedError,
-    GpgNetServerProtocol,
-    QDataStreamProtocol
-)
+from .protocol import DisconnectedError, GpgNetServerProtocol, Protocol
 
 
 @with_logger
@@ -36,7 +32,7 @@ class GameConnection(GpgNetServerProtocol):
         database: FAFDatabase,
         game: Game,
         player: Player,
-        protocol: QDataStreamProtocol,
+        protocol: Protocol,
         player_service: PlayerService,
         games: GameService,
         state: GameConnectionState = GameConnectionState.INITIALIZING

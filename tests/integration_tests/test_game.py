@@ -1,8 +1,9 @@
 import asyncio
+import gc
 
 import pytest
 
-from server.protocol import QDataStreamProtocol
+from server.protocol import Protocol
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until, read_until_command
@@ -12,7 +13,7 @@ from .test_matchmaker import queue_players_for_matchmaking
 pytestmark = pytest.mark.asyncio
 
 
-async def host_game(proto: QDataStreamProtocol) -> int:
+async def host_game(proto: Protocol) -> int:
     await proto.send_message({
         "command": "game_host",
         "mod": "faf",
@@ -36,7 +37,7 @@ async def host_game(proto: QDataStreamProtocol) -> int:
     return game_id
 
 
-async def join_game(proto: QDataStreamProtocol, uid: int):
+async def join_game(proto: Protocol, uid: int):
     await proto.send_message({
         "command": "game_join",
         "uid": uid
@@ -361,6 +362,7 @@ async def test_gamestate_ended_clears_references(
         "command": "GameState",
         "args": ["Launching"]
     })
+    await asyncio.sleep(0.1)
 
     game = game_service[game_id]
 
@@ -381,6 +383,7 @@ async def test_gamestate_ended_clears_references(
         "args": [1, "victory 10"]
     })
     await asyncio.sleep(0.1)
+    gc.collect()
     assert rhiza.game_connection is None
     assert len(game.connections) == 1
     assert len(game._results) == 0
@@ -402,6 +405,7 @@ async def test_gamestate_ended_clears_references(
         lambda msg: msg["command"] == "game_info" and msg["state"] == "closed"
     )
     await asyncio.sleep(0.1)
+    gc.collect()
     assert test.game_connection is None
     assert len(game.connections) == 0
     assert len(game._results) == 1

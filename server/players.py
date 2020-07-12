@@ -161,6 +161,16 @@ class Player:
 
         await self.lobby_connection.send(message)
 
+    def write_message(self, message):
+        """
+        Try to queue a message to be sent this player. Only call this from
+        broadcasting functions. Does nothing if the player has disconnected.
+        """
+        if self.lobby_connection is None:
+            return
+
+        self.lobby_connection.write(message)
+
     def to_dict(self):
         """
         Return a dictionary representing this player object
