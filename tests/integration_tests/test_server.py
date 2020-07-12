@@ -187,7 +187,7 @@ async def test_host_missing_fields(event_loop, lobby_server, player_service):
 
     msg = await read_until_command(proto, 'game_info')
 
-    assert msg['title'] == 'test&#x27;s game'
+    assert msg['title'] == 'test\'s game'
     assert msg['mapname'] == 'scmp_007'
     assert msg['map_file_path'] == 'maps/scmp_007.zip'
     assert msg['featured_mod'] == 'faf'
