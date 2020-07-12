@@ -60,6 +60,7 @@ class ConfigurationStore:
         self.WWW_URL = "https://www.faforever.com"
         self.CONTENT_URL = "http://content.faforever.com"
         self.FAF_POLICY_SERVER_BASE_URL = "http://faf-policy-server"
+        self.USE_POLICY_SERVER = True
 
         self.FORCE_STEAM_LINK_AFTER_DATE = 1536105599  # 5 september 2018 by default
         self.FORCE_STEAM_LINK = False
