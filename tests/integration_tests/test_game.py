@@ -1,4 +1,5 @@
 import asyncio
+import gc
 
 import pytest
 
@@ -361,6 +362,7 @@ async def test_gamestate_ended_clears_references(
         "command": "GameState",
         "args": ["Launching"]
     })
+    await asyncio.sleep(0.1)
 
     game = game_service[game_id]
 
@@ -381,6 +383,7 @@ async def test_gamestate_ended_clears_references(
         "args": [1, "victory 10"]
     })
     await asyncio.sleep(0.1)
+    gc.collect()
     assert rhiza.game_connection is None
     assert len(game.connections) == 1
     assert len(game._results) == 0
@@ -402,6 +405,7 @@ async def test_gamestate_ended_clears_references(
         lambda msg: msg["command"] == "game_info" and msg["state"] == "closed"
     )
     await asyncio.sleep(0.1)
+    gc.collect()
     assert test.game_connection is None
     assert len(game.connections) == 0
     assert len(game._results) == 1
