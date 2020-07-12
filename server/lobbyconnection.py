@@ -459,6 +459,9 @@ class LobbyConnection:
         return True
 
     async def check_policy_conformity(self, player_id, uid_hash, session, ignore_result=False):
+        if not config.USE_POLICY_SERVER:
+            return True
+
         url = config.FAF_POLICY_SERVER_BASE_URL + '/verify'
         payload = {
             "player_id": player_id,
