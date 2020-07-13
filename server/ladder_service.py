@@ -67,12 +67,13 @@ class LadderService(Service):
         self.searches: Dict[str, Dict[Player, Search]] = defaultdict(dict)
 
     async def initialize(self) -> None:
-        await self.update_data()
-        self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
-
         # TODO: Starting hardcoded queues here
         for queue in self.queues.values():
             queue.initialize()
+
+        await self.update_data()
+        self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
+
         self.start_queue_handlers()
 
     async def update_data(self) -> None:
