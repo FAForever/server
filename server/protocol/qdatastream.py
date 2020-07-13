@@ -5,9 +5,7 @@ from typing import Tuple
 
 from server.decorators import with_logger
 
-from .protocol import Protocol
-
-json_encoder = json.JSONEncoder(separators=(',', ':'))
+from .protocol import Protocol, json_encoder
 
 
 @with_logger

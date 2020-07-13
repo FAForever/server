@@ -1,12 +1,11 @@
 import asyncio
-import json
 
 import pytest
 from asynctest import exhaust_callbacks
 
 from server import ServerInstance
 from server.config import config
-from server.protocol import Protocol, QDataStreamProtocol
+from server.protocol import QDataStreamProtocol, SimpleJsonProtocol
 
 from .conftest import connect_and_sign_in, read_until
 from .test_game import host_game
@@ -35,15 +34,6 @@ async def test_multiple_contexts(
     event_loop
 ):
     config.USE_POLICY_SERVER = False
-
-    class SimpleJsonProtocol(Protocol):
-        @staticmethod
-        def encode_message(message) -> bytes:
-            return (json.dumps(message) + "\n").encode()
-
-        async def read_message(self) -> dict:
-            line = await self.reader.readline()
-            return json.loads(line.strip())
 
     instance = ServerInstance(
         "TestMultiContext",
