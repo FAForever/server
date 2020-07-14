@@ -9,15 +9,30 @@ This is the source code for the
 
 # Contributing
 
-To contribute, please fork this repository and make pull requests to the develop
-branch.
+To contribute, please fork this repository and base pull requests on the develop
+branch. Note that we squash on merge, so pull requests that have been open for
+a while may need to be rebased before they can be merged.
+
+Link PR's with accompanying issues by titling them using either "Issue" or
+"Feature" followed by the issue number, such as `Issue/#123 Fix this one thing`
+or `Feature/#456 add that other thing`, and adding `Closes #XXX` to the
+description. Generally, "Issue" and "Feature" should be used for bugs and
+enhancements respectively. It is also convention to name your branch similarly
+to the issue using lowercase letters and dashes e.g. `issue/#123-fix-thing`,
+`feature/#456-add-thing`.
+
+Before committing, check your changes with a linter such as
+[flake8](https://pypi.org/project/flake8/) and sort your imports with
+[isort](https://pypi.org/project/isort/).
 
 Use the normal git conventions for commit messages, with the following rules:
  - Subject line shorter than 80 characters
  - Proper capitalized sentence as subject line, with no trailing period
- - For non-trivial commits, always include a commit message body, describing the
+ - For non-trivial commits, include a commit message body, describing the
  change in detail
- - If there are related issues, reference them in the commit message footer
+
+For further tips on writing good commit messages have a read through
+[this post](https://chris.beams.io/posts/git-commit/#seven-rules).
 
 ## Setting up for development
 
