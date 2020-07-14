@@ -4,22 +4,27 @@
 [![Coveralls Status](https://img.shields.io/coveralls/FAForever/server/develop.svg)](https://coveralls.io/github/FAForever/server)
 [![semver](https://img.shields.io/badge/license-GPLv3-blue)](license.txt)
 
-This is the source code for the [Forged Alliance Forever](http://www.faforever.com/) server.
+This is the source code for the
+[Forged Alliance Forever](https://www.faforever.com/) lobby server.
 
 # Contributing
 
-To contribute, please fork this repository and make pull requests to the develop branch.
+To contribute, please fork this repository and make pull requests to the develop
+branch.
 
 Use the normal git conventions for commit messages, with the following rules:
  - Subject line shorter than 80 characters
  - Proper capitalized sentence as subject line, with no trailing period
- - For non-trivial commits, always include a commit message body, describing the change in detail
+ - For non-trivial commits, always include a commit message body, describing the
+ change in detail
  - If there are related issues, reference them in the commit message footer
 
 ## Setting up for development
 
-First make sure you have an instance of [faf-db](https://github.com/FAForever/db) setup. Then install the dependencies to a virtual environment
-using pipenv by running:
+First, follow the instructions on the [faf-db repo](https://github.com/FAForever/db)
+to setup an instance of the database. Then install the pinned versions of the
+dependencies (and dev dependencies) to a virtual environment using pipenv by
+running:
 
     $ pipenv sync --dev
 
@@ -27,22 +32,58 @@ You can then start the server in development mode with:
 
     $ pipenv run devserver
 
-You will see some exception trace when the server fails to connect to RabbitMQ,
-but this is fine. The server is fully functional without RabbitMQ.
+You will probably see a number of errors and warnings show up in the log which
+is completely normal for a development setup. If you see any of the following,
+they can be safely ignored:
+
+    WARNING  Twilio is not set up. You must set TWILIO_ACCOUNT_SID and TWILIO_TOKEN to use the Twilio ICE servers.
+    WARNING  GEO_IP_LICENSE_KEY not set! Unable to download GeoIP database!
+    WARNING  Unable to connect to RabbitMQ. Is it running?
+    ConnectionError: [Errno 111] Connect call failed ('127.0.0.1', 5672)
+    WARNING  Not connected to RabbitMQ, unable to declare exchange.
+    ERROR    Failure updating NickServ password for test
 
 **Note** *The pipenv scripts are NOT meant for production deployment. For
 deployment use `faf-stack`.*
 
 ## Running the tests
 
-To run the unit tests:
+The unit tests are written using [pytest](https://docs.pytest.org/en/latest) and
+can be run through the pipenv shortcut:
 
     $ pipenv run tests
+
+Any arguments passed to the shortcut will be forwarded to pytest, so the usual
+pytest options can be used for test selection. For instance, to run all unit
+tests containing the keyword "ladder":
+
+    $ pipenv run tests tests/unit_tests -k ladder
+
+If you are running `pytest` by some other means (e.g. with PyCharm) you may need
+to provide the database configuration as command line arguments:
+
+    --mysql_host=MYSQL_HOST
+                          mysql host to use for test database
+    --mysql_username=MYSQL_USERNAME
+                          mysql username to use for test database
+    --mysql_password=MYSQL_PASSWORD
+                          mysql password to use for test database
+    --mysql_database=MYSQL_DATABASE
+                          mysql database to use for tests
+    --mysql_port=MYSQL_PORT
+                          mysql port to use for tests
+
+For further information on available command line arguments run `pytest --help`
+or see the official
+[pytest documentation](https://docs.pytest.org/en/latest/usage.html).
 
 There are also some integration tests which simulate real traffic to the test
 server.
 
     $ pipenv run integration
+
+Some of them may fail depending on the configuration deployed on the test
+server.
 
 ## Other tools
 
@@ -50,13 +91,18 @@ You can check for possible unused code with `vulture` by running:
 
     $ pipenv run vulture
 
+It tends to produce a lot of false positives, but it can provide a good place
+to start.
+
 ## Building with Docker
 
 The recommended way to deploy the server is with
 [faf-stack](https://github.com/FAForever/faf-stack). However, you can also
 build the docker image manually.
 
-Follow the steps to get [faf-db](https://github.com/FAForever/db) setup, the following assumes the db container is called `faf-db` and the database is called `faf` and the root password is `banana`.
+Follow the steps to get [faf-db](https://github.com/FAForever/db) setup, the
+following assumes the db container is called `faf-db` and the database is called
+`faf` and the root password is `banana`.
 
 Then use Docker to build and run the server as follows
 
@@ -67,7 +113,8 @@ Check if the container is running with
 
     $ docker ps
 
-If you cannot find `faf-server` in the list, run `docker run` without `-d` to see what happens.
+If you cannot find `faf-server` in the list, run `docker run` without `-d` to
+see what happens.
 
 ### Configuration
 
@@ -87,7 +134,8 @@ You can find an example configuration file under
 
 # Network Protocol
 
-The protocol is mainly JSON-encoded maps, containing at minimum a `command` key, representing the command to dispatch.
+The protocol is mainly JSON-encoded maps, containing at minimum a `command` key,
+representing the command to dispatch.
 
 The wire format uses [QDataStream](http://doc.qt.io/qt-5/qdatastream.html) (UTF-16, BigEndian).
 
