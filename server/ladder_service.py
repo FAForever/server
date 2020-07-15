@@ -466,9 +466,9 @@ class LadderService(Service):
                     )
                 ).order_by(game_stats.c.startTime.desc()).limit(limit)
 
-            result.extend([
-                row.mapId async for row in await conn.execute(query)
-            ])
+                result.extend([
+                    row.mapId async for row in await conn.execute(query)
+                ])
         return result
 
     async def on_connection_lost(self, player):

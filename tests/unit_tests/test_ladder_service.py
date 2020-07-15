@@ -469,6 +469,18 @@ async def test_get_ladder_history_many_maps(ladder_service: LadderService, playe
     assert history == [6, 5, 4, 3]
 
 
+async def test_get_ladder_history_1v1(ladder_service: LadderService, player_factory):
+    p1 = player_factory("Dostya", player_id=1)
+    p2 = player_factory("Rhiza", player_id=2)
+
+    history = await ladder_service.get_game_history(
+        [p1, p2],
+        mod="ladder1v1",
+    )
+
+    assert history == [6, 5, 4, 3, 4, 5]
+
+
 async def test_game_name(ladder_service: LadderService, player_factory):
     p1 = player_factory(login="Dostya", clan="CYB")
     p2 = player_factory(login="QAI", clan="CYB")
