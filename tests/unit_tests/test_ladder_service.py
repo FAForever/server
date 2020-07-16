@@ -2,17 +2,36 @@ import asyncio
 from unittest import mock
 
 import pytest
-from asynctest import CoroutineMock, exhaust_callbacks
+from asynctest import CoroutineMock, create_autospec, exhaust_callbacks
 
 from server import GameService, LadderService
 from server.db.models import matchmaker_queue, matchmaker_queue_map_pool
 from server.games import LadderGame
 from server.ladder_service import game_name
+from server.matchmaker import MatchmakerQueue
 from server.players import PlayerState
 from server.types import Map
 from tests.utils import fast_forward
 
 pytestmark = pytest.mark.asyncio
+
+
+async def test_queue_initialization(database, game_service):
+    ladder_service = LadderService(database, game_service)
+
+    def make_mock_queue(*args, **kwargs):
+        queue = create_autospec(MatchmakerQueue)
+        queue.map_pools = {}
+        return queue
+
+    with mock.patch("server.ladder_service.MatchmakerQueue", make_mock_queue):
+        for name in list(ladder_service.queues.keys()):
+            ladder_service.queues[name] = make_mock_queue()
+
+        await ladder_service.initialize()
+
+        for queue in ladder_service.queues.values():
+            queue.initialize.assert_called_once()
 
 
 async def test_load_from_database(ladder_service, queue_factory):
