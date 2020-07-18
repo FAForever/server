@@ -39,6 +39,22 @@ they can be safely ignored:
 **Note:** *The pipenv scripts are NOT meant for production deployment. For
 deployment use `faf-stack`.*
 
+### Administrator/root priveleges
+
+On Linux, root priveleges are generally not needed. If you find that a command
+will not work unless run as root, it probably means that you have a file
+permission issue that you should fix. For instance if you ran the server as a
+docker container, it may have created certain files (like the GeoIP database) as
+root, and you should `chown` them or delete them before running the unit tests
+or the devserver.
+
+On Windows you may also find that some issues go away when running as
+administrator. This may be because you have set up your tools to install for the
+whole system instead of just the current user. For example if you have issues
+with pipenv you can try installing it with the `--user` option:
+
+    $ pip install --user pipenv
+
 ## Running the tests
 
 The unit tests are written using [pytest](https://docs.pytest.org/en/latest) and
