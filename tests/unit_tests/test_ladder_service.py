@@ -362,9 +362,7 @@ async def test_cancel_twice(ladder_service: LadderService, player_factory):
 
 
 @fast_forward(5)
-async def test_start_game_called_on_match(
-    ladder_service: LadderService, player_factory, mocker
-):
+async def test_start_game_called_on_match(ladder_service: LadderService, player_factory):
     p1 = player_factory(
         'Dostya',
         player_id=1,
@@ -449,7 +447,7 @@ async def test_start_game_map_selection_pros(
     full_map_pool.choose_map.assert_called_once()
 
 
-async def test_get_ladder_history(ladder_service: LadderService, players, database):
+async def test_get_ladder_history(ladder_service: LadderService, players):
     history = await ladder_service.get_game_history(
         [players.hosting],
         mod="ladder1v1",
@@ -459,7 +457,7 @@ async def test_get_ladder_history(ladder_service: LadderService, players, databa
     assert history == [6]
 
 
-async def test_get_ladder_history_many_maps(ladder_service: LadderService, players, database):
+async def test_get_ladder_history_many_maps(ladder_service: LadderService, players):
     history = await ladder_service.get_game_history(
         [players.hosting],
         mod="ladder1v1",
@@ -481,7 +479,7 @@ async def test_get_ladder_history_1v1(ladder_service: LadderService, player_fact
     assert history == [6, 5, 4, 3, 4, 5]
 
 
-async def test_game_name(ladder_service: LadderService, player_factory):
+async def test_game_name(player_factory):
     p1 = player_factory(login="Dostya", clan="CYB")
     p2 = player_factory(login="QAI", clan="CYB")
     p3 = player_factory(login="Rhiza", clan="AEO")
@@ -490,9 +488,7 @@ async def test_game_name(ladder_service: LadderService, player_factory):
     assert game_name([p1, p2], [p3, p4]) == "Team CYB Vs Team AEO"
 
 
-async def test_game_name_conflicting(
-    ladder_service: LadderService, player_factory
-):
+async def test_game_name_conflicting(player_factory):
     p1 = player_factory(login="Dostya", clan="CYB")
     p2 = player_factory(login="QAI", clan="CYB")
     p3 = player_factory(login="Rhiza", clan="AEO")
@@ -501,9 +497,7 @@ async def test_game_name_conflicting(
     assert game_name([p1, p2], [p3, p4]) == "Team CYB Vs Team Rhiza"
 
 
-async def test_game_name_no_clan(
-    ladder_service: LadderService, player_factory
-):
+async def test_game_name_no_clan(player_factory):
     p1 = player_factory(login="Dostya", clan=None)
     p2 = player_factory(login="QAI", clan="CYB")
     p3 = player_factory(login="Rhiza", clan=None)
@@ -512,18 +506,14 @@ async def test_game_name_no_clan(
     assert game_name([p1, p2], [p3, p4]) == "Team Dostya Vs Team Rhiza"
 
 
-async def test_game_name_1v1(
-    ladder_service: LadderService, player_factory
-):
+async def test_game_name_1v1(player_factory):
     p1 = player_factory(login="Dostya", clan="CYB")
     p2 = player_factory(login="Rhiza", clan=None)
 
     assert game_name([p1], [p2]) == "Dostya Vs Rhiza"
 
 
-async def test_game_name_uneven(
-    ladder_service: LadderService, player_factory
-):
+async def test_game_name_uneven(player_factory):
     p1 = player_factory(login="Dostya", clan="CYB")
     p2 = player_factory(login="QAI", clan="CYB")
     p3 = player_factory(login="Rhiza", clan=None)
@@ -531,9 +521,7 @@ async def test_game_name_uneven(
     assert game_name([p1, p2], [p3]) == "Team CYB Vs Rhiza"
 
 
-async def test_game_name_many_teams(
-    ladder_service: LadderService, player_factory
-):
+async def test_game_name_many_teams(player_factory):
     p1 = player_factory(login="Dostya", clan="CYB")
     p2 = player_factory(login="QAI", clan="CYB")
     p3 = player_factory(login="Rhiza", clan=None)
