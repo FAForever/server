@@ -228,7 +228,11 @@ insert into game_stats (id, startTime, gameName, gameType, gameMod, host, mapId,
   (41941, NOW() + interval 6 minute, 'MapRepetition', '0', 6, 1, 6, 0),
   (41942, NOW(), 'OldRatingNull',  '0', 6, 1, NULL, 0),
   (41943, NOW(), 'OldRatingLose', '0', 6, 1, NULL, 0),
-  (41944, NOW(), 'OldRatingWin', '0', 6, 1, NULL, 0);
+  (41944, NOW(), 'OldRatingWin', '0', 6, 1, NULL, 0),
+  (41945, NOW() + interval 7 minute, 'MapRepetition', '0', 6, 2, 6, 0),
+  (41946, NOW() + interval 8 minute, 'MapRepetition', '0', 6, 2, 5, 0),
+  (41947, NOW() + interval 9 minute, 'MapRepetition', '0', 6, 2, 4, 0),
+  (41948, NOW() + interval 10 minute, 'MapRepetition', '0', 6, 2, 3, 0);
 
 insert into game_player_stats (gameId, playerId, AI, faction, color, team, place, mean, deviation, scoreTime) values
   (1, 1, 0, 0, 0, 2, 0, 1500, 500, NOW()),
@@ -238,7 +242,11 @@ insert into game_player_stats (gameId, playerId, AI, faction, color, team, place
   (41938, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 3 minute),
   (41939, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 4 minute),
   (41940, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 5 minute),
-  (41941, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 6 minute);
+  (41941, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 6 minute),
+  (41945, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 7 minute),
+  (41946, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 8 minute),
+  (41947, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 9 minute),
+  (41948, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 10 minute);
 
 insert into game_player_stats (gameId, playerId, AI, faction, color, team, place, mean, deviation, scoreTime, after_mean) values
   (41942, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), NULL),
