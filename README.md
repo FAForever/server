@@ -39,9 +39,9 @@ they can be safely ignored:
 **Note:** *The pipenv scripts are NOT meant for production deployment. For
 deployment use `faf-stack`.*
 
-### Administrator/root priveleges
+### Administrator/root privileges
 
-On Linux, root priveleges are generally not needed. If you find that a command
+On Linux, root privileges are generally not needed. If you find that a command
 will not work unless run as root, it probably means that you have a file
 permission issue that you should fix. For instance if you ran the server as a
 docker container, it may have created certain files (like the GeoIP database) as
