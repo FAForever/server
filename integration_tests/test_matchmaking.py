@@ -49,6 +49,7 @@ async def test_ladder_1v1_match(test_client):
         "visibility": "public",
         "password_protected": False,
         "state": "closed",
+        "game_type": "matchmaker",
         "featured_mod": "ladder1v1",
         "sim_mods": {},
         "num_players": 0,

@@ -188,9 +188,34 @@ async def test_host_missing_fields(event_loop, lobby_server, player_service):
     msg = await read_until_command(proto, 'game_info')
 
     assert msg['title'] == 'test\'s game'
+    assert msg['game_type'] == 'custom'
     assert msg['mapname'] == 'scmp_007'
     assert msg['map_file_path'] == 'maps/scmp_007.zip'
     assert msg['featured_mod'] == 'faf'
+
+@fast_forward(5)
+async def test_host_coop_game_type(event_loop, lobby_server, player_service):
+    player_id, session, proto = await connect_and_sign_in(
+        ('test', 'test_password'),
+        lobby_server
+    )
+
+    await read_until_command(proto, 'game_info')
+
+    await proto.send_message({
+        'command': 'game_host',
+        'mod': 'coop',
+        'visibility': 'public',
+        'title': ''
+    })
+
+    msg = await read_until_command(proto, 'game_info')
+
+    assert msg['title'] == 'test\'s game'
+    assert msg['mapname'] == 'scmp_007'
+    assert msg['map_file_path'] == 'maps/scmp_007.zip'
+    assert msg['featured_mod'] == 'coop'
+    assert msg['game_type'] == 'coop'
 
 
 @pytest.mark.parametrize("command", ["game_host", "game_join"])

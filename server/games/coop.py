@@ -1,11 +1,12 @@
 from server.abc.base_game import InitMode
 
-from .game import Game, ValidityState, Victory
+from .game import Game, GameType, ValidityState, Victory
 
 
 class CoopGame(Game):
     """Class for coop game"""
     init_mode = InitMode.NORMAL_LOBBY
+    game_type = GameType.COOP
 
     def __init__(self, *args, **kwargs):
         kwargs["game_mode"] = 'coop'
