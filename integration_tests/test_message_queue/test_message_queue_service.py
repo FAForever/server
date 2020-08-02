@@ -144,3 +144,16 @@ async def test_incorrect_vhost(mocker, caplog):
     await service.initialize()
 
     assert any("Incorrect vhost?" in rec.message for rec in caplog.records)
+
+
+async def test_initialize_declare_exchange_race_condition():
+    service = MessageQueueService()
+
+    async def keep_declaring_exchanges():
+        i = 0
+        while service._channel is None:
+            await service.declare_exchange(f"exchange_{i}")
+            await asyncio.sleep(0)
+            i += 1
+
+    await asyncio.gather(keep_declaring_exchanges(), service.initialize())
