@@ -100,6 +100,7 @@ async def test_reconnect(mq_service):
     assert mq_service._exchange_types["test_topic"] == aio_pika.ExchangeType.TOPIC
     assert "test_direct" in mq_service._exchanges
     assert mq_service._exchange_types["test_direct"] == aio_pika.ExchangeType.DIRECT
+    assert mq_service._is_ready
 
 
 async def test_incorrect_credentials(mocker, caplog):
@@ -109,6 +110,7 @@ async def test_incorrect_credentials(mocker, caplog):
     await service.initialize()
     expected_warning = "Unable to connect to RabbitMQ. Incorrect credentials?"
     assert expected_warning in [rec.message for rec in caplog.records]
+    assert service._is_ready is False
     caplog.clear()
 
     await service.declare_exchange("test_exchange")
