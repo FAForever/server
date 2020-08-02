@@ -24,6 +24,7 @@ class MessageQueueService(Service):
         self._exchanges = {}
         self._exchange_types = {}
         self._is_ready = False
+        self._initialization_lock = asyncio.Lock()
 
         config.register_callback("MQ_USER", self.reconnect)
         config.register_callback("MQ_PASSWORD", self.reconnect)
@@ -32,10 +33,11 @@ class MessageQueueService(Service):
         config.register_callback("MQ_PORT", self.reconnect)
 
     async def initialize(self) -> None:
-        if self._connection is not None:
-            return
+        async with self._initialization_lock:
+            if self._connection is not None:
+                return
 
-        self._is_ready =  await self._connect()
+            self._is_ready =  await self._connect()
 
     async def _connect(self) -> bool:
         """ Returns True on success. """
@@ -88,7 +90,11 @@ class MessageQueueService(Service):
         self._exchange_types[exchange_name] = exchange_type
 
     async def shutdown(self) -> None:
-        self._is_ready = False
+        async with self._initialization_lock:
+            self._is_ready = False
+            await self._shutdown()
+
+    async def _shutdown(self) -> None:
         if self._channel is not None:
             await self._channel.close()
             self._channel = None
@@ -125,12 +131,14 @@ class MessageQueueService(Service):
             )
 
     async def reconnect(self) -> None:
-        await self.shutdown()
-        if not await self._connect():
-            return
+        async with self._initialization_lock:
+            self._is_ready = False
+            await self._shutdown()
+            if not await self._connect():
+                return
 
-        for exchange_name in list(self._exchanges.keys()):
-            await self.declare_exchange(
-                exchange_name, self._exchange_types[exchange_name]
-            )
-        self._is_ready = True
+            for exchange_name in list(self._exchanges.keys()):
+                await self.declare_exchange(
+                    exchange_name, self._exchange_types[exchange_name]
+                )
+            self._is_ready = True
