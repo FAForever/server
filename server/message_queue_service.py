@@ -37,7 +37,7 @@ class MessageQueueService(Service):
             if self._connection is not None:
                 return
 
-            self._is_ready =  await self._connect()
+            self._is_ready = await self._connect()
 
     async def _connect(self) -> bool:
         """ Returns True on success. """
@@ -53,19 +53,20 @@ class MessageQueueService(Service):
                 loop=asyncio.get_running_loop(),
             )
         except ConnectionError:
-            self._logger.warning("Unable to connect to RabbitMQ. Is it running?", exc_info=True)
+            self._logger.warning(
+                "Unable to connect to RabbitMQ. Is it running?", exc_info=True
+            )
             return False
         except ProbableAuthenticationError:
             self._logger.warning(
-                "Unable to connect to RabbitMQ. Incorrect credentials?",
-                exc_info=True
+                "Unable to connect to RabbitMQ. Incorrect credentials?", exc_info=True
             )
             return False
         except Exception as e:
             self._logger.warning(
                 "Unable to connect to RabbitMQ due to unhandled excpetion %s. Incorrect vhost?",
                 e,
-                exc_info=True
+                exc_info=True,
             )
             return False
 
