@@ -3,7 +3,7 @@ import asyncio
 import pytest
 from asynctest import CoroutineMock
 
-from server.async_functions import (
+from server.asyncio_extensions import (
     gather_without_exceptions,
     synchronized,
     synchronizedmethod

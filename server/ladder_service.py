@@ -8,8 +8,8 @@ from typing import Dict, List, Optional, Set, Tuple
 import aiocron
 from sqlalchemy import and_, func, select, text, true
 
+from . import asyncio_extensions as asyncio_
 from .abc.base_game import InitMode
-from .async_functions import gather_without_exceptions
 from .config import config
 from .core import Service
 from .db import FAFDatabase
@@ -258,7 +258,7 @@ class LadderService(Service):
                 "%s stopped searching for %s: %s", initiator, queue_name, search
             )
 
-        await gather_without_exceptions(tasks, DisconnectedError)
+        await asyncio_.gather_without_exceptions(tasks, DisconnectedError)
 
     def _cancel_existing_searches(
         self,

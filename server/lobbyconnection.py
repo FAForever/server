@@ -17,8 +17,8 @@ from sqlalchemy import and_, func, select
 import server.metrics as metrics
 from server.db import FAFDatabase
 
+from . import asyncio_extensions as asyncio_
 from .abc.base_game import GameConnectionState, InitMode
-from .async_functions import gather_without_exceptions
 from .config import TRACE, config
 from .db.models import (
     avatars,
@@ -336,7 +336,7 @@ class LobbyConnection:
                     "%s broadcasting message to all players: %s",
                     self.player.login, message_text
                 )
-                await gather_without_exceptions(tasks, Exception)
+                await asyncio_.gather_without_exceptions(tasks, Exception)
         elif action == "join_channel":
             if await self.player_service.has_permission_role(
                 self.player, 'ADMIN_JOIN_CHANNEL'
@@ -353,7 +353,10 @@ class LobbyConnection:
                             "autojoin": [channel]
                         }))
 
-                await gather_without_exceptions(tasks, DisconnectedError)
+                await asyncio_.gather_without_exceptions(
+                    tasks,
+                    DisconnectedError
+                )
 
     async def check_user_login(self, conn, username, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.
