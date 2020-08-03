@@ -1,10 +1,11 @@
-import asyncio
 import contextlib
 from abc import ABCMeta, abstractmethod
 from asyncio import StreamReader, StreamWriter
 from typing import List
 
 import server.metrics as metrics
+
+from ..asyncio_extensions import synchronizedmethod
 
 
 class DisconnectedError(ConnectionError):
@@ -17,10 +18,6 @@ class Protocol(metaclass=ABCMeta):
         self.writer = writer
         # Force calls to drain() to only return once the data has been sent
         self.writer.transport.set_write_buffer_limits(high=0)
-
-        # drain() cannot be called concurrently by multiple coroutines:
-        # http://bugs.python.org/issue29930.
-        self._drain_lock = asyncio.Lock()
 
     @staticmethod
     @abstractmethod
@@ -123,6 +120,7 @@ class Protocol(metaclass=ABCMeta):
         with contextlib.suppress(Exception):
             await self.writer.wait_closed()
 
+    @synchronizedmethod
     async def drain(self) -> None:
         """
         Await the write buffer to empty.
@@ -131,9 +129,11 @@ class Protocol(metaclass=ABCMeta):
         :raises: DisconnectedError if the client disconnects while waiting for
         the write buffer to empty.
         """
-        async with self._drain_lock:
-            try:
-                await self.writer.drain()
-            except Exception as e:
-                await self.close()
-                raise DisconnectedError("Protocol connection lost!") from e
+        # Method needs to be synchronized as drain() cannot be called
+        # concurrently by multiple coroutines:
+        # http://bugs.python.org/issue29930.
+        try:
+            await self.writer.drain()
+        except Exception as e:
+            await self.close()
+            raise DisconnectedError("Protocol connection lost!") from e
