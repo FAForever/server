@@ -344,19 +344,13 @@ class LobbyConnection:
                 user_ids = message['user_ids']
                 channel = message['channel']
 
-                tasks = []
                 for user_id in user_ids:
                     player = self.player_service[user_id]
-                    if player and player.lobby_connection is not None:
-                        tasks.append(player.send_message({
+                    if player:
+                        player.write_message({
                             "command": "social",
                             "autojoin": [channel]
-                        }))
-
-                await asyncio_.gather_without_exceptions(
-                    tasks,
-                    DisconnectedError
-                )
+                        })
 
     async def check_user_login(self, conn, username, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.

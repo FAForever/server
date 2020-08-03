@@ -8,7 +8,6 @@ from typing import Dict, List, Optional, Set, Tuple
 import aiocron
 from sqlalchemy import and_, func, select, text, true
 
-from . import asyncio_extensions as asyncio_
 from .abc.base_game import InitMode
 from .config import config
 from .core import Service
@@ -241,24 +240,20 @@ class LadderService(Service):
     ):
         searches = self._cancel_existing_searches(initiator, queue_name)
 
-        tasks = []
         for queue_name, search in searches:
             for player in search.players:
                 # FIXME: This is wrong for multiqueueing
                 if player.state == PlayerState.SEARCHING_LADDER:
                     player.state = PlayerState.IDLE
 
-                if player.lobby_connection is not None:
-                    tasks.append(player.send_message({
-                        "command": "search_info",
-                        "queue_name": queue_name,
-                        "state": "stop"
-                    }))
+                player.write_message({
+                    "command": "search_info",
+                    "queue_name": queue_name,
+                    "state": "stop"
+                })
             self._logger.info(
                 "%s stopped searching for %s: %s", initiator, queue_name, search
             )
-
-        await asyncio_.gather_without_exceptions(tasks, DisconnectedError)
 
     def _cancel_existing_searches(
         self,
