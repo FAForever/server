@@ -11,7 +11,6 @@ import asyncio
 import logging
 import os
 import signal
-import socket
 import sys
 from datetime import datetime
 
@@ -20,8 +19,9 @@ from docopt import docopt
 import server
 from server.api.api_accessor import ApiAccessor
 from server.config import config
-from server.core import create_services
+from server.game_service import GameService
 from server.ice_servers.nts import TwilioNTS
+from server.player_service import PlayerService
 from server.profiler import Profiler
 
 
@@ -63,65 +63,47 @@ async def main():
 
     api_accessor = ApiAccessor()
 
-    services = create_services({
-        "api_accessor": api_accessor,
-        "database": database,
-        "loop": loop,
-    })
+    instance = server.ServerInstance(
+        "LobbyServer",
+        database,
+        api_accessor,
+        twilio_nts,
+        loop
+    )
+    player_service: PlayerService = instance.services["player_service"]
+    game_service: GameService = instance.services["game_service"]
 
-    await asyncio.gather(*[
-        service.initialize() for service in services.values()
-    ])
-
-    profiler = Profiler(services["player_service"])
+    profiler = Profiler(player_service)
     profiler.refresh()
     config.register_callback("PROFILING_COUNT", profiler.refresh)
     config.register_callback("PROFILING_DURATION", profiler.refresh)
     config.register_callback("PROFILING_INTERVAL", profiler.refresh)
 
-    ctrl_server = await server.run_control_server(
-        services["player_service"],
-        services["game_service"]
-    )
+    ctrl_server = await server.run_control_server(player_service, game_service)
 
     async def restart_control_server():
         nonlocal ctrl_server
-        nonlocal services
 
         await ctrl_server.shutdown()
         ctrl_server = await server.run_control_server(
-            services["player_service"],
-            services["game_service"]
+            player_service,
+            game_service
         )
     config.register_callback("CONTROL_SERVER_PORT", restart_control_server)
 
-    lobby_server = await server.run_lobby_server(
-        address=('', 8001),
-        database=database,
-        geoip_service=services["geo_ip_service"],
-        player_service=services["player_service"],
-        game_service=services["game_service"],
-        nts_client=twilio_nts,
-        ladder_service=services["ladder_service"],
-        loop=loop
-    )
-
-    for sock in lobby_server.sockets:
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+    await instance.listen(("", 8001))
 
     server.metrics.info.info({
         "version": os.environ.get("VERSION") or "dev",
         "python_version": ".".join(map(str, sys.version_info[:3])),
         "start_time": datetime.utcnow().strftime("%m-%d %H:%M"),
-        "game_uid": str(services["game_service"].game_id_counter)
+        "game_uid": str(game_service.game_id_counter)
     })
 
     await done
 
     # Cleanup
-    await asyncio.gather(*[
-        service.shutdown() for service in services.values()
-    ])
+    await instance.shutdown()
     await ctrl_server.shutdown()
 
     # Close DB connections

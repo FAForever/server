@@ -2,7 +2,7 @@ import asyncio
 import hashlib
 import logging
 from collections import defaultdict
-from typing import Any, Callable, Dict, Tuple
+from typing import Any, Callable, Dict, Tuple, Type
 from unittest import mock
 
 import asynctest
@@ -10,11 +10,12 @@ import pytest
 from aiohttp import web
 from asynctest import exhaust_callbacks
 
-from server import GameService, run_control_server, run_lobby_server
+from server import GameService, ServerInstance, run_control_server
 from server.db.models import login
 from server.ladder_service import LadderService
 from server.protocol import Protocol, QDataStreamProtocol
 from server.rating_service.rating_service import RatingService
+from server.servercontext import ServerContext
 
 
 @pytest.fixture
@@ -52,16 +53,22 @@ async def lobby_server(
         'server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL',
         f'http://{policy_server.host}:{policy_server.port}'
     ):
-        ctx = await run_lobby_server(
-            address=('127.0.0.1', None),
-            database=database,
-            geoip_service=geoip_service,
-            player_service=player_service,
-            game_service=game_service,
-            ladder_service=ladder_service,
-            nts_client=None,
+        instance = ServerInstance(
+            "UnitTestServer",
+            database,
+            api_accessor=None,
+            twilio_nts=None,
             loop=event_loop,
+            _override_services={
+                "geo_ip_service": geoip_service,
+                "player_service": player_service,
+                "game_service": game_service,
+                "ladder_service": ladder_service,
+                "rating_service": rating_service,
+                "message_queue_service": message_queue_service
+            }
         )
+        ctx = await instance.listen(('127.0.0.1', None))
         player_service.is_uniqueid_exempt = lambda id: True
 
         yield ctx
@@ -139,8 +146,11 @@ async def tmp_user(database):
     return make_user
 
 
-async def connect_client(server) -> QDataStreamProtocol:
-    return QDataStreamProtocol(
+async def connect_client(
+    server: ServerContext,
+    protocol_class: Type[Protocol] = QDataStreamProtocol
+) -> Protocol:
+    return protocol_class(
         *(await asyncio.open_connection(*server.sockets[0].getsockname()))
     )
 
@@ -191,8 +201,12 @@ async def get_session(proto):
     return msg['session']
 
 
-async def connect_and_sign_in(credentials, lobby_server):
-    proto = await connect_client(lobby_server)
+async def connect_and_sign_in(
+    credentials,
+    lobby_server: ServerContext,
+    protocol_class: Type[Protocol] = QDataStreamProtocol
+):
+    proto = await connect_client(lobby_server, protocol_class=protocol_class)
     session = await get_session(proto)
     await perform_login(proto, credentials)
     hello = await read_until_command(proto, "welcome", timeout=120)
