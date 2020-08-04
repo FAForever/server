@@ -11,6 +11,10 @@ from .core import Service
 from .decorators import with_logger
 
 
+class ConnectionAttemptFailed(Exception):
+    pass
+
+
 @with_logger
 class MessageQueueService(Service):
     def __init__(self) -> None:
@@ -37,9 +41,13 @@ class MessageQueueService(Service):
             if self._connection is not None:
                 return
 
-            self._is_ready = await self._connect()
+            try:
+                await self._connect()
+            except ConnectionAttemptFailed:
+                return
+            self._is_ready = True
 
-    async def _connect(self) -> bool:
+    async def _connect(self) -> None:
         """ Returns True on success. """
         try:
             self._connection = await aio_pika.connect_robust(
@@ -56,23 +64,22 @@ class MessageQueueService(Service):
             self._logger.warning(
                 "Unable to connect to RabbitMQ. Is it running?", exc_info=True
             )
-            return False
+            raise ConnectionAttemptFailed
         except ProbableAuthenticationError:
             self._logger.warning(
                 "Unable to connect to RabbitMQ. Incorrect credentials?", exc_info=True
             )
-            return False
+            raise ConnectionAttemptFailed
         except Exception as e:
             self._logger.warning(
                 "Unable to connect to RabbitMQ due to unhandled excpetion %s. Incorrect vhost?",
                 e,
                 exc_info=True,
             )
-            return False
+            raise ConnectionAttemptFailed
 
         self._channel = await self._connection.channel(publisher_confirms=False)
         self._logger.debug("Connected to RabbitMQ %r", self._connection)
-        return True
 
     async def declare_exchange(
         self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC
@@ -135,7 +142,10 @@ class MessageQueueService(Service):
         async with self._initialization_lock:
             self._is_ready = False
             await self._shutdown()
-            if not await self._connect():
+
+            try:
+                await self._connect()
+            except ConnectionAttemptFailed:
                 return
 
             for exchange_name in list(self._exchanges.keys()):
