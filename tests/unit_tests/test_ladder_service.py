@@ -281,7 +281,7 @@ async def test_start_and_cancel_search(
     search = ladder_service.searches["ladder1v1"][p1]
 
     assert p1.state == PlayerState.SEARCHING_LADDER
-    assert ladder_service.queues['ladder1v1'].queue[search]
+    assert search in ladder_service.queues['ladder1v1']._queue
     assert not search.is_cancelled
 
     await ladder_service.cancel_search(p1)
@@ -308,7 +308,7 @@ async def test_start_search_cancels_previous_search(
     search1 = ladder_service.searches["ladder1v1"][p1]
 
     assert p1.state == PlayerState.SEARCHING_LADDER
-    assert ladder_service.queues['ladder1v1'].queue[search1]
+    assert search1 in ladder_service.queues['ladder1v1']._queue
 
     await ladder_service.start_search(p1, 'ladder1v1')
     await exhaust_callbacks(event_loop)
@@ -316,8 +316,8 @@ async def test_start_search_cancels_previous_search(
 
     assert p1.state == PlayerState.SEARCHING_LADDER
     assert search1.is_cancelled
-    assert not ladder_service.queues['ladder1v1'].queue.get(search1)
-    assert ladder_service.queues['ladder1v1'].queue[search2]
+    assert search1 not in ladder_service.queues['ladder1v1']._queue
+    assert search2 in ladder_service.queues['ladder1v1']._queue
 
 
 async def test_cancel_all_searches(ladder_service: LadderService,
@@ -329,7 +329,7 @@ async def test_cancel_all_searches(ladder_service: LadderService,
     search = ladder_service.searches["ladder1v1"][p1]
 
     assert p1.state == PlayerState.SEARCHING_LADDER
-    assert ladder_service.queues['ladder1v1'].queue[search]
+    assert search in ladder_service.queues['ladder1v1']._queue
     assert not search.is_cancelled
 
     await ladder_service.cancel_search(p1)

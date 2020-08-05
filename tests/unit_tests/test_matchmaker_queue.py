@@ -376,7 +376,7 @@ async def test_queue_race(matchmaker_queue, player_factory):
     except (TimeoutError, CancelledError):
         pass
 
-    assert len(matchmaker_queue.queue) == 0
+    assert len(matchmaker_queue._queue) == 0
 
 
 @pytest.mark.asyncio
@@ -420,4 +420,4 @@ async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
     assert not s1.is_matched
     assert s2.is_matched
     assert s3.is_matched
-    assert len(matchmaker_queue.queue) == 0
+    assert len(matchmaker_queue._queue) == 0

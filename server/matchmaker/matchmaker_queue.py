@@ -52,7 +52,7 @@ class MatchmakerQueue:
         self.team_size = team_size
         self.map_pools = {info[0].id: info for info in map_pools}
 
-        self.queue: Dict[Search, Search] = OrderedDict()
+        self._queue: Dict[Search, None] = OrderedDict()
         self._matches: Deque[Match] = deque()
         self._is_running = True
 
@@ -96,7 +96,7 @@ class MatchmakerQueue:
         """
         self._logger.debug("MatchmakerQueue initialized for %s", self.name)
         while self._is_running:
-            await self.timer.next_pop(lambda: len(self.queue))
+            await self.timer.next_pop(lambda: len(self._queue))
 
             await self.find_matches()
 
@@ -110,7 +110,7 @@ class MatchmakerQueue:
                     search1.quality_with(search2)
                 )
 
-            number_of_unmatched_searches = len(self.queue)
+            number_of_unmatched_searches = len(self._queue)
             metrics.unmatched_searches.labels(self.name).set(number_of_unmatched_searches)
 
             # Any searches in the queue at this point were unable to find a
@@ -139,13 +139,13 @@ class MatchmakerQueue:
             # If the queue was cancelled, or some other error occurred,
             # make sure to clean up.
             self.game_service.mark_dirty(self)
-            if search in self.queue:
-                del self.queue[search]
+            if search in self._queue:
+                del self._queue[search]
 
     async def find_matches(self) -> None:
         self._logger.info("Searching for matches: %s", self.name)
 
-        if len(self.queue) < 2 * self.team_size:
+        if len(self._queue) < 2 * self.team_size:
             return
 
         searches = self.find_teams()
@@ -160,7 +160,7 @@ class MatchmakerQueue:
 
     def find_teams(self) -> List[Search]:
         searches = []
-        unmatched = list(self.queue.values())
+        unmatched = list(self._queue.keys())
         need_team = []
         for search in unmatched:
             if len(search.players) == self.team_size:
@@ -179,7 +179,7 @@ class MatchmakerQueue:
     def push(self, search: Search):
         """ Push the given search object onto the queue """
 
-        self.queue[search] = search
+        self._queue[search] = None
         self.game_service.mark_dirty(self)
 
     def match(self, s1: Search, s2: Search) -> bool:
@@ -193,10 +193,10 @@ class MatchmakerQueue:
             return False
         s1.match(s2)
         s2.match(s1)
-        if s1 in self.queue:
-            del self.queue[s1]
-        if s2 in self.queue:
-            del self.queue[s2]
+        if s1 in self._queue:
+            del self._queue[s1]
+        if s2 in self._queue:
+            del self._queue[s2]
 
         return True
 
@@ -212,12 +212,12 @@ class MatchmakerQueue:
             "queue_pop_time": datetime.fromtimestamp(
                 self.timer.next_queue_pop, timezone.utc
             ).isoformat(),
-            "num_players": sum(len(search.players) for search in self.queue.values()),
-            "boundary_80s": [search.boundary_80 for search in self.queue.values()],
-            "boundary_75s": [search.boundary_75 for search in self.queue.values()],
+            "num_players": sum(len(search.players) for search in self._queue.keys()),
+            "boundary_80s": [search.boundary_80 for search in self._queue.keys()],
+            "boundary_75s": [search.boundary_75 for search in self._queue.keys()],
             # TODO: Remove, the client should query the API for this
             "team_size": self.team_size,
         }
 
     def __repr__(self):
-        return repr(self.queue)
+        return repr(self._queue)
