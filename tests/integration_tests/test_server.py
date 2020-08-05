@@ -194,7 +194,7 @@ async def test_host_missing_fields(event_loop, lobby_server, player_service):
     assert msg['featured_mod'] == 'faf'
 
 @fast_forward(5)
-async def test_host_coop_game_type(event_loop, lobby_server, player_service):
+async def test_host_coop_game(lobby_server):
     player_id, session, proto = await connect_and_sign_in(
         ('test', 'test_password'),
         lobby_server
