@@ -194,36 +194,23 @@ class LadderService(Service):
             ))
         return matchmaker_queues
 
-    async def start_search(self, initiator: Player, queue_name: str):
-        # TODO: Consider what happens if players disconnect while starting
-        # search. Will need a message to inform other players in the search
-        # that it has been cancelled.
+    def start_search(self, initiator: Player, queue_name: str):
         self._cancel_existing_searches(initiator, queue_name)
         queue = self.queues[queue_name]
         search = Search([initiator], rating_type=queue.rating_type)
 
-        tasks = []
         for player in search.players:
             player.state = PlayerState.SEARCHING_LADDER
 
             # FIXME: For now, inform_player is only designed for ladder1v1
             if queue_name == "ladder1v1":
-                tasks.append(self.inform_player(player))
+                self.inform_player(player)
 
-            tasks.append(player.send_message({
+            player.write_message({
                 "command": "search_info",
                 "queue_name": queue_name,
                 "state": "start"
-            }))
-
-        try:
-            await asyncio.gather(*tasks)
-        except DisconnectedError:
-            self._logger.info(
-                "%i failed to start %s search due to a disconnect: %s",
-                initiator, queue_name, search
-            )
-            await self.cancel_search(initiator)
+            })
 
         self.searches[queue_name][initiator] = search
 
@@ -233,7 +220,7 @@ class LadderService(Service):
 
         asyncio.create_task(queue.search(search))
 
-    async def cancel_search(
+    def cancel_search(
         self,
         initiator: Player,
         queue_name: Optional[str] = None
@@ -278,13 +265,13 @@ class LadderService(Service):
                 del self.searches[queue_name][initiator]
         return searches
 
-    async def inform_player(self, player: Player):
+    def inform_player(self, player: Player):
         if player not in self._informed_players:
             self._informed_players.add(player)
             mean, deviation = player.ratings[RatingType.LADDER_1V1]
 
             if deviation > 490:
-                await player.send_message({
+                player.write_message({
                     "command": "notice",
                     "style": "info",
                     "text": (
@@ -299,7 +286,7 @@ class LadderService(Service):
                 })
             elif deviation > 250:
                 progress = (500.0 - deviation) / 2.5
-                await player.send_message({
+                player.write_message({
                     "command": "notice",
                     "style": "info",
                     "text": (
@@ -467,7 +454,7 @@ class LadderService(Service):
         return result
 
     async def on_connection_lost(self, player):
-        await self.cancel_search(player)
+        self.cancel_search(player)
         if player in self._informed_players:
             self._informed_players.remove(player)
 
