@@ -26,6 +26,7 @@ from server.player_service import PlayerService
 from server.players import PlayerState
 from server.protocol import DisconnectedError, QDataStreamProtocol
 from server.rating import InclusiveRange, RatingType
+from server.team_matchmaker import PlayerParty
 from server.types import Address
 
 pytestmark = pytest.mark.asyncio
@@ -924,6 +925,33 @@ async def test_command_game_matchmaking(lobbyconnection):
         lobbyconnection.player,
         "ladder1v1"
     )
+
+
+async def test_command_game_matchmaking_not_party_owner(
+    lobbyconnection,
+    mock_player,
+    player_factory
+):
+    party_owner = player_factory(player_id=2, with_lobby_connection=False)
+    party = PlayerParty(party_owner)
+    party.add_player(mock_player)
+    lobbyconnection.player.id = 1
+    lobbyconnection.party_service.get_party.return_value = party
+
+    await lobbyconnection.on_message_received({
+        'command': 'game_matchmaking',
+        'state': 'start',
+        'faction': 'seraphim'
+    })
+
+    lobbyconnection.ladder_service.start_search.assert_not_called()
+
+    await lobbyconnection.on_message_received({
+        'command': 'game_matchmaking',
+        'state': 'stop'
+    })
+
+    lobbyconnection.ladder_service.cancel_search.assert_called_once()
 
 
 async def test_command_matchmaker_info(

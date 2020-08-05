@@ -823,7 +823,10 @@ class LobbyConnection:
             self.ladder_service.cancel_search(self.player, queue_name)
             return
 
-        if party is not None:
+        if party:
+            if self.player is not party.owner:
+                return
+
             busy = False
             for member in party:
                 player = member.player
