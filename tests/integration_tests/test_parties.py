@@ -179,7 +179,7 @@ async def test_invite_party_workflow(lobby_server, party_service):
 
 
 async def test_invite_non_existent_player(lobby_server):
-    test_id, _, proto = await connect_and_sign_in(
+    _, _, proto = await connect_and_sign_in(
         ('test', 'test_password'), lobby_server
     )
 
@@ -229,7 +229,7 @@ async def test_multiple_invites_same_player(lobby_server):
 
 
 async def test_accept_invite_non_existent(lobby_server):
-    test_id, _, proto = await connect_and_sign_in(
+    _, _, proto = await connect_and_sign_in(
         ('test', 'test_password'), lobby_server
     )
 
@@ -242,7 +242,7 @@ async def test_accept_invite_non_existent(lobby_server):
 
 
 async def test_kick_player_non_existent(lobby_server):
-    test_id, _, proto = await connect_and_sign_in(
+    _, _, proto = await connect_and_sign_in(
         ('test', 'test_password'), lobby_server
     )
 
@@ -258,7 +258,7 @@ async def test_kick_player_non_existent(lobby_server):
 
 
 async def test_party_while_queuing(lobby_server):
-    test_id, _, proto = await connect_and_sign_in(
+    _, _, proto = await connect_and_sign_in(
         ('test', 'test_password'), lobby_server
     )
 

@@ -5,7 +5,6 @@ import pytest
 from trueskill import Rating
 
 from server.factions import Faction
-from server.lobbyconnection import LobbyConnection
 from server.players import Player
 from server.protocol import DisconnectedError
 from server.rating import RatingType
