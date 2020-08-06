@@ -20,6 +20,31 @@ class Victory(Enum):
     ERADICATION = 2
     SANDBOX = 3
 
+@unique
+class GameType(Enum):
+    COOP = 0
+    CUSTOM = 1
+    MATCHMAKER = 2
+
+    @staticmethod
+    def from_string(value: str) -> Optional["GameType"]:
+        """
+        :param value: The string to convert from
+
+        :return: GameType or None if the string is not valid
+        """
+        return {
+            "coop": GameType.COOP,
+            "custom": GameType.CUSTOM,
+            "matchmaker": GameType.MATCHMAKER,
+        }.get(value)
+
+    def to_string(self) -> Optional[str]:
+        return {
+            GameType.COOP: "coop",
+            GameType.CUSTOM: "custom",
+            GameType.MATCHMAKER: "matchmaker",
+        }.get(self)
 
 @unique
 class VisibilityState(Enum):

@@ -28,6 +28,7 @@ from .typedefs import (
     EndedGameInfo,
     FeaturedModType,
     GameState,
+    GameType,
     ValidityState,
     Victory,
     VisibilityState
@@ -46,6 +47,7 @@ class Game:
     The initialization mode to use for the Game.
     """
     init_mode = InitMode.NORMAL_LOBBY
+    game_type = GameType.CUSTOM
 
     def __init__(
         self,
@@ -807,6 +809,7 @@ class Game:
             "uid": self.id,
             "title": self.name,
             "state": client_state,
+            "game_type": GameType.to_string(self.game_type),
             "featured_mod": self.game_mode,
             "sim_mods": self.mods,
             "mapname": self.map_folder_name,

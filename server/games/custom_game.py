@@ -4,12 +4,13 @@ from server.abc.base_game import InitMode
 from server.decorators import with_logger
 from server.rating import RatingType
 
-from .game import Game, ValidityState
+from .game import Game, GameType, ValidityState
 
 
 @with_logger
 class CustomGame(Game):
     init_mode = InitMode.NORMAL_LOBBY
+    game_type = GameType.CUSTOM   
 
     def __init__(self, id_, *args, **kwargs):
         new_kwargs = {

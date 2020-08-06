@@ -545,6 +545,7 @@ async def test_to_dict(game, player_factory):
         "password_protected": game.password is not None,
         "uid": game.id,
         "title": game.sanitize_name(game.name),
+        "game_type": "custom",
         "state": 'playing',
         "featured_mod": game.game_mode,
         "sim_mods": game.mods,
