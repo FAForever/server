@@ -1,4 +1,5 @@
 import weakref
+from contextlib import suppress
 from enum import Enum, unique
 
 from server.config import config
@@ -169,7 +170,8 @@ class Player:
         if self.lobby_connection is None:
             return
 
-        self.lobby_connection.write(message)
+        with suppress(DisconnectedError):
+            self.lobby_connection.write(message)
 
     def to_dict(self):
         """

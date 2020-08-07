@@ -5,9 +5,7 @@ from typing import Tuple
 
 from server.decorators import with_logger
 
-from .protocol import Protocol
-
-json_encoder = json.JSONEncoder(separators=(',', ':'))
+from .protocol import Protocol, json_encoder
 
 
 @with_logger
@@ -94,23 +92,23 @@ class QDataStreamProtocol(Protocol):
         # FIXME: New protocol will remove the need for this
 
         pos, action = self.read_qstring(block)
-        if action in ['PING', 'PONG']:
+        if action in ('PING', 'PONG'):
             return {'command': action.lower()}
-        else:
-            message = json.loads(action)
-            try:
-                for part in self.read_block(block):
-                    try:
-                        message_part = json.loads(part)
-                        if part != action:
-                            message.update(message_part)
-                    except (ValueError, TypeError):
-                        if 'legacy' not in message:
-                            message['legacy'] = []
-                        message['legacy'].append(part)
-            except (KeyError, ValueError):
-                pass
-            return message
+
+        message = json.loads(action)
+        try:
+            for part in self.read_block(block):
+                try:
+                    message_part = json.loads(part)
+                    if part != action:
+                        message.update(message_part)
+                except (ValueError, TypeError):
+                    if 'legacy' not in message:
+                        message['legacy'] = []
+                    message['legacy'].append(part)
+        except (KeyError, ValueError):
+            pass
+        return message
 
 
 PING_MSG = QDataStreamProtocol.pack_message("PING")

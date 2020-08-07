@@ -1,4 +1,5 @@
 import contextlib
+import json
 from abc import ABCMeta, abstractmethod
 from asyncio import StreamReader, StreamWriter
 from typing import List
@@ -6,6 +7,8 @@ from typing import List
 import server.metrics as metrics
 
 from ..asyncio_extensions import synchronizedmethod
+
+json_encoder = json.JSONEncoder(separators=(',', ':'))
 
 
 class DisconnectedError(ConnectionError):
