@@ -104,3 +104,19 @@ async def test_send_message():
     assert p.lobby_connection is None
     with pytest.raises(DisconnectedError):
         await p.send_message({})
+
+
+def test_write_message():
+    p = Player(login='Test')
+
+    assert p.lobby_connection is None
+    # Should not raise
+    p.write_message({})
+
+
+def test_write_message_while_disconnecting(player_factory):
+    p = player_factory("Test", with_lobby_connection=True)
+    p.lobby_connection.write.side_effect = DisconnectedError()
+
+    # Should not raise
+    p.write_message({})
