@@ -196,16 +196,6 @@ class PartyService(Service):
         # TODO: Send a special "disbanded" command?
         self.write_broadcast_party(party, members=members)
 
-    def remove_disbanded_parties(self):
-        disbanded_parties = filter(
-            lambda party: party.is_disbanded(),
-            self.player_parties.values()
-        )
-
-        for party in disbanded_parties:
-            self._logger.info("Cleaning up disbanded party %s", party)
-            self.remove_party(party)
-
     async def on_player_disconnected(self, player):
         if player in self.player_parties:
             await self.leave_party(player)
