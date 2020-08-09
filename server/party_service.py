@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Set
 
 from .core import Service
 from .decorators import with_logger
@@ -12,8 +12,10 @@ from .timing import at_interval
 @with_logger
 class PartyService(Service):
     """
-    Service responsible for managing the global team matchmaking. Does grouping,
-    matchmaking, updates statistics, and launches the games.
+    Service responsible for managing the player parties.
+
+    Logically, we consider players to always be in a party, either alone, or
+    with other players.
     """
 
     def __init__(self, game_service: GameService):
@@ -56,8 +58,13 @@ class PartyService(Service):
             # Will re-encode the message for each player
             member.player.write_message(msg)
 
-    def get_party(self, owner: Player) -> Optional[PlayerParty]:
-        return self.player_parties.get(owner)
+    def get_party(self, owner: Player) -> PlayerParty:
+        party = self.player_parties.get(owner)
+        if not party:
+            party = PlayerParty(owner)
+            self.player_parties[owner] = party
+
+        return party
 
     def mark_dirty(self, party: PlayerParty):
         self._dirty_parties.add(party)

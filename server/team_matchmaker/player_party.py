@@ -1,5 +1,5 @@
 import time
-from typing import List, NamedTuple
+from typing import FrozenSet, List, NamedTuple, Optional
 
 from server.players import Player
 from server.team_matchmaker.party_member import PartyMember
@@ -30,8 +30,12 @@ class PlayerParty:
         return iter(self._members.values())
 
     @property
-    def members(self):
+    def members(self) -> FrozenSet[PartyMember]:
         return frozenset(self._members.values())
+
+    @property
+    def players(self) -> List[Player]:
+        return list(member.player for member in self._members.values())
 
     def is_ready(self) -> bool:
         return all(member.ready for member in self._members.values())
@@ -39,37 +43,37 @@ class PlayerParty:
     def is_disbanded(self) -> bool:
         return not any(m.player == self.owner for m in self._members.values())
 
-    def get_member_by_player(self, player: Player):
+    def get_member_by_player(self, player: Player) -> Optional[PartyMember]:
         return self._members.get(player)
 
-    def add_player(self, player: Player):
+    def add_player(self, player: Player) -> None:
         self._members[player] = PartyMember(player)
 
-    def remove_player(self, player: Player):
+    def remove_player(self, player: Player) -> None:
         assert player in self._members
 
         del self._members[player]
         if player == self.owner:
             self.invited_players.clear()
 
-    def add_invited_player(self, player: Player):
+    def add_invited_player(self, player: Player) -> None:
         self.invited_players[player] = GroupInvite(player, time.time())
 
-    def remove_invited_player(self, player: Player):
+    def remove_invited_player(self, player: Player) -> None:
         assert player in self.invited_players
 
         del self.invited_players[player]
 
-    def ready_player(self, player: Player):
+    def ready_player(self, player: Player) -> None:
         self._members[player].ready = True
 
-    def unready_player(self, player: Player):
+    def unready_player(self, player: Player) -> None:
         self._members[player].ready = False
 
-    def set_factions(self, player: Player, factions: List[bool]):
+    def set_factions(self, player: Player, factions: List[bool]) -> None:
         self._members[player].factions = factions
 
-    async def send_party(self, player: Player):
+    async def send_party(self, player: Player) -> None:
         await player.send_message({
             "command": "update_party",
             **self.to_dict()

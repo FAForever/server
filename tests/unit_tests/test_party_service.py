@@ -38,6 +38,15 @@ def get_members(party: PlayerParty):
     return set(member.player for member in party)
 
 
+async def test_get_party(party_service, player_factory):
+    player = player_factory(player_id=1)
+    party = party_service.get_party(player)
+
+    assert party
+    assert party_service.player_parties[player] is party
+    assert party.owner is player
+
+
 async def test_invite_player_to_party(party_service, player_factory):
     sender = player_factory(player_id=1)
     receiver = player_factory(player_id=2)

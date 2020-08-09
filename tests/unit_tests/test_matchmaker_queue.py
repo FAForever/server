@@ -432,7 +432,10 @@ async def test_find_matches_synchronized(queue_factory):
         queues = [queue_factory(f"Queue{i}") for i in range(5)]
         # Ensure that find_matches does not short circuit
         for queue in queues:
-            queue._queue = {mock.Mock(): 1, mock.Mock(): 2}
+            queue._queue = {
+                mock.Mock(players=[1]): 1,
+                mock.Mock(players=[2]): 2
+            }
             queue.find_teams = mock.Mock()
 
         await asyncio.gather(*[

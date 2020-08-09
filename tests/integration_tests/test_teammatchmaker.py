@@ -124,6 +124,7 @@ async def test_game_matchmaking_multiqueue(lobby_server):
         queue_name="ladder1v1"
     )
     assert msg["state"] == "stop"
+
     msgs = await asyncio.gather(*[client_response(proto) for proto in protos])
 
     uid = set(msg["uid"] for msg in msgs)
@@ -136,6 +137,65 @@ async def test_game_matchmaking_multiqueue(lobby_server):
         assert msg["team"] in (2, 3)
         assert msg["map_position"] in (1, 2, 3, 4)
         assert msg["faction"] == 2
+
+
+@fast_forward(10)
+async def test_game_matchmaking_with_parties(lobby_server):
+    protos, ids = await connect_players(lobby_server)
+    id1, id2, id3, id4 = ids
+    proto1, proto2, proto3, proto4 = protos
+
+    # Setup parties
+    await proto1.send_message({
+        "command": "invite_to_party",
+        "recipient_id": id2
+    })
+    await proto3.send_message({
+        "command": "invite_to_party",
+        "recipient_id": id4
+    })
+    await read_until_command(proto2, "party_invite")
+    await proto2.send_message({
+        "command": "accept_party_invite",
+        "sender_id": id1
+    })
+    await read_until_command(proto4, "party_invite")
+    await proto4.send_message({
+        "command": "accept_party_invite",
+        "sender_id": id3
+    })
+    await read_until_command(proto1, "update_party")
+    await read_until_command(proto3, "update_party")
+
+    # Queue both parties
+    # TODO: This works because UEF is the default faction, really we should be
+    # setting the factions through the party commands.
+    # https://github.com/FAForever/server/issues/613
+    await proto1.send_message({
+        "command": "game_matchmaking",
+        "queue_name": "tmm2v2",
+        "state": "start",
+        "faction": "uef"
+    })
+    await proto3.send_message({
+        "command": "game_matchmaking",
+        "queue_name": "tmm2v2",
+        "state": "start",
+        "faction": "uef"
+    })
+
+    msgs = await asyncio.gather(*[client_response(proto) for proto in protos])
+
+    uid = set(msg["uid"] for msg in msgs)
+    assert len(uid) == 1
+    for msg in msgs:
+        assert msg["init_mode"] == 1
+        assert "None" not in msg["name"]
+        assert msg["mod"] == "faf"
+        assert msg["expected_players"] == 4
+        assert msg["team"] in (2, 3)
+        assert msg["map_position"] in (1, 2, 3, 4)
+        assert msg["faction"] == 1
 
 
 @fast_forward(60)

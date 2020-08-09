@@ -817,37 +817,47 @@ class LobbyConnection:
             message.get("queue_name") or message.get("mod", "ladder1v1")
         )
         state = str(message["state"])
-        party = self.party_service.get_party(self.player)
 
         if state == "stop":
             self.ladder_service.cancel_search(self.player, queue_name)
             return
 
-        if party:
-            if self.player is not party.owner:
-                return
+        party = self.party_service.get_party(self.player)
 
-            busy = False
-            for member in party:
-                player = member.player
-                if player.state != PlayerState.IDLE:
-                    busy = True
-                    await self.send({
-                        'command': 'invalid_state',
-                        'state': player.state.value,
-                        'player': player.id
-                    })
-            if busy:
-                return
+        if self.player is not party.owner:
+            raise ClientError(
+                "Only the party owner may enter the party into a queue.",
+                recoverable=True
+            )
+
+        busy = False
+        for member in party:
+            player = member.player
+            if player.state not in (
+                PlayerState.IDLE,
+                PlayerState.SEARCHING_LADDER
+            ):
+                busy = True
+                await self.send({
+                    'command': 'invalid_state',
+                    'state': player.state.value,
+                    'player': player.id
+                })
+        if busy:
+            return
 
         if state == "start":
-            assert self.player is not None
+            players = party.players
+            if len(players) > self.ladder_service.queues[queue_name].team_size:
+                raise ClientError(
+                    "Your party is too large to join that queue!",
+                    recoverable=True
+                )
             # Faction can be either the name (e.g. 'uef') or the enum value (e.g. 1)
             self.player.faction = message["faction"]
 
-            # TODO: Put player parties here
             self.ladder_service.start_search(
-                [self.player],
+                party.players,
                 queue_name=queue_name
             )
 
@@ -1062,7 +1072,7 @@ class LobbyConnection:
         await self.party_service.unready_player(self.player)
 
     async def command_leave_party(self, _message):
-        # TODO: Cancel party search here if one exists
+        self.ladder_service.cancel_search(self.player)
         await self.party_service.leave_party(self.player)
 
     async def command_set_party_factions(self, message):
