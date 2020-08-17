@@ -853,11 +853,16 @@ class LobbyConnection:
                     "Your party is too large to join that queue!",
                     recoverable=True
                 )
-            # Faction can be either the name (e.g. 'uef') or the enum value (e.g. 1)
-            self.player.faction = message["faction"]
+
+            for member in party:
+                member.set_player_faction()
+
+            # TODO: Remove this legacy behavior, use party instead
+            if "faction" in message:
+                self.player.faction = message["faction"]
 
             self.ladder_service.start_search(
-                party.players,
+                players,
                 queue_name=queue_name
             )
 

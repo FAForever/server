@@ -167,35 +167,49 @@ async def test_game_matchmaking_with_parties(lobby_server):
     await read_until_command(proto1, "update_party")
     await read_until_command(proto3, "update_party")
 
+    await proto1.send_message({
+        "command": "set_party_factions",
+        "factions": [1, 0, 0, 0]
+    })
+    await proto2.send_message({
+        "command": "set_party_factions",
+        "factions": [0, 1, 0, 0]
+    })
+    await proto3.send_message({
+        "command": "set_party_factions",
+        "factions": [0, 0, 1, 0]
+    })
+    await proto4.send_message({
+        "command": "set_party_factions",
+        "factions": [0, 0, 0, 1]
+    })
+    await read_until_command(proto1, "update_party")
+    await read_until_command(proto3, "update_party")
+
     # Queue both parties
-    # TODO: This works because UEF is the default faction, really we should be
-    # setting the factions through the party commands.
-    # https://github.com/FAForever/server/issues/613
     await proto1.send_message({
         "command": "game_matchmaking",
         "queue_name": "tmm2v2",
         "state": "start",
-        "faction": "uef"
     })
     await proto3.send_message({
         "command": "game_matchmaking",
         "queue_name": "tmm2v2",
         "state": "start",
-        "faction": "uef"
     })
 
     msgs = await asyncio.gather(*[client_response(proto) for proto in protos])
 
     uid = set(msg["uid"] for msg in msgs)
     assert len(uid) == 1
-    for msg in msgs:
+    for i, msg in enumerate(msgs):
         assert msg["init_mode"] == 1
         assert "None" not in msg["name"]
         assert msg["mod"] == "faf"
         assert msg["expected_players"] == 4
         assert msg["team"] in (2, 3)
         assert msg["map_position"] in (1, 2, 3, 4)
-        assert msg["faction"] == 1
+        assert msg["faction"] == i + 1
 
 
 @fast_forward(60)
