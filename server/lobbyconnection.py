@@ -837,7 +837,7 @@ class LobbyConnection:
             raise ClientError("Cannot host game. Please update your client to the newest version.")
 
         if state == "stop":
-            await self.ladder_service.cancel_search(self.player, queue_name)
+            self.ladder_service.cancel_search(self.player, queue_name)
             return
 
         if state == "start":
@@ -846,8 +846,8 @@ class LobbyConnection:
             self.player.faction = message['faction']
 
             # TODO: Put player parties here
-            await self.ladder_service.start_search(
-                self.player,
+            self.ladder_service.start_search(
+                [self.player],
                 queue_name=queue_name
             )
 
