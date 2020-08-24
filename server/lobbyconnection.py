@@ -391,7 +391,7 @@ class LobbyConnection:
             self._logger.debug('Rejected login from banned user: %s, %s, %s',
                                player_id, username, self.session)
 
-            await self.send_ban_message_and_abort(ban_expiry - now, ban_reason)
+            raise_ban_error(ban_expiry - now, ban_reason)
 
         # New accounts are prevented from playing if they didn't link to steam
 
@@ -1079,15 +1079,20 @@ class LobbyConnection:
                 return
 
             ban_expiry = data[ban.c.expires_at]
+            if now >= ban_expiry:
+                return
 
-            if now < ban_expiry:
-                self._logger.debug('Aborting connection of banned user: %s, %s, %s',
-                                   self.player.id, self.player.login, self.session)
-                self.send_ban_message_and_abort(ban_expiry - now, data[ban.c.reason])
+            self._logger.debug("Aborting connection of banned user: %s, %s, %s",
+                               self.player.id, self.player.login, self.session)
+            raise_ban_error(ban_expiry - now, data[ban.c.reason])
 
-    def send_ban_message_and_abort(self, ban_time, reason):
-        ban_time_text = (f"for {humanize.naturaldelta(ban_time)}"
-                         if ban_time.days < 365 * 100 else "forever")
-        raise ClientError((f"You are banned from FAF {ban_time_text}.\n "
-                           f"Reason :\n "
-                           f"{reason}"), recoverable=False)
+def raise_ban_error(ban_duration, ban_reason):
+    raise ClientError((f"You are banned from FAF {ban_duration_text(ban_duration)}.\n "
+                       f"Reason :\n "
+                       f"{ban_reason}"), recoverable=False)
+
+def ban_duration_text(ban_duration):
+    if ban_duration.days > 365 * 100:
+        return "forever"
+    humanized_ban_duration = humanize.precisedelta(ban_duration, minimum_unit='hours')
+    return f"for {humanized_ban_duration}"

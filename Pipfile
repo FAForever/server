@@ -21,7 +21,7 @@ aiocron = "*"
 oauthlib = "*"
 sqlalchemy = "*"
 twilio = "*"
-humanize = "*"
+humanize = ">=2.6.0"
 aiomysql = {editable = true, git = "https://github.com/aio-libs/aiomysql"}
 pyyaml = "*"
 aio_pika = "*"

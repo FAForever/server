@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 import asynctest
 import pytest
+import re
 from aiohttp import web
 from asynctest import CoroutineMock
 from sqlalchemy import and_, select
@@ -949,3 +950,29 @@ async def test_check_policy_conformity_fatal(lobbyconnection, policy_server):
         honest = await lobbyconnection.check_policy_conformity(1, result, session=100)
         assert honest is False
         lobbyconnection.abort.assert_called_once()
+
+
+async def test_abort_connection_if_banned(
+    lobbyconnection: LobbyConnection,
+    mock_nts_client
+):
+    lobbyconnection.player.id = 1 # test user that has never been banned
+    await lobbyconnection.abort_connection_if_banned()
+
+    lobbyconnection.player.id = 201 # test user whose ban has been revoked
+    await lobbyconnection.abort_connection_if_banned()
+
+    lobbyconnection.player.id = 202 # test user whose ban has expired
+    await lobbyconnection.abort_connection_if_banned()
+
+    lobbyconnection.player.id = 203 # test user who is permabanned
+    with pytest.raises(ClientError) as banned_error:
+        await lobbyconnection.abort_connection_if_banned()
+    assert banned_error.value.message == "You are banned from FAF forever. <br>Reason : <br>Test permanent ban"
+    assert banned_error.value.recoverable is False
+
+    lobbyconnection.player.id = 204 # test user who is banned for another 46 hours
+    with pytest.raises(ClientError) as banned_error:
+        await lobbyconnection.abort_connection_if_banned()
+    assert re.match(r"You are banned from FAF for 1 day and 2[0-3]\.[0-9]+ hours. <br>Reason : <br>Test ongoing ban with 46 hours left", banned_error.value.message)
+    assert banned_error.value.recoverable is False

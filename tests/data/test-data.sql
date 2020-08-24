@@ -78,6 +78,7 @@ insert into login (id, login, email, password, steamid, create_time) values
   (201, 'ban_revoked', 'ban_revoked@example.com', SHA2('ban_revoked', 256), null, '2000-01-01 00:00:00'),
   (202, 'ban_expired', 'ban_expired@example.com', SHA2('ban_expired', 256), null, '2000-01-01 00:00:00'),
   (203, 'ban_long_time', 'ban_null_expiration@example.com', SHA2('ban_long_time', 256), null, '2000-01-01 00:00:00'),
+  (204, 'ban_46_hour', 'ban_46_hour_expiration@example.com', SHA2('ban_46_hour', 256), null, '2000-01-01 00:00:00'),
   (300, 'steam_id', 'steam_id@example.com', SHA2('steam_id', 256), 34632, '2000-01-01 00:00:00')
 ;
 -- New accounts for testing account age check
@@ -323,7 +324,8 @@ insert into ban (player_id, author_id, reason, level, expires_at, revoke_reason,
 insert into ban (player_id, author_id, reason, level, expires_at, revoke_time) values
   (201, 201, 'Test revoked ban', 'GLOBAL', NULL, now() - interval 1 day),
   (202, 202, 'Test expired ban', 'GLOBAL', now() - interval 1 day, NULL),
-  (203, 203, 'Test permanent ban', 'GLOBAL', now() + interval 1000 year, NULL)
+  (203, 203, 'Test permanent ban', 'GLOBAL', now() + interval 1000 year, NULL),
+  (204, 204, 'Test ongoing ban with 46 hours left', 'GLOBAL', now() + interval 46 hour, NULL)
 ;
 
 -- sample clans
