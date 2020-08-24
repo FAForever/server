@@ -12,6 +12,8 @@ class PartyMember:
         self.factions = [True, True, True, True]
 
     def set_player_faction(self) -> None:
+        assert any(self.factions), "At least one faction must be allowed!"
+
         selected = [
             Faction(i + 1) for i in range(len(self.factions))
             if self.factions[i]

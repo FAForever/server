@@ -20,7 +20,7 @@ class PlayerParty:
         self._members = {
             owner: PartyMember(owner)
         }
-        self.invited_players = dict()
+        self.invited_players = {}
         self.owner = owner
 
     def __contains__(self, player: Player) -> bool:

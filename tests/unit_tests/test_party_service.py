@@ -370,6 +370,13 @@ async def test_set_factions_creates_party(party_service, player_factory):
     assert player in party_service.player_parties
 
 
+async def test_set_factions_none_selected(party_service, player_factory):
+    player = player_factory(player_id=1)
+
+    with pytest.raises(ClientError):
+        party_service.set_factions(player, [False, False, False, False])
+
+
 async def test_player_disconnected(party_service, player_factory):
     sender = player_factory(player_id=1)
     receiver = player_factory(player_id=2)

@@ -172,6 +172,12 @@ class PartyService(Service):
         self.mark_dirty(party)
 
     def set_factions(self, player: Player, factions: List[bool]):
+        if not any(factions):
+            raise ClientError(
+                "You must select at least one faction.",
+                recoverable=True
+            )
+
         if player not in self.player_parties:
             self.player_parties[player] = PlayerParty(player)
 
