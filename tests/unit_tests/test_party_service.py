@@ -5,6 +5,7 @@ import pytest
 from asynctest import CoroutineMock
 
 from server.exceptions import ClientError
+from server.factions import Faction
 from server.party_service import PartyService
 from server.team_matchmaker import PlayerParty
 from tests.utils import fast_forward
@@ -356,25 +357,18 @@ async def test_set_factions(party_service, player_factory):
     # Create a party
     party_service.invite_player_to_party(sender, receiver)
 
-    party_service.set_factions(sender, [False, True, True, False])
+    party_service.set_factions(sender, [1, 4])
 
     party_member = next(iter(party_service.player_parties[sender].members))
-    assert party_member.factions == [False, True, True, False]
+    assert party_member.factions == [Faction.uef, Faction.seraphim]
 
 
 async def test_set_factions_creates_party(party_service, player_factory):
     # TODO: Is this really the behavior we want?
     player = player_factory(player_id=1)
 
-    party_service.set_factions(player, [True, False, True, False])
+    party_service.set_factions(player, [1, 3])
     assert player in party_service.player_parties
-
-
-async def test_set_factions_none_selected(party_service, player_factory):
-    player = player_factory(player_id=1)
-
-    with pytest.raises(ClientError):
-        party_service.set_factions(player, [False, False, False, False])
 
 
 async def test_player_disconnected(party_service, player_factory):

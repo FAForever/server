@@ -3,6 +3,7 @@ from typing import Dict, List, Set
 from .core import Service
 from .decorators import with_logger
 from .exceptions import ClientError
+from .factions import Faction
 from .game_service import GameService
 from .players import Player
 from .team_matchmaker.player_party import PlayerParty
@@ -171,13 +172,7 @@ class PartyService(Service):
         party.unready_player(player)
         self.mark_dirty(party)
 
-    def set_factions(self, player: Player, factions: List[bool]):
-        if not any(factions):
-            raise ClientError(
-                "You must select at least one faction.",
-                recoverable=True
-            )
-
+    def set_factions(self, player: Player, factions: List[Faction]):
         if player not in self.player_parties:
             self.player_parties[player] = PlayerParty(player)
 

@@ -169,19 +169,19 @@ async def test_game_matchmaking_with_parties(lobby_server):
 
     await proto1.send_message({
         "command": "set_party_factions",
-        "factions": [1, 0, 0, 0]
+        "factions": ["uef"]
     })
     await proto2.send_message({
         "command": "set_party_factions",
-        "factions": [0, 1, 0, 0]
+        "factions": ["aeon"]
     })
     await proto3.send_message({
         "command": "set_party_factions",
-        "factions": [0, 0, 1, 0]
+        "factions": ["cybran"]
     })
     await proto4.send_message({
         "command": "set_party_factions",
-        "factions": [0, 0, 0, 1]
+        "factions": ["seraphim"]
     })
     await read_until_command(proto1, "update_party")
     await read_until_command(proto3, "update_party")

@@ -63,12 +63,12 @@ async def test_invite_party_workflow(lobby_server, party_service):
         'owner': test_id,
         'members': [
             {
-                'factions': [True, True, True, True],
+                'factions': ["uef", "aeon", "cybran", "seraphim"],
                 'player': test_id,
                 'ready': False
             },
             {
-                'factions': [True, True, True, True],
+                'factions': ["uef", "aeon", "cybran", "seraphim"],
                 'player': rhiza_id,
                 'ready': False
             }
@@ -77,7 +77,7 @@ async def test_invite_party_workflow(lobby_server, party_service):
     # 3. Player sets factions
     await proto.send_message({
         'command': 'set_party_factions',
-        'factions': [True, False, False, False]
+        'factions': ["uef"]
     })
     msg1 = await read_until_command(proto, 'update_party')
     msg2 = await read_until_command(proto2, 'update_party')
@@ -87,12 +87,12 @@ async def test_invite_party_workflow(lobby_server, party_service):
         'owner': test_id,
         'members': [
             {
-                'factions': [True, False, False, False],
+                'factions': ["uef"],
                 'player': test_id,
                 'ready': False
             },
             {
-                'factions': [True, True, True, True],
+                'factions': ["uef", "aeon", "cybran", "seraphim"],
                 'player': rhiza_id,
                 'ready': False
             }
@@ -110,12 +110,12 @@ async def test_invite_party_workflow(lobby_server, party_service):
         'owner': test_id,
         'members': [
             {
-                'factions': [True, False, False, False],
+                'factions': ["uef"],
                 'player': test_id,
                 'ready': False
             },
             {
-                'factions': [True, True, True, True],
+                'factions': ["uef", "aeon", "cybran", "seraphim"],
                 'player': rhiza_id,
                 'ready': True
             }
@@ -133,12 +133,12 @@ async def test_invite_party_workflow(lobby_server, party_service):
         'owner': test_id,
         'members': [
             {
-                'factions': [True, False, False, False],
+                'factions': ["uef"],
                 'player': test_id,
                 'ready': False
             },
             {
-                'factions': [True, True, True, True],
+                'factions': ["uef", "aeon", "cybran", "seraphim"],
                 'player': rhiza_id,
                 'ready': False
             }
@@ -158,7 +158,7 @@ async def test_invite_party_workflow(lobby_server, party_service):
         'owner': test_id,
         'members': [
             {
-                'factions': [True, False, False, False],
+                'factions': ["uef"],
                 'player': test_id,
                 'ready': False
             }
@@ -320,3 +320,49 @@ async def test_join_party_after_disband(lobby_server):
 
     await read_until_command(proto, 'update_party')
     await read_until_command(proto2, 'update_party')
+
+
+async def test_set_party_factions_duplicate(lobby_server):
+    test_id, _, proto = await connect_and_sign_in(
+        ('test', 'test_password'), lobby_server
+    )
+
+    await read_until_command(proto, 'game_info')
+
+    await proto.send_message({
+        'command': 'set_party_factions',
+        'factions': ["uef", "uef", "uef"]
+    })
+
+    msg = await read_until_command(proto, 'update_party')
+    assert msg == {
+        'command': 'update_party',
+        'owner': test_id,
+        'members': [
+            {
+                'factions': ["uef"],
+                'player': test_id,
+                'ready': False
+            }
+        ]
+    }
+
+
+async def test_set_party_factions_empty(lobby_server):
+    test_id, _, proto = await connect_and_sign_in(
+        ('test', 'test_password'), lobby_server
+    )
+
+    await read_until_command(proto, 'game_info')
+
+    await proto.send_message({
+        'command': 'set_party_factions',
+        'factions': []
+    })
+
+    msg = await read_until_command(proto, 'notice')
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "You must select at least one faction."
+    }

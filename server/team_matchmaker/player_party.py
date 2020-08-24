@@ -1,6 +1,7 @@
 import time
 from typing import FrozenSet, List, NamedTuple, Optional
 
+from server.factions import Faction
 from server.players import Player
 from server.team_matchmaker.party_member import PartyMember
 
@@ -70,7 +71,7 @@ class PlayerParty:
     def unready_player(self, player: Player) -> None:
         self._members[player].ready = False
 
-    def set_factions(self, player: Player, factions: List[bool]) -> None:
+    def set_factions(self, player: Player, factions: List[Faction]) -> None:
         self._members[player].factions = factions
 
     async def send_party(self, player: Player) -> None:

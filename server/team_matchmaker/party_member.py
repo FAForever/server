@@ -9,20 +9,24 @@ class PartyMember:
     def __init__(self, player: Player, ready: bool = False):
         self.player = player
         self.ready = ready
-        self.factions = [True, True, True, True]
+        self.factions = [
+            Faction.uef,
+            Faction.aeon,
+            Faction.cybran,
+            Faction.seraphim
+        ]
 
     def set_player_faction(self) -> None:
-        assert any(self.factions), "At least one faction must be allowed!"
+        assert self.factions, "At least one faction must be allowed!"
+        # NOTE: In the far fetched future we may want to limit the list of
+        # playable factions for special game modes. For flexibility we will
+        # assume for now that the client will take care of this for us.
 
-        selected = [
-            Faction(i + 1) for i in range(len(self.factions))
-            if self.factions[i]
-        ]
-        self.player.faction = random.choice(selected)
+        self.player.faction = random.choice(self.factions)
 
     def to_dict(self):
         return {
             "player": self.player.id,
             "ready": self.ready,
-            "factions": self.factions
+            "factions": list(faction.name for faction in self.factions)
         }
