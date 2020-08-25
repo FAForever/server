@@ -1,7 +1,5 @@
 import asyncio
 import functools
-import random
-from collections import deque
 from concurrent.futures import CancelledError, TimeoutError
 
 import pytest
@@ -11,7 +9,6 @@ from hypothesis import strategies as st
 import server.config as config
 from server.matchmaker import CombinedSearch, MapPool, PopTimer, Search
 from server.rating import RatingType
-from tests.utils import fast_forward
 
 
 @pytest.fixture(scope="session")
@@ -312,30 +309,6 @@ def test_queue_multiple_map_pools(
         assert queue.get_map_pool_for_rating(rating) is None
 
 
-@fast_forward(3)
-@pytest.mark.asyncio
-async def test_queue_matches(matchmaker_queue):
-    matches = [random.randrange(0, 1 << 20) for _ in range(20)]
-    matchmaker_queue._matches = deque(matches)
-
-    async def call_shutdown():
-        await asyncio.sleep(1)
-        matchmaker_queue.shutdown()
-
-    asyncio.create_task(call_shutdown())
-    collected_matches = [match async for match in matchmaker_queue.iter_matches()]
-
-    assert collected_matches == matches
-
-
-@pytest.mark.asyncio
-async def test_shutdown_matchmaker(matchmaker_queue):
-    matchmaker_queue.shutdown()
-    # Verify that no matches are yielded after shutdown is called
-    async for _ in matchmaker_queue.iter_matches():
-        assert False
-
-
 @pytest.mark.asyncio
 async def test_queue_many(matchmaker_queue, player_factory):
     p1, p2, p3 = player_factory("Dostya", ladder_rating=(2200, 150)), \
@@ -354,6 +327,9 @@ async def test_queue_many(matchmaker_queue, player_factory):
     assert not s1.is_matched
     assert s2.is_matched
     assert s3.is_matched
+    matchmaker_queue.on_match_found.assert_called_once_with(
+        s2, s3, matchmaker_queue
+    )
 
 
 @pytest.mark.asyncio
@@ -393,12 +369,13 @@ async def test_queue_cancel(matchmaker_queue, matchmaker_players):
 
     assert not s1.is_matched
     assert not s2.is_matched
+    matchmaker_queue.on_match_found.assert_not_called()
 
 
 @pytest.mark.asyncio
 async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
     # Turn list of players into map from ids to players.
-    p0, p1, p2, p3, _ = matchmaker_players_all_match
+    _, p1, p2, p3, _ = matchmaker_players_all_match
     (s1, s2, s3) = (Search([p1]),
                     Search([p2]),
                     Search([p3]))
@@ -421,3 +398,6 @@ async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
     assert s2.is_matched
     assert s3.is_matched
     assert len(matchmaker_queue._queue) == 0
+    matchmaker_queue.on_match_found.assert_called_once_with(
+        s2, s3, matchmaker_queue
+    )

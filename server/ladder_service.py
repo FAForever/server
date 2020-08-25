@@ -67,16 +67,16 @@ class LadderService(Service):
         for name, info in db_queues.items():
             if name not in self.queues:
                 queue = MatchmakerQueue(
+                    self.game_service,
+                    self.on_match_found,
                     name=name,
                     queue_id=info["id"],
                     featured_mod=info["mod"],
                     rating_type=info["rating_type"],
                     team_size=info["team_size"],
-                    game_service=self.game_service
                 )
                 self.queues[name] = queue
                 queue.initialize()
-                asyncio.ensure_future(self.handle_queue_matches(queue))
             else:
                 queue = self.queues[name]
                 queue.featured_mod = info["mod"]
@@ -267,30 +267,33 @@ class LadderService(Service):
                     )
                 })
 
-    async def handle_queue_matches(self, queue: MatchmakerQueue):
-        async for s1, s2 in queue.iter_matches():
-            try:
-                msg = {"command": "match_found", "queue": queue.name}
-                # TODO: Handle disconnection with a client supported message
-                await asyncio.gather(*[
-                    player.send_message(msg)
-                    for player in s1.players + s2.players
-                ])
-                asyncio.create_task(
-                    self.start_game(s1.players, s2.players, queue)
-                )
-            except Exception as e:
-                self._logger.exception(
-                    "Error processing match between searches %s, and %s: %s",
-                    s1, s2, e
-                )
+    def on_match_found(
+        self,
+        s1: Search,
+        s2: Search,
+        queue: MatchmakerQueue
+    ) -> None:
+        try:
+            msg = {"command": "match_found", "queue": queue.name}
+
+            for player in s1.players + s2.players:
+                player.write_message(msg)
+
+            asyncio.create_task(
+                self.start_game(s1.players, s2.players, queue)
+            )
+        except Exception:
+            self._logger.exception(
+                "Error processing match between searches %s, and %s",
+                s1, s2
+            )
 
     async def start_game(
         self,
         team1: List[Player],
         team2: List[Player],
         queue: MatchmakerQueue
-    ):
+    ) -> None:
         self._logger.debug(
             "Starting %s game between %s and %s", queue.name, team1, team2
         )
