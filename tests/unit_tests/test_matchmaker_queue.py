@@ -8,12 +8,17 @@ from hypothesis import strategies as st
 
 import server.config as config
 from server.matchmaker import CombinedSearch, MapPool, PopTimer, Search
+from server.players import PlayerState
 from server.rating import RatingType
 
 
 @pytest.fixture(scope="session")
 def player_factory(player_factory):
-    return functools.partial(player_factory, ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+    return functools.partial(
+        player_factory,
+        ladder_games=(config.NEWBIE_MIN_GAMES + 1),
+        state=PlayerState.SEARCHING_LADDER
+    )
 
 
 @pytest.fixture

@@ -10,7 +10,7 @@ from .test_game import client_response, get_player_ratings, send_player_options
 pytestmark = pytest.mark.asyncio
 
 
-async def queue_players_for_matchmaking(lobby_server):
+async def connect_players(lobby_server):
     res = await asyncio.gather(*[
         connect_and_sign_in(
             (f"ladder{i}",) * 2,
@@ -20,6 +20,12 @@ async def queue_players_for_matchmaking(lobby_server):
     ])
     protos = [proto for _, _, proto in res]
     ids = [id_ for id_, _, _ in res]
+
+    return protos, ids
+
+
+async def queue_players_for_matchmaking(lobby_server):
+    protos, ids = await connect_players(lobby_server)
 
     await asyncio.gather(*[
         read_until_command(proto, "game_info") for proto in protos
@@ -86,6 +92,55 @@ async def test_game_matchmaking(lobby_server):
         assert msg["team"] in (2, 3)
         assert msg["map_position"] in (1, 2, 3, 4)
         assert msg["faction"] == 1
+
+
+@fast_forward(15)
+async def test_game_matchmaking_multiqueue(lobby_server):
+    protos, _ = await connect_players(lobby_server)
+
+    await asyncio.gather(*[
+        read_until_command(proto, "game_info") for proto in protos
+    ])
+
+    await protos[0].send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef",
+        "queue_name": "ladder1v1"
+    })
+    await read_until_command(protos[0], "search_info")
+    await asyncio.gather(*[
+        proto.send_message({
+            "command": "game_matchmaking",
+            "state": "start",
+            "faction": "aeon",
+            "queue_name": "tmm2v2"
+        })
+        for proto in protos
+    ])
+    msg = await read_until(
+        protos[0],
+        lambda msg: (
+            msg["command"] == "search_info" and msg["queue_name"] == "ladder1v1"
+        )
+    )
+    assert msg == {
+        "command": "search_info",
+        "queue_name": "ladder1v1",
+        "state": "stop"
+    }
+    msgs = await asyncio.gather(*[client_response(proto) for proto in protos])
+
+    uid = set(msg["uid"] for msg in msgs)
+    assert len(uid) == 1
+    for msg in msgs:
+        assert msg["init_mode"] == 1
+        assert "None" not in msg["name"]
+        assert msg["mod"] == "faf"
+        assert msg["expected_players"] == 4
+        assert msg["team"] in (2, 3)
+        assert msg["map_position"] in (1, 2, 3, 4)
+        assert msg["faction"] == 2
 
 
 @fast_forward(60)

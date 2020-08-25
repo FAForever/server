@@ -340,6 +340,50 @@ async def test_start_search_multiqueue_multiple_players(
     assert "tmm2v2" not in ladder_service._searches[p2]
 
 
+async def test_game_start_cancels_search(
+    ladder_service: LadderService,
+    player_factory,
+    queue_factory,
+    event_loop
+):
+    ladder_service.queues["tmm2v2"] = queue_factory("tmm2v2")
+
+    p1 = player_factory(
+        "Dostya",
+        player_id=1,
+        ladder_rating=(1000, 10),
+        with_lobby_connection=True
+    )
+
+    p2 = player_factory(
+        "Brackman",
+        player_id=2,
+        ladder_rating=(1000, 10),
+        with_lobby_connection=True
+    )
+    ladder_service.start_search([p1], "ladder1v1")
+    ladder_service.start_search([p2], "ladder1v1")
+    ladder_service.start_search([p1], "tmm2v2")
+    ladder_service.start_search([p2], "tmm2v2")
+    await exhaust_callbacks(event_loop)
+
+    assert "ladder1v1" in ladder_service._searches[p1]
+    assert "tmm2v2" in ladder_service._searches[p1]
+    assert "ladder1v1" in ladder_service._searches[p2]
+    assert "tmm2v2" in ladder_service._searches[p2]
+
+    ladder_service.on_match_found(
+        ladder_service._searches[p1]["ladder1v1"],
+        ladder_service._searches[p2]["ladder1v1"],
+        ladder_service.queues["ladder1v1"]
+    )
+
+    assert "ladder1v1" not in ladder_service._searches[p1]
+    assert "tmm2v2" not in ladder_service._searches[p1]
+    assert "ladder1v1" not in ladder_service._searches[p2]
+    assert "tmm2v2" not in ladder_service._searches[p2]
+
+
 async def test_start_and_cancel_search(
     ladder_service: LadderService,
     player_factory,

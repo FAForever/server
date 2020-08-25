@@ -7,7 +7,9 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 import server.metrics as metrics
 
+from ..asyncio_extensions import synchronized
 from ..decorators import with_logger
+from ..players import PlayerState
 from .algorithm import make_matches, make_teams, make_teams_from_single
 from .map_pool import MapPool
 from .pop_timer import PopTimer
@@ -125,7 +127,15 @@ class MatchmakerQueue:
             if search in self._queue:
                 del self._queue[search]
 
+    @synchronized
     async def find_matches(self) -> None:
+        """
+        Perform the matchmaking algorithm.
+
+        Note that this function is synchronized such that only one instance of
+        MatchmakerQueue can call this function at any given time. This is
+        needed in order to safely enable multiqueuing.
+        """
         self._logger.info("Searching for matches: %s", self.name)
 
         if len(self._queue) < 2 * self.team_size:
@@ -185,8 +195,24 @@ class MatchmakerQueue:
         :param s2:
         :return: True if matching succeeded or False if matching failed
         """
-        if (s1.is_matched or s2.is_matched) or (s1.is_cancelled or s2.is_cancelled):
+        if s1.is_matched or s2.is_matched:
             return False
+        if s1.is_cancelled or s2.is_cancelled:
+            return False
+        # Additional failsafe. Ideally this check will never fail.
+        if any(
+            player.state != PlayerState.SEARCHING_LADDER
+            for player in s1.players + s2.players
+        ):
+            self._logger.warning(
+                "Tried to match searches %s and %s while some players had "
+                "invalid states: team1: %s team2: %s",
+                s1, s2,
+                list(p.state for p in s1.players),
+                list(p.state for p in s2.players)
+            )
+            return False
+
         s1.match(s2)
         s2.match(s1)
         if s1 in self._queue:
