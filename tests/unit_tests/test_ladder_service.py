@@ -10,6 +10,7 @@ from server.games import LadderGame
 from server.ladder_service import game_name
 from server.matchmaker import MatchmakerQueue
 from server.players import PlayerState
+from server.rating import RatingType
 from server.types import Map
 from tests.utils import fast_forward
 
@@ -171,16 +172,16 @@ async def test_inform_player(ladder_service: LadderService, player_factory):
         with_lobby_connection=True
     )
 
-    ladder_service.inform_player(p1)
+    ladder_service.inform_player(p1, RatingType.LADDER_1V1)
 
     # Message is sent after the first call
     p1.lobby_connection.write.assert_called_once()
-    ladder_service.inform_player(p1)
+    ladder_service.inform_player(p1, RatingType.LADDER_1V1)
     p1.lobby_connection.write.reset_mock()
     # But not after the second
     p1.lobby_connection.write.assert_not_called()
     await ladder_service.on_connection_lost(p1)
-    ladder_service.inform_player(p1)
+    ladder_service.inform_player(p1, RatingType.LADDER_1V1)
 
     # But it is called if the player relogs
     p1.lobby_connection.write.assert_called_once()
@@ -630,7 +631,7 @@ async def test_inform_player_message(
     player = player_factory(ladder_rating=(1500, 500))
     player.write_message = CoroutineMock()
 
-    ladder_service.inform_player(player)
+    ladder_service.inform_player(player, RatingType.LADDER_1V1)
 
     player.write_message.assert_called_once_with({
         "command": "notice",
@@ -654,7 +655,31 @@ async def test_inform_player_message_2(
     player = player_factory(ladder_rating=(1500, 400.1235))
     player.write_message = CoroutineMock()
 
-    ladder_service.inform_player(player)
+    ladder_service.inform_player(player, RatingType.LADDER_1V1)
+
+    player.write_message.assert_called_once_with({
+        "command": "notice",
+        "style": "info",
+        "text": (
+            "The system is still learning you.<b><br><br>"
+            "The learning phase is 40% complete<b>"
+        )
+    })
+
+
+async def test_inform_player_other_rating(
+    ladder_service: LadderService,
+    player_factory
+):
+    player = player_factory(
+        ladder_rating=(1500, 500),
+        global_rating=(1500, 400.1235)
+    )
+    player.write_message = CoroutineMock()
+
+    # There's no reason we would call it with global, but the logic is the same
+    # and global is an available rating that's not ladder
+    ladder_service.inform_player(player, RatingType.GLOBAL)
 
     player.write_message.assert_called_once_with({
         "command": "notice",

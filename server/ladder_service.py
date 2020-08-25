@@ -176,9 +176,8 @@ class LadderService(Service):
 
         for player in players:
             player.state = PlayerState.SEARCHING_LADDER
-            # FIXME: For now, inform_player is only designed for ladder1v1
-            if queue_name == "ladder1v1":
-                self.inform_player(player)
+
+            self.inform_player(player, queue.rating_type)
 
             player.write_message({
                 "command": "search_info",
@@ -238,10 +237,10 @@ class LadderService(Service):
             "%s stopped searching for %s", cancelled_search, queue_name
         )
 
-    def inform_player(self, player: Player):
+    def inform_player(self, player: Player, rating_type: str) -> None:
         if player not in self._informed_players:
             self._informed_players.add(player)
-            mean, deviation = player.ratings[RatingType.LADDER_1V1]
+            _, deviation = player.ratings[rating_type]
 
             if deviation > 490:
                 player.write_message({
