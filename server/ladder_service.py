@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Set, Tuple
 import aiocron
 from sqlalchemy import and_, func, select, text, true
 
+import server.metrics as metrics
 from .abc.base_game import InitMode
 from .config import config
 from .core import Service
@@ -133,6 +134,8 @@ class LadderService(Service):
             if queue_name not in db_queues:
                 self.queues[queue_name].shutdown()
                 del self.queues[queue_name]
+
+        metrics.ladder_service_searches_dict_length.set(len(self._searches))
 
     async def fetch_map_pools(self, conn) -> Dict[int, Tuple[str, List[Map]]]:
         result = await conn.execute(

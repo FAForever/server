@@ -102,6 +102,8 @@ class MatchmakerQueue:
 
             number_of_matches = len(self._matches)
             metrics.matches.labels(self.name).set(number_of_matches)
+            number_of_searches_in_queue = len(self.queue)
+            metrics.matchmaker_queue_length.labels(self.name).set(number_of_searches_in_queue)
 
             # TODO: Move this into algorithm, then don't need to recalculate quality_with?
             # Probably not a major bottleneck though.

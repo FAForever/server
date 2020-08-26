@@ -37,6 +37,12 @@ matchmaker_queue_pop = Gauge(
     ["queue"],
 )
 
+matchmaker_queue_length = Gauge(
+    "server_matchmaker_queue_length",
+    "Number of items in queue",
+    ["queue"],
+)
+
 # =====
 # Users
 # =====
@@ -109,4 +115,13 @@ active_games = Gauge(
 # ==============
 rating_service_backlog = Gauge(
     "server_rating_service_backlog", "Number of games remaining to be rated",
+)
+
+
+# ==============
+# Ladder Service
+# ==============
+ladder_service_searches_dict_length = Gauge(
+    "ladder_service_searches_dict_length",
+    "Number of items in LadderService._searches",
 )
