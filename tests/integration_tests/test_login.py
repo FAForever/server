@@ -37,9 +37,10 @@ async def test_server_ban(lobby_server, user):
     await perform_login(proto, user)
     msg = await proto.read_message()
     assert msg == {
-        'command': 'notice',
-        'style': 'error',
-        'text': 'You are banned from FAF forever. <br>Reason : <br>Test permanent ban'}
+        "command": "notice",
+        "style": "error",
+        "text": "You are banned from FAF forever. <br>Reason : <br>Test permanent ban"
+    }
 
 
 @pytest.mark.parametrize('user', ['ban_revoked', 'ban_expired'])

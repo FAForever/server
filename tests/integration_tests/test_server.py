@@ -245,9 +245,9 @@ async def test_server_ban_prevents_hosting(lobby_server, database, command):
 
     msg = await proto.read_message()
     assert msg == {
-        'command': 'notice',
-        'style': 'error',
-        'text': 'You are banned from FAF forever. <br>Reason : <br>Test live ban'
+        "command": "notice",
+        "style": "error",
+        "text": "You are banned from FAF forever. <br>Reason : <br>Test live ban"
     }
 
 

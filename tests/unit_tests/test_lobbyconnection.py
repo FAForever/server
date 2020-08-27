@@ -18,7 +18,7 @@ from server.games import CustomGame, Game
 from server.geoip_service import GeoIpService
 from server.ice_servers.nts import TwilioNTS
 from server.ladder_service import LadderService
-from server.lobbyconnection import ClientError, LobbyConnection
+from server.lobbyconnection import BanError, ClientError, LobbyConnection
 from server.matchmaker import Search
 from server.player_service import PlayerService
 from server.players import PlayerState
@@ -966,13 +966,11 @@ async def test_abort_connection_if_banned(
     await lobbyconnection.abort_connection_if_banned()
 
     lobbyconnection.player.id = 203 # test user who is permabanned
-    with pytest.raises(ClientError) as banned_error:
+    with pytest.raises(BanError) as banned_error:
         await lobbyconnection.abort_connection_if_banned()
-    assert banned_error.value.message == "You are banned from FAF forever. <br>Reason : <br>Test permanent ban"
-    assert banned_error.value.recoverable is False
+    assert banned_error.value.message() == "You are banned from FAF forever. <br>Reason : <br>Test permanent ban"
 
     lobbyconnection.player.id = 204 # test user who is banned for another 46 hours
-    with pytest.raises(ClientError) as banned_error:
+    with pytest.raises(BanError) as banned_error:
         await lobbyconnection.abort_connection_if_banned()
-    assert re.match(r"You are banned from FAF for 1 day and 2[0-3]\.[0-9]+ hours. <br>Reason : <br>Test ongoing ban with 46 hours left", banned_error.value.message)
-    assert banned_error.value.recoverable is False
+    assert re.match(r"You are banned from FAF for 1 day and 2[0-3]\.[0-9]+ hours. <br>Reason : <br>Test ongoing ban with 46 hours left", banned_error.value.message())
