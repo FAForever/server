@@ -1087,8 +1087,8 @@ class LobbyConnection:
             raise_ban_error(ban_expiry - now, data[ban.c.reason])
 
 def raise_ban_error(ban_duration, ban_reason):
-    raise ClientError((f"You are banned from FAF {ban_duration_text(ban_duration)}.\n "
-                       f"Reason :\n "
+    raise ClientError((f"You are banned from FAF {ban_duration_text(ban_duration)}. <br>"
+                       f"Reason : <br>"
                        f"{ban_reason}"), recoverable=False)
 
 def ban_duration_text(ban_duration):
