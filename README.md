@@ -7,6 +7,13 @@
 This is the source code for the
 [Forged Alliance Forever](https://www.faforever.com/) lobby server.
 
+## Support development
+
+Post a bounty on Issue Hunt. You can reward and financially help developers who
+work on your issue.
+
+[![Issue hunt](https://github.com/BoostIO/issuehunt-materials/raw/master/v1/issuehunt-button-v1.svg?sanitize=true)](https://issuehunt.io/r/FAForever/server)
+
 # Contributing
 
 Before opening a pull request, please take a moment to look over the
