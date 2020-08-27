@@ -186,12 +186,12 @@ class Player:
         return dict(
             filter(
                 filter_none, (
-                    ('id', self.id),
-                    ('login', self.login),
-                    ('avatar', self.avatar),
-                    ('country', self.country),
-                    ('clan', self.clan),
-                    ('ratings', {
+                    ("id", self.id),
+                    ("login", self.login),
+                    ("avatar", self.avatar),
+                    ("country", self.country),
+                    ("clan", self.clan),
+                    ("ratings", {
                         rating_type: {
                             "rating": self.ratings[rating_type],
                             "number_of_games": self.game_count[rating_type]
@@ -199,9 +199,9 @@ class Player:
                         for rating_type in self.ratings
                     }),
                     # Deprecated
-                    ('global_rating', self.ratings[RatingType.GLOBAL]),
-                    ('ladder_rating', self.ratings[RatingType.LADDER_1V1]),
-                    ('number_of_games', self.game_count[RatingType.GLOBAL]),
+                    ("global_rating", self.ratings[RatingType.GLOBAL]),
+                    ("ladder_rating", self.ratings[RatingType.LADDER_1V1]),
+                    ("number_of_games", self.game_count[RatingType.GLOBAL]),
                 )
             )
         )

@@ -25,7 +25,7 @@ def mock_games():
 
 @pytest.fixture
 async def ladder_service(mocker, database, game_service):
-    mocker.patch('server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX', 1)
+    mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1)
     ladder_service = LadderService(database, game_service)
     await ladder_service.initialize()
 
@@ -50,8 +50,8 @@ async def lobby_server(
     ladder_service, rating_service, message_queue_service, policy_server
 ):
     with mock.patch(
-        'server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL',
-        f'http://{policy_server.host}:{policy_server.port}'
+        "server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL",
+        f"http://{policy_server.host}:{policy_server.port}"
     ):
         instance = ServerInstance(
             "UnitTestServer",
@@ -68,7 +68,7 @@ async def lobby_server(
                 "message_queue_service": message_queue_service
             }
         )
-        ctx = await instance.listen(('127.0.0.1', None))
+        ctx = await instance.listen(("127.0.0.1", None))
         player_service.is_uniqueid_exempt = lambda id: True
 
         yield ctx
@@ -89,7 +89,7 @@ async def control_server(player_service, game_service):
 
 @pytest.fixture
 async def policy_server():
-    host = 'localhost'
+    host = "localhost"
     port = 6080
 
     app = web.Application()
@@ -104,13 +104,13 @@ async def policy_server():
 
     handle = Handle()
 
-    @routes.post('/verify')
+    @routes.post("/verify")
     async def token(request):
         # Register that the endpoint was called using a Mock
         handle.verify()
 
         await request.json()
-        return web.json_response({'result': handle.result})
+        return web.json_response({"result": handle.result})
 
     app.add_routes(routes)
 
@@ -159,14 +159,14 @@ async def perform_login(
     proto: Protocol, credentials: Tuple[str, str]
 ) -> None:
     login, pw = credentials
-    pw_hash = hashlib.sha256(pw.encode('utf-8'))
+    pw_hash = hashlib.sha256(pw.encode("utf-8"))
     await proto.send_message({
-        'command': 'hello',
-        'version': '1.0.0-dev',
-        'user_agent': 'faf-client',
-        'login': login,
-        'password': pw_hash.hexdigest(),
-        'unique_id': 'some_id'
+        "command": "hello",
+        "version": "1.0.0-dev",
+        "user_agent": "faf-client",
+        "login": login,
+        "password": pw_hash.hexdigest(),
+        "unique_id": "some_id"
     })
 
 
@@ -189,16 +189,16 @@ async def read_until_command(
     timeout: float = 60
 ) -> Dict[str, Any]:
     return await asyncio.wait_for(
-        read_until(proto, lambda msg: msg.get('command') == command),
+        read_until(proto, lambda msg: msg.get("command") == command),
         timeout=timeout
     )
 
 
 async def get_session(proto):
-    await proto.send_message({'command': 'ask_session', 'user_agent': 'faf-client', 'version': '0.11.16'})
-    msg = await read_until_command(proto, 'session')
+    await proto.send_message({"command": "ask_session", "user_agent": "faf-client", "version": "0.11.16"})
+    msg = await read_until_command(proto, "session")
 
-    return msg['session']
+    return msg["session"]
 
 
 async def connect_and_sign_in(
@@ -210,5 +210,5 @@ async def connect_and_sign_in(
     session = await get_session(proto)
     await perform_login(proto, credentials)
     hello = await read_until_command(proto, "welcome", timeout=120)
-    player_id = hello['id']
+    player_id = hello["id"]
     return player_id, session, proto

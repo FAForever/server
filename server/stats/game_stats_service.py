@@ -25,18 +25,18 @@ class GameStatsService(Service):
         highest_scorer = None
 
         for army_stats in army_stats_list:
-            if army_stats['type'] == 'AI' and army_stats['name'] != 'civilian':
+            if army_stats["type"] == "AI" and army_stats["name"] != "civilian":
                 self._logger.debug("Ignoring AI game reported by %s", player.login)
                 return
 
-            if army_stats['type'] == 'Human':
+            if army_stats["type"] == "Human":
                 number_of_humans += 1
 
-                if highest_score < army_stats['general']['score']:
-                    highest_score = army_stats['general']['score']
-                    highest_scorer = army_stats['name']
+                if highest_score < army_stats["general"]["score"]:
+                    highest_score = army_stats["general"]["score"]
+                    highest_scorer = army_stats["name"]
 
-            if army_stats['name'] == player.login:
+            if army_stats["name"] == player.login:
                 stats = army_stats
 
         if number_of_humans < 2:
@@ -54,16 +54,16 @@ class GameStatsService(Service):
 
         self._logger.debug("Processing game stats for player: %s", player.login)
 
-        faction = stats['faction']
+        faction = stats["faction"]
         # Stores achievements to batch update
         a_queue = []
         # Stores events to batch update
         e_queue = []
-        self._logger.debug('Army result for %s => %s ', player, army_result)
+        self._logger.debug("Army result for %s => %s ", player, army_result)
 
         survived = army_result is GameOutcome.VICTORY
-        blueprint_stats = stats['blueprints']
-        unit_stats = stats['units']
+        blueprint_stats = stats["blueprints"]
+        unit_stats = stats["units"]
         scored_highest = highest_scorer == player.login
 
         if survived and game.game_mode == FeaturedModType.LADDER_1V1:
@@ -96,9 +96,9 @@ class GameStatsService(Service):
         self._built_soul_rippers(_count_built_units(blueprint_stats, Unit.SOUL_RIPPER), a_queue)
         self._built_megaliths(_count_built_units(blueprint_stats, Unit.MEGALITH), a_queue)
         self._built_asfs(_count_built_units(blueprint_stats, *ASFS), a_queue)
-        self._built_transports(unit_stats['transportation'].get('built', 0), a_queue)
-        self._built_sacus(unit_stats['sacu'].get('built', 0), a_queue)
-        self._lowest_acu_health(_count(blueprint_stats, lambda x: x.get('lowest_health', 0), *ACUS), survived, a_queue)
+        self._built_transports(unit_stats["transportation"].get("built", 0), a_queue)
+        self._built_sacus(unit_stats["sacu"].get("built", 0), a_queue)
+        self._lowest_acu_health(_count(blueprint_stats, lambda x: x.get("lowest_health", 0), *ACUS), survived, a_queue)
         self._highscore(scored_highest, number_of_humans, a_queue)
 
         if config.USE_API:
@@ -113,28 +113,28 @@ class GameStatsService(Service):
                 await player.lobby_connection.send_updated_achievements(updated_achievements)
 
     def _category_stats(self, unit_stats, survived, achievements_queue, events_queue):
-        built_air = unit_stats['air'].get('built', 0)
-        built_land = unit_stats['land'].get('built', 0)
-        built_naval = unit_stats['naval'].get('built', 0)
-        built_experimentals = unit_stats['experimental'].get('built', 0)
+        built_air = unit_stats["air"].get("built", 0)
+        built_land = unit_stats["land"].get("built", 0)
+        built_naval = unit_stats["naval"].get("built", 0)
+        built_experimentals = unit_stats["experimental"].get("built", 0)
 
         self._record_event(EVENT_BUILT_AIR_UNITS, built_air, events_queue)
-        self._record_event(EVENT_LOST_AIR_UNITS, unit_stats['air'].get('lost', 0), events_queue)
+        self._record_event(EVENT_LOST_AIR_UNITS, unit_stats["air"].get("lost", 0), events_queue)
         self._record_event(EVENT_BUILT_LAND_UNITS, built_land, events_queue)
-        self._record_event(EVENT_LOST_LAND_UNITS, unit_stats['land'].get('lost', 0), events_queue)
+        self._record_event(EVENT_LOST_LAND_UNITS, unit_stats["land"].get("lost", 0), events_queue)
         self._record_event(EVENT_BUILT_NAVAL_UNITS, built_naval, events_queue)
-        self._record_event(EVENT_LOST_NAVAL_UNITS, unit_stats['naval'].get('lost', 0), events_queue)
-        self._record_event(EVENT_LOST_ACUS, unit_stats['cdr'].get('lost', 0), events_queue)
-        self._record_event(EVENT_BUILT_TECH_1_UNITS, unit_stats['tech1'].get('built', 0), events_queue)
-        self._record_event(EVENT_LOST_TECH_1_UNITS, unit_stats['tech1'].get('lost', 0), events_queue)
-        self._record_event(EVENT_BUILT_TECH_2_UNITS, unit_stats['tech2'].get('built', 0), events_queue)
-        self._record_event(EVENT_LOST_TECH_2_UNITS, unit_stats['tech2'].get('lost', 0), events_queue)
-        self._record_event(EVENT_BUILT_TECH_3_UNITS, unit_stats['tech3'].get('built', 0), events_queue)
-        self._record_event(EVENT_LOST_TECH_3_UNITS, unit_stats['tech3'].get('lost', 0), events_queue)
+        self._record_event(EVENT_LOST_NAVAL_UNITS, unit_stats["naval"].get("lost", 0), events_queue)
+        self._record_event(EVENT_LOST_ACUS, unit_stats["cdr"].get("lost", 0), events_queue)
+        self._record_event(EVENT_BUILT_TECH_1_UNITS, unit_stats["tech1"].get("built", 0), events_queue)
+        self._record_event(EVENT_LOST_TECH_1_UNITS, unit_stats["tech1"].get("lost", 0), events_queue)
+        self._record_event(EVENT_BUILT_TECH_2_UNITS, unit_stats["tech2"].get("built", 0), events_queue)
+        self._record_event(EVENT_LOST_TECH_2_UNITS, unit_stats["tech2"].get("lost", 0), events_queue)
+        self._record_event(EVENT_BUILT_TECH_3_UNITS, unit_stats["tech3"].get("built", 0), events_queue)
+        self._record_event(EVENT_LOST_TECH_3_UNITS, unit_stats["tech3"].get("lost", 0), events_queue)
         self._record_event(EVENT_BUILT_EXPERIMENTALS, built_experimentals, events_queue)
-        self._record_event(EVENT_LOST_EXPERIMENTALS, unit_stats['experimental'].get('lost', 0), events_queue)
-        self._record_event(EVENT_BUILT_ENGINEERS, unit_stats['engineer'].get('built', 0), events_queue)
-        self._record_event(EVENT_LOST_ENGINEERS, unit_stats['engineer'].get('lost', 0), events_queue)
+        self._record_event(EVENT_LOST_EXPERIMENTALS, unit_stats["experimental"].get("lost", 0), events_queue)
+        self._record_event(EVENT_BUILT_ENGINEERS, unit_stats["engineer"].get("built", 0), events_queue)
+        self._record_event(EVENT_LOST_ENGINEERS, unit_stats["engineer"].get("lost", 0), events_queue)
 
         if survived:
             if built_air > built_land and built_air > built_naval:
@@ -193,7 +193,7 @@ class GameStatsService(Service):
                 self._increment(ACH_SUTHANUS, 1, achievements_queue)
 
     def _killed_acus(self, unit_stats, survived, achievements_queue):
-        killed_acus = unit_stats['cdr'].get('kills', 0)
+        killed_acus = unit_stats["cdr"].get("kills", 0)
 
         if killed_acus > 0:
             self._increment(ACH_DONT_MESS_WITH_ME, killed_acus, achievements_queue)
@@ -289,7 +289,7 @@ class GameStatsService(Service):
 
 
 def _count_built_units(stats, *units):
-    return _count(stats, lambda x: x.get('built', 0), *units)
+    return _count(stats, lambda x: x.get("built", 0), *units)
 
 
 def _count(stats, function, *units):

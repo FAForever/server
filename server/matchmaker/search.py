@@ -150,7 +150,7 @@ class Search:
 
         return max(0.8 * self.quality_against_self - self.search_expansion, 0)
 
-    def quality_with(self, other: 'Search') -> float:
+    def quality_with(self, other: "Search") -> float:
         assert all(other.raw_ratings)
         assert other.players
 
@@ -170,7 +170,7 @@ class Search:
     def is_cancelled(self):
         return self._match.cancelled()
 
-    def matches_with(self, other: 'Search'):
+    def matches_with(self, other: "Search"):
         """
         Determine if this search is compatible with other given search according
         to both wishes.
@@ -181,7 +181,7 @@ class Search:
         quality = self.quality_with(other)
         return self._match_quality_acceptable(other, quality)
 
-    def _match_quality_acceptable(self, other: 'Search', quality: float) -> bool:
+    def _match_quality_acceptable(self, other: "Search", quality: float) -> bool:
         """
         Determine if the given match quality is acceptable.
 
@@ -193,7 +193,7 @@ class Search:
         return (quality >= self.match_threshold and
                 quality >= other.match_threshold)
 
-    def match(self, other: 'Search'):
+    def match(self, other: "Search"):
         """
         Mark as matched with given opponent
         :param other:
@@ -205,7 +205,7 @@ class Search:
             if self.is_ladder1v1_search() and self._is_ladder_newbie(player):
                 mean, dev = raw_rating
                 adjusted_mean = self.adjusted_rating(player)
-                self._logger.info('Adjusted mean rating for {player} with {ladder_games} games from {mean} to {adjusted_mean}'.format(
+                self._logger.info("Adjusted mean rating for {player} with {ladder_games} games from {mean} to {adjusted_mean}".format(
                     player=player,
                     ladder_games=player.game_count[RatingType.LADDER_1V1],
                     mean=mean,
@@ -283,7 +283,7 @@ class CombinedSearch(Search):
     def is_cancelled(self) -> bool:
         return any(s.is_cancelled for s in self.searches)
 
-    def match(self, other: 'Search'):
+    def match(self, other: "Search"):
         """
         Mark as matched with given opponent
         """

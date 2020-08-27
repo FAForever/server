@@ -20,7 +20,7 @@ pytestmark = pytest.mark.asyncio
 
 @pytest.fixture
 def fake_geoip_path(geoip_service) -> str:
-    return '/tmp/fake_db.mmdb'
+    return "/tmp/fake_db.mmdb"
 
 
 @pytest.fixture
@@ -31,7 +31,7 @@ def fake_geoip_service(geoip_service, fake_geoip_path) -> GeoIpService:
 
 async def test_check_update(fake_geoip_service, fake_geoip_path):
     # Set the modified time to unixtime 0
-    with open(fake_geoip_path, 'a'):
+    with open(fake_geoip_path, "a"):
         os.utime(fake_geoip_path, (0, 0))
 
     server.config.GEO_IP_DATABASE_MAX_AGE_DAYS = 32
@@ -106,11 +106,11 @@ async def test_do_update(fake_geoip_service, fake_geoip_path):
         return resp
 
     app = web.Application()
-    app.add_routes([web.get('/', file_download)])
+    app.add_routes([web.get("/", file_download)])
 
     runner = web.AppRunner(app)
     await runner.setup()
-    await web.TCPSite(runner, 'localhost', PORT).start()
+    await web.TCPSite(runner, "localhost", PORT).start()
 
     # Test geoip update
     if os.path.isfile(fake_geoip_path):

@@ -47,7 +47,7 @@ def player(player_factory):
 @pytest.fixture()
 def game(database, game_stats_service, player):
     game = Game(1, database, Mock(), game_stats_service)
-    game._player_options[player.id] = {'Army': 1}
+    game._player_options[player.id] = {"Army": 1}
     game._results = GameResultReports(1)
     game._results.add(GameResultReport(1, 1, GameOutcome.VICTORY, 0))
     return game
@@ -56,60 +56,60 @@ def game(database, game_stats_service, player):
 @pytest.fixture()
 def unit_stats():
     return {
-        'air': {
-            'built': 0,
-            'lost': 0,
-            'kills': 0
+        "air": {
+            "built": 0,
+            "lost": 0,
+            "kills": 0
         },
-        'land': {
-            'built': 0,
-            'lost': 0,
-            'kills': 0
+        "land": {
+            "built": 0,
+            "lost": 0,
+            "kills": 0
         },
-        'naval': {
-            'built': 0,
-            'lost': 0,
-            'kills': 0
+        "naval": {
+            "built": 0,
+            "lost": 0,
+            "kills": 0
         },
-        'experimental': {
-            'built': 0,
-            'lost': 0,
-            'kills': 0
+        "experimental": {
+            "built": 0,
+            "lost": 0,
+            "kills": 0
         },
-        'transportation': {
-            'built': 0,
-            'lost': 0,
-            'kills': 0
+        "transportation": {
+            "built": 0,
+            "lost": 0,
+            "kills": 0
         },
-        'sacu': {
-            'built': 0,
-            'lost': 0,
-            'kills': 0
+        "sacu": {
+            "built": 0,
+            "lost": 0,
+            "kills": 0
         },
-        'cdr': {
-            'built': 1,
-            'lost': 0,
-            'kills': 0
+        "cdr": {
+            "built": 1,
+            "lost": 0,
+            "kills": 0
         },
-        'tech1': {
-            'built': 0,
-            'lost': 0,
-            'kills': 0
+        "tech1": {
+            "built": 0,
+            "lost": 0,
+            "kills": 0
         },
-        'tech2': {
-            'built': 0,
-            'lost': 0,
-            'kills': 0
+        "tech2": {
+            "built": 0,
+            "lost": 0,
+            "kills": 0
         },
-        'tech3': {
-            'built': 0,
-            'lost': 0,
-            'kills': 0
+        "tech3": {
+            "built": 0,
+            "lost": 0,
+            "kills": 0
         },
-        'engineer': {
-            'built': 0,
-            'lost': 0,
-            'kills': 0
+        "engineer": {
+            "built": 0,
+            "lost": 0,
+            "kills": 0
         }
     }
 
@@ -269,7 +269,7 @@ async def test_process_game_stats_ai_game(
 async def test_process_game_won_ladder1v1(
     game_stats_service, player, game, achievement_service
 ):
-    game.game_mode = 'ladder1v1'
+    game.game_mode = "ladder1v1"
 
     with open("tests/data/game_stats_simple_win.json", "r") as stats_file:
         stats = json.loads(stats_file.read())["stats"]
@@ -282,9 +282,9 @@ async def test_process_game_won_ladder1v1(
 async def test_category_stats_won_more_air(
     game_stats_service, achievement_service, unit_stats
 ):
-    unit_stats['air']['built'] = 3
-    unit_stats['land']['built'] = 2
-    unit_stats['naval']['built'] = 1
+    unit_stats["air"]["built"] = 3
+    unit_stats["land"]["built"] = 2
+    unit_stats["naval"]["built"] = 1
 
     game_stats_service._category_stats(unit_stats, True, [], [])
 
@@ -301,9 +301,9 @@ async def test_category_stats_won_more_air(
 async def test_category_stats_won_more_land(
     game_stats_service, achievement_service, unit_stats
 ):
-    unit_stats['air']['built'] = 2
-    unit_stats['land']['built'] = 3
-    unit_stats['naval']['built'] = 1
+    unit_stats["air"]["built"] = 2
+    unit_stats["land"]["built"] = 3
+    unit_stats["naval"]["built"] = 1
 
     game_stats_service._category_stats(unit_stats, True, [], [])
 
@@ -316,9 +316,9 @@ async def test_category_stats_won_more_land(
 async def test_category_stats_won_more_naval(
     game_stats_service, achievement_service, unit_stats
 ):
-    unit_stats['air']['built'] = 2
-    unit_stats['land']['built'] = 1
-    unit_stats['naval']['built'] = 3
+    unit_stats["air"]["built"] = 2
+    unit_stats["land"]["built"] = 1
+    unit_stats["naval"]["built"] = 3
 
     game_stats_service._category_stats(unit_stats, True, [], [])
 
@@ -333,10 +333,10 @@ async def test_category_stats_won_more_naval(
 async def test_category_stats_won_more_naval_and_one_experimental(
     game_stats_service, achievement_service, unit_stats
 ):
-    unit_stats['air']['built'] = 2
-    unit_stats['land']['built'] = 1
-    unit_stats['naval']['built'] = 3
-    unit_stats['experimental']['built'] = 1
+    unit_stats["air"]["built"] = 2
+    unit_stats["land"]["built"] = 1
+    unit_stats["naval"]["built"] = 3
+    unit_stats["experimental"]["built"] = 1
 
     game_stats_service._category_stats(unit_stats, True, [], [])
 
@@ -353,10 +353,10 @@ async def test_category_stats_won_more_naval_and_one_experimental(
 async def test_category_stats_won_more_naval_and_three_experimentals(
     game_stats_service, achievement_service, unit_stats
 ):
-    unit_stats['air']['built'] = 2
-    unit_stats['land']['built'] = 1
-    unit_stats['naval']['built'] = 3
-    unit_stats['experimental']['built'] = 3
+    unit_stats["air"]["built"] = 2
+    unit_stats["land"]["built"] = 1
+    unit_stats["naval"]["built"] = 3
+    unit_stats["experimental"]["built"] = 3
 
     game_stats_service._category_stats(unit_stats, True, [], [])
 
@@ -475,7 +475,7 @@ async def test_faction_played_seraphim_died(
 async def test_killed_acus_none_and_survived(
     game_stats_service, achievement_service, event_service, unit_stats
 ):
-    unit_stats['cdr']['kills'] = 0
+    unit_stats["cdr"]["kills"] = 0
 
     game_stats_service._killed_acus(unit_stats, True, [])
 
@@ -486,7 +486,7 @@ async def test_killed_acus_none_and_survived(
 async def test_killed_acus_one_and_survived(
     game_stats_service, achievement_service, event_service, unit_stats
 ):
-    unit_stats['cdr']['kills'] = 1
+    unit_stats["cdr"]["kills"] = 1
     game_stats_service._killed_acus(unit_stats, True, [])
 
     achievement_service.increment.assert_called_once_with(
@@ -499,7 +499,7 @@ async def test_killed_acus_one_and_survived(
 async def test_killed_acus_three_and_survived(
     game_stats_service, achievement_service, event_service, unit_stats
 ):
-    unit_stats['cdr']['kills'] = 3
+    unit_stats["cdr"]["kills"] = 3
     game_stats_service._killed_acus(unit_stats, True, [])
 
     achievement_service.increment.assert_called_once_with(
@@ -513,8 +513,8 @@ async def test_killed_acus_three_and_survived(
 async def test_killed_acus_one_and_died(
     game_stats_service, achievement_service, event_service, unit_stats
 ):
-    unit_stats['cdr']['kills'] = 1
-    unit_stats['cdr']['lost'] = 1
+    unit_stats["cdr"]["kills"] = 1
+    unit_stats["cdr"]["lost"] = 1
     game_stats_service._killed_acus(unit_stats, False, [])
 
     achievement_service.increment.assert_called_once_with(
@@ -527,8 +527,8 @@ async def test_killed_acus_one_and_died(
 async def test_killed_acus_three_and_died(
     game_stats_service, achievement_service, event_service, unit_stats
 ):
-    unit_stats['cdr']['kills'] = 3
-    unit_stats['cdr']['lost'] = 1
+    unit_stats["cdr"]["kills"] = 3
+    unit_stats["cdr"]["lost"] = 1
 
     game_stats_service._killed_acus(unit_stats, False, [])
     achievement_service.increment.assert_called_once_with(

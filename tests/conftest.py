@@ -34,11 +34,11 @@ logging.getLogger().setLevel(TRACE)
 
 
 def pytest_addoption(parser):
-    parser.addoption('--mysql_host', action='store', default=config.DB_SERVER, help='mysql host to use for test database')
-    parser.addoption('--mysql_username', action='store', default=config.DB_LOGIN, help='mysql username to use for test database')
-    parser.addoption('--mysql_password', action='store', default=config.DB_PASSWORD, help='mysql password to use for test database')
-    parser.addoption('--mysql_database', action='store', default='faf_test', help='mysql database to use for tests')
-    parser.addoption('--mysql_port',     action='store', default=int(config.DB_PORT), help='mysql port to use for tests')
+    parser.addoption("--mysql_host", action="store", default=config.DB_SERVER, help="mysql host to use for test database")
+    parser.addoption("--mysql_username", action="store", default=config.DB_LOGIN, help="mysql username to use for test database")
+    parser.addoption("--mysql_password", action="store", default=config.DB_PASSWORD, help="mysql password to use for test database")
+    parser.addoption("--mysql_database", action="store", default="faf_test", help="mysql database to use for tests")
+    parser.addoption("--mysql_port",     action="store", default=int(config.DB_PORT), help="mysql port to use for tests")
 
 
 def pytest_configure(config):
@@ -50,10 +50,10 @@ def pytest_configure(config):
     )
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 async def test_data(request):
     db = await global_database(request)
-    with open('tests/data/test-data.sql') as f:
+    with open("tests/data/test-data.sql") as f:
         async with db.acquire() as conn:
             await conn.execute(f.read())
 
@@ -64,11 +64,11 @@ async def global_database(request):
     def opt(val):
         return request.config.getoption(val)
     host, user, pw, name, port = (
-        opt('--mysql_host'),
-        opt('--mysql_username'),
-        opt('--mysql_password'),
-        opt('--mysql_database'),
-        opt('--mysql_port')
+        opt("--mysql_host"),
+        opt("--mysql_username"),
+        opt("--mysql_password"),
+        opt("--mysql_database"),
+        opt("--mysql_port")
     )
     db = FAFDatabase(asyncio.get_running_loop())
 
@@ -88,11 +88,11 @@ async def database(request, event_loop):
     def opt(val):
         return request.config.getoption(val)
     host, user, pw, name, port = (
-        opt('--mysql_host'),
-        opt('--mysql_username'),
-        opt('--mysql_password'),
-        opt('--mysql_database'),
-        opt('--mysql_port')
+        opt("--mysql_host"),
+        opt("--mysql_username"),
+        opt("--mysql_password"),
+        opt("--mysql_database"),
+        opt("--mysql_port")
     )
     db = MockDatabase(event_loop)
 
@@ -205,9 +205,9 @@ def player_factory():
 def players(player_factory):
     from server.players import PlayerState
     return mock.Mock(
-        hosting=player_factory('Paula_Bean', player_id=1, state=PlayerState.HOSTING),
-        peer=player_factory('That_Guy', player_id=2, state=PlayerState.JOINING),
-        joining=player_factory('James_Kirk', player_id=3, state=PlayerState.JOINING)
+        hosting=player_factory("Paula_Bean", player_id=1, state=PlayerState.HOSTING),
+        peer=player_factory("That_Guy", player_id=2, state=PlayerState.JOINING),
+        joining=player_factory("James_Kirk", player_id=3, state=PlayerState.JOINING)
     )
 
 
@@ -287,7 +287,7 @@ def matchmaker_queue(game_service) -> MatchmakerQueue:
 @pytest.fixture()
 def api_accessor():
     session = asynctest.create_autospec(OAuth2Session)
-    session.request.return_value = (200, 'test')
+    session.request.return_value = (200, "test")
 
     api_accessor = ApiAccessor()
     api_accessor.api_session.session = session

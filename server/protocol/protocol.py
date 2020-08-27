@@ -8,7 +8,7 @@ import server.metrics as metrics
 
 from ..asyncio_extensions import synchronizedmethod
 
-json_encoder = json.JSONEncoder(separators=(',', ':'))
+json_encoder = json.JSONEncoder(separators=(",", ":"))
 
 
 class DisconnectedError(ConnectionError):

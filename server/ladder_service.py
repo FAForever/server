@@ -54,7 +54,7 @@ class LadderService(Service):
         # Fallback legacy map pool and matchmaker queue
         self.ladder_1v1_map_pool = MapPool(0, "ladder1v1")
         self.queues = {
-            'ladder1v1': MatchmakerQueue(
+            "ladder1v1": MatchmakerQueue(
                 game_service,
                 name="ladder1v1",
                 featured_mod=FeaturedModType.LADDER_1V1,
@@ -71,7 +71,7 @@ class LadderService(Service):
             queue.initialize()
 
         await self.update_data()
-        self._update_cron = aiocron.crontab('*/10 * * * *', func=self.update_data)
+        self._update_cron = aiocron.crontab("*/10 * * * *", func=self.update_data)
 
         self.start_queue_handlers()
 
@@ -364,13 +364,13 @@ class LadderService(Service):
                 team = (i % 2) + 2
                 player.game = game
 
-                game.set_player_option(player.id, 'Faction', player.faction.value)
-                game.set_player_option(player.id, 'Team', team)
-                game.set_player_option(player.id, 'StartSpot', slot)
-                game.set_player_option(player.id, 'Army', slot)
-                game.set_player_option(player.id, 'Color', slot)
+                game.set_player_option(player.id, "Faction", player.faction.value)
+                game.set_player_option(player.id, "Team", team)
+                game.set_player_option(player.id, "StartSpot", slot)
+                game.set_player_option(player.id, "Army", slot)
+                game.set_player_option(player.id, "Color", slot)
 
-            mapname = re.match('maps/(.+).zip', map_path).group(1)
+            mapname = re.match("maps/(.+).zip", map_path).group(1)
             # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
             # Really in the future, just send a better description
             self._logger.debug("Starting ladder game: %s", game)

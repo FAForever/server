@@ -14,58 +14,58 @@ pytestmark = pytest.mark.asyncio
 @pytest.fixture
 def oauth2_session(oauth2_server):
     (host, port) = oauth2_server
-    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = 'Uh, yea I guess'
+    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "Uh, yea I guess"
 
     yield OAuth2Session(
-        'the_client_id',
-        'the_client_secret',
-        f'http://{host}:{port}/token'
+        "the_client_id",
+        "the_client_secret",
+        f"http://{host}:{port}/token"
     )
-    del os.environ['OAUTHLIB_INSECURE_TRANSPORT']
+    del os.environ["OAUTHLIB_INSECURE_TRANSPORT"]
 
 
 @pytest.fixture
 def oauth2_server(event_loop):
-    host = 'localhost'
+    host = "localhost"
     port = 8080
 
     app = web.Application()
     routes = web.RouteTableDef()
 
-    @routes.post('/token')
+    @routes.post("/token")
     async def token(request):
         data = await request.post()
         return await {
-            'client_credentials': client_credentials,
-            'refresh_token': refresh_token
-        }.get(data.get('grant_type'))(data)
+            "client_credentials": client_credentials,
+            "refresh_token": refresh_token
+        }.get(data.get("grant_type"))(data)
 
     async def client_credentials(data):
-        if data.get('client_id') != 'the_client_id' or \
-           data.get('client_secret') != 'the_client_secret':
-            return web.Response(status=401, headers={'WWW-Authenticate': 'Git gud'})
+        if data.get("client_id") != "the_client_id" or \
+           data.get("client_secret") != "the_client_secret":
+            return web.Response(status=401, headers={"WWW-Authenticate": "Git gud"})
         return web.json_response({
-            'access_token': 'the_token',
-            'refresh_token': 'the_refresh_token',
-            'expires_in': 0
+            "access_token": "the_token",
+            "refresh_token": "the_refresh_token",
+            "expires_in": 0
         })
 
     async def refresh_token(data):
-        if data.get('client_id') != 'the_client_id' or \
-           data.get('client_secret') != 'the_client_secret' or \
-           data.get('refresh_token') != 'the_refresh_token':
-            return web.Response(status=401, headers={'WWW-Authenticate': 'Git gud'})
+        if data.get("client_id") != "the_client_id" or \
+           data.get("client_secret") != "the_client_secret" or \
+           data.get("refresh_token") != "the_refresh_token":
+            return web.Response(status=401, headers={"WWW-Authenticate": "Git gud"})
         return web.json_response({
-            'access_token': 'the_token',
-            'refresh_token': 'the_refresh_token',
-            'expires_in': 0
+            "access_token": "the_token",
+            "refresh_token": "the_refresh_token",
+            "expires_in": 0
         })
 
-    @routes.get('/endpoint')
+    @routes.get("/endpoint")
     async def endpoint(request):
-        if request.headers.get('Authorization') != 'Bearer the_token':
-            return web.Response(status=401, headers={'WWW-Authenticate': 'Git gud'})
-        return web.json_response({'message': 'You did it!'})
+        if request.headers.get("Authorization") != "Bearer the_token":
+            return web.Response(status=401, headers={"WWW-Authenticate": "Git gud"})
+        return web.json_response({"message": "You did it!"})
 
     app.add_routes(routes)
 
@@ -84,12 +84,12 @@ def oauth2_server(event_loop):
 async def test_fetch_token(oauth2_session):
     await oauth2_session.fetch_token()
 
-    assert oauth2_session.token == 'the_token'
-    assert oauth2_session.refresh_token == 'the_refresh_token'
+    assert oauth2_session.token == "the_token"
+    assert oauth2_session.refresh_token == "the_refresh_token"
 
 
 async def test_fetch_token_bad(oauth2_session):
-    oauth2_session.client_id = 'bad_client_id'
+    oauth2_session.client_id = "bad_client_id"
     with pytest.raises(ClientResponseError):
         await oauth2_session.fetch_token()
 
@@ -99,10 +99,10 @@ async def test_fetch_token_bad(oauth2_session):
 
 async def test_reqest(oauth2_session):
     await oauth2_session.fetch_token()
-    resp = await oauth2_session.request('GET', 'http://localhost:8080/endpoint')
-    assert resp == (200, {'message': 'You did it!'})
+    resp = await oauth2_session.request("GET", "http://localhost:8080/endpoint")
+    assert resp == (200, {"message": "You did it!"})
 
 
 async def test_reqest_missing_token(oauth2_session):
     with pytest.raises(MissingTokenError):
-        await oauth2_session.request('GET', 'the_url')
+        await oauth2_session.request("GET", "the_url")

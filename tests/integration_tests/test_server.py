@@ -16,30 +16,30 @@ from .conftest import (
 )
 
 pytestmark = pytest.mark.asyncio
-TEST_ADDRESS = ('127.0.0.1', None)
+TEST_ADDRESS = ("127.0.0.1", None)
 
 
 async def test_server_deprecated_client(lobby_server):
     proto = await connect_client(lobby_server)
 
-    await proto.send_message({'command': 'ask_session', 'user_agent': 'faf-client', 'version': '0.0.0'})
+    await proto.send_message({"command": "ask_session", "user_agent": "faf-client", "version": "0.0.0"})
     msg = await proto.read_message()
 
-    assert msg['command'] == 'notice'
+    assert msg["command"] == "notice"
 
     proto = await connect_client(lobby_server)
-    await proto.send_message({'command': 'ask_session', 'version': '0.0.0'})
+    await proto.send_message({"command": "ask_session", "version": "0.0.0"})
     msg = await proto.read_message()
 
-    assert msg['command'] == 'notice'
+    assert msg["command"] == "notice"
 
 
 @fast_forward(50)
 async def test_ping_message(lobby_server):
-    _, _, proto = await connect_and_sign_in(('test', 'test_password'), lobby_server)
+    _, _, proto = await connect_and_sign_in(("test", "test_password"), lobby_server)
 
     # We should receive the message every 45 seconds
-    await read_until_command(proto, 'ping', timeout=46)
+    await read_until_command(proto, "ping", timeout=46)
 
 
 @fast_forward(5)
@@ -47,12 +47,12 @@ async def test_player_info_broadcast(lobby_server):
     p1 = await connect_client(lobby_server)
     p2 = await connect_client(lobby_server)
 
-    await perform_login(p1, ('test', 'test_password'))
-    await perform_login(p2, ('Rhiza', 'puff_the_magic_dragon'))
+    await perform_login(p1, ("test", "test_password"))
+    await perform_login(p2, ("Rhiza", "puff_the_magic_dragon"))
 
     await read_until(
-        p2, lambda m: 'player_info' in m.values()
-        and any(map(lambda d: ('login', 'test') in d.items(), m['players']))
+        p2, lambda m: "player_info" in m.values()
+        and any(map(lambda d: ("login", "test") in d.items(), m["players"]))
     )
 
 
@@ -62,8 +62,8 @@ async def test_info_broadcast_authenticated(lobby_server):
     proto2 = await connect_client(lobby_server)
     proto3 = await connect_client(lobby_server)
 
-    await perform_login(proto1, ('test', 'test_password'))
-    await perform_login(proto2, ('Rhiza', 'puff_the_magic_dragon'))
+    await perform_login(proto1, ("test", "test_password"))
+    await perform_login(proto2, ("Rhiza", "puff_the_magic_dragon"))
     await proto1.send_message({
         "command": "game_matchmaking",
         "state": "start",
@@ -153,69 +153,69 @@ async def test_game_info_broadcast_to_friends(lobby_server):
 ])
 async def test_game_host_authenticated(lobby_server, user):
     _, _, proto = await connect_and_sign_in(user, lobby_server)
-    await read_until_command(proto, 'game_info')
+    await read_until_command(proto, "game_info")
 
     await proto.send_message({
-        'command': 'game_host',
-        'title': 'My Game',
-        'mod': 'faf',
-        'visibility': 'public',
+        "command": "game_host",
+        "title": "My Game",
+        "mod": "faf",
+        "visibility": "public",
     })
 
-    msg = await read_until_command(proto, 'game_launch')
+    msg = await read_until_command(proto, "game_launch")
 
-    assert msg['mod'] == 'faf'
-    assert 'args' in msg
-    assert isinstance(msg['uid'], int)
+    assert msg["mod"] == "faf"
+    assert "args" in msg
+    assert isinstance(msg["uid"], int)
 
 
 @fast_forward(5)
 async def test_host_missing_fields(event_loop, lobby_server, player_service):
     player_id, session, proto = await connect_and_sign_in(
-        ('test', 'test_password'),
+        ("test", "test_password"),
         lobby_server
     )
 
-    await read_until_command(proto, 'game_info')
+    await read_until_command(proto, "game_info")
 
     await proto.send_message({
-        'command': 'game_host',
-        'mod': '',
-        'visibility': 'public',
-        'title': ''
+        "command": "game_host",
+        "mod": "",
+        "visibility": "public",
+        "title": ""
     })
 
-    msg = await read_until_command(proto, 'game_info')
+    msg = await read_until_command(proto, "game_info")
 
-    assert msg['title'] == 'test\'s game'
-    assert msg['game_type'] == 'custom'
-    assert msg['mapname'] == 'scmp_007'
-    assert msg['map_file_path'] == 'maps/scmp_007.zip'
-    assert msg['featured_mod'] == 'faf'
+    assert msg["title"] == "test's game"
+    assert msg["game_type"] == "custom"
+    assert msg["mapname"] == "scmp_007"
+    assert msg["map_file_path"] == "maps/scmp_007.zip"
+    assert msg["featured_mod"] == "faf"
 
 @fast_forward(5)
 async def test_host_coop_game(lobby_server):
     player_id, session, proto = await connect_and_sign_in(
-        ('test', 'test_password'),
+        ("test", "test_password"),
         lobby_server
     )
 
-    await read_until_command(proto, 'game_info')
+    await read_until_command(proto, "game_info")
 
     await proto.send_message({
-        'command': 'game_host',
-        'mod': 'coop',
-        'visibility': 'public',
-        'title': ''
+        "command": "game_host",
+        "mod": "coop",
+        "visibility": "public",
+        "title": ""
     })
 
-    msg = await read_until_command(proto, 'game_info')
+    msg = await read_until_command(proto, "game_info")
 
-    assert msg['title'] == 'test\'s game'
-    assert msg['mapname'] == 'scmp_007'
-    assert msg['map_file_path'] == 'maps/scmp_007.zip'
-    assert msg['featured_mod'] == 'coop'
-    assert msg['game_type'] == 'coop'
+    assert msg["title"] == "test's game"
+    assert msg["mapname"] == "scmp_007"
+    assert msg["map_file_path"] == "maps/scmp_007.zip"
+    assert msg["featured_mod"] == "coop"
+    assert msg["game_type"] == "coop"
 
 
 @pytest.mark.parametrize("command", ["game_host", "game_join"])
@@ -225,10 +225,10 @@ async def test_server_ban_prevents_hosting(lobby_server, database, command):
     prevented from joining or hosting games until their ban expires.
     """
     player_id, _, proto = await connect_and_sign_in(
-        ('banme', 'banme'), lobby_server
+        ("banme", "banme"), lobby_server
     )
     # User successfully logs in
-    await read_until_command(proto, 'game_info')
+    await read_until_command(proto, "game_info")
 
     async with database.acquire() as conn:
         await conn.execute(
@@ -237,7 +237,7 @@ async def test_server_ban_prevents_hosting(lobby_server, database, command):
                 author_id=player_id,
                 reason="Test live ban",
                 expires_at=None,
-                level='GLOBAL'
+                level="GLOBAL"
             )
         )
 
@@ -254,11 +254,11 @@ async def test_server_ban_prevents_hosting(lobby_server, database, command):
 @fast_forward(5)
 async def test_coop_list(lobby_server):
     _, _, proto = await connect_and_sign_in(
-        ('test', 'test_password'),
+        ("test", "test_password"),
         lobby_server
     )
 
-    await read_until_command(proto, 'game_info')
+    await read_until_command(proto, "game_info")
 
     await proto.send_message({"command": "coop_list"})
 
@@ -270,11 +270,11 @@ async def test_coop_list(lobby_server):
 
 async def test_ice_servers_empty(lobby_server):
     _, _, proto = await connect_and_sign_in(
-        ('test', 'test_password'),
+        ("test", "test_password"),
         lobby_server
     )
 
-    await read_until_command(proto, 'game_info')
+    await read_until_command(proto, "game_info")
 
     await proto.send_message({"command": "ice_servers"})
 
@@ -282,9 +282,9 @@ async def test_ice_servers_empty(lobby_server):
 
     # By default the server config should not have any ice servers
     assert msg == {
-        'command': 'ice_servers',
-        'ice_servers': [],
-        'ttl': 86400
+        "command": "ice_servers",
+        "ice_servers": [],
+        "ttl": 86400
     }
 
 
@@ -305,13 +305,13 @@ async def get_player_selected_avatars(conn, player_id):
 async def test_avatar_select(lobby_server, database):
     # This user has multiple avatars in the test data
     player_id, _, proto = await connect_and_sign_in(
-        ('player_service1', 'player_service1'),
+        ("player_service1", "player_service1"),
         lobby_server
     )
-    await read_until_command(proto, 'game_info')
+    await read_until_command(proto, "game_info")
     # Skip any latent player broadcasts
     with contextlib.suppress(asyncio.TimeoutError):
-        await read_until_command(proto, 'player_info', timeout=5)
+        await read_until_command(proto, "player_info", timeout=5)
 
     await proto.send_message({
         "command": "avatar", "action": "list_avatar"
@@ -354,13 +354,13 @@ async def test_avatar_select(lobby_server, database):
 async def test_avatar_select_not_owned(lobby_server, database):
     # This user has no avatars
     player_id, _, proto = await connect_and_sign_in(
-        ('test', 'test_password'),
+        ("test", "test_password"),
         lobby_server
     )
-    await read_until_command(proto, 'game_info')
+    await read_until_command(proto, "game_info")
     # Skip any latent player broadcasts
     with contextlib.suppress(asyncio.TimeoutError):
-        await read_until_command(proto, 'player_info', timeout=5)
+        await read_until_command(proto, "player_info", timeout=5)
 
     await proto.send_message({
         "command": "avatar",

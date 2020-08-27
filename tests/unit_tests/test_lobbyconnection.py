@@ -32,32 +32,32 @@ pytestmark = pytest.mark.asyncio
 @pytest.fixture()
 def test_game_info():
     return {
-        'title': 'Test game',
-        'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
-        'mod': 'faf',
-        'mapname': 'scmp_007',
-        'password': None,
-        'lobby_rating': 1,
-        'options': []
+        "title": "Test game",
+        "visibility": VisibilityState.to_string(VisibilityState.PUBLIC),
+        "mod": "faf",
+        "mapname": "scmp_007",
+        "password": None,
+        "lobby_rating": 1,
+        "options": []
     }
 
 
 @pytest.fixture()
 def test_game_info_invalid():
     return {
-        'title': 'Title with non ASCI char \xc3',
-        'visibility': VisibilityState.to_string(VisibilityState.PUBLIC),
-        'mod': 'faf',
-        'mapname': 'scmp_007',
-        'password': None,
-        'lobby_rating': 1,
-        'options': []
+        "title": "Title with non ASCI char \xc3",
+        "visibility": VisibilityState.to_string(VisibilityState.PUBLIC),
+        "mod": "faf",
+        "mapname": "scmp_007",
+        "password": None,
+        "lobby_rating": 1,
+        "options": []
     }
 
 
 @pytest.fixture
 def mock_player(player_factory):
-    return player_factory('Dummy', player_id=42, with_lobby_connection=False)
+    return player_factory("Dummy", player_id=42, with_lobby_connection=False)
 
 
 @pytest.fixture
@@ -108,23 +108,23 @@ def lobbyconnection(
     lc.player = mock_player
     lc.protocol = mock_protocol
     lc.player_service.fetch_player_data = CoroutineMock()
-    lc.peer_address = Address('127.0.0.1', 1234)
+    lc.peer_address = Address("127.0.0.1", 1234)
     lc._authenticated = True
     return lc
 
 
 @pytest.fixture
 def policy_server(event_loop):
-    host = 'localhost'
+    host = "localhost"
     port = 6080
 
     app = web.Application()
     routes = web.RouteTableDef()
 
-    @routes.post('/verify')
+    @routes.post("/verify")
     async def token(request):
         data = await request.json()
-        return web.json_response({'result': data.get('uid_hash')})
+        return web.json_response({"result": data.get("uid_hash")})
 
     app.add_routes(routes)
 
@@ -241,12 +241,12 @@ async def test_command_game_host_creates_game(lobbyconnection,
         **test_game_info
     })
     expected_call = {
-        'game_mode': 'faf',
-        'name': test_game_info['title'],
-        'host': players.hosting,
-        'visibility': VisibilityState.PUBLIC,
-        'password': test_game_info['password'],
-        'mapname': test_game_info['mapname'],
+        "game_mode": "faf",
+        "name": test_game_info["title"],
+        "host": players.hosting,
+        "visibility": VisibilityState.PUBLIC,
+        "password": test_game_info["password"],
+        "mapname": test_game_info["mapname"],
     }
     mock_games.create_game.assert_called_with(**expected_call)
 
@@ -298,12 +298,12 @@ async def test_command_game_join_calls_join_game(mocker,
     game = Game(42, database, game_service, game_stats_service)
     game.state = GameState.LOBBY
     game.password = None
-    game.game_mode = 'faf'
+    game.game_mode = "faf"
     game.id = 42
     game.name = "Test Game Name"
     game_service._games[42] = game
     lobbyconnection.player = players.hosting
-    test_game_info['uid'] = 42
+    test_game_info["uid"] = 42
 
     await lobbyconnection.on_message_received({
         "command": "game_join",
@@ -332,24 +332,24 @@ async def test_command_game_join_uid_as_str(mocker,
     game = Game(42, database, game_service, game_stats_service)
     game.state = GameState.LOBBY
     game.password = None
-    game.game_mode = 'faf'
+    game.game_mode = "faf"
     game.id = 42
     game.name = "Test Game Name"
     game_service._games[42] = game
     lobbyconnection.player = players.hosting
-    test_game_info['uid'] = '42'  # Pass in uid as string
+    test_game_info["uid"] = "42"  # Pass in uid as string
 
     await lobbyconnection.on_message_received({
         "command": "game_join",
         **test_game_info
     })
     expected_reply = {
-        'command': 'game_launch',
-        'args': ['/numgames', players.hosting.game_count[RatingType.GLOBAL]],
-        'mod': 'faf',
-        'uid': 42,
-        'name': 'Test Game Name',
-        'init_mode': InitMode.NORMAL_LOBBY.value,
+        "command": "game_launch",
+        "args": ["/numgames", players.hosting.game_count[RatingType.GLOBAL]],
+        "mod": "faf",
+        "uid": 42,
+        "name": "Test Game Name",
+        "init_mode": InitMode.NORMAL_LOBBY.value,
     }
     lobbyconnection.send.assert_called_with(expected_reply)
 
@@ -367,13 +367,13 @@ async def test_command_game_join_without_password(
     game = mock.create_autospec(Game)
     game.state = GameState.LOBBY
     game.init_mode = InitMode.NORMAL_LOBBY
-    game.password = 'password'
-    game.game_mode = 'faf'
+    game.password = "password"
+    game.game_mode = "faf"
     game.id = 42
     game_service._games[42] = game
     lobbyconnection.player = players.hosting
-    test_game_info['uid'] = 42
-    del test_game_info['password']
+    test_game_info["uid"] = 42
+    del test_game_info["password"]
 
     await lobbyconnection.on_message_received({
         "command": "game_join",
@@ -395,7 +395,7 @@ async def test_command_game_join_game_not_found(
     lobbyconnection.send = CoroutineMock()
     lobbyconnection.game_service = game_service
     lobbyconnection.player = players.hosting
-    test_game_info['uid'] = 42
+    test_game_info["uid"] = 42
 
     await lobbyconnection.on_message_received({
         "command": "game_join",
@@ -422,7 +422,7 @@ async def test_command_game_join_game_bad_init_mode(
     game.id = 42
     game_service._games[42] = game
     lobbyconnection.player = players.hosting
-    test_game_info['uid'] = 42
+    test_game_info["uid"] = 42
 
     await lobbyconnection.on_message_received({
         "command": "game_join",
@@ -457,7 +457,7 @@ async def test_abort(mocker, lobbyconnection):
 
 
 async def test_send_game_list(mocker, database, lobbyconnection, game_stats_service):
-    games = mocker.patch.object(lobbyconnection, 'game_service')  # type: GameService
+    games = mocker.patch.object(lobbyconnection, "game_service")  # type: GameService
     game1, game2 = mock.create_autospec(Game(42, database, mock.Mock(), game_stats_service)), \
                    mock.create_autospec(Game(22, database, mock.Mock(), game_stats_service))
 
@@ -467,8 +467,8 @@ async def test_send_game_list(mocker, database, lobbyconnection, game_stats_serv
     await lobbyconnection.send_game_list()
 
     lobbyconnection.send.assert_any_call({
-        'command': 'game_info',
-        'games': [game1.to_dict(), game2.to_dict()]
+        "command": "game_info",
+        "games": [game1.to_dict(), game2.to_dict()]
     })
 
 
@@ -479,7 +479,7 @@ async def test_coop_list(mocker, lobbyconnection):
     assert len(args) == 1
     coop_maps = args[0][0][0]
     for info in coop_maps:
-        del info['uid']
+        del info["uid"]
     assert coop_maps == [
         {
             "command": "coop_info",
@@ -535,9 +535,9 @@ async def test_command_admin_closelobby(mocker, lobbyconnection, player_factory)
     lobbyconnection.player_service.__getitem__.side_effect = data.__getitem__
 
     await lobbyconnection.on_message_received({
-        'command': 'admin',
-        'action': 'closelobby',
-        'user_id': 55
+        "command": "admin",
+        "action": "closelobby",
+        "user_id": 55
     })
 
     tuna.lobby_connection.kick.assert_any_call()
@@ -554,9 +554,9 @@ async def test_command_admin_closeFA(lobbyconnection, player_factory):
     lobbyconnection.player_service.__getitem__.side_effect = data.__getitem__
 
     await lobbyconnection.on_message_received({
-        'command': 'admin',
-        'action': 'closeFA',
-        'user_id': tuna.id
+        "command": "admin",
+        "action": "closeFA",
+        "user_id": tuna.id
     })
 
     tuna.lobby_connection.send.assert_any_call({
@@ -571,12 +571,12 @@ async def test_game_subscription(lobbyconnection: LobbyConnection):
     lobbyconnection.game_connection = game
 
     await lobbyconnection.on_message_received({
-        'command': 'test',
-        'args': ['foo', 42],
-        'target': 'game'
+        "command": "test",
+        "args": ["foo", 42],
+        "target": "game"
     })
 
-    game.handle_action.assert_called_with('test', ['foo', 42])
+    game.handle_action.assert_called_with("test", ["foo", 42])
 
 
 async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection):
@@ -584,13 +584,13 @@ async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection):
     lobbyconnection.player.id = 2  # Dostya test user
 
     await lobbyconnection.on_message_received({
-        'command': 'avatar',
-        'action': 'list_avatar'
+        "command": "avatar",
+        "action": "list_avatar"
     })
 
     lobbyconnection.send.assert_any_call({
         "command": "avatar",
-        "avatarlist": [{'url': 'https://content.faforever.com/faf/avatars/qai2.png', 'tooltip': 'QAI'}, {'url': 'https://content.faforever.com/faf/avatars/UEF.png', 'tooltip': 'UEF'}]
+        "avatarlist": [{"url": "https://content.faforever.com/faf/avatars/qai2.png", "tooltip": "QAI"}, {"url": "https://content.faforever.com/faf/avatars/UEF.png", "tooltip": "UEF"}]
     })
 
 
@@ -598,9 +598,9 @@ async def test_command_avatar_select(mocker, database, lobbyconnection: LobbyCon
     lobbyconnection.player.id = 2  # Dostya test user
 
     await lobbyconnection.on_message_received({
-        'command': 'avatar',
-        'action': 'select',
-        'avatar': "https://content.faforever.com/faf/avatars/qai2.png"
+        "command": "avatar",
+        "action": "select",
+        "avatar": "https://content.faforever.com/faf/avatars/qai2.png"
     })
 
     async with database.acquire() as conn:
@@ -615,12 +615,12 @@ async def get_friends(player_id, database):
             select([friends_and_foes.c.subject_id]).where(
                 and_(
                     friends_and_foes.c.user_id == player_id,
-                    friends_and_foes.c.status == 'FRIEND'
+                    friends_and_foes.c.status == "FRIEND"
                 )
             )
         )
 
-        return [row['subject_id'] async for row in result]
+        return [row["subject_id"] async for row in result]
 
 
 async def test_command_social_add_friend(lobbyconnection, database):
@@ -630,8 +630,8 @@ async def test_command_social_add_friend(lobbyconnection, database):
     assert friends == []
 
     await lobbyconnection.on_message_received({
-        'command': 'social_add',
-        'friend': 2
+        "command": "social_add",
+        "friend": 2
     })
 
     friends = await get_friends(lobbyconnection.player.id, database)
@@ -645,8 +645,8 @@ async def test_command_social_remove_friend(lobbyconnection, database):
     assert friends == [1]
 
     await lobbyconnection.on_message_received({
-        'command': 'social_remove',
-        'friend': 1
+        "command": "social_remove",
+        "friend": 1
     })
 
     friends = await get_friends(lobbyconnection.player.id, database)
@@ -686,9 +686,9 @@ async def test_broadcast(lobbyconnection: LobbyConnection, player_factory):
     lobbyconnection.send_warning = CoroutineMock()
 
     await lobbyconnection.on_message_received({
-        'command': 'admin',
-        'action': 'broadcast',
-        'message': "This is a test message"
+        "command": "admin",
+        "action": "broadcast",
+        "message": "This is a test message"
     })
 
     player.lobby_connection.send_warning.assert_called_with("This is a test message")
@@ -712,9 +712,9 @@ async def test_broadcast_during_disconnect(lobbyconnection: LobbyConnection, pla
 
     # This should not leak any exceptions
     await lobbyconnection.on_message_received({
-        'command': 'admin',
-        'action': 'broadcast',
-        'message': "This is a test message"
+        "command": "admin",
+        "action": "broadcast",
+        "message": "This is a test message"
     })
 
     player.lobby_connection.send_warning.assert_called_with("This is a test message")
@@ -735,9 +735,9 @@ async def test_broadcast_connection_error(lobbyconnection: LobbyConnection, play
 
     # This should not leak any exceptions
     await lobbyconnection.on_message_received({
-        'command': 'admin',
-        'action': 'broadcast',
-        'message': "This is a test message"
+        "command": "admin",
+        "action": "broadcast",
+        "message": "This is a test message"
     })
 
     player.lobby_connection.send_warning.assert_called_with("This is a test message")
@@ -748,8 +748,8 @@ async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnecti
     lobbyconnection.send = CoroutineMock()
     lobbyconnection.player.state = PlayerState.IDLE
     await lobbyconnection.on_message_received({
-        'command': 'restore_game_session',
-        'game_id': 123
+        "command": "restore_game_session",
+        "game_id": 123
     })
 
     assert not lobbyconnection.player.game_connection
@@ -778,13 +778,13 @@ async def test_game_connection_not_restored_if_game_state_prohibits(
     game = mock.create_autospec(Game(42, database, game_service, game_stats_service))
     game.state = game_state
     game.password = None
-    game.game_mode = 'faf'
+    game.game_mode = "faf"
     game.id = 42
     game_service._games[42] = game
 
     await lobbyconnection.on_message_received({
-        'command': 'restore_game_session',
-        'game_id': 42
+        "command": "restore_game_session",
+        "game_id": 42
     })
 
     assert not lobbyconnection.game_connection
@@ -811,13 +811,13 @@ async def test_game_connection_restored_if_game_exists(
     game = mock.create_autospec(Game(42, database, game_service, game_stats_service))
     game.state = game_state
     game.password = None
-    game.game_mode = 'faf'
+    game.game_mode = "faf"
     game.id = 42
     game_service._games[42] = game
 
     await lobbyconnection.on_message_received({
-        'command': 'restore_game_session',
-        'game_id': 42
+        "command": "restore_game_session",
+        "game_id": 42
     })
 
     assert lobbyconnection.game_connection
@@ -829,8 +829,8 @@ async def test_command_game_matchmaking(lobbyconnection):
     lobbyconnection.player.id = 1
 
     await lobbyconnection.on_message_received({
-        'command': 'game_matchmaking',
-        'state': 'stop'
+        "command": "game_matchmaking",
+        "state": "stop"
     })
 
     lobbyconnection.ladder_service.cancel_search.assert_called_with(
@@ -945,7 +945,7 @@ async def test_check_policy_conformity_fatal(lobbyconnection, policy_server):
     host, port = policy_server
     config.FAF_POLICY_SERVER_BASE_URL = f"http://{host}:{port}"
 
-    for result in ('vm', 'already_associated', 'fraudulent'):
+    for result in ("vm", "already_associated", "fraudulent"):
         lobbyconnection.abort = CoroutineMock()
         honest = await lobbyconnection.check_policy_conformity(1, result, session=100)
         assert honest is False

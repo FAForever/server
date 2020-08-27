@@ -72,7 +72,7 @@ async def ladder_service(
     database,
     game_service: GameService,
 ):
-    mocker.patch('server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX', 1)
+    mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1)
     ladder_service = LadderService(database, game_service)
     await ladder_service.initialize()
 
@@ -84,11 +84,11 @@ async def ladder_service(
 def add_connected_player(game: Game, player):
     game.game_service.player_service[player.id] = player
     gc = make_mock_game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=player)
-    game.set_player_option(player.id, 'Army', 0)
-    game.set_player_option(player.id, 'StartSpot', 0)
-    game.set_player_option(player.id, 'Team', 0)
-    game.set_player_option(player.id, 'Faction', 0)
-    game.set_player_option(player.id, 'Color', 0)
+    game.set_player_option(player.id, "Army", 0)
+    game.set_player_option(player.id, "StartSpot", 0)
+    game.set_player_option(player.id, "Team", 0)
+    game.set_player_option(player.id, "Faction", 0)
+    game.set_player_option(player.id, "Color", 0)
     game.add_game_connection(gc)
     return gc
 
@@ -99,11 +99,11 @@ def add_connected_players(game: Game, players):
     """
     for army, player in enumerate(players):
         add_connected_player(game, player)
-        game.set_player_option(player.id, 'Army', army)
-        game.set_player_option(player.id, 'StartSpot', army)
-        game.set_player_option(player.id, 'Team', army)
-        game.set_player_option(player.id, 'Faction', 0)
-        game.set_player_option(player.id, 'Color', 0)
+        game.set_player_option(player.id, "Army", army)
+        game.set_player_option(player.id, "StartSpot", army)
+        game.set_player_option(player.id, "Team", army)
+        game.set_player_option(player.id, "Faction", 0)
+        game.set_player_option(player.id, "Color", 0)
     game.host = players[0]
 
 
@@ -116,7 +116,7 @@ def game_add_players(player_factory):
         for i in range(current, current+n):
             p = player_factory(
                 player_id=i+1,
-                login=f'Player {i + 1}',
+                login=f"Player {i + 1}",
                 global_rating=(1500, 500),
                 with_lobby_connection=False
             )
@@ -126,7 +126,7 @@ def game_add_players(player_factory):
 
         if team is not None:
             for p in players:
-                game.set_player_option(p.id, 'Team', team)
+                game.set_player_option(p.id, "Team", team)
 
         return players
 

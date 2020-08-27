@@ -49,8 +49,8 @@ async def test_load_from_database(ladder_service, queue_factory):
         assert queue.name == "ladder1v1"
         assert len(queue.map_pools) == 3
         assert list(ladder_service.ladder_1v1_map_pool.maps.values()) == [
-            Map(id=1, name='SCMP_001', path='maps/scmp_001.zip'),
-            Map(id=2, name='SCMP_002', path='maps/scmp_002.zip')
+            Map(id=1, name="SCMP_001", path="maps/scmp_001.zip"),
+            Map(id=2, name="SCMP_002", path="maps/scmp_002.zip")
         ]
 
 
@@ -89,7 +89,7 @@ async def test_start_game_1v1(
     p1 = player_factory("Dostya", player_id=1, with_lobby_connection=True)
     p2 = player_factory("Rhiza", player_id=2, with_lobby_connection=True)
 
-    with mock.patch('server.games.game.Game.await_hosted', CoroutineMock()):
+    with mock.patch("server.games.game.Game.await_hosted", CoroutineMock()):
         await ladder_service.start_game([p1], [p2], queue)
 
     game = game_service[game_service.game_id_counter]
@@ -107,8 +107,8 @@ async def test_start_game_timeout(
     player_factory,
 ):
     queue = ladder_service.queues["ladder1v1"]
-    p1 = player_factory('Dostya', player_id=1, with_lobby_connection=True)
-    p2 = player_factory('Rhiza', player_id=2, with_lobby_connection=True)
+    p1 = player_factory("Dostya", player_id=1, with_lobby_connection=True)
+    p2 = player_factory("Rhiza", player_id=2, with_lobby_connection=True)
 
     await ladder_service.start_game([p1], [p2], queue)
 
@@ -130,9 +130,9 @@ async def test_start_game_with_teams(
     p3 = player_factory("QAI", player_id=3, with_lobby_connection=True)
     p4 = player_factory("Hall", player_id=4, with_lobby_connection=True)
 
-    game_service.ladder_maps = [(1, 'scmp_007', 'maps/scmp_007.zip')]
+    game_service.ladder_maps = [(1, "scmp_007", "maps/scmp_007.zip")]
 
-    with mock.patch('server.games.game.Game.await_hosted', CoroutineMock()):
+    with mock.patch("server.games.game.Game.await_hosted", CoroutineMock()):
         await ladder_service.start_game([p1, p3], [p2, p4], queue)
 
     game = game_service[game_service.game_id_counter]
@@ -327,7 +327,7 @@ async def test_start_and_cancel_search(
     player_factory,
     event_loop
 ):
-    p1 = player_factory('Dostya', player_id=1, ladder_rating=(1500, 500), ladder_games=0)
+    p1 = player_factory("Dostya", player_id=1, ladder_rating=(1500, 500), ladder_games=0)
 
     ladder_service.start_search([p1], "ladder1v1")
     await exhaust_callbacks(event_loop)
@@ -349,7 +349,7 @@ async def test_start_search_cancels_previous_search(
     event_loop
 ):
     p1 = player_factory(
-        'Dostya',
+        "Dostya",
         player_id=1,
         ladder_rating=(1500, 500),
         ladder_games=0,
@@ -414,14 +414,14 @@ async def test_cancel_twice(ladder_service: LadderService, player_factory):
 @fast_forward(5)
 async def test_start_game_called_on_match(ladder_service: LadderService, player_factory):
     p1 = player_factory(
-        'Dostya',
+        "Dostya",
         player_id=1,
         ladder_rating=(2300, 64),
         ladder_games=0,
         with_lobby_connection=True
     )
     p2 = player_factory(
-        'QAI',
+        "QAI",
         player_id=2,
         ladder_rating=(2350, 125),
         ladder_games=0,
@@ -431,8 +431,8 @@ async def test_start_game_called_on_match(ladder_service: LadderService, player_
     ladder_service.start_game = CoroutineMock()
     ladder_service.inform_player = CoroutineMock()
 
-    ladder_service.start_search([p1], 'ladder1v1')
-    ladder_service.start_search([p2], 'ladder1v1')
+    ladder_service.start_search([p1], "ladder1v1")
+    ladder_service.start_search([p2], "ladder1v1")
 
     await asyncio.sleep(2)
 

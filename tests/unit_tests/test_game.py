@@ -63,7 +63,7 @@ async def test_initialization(game: Game):
 
 
 async def test_instance_logging(database, game_stats_service):
-    logger = logging.getLogger('{}.5'.format(Game.__qualname__))
+    logger = logging.getLogger("{}.5".format(Game.__qualname__))
     logger.debug = mock.Mock()
     mock_parent = mock.Mock()
     game = Game(5, database, mock_parent, game_stats_service)
@@ -72,13 +72,13 @@ async def test_instance_logging(database, game_stats_service):
 
 async def test_validate_game_settings(game: Game, game_add_players):
     settings = [
-        ('Victory', Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
-        ('FogOfWar', 'none', ValidityState.NO_FOG_OF_WAR),
-        ('CheatsEnabled', 'true', ValidityState.CHEATS_ENABLED),
-        ('PrebuiltUnits', 'On', ValidityState.PREBUILT_ENABLED),
-        ('NoRushOption', 20, ValidityState.NORUSH_ENABLED),
-        ('RestrictedCategories', 1, ValidityState.BAD_UNIT_RESTRICTIONS),
-        ('TeamLock', 'unlocked', ValidityState.UNLOCKED_TEAMS)
+        ("Victory", Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
+        ("FogOfWar", "none", ValidityState.NO_FOG_OF_WAR),
+        ("CheatsEnabled", "true", ValidityState.CHEATS_ENABLED),
+        ("PrebuiltUnits", "On", ValidityState.PREBUILT_ENABLED),
+        ("NoRushOption", 20, ValidityState.NORUSH_ENABLED),
+        ("RestrictedCategories", 1, ValidityState.BAD_UNIT_RESTRICTIONS),
+        ("TeamLock", "unlocked", ValidityState.UNLOCKED_TEAMS)
     ]
 
     game.state = GameState.LOBBY
@@ -94,13 +94,13 @@ async def test_validate_game_settings(game: Game, game_add_players):
 async def test_validate_game_settings_coop(coop_game: Game):
     settings = [
         (
-            'Victory', Victory.DEMORALIZATION,
+            "Victory", Victory.DEMORALIZATION,
             ValidityState.WRONG_VICTORY_CONDITION
         ),
-        ('TeamSpawn', 'open', ValidityState.SPAWN_NOT_FIXED),
-        ('RevealedCivilians', 'Yes', ValidityState.CIVILIANS_REVEALED),
-        ('Difficulty', 1, ValidityState.WRONG_DIFFICULTY),
-        ('Expansion', 0, ValidityState.EXPANSION_DISABLED),
+        ("TeamSpawn", "open", ValidityState.SPAWN_NOT_FIXED),
+        ("RevealedCivilians", "Yes", ValidityState.CIVILIANS_REVEALED),
+        ("Difficulty", 1, ValidityState.WRONG_DIFFICULTY),
+        ("Expansion", 0, ValidityState.EXPANSION_DISABLED),
     ]
 
     await check_game_settings(coop_game, settings)
@@ -136,7 +136,7 @@ async def test_add_result_unknown(game, game_add_players):
     game.state = GameState.LOBBY
     players = game_add_players(game, 5, team=1)
     await game.launch()
-    await game.add_result(0, 1, 'something invalid', 5)
+    await game.add_result(0, 1, "something invalid", 5)
     assert game.get_player_outcome(players[0]) is GameOutcome.UNKNOWN
 
 
@@ -144,7 +144,7 @@ async def test_ffa_not_rated(game, game_add_players):
     game.state = GameState.LOBBY
     game_add_players(game, 5, team=1)
     await game.launch()
-    await game.add_result(0, 1, 'victory', 5)
+    await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20    # seconds
     await game.on_game_end()
     assert game.validity == ValidityState.FFA_NOT_RANKED
@@ -152,10 +152,10 @@ async def test_ffa_not_rated(game, game_add_players):
 
 async def test_generated_map_is_rated(game, game_add_players):
     game.state = GameState.LOBBY
-    game.map_file_path = 'maps/neroxis_map_generator_1.0.0_1234.zip'
+    game.map_file_path = "maps/neroxis_map_generator_1.0.0_1234.zip"
     game_add_players(game, 2, team=1)
     await game.launch()
-    await game.add_result(0, 1, 'victory', 5)
+    await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_end()
     assert game.validity == ValidityState.VALID
@@ -163,10 +163,10 @@ async def test_generated_map_is_rated(game, game_add_players):
 
 async def test_unranked_generated_map_not_rated(game, game_add_players):
     game.state = GameState.LOBBY
-    game.map_file_path = 'maps/neroxis_map_generator_sneaky_map.zip'
+    game.map_file_path = "maps/neroxis_map_generator_sneaky_map.zip"
     game_add_players(game, 2, team=1)
     await game.launch()
-    await game.add_result(0, 1, 'victory', 5)
+    await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_end()
     assert game.validity == ValidityState.BAD_MAP
@@ -176,7 +176,7 @@ async def test_two_player_ffa_is_rated(game, game_add_players):
     game.state = GameState.LOBBY
     game_add_players(game, 2, team=1)
     await game.launch()
-    await game.add_result(0, 1, 'victory', 5)
+    await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20    # seconds
     await game.on_game_end()
     assert game.validity == ValidityState.VALID
@@ -188,7 +188,7 @@ async def test_multi_team_not_rated(game, game_add_players):
     game_add_players(game, 2, team=3)
     game_add_players(game, 2, team=4)
     await game.launch()
-    await game.add_result(0, 1, 'victory', 5)
+    await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20    # seconds
     await game.on_game_end()
     assert game.validity == ValidityState.MULTI_TEAM
@@ -199,18 +199,18 @@ async def test_has_ai_players_not_rated(game, game_add_players):
     game_add_players(game, 2, team=2)
     game_add_players(game, 2, team=3)
     game.AIs = {
-        'IA Tech': {
-            'Faction': 5,
-            'Color': 1,
-            'Team': 2,
-            'StartSpot': 2
+        "IA Tech": {
+            "Faction": 5,
+            "Color": 1,
+            "Team": 2,
+            "StartSpot": 2
         },
-        'Oum-Ashavoh (IA Tech)': {
-            'Army': 3
+        "Oum-Ashavoh (IA Tech)": {
+            "Army": 3
         }
     }
     await game.launch()
-    await game.add_result(0, 1, 'victory', 5)
+    await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20    # seconds
     await game.on_game_end()
     assert game.validity == ValidityState.HAS_AI_PLAYERS
@@ -221,7 +221,7 @@ async def test_uneven_teams_not_rated(game, game_add_players):
     game_add_players(game, 2, team=2)
     game_add_players(game, 3, team=3)
     await game.launch()
-    await game.add_result(0, 1, 'victory', 5)
+    await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20    # seconds
     await game.on_game_end()
     assert game.validity == ValidityState.UNEVEN_TEAMS_NOT_RANKED
@@ -234,7 +234,7 @@ async def test_single_team_not_rated(game, game_add_players):
     await game.launch()
     game.launched_at = time.time() - 60 * 20
     for i in range(n_players):
-        await game.add_result(0, i + 1, 'victory', 5)
+        await game.add_result(0, i + 1, "victory", 5)
     await game.on_game_end()
     assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
@@ -244,12 +244,12 @@ async def test_set_player_option(game, players, mock_game_connection):
     mock_game_connection.player = players.hosting
     mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
     game.add_game_connection(mock_game_connection)
-    game.set_player_option(players.hosting.id, 'Team', 1)
+    game.set_player_option(players.hosting.id, "Team", 1)
     assert game.players == {players.hosting}
-    assert game.get_player_option(players.hosting.id, 'Team') == 1
+    assert game.get_player_option(players.hosting.id, "Team") == 1
     assert game.teams == {1}
-    game.set_player_option(players.hosting.id, 'StartSpot', 1)
-    game.get_player_option(players.hosting.id, 'StartSpot') == 1
+    game.set_player_option(players.hosting.id, "StartSpot", 1)
+    game.get_player_option(players.hosting.id, "StartSpot") == 1
 
 
 async def test_invalid_get_player_option_key(game: Game, players):
@@ -265,7 +265,7 @@ async def test_add_game_connection(game: Game, players, mock_game_connection):
     # "PlayerOption" configuration for them
     assert game.to_dict()["num_players"] == 0
     assert game.players == set()
-    game.set_player_option(players.hosting.id, 'Team', 1)
+    game.set_player_option(players.hosting.id, "Team", 1)
     assert players.hosting in game.players
 
 
@@ -279,7 +279,7 @@ async def test_add_game_connection_twice(game: Game, players, mock_game_connecti
     mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
     # Connect the host
     game.add_game_connection(mock_game_connection)
-    game.set_player_option(players.hosting.id, 'Team', 1)
+    game.set_player_option(players.hosting.id, "Team", 1)
     assert game.players == {players.hosting}
     # Join a new player
     join_conn = add_connected_player(game, players.joining)
@@ -291,7 +291,7 @@ async def test_add_game_connection_twice(game: Game, players, mock_game_connecti
     game.add_game_connection(join_conn)
     assert game.to_dict()["num_players"] == 1
     assert game.players == {players.hosting}
-    game.set_player_option(players.joining.id, 'Team', 1)
+    game.set_player_option(players.joining.id, "Team", 1)
     assert game.players == {players.hosting, players.joining}
     assert game.to_dict()["num_players"] == 2
 
@@ -388,16 +388,16 @@ async def test_clear_slot(
         player_factory("Rhiza", player_id=2, global_rating=(1500, 500))
     ]
     add_connected_players(game, players)
-    game.set_ai_option('rush', 'StartSpot', 3)
+    game.set_ai_option("rush", "StartSpot", 3)
 
     game.clear_slot(0)
     game.clear_slot(3)
 
-    assert game.get_player_option(1, 'StartSpot') == -1
-    assert game.get_player_option(1, 'Team') == -1
-    assert game.get_player_option(1, 'Army') == -1
-    assert game.get_player_option(2, 'StartSpot') == 1
-    assert 'rush' not in game.AIs
+    assert game.get_player_option(1, "StartSpot") == -1
+    assert game.get_player_option(1, "Team") == -1
+    assert game.get_player_option(1, "Army") == -1
+    assert game.get_player_option(2, "StartSpot") == 1
+    assert "rush" not in game.AIs
 
 
 async def test_game_launch_freezes_players(game: Game, players):
@@ -418,8 +418,8 @@ async def test_game_launch_freezes_players(game: Game, players):
 async def test_game_teams_represents_active_teams(game: Game, players):
     game.state = GameState.LOBBY
     add_connected_players(game, [players.hosting, players.joining])
-    game.set_player_option(players.hosting.id, 'Team', 1)
-    game.set_player_option(players.joining.id, 'Team', 2)
+    game.set_player_option(players.hosting.id, "Team", 1)
+    game.set_player_option(players.joining.id, "Team", 2)
     assert game.teams == {1, 2}
 
 
@@ -436,8 +436,8 @@ async def test_game_ends_in_mutually_agreed_draw(game: Game, game_add_players):
     await game.launch()
     game.launched_at = time.time() - 60 * 60
 
-    await game.add_result(players[0].id, 0, 'mutual_draw', 0)
-    await game.add_result(players[1].id, 1, 'mutual_draw', 0)
+    await game.add_result(players[0].id, 0, "mutual_draw", 0)
+    await game.add_result(players[1].id, 1, "mutual_draw", 0)
     await game.on_game_end()
 
     assert game.validity is ValidityState.MUTUAL_DRAW
@@ -452,8 +452,8 @@ async def test_game_not_ends_in_unilatery_agreed_draw(
     await game.launch()
     game.launched_at = time.time() - 60 * 60
 
-    await game.add_result(players.hosting.id, 0, 'mutual_draw', 0)
-    await game.add_result(players.joining.id, 1, 'victory', 10)
+    await game.add_result(players.hosting.id, 0, "mutual_draw", 0)
+    await game.add_result(players.joining.id, 1, "victory", 10)
     await game.on_game_end()
 
     assert game.validity is not ValidityState.MUTUAL_DRAW
@@ -477,11 +477,11 @@ async def test_game_get_player_outcome_ignores_unknown_results(
     game.state = GameState.LOBBY
     players = game_add_players(game, 2)
 
-    await game.add_result(0, 0, 'defeat', 0)
-    await game.add_result(0, 0, 'score', 0)
+    await game.add_result(0, 0, "defeat", 0)
+    await game.add_result(0, 0, "score", 0)
     assert game.get_player_outcome(players[0]) is GameOutcome.DEFEAT
 
-    await game.add_result(0, 1, 'score', 0)
+    await game.add_result(0, 1, "score", 0)
     assert game.get_player_outcome(players[1]) is GameOutcome.UNKNOWN
 
 
@@ -503,8 +503,8 @@ async def test_on_game_end_two_players_is_valid(
     await game.launch()
 
     assert len(game.players) == 2
-    await game.add_result(0, 1, 'victory', 10)
-    await game.add_result(1, 2, 'defeat', -10)
+    await game.add_result(0, 1, "victory", 10)
+    await game.add_result(1, 2, "defeat", -10)
 
     await game.on_game_end()
     assert game.state is GameState.ENDED
@@ -515,7 +515,7 @@ async def test_name_sanitization(game):
     game.state = GameState.LOBBY
     game.name = game.sanitize_name("卓☻иAâé~<1000")
     try:
-        game.name.encode('utf-16-be').decode('ascii')
+        game.name.encode("utf-16-be").decode("ascii")
     except UnicodeDecodeError:
         pass
 
@@ -534,8 +534,8 @@ async def test_to_dict(game, player_factory):
             ], 1)]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
-        game.set_player_option(player.id, 'Team', team)
-        game.set_player_option(player.id, 'Army', player.id - 1)
+        game.set_player_option(player.id, "Team", team)
+        game.set_player_option(player.id, "Army", player.id - 1)
     game.host = players[0][0]
     await game.launch()
     data = game.to_dict()
@@ -546,7 +546,7 @@ async def test_to_dict(game, player_factory):
         "uid": game.id,
         "title": game.sanitize_name(game.name),
         "game_type": "custom",
-        "state": 'playing',
+        "state": "playing",
         "featured_mod": game.game_mode,
         "sim_mods": game.mods,
         "mapname": game.map_folder_name,
@@ -558,7 +558,7 @@ async def test_to_dict(game, player_factory):
         "teams": {
             team: [
                 player.login for player in game.players
-                if game.get_player_option(player.id, 'Team') == team
+                if game.get_player_option(player.id, "Team") == team
             ]
             for team in game.teams
         }
@@ -578,7 +578,7 @@ async def test_persist_results_not_called_with_one_player(
     add_connected_players(game, players)
     await game.launch()
     assert len(game.players) == 1
-    await game.add_result(0, 1, 'victory', 5)
+    await game.add_result(0, 1, "victory", 5)
     await game.on_game_end()
 
     game.persist_results.assert_not_called()
@@ -607,7 +607,7 @@ async def test_persist_results_called_with_two_players(game, game_add_players):
     game_add_players(game, 2)
     await game.launch()
     assert len(game.players) == 2
-    await game.add_result(0, 1, 'victory', 5)
+    await game.add_result(0, 1, "victory", 5)
     await game.on_game_end()
 
     assert game.get_army_score(1) == 5
@@ -616,7 +616,7 @@ async def test_persist_results_called_with_two_players(game, game_add_players):
     await game.load_results()
     assert game.get_army_score(1) == 5
     for player in game.players:
-        if game.get_player_option(player.id, 'Army') == 1:
+        if game.get_player_option(player.id, "Army") == 1:
             assert game.get_player_outcome(player) is GameOutcome.VICTORY
         else:
             assert game.get_player_outcome(player) is GameOutcome.UNKNOWN
@@ -628,13 +628,13 @@ async def test_persist_results_called_for_unranked(game, game_add_players):
     await game.launch()
     game.validity = ValidityState.BAD_UNIT_RESTRICTIONS
     assert len(game.players) == 2
-    await game.add_result(0, 1, 'victory', 5)
+    await game.add_result(0, 1, "victory", 5)
     await game.on_game_end()
 
     assert game.get_army_score(1) == 5
     assert len(game.players) == 2
     for player in game.players:
-        if game.get_player_option(player.id, 'Army') == 1:
+        if game.get_player_option(player.id, "Army") == 1:
             assert game.get_player_outcome(player) is GameOutcome.VICTORY
         else:
             assert game.get_player_outcome(player) is GameOutcome.UNKNOWN
@@ -642,7 +642,7 @@ async def test_persist_results_called_for_unranked(game, game_add_players):
     await game.load_results()
     assert game.get_army_score(1) == 5
     for player in game.players:
-        if game.get_player_option(player.id, 'Army') == 1:
+        if game.get_player_option(player.id, "Army") == 1:
             assert game.get_player_outcome(player) is GameOutcome.VICTORY
         else:
             assert game.get_player_outcome(player) is GameOutcome.UNKNOWN
@@ -656,12 +656,12 @@ async def test_get_army_score_conflicting_results_clear_winner(
     game_add_players(game, 3, team=3)
     await game.launch()
 
-    await game.add_result(0, 0, 'victory', 1000)
-    await game.add_result(1, 0, 'victory', 1234)
-    await game.add_result(2, 0, 'victory', 1234)
-    await game.add_result(3, 1, 'defeat', 100)
-    await game.add_result(4, 1, 'defeat', 123)
-    await game.add_result(5, 1, 'defeat', 100)
+    await game.add_result(0, 0, "victory", 1000)
+    await game.add_result(1, 0, "victory", 1234)
+    await game.add_result(2, 0, "victory", 1234)
+    await game.add_result(3, 1, "defeat", 100)
+    await game.add_result(4, 1, "defeat", 123)
+    await game.add_result(5, 1, "defeat", 100)
 
     # Choose the most frequently reported score
     assert game.get_army_score(0) == 1234
@@ -672,10 +672,10 @@ async def test_get_army_score_conflicting_results_tied(game, game_add_players):
     game.state = GameState.LOBBY
     game_add_players(game, 2, team=2)
     game_add_players(game, 2, team=3)
-    await game.add_result(0, 0, 'victory', 1000)
-    await game.add_result(1, 0, 'victory', 1234)
-    await game.add_result(2, 1, 'defeat', 100)
-    await game.add_result(3, 1, 'defeat', 123)
+    await game.add_result(0, 0, "victory", 1000)
+    await game.add_result(1, 0, "victory", 1234)
+    await game.add_result(2, 1, "defeat", 100)
+    await game.add_result(3, 1, "defeat", 123)
 
     # Choose the highest score
     assert game.get_army_score(0) == 1234
@@ -703,7 +703,7 @@ async def test_report_army_stats_sends_stats_for_defeated_player(
     players = game_add_players(game, 2)
 
     await game.launch()
-    await game.add_result(0, 1, 'defeat', -1)
+    await game.add_result(0, 1, "defeat", -1)
 
     with open("tests/data/game_stats_simple_win.json", "r") as stats_file:
         stats = stats_file.read()
@@ -725,14 +725,14 @@ async def test_partial_stats_not_affecting_rating_persistence(
     )
     game.state = GameState.LOBBY
     players = game_add_players(game, 2)
-    game.set_player_option(players[0].id, 'Team', 2)
-    game.set_player_option(players[1].id, 'Team', 3)
+    game.set_player_option(players[0].id, "Team", 2)
+    game.set_player_option(players[1].id, "Team", 3)
     old_mean = players[0].ratings[RatingType.GLOBAL][0]
 
     await game.launch()
     game.launched_at = time.time() - 60 * 60
-    await game.add_result(0, 0, 'victory', 10)
-    await game.add_result(0, 1, 'defeat', -10)
+    await game.add_result(0, 0, "victory", 10)
+    await game.add_result(0, 1, "defeat", -10)
     game.report_army_stats('{"stats": []}')
     await game.on_game_end()
 
@@ -750,18 +750,18 @@ async def test_players_exclude_observers(
     players = game_add_players(game, 2)
 
     obs = player_factory(
-        player_id=3, login='Zoidberg', global_rating=(1500, 500)
+        player_id=3, login="Zoidberg", global_rating=(1500, 500)
     )
 
     game.game_service.player_service[obs.id] = obs
     gc = make_mock_game_connection(
         state=GameConnectionState.CONNECTED_TO_HOST, player=obs
     )
-    game.set_player_option(obs.id, 'Army', -1)
-    game.set_player_option(obs.id, 'StartSpot', -1)
-    game.set_player_option(obs.id, 'Team', 0)
-    game.set_player_option(obs.id, 'Faction', 0)
-    game.set_player_option(obs.id, 'Color', 0)
+    game.set_player_option(obs.id, "Army", -1)
+    game.set_player_option(obs.id, "StartSpot", -1)
+    game.set_player_option(obs.id, "Team", 0)
+    game.set_player_option(obs.id, "Faction", 0)
+    game.set_player_option(obs.id, "Color", 0)
     game.add_game_connection(gc)
     await game.launch()
 
@@ -774,10 +774,10 @@ async def test_game_outcomes(game: Game, database, players):
     players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
-    await game.add_result(players.hosting.id, 0, 'victory', 1)
-    await game.add_result(players.joining.id, 1, 'defeat', 0)
-    game.set_player_option(players.hosting.id, 'Team', 1)
-    game.set_player_option(players.joining.id, 'Team', 1)
+    await game.add_result(players.hosting.id, 0, "victory", 1)
+    await game.add_result(players.joining.id, 1, "defeat", 0)
+    game.set_player_option(players.hosting.id, "Team", 1)
+    game.set_player_option(players.joining.id, "Team", 1)
 
     host_outcome = game.get_player_outcome(players.hosting)
     guest_outcome = game.get_player_outcome(players.joining)
@@ -798,8 +798,8 @@ async def test_game_outcomes_no_results(game: Game, database, players):
     players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
-    game.set_player_option(players.hosting.id, 'Team', 1)
-    game.set_player_option(players.joining.id, 'Team', 1)
+    game.set_player_option(players.hosting.id, "Team", 1)
+    game.set_player_option(players.joining.id, "Team", 1)
 
     host_outcome = game.get_player_outcome(players.hosting)
     guest_outcome = game.get_player_outcome(players.joining)
@@ -817,12 +817,12 @@ async def test_game_outcomes_conflicting(game: Game, database, players):
     players.joining.ratings[RatingType.LADDER_1V1] = Rating(1500, 250)
     add_connected_players(game, [players.hosting, players.joining])
     await game.launch()
-    await game.add_result(players.hosting.id, 0, 'victory', 1)
-    await game.add_result(players.joining.id, 1, 'victory', 0)
-    await game.add_result(players.hosting.id, 0, 'defeat', 1)
-    await game.add_result(players.joining.id, 1, 'defeat', 0)
-    game.set_player_option(players.hosting.id, 'Team', 1)
-    game.set_player_option(players.joining.id, 'Team', 1)
+    await game.add_result(players.hosting.id, 0, "victory", 1)
+    await game.add_result(players.joining.id, 1, "victory", 0)
+    await game.add_result(players.hosting.id, 0, "defeat", 1)
+    await game.add_result(players.joining.id, 1, "defeat", 0)
+    game.set_player_option(players.hosting.id, "Team", 1)
+    game.set_player_option(players.joining.id, "Team", 1)
 
     host_outcome = game.get_player_outcome(players.hosting)
     guest_outcome = game.get_player_outcome(players.joining)
@@ -886,8 +886,8 @@ async def test_game_results(game: Game, players):
     host_id = players.hosting.id
     join_id = players.joining.id
     add_connected_players(game, [players.hosting, players.joining])
-    game.set_player_option(players.hosting.id, 'Team', 1)
-    game.set_player_option(players.joining.id, 'Team', 1)
+    game.set_player_option(players.hosting.id, "Team", 1)
+    game.set_player_option(players.joining.id, "Team", 1)
 
     await game.launch()
     await game.add_result(host_id, 0, "victory", 1)

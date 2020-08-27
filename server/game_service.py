@@ -57,7 +57,7 @@ class GameService(Service):
         await self.initialise_game_counter()
         await self.update_data()
         self._update_cron = aiocron.crontab(
-            '*/10 * * * *', func=self.update_data
+            "*/10 * * * *", func=self.update_data
         )
 
         await self._message_queue_service.declare_exchange("faf-rabbitmq")
@@ -194,10 +194,10 @@ class GameService(Service):
         Return all games that meet the client's definition of "not closed".
         Server game states are mapped to client game states as follows:
 
-            GameState.LOBBY: 'open',
-            GameState.LIVE: 'playing',
-            GameState.ENDED: 'closed',
-            GameState.INITIALIZING: 'closed',
+            GameState.LOBBY: "open",
+            GameState.LIVE: "playing",
+            GameState.ENDED: "closed",
+            GameState.INITIALIZING: "closed",
 
         The client ignores everything "closed". This property fetches all such not-closed games.
         :return:

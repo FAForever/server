@@ -42,7 +42,7 @@ class GameConnection(GpgNetServerProtocol):
         """
         super().__init__()
         self._db = database
-        self._logger.debug('GameConnection initializing')
+        self._logger.debug("GameConnection initializing")
 
         self.protocol = protocol
         self._state = state
@@ -94,7 +94,7 @@ class GameConnection(GpgNetServerProtocol):
         handle `DisconnectedError`, otherwise failure to send the message will
         cause the caller to be disconnected as well.
         """
-        message['target'] = "game"
+        message["target"] = "game"
 
         self._logger.log(TRACE, ">> %s: %s", self.player.login, message)
         await self.protocol.send_message(message)
@@ -236,7 +236,7 @@ class GameConnection(GpgNetServerProtocol):
             raw = repr(value)
             self.game.map_scenario_path = \
                 raw.replace("\\", "/").replace("//", "/").replace("'", "")
-            self.game.map_file_path = 'maps/{}.zip'.format(
+            self.game.map_file_path = "maps/{}.zip".format(
                 self.game.map_scenario_path.split("/")[2].lower()
             )
         elif key == "Title":
@@ -410,19 +410,19 @@ class GameConnection(GpgNetServerProtocol):
         :return: None
         """
 
-        if state == 'Idle':
+        if state == "Idle":
             await self._handle_idle_state()
             # Don't mark as dirty
             return
 
-        elif state == 'Lobby':
+        elif state == "Lobby":
             # TODO: Do we still need to schedule with `ensure_future`?
             #
             # We do not yield from the task, since we
             # need to keep processing other commands while it runs
             await self._handle_lobby_state()
 
-        elif state == 'Launching':
+        elif state == "Launching":
             if self.player.state != PlayerState.HOSTING:
                 return
 
@@ -442,7 +442,7 @@ class GameConnection(GpgNetServerProtocol):
                             SET s.times_played = s.times_played + 1 WHERE v.uid in :ids"""),
                         ids=tuple(uids)
                     )
-        elif state == 'Ended':
+        elif state == "Ended":
             await self.on_connection_lost()
         self._mark_dirty()
 

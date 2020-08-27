@@ -37,13 +37,13 @@ class PlayerService(Service):
 
         # Static-ish data fields.
         self.uniqueid_exempt = {}
-        self.client_version_info = ('0.0.0', None)
+        self.client_version_info = ("0.0.0", None)
         self._dirty_players = set()
 
     async def initialize(self) -> None:
         await self.update_data()
         self._update_cron = aiocron.crontab(
-            '*/10 * * * *', func=self.update_data
+            "*/10 * * * *", func=self.update_data
         )
 
     def __len__(self):
