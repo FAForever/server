@@ -56,6 +56,26 @@ class ClientError(Exception):
         self.recoverable = recoverable
 
 
+class BanError(Exception):
+    def __init__(self, ban_expiry, ban_reason, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ban_expiry = ban_expiry
+        self.ban_reason = ban_reason
+
+    def message(self):
+        return (f"You are banned from FAF {self._ban_duration_text()}. <br>"
+                f"Reason : <br>"
+                f"{self.ban_reason}")
+
+    def _ban_duration_text(self):
+        ban_duration = self.ban_expiry - datetime.now()
+        if ban_duration.days > 365 * 100:
+            return "forever"
+        humanized_ban_duration = humanize.precisedelta(ban_duration, minimum_unit="hours")
+        return f"for {humanized_ban_duration}"
+
+
+
 class AuthenticationError(Exception):
     def __init__(self, message, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -166,6 +186,13 @@ class LobbyConnection:
                 'command': 'authentication_failed',
                 'text': ex.message
             })
+        except BanError as ex:
+            await self.send({
+                "command": "notice",
+                "style": "error",
+                "text": ex.message()
+            })
+            await self.abort(ex.message())
         except ClientError as ex:
             self._logger.warning("Client error: %s", ex.message)
             await self.send({
@@ -390,8 +417,7 @@ class LobbyConnection:
         if ban_reason is not None and now < ban_expiry:
             self._logger.debug('Rejected login from banned user: %s, %s, %s',
                                player_id, username, self.session)
-
-            await self.send_ban_message_and_abort(ban_expiry - now, ban_reason)
+            raise BanError(ban_expiry, ban_reason)
 
         # New accounts are prevented from playing if they didn't link to steam
 
@@ -1079,15 +1105,8 @@ class LobbyConnection:
                 return
 
             ban_expiry = data[ban.c.expires_at]
-
+            ban_reason = data[ban.c.reason]
             if now < ban_expiry:
-                self._logger.debug('Aborting connection of banned user: %s, %s, %s',
+                self._logger.debug("Aborting connection of banned user: %s, %s, %s",
                                    self.player.id, self.player.login, self.session)
-                self.send_ban_message_and_abort(ban_expiry - now, data[ban.c.reason])
-
-    def send_ban_message_and_abort(self, ban_time, reason):
-        ban_time_text = (f"for {humanize.naturaldelta(ban_time)}"
-                         if ban_time.days < 365 * 100 else "forever")
-        raise ClientError((f"You are banned from FAF {ban_time_text}.\n "
-                           f"Reason :\n "
-                           f"{reason}"), recoverable=False)
+                raise BanError(ban_expiry, ban_reason)
