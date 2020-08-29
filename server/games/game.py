@@ -787,7 +787,7 @@ class Game:
         self._process_pending_army_stats()
 
     def is_visible_to_player(self, player: Player) -> bool:
-        if player == self.host:
+        if player == self.host or player in self.players:
             return True
 
         mean, dev = player.ratings[self.rating_type]
