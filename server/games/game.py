@@ -584,40 +584,16 @@ class Game:
         if await self._validate_game_options(valid_options) is False:
             return
 
-        if self.game_mode in (FeaturedModType.FAF, FeaturedModType.LADDER_1V1):
-            await self._validate_faf_game_settings()
-        elif self.game_mode == FeaturedModType.COOP:
-            await self._validate_coop_game_settings()
+        await self.validate_game_mode_settings()
 
-    async def _validate_game_options(
-        self, valid_options: Dict[str, Tuple[Any, ValidityState]]
-    ) -> bool:
-        for key, value in self.gameOptions.items():
-            if key in valid_options:
-                (valid_value, validity_state) = valid_options[key]
-                if self.gameOptions[key] != valid_value:
-                    await self.mark_invalid(validity_state)
-                    return False
-        return True
-
-    async def _validate_coop_game_settings(self):
-        """
-        Checks which only apply to the coop mode
-        """
-
-        valid_options = {
-            "Victory": (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
-            "TeamSpawn": ("fixed", ValidityState.SPAWN_NOT_FIXED),
-            "RevealedCivilians": ("No", ValidityState.CIVILIANS_REVEALED),
-            "Difficulty": (3, ValidityState.WRONG_DIFFICULTY),
-            "Expansion": (1, ValidityState.EXPANSION_DISABLED),
-        }
-        await self._validate_game_options(valid_options)
-
-    async def _validate_faf_game_settings(self):
+    async def validate_game_mode_settings(self):
         """
         Checks which only apply to the faf or ladder1v1 mode
+        Override this in a child game class for custom checks
         """
+        if self.game_mode not in (FeaturedModType.FAF, FeaturedModType.LADDER_1V1):
+            return
+
         if None in self.teams or not self.is_even:
             await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
             return
@@ -630,6 +606,17 @@ class Game:
             "Victory": (Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION)
         }
         await self._validate_game_options(valid_options)
+
+    async def _validate_game_options(
+        self, valid_options: Dict[str, Tuple[Any, ValidityState]]
+    ) -> bool:
+        for key, value in self.gameOptions.items():
+            if key in valid_options:
+                (valid_value, validity_state) = valid_options[key]
+                if self.gameOptions[key] != valid_value:
+                    await self.mark_invalid(validity_state)
+                    return False
+        return True
 
     async def launch(self):
         """
