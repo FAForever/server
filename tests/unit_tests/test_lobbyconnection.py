@@ -630,6 +630,7 @@ async def test_command_social_add_friend(lobbyconnection, database):
 
     friends = await get_friends(lobbyconnection.player.id, database)
     assert friends == []
+    assert lobbyconnection.player.friends == set()
 
     await lobbyconnection.on_message_received({
         "command": "social_add",
@@ -638,6 +639,7 @@ async def test_command_social_add_friend(lobbyconnection, database):
 
     friends = await get_friends(lobbyconnection.player.id, database)
     assert friends == [2]
+    assert lobbyconnection.player.friends == {2}
 
 
 async def test_command_social_remove_friend(lobbyconnection, database):
@@ -645,6 +647,7 @@ async def test_command_social_remove_friend(lobbyconnection, database):
 
     friends = await get_friends(lobbyconnection.player.id, database)
     assert friends == [1]
+    lobbyconnection.player.friends = {1}
 
     await lobbyconnection.on_message_received({
         "command": "social_remove",
@@ -653,6 +656,17 @@ async def test_command_social_remove_friend(lobbyconnection, database):
 
     friends = await get_friends(lobbyconnection.player.id, database)
     assert friends == []
+    assert lobbyconnection.player.friends == set()
+
+    # Removing twice does nothing
+    await lobbyconnection.on_message_received({
+        'command': 'social_remove',
+        'friend': 1
+    })
+
+    friends = await get_friends(lobbyconnection.player.id, database)
+    assert friends == []
+    assert lobbyconnection.player.friends == set()
 
 
 async def test_command_ice_servers(

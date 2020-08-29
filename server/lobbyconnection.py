@@ -272,8 +272,10 @@ class LobbyConnection:
     async def command_social_remove(self, message):
         if "friend" in message:
             subject_id = message["friend"]
+            player_attr = self.player.friends
         elif "foe" in message:
             subject_id = message["foe"]
+            player_attr = self.player.foes
         else:
             await self.abort("No-op social_remove.")
             return
@@ -284,13 +286,18 @@ class LobbyConnection:
                 friends_and_foes.c.subject_id == subject_id
             )))
 
+        with contextlib.suppress(KeyError):
+            player_attr.remove(subject_id)
+
     async def command_social_add(self, message):
         if "friend" in message:
             status = "FRIEND"
             subject_id = message["friend"]
+            player_attr = self.player.friends
         elif "foe" in message:
             status = "FOE"
             subject_id = message["foe"]
+            player_attr = self.player.foes
         else:
             return
 
@@ -300,6 +307,8 @@ class LobbyConnection:
                 status=status,
                 subject_id=subject_id,
             ))
+
+        player_attr.add(subject_id)
 
     async def kick(self):
         await self.send({
