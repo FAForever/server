@@ -68,12 +68,14 @@ class BanError(Exception):
                 f"{self.ban_reason}")
 
     def _ban_duration_text(self):
-        ban_duration = self.ban_expiry - datetime.now()
+        ban_duration = self.ban_expiry - datetime.utcnow()
         if ban_duration.days > 365 * 100:
             return "forever"
-        humanized_ban_duration = humanize.precisedelta(ban_duration, minimum_unit="hours")
+        humanized_ban_duration = humanize.precisedelta(
+            ban_duration,
+            minimum_unit="hours"
+        )
         return f"for {humanized_ban_duration}"
-
 
 
 class AuthenticationError(Exception):
@@ -413,7 +415,7 @@ class LobbyConnection:
             metrics.user_logins.labels("failure").inc()
             raise AuthenticationError(auth_error_message)
 
-        now = datetime.now()
+        now = datetime.utcnow()
         if ban_reason is not None and now < ban_expiry:
             self._logger.debug('Rejected login from banned user: %s, %s, %s',
                                player_id, username, self.session)
@@ -1093,7 +1095,7 @@ class LobbyConnection:
 
     async def abort_connection_if_banned(self):
         async with self._db.acquire() as conn:
-            now = datetime.now()
+            now = datetime.utcnow()
             result = await conn.execute(
                 select([lobby_ban.c.reason, lobby_ban.c.expires_at])
                 .where(lobby_ban.c.idUser == self.player.id)

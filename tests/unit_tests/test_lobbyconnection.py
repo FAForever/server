@@ -1,10 +1,10 @@
+import re
 from hashlib import sha256
 from unittest import mock
 from unittest.mock import Mock
 
 import asynctest
 import pytest
-import re
 from aiohttp import web
 from asynctest import CoroutineMock
 from sqlalchemy import and_, select
@@ -956,21 +956,31 @@ async def test_abort_connection_if_banned(
     lobbyconnection: LobbyConnection,
     mock_nts_client
 ):
-    lobbyconnection.player.id = 1 # test user that has never been banned
+    # test user that has never been banned
+    lobbyconnection.player.id = 1
     await lobbyconnection.abort_connection_if_banned()
 
-    lobbyconnection.player.id = 201 # test user whose ban has been revoked
+    # test user whose ban has been revoked
+    lobbyconnection.player.id = 201
     await lobbyconnection.abort_connection_if_banned()
 
-    lobbyconnection.player.id = 202 # test user whose ban has expired
+    # test user whose ban has expired
+    lobbyconnection.player.id = 202
     await lobbyconnection.abort_connection_if_banned()
 
-    lobbyconnection.player.id = 203 # test user who is permabanned
+    # test user who is permabanned
+    lobbyconnection.player.id = 203
     with pytest.raises(BanError) as banned_error:
         await lobbyconnection.abort_connection_if_banned()
-    assert banned_error.value.message() == "You are banned from FAF forever. <br>Reason : <br>Test permanent ban"
+    assert banned_error.value.message() == \
+        "You are banned from FAF forever. <br>Reason : <br>Test permanent ban"
 
-    lobbyconnection.player.id = 204 # test user who is banned for another 46 hours
+    # test user who is banned for another 46 hours
+    lobbyconnection.player.id = 204
     with pytest.raises(BanError) as banned_error:
         await lobbyconnection.abort_connection_if_banned()
-    assert re.match(r"You are banned from FAF for 1 day and 2[0-3]\.[0-9]+ hours. <br>Reason : <br>Test ongoing ban with 46 hours left", banned_error.value.message())
+    assert re.match(
+        r"You are banned from FAF for 1 day and 2[12]\.[0-9]+ hours. <br>"
+        "Reason : <br>Test ongoing ban with 46 hours left",
+        banned_error.value.message()
+    )
