@@ -1,4 +1,4 @@
-from typing import DefaultDict, Tuple, TypeVar, Union
+from typing import DefaultDict, Optional, Tuple, TypeVar, Union
 
 from trueskill import Rating
 
@@ -47,3 +47,33 @@ class PlayerRatings(RatingTypeMap[Tuple[float, float]]):
             return tmm_2v2_rating
         else:
             return super().__getitem__(key)
+
+
+class InclusiveRange():
+    """
+    A simple inclusive range.
+
+    # Examples
+    assert 10 in InclusiveRange()
+    assert 10 in InclusiveRange(0)
+    assert 10 in InclusiveRange(0, 10)
+    assert -1 not in InclusiveRange(0, 10)
+    assert 11 not in InclusiveRange(0, 10)
+    """
+    def __init__(self, lo: Optional[float] = None, hi: Optional[float] = None):
+        self.lo = lo
+        self.hi = hi
+
+    def __contains__(self, rating: float) -> bool:
+        if self.lo is not None and rating < self.lo:
+            return False
+        if self.hi is not None and rating > self.hi:
+            return False
+        return True
+
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, type(self))
+            and self.lo == other.lo
+            and self.hi == other.hi
+        )

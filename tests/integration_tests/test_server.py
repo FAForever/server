@@ -144,6 +144,43 @@ async def test_game_info_broadcast_to_friends(lobby_server):
         await read_until_command(proto3, "game_info", timeout=1)
 
 
+@pytest.mark.parametrize("limit", (
+    (None, 1000),
+    (1500, 1700),
+    (1500, None),
+))
+@fast_forward(5)
+async def test_game_info_not_broadcast_out_of_rating_range(lobby_server, limit):
+    # Rhiza has displayed rating of 1462
+    _, _, proto1 = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    _, _, proto2 = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(proto1, "game_info")
+    await read_until_command(proto2, "game_info")
+
+    await proto1.send_message({
+        "command": "game_host",
+        "title": "No noobs!",
+        "mod": "faf",
+        "visibility": "public",
+        "rating_min": limit[0],
+        "rating_max": limit[1],
+        "enforce_rating_range": True
+    })
+
+    msg = await read_until_command(proto1, "game_info")
+
+    assert msg["featured_mod"] == "faf"
+    assert msg["title"] == "No noobs!"
+    assert msg["visibility"] == "public"
+
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(proto2, "game_info", timeout=1)
+
+
 @pytest.mark.parametrize("user", [
     ("test", "test_password"),
     ("ban_revoked", "ban_revoked"),
@@ -192,6 +229,7 @@ async def test_host_missing_fields(event_loop, lobby_server, player_service):
     assert msg["mapname"] == "scmp_007"
     assert msg["map_file_path"] == "maps/scmp_007.zip"
     assert msg["featured_mod"] == "faf"
+
 
 @fast_forward(5)
 async def test_host_coop_game(lobby_server):

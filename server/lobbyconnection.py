@@ -40,6 +40,7 @@ from .ladder_service import LadderService
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, Protocol
+from .rating import InclusiveRange, RatingType
 from .types import Address, GameLaunchOptions
 
 
@@ -909,6 +910,13 @@ class LobbyConnection:
         mapname = message.get("mapname") or "scmp_007"
         password = message.get("password")
         game_mode = mod.lower()
+        rating_min = message.get("rating_min")
+        rating_max = message.get("rating_max")
+        enforce_rating_range = bool(message.get("enforce_rating_range", False))
+        if rating_min is not None:
+            rating_min = float(rating_min)
+        if rating_max is not None:
+            rating_max = float(rating_max)
 
         game = self.game_service.create_game(
             visibility=visibility,
@@ -916,7 +924,10 @@ class LobbyConnection:
             host=self.player,
             name=title,
             mapname=mapname,
-            password=password
+            password=password,
+            rating_type=RatingType.GLOBAL,
+            displayed_rating_range=InclusiveRange(rating_min, rating_max),
+            enforce_rating_range=enforce_rating_range
         )
         await self.launch_game(game, is_host=True)
 

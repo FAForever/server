@@ -9,12 +9,12 @@ from aiohttp import web
 from asynctest import CoroutineMock
 from sqlalchemy import and_, select
 
-from server import GameState, VisibilityState, config
 from server.abc.base_game import InitMode
+from server.config import config
 from server.db.models import ban, friends_and_foes
 from server.game_service import GameService
 from server.gameconnection import GameConnection
-from server.games import CustomGame, Game
+from server.games import CustomGame, Game, GameState, VisibilityState
 from server.geoip_service import GeoIpService
 from server.ice_servers.nts import TwilioNTS
 from server.ladder_service import LadderService
@@ -23,7 +23,7 @@ from server.matchmaker import Search
 from server.player_service import PlayerService
 from server.players import PlayerState
 from server.protocol import DisconnectedError, QDataStreamProtocol
-from server.rating import RatingType
+from server.rating import InclusiveRange, RatingType
 from server.types import Address
 
 pytestmark = pytest.mark.asyncio
@@ -231,10 +231,9 @@ async def test_double_login_disconnected(lobbyconnection, mock_players, player_f
     lobbyconnection.abort.assert_not_called()
 
 
-async def test_command_game_host_creates_game(lobbyconnection,
-                                              mock_games,
-                                              test_game_info,
-                                              players):
+async def test_command_game_host_creates_game(
+    lobbyconnection, mock_games, test_game_info, players
+):
     lobbyconnection.player = players.hosting
     await lobbyconnection.on_message_received({
         "command": "game_host",
@@ -247,6 +246,9 @@ async def test_command_game_host_creates_game(lobbyconnection,
         "visibility": VisibilityState.PUBLIC,
         "password": test_game_info["password"],
         "mapname": test_game_info["mapname"],
+        "rating_type": RatingType.GLOBAL,
+        "displayed_rating_range": InclusiveRange(None, None),
+        "enforce_rating_range": False
     }
     mock_games.create_game.assert_called_with(**expected_call)
 
