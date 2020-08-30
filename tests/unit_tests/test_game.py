@@ -19,7 +19,7 @@ from server.games.game import (
     VisibilityState
 )
 from server.games.game_results import GameOutcome
-from server.rating import RatingType
+from server.rating import InclusiveRange, RatingType
 from tests.unit_tests.conftest import (
     add_connected_player,
     add_connected_players,
@@ -30,22 +30,19 @@ from tests.utils import fast_forward
 pytestmark = pytest.mark.asyncio
 
 
-@pytest.yield_fixture
-def game(event_loop, database, game_service, game_stats_service):
-    game = Game(42, database, game_service, game_stats_service, rating_type=RatingType.GLOBAL)
-    yield game
+@pytest.fixture
+def game(database, game_service, game_stats_service):
+    return Game(42, database, game_service, game_stats_service, rating_type=RatingType.GLOBAL)
+
+
+@pytest.fixture
+def coop_game(database, game_service, game_stats_service):
+    return CoopGame(42, database, game_service, game_stats_service)
 
 
 @pytest.yield_fixture
-def coop_game(event_loop, database, game_service, game_stats_service):
-    game = CoopGame(42, database, game_service, game_stats_service)
-    yield game
-
-
-@pytest.yield_fixture
-def custom_game(event_loop, database, game_service, game_stats_service):
-    game = CustomGame(42, database, game_service, game_stats_service)
-    yield game
+def custom_game(database, game_service, game_stats_service):
+    return CustomGame(42, database, game_service, game_stats_service)
 
 
 async def game_player_scores(database, game):
@@ -237,6 +234,45 @@ async def test_single_team_not_rated(game, game_add_players):
         await game.add_result(0, i + 1, "victory", 5)
     await game.on_game_end()
     assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
+
+
+async def test_game_visible_to_host(game: Game, players):
+    game.host = players.hosting
+    game.visibility = None  # Ensure that visibility is not checked
+    assert game.is_visible_to_player(players.hosting)
+
+
+async def test_game_visible_to_players(game: Game, players):
+    game.host = players.hosting
+    game.visibility = None  # Ensure that visibility is not checked
+    game.state = GameState.LOBBY
+    add_connected_player(game, players.joining)
+    assert game.is_visible_to_player(players.joining)
+
+
+async def test_game_not_visible_to_foes(game: Game, players):
+    game.host = players.hosting
+    players.hosting.foes.add(players.joining.id)
+    assert not game.is_visible_to_player(players.joining)
+
+
+async def test_game_visible_to_friends(game: Game, players):
+    game.host = players.hosting
+    game.visibility = VisibilityState.FRIENDS
+    players.hosting.friends.add(players.joining.id)
+    assert game.is_visible_to_player(players.joining)
+
+
+async def test_game_visible_for_rating(game: Game, players):
+    game.enforce_rating_range = True
+    game.displayed_rating_range = InclusiveRange(2000, None)
+    game.host = players.hosting
+
+    players.joining.ratings[RatingType.GLOBAL] = (1500, 1)
+    assert not game.is_visible_to_player(players.joining)
+
+    players.joining.ratings[RatingType.GLOBAL] = (2100, 1)
+    assert game.is_visible_to_player(players.joining)
 
 
 async def test_set_player_option(game, players, mock_game_connection):
