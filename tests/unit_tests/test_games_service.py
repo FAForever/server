@@ -15,10 +15,10 @@ async def test_create_game(players, game_service):
     players.hosting.state = PlayerState.IDLE
     game = game_service.create_game(
         visibility=VisibilityState.PUBLIC,
-        game_mode='faf',
+        game_mode="faf",
         host=players.hosting,
-        name='Test',
-        mapname='SCMP_007',
+        name="Test",
+        mapname="SCMP_007",
         password=None
     )
     assert game is not None
@@ -32,10 +32,10 @@ async def test_create_game(players, game_service):
 async def test_all_games(players, game_service):
     game = game_service.create_game(
         visibility=VisibilityState.PUBLIC,
-        game_mode='faf',
+        game_mode="faf",
         host=players.hosting,
-        name='Test',
-        mapname='SCMP_007',
+        name="Test",
+        mapname="SCMP_007",
         password=None
     )
     assert game in game_service.pending_games
@@ -44,26 +44,26 @@ async def test_all_games(players, game_service):
 
 async def test_create_game_ladder1v1(players, game_service):
     game = game_service.create_game(
-        game_mode='ladder1v1',
+        game_mode="ladder1v1",
         host=players.hosting,
-        name='Test Ladder',
+        name="Test Ladder",
     )
     assert game is not None
     assert game in game_service.dirty_games
     assert isinstance(game, LadderGame)
-    assert game.game_mode == 'ladder1v1'
+    assert game.game_mode == "ladder1v1"
 
 
 async def test_create_game_other_gamemode(players, game_service):
     game = game_service.create_game(
         visibility=VisibilityState.PUBLIC,
-        game_mode='labwars',
+        game_mode="labwars",
         host=players.hosting,
-        name='Test',
-        mapname='SCMP_007',
+        name="Test",
+        mapname="SCMP_007",
         password=None
     )
     assert game is not None
     assert game in game_service.dirty_games
     assert isinstance(game, Game)
-    assert game.game_mode == 'labwars'
+    assert game.game_mode == "labwars"

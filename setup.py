@@ -23,13 +23,13 @@ def get_version() -> str:
 
 
 setup(
-    name='Forged Alliance Forever Server',
+    name="Forged Alliance Forever Server",
     version=get_version(),
-    packages=['server'] + find_packages(),
-    url='http://www.faforever.com',
+    packages=["server"] + find_packages(),
+    url="http://www.faforever.com",
     license=server.__license__,
     author=server.__author__,
     author_email=server.__contact__,
-    description='Lobby/game server project',
+    description="Lobby/game server project",
     include_package_data=True
 )

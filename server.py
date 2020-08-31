@@ -112,8 +112,8 @@ async def main():
     await database.close()
 
 
-if __name__ == '__main__':
-    args = docopt(__doc__, version='FAF Server')
+if __name__ == "__main__":
+    args = docopt(__doc__, version="FAF Server")
     config_file = args.get("--configuration-file")
     if config_file:
         os.environ["CONFIGURATION_FILE"] = config_file
@@ -122,8 +122,8 @@ if __name__ == '__main__':
     stderr_handler = logging.StreamHandler()
     stderr_handler.setFormatter(
         logging.Formatter(
-            fmt='%(levelname)-8s %(asctime)s %(name)-30s %(message)s',
-            datefmt='%b %d  %H:%M:%S'
+            fmt="%(levelname)-8s %(asctime)s %(name)-30s %(message)s",
+            datefmt="%b %d  %H:%M:%S"
         )
     )
     logger.addHandler(stderr_handler)

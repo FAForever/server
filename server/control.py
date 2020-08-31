@@ -48,11 +48,11 @@ class ControlServer:
 
     async def games(self, request):
         body = dumps(to_dict_list(self.game_service.all_games))
-        return web.Response(body=body.encode(), content_type='application/json')
+        return web.Response(body=body.encode(), content_type="application/json")
 
     async def players(self, request):
         body = dumps(to_dict_list(self.player_service.all_players))
-        return web.Response(body=body.encode(), content_type='application/json')
+        return web.Response(body=body.encode(), content_type="application/json")
 
 
 async def run_control_server(

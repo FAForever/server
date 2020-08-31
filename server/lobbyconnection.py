@@ -152,7 +152,7 @@ class LobbyConnection:
 
     async def ensure_authenticated(self, cmd):
         if not self._authenticated:
-            if cmd not in ['hello', 'ask_session', 'create_account', 'ping', 'pong', 'Bottleneck']:  # Bottleneck is sent by the game during reconnect
+            if cmd not in ["hello", "ask_session", "create_account", "ping", "pong", "Bottleneck"]:  # Bottleneck is sent by the game during reconnect
                 metrics.unauth_messages.labels(cmd).inc()
                 await self.abort("Message invalid for unauthenticated connection: %s" % cmd)
                 return False
@@ -165,28 +165,28 @@ class LobbyConnection:
         self._logger.log(TRACE, "<< %s: %s", self.get_user_identifier(), message)
 
         try:
-            cmd = message['command']
+            cmd = message["command"]
             if not await self.ensure_authenticated(cmd):
                 return
-            target = message.get('target')
-            if target == 'game':
+            target = message.get("target")
+            if target == "game":
                 if not self.game_connection:
                     return
 
-                await self.game_connection.handle_action(cmd, message.get('args', []))
+                await self.game_connection.handle_action(cmd, message.get("args", []))
                 return
 
-            if target == 'connectivity' and message.get('command') == 'InitiateTest':
+            if target == "connectivity" and message.get("command") == "InitiateTest":
                 self._attempted_connectivity_test = True
                 raise ClientError("Your client version is no longer supported. Please update to the newest version: https://faforever.com")
 
-            handler = getattr(self, 'command_{}'.format(cmd))
+            handler = getattr(self, "command_{}".format(cmd))
             await handler(message)
 
         except AuthenticationError as ex:
             await self.send({
-                'command': 'authentication_failed',
-                'text': ex.message
+                "command": "authentication_failed",
+                "text": ex.message
             })
         except BanError as ex:
             await self.send({
@@ -198,9 +198,9 @@ class LobbyConnection:
         except ClientError as ex:
             self._logger.warning("Client error: %s", ex.message)
             await self.send({
-                'command': 'notice',
-                'style': 'error',
-                'text': ex.message
+                "command": "notice",
+                "style": "error",
+                "text": ex.message
             })
             if not ex.recoverable:
                 await self.abort(ex.message)
@@ -211,7 +211,7 @@ class LobbyConnection:
             # Propagate connection errors to the ServerContext error handler.
             raise e
         except Exception as ex:  # pragma: no cover
-            await self.send({'command': 'invalid'})
+            await self.send({"command": "invalid"})
             self._logger.exception(ex)
             await self.abort("Error processing command")
 
@@ -258,14 +258,14 @@ class LobbyConnection:
 
     async def command_matchmaker_info(self, message):
         await self.send({
-            'command': 'matchmaker_info',
-            'queues': [queue.to_dict() for queue in self.ladder_service.queues.values()]
+            "command": "matchmaker_info",
+            "queues": [queue.to_dict() for queue in self.ladder_service.queues.values()]
         })
 
     async def send_game_list(self):
         await self.send({
-            'command': 'game_info',
-            'games': [game.to_dict() for game in self.game_service.open_games]
+            "command": "game_info",
+            "games": [game.to_dict() for game in self.game_service.open_games]
         })
 
     async def command_social_remove(self, message):
@@ -314,16 +314,16 @@ class LobbyConnection:
         })
 
     async def command_admin(self, message):
-        action = message['action']
+        action = message["action"]
 
         if action == "closeFA":
             if await self.player_service.has_permission_role(
-                self.player, 'ADMIN_KICK_SERVER'
+                self.player, "ADMIN_KICK_SERVER"
             ):
-                player = self.player_service[message['user_id']]
+                player = self.player_service[message["user_id"]]
                 if player:
                     self._logger.info(
-                        'Administrative action: %s closed game for %s',
+                        "Administrative action: %s closed game for %s",
                         self.player, player
                     )
                     with contextlib.suppress(DisconnectedError):
@@ -334,23 +334,23 @@ class LobbyConnection:
 
         elif action == "closelobby":
             if await self.player_service.has_permission_role(
-                self.player, 'ADMIN_KICK_SERVER'
+                self.player, "ADMIN_KICK_SERVER"
             ):
-                player = self.player_service[message['user_id']]
+                player = self.player_service[message["user_id"]]
                 if player and player.lobby_connection is not None:
                     self._logger.info(
-                        'Administrative action: %s closed client for %s',
+                        "Administrative action: %s closed client for %s",
                         self.player, player
                     )
                     with contextlib.suppress(DisconnectedError):
                         await player.lobby_connection.kick()
 
         elif action == "broadcast":
-            message_text = message.get('message')
+            message_text = message.get("message")
             if not message_text:
                 return
             if await self.player_service.has_permission_role(
-                self.player, 'ADMIN_BROADCAST_MESSAGE'
+                self.player, "ADMIN_BROADCAST_MESSAGE"
             ):
                 tasks = []
                 for player in self.player_service:
@@ -368,10 +368,10 @@ class LobbyConnection:
                 await asyncio_.gather_without_exceptions(tasks, Exception)
         elif action == "join_channel":
             if await self.player_service.has_permission_role(
-                self.player, 'ADMIN_JOIN_CHANNEL'
+                self.player, "ADMIN_JOIN_CHANNEL"
             ):
-                user_ids = message['user_ids']
-                channel = message['channel']
+                user_ids = message["user_ids"]
+                channel = message["channel"]
 
                 for user_id in user_ids:
                     player = self.player_service[user_id]
@@ -417,16 +417,16 @@ class LobbyConnection:
 
         now = datetime.utcnow()
         if ban_reason is not None and now < ban_expiry:
-            self._logger.debug('Rejected login from banned user: %s, %s, %s',
+            self._logger.debug("Rejected login from banned user: %s, %s, %s",
                                player_id, username, self.session)
             raise BanError(ban_expiry, ban_reason)
 
         # New accounts are prevented from playing if they didn't link to steam
 
         if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() > config.FORCE_STEAM_LINK_AFTER_DATE:
-            self._logger.debug('Rejected login from new user: %s, %s, %s', player_id, username, self.session)
+            self._logger.debug("Rejected login from new user: %s, %s, %s", player_id, username, self.session)
             raise ClientError(
-                "Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on <a href='{steamlink_url}'>{steamlink_url}</a>.".format(steamlink_url=config.WWW_URL + '/account/link'),
+                'Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on <a href="{steamlink_url}">{steamlink_url}</a>.'.format(steamlink_url=config.WWW_URL + "/account/link"),
                 recoverable=False)
 
         self._logger.debug("Login from: %s, %s, %s", player_id, username, self.session)
@@ -447,12 +447,12 @@ class LobbyConnection:
     async def _check_version(self):
         versionDB, updateFile = self.player_service.client_version_info
         update_msg = {
-            'command': 'update',
-            'update': updateFile,
-            'new_version': versionDB
+            "command": "update",
+            "update": updateFile,
+            "new_version": versionDB
         }
 
-        if not self.user_agent or 'downlords-faf-client' not in self.user_agent:
+        if not self.user_agent or "downlords-faf-client" not in self.user_agent:
             await self.send_warning(
                 "You are using an unofficial client version! "
                 "Some features might not work as expected. "
@@ -462,19 +462,19 @@ class LobbyConnection:
             )
 
         if not self._version or not self.user_agent:
-            update_msg['command'] = 'welcome'
+            update_msg["command"] = "welcome"
             # For compatibility with 0.10.x updating mechanism
             await self.send(update_msg)
             return False
 
         # Check their client is reporting the right version number.
-        if 'downlords-faf-client' not in self.user_agent:
+        if "downlords-faf-client" not in self.user_agent:
             try:
                 version = self._version
                 if "-" in version:
-                    version = version.split('-')[0]
+                    version = version.split("-")[0]
                 if "+" in version:
-                    version = version.split('+')[0]
+                    version = version.split("+")[0]
                 if semver.compare(versionDB, version) > 0:
                     await self.send(update_msg)
                     return False
@@ -487,15 +487,15 @@ class LobbyConnection:
         if not config.USE_POLICY_SERVER:
             return True
 
-        url = config.FAF_POLICY_SERVER_BASE_URL + '/verify'
+        url = config.FAF_POLICY_SERVER_BASE_URL + "/verify"
         payload = {
             "player_id": player_id,
             "uid_hash": uid_hash,
             "session": session
         }
         headers = {
-            'content-type': "application/json",
-            'cache-control': "no-cache"
+            "content-type": "application/json",
+            "cache-control": "no-cache"
         }
 
         async with aiohttp.ClientSession(raise_for_status=True) as session:
@@ -505,7 +505,7 @@ class LobbyConnection:
         if ignore_result:
             return True
 
-        if response.get('result', '') == 'vm':
+        if response.get("result", "") == "vm":
             self._logger.debug("Using VM: %d: %s", player_id, uid_hash)
             await self.send({
                 "command": "notice",
@@ -523,7 +523,7 @@ class LobbyConnection:
                                     config.WWW_URL + "/account/link</a>.<br>If you need an exception, please contact an "
                                                      "admin or moderator on the forums", fatal=True)
 
-        if response.get('result', '') == 'already_associated':
+        if response.get("result", "") == "already_associated":
             self._logger.warning("UID hit: %d: %s", player_id, uid_hash)
             await self.send_warning("Your computer is already associated with another FAF account.<br><br>In order to "
                                     "log in with an additional account, you have to link it to Steam: <a href='" +
@@ -532,7 +532,7 @@ class LobbyConnection:
                                                      "admin or moderator on the forums", fatal=True)
             return False
 
-        if response.get('result', '') == 'fraudulent':
+        if response.get("result", "") == "fraudulent":
             self._logger.info("Banning player %s for fraudulent looking login.", player_id)
             await self.send_warning("Fraudulent login attempt detected. As a precautionary measure, your account has been "
                                     "banned permanently. Please contact an admin or moderator on the forums if you feel this is "
@@ -552,15 +552,15 @@ class LobbyConnection:
                         )
                     )
                 except pymysql.MySQLError as e:
-                    raise ClientError('Banning failed: {}'.format(e))
+                    raise ClientError("Banning failed: {}".format(e))
 
             return False
 
-        return response.get('result', '') == 'honest'
+        return response.get("result", "") == "honest"
 
     async def command_hello(self, message):
-        login = message['login'].strip()
-        password = message['password']
+        login = message["login"].strip()
+        password = message["password"]
 
         async with self._db.acquire() as conn:
             player_id, login, steamid = await self.check_user_login(conn, login, password)
@@ -577,7 +577,7 @@ class LobbyConnection:
             )
 
             conforms_policy = await self.check_policy_conformity(
-                player_id, message['unique_id'], self.session,
+                player_id, message["unique_id"], self.session,
                 ignore_result=(
                     steamid is not None or
                     self.player_service.is_uniqueid_exempt(player_id)
@@ -697,7 +697,7 @@ class LobbyConnection:
     async def command_restore_game_session(self, message):
         assert self.player is not None
 
-        game_id = int(message.get('game_id'))
+        game_id = int(message.get("game_id"))
 
         # Restore the player's game connection, if the game still exists and is live
         if not game_id or game_id not in self.game_service:
@@ -733,7 +733,7 @@ class LobbyConnection:
             await self.send({"command": "session", "session": self.session})
 
     async def command_avatar(self, message):
-        action = message['action']
+        action = message["action"]
 
         if action == "list_avatar":
             avatarList = []
@@ -760,7 +760,7 @@ class LobbyConnection:
                     await self.send({"command": "avatar", "avatarlist": avatarList})
 
         elif action == "select":
-            avatar_url = message['avatar']
+            avatar_url = message["avatar"]
 
             async with self._db.acquire() as conn:
                 if avatar_url is not None:
@@ -806,7 +806,7 @@ class LobbyConnection:
                     }
                 self.player_service.mark_dirty(self.player)
         else:
-            raise KeyError('invalid action')
+            raise KeyError("invalid action")
 
     async def command_game_join(self, message):
         """
@@ -819,8 +819,8 @@ class LobbyConnection:
 
         await self.abort_connection_if_banned()
 
-        uuid = int(message['uid'])
-        password = message.get('password')
+        uuid = int(message["uid"])
+        password = message.get("password")
 
         self._logger.debug("joining: %d with pw: %s", uuid, password)
         try:
@@ -857,9 +857,9 @@ class LobbyConnection:
 
     async def command_game_matchmaking(self, message):
         queue_name = str(
-            message.get('queue_name') or message.get('mod', 'ladder1v1')
+            message.get("queue_name") or message.get("mod", "ladder1v1")
         )
-        state = str(message['state'])
+        state = str(message["state"])
 
         if self._attempted_connectivity_test:
             raise ClientError("Cannot host game. Please update your client to the newest version.")
@@ -871,7 +871,7 @@ class LobbyConnection:
         if state == "start":
             assert self.player is not None
             # Faction can be either the name (e.g. 'uef') or the enum value (e.g. 1)
-            self.player.faction = message['faction']
+            self.player.faction = message["faction"]
 
             # TODO: Put player parties here
             self.ladder_service.start_search(
@@ -887,16 +887,16 @@ class LobbyConnection:
 
         await self.abort_connection_if_banned()
 
-        visibility = VisibilityState.from_string(message.get('visibility'))
+        visibility = VisibilityState.from_string(message.get("visibility"))
         if not isinstance(visibility, VisibilityState):
             # Protocol violation.
-            await self.abort("{} sent a nonsense visibility code: {}".format(self.player.login, message.get('visibility')))
+            await self.abort("{} sent a nonsense visibility code: {}".format(self.player.login, message.get("visibility")))
             return
 
-        title = message.get('title') or f"{self.player.login}'s game"
+        title = message.get("title") or f"{self.player.login}'s game"
 
         try:
-            title.encode('ascii')
+            title.encode("ascii")
         except UnicodeEncodeError:
             await self.send({
                 "command": "notice",
@@ -905,9 +905,9 @@ class LobbyConnection:
             })
             return
 
-        mod = message.get('mod') or FeaturedModType.FAF
-        mapname = message.get('mapname') or 'scmp_007'
-        password = message.get('password')
+        mod = message.get("mod") or FeaturedModType.FAF
+        mapname = message.get("mapname") or "scmp_007"
+        password = message.get("password")
         game_mode = mod.lower()
 
         game = self.game_service.create_game(
@@ -987,7 +987,7 @@ class LobbyConnection:
 
             elif type == "like":
                 canLike = True
-                uid = message['uid']
+                uid = message["uid"]
                 result = await conn.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likers FROM `table_mod` WHERE uid = %s LIMIT 1", (uid,))
 
                 row = await result.fetchone()
@@ -1027,7 +1027,7 @@ class LobbyConnection:
                     "JOIN mod_version v ON v.mod_id = s.mod_id "
                     "SET downloads=downloads+1 WHERE v.uid = %s", uid)
             else:
-                raise ValueError('invalid type argument')
+                raise ValueError("invalid type argument")
 
     async def command_ice_servers(self, message):
         if not self.player:
@@ -1043,9 +1043,9 @@ class LobbyConnection:
             ice_servers += await self.nts_client.server_tokens(ttl=ttl)
 
         await self.send({
-            'command': 'ice_servers',
-            'ice_servers': ice_servers,
-            'ttl': ttl
+            "command": "ice_servers",
+            "ice_servers": ice_servers,
+            "ttl": ttl
         })
 
     async def send_warning(self, message: str, fatal: bool = False):
@@ -1058,9 +1058,9 @@ class LobbyConnection:
         :return: None
         """
         await self.send({
-            'command': 'notice',
-            'style': 'info' if not fatal else 'error',
-            'text': message
+            "command": "notice",
+            "style": "info" if not fatal else "error",
+            "text": message
         })
         if fatal:
             await self.abort(message)

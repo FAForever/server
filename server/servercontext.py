@@ -83,7 +83,7 @@ class ServerContext:
         self.connections[connection] = protocol
 
         try:
-            await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info('peername')))
+            await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info("peername")))
             metrics.user_connections.labels("None").inc()
             while protocol.is_connected():
                 message = await protocol.read_message()

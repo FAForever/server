@@ -35,9 +35,9 @@ def test_timed_method():
 def test_timed_wraps_right():
     @timed()
     def somefun():
-        return 'test'
+        return "test"
 
     @timed
     def somefun():
-        return 'test'
-    assert somefun.__name__ == 'somefun'
+        return "test"
+    assert somefun.__name__ == "somefun"

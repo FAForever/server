@@ -11,7 +11,7 @@ from server.rating import RatingType
 
 
 def test_ratings():
-    p = Player('Schroedinger')
+    p = Player("Schroedinger")
     p.ratings[RatingType.GLOBAL] = (1500, 20)
     assert p.ratings[RatingType.GLOBAL] == (1500, 20)
     p.ratings[RatingType.GLOBAL] = Rating(1700, 20)
@@ -29,23 +29,23 @@ def test_faction():
     Yes, this test was motivated by a bug
     :return:
     """
-    p = Player('Schroedinger2')
-    p.faction = 'aeon'
+    p = Player("Schroedinger2")
+    p.faction = "aeon"
     assert p.faction == Faction.aeon
     p.faction = Faction.aeon
     assert p.faction == Faction.aeon
 
 
 def test_equality_by_id():
-    p = Player('Sheeo', 42)
-    p2 = Player('RandomSheeo', 42)
+    p = Player("Sheeo", 42)
+    p2 = Player("RandomSheeo", 42)
     assert p == p2
     assert p.__hash__() == p2.__hash__()
 
 
 def test_weak_references():
-    p = Player(login='Test')
-    weak_properties = ['lobby_connection', 'game']
+    p = Player(login="Test")
+    weak_properties = ["lobby_connection", "game"]
     referent = mock.Mock()
     for prop in weak_properties:
         setattr(p, prop, referent)
@@ -58,7 +58,7 @@ def test_weak_references():
 
 
 def test_unlink_weakref():
-    p = Player(login='Test')
+    p = Player(login="Test")
     mock_game = mock.Mock()
     p.game = mock_game
     assert p.game == mock_game
@@ -99,7 +99,7 @@ def test_serialize():
 
 @pytest.mark.asyncio
 async def test_send_message():
-    p = Player(login='Test')
+    p = Player(login="Test")
 
     assert p.lobby_connection is None
     with pytest.raises(DisconnectedError):
@@ -107,7 +107,7 @@ async def test_send_message():
 
 
 def test_write_message():
-    p = Player(login='Test')
+    p = Player(login="Test")
 
     assert p.lobby_connection is None
     # Should not raise

@@ -36,10 +36,10 @@ from .servercontext import ServerContext
 from .stats.game_stats_service import GameStatsService
 from .timing import at_interval
 
-__author__ = 'Askaholic, Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard, Michel Jung'
-__contact__ = 'admin@faforever.com'
-__license__ = 'GPLv3'
-__copyright__ = 'Copyright (c) 2011-2015 ' + __author__
+__author__ = "Askaholic, Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard, Michel Jung"
+__contact__ = "admin@faforever.com"
+__license__ = "GPLv3"
+__copyright__ = "Copyright (c) 2011-2015 " + __author__
 
 __all__ = (
     "ConfigurationService",

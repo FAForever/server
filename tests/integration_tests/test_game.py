@@ -298,14 +298,14 @@ async def test_ladder_game_not_joinable(lobby_server):
 
     msg = await read_until_command(proto1, "game_launch")
     await proto1.send_message({
-        'command': 'GameState',
-        'target': 'game',
-        'args': ['Idle']
+        "command": "GameState",
+        "target": "game",
+        "args": ["Idle"]
     })
     await proto1.send_message({
-        'command': 'GameState',
-        'target': 'game',
-        'args': ['Lobby']
+        "command": "GameState",
+        "target": "game",
+        "args": ["Lobby"]
     })
 
     game_uid = msg["uid"]

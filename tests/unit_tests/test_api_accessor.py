@@ -17,7 +17,7 @@ async def test_session_manager(mocker):
         has_refresh_token = Mock(return_value=False)
 
     manager = SessionManager()
-    mocker.patch('server.api.api_accessor.OAuth2Session', MockSession)
+    mocker.patch("server.api.api_accessor.OAuth2Session", MockSession)
 
     session = await manager.get_session()
     assert session
@@ -25,38 +25,38 @@ async def test_session_manager(mocker):
 
 
 async def test_api_get(api_accessor):
-    result = await api_accessor.api_get('test')
+    result = await api_accessor.api_get("test")
     api_accessor.api_session.session.request.assert_called_once_with(
-        'GET',
-        config.API_BASE_URL + 'test'
+        "GET",
+        config.API_BASE_URL + "test"
     )
 
-    assert result == (200, 'test')
+    assert result == (200, "test")
 
 
 async def test_api_patch(api_accessor):
     data = dict()
-    result = await api_accessor.api_patch('test', data)
+    result = await api_accessor.api_patch("test", data)
     api_accessor.api_session.session.request.assert_called_once_with(
         "PATCH",
-        config.API_BASE_URL + 'test',
-        headers={'Content-type': 'application/json'},
+        config.API_BASE_URL + "test",
+        headers={"Content-type": "application/json"},
         json=data
     )
 
-    assert result == (200, 'test')
+    assert result == (200, "test")
 
 
 async def test_update_achievements(api_accessor):
     achievements = await api_accessor.update_achievements([dict(
-        achievement_id='test',
-        update_type='test'
+        achievement_id="test",
+        update_type="test"
     )], 1)
-    assert achievements == (200, 'test')
+    assert achievements == (200, "test")
 
 
 async def test_update_events(api_accessor):
     events = await api_accessor.update_events([dict(
-        event_id='test'
+        event_id="test"
     )], 1)
-    assert events == (200, 'test')
+    assert events == (200, "test")

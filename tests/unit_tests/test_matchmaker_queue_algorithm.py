@@ -201,12 +201,12 @@ def test_stable_marriage_produces_symmetric_matchings(caplog, build_func, search
 
 
 def test_stable_marriage(player_factory):
-    s1 = Search([player_factory(2300, 64, name='p1')])
-    s2 = Search([player_factory(1200, 72, name='p2')])
-    s3 = Search([player_factory(1300, 175, name='p3')])
-    s4 = Search([player_factory(2350, 125, name='p4')])
-    s5 = Search([player_factory(1200, 175, name='p5')])
-    s6 = Search([player_factory(1250, 175, name='p6')])
+    s1 = Search([player_factory(2300, 64, name="p1")])
+    s2 = Search([player_factory(1200, 72, name="p2")])
+    s3 = Search([player_factory(1300, 175, name="p3")])
+    s4 = Search([player_factory(2350, 125, name="p4")])
+    s5 = Search([player_factory(1200, 175, name="p5")])
+    s6 = Search([player_factory(1250, 175, name="p6")])
 
     searches = [s1, s2, s3, s4, s5, s6]
     ranks = algorithm._MatchingGraph.build_full(searches)
@@ -219,10 +219,10 @@ def test_stable_marriage(player_factory):
 
 
 def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_different_mean(player_factory):
-    new1 = Search([player_factory(1500, 500, name='new1', ladder_games=1)])
-    new2 = Search([player_factory(1400, 500, name='new2', ladder_games=2)])
-    old1 = Search([player_factory(2300, 75, name='old1', ladder_games=100)])
-    old2 = Search([player_factory(2350, 75, name='old2', ladder_games=200)])
+    new1 = Search([player_factory(1500, 500, name="new1", ladder_games=1)])
+    new2 = Search([player_factory(1400, 500, name="new2", ladder_games=2)])
+    old1 = Search([player_factory(2300, 75, name="old1", ladder_games=100)])
+    old2 = Search([player_factory(2350, 75, name="old2", ladder_games=200)])
 
     searches = [new1, new2, old1, old2]
     ranks = algorithm._MatchingGraph.build_full(searches)
@@ -236,10 +236,10 @@ def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_differ
 def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_same_mean(player_factory):
     # Assumes that both new players initialized with mean 1500 will be matched
     # as if they had mean 500
-    new1 = Search([player_factory(1500, 500, name='new1', ladder_games=0)])
-    new2 = Search([player_factory(1500, 500, name='new2', ladder_games=0)])
-    old1 = Search([player_factory(500, 75, name='old1', ladder_games=100)])
-    old2 = Search([player_factory(500, 75, name='old2', ladder_games=100)])
+    new1 = Search([player_factory(1500, 500, name="new1", ladder_games=0)])
+    new2 = Search([player_factory(1500, 500, name="new2", ladder_games=0)])
+    old1 = Search([player_factory(500, 75, name="old1", ladder_games=100)])
+    old2 = Search([player_factory(500, 75, name="old2", ladder_games=100)])
 
     searches = [new1, new2, old1, old2]
     ranks = algorithm._MatchingGraph.build_full(searches)
@@ -251,12 +251,12 @@ def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_same_m
 
 
 def test_stable_marriage_better_than_greedy(player_factory):
-    s1 = Search([player_factory(2300, 64, name='p1')])
-    s2 = Search([player_factory(2000, 64, name='p2')])
-    s3 = Search([player_factory(2100, 64, name='p3')])
-    s4 = Search([player_factory(2200, 64, name='p4')])
-    s5 = Search([player_factory(2300, 64, name='p5')])
-    s6 = Search([player_factory(2400, 64, name='p6')])
+    s1 = Search([player_factory(2300, 64, name="p1")])
+    s2 = Search([player_factory(2000, 64, name="p2")])
+    s3 = Search([player_factory(2100, 64, name="p3")])
+    s4 = Search([player_factory(2200, 64, name="p4")])
+    s5 = Search([player_factory(2300, 64, name="p5")])
+    s6 = Search([player_factory(2400, 64, name="p6")])
 
     searches = [s1, s2, s3, s4, s5, s6]
     ranks = algorithm._MatchingGraph.build_full(searches)
@@ -276,10 +276,10 @@ def test_stable_marriage_better_than_greedy(player_factory):
 
 
 def test_stable_marriage_unmatch(player_factory):
-    s1 = Search([player_factory(503, 64, name='p1')])
-    s2 = Search([player_factory(504, 64, name='p2')])
-    s3 = Search([player_factory(504, 64, name='p3')])
-    s4 = Search([player_factory(505, 64, name='p4')])
+    s1 = Search([player_factory(503, 64, name="p1")])
+    s2 = Search([player_factory(504, 64, name="p2")])
+    s3 = Search([player_factory(504, 64, name="p3")])
+    s4 = Search([player_factory(505, 64, name="p4")])
 
     searches = [s1, s2, s3, s4]
     ranks = algorithm._MatchingGraph.build_full(searches)
@@ -291,12 +291,12 @@ def test_stable_marriage_unmatch(player_factory):
 
 
 def test_random_newbie_matching_is_symmetric(player_factory):
-    s1 = Search([player_factory(1000, 500, name='p1', ladder_games=5)])
-    s2 = Search([player_factory(1200, 500, name='p2', ladder_games=5)])
-    s3 = Search([player_factory(900, 500, name='p3', ladder_games=5)])
-    s4 = Search([player_factory(1500, 500, name='p4', ladder_games=5)])
-    s5 = Search([player_factory(1700, 500, name='p5', ladder_games=5)])
-    s6 = Search([player_factory(600, 500, name='p6', ladder_games=5)])
+    s1 = Search([player_factory(1000, 500, name="p1", ladder_games=5)])
+    s2 = Search([player_factory(1200, 500, name="p2", ladder_games=5)])
+    s3 = Search([player_factory(900, 500, name="p3", ladder_games=5)])
+    s4 = Search([player_factory(1500, 500, name="p4", ladder_games=5)])
+    s5 = Search([player_factory(1700, 500, name="p5", ladder_games=5)])
+    s6 = Search([player_factory(600, 500, name="p6", ladder_games=5)])
 
     searches = [s1, s2, s3, s4, s5, s6]
     matches = algorithm.RandomlyMatchNewbies().find(searches)
@@ -428,8 +428,8 @@ def test_matchmaker_random_only(player_factory):
 
 
 def test_make_matches_will_not_match_low_quality_games(player_factory):
-    s1 = Search([player_factory(100, 64, name='p1')])
-    s2 = Search([player_factory(2000, 64, name='p2')])
+    s1 = Search([player_factory(100, 64, name="p1")])
+    s2 = Search([player_factory(2000, 64, name="p2")])
 
     searches = [s1, s2]
 
@@ -440,8 +440,8 @@ def test_make_matches_will_not_match_low_quality_games(player_factory):
 
 
 def test_make_matches_communicates_failed_attempts(player_factory):
-    s1 = Search([player_factory(100, 64, name='p1')])
-    s2 = Search([player_factory(2000, 64, name='p2')])
+    s1 = Search([player_factory(100, 64, name="p1")])
+    s2 = Search([player_factory(2000, 64, name="p2")])
 
     searches = [s1, s2]
 

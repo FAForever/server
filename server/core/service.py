@@ -3,7 +3,7 @@ from typing import Dict, List
 
 from .dependency_injector import DependencyInjector
 
-CASE_PATTERN = re.compile(r'(?<!^)(?=[A-Z])')
+CASE_PATTERN = re.compile(r"(?<!^)(?=[A-Z])")
 DependencyGraph = Dict[str, List[str]]
 
 
@@ -59,4 +59,4 @@ def snake_case(string: str) -> str:
     Copied from:
     https://stackoverflow.com/questions/1175208/elegant-python-function-to-convert-camelcase-to-snake-case
     """
-    return CASE_PATTERN.sub('_', string).lower()
+    return CASE_PATTERN.sub("_", string).lower()

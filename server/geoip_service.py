@@ -45,7 +45,7 @@ class GeoIpService(Service):
         # Run every Wednesday because GeoLite2 is updated every first Tuesday
         # of the month.
         self._update_cron = aiocron.crontab(
-            '0 0 0 * * 3', func=self.check_update_geoip_db
+            "0 0 0 * * 3", func=self.check_update_geoip_db
         )
         self._check_file_timer = Timer(
             60 * 10, self.check_geoip_db_file_updated, start=True
@@ -125,9 +125,9 @@ class GeoIpService(Service):
 
         # Unzip the archive and overwrite the old file
         try:
-            with tarfile.open(temp_file_path, 'r:gz') as tar:
+            with tarfile.open(temp_file_path, "r:gz") as tar:
                 f_in = extract_file(tar, "GeoLite2-Country.mmdb")
-                with open(self.file_path, 'wb') as f_out:
+                with open(self.file_path, "wb") as f_out:
                     shutil.copyfileobj(f_in, f_out)
         except (tarfile.TarError) as e:    # pragma: no cover
             self._logger.warning("Failed to extract downloaded file!")
@@ -152,14 +152,14 @@ class GeoIpService(Service):
         async def get_checksum(session):
             async with session.get(url, params={
                 **params,
-                "suffix": f"{params['suffix']}.md5"
+                "suffix": params["suffix"] + ".md5"
             }, timeout=60 * 20) as resp:
                 return await resp.text()
 
         async def get_db_file_with_checksum(session):
             hasher = hashlib.md5()
             async with session.get(url, params=params, timeout=60 * 20) as resp:
-                with open(file_path, 'wb') as f:
+                with open(file_path, "wb") as f:
                     while True:
                         chunk = await resp.content.read(chunk_size)
                         if not chunk:

@@ -21,21 +21,21 @@ def service(api_accessor: ApiAccessor):
 
 def create_queue():
     return [
-        dict(event_id='1-2-3', count=1),
-        dict(event_id='2-3-4', count=4),
+        dict(event_id="1-2-3", count=1),
+        dict(event_id="2-3-4", count=4),
     ]
 
 
 async def test_fill_queue(service: EventService):
 
     queue = []
-    service.record_event('1-2-3', 0, queue)
-    service.record_event('1-2-3', 1, queue)
-    service.record_event('2-3-4', 4, queue)
+    service.record_event("1-2-3", 0, queue)
+    service.record_event("1-2-3", 1, queue)
+    service.record_event("2-3-4", 4, queue)
 
     assert queue == [
-        dict(event_id='1-2-3', count=1),
-        dict(event_id='2-3-4', count=4),
+        dict(event_id="1-2-3", count=1),
+        dict(event_id="2-3-4", count=4),
     ]
 
 
@@ -66,10 +66,10 @@ async def test_record_multiple(service: EventService):
     result = await service.execute_batch_update(42, queue)
 
     events_data = []
-    for event in content['data']:
+    for event in content["data"]:
         converted_event = dict(
-            event_id=event['attributes']['eventId'],
-            count=event['attributes']['currentCount']
+            event_id=event["attributes"]["eventId"],
+            count=event["attributes"]["currentCount"]
         )
         events_data.append(converted_event)
 

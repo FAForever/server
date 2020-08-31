@@ -56,8 +56,8 @@ class Game:
         game_service: "GameService",
         game_stats_service: "GameStatsService",
         host: Optional[Player] = None,
-        name: str = 'None',
-        map_: str = 'SCMP_007',
+        name: str = "None",
+        map_: str = "SCMP_007",
         game_mode: str = FeaturedModType.FAF,
         rating_type: Optional[str] = None,
         max_players: int = 12
@@ -80,7 +80,7 @@ class Game:
         self.host = host
         self.name = self.sanitize_name(name)
         self.map_id = None
-        self.map_file_path = f'maps/{map_}.zip'
+        self.map_file_path = f"maps/{map_}.zip"
         self.map_scenario_path = None
         self.password = None
         self._players = []
@@ -93,15 +93,15 @@ class Game:
         self._connections = {}
         self.enforce_rating = False
         self.gameOptions = {
-            'FogOfWar': 'explored',
-            'GameSpeed': 'normal',
-            'Victory': Victory.DEMORALIZATION,
-            'CheatsEnabled': 'false',
-            'PrebuiltUnits': 'Off',
-            'NoRushOption': 'Off',
-            'TeamLock': 'locked',
-            'AIReplacement': 'Off',
-            'RestrictedCategories': 0
+            "FogOfWar": "explored",
+            "GameSpeed": "normal",
+            "Victory": Victory.DEMORALIZATION,
+            "CheatsEnabled": "false",
+            "PrebuiltUnits": "Off",
+            "NoRushOption": "Off",
+            "TeamLock": "locked",
+            "AIReplacement": "Off",
+            "RestrictedCategories": 0
         }
         self.mods = {}
         self._is_hosted = asyncio.Future()
@@ -121,7 +121,7 @@ class Game:
     @property
     def armies(self):
         return frozenset(
-            self.get_player_option(player.id, 'Army')
+            self.get_player_option(player.id, "Army")
             for player in self.players
         )
 
@@ -149,8 +149,8 @@ class Game:
             return frozenset(
                 player
                 for player in self._players
-                if self.get_player_option(player.id, 'Army') is not None
-                and self.get_player_option(player.id, 'Army') >= 0
+                if self.get_player_option(player.id, "Army") is not None
+                and self.get_player_option(player.id, "Army") >= 0
             )
 
     @property
@@ -163,7 +163,7 @@ class Game:
         A set of all teams of this game's players.
         """
         return frozenset(
-            self.get_player_option(player.id, 'Team')
+            self.get_player_option(player.id, "Team")
             for player in self.players
         )
 
@@ -207,14 +207,14 @@ class Game:
         if None in self.teams:
             raise GameError(
                 "Missing team for at least one player. (player, team): {}"
-                .format([(player, self.get_player_option(player.id, 'Team'))
+                .format([(player, self.get_player_option(player.id, "Team"))
                         for player in self.players])
             )
 
         teams = defaultdict(set)
         ffa_players = []
         for player in self.players:
-            team_id = self.get_player_option(player.id, 'Team')
+            team_id = self.get_player_option(player.id, "Team")
             if team_id == FFA_TEAM:
                 ffa_players.append({player})
             else:
@@ -263,7 +263,7 @@ class Game:
 
     def _process_pending_army_stats(self):
         for player in self._players_with_unsent_army_stats:
-            army = self.get_player_option(player.id, 'Army')
+            army = self.get_player_option(player.id, "Army")
             if army not in self._results:
                 continue
 
@@ -453,12 +453,12 @@ class Game:
         self._logger.debug("Saving scores from game %s", self.id)
         scores = {}
         for player in self.players:
-            army = self.get_player_option(player.id, 'Army')
+            army = self.get_player_option(player.id, "Army")
             outcome = self.get_player_outcome(player)
             score = self.get_army_score(army)
             scores[player] = (score, outcome)
             self._logger.info(
-                'Result for army %s, player: %s: score %s, outcome %s',
+                "Result for army %s, player: %s: score %s, outcome %s",
                 army, player, score, outcome
             )
 
@@ -540,14 +540,14 @@ class Game:
         :return:
         """
         for player in self.players:
-            if self.get_player_option(player.id, 'StartSpot') == slot_index:
-                self.set_player_option(player.id, 'Team', -1)
-                self.set_player_option(player.id, 'Army', -1)
-                self.set_player_option(player.id, 'StartSpot', -1)
+            if self.get_player_option(player.id, "StartSpot") == slot_index:
+                self.set_player_option(player.id, "Team", -1)
+                self.set_player_option(player.id, "Army", -1)
+                self.set_player_option(player.id, "StartSpot", -1)
 
         to_remove = []
         for ai in self.AIs:
-            if self.AIs[ai]['StartSpot'] == slot_index:
+            if self.AIs[ai]["StartSpot"] == slot_index:
                 to_remove.append(ai)
         for item in to_remove:
             del self.AIs[item]
@@ -674,7 +674,7 @@ class Game:
         is_generated = (self.map_file_path and "neroxis_map_generator" in self.map_file_path)
 
         if row:
-            self.map_id = row['id']
+            self.map_id = row["id"]
 
         if (
             self.validity is ValidityState.VALID
@@ -757,7 +757,7 @@ class Game:
         Avoids the game name to crash the mysql INSERT query by being longer than the column's max size or by
         containing non-latin1 characters
         """
-        return re.sub('[^\x20-\xFF]+', '_', name)[:128]
+        return re.sub("[^\x20-\xFF]+", "_", name)[:128]
 
     async def mark_invalid(self, new_validity_state: ValidityState):
         self._logger.info(
@@ -785,7 +785,7 @@ class Game:
         return self._results.score(army)
 
     def get_player_outcome(self, player):
-        army = self.get_player_option(player.id, 'Army')
+        army = self.get_player_option(player.id, "Army")
         if army is None:
             return GameOutcome.UNKNOWN
 
@@ -797,11 +797,11 @@ class Game:
 
     def to_dict(self):
         client_state = {
-            GameState.LOBBY: 'open',
-            GameState.LIVE: 'playing',
-            GameState.ENDED: 'closed',
-            GameState.INITIALIZING: 'closed',
-        }.get(self.state, 'closed')
+            GameState.LOBBY: "open",
+            GameState.LIVE: "playing",
+            GameState.ENDED: "closed",
+            GameState.INITIALIZING: "closed",
+        }.get(self.state, "closed")
         return {
             "command": "game_info",
             "visibility": VisibilityState.to_string(self.visibility),
@@ -821,7 +821,7 @@ class Game:
             "teams": {
                 team: [
                     player.login for player in self.players
-                    if self.get_player_option(player.id, 'Team') == team
+                    if self.get_player_option(player.id, "Team") == team
                 ]
                 for team in self.teams
             }
@@ -834,12 +834,12 @@ class Game:
         :return:
         """
         try:
-            return str(self.map_scenario_path.split('/')[2]).lower()
+            return str(self.map_scenario_path.split("/")[2]).lower()
         except (IndexError, AttributeError):
             if self.map_file_path:
                 return self.map_file_path[5:-4].lower()
             else:
-                return 'scmp_009'
+                return "scmp_009"
 
     def __eq__(self, other):
         if not isinstance(other, Game):

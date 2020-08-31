@@ -65,9 +65,9 @@ class ApiAccessor:
 
         # Converting the achievements to a format the jAPI can understand
         for achievement in achievements_data:
-            achievement['playerId'] = player_id
-            achievement['achievementId'] = achievement.pop('achievement_id')
-            achievement['operation'] = achievement.pop('update_type')
+            achievement["playerId"] = player_id
+            achievement["achievementId"] = achievement.pop("achievement_id")
+            achievement["operation"] = achievement.pop("update_type")
 
         self._logger.debug("Sending achievement data: %s", achievements_data)
 
@@ -77,8 +77,8 @@ class ApiAccessor:
 
         # Converting the events to a format the jAPI can understand
         for event in events_data:
-            event['playerId'] = player_id
-            event['eventId'] = event.pop('event_id')
+            event["playerId"] = player_id
+            event["eventId"] = event.pop("event_id")
 
         self._logger.debug("Sending event data: %s", events_data)
 
@@ -86,11 +86,11 @@ class ApiAccessor:
 
     async def api_get(self, path):
         api = await self.api_session.get_session()
-        return await api.request('GET', config.API_BASE_URL + path)
+        return await api.request("GET", config.API_BASE_URL + path)
 
     async def api_patch(self, path, json_data):
         api = await self.api_session.get_session()
-        headers = {'Content-type': 'application/json'}
+        headers = {"Content-type": "application/json"}
         status, data = await api.request(
             "PATCH",
             config.API_BASE_URL + path,
