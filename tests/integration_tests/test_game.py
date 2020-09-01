@@ -402,7 +402,11 @@ async def test_gamestate_ended_clears_references(
 
     await read_until(
         test_proto,
-        lambda msg: msg["command"] == "game_info" and msg["state"] == "closed"
+        lambda msg: (
+            msg["command"] == "game_info"
+            and msg["state"] == "closed"
+            and msg["num_players"] == 2
+        )
     )
     await asyncio.sleep(0.1)
     gc.collect()
