@@ -83,12 +83,18 @@ class MessageQueueService(Service):
     async def declare_exchange(
         self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC
     ) -> None:
+        await self.initialize()
         if not self._is_ready:
             self._logger.warning(
                 "Not connected to RabbitMQ, unable to declare exchange."
             )
             return
 
+        await self._declare_exchange(exchange_name, exchange_type)
+
+    async def _declare_exchange(
+        self, exchange_name: str, exchange_type: ExchangeType
+    ) -> None:
         new_exchange = await self._channel.declare_exchange(
             exchange_name, exchange_type
         )
@@ -148,7 +154,7 @@ class MessageQueueService(Service):
             return
 
         for exchange_name in list(self._exchanges.keys()):
-            await self.declare_exchange(
+            await self._declare_exchange(
                 exchange_name, self._exchange_types[exchange_name]
             )
         self._is_ready = True

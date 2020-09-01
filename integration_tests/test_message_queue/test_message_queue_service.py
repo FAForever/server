@@ -159,3 +159,17 @@ async def test_initialize_declare_exchange_race_condition():
             i += 1
 
     await asyncio.gather(keep_declaring_exchanges(), service.initialize())
+
+
+async def test_declaring_exchange_without_initialization():
+    service = MessageQueueService()
+    exchange_name = "test_exchange"
+
+    assert service._is_ready is False
+    assert service._connection is None
+
+    await service.declare_exchange(exchange_name)
+
+    assert service._is_ready
+    assert service._connection is not None
+    assert service._exchanges.get(exchange_name) is not None
