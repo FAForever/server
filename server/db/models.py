@@ -291,6 +291,7 @@ matchmaker_queue = Table(
 
 matchmaker_queue_game = Table(
     "matchmaker_queue_game", metadata,
+    Column("id",                  Integer, primary_key=True),
     Column("matchmaker_queue_id", Integer, ForeignKey("matchmaker_queue.id"), nullable=False),
     Column("game_stats_id",       Integer, ForeignKey("game_stats.id"),       nullable=False),
 )
