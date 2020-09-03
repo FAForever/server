@@ -1,18 +1,13 @@
 import asyncio
 import contextlib
 
-from sqlalchemy import or_, select, text
+from sqlalchemy import select, text
 
 from server.db import FAFDatabase
 
 from .abc.base_game import GameConnectionState
 from .config import TRACE
-from .db.models import (
-    coop_leaderboard,
-    coop_map,
-    login,
-    teamkills
-)
+from .db.models import coop_leaderboard, coop_map, teamkills
 from .decorators import with_logger
 from .game_service import GameService
 from .games.game import Game, GameError, GameState, ValidityState, Victory

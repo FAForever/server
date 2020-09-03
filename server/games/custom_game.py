@@ -10,7 +10,7 @@ from .game import Game, GameType, ValidityState
 @with_logger
 class CustomGame(Game):
     init_mode = InitMode.NORMAL_LOBBY
-    game_type = GameType.CUSTOM   
+    game_type = GameType.CUSTOM
 
     def __init__(self, id_, *args, **kwargs):
         new_kwargs = {

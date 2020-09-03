@@ -4,7 +4,6 @@ from trueskill import Rating
 
 from server.games.game_results import GameOutcome
 from server.games.typedefs import TeamRatingSummary
-from server.rating import RatingType
 
 PlayerID = int
 

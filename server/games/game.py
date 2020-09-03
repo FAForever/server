@@ -719,7 +719,6 @@ class Game:
                     )
                 )
 
-
     async def update_game_player_stats(self):
         query_args = []
         for player in self.players:
