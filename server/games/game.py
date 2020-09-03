@@ -7,11 +7,16 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pymysql
-from sqlalchemy import and_, bindparam
+from sqlalchemy import and_, bindparam, select
 from sqlalchemy.sql.functions import now as sql_now
 
 from server.config import FFA_TEAM
-from server.db.models import game_player_stats, game_stats
+from server.db.models import (
+    game_player_stats,
+    game_stats,
+    matchmaker_queue,
+    matchmaker_queue_game
+)
 from server.games.game_results import (
     GameOutcome,
     GameResolutionError,
@@ -59,10 +64,11 @@ class Game:
         name: str = "None",
         map_: str = "SCMP_007",
         game_mode: str = FeaturedModType.FAF,
+        matchmaker_queue_name: Optional[str] = None,
         rating_type: Optional[str] = None,
         displayed_rating_range: Optional[InclusiveRange] = None,
         enforce_rating_range: bool = False,
-        max_players: int = 12
+        max_players: int = 12,
     ):
         self._db = database
         self._results = GameResultReports(id_)
@@ -93,6 +99,7 @@ class Game:
         self.rating_type = rating_type or RatingType.GLOBAL
         self.displayed_rating_range = displayed_rating_range or InclusiveRange()
         self.enforce_rating_range = enforce_rating_range
+        self.matchmaker_queue_name = matchmaker_queue_name
         self.state = GameState.INITIALIZING
         self._connections = {}
         self.enforce_rating = False
@@ -700,6 +707,18 @@ class Game:
                     validity=self.validity.value,
                 )
             )
+
+            if self.matchmaker_queue_name is not None:
+                queue_id_select = select([matchmaker_queue.c.id]).where(
+                    matchmaker_queue.c.technical_name == self.matchmaker_queue_name
+                )
+                await conn.execute(
+                    matchmaker_queue_game.insert().values(
+                        matchmaker_queue_id=queue_id_select,
+                        game_stats_id=self.id,
+                    )
+                )
+
 
     async def update_game_player_stats(self):
         query_args = []

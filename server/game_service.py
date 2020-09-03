@@ -132,6 +132,7 @@ class GameService(Service):
         name: Optional[str] = None,
         mapname: Optional[str] = None,
         password: Optional[str] = None,
+        matchmaker_queue_name: Optional[str] = None,
         **kwargs
     ):
         """
@@ -146,7 +147,8 @@ class GameService(Service):
             "map_": mapname,
             "game_mode": game_mode,
             "game_service": self,
-            "game_stats_service": self.game_stats_service
+            "game_stats_service": self.game_stats_service,
+            "matchmaker_queue_name": matchmaker_queue_name,
         }
         game_args.update(kwargs)
 

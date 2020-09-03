@@ -132,6 +132,7 @@ class LadderService(Service):
     async def fetch_matchmaker_queues(self, conn):
         result = await conn.execute(
             select([
+                matchmaker_queue.c.id,
                 matchmaker_queue.c.technical_name,
                 matchmaker_queue.c.team_size,
                 matchmaker_queue_map_pool.c.map_pool_id,
@@ -151,6 +152,7 @@ class LadderService(Service):
         async for row in result:
             name = row.technical_name
             info = matchmaker_queues[name]
+            info["id"] = row.id
             info["mod"] = row.gamemod
             info["rating_type"] = row.rating_type
             info["team_size"] = row.team_size
@@ -312,6 +314,7 @@ class LadderService(Service):
                 game_mode=queue.featured_mod,
                 host=host,
                 name=game_name(team1, team2),
+                matchmaker_queue_name=queue.name,
                 rating_type=queue.rating_type,
                 max_players=len(all_players)
             )
