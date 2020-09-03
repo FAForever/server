@@ -21,6 +21,8 @@ before_install:
       && git checkout "${FAF_DB_VERSION}"
       && ./ci/bootstrap.sh
       && popd
+  - docker cp matchmaker_queue_game_migration.sql faf-db:.
+  - docker exec faf-db sh -c "mysql faf -pbanana < matchmaker_queue_game_migration.sql"
   - docker exec -i faf-db mysql -uroot -pbanana faf -e "select * from login;"
   - python -m pip install pipenv
 
