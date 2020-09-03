@@ -1,5 +1,9 @@
+import asyncio
+from unittest import mock
+
 import aio_pika
 import pytest
+from asynctest import CoroutineMock
 
 from server.message_queue_service import MessageQueueService
 
@@ -41,3 +45,23 @@ async def test_incorrect_port(mocker, caplog):
 
     expected_warning = "Unable to connect to RabbitMQ. Is it running?"
     assert expected_warning in [rec.message for rec in caplog.records]
+
+
+async def test_several_initializations_connect_only_once():
+    service = MessageQueueService()
+
+    def set_mock_connection(*args, **kwargs):
+        service._connection = mock.Mock()
+        service._channel = mock.Mock()
+        service._channel.declare_exchange = CoroutineMock()
+
+    service._connect = CoroutineMock(side_effect=set_mock_connection)
+
+    await asyncio.gather(
+        service.declare_exchange("exchange_one"),
+        service.initialize(),
+        service.declare_exchange("exchange_two"),
+        service.initialize(),
+    )
+
+    service._connect.assert_called_once()

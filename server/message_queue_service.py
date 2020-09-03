@@ -6,9 +6,14 @@ import aio_pika
 from aio_pika import DeliveryMode, ExchangeType
 from aio_pika.exceptions import ProbableAuthenticationError
 
+from .asyncio_extensions import synchronizedmethod
 from .config import TRACE, config
 from .core import Service
 from .decorators import with_logger
+
+
+class ConnectionAttemptFailed(ConnectionError):
+    pass
 
 
 @with_logger
@@ -23,6 +28,7 @@ class MessageQueueService(Service):
         self._channel = None
         self._exchanges = {}
         self._exchange_types = {}
+        self._is_ready = False
 
         config.register_callback("MQ_USER", self.reconnect)
         config.register_callback("MQ_PASSWORD", self.reconnect)
@@ -30,11 +36,16 @@ class MessageQueueService(Service):
         config.register_callback("MQ_SERVER", self.reconnect)
         config.register_callback("MQ_PORT", self.reconnect)
 
+    @synchronizedmethod("initialization_lock")
     async def initialize(self) -> None:
-        if self._connection is not None:
+        if self._is_ready:
             return
 
-        await self._connect()
+        try:
+            await self._connect()
+        except ConnectionAttemptFailed:
+            return
+        self._is_ready = True
 
     async def _connect(self) -> None:
         try:
@@ -48,22 +59,23 @@ class MessageQueueService(Service):
                 ),
                 loop=asyncio.get_running_loop(),
             )
-        except ConnectionError:
-            self._logger.warning("Unable to connect to RabbitMQ. Is it running?", exc_info=True)
-            return
-        except ProbableAuthenticationError:
+        except ConnectionError as e:
             self._logger.warning(
-                "Unable to connect to RabbitMQ. Incorrect credentials?",
-                exc_info=True
+                "Unable to connect to RabbitMQ. Is it running?", exc_info=True
             )
-            return
+            raise ConnectionAttemptFailed from e
+        except ProbableAuthenticationError as e:
+            self._logger.warning(
+                "Unable to connect to RabbitMQ. Incorrect credentials?", exc_info=True
+            )
+            raise ConnectionAttemptFailed from e
         except Exception as e:
             self._logger.warning(
                 "Unable to connect to RabbitMQ due to unhandled excpetion %s. Incorrect vhost?",
                 e,
-                exc_info=True
+                exc_info=True,
             )
-            return
+            raise ConnectionAttemptFailed from e
 
         self._channel = await self._connection.channel(publisher_confirms=False)
         self._logger.debug("Connected to RabbitMQ %r", self._connection)
@@ -71,12 +83,18 @@ class MessageQueueService(Service):
     async def declare_exchange(
         self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC
     ) -> None:
-        if self._connection is None:
+        await self.initialize()
+        if not self._is_ready:
             self._logger.warning(
                 "Not connected to RabbitMQ, unable to declare exchange."
             )
             return
 
+        await self._declare_exchange(exchange_name, exchange_type)
+
+    async def _declare_exchange(
+        self, exchange_name: str, exchange_type: ExchangeType
+    ) -> None:
         new_exchange = await self._channel.declare_exchange(
             exchange_name, exchange_type
         )
@@ -84,7 +102,12 @@ class MessageQueueService(Service):
         self._exchanges[exchange_name] = new_exchange
         self._exchange_types[exchange_name] = exchange_type
 
+    @synchronizedmethod("initialization_lock")
     async def shutdown(self) -> None:
+        self._is_ready = False
+        await self._shutdown()
+
+    async def _shutdown(self) -> None:
         if self._channel is not None:
             await self._channel.close()
             self._channel = None
@@ -100,7 +123,7 @@ class MessageQueueService(Service):
         payload: Dict,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
     ) -> None:
-        if self._connection is None:
+        if not self._is_ready:
             self._logger.warning(
                 "Not connected to RabbitMQ, unable to publish message."
             )
@@ -120,11 +143,18 @@ class MessageQueueService(Service):
                 TRACE, "Published message %s to %s/%s", payload, exchange_name, routing
             )
 
+    @synchronizedmethod("initialization_lock")
     async def reconnect(self) -> None:
-        await self.shutdown()
-        await self.initialize()
+        self._is_ready = False
+        await self._shutdown()
+
+        try:
+            await self._connect()
+        except ConnectionAttemptFailed:
+            return
 
         for exchange_name in list(self._exchanges.keys()):
-            await self.declare_exchange(
+            await self._declare_exchange(
                 exchange_name, self._exchange_types[exchange_name]
             )
+        self._is_ready = True
