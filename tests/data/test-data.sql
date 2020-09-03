@@ -49,6 +49,7 @@ DELETE FROM leaderboard_rating_journal;
 DELETE FROM leaderboard_rating;
 DELETE FROM leaderboard;
 DELETE FROM matchmaker_queue;
+DELETE FROM matchmaker_queue_game;
 DELETE FROM matchmaker_queue_map_pool;
 DELETE FROM map_pool;
 DELETE FROM map_pool_map_version;
@@ -258,6 +259,23 @@ insert into matchmaker_queue (id, technical_name, featured_mod_id, leaderboard_i
   (1, "ladder1v1", 6, 2, "matchmaker.ladder1v1", 1, true),
   (2, "tmm2v2", 1, 3, "matchmaker.tmm2v2", 2, true),
   (3, "disabled", 1, 1, "matchmaker.disabled", 4, false);
+
+insert into matchmaker_queue_game (matchmaker_queue_id, game_stats_id) values
+  (1, 1),
+  (1, 41935),
+  (1, 41936),
+  (1, 41937),
+  (1, 41938),
+  (1, 41939),
+  (1, 41940),
+  (1, 41941),
+  (1, 41942),
+  (1, 41943),
+  (1, 41944),
+  (1, 41945),
+  (1, 41946),
+  (1, 41947),
+  (1, 41948);
 
 insert into map_pool (id, name) values
   (1, "Ladder1v1 season 1: 5-10k"),

@@ -508,7 +508,7 @@ async def test_start_game_map_selection_pros(
 async def test_get_ladder_history(ladder_service: LadderService, players):
     history = await ladder_service.get_game_history(
         [players.hosting],
-        mod="ladder1v1",
+        queue_name="ladder1v1",
         limit=1
     )
 
@@ -518,7 +518,7 @@ async def test_get_ladder_history(ladder_service: LadderService, players):
 async def test_get_ladder_history_many_maps(ladder_service: LadderService, players):
     history = await ladder_service.get_game_history(
         [players.hosting],
-        mod="ladder1v1",
+        queue_name="ladder1v1",
         limit=4
     )
 
@@ -531,7 +531,7 @@ async def test_get_ladder_history_1v1(ladder_service: LadderService, player_fact
 
     history = await ladder_service.get_game_history(
         [p1, p2],
-        mod="ladder1v1",
+        queue_name="ladder1v1",
     )
 
     assert history == [6, 5, 4, 3, 4, 5]

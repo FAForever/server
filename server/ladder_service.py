@@ -24,6 +24,7 @@ from .db.models import (
     map_pool_map_version,
     map_version,
     matchmaker_queue,
+    matchmaker_queue_game,
     matchmaker_queue_map_pool
 )
 from .decorators import with_logger
@@ -296,8 +297,7 @@ class LadderService(Service):
 
             played_map_ids = await self.get_game_history(
                 all_players,
-                # FIXME: Use reference to matchmaker queue instead
-                FeaturedModType.LADDER_1V1,
+                queue.name,
                 limit=config.LADDER_ANTI_REPETITION_LIMIT
             )
             rating = min(
@@ -387,7 +387,7 @@ class LadderService(Service):
     async def get_game_history(
         self,
         players: List[Player],
-        mod: str,
+        queue_name: str,
         limit=3
     ) -> List[int]:
         async with self._db.acquire() as conn:
@@ -396,7 +396,10 @@ class LadderService(Service):
                 query = select([
                     game_stats.c.mapId,
                 ]).select_from(
-                    game_player_stats.join(game_stats).join(game_featuredMods)
+                    game_player_stats
+                    .join(game_stats)
+                    .join(matchmaker_queue_game)
+                    .join(matchmaker_queue)
                 ).where(
                     and_(
                         game_player_stats.c.playerId == player.id,
@@ -404,7 +407,7 @@ class LadderService(Service):
                             func.now(),
                             text("interval 1 day")
                         ),
-                        game_featuredMods.c.gamemod == mod
+                        matchmaker_queue.c.technical_name == queue_name
                     )
                 ).order_by(game_stats.c.startTime.desc()).limit(limit)
 
