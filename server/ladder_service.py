@@ -29,7 +29,7 @@ from .db.models import (
 )
 from .decorators import with_logger
 from .game_service import GameService
-from .games import FeaturedModType, LadderGame
+from .games import LadderGame
 from .matchmaker import MapPool, MatchmakerQueue, Search
 from .players import Player, PlayerState
 from .protocol import DisconnectedError
@@ -68,6 +68,7 @@ class LadderService(Service):
             if name not in self.queues:
                 queue = MatchmakerQueue(
                     name=name,
+                    id=info["id"],
                     featured_mod=info["mod"],
                     rating_type=info["rating_type"],
                     team_size=info["team_size"],
@@ -297,7 +298,7 @@ class LadderService(Service):
 
             played_map_ids = await self.get_game_history(
                 all_players,
-                queue.name,
+                queue.id,
                 limit=config.LADDER_ANTI_REPETITION_LIMIT
             )
             rating = min(
@@ -314,7 +315,7 @@ class LadderService(Service):
                 game_mode=queue.featured_mod,
                 host=host,
                 name=game_name(team1, team2),
-                matchmaker_queue_name=queue.name,
+                matchmaker_queue_id=queue.id,
                 rating_type=queue.rating_type,
                 max_players=len(all_players)
             )
@@ -387,7 +388,7 @@ class LadderService(Service):
     async def get_game_history(
         self,
         players: List[Player],
-        queue_name: str,
+        queue_id: int,
         limit=3
     ) -> List[int]:
         async with self._db.acquire() as conn:
@@ -399,7 +400,6 @@ class LadderService(Service):
                     game_player_stats
                     .join(game_stats)
                     .join(matchmaker_queue_game)
-                    .join(matchmaker_queue)
                 ).where(
                     and_(
                         game_player_stats.c.playerId == player.id,
@@ -407,7 +407,7 @@ class LadderService(Service):
                             func.now(),
                             text("interval 1 day")
                         ),
-                        matchmaker_queue.c.technical_name == queue_name
+                        matchmaker_queue_game.c.matchmaker_queue_id == queue_id
                     )
                 ).order_by(game_stats.c.startTime.desc()).limit(limit)
 

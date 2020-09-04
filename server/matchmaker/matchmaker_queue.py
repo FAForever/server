@@ -40,6 +40,7 @@ class MatchmakerQueue:
         self,
         game_service: "GameService",
         name: str,
+        id: int,
         featured_mod: str,
         rating_type: str,
         team_size: int = 1,
@@ -47,6 +48,7 @@ class MatchmakerQueue:
     ):
         self.game_service = game_service
         self.name = name
+        self.id = id
         self.featured_mod = featured_mod
         self.rating_type = rating_type
         self.team_size = team_size

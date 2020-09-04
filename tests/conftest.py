@@ -227,6 +227,7 @@ async def rating_service(database, player_service):
 
     await service.shutdown()
 
+
 @pytest.fixture
 async def message_queue_service():
     service = MessageQueueService()
@@ -235,6 +236,7 @@ async def message_queue_service():
     yield service
 
     await service.shutdown()
+
 
 @pytest.fixture
 async def game_service(
@@ -262,15 +264,20 @@ async def geoip_service() -> GeoIpService:
 
 @pytest.fixture(scope="session")
 def queue_factory():
+    queue_id = 0
+
     def make(
         name="Test Queue",
         mod="ladder1v1",
         team_size=1,
         rating_type=RatingType.GLOBAL
     ):
+        nonlocal queue_id
+        queue_id += 1
         return MatchmakerQueue(
             game_service=mock.Mock(),
             name=name,
+            id=queue_id,
             featured_mod=mod,
             rating_type=rating_type,
             team_size=team_size,
@@ -280,7 +287,7 @@ def queue_factory():
 
 @pytest.fixture
 def matchmaker_queue(game_service) -> MatchmakerQueue:
-    queue = MatchmakerQueue(game_service, "ladder1v1test", "ladder1v1", 2)
+    queue = MatchmakerQueue(game_service, "ladder1v1test", 1, "ladder1v1", 2)
     return queue
 
 

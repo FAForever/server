@@ -1,5 +1,3 @@
-from enum import Enum
-
 import asynctest
 import pytest
 from mock import Mock
@@ -53,7 +51,6 @@ async def test_fetch_ratings_partially_nonexistent(player_factory, player_servic
 
     player_service._logger.info.assert_called_once()
     assert player.ratings[RatingType.LADDER_1V1] == (1500, 500)
-
 
 
 async def test_fetch_player_data_multiple_avatar(player_factory, player_service):

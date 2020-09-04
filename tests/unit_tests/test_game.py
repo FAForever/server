@@ -954,7 +954,7 @@ async def test_game_results_commander_kills(
 
     game.report_army_stats(stats)
 
-    game_results =  await game.resolve_game_results()
+    game_results = await game.resolve_game_results()
     result_dict = game_results.to_dict()
 
     assert result_dict["commander_kills"] == {
