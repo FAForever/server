@@ -58,8 +58,6 @@ class LadderService(Service):
         await self.update_data()
         self._update_cron = aiocron.crontab("*/10 * * * *", func=self.update_data)
 
-        self.start_queue_handlers()
-
     async def update_data(self) -> None:
         async with self._db.acquire() as conn:
             map_pool_maps = await self.fetch_map_pools(conn)
@@ -257,10 +255,6 @@ class LadderService(Service):
                         f"learning phase is {progress:.0f}% complete<b>"
                     )
                 })
-
-    def start_queue_handlers(self):
-        for queue in self.queues.values():
-            asyncio.ensure_future(self.handle_queue_matches(queue))
 
     async def handle_queue_matches(self, queue: MatchmakerQueue):
         async for s1, s2 in queue.iter_matches():
