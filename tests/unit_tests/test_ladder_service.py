@@ -164,7 +164,7 @@ async def test_start_game_with_teams(
     LadderGame.wait_launched.assert_called_once()
 
 
-async def test_inform_player(ladder_service: LadderService, player_factory):
+async def test_write_rating_progress(ladder_service: LadderService, player_factory):
     p1 = player_factory(
         "Dostya",
         player_id=1,
@@ -172,16 +172,16 @@ async def test_inform_player(ladder_service: LadderService, player_factory):
         with_lobby_connection=True
     )
 
-    ladder_service.inform_player(p1, RatingType.LADDER_1V1)
+    ladder_service.write_rating_progress(p1, RatingType.LADDER_1V1)
 
     # Message is sent after the first call
     p1.lobby_connection.write.assert_called_once()
-    ladder_service.inform_player(p1, RatingType.LADDER_1V1)
+    ladder_service.write_rating_progress(p1, RatingType.LADDER_1V1)
     p1.lobby_connection.write.reset_mock()
     # But not after the second
     p1.lobby_connection.write.assert_not_called()
     await ladder_service.on_connection_lost(p1)
-    ladder_service.inform_player(p1, RatingType.LADDER_1V1)
+    ladder_service.write_rating_progress(p1, RatingType.LADDER_1V1)
 
     # But it is called if the player relogs
     p1.lobby_connection.write.assert_called_once()
@@ -491,14 +491,14 @@ async def test_start_game_called_on_match(ladder_service: LadderService, player_
     )
 
     ladder_service.start_game = CoroutineMock()
-    ladder_service.inform_player = CoroutineMock()
+    ladder_service.write_rating_progress = CoroutineMock()
 
     ladder_service.start_search([p1], "ladder1v1")
     ladder_service.start_search([p2], "ladder1v1")
 
     await asyncio.sleep(2)
 
-    ladder_service.inform_player.assert_called()
+    ladder_service.write_rating_progress.assert_called()
     ladder_service.start_game.assert_called_once()
 
 
@@ -668,14 +668,14 @@ async def test_game_name_many_teams(player_factory):
     assert game_name([p1], [p2], [p3], [p4]) == "Dostya Vs QAI Vs Rhiza Vs Kale"
 
 
-async def test_inform_player_message(
+async def test_write_rating_progress_message(
     ladder_service: LadderService,
     player_factory
 ):
     player = player_factory(ladder_rating=(1500, 500))
     player.write_message = CoroutineMock()
 
-    ladder_service.inform_player(player, RatingType.LADDER_1V1)
+    ladder_service.write_rating_progress(player, RatingType.LADDER_1V1)
 
     player.write_message.assert_called_once_with({
         "command": "notice",
@@ -692,14 +692,14 @@ async def test_inform_player_message(
     })
 
 
-async def test_inform_player_message_2(
+async def test_write_rating_progress_message_2(
     ladder_service: LadderService,
     player_factory
 ):
     player = player_factory(ladder_rating=(1500, 400.1235))
     player.write_message = CoroutineMock()
 
-    ladder_service.inform_player(player, RatingType.LADDER_1V1)
+    ladder_service.write_rating_progress(player, RatingType.LADDER_1V1)
 
     player.write_message.assert_called_once_with({
         "command": "notice",
@@ -711,7 +711,7 @@ async def test_inform_player_message_2(
     })
 
 
-async def test_inform_player_other_rating(
+async def test_write_rating_progress_other_rating(
     ladder_service: LadderService,
     player_factory
 ):
@@ -723,7 +723,7 @@ async def test_inform_player_other_rating(
 
     # There's no reason we would call it with global, but the logic is the same
     # and global is an available rating that's not ladder
-    ladder_service.inform_player(player, RatingType.GLOBAL)
+    ladder_service.write_rating_progress(player, RatingType.GLOBAL)
 
     player.write_message.assert_called_once_with({
         "command": "notice",

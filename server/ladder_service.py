@@ -177,7 +177,7 @@ class LadderService(Service):
         for player in players:
             player.state = PlayerState.SEARCHING_LADDER
 
-            self.inform_player(player, queue.rating_type)
+            self.write_rating_progress(player, queue.rating_type)
 
             player.write_message({
                 "command": "search_info",
@@ -237,7 +237,7 @@ class LadderService(Service):
             "%s stopped searching for %s", cancelled_search, queue_name
         )
 
-    def inform_player(self, player: Player, rating_type: str) -> None:
+    def write_rating_progress(self, player: Player, rating_type: str) -> None:
         if player not in self._informed_players:
             self._informed_players.add(player)
             _, deviation = player.ratings[rating_type]
