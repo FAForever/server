@@ -42,15 +42,23 @@ async def test_load_from_database(ladder_service, queue_factory):
     for _ in range(3):
         await ladder_service.update_data()
 
-        # FIXME: Accounting for hardcoded queues
         assert len(ladder_service.queues) == 2
 
         queue = ladder_service.queues["ladder1v1"]
         assert queue.name == "ladder1v1"
         assert len(queue.map_pools) == 3
-        assert list(ladder_service.ladder_1v1_map_pool.maps.values()) == [
+        assert list(queue.map_pools[1][0].maps.values()) == [
+            Map(id=15, name="SCMP_015", path="maps/scmp_015.v0003.zip"),
+        ]
+        assert list(queue.map_pools[2][0].maps.values()) == [
+            Map(id=11, name="SCMP_011", path="maps/scmp_011.zip"),
+            Map(id=14, name="SCMP_014", path="maps/scmp_014.zip"),
+            Map(id=15, name="SCMP_015", path="maps/scmp_015.v0003.zip"),
+        ]
+        assert list(queue.map_pools[3][0].maps.values()) == [
             Map(id=1, name="SCMP_001", path="maps/scmp_001.zip"),
-            Map(id=2, name="SCMP_002", path="maps/scmp_002.zip")
+            Map(id=2, name="SCMP_002", path="maps/scmp_002.zip"),
+            Map(id=3, name="SCMP_003", path="maps/scmp_003.zip"),
         ]
 
 

@@ -50,46 +50,16 @@ class LadderService(Service):
         self._db = database
         self._informed_players: Set[Player] = set()
         self.game_service = game_service
-
-        # Fallback legacy map pool and matchmaker queue
-        self.ladder_1v1_map_pool = MapPool(0, "ladder1v1")
-        self.queues = {
-            "ladder1v1": MatchmakerQueue(
-                game_service,
-                name="ladder1v1",
-                featured_mod=FeaturedModType.LADDER_1V1,
-                rating_type=RatingType.LADDER_1V1,
-                map_pools=[(self.ladder_1v1_map_pool, None, None)]
-            )
-        }
+        self.queues = {}
 
         self._searches: Dict[Player, Dict[str, Search]] = defaultdict(dict)
 
     async def initialize(self) -> None:
-        # TODO: Starting hardcoded queues here
-        for queue in self.queues.values():
-            queue.initialize()
-
         await self.update_data()
         self._update_cron = aiocron.crontab("*/10 * * * *", func=self.update_data)
 
-        self.start_queue_handlers()
-
     async def update_data(self) -> None:
         async with self._db.acquire() as conn:
-            # Legacy ladder1v1 map pool
-            # TODO: Remove this https://github.com/FAForever/server/issues/581
-            result = await conn.execute(
-                "SELECT ladder_map.idmap, "
-                "table_map.name, "
-                "table_map.filename "
-                "FROM ladder_map "
-                "INNER JOIN table_map ON table_map.id = ladder_map.idmap"
-            )
-            maps = [Map(*row.as_tuple()) async for row in result]
-
-            self.ladder_1v1_map_pool.set_maps(maps)
-
             map_pool_maps = await self.fetch_map_pools(conn)
             db_queues = await self.fetch_matchmaker_queues(conn)
 
@@ -127,9 +97,6 @@ class LadderService(Service):
                 )
         # Remove queues that don't exist anymore
         for queue_name in list(self.queues.keys()):
-            if queue_name == "ladder1v1":
-                # TODO: Remove me. Legacy queue fallback
-                continue
             if queue_name not in db_queues:
                 self.queues[queue_name].shutdown()
                 del self.queues[queue_name]
@@ -288,10 +255,6 @@ class LadderService(Service):
                         f"learning phase is {progress:.0f}% complete<b>"
                     )
                 })
-
-    def start_queue_handlers(self):
-        for queue in self.queues.values():
-            asyncio.ensure_future(self.handle_queue_matches(queue))
 
     async def handle_queue_matches(self, queue: MatchmakerQueue):
         async for s1, s2 in queue.iter_matches():
