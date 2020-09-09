@@ -20,3 +20,17 @@ class CoopGame(Game):
             "Difficulty": 3,
             "Expansion": 1
         })
+
+    async def validate_game_mode_settings(self):
+        """
+        Checks which only apply to the coop mode
+        """
+
+        valid_options = {
+            "Victory": (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
+            "TeamSpawn": ("fixed", ValidityState.SPAWN_NOT_FIXED),
+            "RevealedCivilians": ("No", ValidityState.CIVILIANS_REVEALED),
+            "Difficulty": (3, ValidityState.WRONG_DIFFICULTY),
+            "Expansion": (1, ValidityState.EXPANSION_DISABLED),
+        }
+        await self._validate_game_options(valid_options)
