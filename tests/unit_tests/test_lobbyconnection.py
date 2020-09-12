@@ -868,8 +868,8 @@ async def test_command_invite_to_party(lobbyconnection, mock_player):
     lobbyconnection._authenticated = True
 
     await lobbyconnection.on_message_received({
-        'command': 'invite_to_party',
-        'recipient_id': 1
+        "command": "invite_to_party",
+        "recipient_id": 1
     })
 
     lobbyconnection.party_service.invite_player_to_party.assert_called_once()
@@ -881,8 +881,8 @@ async def test_command_accept_party_invite(lobbyconnection, mock_player):
     lobbyconnection._authenticated = True
 
     await lobbyconnection.on_message_received({
-        'command': 'accept_party_invite',
-        'sender_id': 1
+        "command": "accept_party_invite",
+        "sender_id": 1
     })
 
     lobbyconnection.party_service.accept_invite.assert_called_once()
@@ -894,8 +894,8 @@ async def test_command_kick_player_from_party(lobbyconnection, mock_player):
     lobbyconnection._authenticated = True
 
     await lobbyconnection.on_message_received({
-        'command': 'kick_player_from_party',
-        'kicked_player_id': 1
+        "command": "kick_player_from_party",
+        "kicked_player_id": 1
     })
 
     lobbyconnection.party_service.kick_player_from_party.assert_called_once()
@@ -907,7 +907,7 @@ async def test_command_leave_party(lobbyconnection, mock_player):
     lobbyconnection._authenticated = True
 
     await lobbyconnection.on_message_received({
-        'command': 'leave_party'
+        "command": "leave_party"
     })
 
     lobbyconnection.party_service.leave_party.assert_called_once()
@@ -939,16 +939,16 @@ async def test_command_game_matchmaking_not_party_owner(
     lobbyconnection.party_service.get_party.return_value = party
 
     await lobbyconnection.on_message_received({
-        'command': 'game_matchmaking',
-        'state': 'start',
-        'faction': 'seraphim'
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "seraphim"
     })
 
     lobbyconnection.ladder_service.start_search.assert_not_called()
 
     await lobbyconnection.on_message_received({
-        'command': 'game_matchmaking',
-        'state': 'stop'
+        "command": "game_matchmaking",
+        "state": "stop"
     })
 
     lobbyconnection.ladder_service.cancel_search.assert_called_once()

@@ -38,37 +38,37 @@ async def test_server_deprecated_client(lobby_server):
 
 async def test_old_client_error(lobby_server):
     error_msg = {
-        'command': 'notice',
-        'style': 'error',
-        'text': 'Cannot join game. Please update your client to the newest version.'
+        "command": "notice",
+        "style": "error",
+        "text": 'Cannot join game. Please update your client to the newest version.'
     }
     player_id, session, proto = await connect_and_sign_in(
-        ('test', 'test_password'),
+        ("test", "test_password"),
         lobby_server
     )
 
-    await read_until_command(proto, 'game_info')
+    await read_until_command(proto, "game_info")
 
     await proto.send_message({
-        'command': 'InitiateTest',
-        'target': 'connectivity'
+        "command": "InitiateTest",
+        "target": "connectivity"
     })
     msg = await proto.read_message()
     assert msg == {
-        'command': 'notice',
-        'style': 'error',
-        'text': 'Your client version is no longer supported. Please update to the newest version: https://faforever.com'
+        "command": "notice",
+        "style": "error",
+        "text": 'Your client version is no longer supported. Please update to the newest version: https://faforever.com'
     }
 
-    await proto.send_message({'command': 'game_host'})
+    await proto.send_message({"command": "game_host"})
     msg = await proto.read_message()
     assert msg == error_msg
 
-    await proto.send_message({'command': 'game_join'})
+    await proto.send_message({"command": "game_join"})
     msg = await proto.read_message()
     assert msg == error_msg
 
-    await proto.send_message({'command': 'game_matchmaking', 'state': 'start'})
+    await proto.send_message({"command": "game_matchmaking", "state": "start"})
     msg = await proto.read_message()
     assert msg == error_msg
 
@@ -362,25 +362,25 @@ async def test_host_coop_game(lobby_server):
 
 async def test_play_game_while_queueing(lobby_server):
     player_id, session, proto = await connect_and_sign_in(
-        ('test', 'test_password'),
+        ("test", "test_password"),
         lobby_server
     )
 
-    await read_until_command(proto, 'game_info')
+    await read_until_command(proto, "game_info")
 
     await proto.send_message({
-        'command': 'game_matchmaking',
-        'state': 'start',
-        'faction': 'uef'
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef"
     })
 
-    await proto.send_message({'command': 'game_host'})
-    msg = await read_until_command(proto, 'invalid_state')
-    assert msg == {'command': 'invalid_state', 'state': PlayerState.SEARCHING_LADDER.value}
+    await proto.send_message({"command": "game_host"})
+    msg = await read_until_command(proto, "invalid_state")
+    assert msg == {"command": "invalid_state", "state": PlayerState.SEARCHING_LADDER.value}
 
-    await proto.send_message({'command': 'game_join'})
-    msg = await read_until_command(proto, 'invalid_state')
-    assert msg == {'command': 'invalid_state', 'state': PlayerState.SEARCHING_LADDER.value}
+    await proto.send_message({"command": "game_join"})
+    msg = await read_until_command(proto, "invalid_state")
+    assert msg == {"command": "invalid_state", "state": PlayerState.SEARCHING_LADDER.value}
 
 
 @pytest.mark.parametrize("command", ["game_host", "game_join"])

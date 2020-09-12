@@ -8,6 +8,6 @@ from .party_member import PartyMember
 from .player_party import PlayerParty
 
 __all__ = [
-    'PlayerParty',
-    'PartyMember'
+    "PlayerParty",
+    "PartyMember"
 ]

@@ -761,7 +761,7 @@ class LobbyConnection:
         @wraps(func)
         async def wrapper(self, message):
             if self.player.state != PlayerState.IDLE:
-                await self.send({'command': 'invalid_state', 'state': self.player.state.value})
+                await self.send({"command": "invalid_state", "state": self.player.state.value})
                 return
             return await func(self, message)
         return wrapper
@@ -840,9 +840,9 @@ class LobbyConnection:
             ):
                 busy = True
                 await self.send({
-                    'command': 'invalid_state',
-                    'state': player.state.value,
-                    'player': player.id
+                    "command": "invalid_state",
+                    "state": player.state.value,
+                    "player": player.id
                 })
         if busy:
             return

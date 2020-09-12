@@ -79,7 +79,7 @@ async def test_do_update(fake_geoip_service, fake_geoip_path):
     PORT = 8137
     server.config.GEO_IP_DATABASE_URL = f"http://localhost:{PORT}"
     server.config.GEO_IP_LICENSE_KEY = "Anything"
-    random_text = ''.join(random.choice(string.ascii_letters) for i in range(20))
+    random_text = "".join(random.choice(string.ascii_letters) for i in range(20))
 
     data = BytesIO()
     tar = tarfile.open(fileobj=data, mode="w:gz")
@@ -126,14 +126,14 @@ async def test_do_update(fake_geoip_service, fake_geoip_path):
 
 async def test_country_on_invalid_address(geoip_service):
     country_code = geoip_service.country("127.0.0.1")
-    assert country_code == ''
+    assert country_code == ""
 
 
 async def test_country_on_failed_db_load(geoip_service):
     geoip_service.db = None
 
     country_code = geoip_service.country("8.8.8.8")
-    assert country_code == ''
+    assert country_code == ""
 
 
 async def test_load_db_not_raises(geoip_service):
