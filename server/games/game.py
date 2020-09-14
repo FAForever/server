@@ -19,7 +19,7 @@ from server.games.game_results import (
     GameResultReports,
     resolve_game
 )
-from server.rating import RatingType
+from server.rating import InclusiveRange, RatingType
 
 from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
@@ -60,6 +60,8 @@ class Game:
         map_: str = "SCMP_007",
         game_mode: str = FeaturedModType.FAF,
         rating_type: Optional[str] = None,
+        displayed_rating_range: Optional[InclusiveRange] = None,
+        enforce_rating_range: bool = False,
         max_players: int = 12
     ):
         self._db = database
@@ -89,6 +91,8 @@ class Game:
         self.validity = ValidityState.VALID
         self.game_mode = game_mode
         self.rating_type = rating_type or RatingType.GLOBAL
+        self.displayed_rating_range = displayed_rating_range or InclusiveRange()
+        self.enforce_rating_range = enforce_rating_range
         self.state = GameState.INITIALIZING
         self._connections = {}
         self.enforce_rating = False
@@ -782,6 +786,26 @@ class Game:
         self._army_stats_list = json.loads(stats_json)["stats"]
         self._process_pending_army_stats()
 
+    def is_visible_to_player(self, player: Player) -> bool:
+        if player == self.host or player in self.players:
+            return True
+
+        mean, dev = player.ratings[self.rating_type]
+        displayed_rating = mean - 3 * dev
+        if (
+            self.enforce_rating_range
+            and displayed_rating not in self.displayed_rating_range
+        ):
+            return False
+
+        if self.host is None:
+            return False
+
+        if self.visibility is VisibilityState.FRIENDS:
+            return player.id in self.host.friends
+        else:
+            return player.id not in self.host.foes
+
     def to_dict(self):
         client_state = {
             GameState.LOBBY: "open",
@@ -791,7 +815,7 @@ class Game:
         }.get(self.state, "closed")
         return {
             "command": "game_info",
-            "visibility": VisibilityState.to_string(self.visibility),
+            "visibility": self.visibility.value,
             "password_protected": self.password is not None,
             "uid": self.id,
             "title": self.name,
@@ -805,6 +829,10 @@ class Game:
             "num_players": len(self.players),
             "max_players": self.max_players,
             "launched_at": self.launched_at,
+            "rating_type": self.rating_type,
+            "rating_min": self.displayed_rating_range.lo,
+            "rating_max": self.displayed_rating_range.hi,
+            "enforce_rating_range": self.enforce_rating_range,
             "teams": {
                 team: [
                     player.login for player in self.players

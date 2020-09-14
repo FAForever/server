@@ -20,6 +20,7 @@ class Victory(Enum):
     ERADICATION = 2
     SANDBOX = 3
 
+
 @unique
 class GameType(Enum):
     COOP = 0
@@ -46,28 +47,11 @@ class GameType(Enum):
             GameType.MATCHMAKER: "matchmaker",
         }.get(self)
 
+
 @unique
 class VisibilityState(Enum):
-    PUBLIC = 0
-    FRIENDS = 1
-
-    @staticmethod
-    def from_string(value: str) -> Optional["VisibilityState"]:
-        """
-        :param value: The string to convert from
-
-        :return: VisibilityState or None if the string is not valid
-        """
-        return {
-            "public": VisibilityState.PUBLIC,
-            "friends": VisibilityState.FRIENDS,
-        }.get(value)
-
-    def to_string(self) -> Optional[str]:
-        return {
-            VisibilityState.PUBLIC: "public",
-            VisibilityState.FRIENDS: "friends",
-        }.get(self)
+    PUBLIC = "public"
+    FRIENDS = "friends"
 
 
 # Identifiers must be kept in sync with the contents of the invalid_game_reasons table.

@@ -55,5 +55,9 @@ async def test_ladder_1v1_match(test_client):
         "num_players": 0,
         "max_players": 2,
         "launched_at": None,
+        "rating_type": "ladder_1v1",
+        "rating_min": None,
+        "rating_max": None,
+        "enforce_rating_range": False,
         "teams": {}
     }

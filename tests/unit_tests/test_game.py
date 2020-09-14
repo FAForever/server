@@ -19,7 +19,7 @@ from server.games.game import (
     VisibilityState
 )
 from server.games.game_results import GameOutcome
-from server.rating import RatingType
+from server.rating import InclusiveRange, RatingType
 from tests.unit_tests.conftest import (
     add_connected_player,
     add_connected_players,
@@ -30,22 +30,19 @@ from tests.utils import fast_forward
 pytestmark = pytest.mark.asyncio
 
 
-@pytest.yield_fixture
-def game(event_loop, database, game_service, game_stats_service):
-    game = Game(42, database, game_service, game_stats_service, rating_type=RatingType.GLOBAL)
-    yield game
+@pytest.fixture
+def game(database, game_service, game_stats_service):
+    return Game(42, database, game_service, game_stats_service, rating_type=RatingType.GLOBAL)
+
+
+@pytest.fixture
+def coop_game(database, game_service, game_stats_service):
+    return CoopGame(42, database, game_service, game_stats_service)
 
 
 @pytest.yield_fixture
-def coop_game(event_loop, database, game_service, game_stats_service):
-    game = CoopGame(42, database, game_service, game_stats_service)
-    yield game
-
-
-@pytest.yield_fixture
-def custom_game(event_loop, database, game_service, game_stats_service):
-    game = CustomGame(42, database, game_service, game_stats_service)
-    yield game
+def custom_game(database, game_service, game_stats_service):
+    return CustomGame(42, database, game_service, game_stats_service)
 
 
 async def game_player_scores(database, game):
@@ -237,6 +234,45 @@ async def test_single_team_not_rated(game, game_add_players):
         await game.add_result(0, i + 1, "victory", 5)
     await game.on_game_end()
     assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
+
+
+async def test_game_visible_to_host(game: Game, players):
+    game.host = players.hosting
+    game.visibility = None  # Ensure that visibility is not checked
+    assert game.is_visible_to_player(players.hosting)
+
+
+async def test_game_visible_to_players(game: Game, players):
+    game.host = players.hosting
+    game.visibility = None  # Ensure that visibility is not checked
+    game.state = GameState.LOBBY
+    add_connected_player(game, players.joining)
+    assert game.is_visible_to_player(players.joining)
+
+
+async def test_game_not_visible_to_foes(game: Game, players):
+    game.host = players.hosting
+    players.hosting.foes.add(players.joining.id)
+    assert not game.is_visible_to_player(players.joining)
+
+
+async def test_game_visible_to_friends(game: Game, players):
+    game.host = players.hosting
+    game.visibility = VisibilityState.FRIENDS
+    players.hosting.friends.add(players.joining.id)
+    assert game.is_visible_to_player(players.joining)
+
+
+async def test_game_visible_for_rating(game: Game, players):
+    game.enforce_rating_range = True
+    game.displayed_rating_range = InclusiveRange(2000, None)
+    game.host = players.hosting
+
+    players.joining.ratings[RatingType.GLOBAL] = (1500, 1)
+    assert not game.is_visible_to_player(players.joining)
+
+    players.joining.ratings[RatingType.GLOBAL] = (2100, 1)
+    assert game.is_visible_to_player(players.joining)
 
 
 async def test_set_player_option(game, players, mock_game_connection):
@@ -541,7 +577,7 @@ async def test_to_dict(game, player_factory):
     data = game.to_dict()
     expected = {
         "command": "game_info",
-        "visibility": VisibilityState.to_string(game.visibility),
+        "visibility": game.visibility.value,
         "password_protected": game.password is not None,
         "uid": game.id,
         "title": game.sanitize_name(game.name),
@@ -555,6 +591,10 @@ async def test_to_dict(game, player_factory):
         "num_players": len(game.players),
         "max_players": game.max_players,
         "launched_at": game.launched_at,
+        "rating_type": game.rating_type,
+        "rating_min": game.displayed_rating_range.lo,
+        "rating_max": game.displayed_rating_range.hi,
+        "enforce_rating_range": game.enforce_rating_range,
         "teams": {
             team: [
                 player.login for player in game.players
@@ -829,17 +869,6 @@ async def test_game_outcomes_conflicting(game: Game, database, players):
     assert host_outcome is GameOutcome.CONFLICTING
     assert guest_outcome is GameOutcome.CONFLICTING
     # No guarantees on scores for conflicting results.
-
-
-async def test_visibility_states():
-    states = [("public", VisibilityState.PUBLIC),
-              ("friends", VisibilityState.FRIENDS)]
-
-    for string_value, enum_value in states:
-        assert (
-            VisibilityState.from_string(string_value) == enum_value
-            and VisibilityState.to_string(enum_value) == string_value
-        )
 
 
 async def test_is_even(game: Game, game_add_players):

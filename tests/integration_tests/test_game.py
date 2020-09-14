@@ -22,17 +22,7 @@ async def host_game(proto: Protocol) -> int:
     msg = await read_until_command(proto, "game_launch")
     game_id = int(msg["uid"])
 
-    # Simulate FA opening
-    await proto.send_message({
-        "target": "game",
-        "command": "GameState",
-        "args": ["Idle"]
-    })
-    await proto.send_message({
-        "target": "game",
-        "command": "GameState",
-        "args": ["Lobby"]
-    })
+    await open_fa(proto)
 
     return game_id
 
@@ -43,8 +33,14 @@ async def join_game(proto: Protocol, uid: int):
         "uid": uid
     })
     await read_until_command(proto, "game_launch")
+    await open_fa(proto)
+    # HACK: Yield long enough for the server to process our message
+    await asyncio.sleep(0.5)
 
-    # Simulate FA opening
+
+async def open_fa(proto):
+    """Simulate FA opening"""
+
     await proto.send_message({
         "target": "game",
         "command": "GameState",
@@ -55,8 +51,6 @@ async def join_game(proto: Protocol, uid: int):
         "command": "GameState",
         "args": ["Lobby"]
     })
-    # HACK: Yield long enough for the server to process our message
-    await asyncio.sleep(0.5)
 
 
 async def get_player_ratings(proto, *names, rating_type="global"):

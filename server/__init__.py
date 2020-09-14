@@ -23,7 +23,7 @@ from .core import Service, create_services
 from .db import FAFDatabase
 from .game_service import GameService
 from .gameconnection import GameConnection
-from .games import GameState, VisibilityState
+from .games import GameState
 from .geoip_service import GeoIpService
 from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
@@ -168,22 +168,12 @@ class ServerInstance(object):
                 # So we're going to be broadcasting this to _somebody_...
                 message = game.to_dict()
 
-                # These games shouldn't be broadcast, but instead privately sent
-                # to those who are allowed to see them.
-                if game.visibility == VisibilityState.FRIENDS:
-                    # To see this game, you must have an authenticated
-                    # connection and be a friend of the host, or the host.
-                    def validation_func(conn):
-                        return conn.player.id in game.host.friends or \
-                               conn.player == game.host
-                else:
-                    def validation_func(conn):
-                        return conn.player.id not in game.host.foes
-
                 self.write_broadcast(
                     message,
-                    lambda conn:
-                        conn.authenticated and validation_func(conn)
+                    lambda conn: (
+                        conn.authenticated
+                        and game.is_visible_to_player(conn.player)
+                    )
                 )
 
         @at_interval(45, loop=self.loop)

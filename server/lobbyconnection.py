@@ -40,6 +40,7 @@ from .ladder_service import LadderService
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, Protocol
+from .rating import InclusiveRange, RatingType
 from .types import Address, GameLaunchOptions
 
 
@@ -271,8 +272,10 @@ class LobbyConnection:
     async def command_social_remove(self, message):
         if "friend" in message:
             subject_id = message["friend"]
+            player_attr = self.player.friends
         elif "foe" in message:
             subject_id = message["foe"]
+            player_attr = self.player.foes
         else:
             await self.abort("No-op social_remove.")
             return
@@ -283,13 +286,18 @@ class LobbyConnection:
                 friends_and_foes.c.subject_id == subject_id
             )))
 
+        with contextlib.suppress(KeyError):
+            player_attr.remove(subject_id)
+
     async def command_social_add(self, message):
         if "friend" in message:
             status = "FRIEND"
             subject_id = message["friend"]
+            player_attr = self.player.friends
         elif "foe" in message:
             status = "FOE"
             subject_id = message["foe"]
+            player_attr = self.player.foes
         else:
             return
 
@@ -299,6 +307,8 @@ class LobbyConnection:
                 status=status,
                 subject_id=subject_id,
             ))
+
+        player_attr.add(subject_id)
 
     async def kick(self):
         await self.send({
@@ -887,12 +897,7 @@ class LobbyConnection:
 
         await self.abort_connection_if_banned()
 
-        visibility = VisibilityState.from_string(message.get("visibility"))
-        if not isinstance(visibility, VisibilityState):
-            # Protocol violation.
-            await self.abort("{} sent a nonsense visibility code: {}".format(self.player.login, message.get("visibility")))
-            return
-
+        visibility = VisibilityState(message["visibility"])
         title = message.get("title") or f"{self.player.login}'s game"
 
         try:
@@ -909,6 +914,13 @@ class LobbyConnection:
         mapname = message.get("mapname") or "scmp_007"
         password = message.get("password")
         game_mode = mod.lower()
+        rating_min = message.get("rating_min")
+        rating_max = message.get("rating_max")
+        enforce_rating_range = bool(message.get("enforce_rating_range", False))
+        if rating_min is not None:
+            rating_min = float(rating_min)
+        if rating_max is not None:
+            rating_max = float(rating_max)
 
         game = self.game_service.create_game(
             visibility=visibility,
@@ -916,7 +928,10 @@ class LobbyConnection:
             host=self.player,
             name=title,
             mapname=mapname,
-            password=password
+            password=password,
+            rating_type=RatingType.GLOBAL,
+            displayed_rating_range=InclusiveRange(rating_min, rating_max),
+            enforce_rating_range=enforce_rating_range
         )
         await self.launch_game(game, is_host=True)
 

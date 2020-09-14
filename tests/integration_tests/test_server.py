@@ -14,6 +14,7 @@ from .conftest import (
     read_until,
     read_until_command
 )
+from .test_game import join_game, open_fa, send_player_options
 
 pytestmark = pytest.mark.asyncio
 TEST_ADDRESS = ("127.0.0.1", None)
@@ -144,6 +145,108 @@ async def test_game_info_broadcast_to_friends(lobby_server):
         await read_until_command(proto3, "game_info", timeout=1)
 
 
+@pytest.mark.parametrize("limit", (
+    (None, 1000),
+    (1500, 1700),
+    (1500, None),
+))
+@fast_forward(5)
+async def test_game_info_not_broadcast_out_of_rating_range(lobby_server, limit):
+    # Rhiza has displayed rating of 1462
+    _, _, proto1 = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    _, _, proto2 = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(proto1, "game_info")
+    await read_until_command(proto2, "game_info")
+
+    await proto1.send_message({
+        "command": "game_host",
+        "title": "No noobs!",
+        "mod": "faf",
+        "visibility": "public",
+        "rating_min": limit[0],
+        "rating_max": limit[1],
+        "enforce_rating_range": True
+    })
+
+    msg = await read_until_command(proto1, "game_info")
+
+    assert msg["featured_mod"] == "faf"
+    assert msg["title"] == "No noobs!"
+    assert msg["visibility"] == "public"
+
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(proto2, "game_info", timeout=1)
+
+
+@fast_forward(10)
+async def test_game_info_broadcast_to_players_in_lobby(lobby_server):
+    # test is the friend of friends
+    _, _, proto1 = await connect_and_sign_in(
+        ("friends", "friends"), lobby_server
+    )
+    test_id, _, proto2 = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    await read_until_command(proto1, "game_info")
+    await read_until_command(proto2, "game_info")
+
+    await proto1.send_message({
+        "command": "game_host",
+        "title": "Friends Only",
+        "mod": "faf",
+        "visibility": "friends"
+    })
+
+    # The host and his friend should see the game
+    await read_until_command(proto1, "game_info")
+    await read_until_command(proto2, "game_info")
+    await open_fa(proto1)
+    # The host joins which changes the lobby state
+    msg = await read_until_command(proto1, "game_info")
+    msg2 = await read_until_command(proto2, "game_info")
+
+    assert msg == msg2
+    assert msg["featured_mod"] == "faf"
+    assert msg["title"] == "Friends Only"
+    assert msg["visibility"] == "friends"
+    assert msg["state"] == "open"
+
+    game_id = msg["uid"]
+    await join_game(proto2, game_id)
+
+    await read_until_command(proto1, "game_info")
+    await read_until_command(proto2, "game_info")
+    await send_player_options(proto1, [test_id, "Army", 1])
+    await read_until_command(proto1, "game_info")
+    await read_until_command(proto2, "game_info")
+
+    # Now we unfriend the person in the lobby
+    await proto1.send_message({
+        "command": "social_remove",
+        "friend": test_id
+    })
+    # And change some game options to trigger a new update message
+    await proto1.send_message({
+        "target": "game",
+        "command": "GameOption",
+        "args": ["Title", "New Title"]
+    })
+
+    # The host and the other player in the lobby should see the game even
+    # though they are not friends anymore
+    msg = await read_until_command(proto1, "game_info", timeout=2)
+    msg2 = await read_until_command(proto2, "game_info", timeout=2)
+
+    assert msg == msg2
+    assert msg["featured_mod"] == "faf"
+    assert msg["title"] == "New Title"
+    assert msg["visibility"] == "friends"
+
+
 @pytest.mark.parametrize("user", [
     ("test", "test_password"),
     ("ban_revoked", "ban_revoked"),
@@ -192,6 +295,7 @@ async def test_host_missing_fields(event_loop, lobby_server, player_service):
     assert msg["mapname"] == "scmp_007"
     assert msg["map_file_path"] == "maps/scmp_007.zip"
     assert msg["featured_mod"] == "faf"
+
 
 @fast_forward(5)
 async def test_host_coop_game(lobby_server):
