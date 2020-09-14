@@ -577,7 +577,7 @@ async def test_to_dict(game, player_factory):
     data = game.to_dict()
     expected = {
         "command": "game_info",
-        "visibility": VisibilityState.to_string(game.visibility),
+        "visibility": game.visibility.value,
         "password_protected": game.password is not None,
         "uid": game.id,
         "title": game.sanitize_name(game.name),
@@ -869,17 +869,6 @@ async def test_game_outcomes_conflicting(game: Game, database, players):
     assert host_outcome is GameOutcome.CONFLICTING
     assert guest_outcome is GameOutcome.CONFLICTING
     # No guarantees on scores for conflicting results.
-
-
-async def test_visibility_states():
-    states = [("public", VisibilityState.PUBLIC),
-              ("friends", VisibilityState.FRIENDS)]
-
-    for string_value, enum_value in states:
-        assert (
-            VisibilityState.from_string(string_value) == enum_value
-            and VisibilityState.to_string(enum_value) == string_value
-        )
 
 
 async def test_is_even(game: Game, game_add_players):

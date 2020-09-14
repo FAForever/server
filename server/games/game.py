@@ -815,7 +815,7 @@ class Game:
         }.get(self.state, "closed")
         return {
             "command": "game_info",
-            "visibility": VisibilityState.to_string(self.visibility),
+            "visibility": self.visibility.value,
             "password_protected": self.password is not None,
             "uid": self.id,
             "title": self.name,

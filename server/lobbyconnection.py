@@ -897,12 +897,7 @@ class LobbyConnection:
 
         await self.abort_connection_if_banned()
 
-        visibility = VisibilityState.from_string(message.get("visibility"))
-        if not isinstance(visibility, VisibilityState):
-            # Protocol violation.
-            await self.abort("{} sent a nonsense visibility code: {}".format(self.player.login, message.get("visibility")))
-            return
-
+        visibility = VisibilityState(message["visibility"])
         title = message.get("title") or f"{self.player.login}'s game"
 
         try:

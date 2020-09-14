@@ -33,7 +33,7 @@ pytestmark = pytest.mark.asyncio
 def test_game_info():
     return {
         "title": "Test game",
-        "visibility": VisibilityState.to_string(VisibilityState.PUBLIC),
+        "visibility": VisibilityState.PUBLIC.value,
         "mod": "faf",
         "mapname": "scmp_007",
         "password": None,
@@ -46,7 +46,7 @@ def test_game_info():
 def test_game_info_invalid():
     return {
         "title": "Title with non ASCI char \xc3",
-        "visibility": VisibilityState.to_string(VisibilityState.PUBLIC),
+        "visibility": VisibilityState.PUBLIC.value,
         "mod": "faf",
         "mapname": "scmp_007",
         "password": None,
