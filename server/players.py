@@ -40,7 +40,7 @@ class Player:
         game_count=None,
         lobby_connection: "LobbyConnection" = None
     ):
-        self._faction = 0
+        self._faction = Faction.uef
 
         self.id = player_id
         self.login = login
@@ -69,8 +69,6 @@ class Player:
         self.user_groups = set()
 
         self.state = PlayerState.IDLE
-
-        self.faction = 1
 
         if lobby_connection is not None:
             self.lobby_connection = lobby_connection
