@@ -1,5 +1,6 @@
 from contextlib import suppress
 from enum import Enum, unique
+from typing import Optional, Union
 
 from server.config import config
 from server.rating import PlayerRatings, RatingType, RatingTypeMap
@@ -11,11 +12,11 @@ from .weakattr import WeakAttribute
 
 @unique
 class PlayerState(Enum):
-    IDLE = 1,
-    PLAYING = 2,
-    HOSTING = 3,
-    JOINING = 4,
-    SEARCHING_LADDER = 5,
+    IDLE = 1
+    PLAYING = 2
+    HOSTING = 3
+    JOINING = 4
+    SEARCHING_LADDER = 5
 
 
 class Player:
@@ -38,8 +39,8 @@ class Player:
         ratings=None,
         clan=None,
         game_count=None,
-        lobby_connection: "LobbyConnection" = None
-    ):
+        lobby_connection: Optional["LobbyConnection"] = None
+    ) -> None:
         self._faction = Faction.uef
 
         self.id = player_id
@@ -74,11 +75,11 @@ class Player:
             self.lobby_connection = lobby_connection
 
     @property
-    def faction(self):
+    def faction(self) -> Faction:
         return self._faction
 
     @faction.setter
-    def faction(self, value):
+    def faction(self, value: Union[str, int, Faction]) -> None:
         if isinstance(value, str):
             self._faction = Faction.from_string(value)
         elif isinstance(value, int):
@@ -88,7 +89,7 @@ class Player:
         else:
             raise TypeError(f"Unsupported faction type {type(value)}!")
 
-    def power(self):
+    def power(self) -> int:
         """An artifact of the old permission system. The client still uses this
         number to determine if a player gets a special category in the user list
         such as "Moderator"
@@ -106,7 +107,7 @@ class Player:
     def is_moderator(self) -> bool:
         return "faf_moderators_global" in self.user_groups
 
-    async def send_message(self, message):
+    async def send_message(self, message) -> None:
         """
         Try to send a message to this player.
 
@@ -117,7 +118,7 @@ class Player:
 
         await self.lobby_connection.send(message)
 
-    def write_message(self, message):
+    def write_message(self, message) -> None:
         """
         Try to queue a message to be sent this player. Only call this from
         broadcasting functions. Does nothing if the player has disconnected.
@@ -161,19 +162,16 @@ class Player:
             )
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (f"Player({self.login}, {self.id}, "
                 f"{self.ratings[RatingType.GLOBAL]}, "
                 f"{self.ratings[RatingType.LADDER_1V1]})")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return self.id
 
-    def __eq__(self, other):
-        if not isinstance(other, Player):
-            return False
-        else:
-            return self.id == other.id
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, type(self)) and self.id == other.id
