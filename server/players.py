@@ -1,4 +1,3 @@
-import weakref
 from contextlib import suppress
 from enum import Enum, unique
 
@@ -7,6 +6,7 @@ from server.rating import PlayerRatings, RatingType, RatingTypeMap
 
 from .factions import Faction
 from .protocol import DisconnectedError
+from .weakattr import WeakAttribute
 
 
 @unique
@@ -25,6 +25,10 @@ class Player:
     In the context of a game, the Game object holds game-specific
     information about players.
     """
+
+    lobby_connection = WeakAttribute["LobbyConnection"]()
+    game = WeakAttribute["Game"]()
+    game_connection = WeakAttribute["GameConnection"]()
 
     def __init__(
         self,
@@ -68,12 +72,8 @@ class Player:
 
         self.faction = 1
 
-        self._lobby_connection = lambda: None
         if lobby_connection is not None:
             self.lobby_connection = lobby_connection
-
-        self._game = lambda: None
-        self._game_connection = lambda: None
 
     @property
     def faction(self):
@@ -89,49 +89,6 @@ class Player:
             self._faction = value
         else:
             raise TypeError(f"Unsupported faction type {type(value)}!")
-
-    @property
-    def lobby_connection(self) -> "LobbyConnection":
-        """
-        Weak reference to the LobbyConnection of this player
-        """
-        return self._lobby_connection()
-
-    @lobby_connection.setter
-    def lobby_connection(self, value: "LobbyConnection"):
-        self._lobby_connection = weakref.ref(value)
-
-    @property
-    def game(self):
-        """
-        Weak reference to the Game object that this player wants to join or is
-        currently in
-        """
-        return self._game()
-
-    @game.setter
-    def game(self, value):
-        self._game = weakref.ref(value)
-
-    @game.deleter
-    def game(self):
-        self._game = lambda: None
-
-    @property
-    def game_connection(self):
-        """
-        Weak reference to the GameConnection object for this player
-        :return:
-        """
-        return self._game_connection()
-
-    @game_connection.setter
-    def game_connection(self, value):
-        self._game_connection = weakref.ref(value)
-
-    @game_connection.deleter
-    def game_connection(self):
-        self._game_connection = lambda: None
 
     def power(self):
         """An artifact of the old permission system. The client still uses this
