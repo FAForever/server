@@ -101,3 +101,4 @@ class ServerContext:
             metrics.user_connections.labels(connection.user_agent).dec()
             await protocol.close()
             await connection.on_connection_lost()
+            self._logger.debug("%s: Client disconnected", self.name)

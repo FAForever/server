@@ -39,6 +39,10 @@ class FAFClient(object):
 
         await self.proto.send_message(message)
 
+    async def send_command(self, command, **kwargs):
+        """Convenience for sending commands"""
+        await self.send_message({"command": command, **kwargs})
+
     async def read_until(self, predicate, timeout=60):
         return await asyncio.wait_for(
             read_until(self.proto, predicate),
@@ -49,6 +53,12 @@ class FAFClient(object):
         return await read_until_command(self.proto, command, timeout=timeout)
 
     # Commonly used functionality here
+    async def ping(self):
+        await self.send_command("ping")
+
+    async def pong(self):
+        await self.send_command("pong")
+
     async def login(self, username, password):
         """Perform the entire login sequence including fetching a session
         and calling `faf-uid`"""

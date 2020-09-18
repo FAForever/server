@@ -7,14 +7,9 @@ pytestmark = pytest.mark.asyncio
 
 
 async def simulate_game(host, *guests, results=[]):
-    all_clients = [host] + list(guests)
     await simulate_game_launch(host, *guests)
 
     await simulate_result_reports(host, *guests, results=results)
-
-    # Report GameEnded
-    for client in all_clients:
-        await client.send_gpg_command("GameState", "Ended")
 
 
 async def simulate_game_launch(host, *guests):
@@ -47,10 +42,10 @@ async def simulate_result_reports(host, *guests, results=[]):
             await client.send_gpg_command("GameResult", *result)
 
 
-async def test_custom_game_1v1(test_client):
+async def test_custom_game_1v1(client_factory):
     """More or less the same as the regression test version"""
-    client1, _ = await test_client("test")
-    client2, _ = await test_client("test2")
+    client1, _ = await client_factory.login("test")
+    client2, _ = await client_factory.login("test2")
 
     await client1.read_until_command("game_info")
     await client2.read_until_command("game_info")
@@ -60,6 +55,9 @@ async def test_custom_game_1v1(test_client):
         [2, "defeat -10"],
         [1, "victory 10"]
     ])
+
+    for client in (client1, client2):
+        await client.send_gpg_command("GameEnded")
 
     # Check that the ratings were updated
     new_ratings = await client1.get_player_ratings("test", "test2")
@@ -72,9 +70,9 @@ async def test_custom_game_1v1(test_client):
     assert ratings["test2"][0] > new_ratings["test2"][0]
 
 
-async def test_custom_game_1v1_bad_result(test_client):
-    client1, _ = await test_client("test")
-    client2, _ = await test_client("test2")
+async def test_custom_game_1v1_bad_result(client_factory):
+    client1, _ = await client_factory.login("test")
+    client2, _ = await client_factory.login("test2")
 
     await client1.read_until_command("game_info")
     await client2.read_until_command("game_info")
@@ -94,9 +92,9 @@ async def test_custom_game_1v1_bad_result(test_client):
         await client1.get_player_ratings("test", "test2", timeout=3)
 
 
-async def test_custom_game_1v1_game_stats(test_client, json_stats_1v1):
-    client1, _ = await test_client("test")
-    client2, _ = await test_client("test2")
+async def test_custom_game_1v1_game_stats(client_factory, json_stats_1v1):
+    client1, _ = await client_factory.login("test")
+    client2, _ = await client_factory.login("test2")
 
     await client1.read_until_command("game_info")
     await client2.read_until_command("game_info")
@@ -108,28 +106,20 @@ async def test_custom_game_1v1_game_stats(test_client, json_stats_1v1):
 
     stats = json_stats_1v1("test", "test2")
     for client in (client1, client2):
-        await client.send_message({
-            "target": "game",
-            "command": "JsonStats",
-            "args": [stats]
-        })
+        await client.send_gpg_command("JsonStats", stats)
 
     # Now disconnect both players
     for client in (client1, client2):
-        await client.send_message({
-            "target": "game",
-            "command": "GameState",
-            "args": ["Ended"]
-        })
+        await client.send_gpg_command("GameState", "Ended")
 
     await client1.read_until_command("updated_achievements", timeout=10)
     await client2.read_until_command("updated_achievements", timeout=2)
 
 
-async def test_custom_game_1v1_extra_gameresults(test_client):
+async def test_custom_game_1v1_extra_gameresults(client_factory):
     """Clients can send bad game results when a player leaves the game early"""
-    client1, _ = await test_client("test")
-    client2, _ = await test_client("test2")
+    client1, _ = await client_factory.login("test")
+    client2, _ = await client_factory.login("test2")
 
     await client1.read_until_command("game_info")
     await client2.read_until_command("game_info")

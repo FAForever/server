@@ -7,20 +7,33 @@ from .fafclient import FAFClient
 
 
 @pytest.fixture(scope="function")
-async def test_client(request):
-    clients = []
-    """Create a new client connected to the test server"""
-    async def connect(username, password="foo"):
-        client = FAFClient()
-        clients.append(client)
-        await client.connect("test.faforever.com", 8001)
-        msg = await client.login(username, password)
-        return client, msg
+async def client_factory():
+    """
+    Create new clients connected to the test server and automatically
+    disconnect them when the test ends
+    """
+    class Manager():
+        def __init__(self):
+            self.clients = []
 
-    yield connect
+        async def add_client(self, host="test.faforever.com", port=8001):
+            client = FAFClient()
+            await client.connect(host, port)
+            self.clients.append(client)
+            return client
 
-    for client in clients:
-        await client.close()
+        async def login(self, username, password="foo"):
+            client = await self.add_client()
+            msg = await client.login(username, password)
+            return client, msg
+
+        async def close_all(self):
+            for client in self.clients:
+                await client.close()
+
+    manager = Manager()
+    yield manager
+    await manager.close_all()
 
 
 @pytest.fixture(scope="session")
