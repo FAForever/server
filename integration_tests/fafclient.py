@@ -49,6 +49,12 @@ class FAFClient(object):
         return await read_until_command(self.proto, command, timeout=timeout)
 
     # Commonly used functionality here
+    async def ping(self):
+        await self.send_message({"command": "ping"})
+
+    async def pong(self):
+        await self.send_message({"command": "pong"})
+        
     async def login(self, username, password):
         """Perform the entire login sequence including fetching a session
         and calling `faf-uid`"""

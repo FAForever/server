@@ -4,10 +4,10 @@ import pytest
 pytestmark = pytest.mark.asyncio
 
 
-async def test_ladder_1v1_match(test_client):
+async def test_ladder_1v1_match(client_factory):
     """More or less the same as the regression test version"""
-    client1, _ = await test_client("test")
-    client2, _ = await test_client("test2")
+    client1, _ = await client_factory.login("test")
+    client2, _ = await client_factory.login("test2")
 
     await client1.read_until_command("game_info")
     await client2.read_until_command("game_info")
