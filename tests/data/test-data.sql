@@ -234,7 +234,14 @@ insert into game_stats (id, startTime, gameName, gameType, gameMod, host, mapId,
   (41945, NOW() + interval 7 minute, 'MapRepetition', '0', 6, 2, 6, 0),
   (41946, NOW() + interval 8 minute, 'MapRepetition', '0', 6, 2, 5, 0),
   (41947, NOW() + interval 9 minute, 'MapRepetition', '0', 6, 2, 4, 0),
-  (41948, NOW() + interval 10 minute, 'MapRepetition', '0', 6, 2, 3, 0);
+  (41948, NOW() + interval 10 minute, 'MapRepetition', '0', 6, 2, 3, 0),
+  (41949, NOW() + interval 1 minute, 'MapRepetition', '0', 6, 1, 7, 0),
+  (41950, NOW() + interval 2 minute, 'MapRepetition', '0', 6, 1, 8, 0),
+  (41951, NOW() + interval 3 minute, 'MapRepetition', '0', 6, 1, 9, 0),
+  (41952, NOW() + interval 4 minute, 'MapRepetition', '0', 6, 1, 7, 0),
+  (41953, NOW() + interval 1 minute, 'MapRepetition', '0', 6, 2, 5, 0),
+  (41954, NOW() + interval 2 minute, 'MapRepetition', '0', 6, 2, 6, 0),
+  (41955, NOW() + interval 3 minute, 'MapRepetition', '0', 6, 2, 7, 0);
 
 insert into game_player_stats (gameId, playerId, AI, faction, color, team, place, mean, deviation, scoreTime) values
   (1, 1, 0, 0, 0, 2, 0, 1500, 500, NOW()),
@@ -248,7 +255,14 @@ insert into game_player_stats (gameId, playerId, AI, faction, color, team, place
   (41945, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 7 minute),
   (41946, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 8 minute),
   (41947, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 9 minute),
-  (41948, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 10 minute);
+  (41948, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 10 minute),
+  (41949, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 1 minute),
+  (41950, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 2 minute),
+  (41951, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 3 minute),
+  (41952, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 4 minute),
+  (41953, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 1 minute),
+  (41954, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 2 minute),
+  (41955, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 3 minute);
 
 insert into game_player_stats (gameId, playerId, AI, faction, color, team, place, mean, deviation, scoreTime, after_mean) values
   (41942, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), NULL),
@@ -275,7 +289,14 @@ insert into matchmaker_queue_game (matchmaker_queue_id, game_stats_id) values
   (1, 41945),
   (1, 41946),
   (1, 41947),
-  (1, 41948);
+  (1, 41948),
+  (2, 41949),
+  (2, 41950),
+  (2, 41951),
+  (2, 41952),
+  (2, 41953),
+  (2, 41954),
+  (2, 41955);
 
 insert into map_pool (id, name) values
   (1, "Ladder1v1 season 1: 5-10k"),
