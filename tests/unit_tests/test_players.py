@@ -45,7 +45,7 @@ def test_equality_by_id():
 
 def test_weak_references():
     p = Player(login="Test")
-    weak_properties = ["lobby_connection", "game"]
+    weak_properties = ["lobby_connection", "game", "game_connection"]
     referent = mock.Mock()
     for prop in weak_properties:
         setattr(p, prop, referent)
