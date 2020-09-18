@@ -277,7 +277,7 @@ def queue_factory():
         return MatchmakerQueue(
             game_service=mock.Mock(),
             name=name,
-            id=queue_id,
+            queue_id=queue_id,
             featured_mod=mod,
             rating_type=rating_type,
             team_size=team_size,

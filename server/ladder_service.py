@@ -68,7 +68,7 @@ class LadderService(Service):
             if name not in self.queues:
                 queue = MatchmakerQueue(
                     name=name,
-                    id=info["id"],
+                    queue_id=info["id"],
                     featured_mod=info["mod"],
                     rating_type=info["rating_type"],
                     team_size=info["team_size"],
