@@ -130,6 +130,19 @@ class FAFClient(object):
         # HACK: Yield long enough for the server to process our message
         await asyncio.sleep(0.5)
 
+    async def join_queue(self, queue_name, faction="uef"):
+        await self.send_message({
+            "command": "game_matchmaking",
+            "state": "start",
+            "queue_name": queue_name,
+            "faction": faction
+        })
+        await self.read_until(lambda msg: msg == {
+            "command": "search_info",
+            "state": "start",
+            "queue_name": queue_name
+        })
+
     async def open_fa(self):
         """Simulate FA opening"""
         await self.send_message({
