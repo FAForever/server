@@ -29,7 +29,7 @@ async def test_ladder_1v1_match(client_factory):
         "faction": "seraphim"
     })
 
-    await client1.read_until_command("match_found")
+    await client1.read_until_command("match_found", timeout=60)
     await client2.read_until_command("match_found")
 
     msg1 = await client1.read_until_command("game_info")
