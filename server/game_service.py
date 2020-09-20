@@ -3,6 +3,8 @@ from typing import Dict, List, Optional, Type, Union, ValuesView
 
 import aiocron
 
+from server.config import config
+
 from . import metrics
 from .core import Service
 from .db import FAFDatabase
@@ -60,7 +62,7 @@ class GameService(Service):
             "*/10 * * * *", func=self.update_data
         )
 
-        await self._message_queue_service.declare_exchange("faf-rabbitmq")
+        await self._message_queue_service.declare_exchange(config.MQ_EXCHANGE_NAME)
 
     async def initialise_game_counter(self):
         async with self._db.acquire() as conn:
@@ -227,7 +229,7 @@ class GameService(Service):
     async def publish_game_results(self, game_results: EndedGameInfo):
         result_dict = game_results.to_dict()
         await self._message_queue_service.publish(
-            "faf-rabbitmq",
+            config.MQ_EXCHANGE_NAME,
             "success.gameResults.create",
             result_dict,
         )
