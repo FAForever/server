@@ -423,7 +423,11 @@ class Game:
                     {self.get_player_outcome(player) for player in team}
                     for team in basic_info.teams
                 ]
-                team_outcomes = resolve_game(team_player_partial_outcomes)
+                #TODO Remove override once game result messages are reliable
+                team_outcomes = (
+                    self._outcome_override_hook()
+                    or resolve_game(team_player_partial_outcomes)
+                )
             except GameResolutionError:
                 await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
 
@@ -438,6 +442,9 @@ class Game:
         return EndedGameInfo.from_basic(
             basic_info, self.validity, team_outcomes, commander_kills
         )
+
+    def _outcome_override_hook(self) -> Optional[List[GameOutcome]]:
+        return None
 
     async def load_results(self):
         """
