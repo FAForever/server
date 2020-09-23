@@ -57,17 +57,17 @@ class _partial(object):
 
 @overload
 def synchronized() -> AsyncDecorator:
-    ...
+    ...  # pragma: no cover
 
 
 @overload
 def synchronized(function: AsyncFunc) -> AsyncFunc:
-    ...
+    ...  # pragma: no cover
 
 
 @overload
 def synchronized(lock: Optional[asyncio.Lock]) -> AsyncDecorator:
-    ...
+    ...  # pragma: no cover
 
 
 def synchronized(*args):
@@ -102,17 +102,17 @@ def _synchronize(
 
 @overload
 def synchronizedmethod() -> AsyncDecorator:
-    ...
+    ...  # pragma: no cover
 
 
 @overload
 def synchronizedmethod(function: AsyncFunc) -> AsyncFunc:
-    ...
+    ...  # pragma: no cover
 
 
 @overload
 def synchronizedmethod(lock_name: Optional[str]) -> AsyncDecorator:
-    ...
+    ...  # pragma: no cover
 
 
 def synchronizedmethod(*args):
