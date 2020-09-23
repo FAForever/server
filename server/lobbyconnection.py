@@ -174,7 +174,7 @@ class LobbyConnection:
                 if not self.game_connection:
                     return
 
-                await self.game_connection.handle_action(cmd, message.get("args", []))
+                await self.game_connection.handle_message(message)
                 return
 
             if target == "connectivity" and message.get("command") == "InitiateTest":

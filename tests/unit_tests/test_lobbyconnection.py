@@ -569,7 +569,7 @@ async def test_command_admin_closeFA(lobbyconnection, player_factory):
 
 async def test_game_subscription(lobbyconnection: LobbyConnection):
     game = Mock()
-    game.handle_action = CoroutineMock()
+    game.handle_message = CoroutineMock()
     lobbyconnection.game_connection = game
 
     await lobbyconnection.on_message_received({
@@ -578,7 +578,11 @@ async def test_game_subscription(lobbyconnection: LobbyConnection):
         "target": "game"
     })
 
-    game.handle_action.assert_called_with("test", ["foo", 42])
+    game.handle_message.assert_called_with({
+        "command": "test",
+        "args": ["foo", 42],
+        "target": "game"
+    })
 
 
 async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection):
