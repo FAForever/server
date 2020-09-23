@@ -1,6 +1,8 @@
 import logging
+from typing import List, Optional
 
 from server.abc.base_game import InitMode
+from server.config import config
 from server.players import Player
 from server.rating import RatingType
 
@@ -20,7 +22,7 @@ class LadderGame(Game):
         new_kwargs = {
             "game_mode": FeaturedModType.LADDER_1V1,
             "rating_type": RatingType.LADDER_1V1,
-            "max_players": 2
+            "max_players": 2,
         }
         new_kwargs.update(kwargs)
         super().__init__(id_, *args, **new_kwargs)
@@ -34,3 +36,18 @@ class LadderGame(Game):
         as 1 for win and 0 for anything else.
         """
         return self._results.victory_only_score(army)
+
+    def _outcome_override_hook(self) -> Optional[List[GameOutcome]]:
+        if not config.LADDER_1V1_OUTCOME_OVERRIDE or len(self.players) > 2:
+            return None
+        team_sets = self.get_team_sets()
+        army_scores = [
+            self._results.score(self.get_player_option(team_set.pop().id, "Army"))
+            for team_set in team_sets
+        ]
+        if army_scores[0] > army_scores[1]:
+            return [GameOutcome.VICTORY, GameOutcome.DEFEAT]
+        elif army_scores[0] < army_scores[1]:
+            return [GameOutcome.DEFEAT, GameOutcome.VICTORY]
+        else:
+            return [GameOutcome.DRAW, GameOutcome.DRAW]

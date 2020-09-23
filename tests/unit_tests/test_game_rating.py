@@ -185,9 +185,11 @@ async def test_on_game_end_global_ratings(custom_game, players):
     assert results.rating_type is RatingType.GLOBAL
     assert players.hosting.id in results.ratings
     assert players.joining.id in results.ratings
+    assert results.outcomes[players.hosting.id] is GameOutcome.VICTORY
+    assert results.outcomes[players.joining.id] is GameOutcome.DEFEAT
 
 
-async def test_on_game_end_ladder_ratings(ladder_game, players):
+async def test_on_game_end_ladder_ratings_(ladder_game, players):
     rating_service = ladder_game.game_service._rating_service
 
     ladder_game.state = GameState.LOBBY
@@ -206,6 +208,86 @@ async def test_on_game_end_ladder_ratings(ladder_game, players):
     assert results.rating_type is RatingType.LADDER_1V1
     assert players.hosting.id in results.ratings
     assert players.joining.id in results.ratings
+    assert results.outcomes[players.hosting.id] is GameOutcome.VICTORY
+    assert results.outcomes[players.joining.id] is GameOutcome.DEFEAT
+
+
+async def test_on_game_end_ladder_ratings_without_score_override(
+    ladder_game, players, mocker
+):
+    mocker.patch("server.games.ladder_game.config.LADDER_1V1_OUTCOME_OVERRIDE", False)
+    rating_service = ladder_game.game_service._rating_service
+
+    ladder_game.state = GameState.LOBBY
+    add_connected_players(ladder_game, [players.hosting, players.joining])
+    ladder_game.set_player_option(players.hosting.id, "Team", 1)
+    ladder_game.set_player_option(players.joining.id, "Team", 1)
+
+    await ladder_game.launch()
+    await ladder_game.add_result(players.hosting.id, 0, "victory", 0)
+    await ladder_game.add_result(players.joining.id, 1, "defeat", 0)
+
+    await ladder_game.on_game_end()
+    await rating_service._join_rating_queue()
+
+    results = get_persisted_results(rating_service)
+    assert results.rating_type is RatingType.LADDER_1V1
+    assert players.hosting.id in results.ratings
+    assert players.joining.id in results.ratings
+    assert results.outcomes[players.hosting.id] is GameOutcome.VICTORY
+    assert results.outcomes[players.joining.id] is GameOutcome.DEFEAT
+
+
+async def test_on_game_end_ladder_ratings_uses_score_override(
+    ladder_game, players, mocker
+):
+    mocker.patch("server.games.ladder_game.config.LADDER_1V1_OUTCOME_OVERRIDE", True)
+    rating_service = ladder_game.game_service._rating_service
+
+    ladder_game.state = GameState.LOBBY
+    add_connected_players(ladder_game, [players.hosting, players.joining])
+    ladder_game.set_player_option(players.hosting.id, "Team", 1)
+    ladder_game.set_player_option(players.joining.id, "Team", 1)
+
+    await ladder_game.launch()
+    await ladder_game.add_result(players.hosting.id, 0, "defeat", 1)
+    await ladder_game.add_result(players.joining.id, 1, "defeat", 0)
+
+    await ladder_game.on_game_end()
+    await rating_service._join_rating_queue()
+
+    results = get_persisted_results(rating_service)
+    assert results.rating_type is RatingType.LADDER_1V1
+    assert players.hosting.id in results.ratings
+    assert players.joining.id in results.ratings
+    assert results.outcomes[players.hosting.id] is GameOutcome.VICTORY
+    assert results.outcomes[players.joining.id] is GameOutcome.DEFEAT
+
+
+async def test_on_game_end_ladder_ratings_score_override_draw(
+    ladder_game, players, mocker
+):
+    mocker.patch("server.games.ladder_game.config.LADDER_1V1_OUTCOME_OVERRIDE", True)
+    rating_service = ladder_game.game_service._rating_service
+
+    ladder_game.state = GameState.LOBBY
+    add_connected_players(ladder_game, [players.hosting, players.joining])
+    ladder_game.set_player_option(players.hosting.id, "Team", 1)
+    ladder_game.set_player_option(players.joining.id, "Team", 1)
+
+    await ladder_game.launch()
+    await ladder_game.add_result(players.hosting.id, 0, "defeat", 0)
+    await ladder_game.add_result(players.joining.id, 1, "defeat", 0)
+
+    await ladder_game.on_game_end()
+    await rating_service._join_rating_queue()
+
+    results = get_persisted_results(rating_service)
+    assert results.rating_type is RatingType.LADDER_1V1
+    assert players.hosting.id in results.ratings
+    assert players.joining.id in results.ratings
+    assert results.outcomes[players.hosting.id] is GameOutcome.DRAW
+    assert results.outcomes[players.joining.id] is GameOutcome.DRAW
 
 
 async def test_on_game_end_rating_type_not_set(game, players):
@@ -306,10 +388,12 @@ async def test_rate_game_sum_of_scores_edge_case(custom_game, player_factory):
             assert results.ratings[player.id] > Rating(
                 *player.ratings[RatingType.GLOBAL]
             )
+            assert results.outcomes[player.id] is GameOutcome.VICTORY
         else:
             assert results.ratings[player.id] < Rating(
                 *player.ratings[RatingType.GLOBAL]
             )
+            assert results.outcomes[player.id] is GameOutcome.DEFEAT
 
 
 async def test_rate_game_only_one_survivor(custom_game, player_factory):
@@ -351,10 +435,12 @@ async def test_rate_game_only_one_survivor(custom_game, player_factory):
             assert results.ratings[player.id] > Rating(
                 *player.ratings[RatingType.GLOBAL]
             )
+            assert results.outcomes[player.id] is GameOutcome.VICTORY
         else:
             assert results.ratings[player.id] < Rating(
                 *player.ratings[RatingType.GLOBAL]
             )
+            assert results.outcomes[player.id] is GameOutcome.DEFEAT
 
 
 async def test_rate_game_two_player_FFA(custom_game, player_factory):
@@ -592,10 +678,12 @@ async def test_compute_rating_works_with_partially_unknown_results(
             assert results.ratings[player.id] > Rating(
                 *player.ratings[RatingType.GLOBAL]
             )
+            assert results.outcomes[player.id] is GameOutcome.VICTORY
         else:
             assert results.ratings[player.id] < Rating(
                 *player.ratings[RatingType.GLOBAL]
             )
+            assert results.outcomes[player.id] is GameOutcome.DEFEAT
 
 
 async def test_rate_game_single_ffa_vs_single_team(custom_game, player_factory):

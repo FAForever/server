@@ -83,6 +83,7 @@ class ConfigurationStore:
         self.GEO_IP_LICENSE_KEY = ""
         self.GEO_IP_DATABASE_MAX_AGE_DAYS = 22
 
+        self.LADDER_1V1_OUTCOME_OVERRIDE = True
         self.LADDER_ANTI_REPETITION_LIMIT = 3
         self.LADDER_SEARCH_EXPANSION_MAX = 0.25
         self.LADDER_SEARCH_EXPANSION_STEP = 0.05
