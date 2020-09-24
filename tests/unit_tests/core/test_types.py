@@ -1,4 +1,4 @@
-from server.types import Address
+from server.core.typedefs import Address
 
 
 def test_address_from_string():

@@ -4,10 +4,10 @@ from typing import Callable, Dict, Type
 
 import server.metrics as metrics
 
+from .core.typedefs import Address
 from .decorators import with_logger
 from .lobbyconnection import LobbyConnection
 from .protocol import Protocol, QDataStreamProtocol
-from .types import Address
 
 
 @with_logger

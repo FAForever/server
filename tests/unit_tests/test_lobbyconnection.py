@@ -11,6 +11,7 @@ from sqlalchemy import and_, select
 
 from server.abc.base_game import InitMode
 from server.config import config
+from server.core.typedefs import Address
 from server.db.models import ban, friends_and_foes
 from server.game_service import GameService
 from server.gameconnection import GameConnection
@@ -24,7 +25,6 @@ from server.player_service import PlayerService
 from server.players import PlayerState
 from server.protocol import DisconnectedError, QDataStreamProtocol
 from server.rating import InclusiveRange, RatingType
-from server.types import Address
 
 pytestmark = pytest.mark.asyncio
 

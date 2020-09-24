@@ -20,6 +20,7 @@ from server.db import FAFDatabase
 from .abc.base_game import GameConnectionState, InitMode
 from .config import TRACE, config
 from .core import asyncio_extensions as asyncio_
+from .core.typedefs import Address
 from .db.models import (
     avatars,
     avatars_list,
@@ -41,7 +42,7 @@ from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, Protocol
 from .rating import InclusiveRange, RatingType
-from .types import Address, GameLaunchOptions
+from .types import GameLaunchOptions
 
 
 class ClientError(Exception):
