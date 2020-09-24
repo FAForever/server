@@ -595,11 +595,10 @@ class LobbyConnection:
         if old_player:
             self._logger.debug("player {} already signed in: {}".format(self.player.id, old_player))
             if old_player.lobby_connection is not None:
-                with contextlib.suppress(DisconnectedError):
-                    await old_player.lobby_connection.send_warning(
-                        "You have been signed out because you signed in elsewhere.",
-                        fatal=True
-                    )
+                old_player.lobby_connection.write_warning(
+                    "You have been signed out because you signed in elsewhere.",
+                    fatal=True
+                )
 
         await self.player_service.fetch_player_data(self.player)
 
@@ -1048,6 +1047,18 @@ class LobbyConnection:
         })
         if fatal:
             await self.abort(message)
+
+    def write_warning(self, message: str, fatal: bool = False):
+        """
+        Like send_warning, but does not await the data to be sent.
+        """
+        self.write({
+            "command": "notice",
+            "style": "info" if not fatal else "error",
+            "text": message
+        })
+        if fatal:
+            asyncio.create_task(self.abort(message))
 
     async def send(self, message):
         """Send a message and wait for it to be sent."""

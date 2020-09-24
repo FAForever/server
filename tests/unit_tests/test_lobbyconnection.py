@@ -204,7 +204,7 @@ async def test_double_login(lobbyconnection, mock_players, player_factory):
         "unique_id": "blah"
     })
 
-    old_player.lobby_connection.send_warning.assert_called_with(
+    old_player.lobby_connection.write_warning.assert_called_with(
         "You have been signed out because you signed in elsewhere.",
         fatal=True
     )
