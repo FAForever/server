@@ -1,5 +1,6 @@
+from ..core.protocol import DisconnectedError
 from .gpgnet import GpgNetClientProtocol, GpgNetServerProtocol
-from .protocol import DisconnectedError, Protocol
+from .protocol import Protocol
 from .qdatastream import QDataStreamProtocol
 from .simple_json import SimpleJsonProtocol
 

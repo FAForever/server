@@ -15,11 +15,11 @@ from prometheus_client import start_http_server
 import server.metrics as metrics
 
 from .api.api_accessor import ApiAccessor
-from .asyncio_extensions import synchronizedmethod
 from .config import TRACE, config
 from .configuration_service import ConfigurationService
 from .control import run_control_server
 from .core import Service, create_services
+from .core.asyncio_extensions import synchronizedmethod
 from .db import FAFDatabase
 from .game_service import GameService
 from .gameconnection import GameConnection

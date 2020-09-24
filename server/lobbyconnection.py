@@ -17,9 +17,9 @@ from sqlalchemy import and_, func, select
 import server.metrics as metrics
 from server.db import FAFDatabase
 
-from . import asyncio_extensions as asyncio_
 from .abc.base_game import GameConnectionState, InitMode
 from .config import TRACE, config
+from .core import asyncio_extensions as asyncio_
 from .db.models import (
     avatars,
     avatars_list,
