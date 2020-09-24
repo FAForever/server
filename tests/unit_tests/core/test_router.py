@@ -3,7 +3,7 @@ from textwrap import dedent
 import mock
 import pytest
 
-from server.core.routing import RouteError, Router, SearchTree
+from server.core.router import RouteError, Router, SearchTree
 
 
 @pytest.fixture
