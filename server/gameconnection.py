@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+from typing import Union
 
 from sqlalchemy import or_, select, text
 
@@ -7,30 +8,30 @@ from server.db import FAFDatabase
 
 from .abc.base_game import GameConnectionState
 from .config import TRACE
-from .core import RouteError, Router
+from .core import Protocol, RouteError
+from .core.connection import Connection, handler
+from .core.typedefs import Address
 from .db.models import coop_leaderboard, coop_map, login, teamkills
 from .decorators import with_logger
 from .game_service import GameService
 from .games.game import Game, GameError, GameState, ValidityState, Victory
 from .player_service import PlayerService
 from .players import Player, PlayerState
-from .protocol import DisconnectedError, GpgNetServerProtocol, Protocol
+from .protocol import DisconnectedError
 
 
 @with_logger
-class GameConnection(GpgNetServerProtocol):
+class GameConnection(Connection):
     """
     Responsible for connections to the game, using the GPGNet protocol
     """
-
-    router = Router("command")
-
     def __init__(
         self,
+        protocol: Protocol,
+        address: Address,
         database: FAFDatabase,
         game: Game,
         player: Player,
-        protocol: Protocol,
         player_service: PlayerService,
         games: GameService,
         state: GameConnectionState = GameConnectionState.INITIALIZING
@@ -38,11 +39,9 @@ class GameConnection(GpgNetServerProtocol):
         """
         Construct a new GameConnection
         """
-        super().__init__()
+        super().__init__(protocol, address)
         self._db = database
-        self._logger.debug("GameConnection initializing")
 
-        self.protocol = protocol
         self._state = state
         self.game_service = games
         self.player_service = player_service
@@ -52,6 +51,7 @@ class GameConnection(GpgNetServerProtocol):
         self._game = game
 
         self.finished_sim = False
+        self._logger.debug("GameConnection initialized")
 
     @property
     def state(self) -> GameConnectionState:
@@ -82,6 +82,14 @@ class GameConnection(GpgNetServerProtocol):
             self.player == self.game.host
         )
 
+    async def send_gpgnet_message(
+        self,
+        command: str,
+        *arguments: Union[int, str, bool]
+    ):
+        message = {"command": command, "args": arguments}
+        await self.send(message)
+
     async def send(self, message):
         """
         Send a game message to the client.
@@ -106,16 +114,16 @@ class GameConnection(GpgNetServerProtocol):
             await self.abort("The host left the lobby")
             return
 
-        await self.send_JoinGame(peer.player.login, peer.player.id)
+        await self.send_gpgnet_message(
+            "JoinGame", peer.player.login, peer.player.id
+        )
 
         if not peer:
             await self.abort("The host left the lobby")
             return
 
-        await peer.send_ConnectToPeer(
-            player_name=self.player.login,
-            player_uid=self.player.id,
-            offer=True
+        await peer.send_gpgnet_message(
+            "ConnectToPeer", self.player.login, self.player.id, True
         )
 
     async def connect_to_peer(self, peer: "GameConnection"):
@@ -124,28 +132,24 @@ class GameConnection(GpgNetServerProtocol):
         :return: None
         """
         if peer is not None:
-            await self.send_ConnectToPeer(
-                player_name=peer.player.login,
-                player_uid=peer.player.id,
-                offer=True
+            await self.send_gpgnet_message(
+                "ConnectToPeer", peer.player.login, peer.player.id, True
             )
 
         if peer is not None:
             with contextlib.suppress(DisconnectedError):
-                await peer.send_ConnectToPeer(
-                    player_name=self.player.login,
-                    player_uid=self.player.id,
-                    offer=False
+                await peer.send_gpgnet_message(
+                    "ConnectToPeer", self.player.login, self.player.id, False
                 )
 
-    async def handle_message(self, message) -> None:
+    async def on_message_received(self, message) -> None:
         """
         Handle GpgNetSend messages, wrapped in the JSON protocol
         """
         try:
             command, args = message.get("command"), message.get("args", [])
-            handler = self.router.dispatch(message)
-            await handler(self, *args)
+            handler_func = self.dispatch(message)
+            await handler_func(*args)
         except RouteError:
             self._logger.warning(
                 "Unrecognized command %s: %s from player %s",
@@ -159,11 +163,11 @@ class GameConnection(GpgNetServerProtocol):
             self._logger.exception("Something awful happened in a game thread!")
             await self.abort()
 
-    @router.register("Desync")
+    @handler("Desync")
     async def handle_desync(self, *_args):
         self.game.desyncs += 1
 
-    @router.register("GameOption")
+    @handler("GameOption")
     async def handle_game_option(self, key, value):
         if not self.is_host():
             return
@@ -189,7 +193,7 @@ class GameConnection(GpgNetServerProtocol):
 
         self._mark_dirty()
 
-    @router.register("GameMods")
+    @handler("GameMods")
     async def handle_game_mods(self, mode, args):
         if not self.is_host():
             return
@@ -214,7 +218,7 @@ class GameConnection(GpgNetServerProtocol):
 
         self._mark_dirty()
 
-    @router.register("PlayerOption")
+    @handler("PlayerOption")
     async def handle_player_option(self, player_id, command, value):
         if not self.is_host():
             return
@@ -222,7 +226,7 @@ class GameConnection(GpgNetServerProtocol):
         self.game.set_player_option(int(player_id), command, value)
         self._mark_dirty()
 
-    @router.register("AIOption")
+    @handler("AIOption")
     async def handle_ai_option(self, name, key, value):
         if not self.is_host():
             return
@@ -230,7 +234,7 @@ class GameConnection(GpgNetServerProtocol):
         self.game.set_ai_option(str(name), key, value)
         self._mark_dirty()
 
-    @router.register("ClearSlot")
+    @handler("ClearSlot")
     async def handle_clear_slot(self, slot):
         if not self.is_host():
             return
@@ -238,7 +242,7 @@ class GameConnection(GpgNetServerProtocol):
         self.game.clear_slot(int(slot))
         self._mark_dirty()
 
-    @router.register("GameResult")
+    @handler("GameResult")
     async def handle_game_result(self, army, result):
         army = int(army)
         result = str(result).lower()
@@ -248,7 +252,7 @@ class GameConnection(GpgNetServerProtocol):
         except (KeyError, ValueError):  # pragma: no cover
             self._logger.warning("Invalid result for %s reported: %s", army, result)
 
-    @router.register("OperationComplete")
+    @handler("OperationComplete")
     async def handle_operation_complete(self, army, secondary, delta):
         # FIXME: This check is meant to prevent double insertion into the
         # leaderboards, but it also requires that a player must be in the first
@@ -284,15 +288,15 @@ class GameConnection(GpgNetServerProtocol):
                 )
             )
 
-    @router.register("JsonStats")
+    @handler("JsonStats")
     async def handle_json_stats(self, stats):
         self.game.report_army_stats(stats)
 
-    @router.register("EnforceRating")
+    @handler("EnforceRating")
     async def handle_enforce_rating(self):
         self.game.enforce_rating = True
 
-    @router.register("TeamkillReport")
+    @handler("TeamkillReport")
     async def handle_teamkill_report(self, gametime, reporter_id, reporter_name, teamkiller_id, teamkiller_name):
         """
             Sent when a player is teamkilled and clicks the 'Report' button.
@@ -306,7 +310,7 @@ class GameConnection(GpgNetServerProtocol):
 
         pass
 
-    @router.register("TeamkillHappened")
+    @handler("TeamkillHappened")
     async def handle_teamkill_happened(self, gametime, victim_id, victim_name, teamkiller_id, teamkiller_name):
         """
             Send automatically by the game whenever a teamkill happens. Takes
@@ -335,7 +339,7 @@ class GameConnection(GpgNetServerProtocol):
                 )
             )
 
-    @router.register("IceMsg")
+    @handler("IceMsg")
     async def handle_ice_message(self, receiver_id, ice_msg):
         receiver_id = int(receiver_id)
         peer = self.player_service.get_player(receiver_id)
@@ -363,7 +367,7 @@ class GameConnection(GpgNetServerProtocol):
                 receiver_id
             )
 
-    @router.register("GameState")
+    @handler("GameState")
     async def handle_game_state(self, state):
         """
         Changes in game state
@@ -431,7 +435,7 @@ class GameConnection(GpgNetServerProtocol):
         """
         player_state = self.player.state
         if player_state == PlayerState.HOSTING:
-            await self.send_HostGame(self.game.map_folder_name)
+            await self.send_gpgnet_message("HostGame", self.game.map_folder_name)
             self.game.set_hosted()
         # If the player is joining, we connect him to host
         # followed by the rest of the players.
@@ -457,7 +461,7 @@ class GameConnection(GpgNetServerProtocol):
                     tasks.append(self.connect_to_peer(peer))
             await asyncio.gather(*tasks)
 
-    @router.register("GameEnded")
+    @handler("GameEnded")
     async def handle_game_ended(self, *args):
         """
         Signals that the simulation has ended.
@@ -469,7 +473,7 @@ class GameConnection(GpgNetServerProtocol):
         if self.game.ended:
             await self.game.on_game_end()
 
-    @router.register("Rehost")
+    @handler("Rehost")
     async def handle_rehost(self, *args):
         """
         Signals that the user has rehosted the game. This is currently unused but
@@ -477,7 +481,7 @@ class GameConnection(GpgNetServerProtocol):
         """
         pass
 
-    @router.register("Bottleneck")
+    @handler("Bottleneck")
     async def handle_bottleneck(self, *args):
         """
         Not sure what this command means. This is currently unused but
@@ -485,7 +489,7 @@ class GameConnection(GpgNetServerProtocol):
         """
         pass
 
-    @router.register("BottleneckCleared")
+    @handler("BottleneckCleared")
     async def handle_bottleneck_cleared(self, *args):
         """
         Not sure what this command means. This is currently unused but
@@ -493,7 +497,7 @@ class GameConnection(GpgNetServerProtocol):
         """
         pass
 
-    @router.register("Disconnected")
+    @handler("Disconnected")
     async def handle_disconnected(self, *args):
         """
         Not sure what this command means. This is currently unused but
@@ -501,14 +505,14 @@ class GameConnection(GpgNetServerProtocol):
         """
         pass
 
-    @router.register("Chat")
+    @handler("Chat")
     async def handle_chat(self, message: str):
         """
         Whenever the player sends a chat message during the game lobby.
         """
         pass
 
-    @router.register("GameFull")
+    @handler("GameFull")
     async def handle_game_full(self):
         """
         Sent when all game slots are full
@@ -552,7 +556,9 @@ class GameConnection(GpgNetServerProtocol):
             if peer == self:
                 continue
 
-            tasks.append(peer.send_DisconnectFromPeer(self.player.id))
+            tasks.append(
+                peer.send_gpgnet_message("DisconnectFromPeer", self.player.id)
+            )
 
         for fut in asyncio.as_completed(tasks):
             try:

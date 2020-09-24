@@ -101,7 +101,8 @@ class ServerInstance(object):
             "loop": self.loop,
         })
 
-        self.connection_factory = lambda: LobbyConnection(
+        self.connection_factory = lambda proto, addr: LobbyConnection(
+            proto, addr,
             database=database,
             geoip=self.services["geo_ip_service"],
             game_service=self.services["game_service"],

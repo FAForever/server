@@ -97,6 +97,8 @@ def lobbyconnection(
     mock_nts_client
 ):
     lc = LobbyConnection(
+        mock_protocol,
+        Address("127.0.0.1", 1234),
         database=database,
         geoip=mock_geoip,
         game_service=mock_games,
@@ -106,10 +108,8 @@ def lobbyconnection(
     )
 
     lc.player = mock_player
-    lc.protocol = mock_protocol
     lc.player_service.fetch_player_data = CoroutineMock()
-    lc.peer_address = Address("127.0.0.1", 1234)
-    lc._authenticated = True
+    lc.authenticated = True
     return lc
 
 
@@ -141,7 +141,7 @@ def policy_server(event_loop):
 
 
 async def test_unauthenticated_calls_abort(lobbyconnection, test_game_info):
-    lobbyconnection._authenticated = False
+    lobbyconnection.authenticated = False
     lobbyconnection.abort = CoroutineMock()
 
     await lobbyconnection.on_message_received({
@@ -569,7 +569,7 @@ async def test_command_admin_closeFA(lobbyconnection, player_factory):
 
 async def test_game_subscription(lobbyconnection: LobbyConnection):
     game = Mock()
-    game.handle_message = CoroutineMock()
+    game.on_message_received = CoroutineMock()
     lobbyconnection.game_connection = game
 
     await lobbyconnection.on_message_received({
@@ -578,7 +578,7 @@ async def test_game_subscription(lobbyconnection: LobbyConnection):
         "target": "game"
     })
 
-    game.handle_message.assert_called_with({
+    game.on_message_received.assert_called_with({
         "command": "test",
         "args": ["foo", 42],
         "target": "game"
