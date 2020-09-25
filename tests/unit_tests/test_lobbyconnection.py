@@ -163,7 +163,9 @@ async def test_bad_command_calls_abort(lobbyconnection):
     })
 
     lobbyconnection.send.assert_called_once_with({"command": "invalid"})
-    lobbyconnection.abort.assert_called_once_with("Error processing command")
+    lobbyconnection.abort.assert_called_once_with(
+        "Error processing message: {'command': 'this_isnt_real'}"
+    )
 
 
 async def test_command_pong_does_nothing(lobbyconnection):
@@ -561,7 +563,7 @@ async def test_command_admin_closeFA(lobbyconnection, player_factory):
         "user_id": tuna.id
     })
 
-    tuna.lobby_connection.send.assert_any_call({
+    tuna.lobby_connection.write.assert_any_call({
         "command": "notice",
         "style": "kill",
     })
@@ -778,7 +780,7 @@ async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnecti
     lobbyconnection.send.assert_any_call({
         "command": "notice",
         "style": "info",
-        "text": "The game you were connected to does no longer exist"
+        "text": "The game you were connected to no longer exists"
     })
 
 

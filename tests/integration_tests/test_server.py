@@ -323,7 +323,7 @@ async def test_host_coop_game(lobby_server):
 
 
 @pytest.mark.parametrize("command", ["game_host", "game_join"])
-async def test_server_ban_prevents_hosting(lobby_server, database, command):
+async def test_server_ban_prevents_playing(lobby_server, database, command):
     """
     Players who are banned while they are online, should immediately be
     prevented from joining or hosting games until their ban expires.

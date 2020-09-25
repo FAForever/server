@@ -1,9 +1,7 @@
 import contextlib
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-from .typedefs import Handler, Message
-
-HandlerDecorator = Callable[[Handler], Handler]
+from .typedefs import Handler, HandlerDecorator, Message
 
 
 class RouteError(Exception):

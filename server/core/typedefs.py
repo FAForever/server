@@ -2,6 +2,7 @@ from typing import Any, Callable, Dict, NamedTuple
 
 # Type aliases
 Handler = Callable[..., Any]
+HandlerDecorator = Callable[[Handler], Handler]
 Message = Dict[Any, Any]
 
 
