@@ -144,6 +144,70 @@ async def test_game_matchmaking_multiqueue(lobby_server):
 
 
 @fast_forward(60)
+async def test_game_matchmaking_multiqueue_multimatch(lobby_server):
+    """
+    Scenario where both queues could possibly generate a match.
+    Queues:
+        ladder1v1 - 2 players join
+        tmm2v2    - 4 players join
+    Result:
+        Either one of the queues generates a match, but not both.
+    """
+    protos, _ = await connect_players(lobby_server)
+
+    await asyncio.gather(*[
+        read_until_command(proto, "game_info") for proto in protos
+    ])
+
+    ladder1v1_tasks = [
+        proto.send_message({
+            "command": "game_matchmaking",
+            "state": "start",
+            "faction": "uef",
+            "queue_name": "ladder1v1"
+        })
+        for proto in protos[:2]
+    ]
+    await asyncio.gather(*[
+        proto.send_message({
+            "command": "game_matchmaking",
+            "state": "start",
+            "faction": "aeon",
+            "queue_name": "tmm2v2"
+        })
+        for proto in protos
+    ] + ladder1v1_tasks)
+    msg1 = await read_until_command(protos[0], "match_found")
+    msg2 = await read_until_command(protos[1], "match_found")
+
+    matched_queue = msg1["queue"]
+    if matched_queue == "ladder1v1":
+        with pytest.raises(asyncio.TimeoutError):
+            await read_until_command(protos[2], "match_found", timeout=3)
+        with pytest.raises(asyncio.TimeoutError):
+            await read_until_command(protos[3], "match_found", timeout=3)
+        with pytest.raises(asyncio.TimeoutError):
+            await read_until_command(protos[2], "search_info", timeout=3)
+        with pytest.raises(asyncio.TimeoutError):
+            await read_until_command(protos[3], "search_info", timeout=3)
+    else:
+        await read_until_command(protos[2], "match_found", timeout=3)
+        await read_until_command(protos[3], "match_found", timeout=3)
+
+    assert msg1 == msg2
+
+    def other_cancelled(msg):
+        return (
+            msg["command"] == "search_info"
+            and msg["queue_name"] != matched_queue
+        )
+    msg1 = await read_until(protos[0], other_cancelled, timeout=3)
+    msg2 = await read_until(protos[1], other_cancelled, timeout=3)
+    assert msg1 == msg2
+    assert msg1["state"] == "stop"
+
+
+@fast_forward(60)
 async def test_game_matchmaking_timeout(lobby_server):
     protos, _ = await queue_players_for_matchmaking(lobby_server)
 
