@@ -1,5 +1,5 @@
 import re
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 
 from .dependency_injector import DependencyInjector
 
@@ -7,28 +7,22 @@ CASE_PATTERN = re.compile(r"(?<!^)(?=[A-Z])")
 DependencyGraph = Dict[str, List[str]]
 
 
-class ServiceMeta(type):
-    """
-    For tracking which Services have been defined.
-    """
-
-    # Mapping from parameter name to class
-    services: Dict[str, type] = {}
-
-    def __new__(cls, name, bases, attrs):
-        klass = type.__new__(cls, name, bases, attrs)
-        if name != "Service":
-            arg_name = snake_case(name)
-            cls.services[arg_name] = klass
-        return klass
+service_registry: Dict[str, type] = {}
 
 
-class Service(metaclass=ServiceMeta):
+class Service():
     """
     All services should inherit from this class.
 
     Services are singleton objects which manage some server task.
     """
+    def __init_subclass__(cls, name: Optional[str] = None, **kwargs: Any):
+        """
+        For tracking which services have been defined.
+        """
+        super().__init_subclass__(**kwargs)
+        arg_name = name or snake_case(cls.__name__)
+        service_registry[arg_name] = cls
 
     async def initialize(self) -> None:
         """
@@ -51,7 +45,7 @@ def create_services(injectables: Dict[str, object] = {}) -> Dict[str, Service]:
     injector = DependencyInjector()
     injector.add_injectables(**injectables)
 
-    return injector.build_classes(ServiceMeta.services)
+    return injector.build_classes(service_registry)
 
 
 def snake_case(string: str) -> str:

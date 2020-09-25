@@ -25,10 +25,11 @@ def game_connection(
     event_loop
 ):
     conn = GameConnection(
+        asynctest.create_autospec(QDataStreamProtocol),
+        ("localhost", 8001),
         database=database,
         game=game,
         player=players.hosting,
-        protocol=asynctest.create_autospec(QDataStreamProtocol),
         player_service=player_service,
         games=game_service
     )

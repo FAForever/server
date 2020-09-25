@@ -6,9 +6,9 @@ import aio_pika
 from aio_pika import DeliveryMode, ExchangeType
 from aio_pika.exceptions import ProbableAuthenticationError
 
-from .asyncio_extensions import synchronizedmethod
 from .config import TRACE, config
 from .core import Service
+from .core.asyncio_extensions import synchronizedmethod
 from .decorators import with_logger
 
 

@@ -11,6 +11,7 @@ from sqlalchemy import and_, select
 
 from server.abc.base_game import InitMode
 from server.config import config
+from server.core.typedefs import Address
 from server.db.models import ban, friends_and_foes
 from server.game_service import GameService
 from server.gameconnection import GameConnection
@@ -24,7 +25,6 @@ from server.player_service import PlayerService
 from server.players import PlayerState
 from server.protocol import DisconnectedError, QDataStreamProtocol
 from server.rating import InclusiveRange, RatingType
-from server.types import Address
 
 pytestmark = pytest.mark.asyncio
 
@@ -97,6 +97,8 @@ def lobbyconnection(
     mock_nts_client
 ):
     lc = LobbyConnection(
+        mock_protocol,
+        Address("127.0.0.1", 1234),
         database=database,
         geoip=mock_geoip,
         game_service=mock_games,
@@ -106,10 +108,8 @@ def lobbyconnection(
     )
 
     lc.player = mock_player
-    lc.protocol = mock_protocol
     lc.player_service.fetch_player_data = CoroutineMock()
-    lc.peer_address = Address("127.0.0.1", 1234)
-    lc._authenticated = True
+    lc.authenticated = True
     return lc
 
 
@@ -141,7 +141,7 @@ def policy_server(event_loop):
 
 
 async def test_unauthenticated_calls_abort(lobbyconnection, test_game_info):
-    lobbyconnection._authenticated = False
+    lobbyconnection.authenticated = False
     lobbyconnection.abort = CoroutineMock()
 
     await lobbyconnection.on_message_received({
@@ -163,7 +163,9 @@ async def test_bad_command_calls_abort(lobbyconnection):
     })
 
     lobbyconnection.send.assert_called_once_with({"command": "invalid"})
-    lobbyconnection.abort.assert_called_once_with("Error processing command")
+    lobbyconnection.abort.assert_called_once_with(
+        "Error processing message: {'command': 'this_isnt_real'}"
+    )
 
 
 async def test_command_pong_does_nothing(lobbyconnection):
@@ -561,7 +563,7 @@ async def test_command_admin_closeFA(lobbyconnection, player_factory):
         "user_id": tuna.id
     })
 
-    tuna.lobby_connection.send.assert_any_call({
+    tuna.lobby_connection.write.assert_any_call({
         "command": "notice",
         "style": "kill",
     })
@@ -569,7 +571,7 @@ async def test_command_admin_closeFA(lobbyconnection, player_factory):
 
 async def test_game_subscription(lobbyconnection: LobbyConnection):
     game = Mock()
-    game.handle_action = CoroutineMock()
+    game.on_message_received = CoroutineMock()
     lobbyconnection.game_connection = game
 
     await lobbyconnection.on_message_received({
@@ -578,7 +580,11 @@ async def test_game_subscription(lobbyconnection: LobbyConnection):
         "target": "game"
     })
 
-    game.handle_action.assert_called_with("test", ["foo", 42])
+    game.on_message_received.assert_called_with({
+        "command": "test",
+        "args": ["foo", 42],
+        "target": "game"
+    })
 
 
 async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection):
@@ -774,7 +780,7 @@ async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnecti
     lobbyconnection.send.assert_any_call({
         "command": "notice",
         "style": "info",
-        "text": "The game you were connected to does no longer exist"
+        "text": "The game you were connected to no longer exists"
     })
 
 

@@ -4,14 +4,14 @@ from typing import Callable, Dict, Type
 
 import server.metrics as metrics
 
+from .core.typedefs import Address
 from .decorators import with_logger
 from .lobbyconnection import LobbyConnection
 from .protocol import Protocol, QDataStreamProtocol
-from .types import Address
 
 
 @with_logger
-class ServerContext:
+class ServerContext():
     """
     Base class for managing connections and holding state about them.
     """
@@ -19,7 +19,7 @@ class ServerContext:
     def __init__(
         self,
         name: str,
-        connection_factory: Callable[[], LobbyConnection],
+        connection_factory: Callable[[Protocol, Address], LobbyConnection],
         protocol_class: Type[Protocol] = QDataStreamProtocol,
     ):
         super().__init__()
@@ -79,11 +79,13 @@ class ServerContext:
     async def client_connected(self, stream_reader, stream_writer):
         self._logger.debug("%s: Client connected", self.name)
         protocol = self.protocol_class(stream_reader, stream_writer)
-        connection = self._connection_factory()
+        connection = self._connection_factory(
+            protocol,
+            Address(*stream_writer.get_extra_info("peername"))
+        )
         self.connections[connection] = protocol
 
         try:
-            await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info("peername")))
             metrics.user_connections.labels("None").inc()
             while protocol.is_connected():
                 message = await protocol.read_message()

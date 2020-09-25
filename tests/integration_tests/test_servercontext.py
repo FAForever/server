@@ -13,17 +13,13 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
-def mock_server(event_loop):
+def mock_connection(event_loop):
     class MockServer:
         def __init__(self):
-            self.protocol, self.peername, self.user_agent = None, None, None
+            self.protocol = None
+            self.peername = None
+            self.user_agent = None
             self.on_connection_lost = CoroutineMock()
-
-        async def on_connection_made(self, protocol, peername):
-            self.protocol = protocol
-            self.peername = peername
-            self.protocol.writer.write_eof()
-            self.protocol.reader.feed_eof()
 
         async def on_message_received(self, msg):
             pass
@@ -32,16 +28,24 @@ def mock_server(event_loop):
 
 
 @pytest.fixture
-async def mock_context(mock_server):
-    ctx = ServerContext("TestServer", lambda: mock_server)
+async def mock_context(mock_connection):
+    def connection_factory(protocol, peername):
+        mock_connection.protocol = protocol
+        mock_connection.peername = peername
+        mock_connection.protocol.writer.write_eof()
+        mock_connection.protocol.reader.feed_eof()
+        return mock_connection
+    ctx = ServerContext("TestServer", connection_factory)
     yield await ctx.listen("127.0.0.1", None), ctx
     ctx.close()
 
 
 @pytest.fixture
 async def context():
-    def make_connection() -> LobbyConnection:
+    def make_connection(protocol, address) -> LobbyConnection:
         return LobbyConnection(
+            protocol,
+            address,
             database=mock.Mock(),
             geoip=mock.Mock(),
             game_service=mock.Mock(),
@@ -55,17 +59,17 @@ async def context():
     ctx.close()
 
 
-async def test_serverside_abort(event_loop, mock_context, mock_server):
+async def test_serverside_abort(event_loop, mock_context, mock_connection):
     srv, ctx = mock_context
     (reader, writer) = await asyncio.open_connection(*srv.sockets[0].getsockname())
     proto = QDataStreamProtocol(reader, writer)
     await proto.send_message({"some_junk": True})
     await exhaust_callbacks(event_loop)
 
-    mock_server.on_connection_lost.assert_any_call()
+    mock_connection.on_connection_lost.assert_any_call()
 
 
-async def test_connection_broken_external(context, mock_server):
+async def test_connection_broken_external(context, mock_connection):
     """
     When the connection breaks while the server is calling protocol.send from
     somewhere other than the main read - response loop. Make sure that this
