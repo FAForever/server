@@ -97,7 +97,7 @@ async def test_start_game_1v1(
     p1 = player_factory("Dostya", player_id=1, with_lobby_connection=True)
     p2 = player_factory("Rhiza", player_id=2, with_lobby_connection=True)
 
-    with mock.patch("server.games.game.Game.await_hosted", CoroutineMock()):
+    with mock.patch("server.games.game.Game.wait_hosted", CoroutineMock()):
         await ladder_service.start_game([p1], [p2], queue)
 
     game = game_service[game_service.game_id_counter]
@@ -140,7 +140,7 @@ async def test_start_game_with_teams(
 
     game_service.ladder_maps = [(1, "scmp_007", "maps/scmp_007.zip")]
 
-    with mock.patch("server.games.game.Game.await_hosted", CoroutineMock()):
+    with mock.patch("server.games.game.Game.wait_hosted", CoroutineMock()):
         await ladder_service.start_game([p1, p3], [p2, p4], queue)
 
     game = game_service[game_service.game_id_counter]

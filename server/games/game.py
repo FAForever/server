@@ -115,6 +115,7 @@ class Game:
         }
         self.mods = {}
         self._is_hosted = asyncio.Future()
+        self._launch_fut = asyncio.Future()
 
         self._logger.debug("%s created", self)
         asyncio.get_event_loop().create_task(self.timeout_game())
@@ -232,12 +233,15 @@ class Game:
 
         return list(teams.values()) + ffa_players
 
-    async def await_hosted(self):
+    async def wait_hosted(self):
         return await asyncio.wait_for(self._is_hosted, None)
 
     def set_hosted(self, value: bool = True):
         if not self._is_hosted.done():
             self._is_hosted.set_result(value)
+
+    async def wait_launched(self, timeout: float):
+        return await asyncio.wait_for(self._launch_fut, timeout=timeout)
 
     async def add_result(
         self, reporter: int, army: int, result_type: str, score: int
@@ -648,10 +652,12 @@ class Game:
         self._players_with_unsent_army_stats = list(self._players)
 
         self.state = GameState.LIVE
-        self._logger.info("Game launched")
 
         await self.on_game_launched()
         await self.validate_game_settings()
+
+        self._launch_fut.set_result(None)
+        self._logger.info("Game launched")
 
     async def on_game_launched(self):
         for player in self.players:

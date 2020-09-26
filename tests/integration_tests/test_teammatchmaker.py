@@ -5,7 +5,7 @@ import pytest
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until, read_until_command
-from .test_game import get_player_ratings, send_player_options
+from .test_game import client_response, get_player_ratings, send_player_options
 
 pytestmark = pytest.mark.asyncio
 
@@ -41,23 +41,6 @@ async def queue_players_for_matchmaking(lobby_server):
     ])
 
     return protos, ids
-
-
-async def client_response(proto):
-    msg = await read_until_command(proto, "game_launch")
-    # Ensures that the game enters the `LOBBY` state
-    await proto.send_message({
-        "command": "GameState",
-        "target": "game",
-        "args": ["Idle"]
-    })
-    # Ensures that the game is considered hosted
-    await proto.send_message({
-        "command": "GameState",
-        "target": "game",
-        "args": ["Lobby"]
-    })
-    return msg
 
 
 @fast_forward(10)
