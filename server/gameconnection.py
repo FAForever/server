@@ -293,7 +293,7 @@ class GameConnection(GpgNetServerProtocol):
         army = int(army)
         result = str(result).lower()
         try:
-            label, score = result.split(" ")
+            label, score = result.split(" ")[-2:]
             await self.game.add_result(self.player.id, army, label, int(score))
         except (KeyError, ValueError):  # pragma: no cover
             self._logger.warning("Invalid result for %s reported: %s", army, result)
