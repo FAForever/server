@@ -37,7 +37,6 @@ class PlayerService(Service):
 
         # Static-ish data fields.
         self.uniqueid_exempt = {}
-        self.client_version_info = ("0.0.0", None)
         self._dirty_players = set()
 
     async def initialize(self) -> None:
@@ -255,14 +254,6 @@ class PlayerService(Service):
             )
             rows = await result.fetchall()
             self.uniqueid_exempt = frozenset(map(lambda x: x[0], rows))
-
-            # Client version number
-            result = await conn.execute(
-                "SELECT version, file FROM version_lobby ORDER BY id DESC LIMIT 1"
-            )
-            row = await result.fetchone()
-            if row is not None:
-                self.client_version_info = (row[0], row[1])
 
     async def shutdown(self):
         tasks = []
