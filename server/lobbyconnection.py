@@ -11,7 +11,6 @@ from typing import Optional
 import aiohttp
 import humanize
 import pymysql
-import semver
 from sqlalchemy import and_, func, select
 
 import server.metrics as metrics
@@ -454,45 +453,6 @@ class LobbyConnection:
             metrics.user_agent_version.labels(str(version)).inc()
         self._version = version
 
-    async def _check_version(self):
-        versionDB, updateFile = self.player_service.client_version_info
-        update_msg = {
-            "command": "update",
-            "update": updateFile,
-            "new_version": versionDB
-        }
-
-        if not self.user_agent or "downlords-faf-client" not in self.user_agent:
-            await self.send_warning(
-                "You are using an unofficial client version! "
-                "Some features might not work as expected. "
-                "If you experience any problems please download the latest "
-                "version of the official client from "
-                f'<a href="{config.WWW_URL}">{config.WWW_URL}</a>'
-            )
-
-        if not self._version or not self.user_agent:
-            update_msg["command"] = "welcome"
-            # For compatibility with 0.10.x updating mechanism
-            await self.send(update_msg)
-            return False
-
-        # Check their client is reporting the right version number.
-        if "downlords-faf-client" not in self.user_agent:
-            try:
-                version = self._version
-                if "-" in version:
-                    version = version.split("-")[0]
-                if "+" in version:
-                    version = version.split("+")[0]
-                if semver.compare(versionDB, version) > 0:
-                    await self.send(update_msg)
-                    return False
-            except ValueError:
-                await self.send(update_msg)
-                return False
-        return True
-
     async def check_policy_conformity(self, player_id, uid_hash, session, ignore_result=False):
         if not config.USE_POLICY_SERVER:
             return True
@@ -738,9 +698,7 @@ class LobbyConnection:
         user_agent = message.get("user_agent")
         version = message.get("version")
         self._set_user_agent_and_version(user_agent, version)
-
-        if await self._check_version():
-            await self.send({"command": "session", "session": self.session})
+        await self.send({"command": "session", "session": self.session})
 
     async def command_avatar(self, message):
         action = message["action"]
