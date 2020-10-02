@@ -20,21 +20,6 @@ pytestmark = pytest.mark.asyncio
 TEST_ADDRESS = ("127.0.0.1", None)
 
 
-async def test_server_deprecated_client(lobby_server):
-    proto = await connect_client(lobby_server)
-
-    await proto.send_message({"command": "ask_session", "user_agent": "faf-client", "version": "0.0.0"})
-    msg = await proto.read_message()
-
-    assert msg["command"] == "notice"
-
-    proto = await connect_client(lobby_server)
-    await proto.send_message({"command": "ask_session", "version": "0.0.0"})
-    msg = await proto.read_message()
-
-    assert msg["command"] == "notice"
-
-
 @fast_forward(50)
 async def test_ping_message(lobby_server):
     _, _, proto = await connect_and_sign_in(("test", "test_password"), lobby_server)
