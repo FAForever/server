@@ -545,3 +545,7 @@ async def test_handle_action_invalid(game_connection: GameConnection):
 
     game_connection.abort.assert_not_called()
     game_connection.protocol.send_message.assert_not_called()
+
+async def test_result_format_phantom(game: Game, game_connection: GameConnection):
+    await game_connection.handle_action("GameResult", [0, "phantom score -5"])
+    game.add_result.assert_called_once_with(game_connection.player.id, 0, "score", -5)
