@@ -24,11 +24,12 @@ from .db.models import (
     map_pool_map_version,
     map_version,
     matchmaker_queue,
+    matchmaker_queue_game,
     matchmaker_queue_map_pool
 )
 from .decorators import with_logger
 from .game_service import GameService
-from .games import FeaturedModType, LadderGame
+from .games import LadderGame
 from .matchmaker import MapPool, MatchmakerQueue, Search
 from .players import Player, PlayerState
 from .protocol import DisconnectedError
@@ -67,6 +68,7 @@ class LadderService(Service):
             if name not in self.queues:
                 queue = MatchmakerQueue(
                     name=name,
+                    queue_id=info["id"],
                     featured_mod=info["mod"],
                     rating_type=info["rating_type"],
                     team_size=info["team_size"],
@@ -132,6 +134,7 @@ class LadderService(Service):
     async def fetch_matchmaker_queues(self, conn):
         result = await conn.execute(
             select([
+                matchmaker_queue.c.id,
                 matchmaker_queue.c.technical_name,
                 matchmaker_queue.c.team_size,
                 matchmaker_queue_map_pool.c.map_pool_id,
@@ -151,6 +154,7 @@ class LadderService(Service):
         async for row in result:
             name = row.technical_name
             info = matchmaker_queues[name]
+            info["id"] = row.id
             info["mod"] = row.gamemod
             info["rating_type"] = row.rating_type
             info["team_size"] = row.team_size
@@ -294,8 +298,7 @@ class LadderService(Service):
 
             played_map_ids = await self.get_game_history(
                 all_players,
-                # FIXME: Use reference to matchmaker queue instead
-                FeaturedModType.LADDER_1V1,
+                queue.id,
                 limit=config.LADDER_ANTI_REPETITION_LIMIT
             )
             rating = min(
@@ -312,6 +315,7 @@ class LadderService(Service):
                 game_mode=queue.featured_mod,
                 host=host,
                 name=game_name(team1, team2),
+                matchmaker_queue_id=queue.id,
                 rating_type=queue.rating_type,
                 max_players=len(all_players)
             )
@@ -384,7 +388,7 @@ class LadderService(Service):
     async def get_game_history(
         self,
         players: List[Player],
-        mod: str,
+        queue_id: int,
         limit=3
     ) -> List[int]:
         async with self._db.acquire() as conn:
@@ -393,7 +397,9 @@ class LadderService(Service):
                 query = select([
                     game_stats.c.mapId,
                 ]).select_from(
-                    game_player_stats.join(game_stats).join(game_featuredMods)
+                    game_player_stats
+                    .join(game_stats)
+                    .join(matchmaker_queue_game)
                 ).where(
                     and_(
                         game_player_stats.c.playerId == player.id,
@@ -401,7 +407,7 @@ class LadderService(Service):
                             func.now(),
                             text("interval 1 day")
                         ),
-                        game_featuredMods.c.gamemod == mod
+                        matchmaker_queue_game.c.matchmaker_queue_id == queue_id
                     )
                 ).order_by(game_stats.c.startTime.desc()).limit(limit)
 

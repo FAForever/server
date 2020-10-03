@@ -13,7 +13,7 @@ services:
 
 env:
   global:
-    - FAF_DB_VERSION="v96"
+    - FAF_DB_VERSION="v106"
 
 before_install:
   - git clone https://github.com/FAForever/db.git faf-db

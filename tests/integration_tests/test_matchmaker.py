@@ -3,7 +3,11 @@ import asyncio
 import pytest
 from sqlalchemy import select
 
-from server.db.models import game_player_stats
+from server.db.models import (
+    game_player_stats,
+    matchmaker_queue,
+    matchmaker_queue_game
+)
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until, read_until_command
@@ -139,6 +143,14 @@ async def test_game_matchmaking_start(lobby_server, database):
             assert row["color"] in (1, 2)
             assert row["team"] is not None
             assert row["place"] is not None
+
+        result = await conn.execute(select([
+            matchmaker_queue.c.technical_name,
+        ]).select_from(
+            matchmaker_queue_game.outerjoin(matchmaker_queue)
+        ).where(matchmaker_queue_game.c.game_stats_id == msg["uid"]))
+        row = await result.fetchone()
+        assert row["technical_name"] == "ladder1v1"
 
 
 @fast_forward(120)

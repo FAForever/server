@@ -506,9 +506,10 @@ async def test_start_game_map_selection_pros(
 
 
 async def test_get_ladder_history(ladder_service: LadderService, players):
+    ladder1v1_queue_id = 1
     history = await ladder_service.get_game_history(
         [players.hosting],
-        mod="ladder1v1",
+        queue_id=ladder1v1_queue_id,
         limit=1
     )
 
@@ -516,9 +517,10 @@ async def test_get_ladder_history(ladder_service: LadderService, players):
 
 
 async def test_get_ladder_history_many_maps(ladder_service: LadderService, players):
+    ladder1v1_queue_id = 1
     history = await ladder_service.get_game_history(
         [players.hosting],
-        mod="ladder1v1",
+        queue_id=ladder1v1_queue_id,
         limit=4
     )
 
@@ -529,12 +531,36 @@ async def test_get_ladder_history_1v1(ladder_service: LadderService, player_fact
     p1 = player_factory("Dostya", player_id=1)
     p2 = player_factory("Rhiza", player_id=2)
 
+    ladder1v1_queue_id = 1
     history = await ladder_service.get_game_history(
         [p1, p2],
-        mod="ladder1v1",
+        queue_id=ladder1v1_queue_id,
     )
 
     assert history == [6, 5, 4, 3, 4, 5]
+
+
+async def test_get_ladder_history_tmm_queue(ladder_service: LadderService, players):
+    tmm2v2_queue_id = 2
+    history = await ladder_service.get_game_history(
+        [players.hosting],
+        queue_id=tmm2v2_queue_id,
+    )
+
+    assert history == [7, 9, 8]
+
+
+async def test_get_ladder_history_tmm2v2(ladder_service: LadderService, player_factory):
+    p1 = player_factory("Dostya", player_id=1)
+    p2 = player_factory("Rhiza", player_id=2)
+
+    tmm2v2_queue_id = 2
+    history = await ladder_service.get_game_history(
+        [p1, p2],
+        queue_id=tmm2v2_queue_id,
+    )
+
+    assert history == [7, 9, 8, 7, 6, 5]
 
 
 async def test_game_name(player_factory):

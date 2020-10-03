@@ -396,6 +396,7 @@ async def test_handle_action_TeamkillReport(game: Game, game_connection: GameCon
         report = await result.fetchone()
         assert report is None
 
+
 async def test_handle_action_TeamkillHappened(game: Game, game_connection: GameConnection, database):
     game.launch = CoroutineMock()
     await game_connection.handle_action("TeamkillHappened", ["200", "2", "Dostya", "3", "Rhiza"])
