@@ -453,6 +453,16 @@ class LobbyConnection:
             metrics.user_agent_version.labels(str(version)).inc()
         self._version = version
 
+    async def _check_user_agent(self):
+        if not self.user_agent or "downlords-faf-client" not in self.user_agent:
+            await self.send_warning(
+                "You are using an unofficial client version! "
+                "Some features might not work as expected. "
+                "If you experience any problems please download the latest "
+                "version of the official client from "
+                f'<a href="{config.WWW_URL}">{config.WWW_URL}</a>'
+            )
+
     async def check_policy_conformity(self, player_id, uid_hash, session, ignore_result=False):
         if not config.USE_POLICY_SERVER:
             return True
@@ -698,6 +708,7 @@ class LobbyConnection:
         user_agent = message.get("user_agent")
         version = message.get("version")
         self._set_user_agent_and_version(user_agent, version)
+        await self._check_user_agent()
         await self.send({"command": "session", "session": self.session})
 
     async def command_avatar(self, message):
