@@ -160,9 +160,6 @@ insert into unique_id_users (user_id, uniqueid_hash) values (1, 'some_id');
 insert into unique_id_users (user_id, uniqueid_hash) values (2, 'another_id');
 insert into unique_id_users (user_id, uniqueid_hash) values (3, 'some_id');
 
--- Lobby version table
-insert into version_lobby (id, `file`, version) values (1, 'some-installer.msi', '0.10.125');
-
 -- Sample maps
 insert into map (id, display_name, map_type, battle_type, author) values
   (1, 'SCMP_001', 'FFA', 'skirmish', 1),
