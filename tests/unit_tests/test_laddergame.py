@@ -4,8 +4,7 @@ import pytest
 from sqlalchemy import and_, select
 
 from server.db.models import leaderboard_rating
-from server.games import LadderGame
-from server.games.game import GameState, ValidityState
+from server.games import GameState, LadderGame, ValidityState
 from server.rating import RatingType
 from tests.unit_tests.test_game import add_connected_players
 

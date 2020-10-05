@@ -6,10 +6,15 @@ import pytest
 from asynctest import CoroutineMock
 from trueskill import Rating
 
-from server.games.custom_game import CustomGame
-from server.games.game import Game, GameError, GameState, ValidityState
+from server.games import (
+    CustomGame,
+    Game,
+    GameError,
+    GameState,
+    LadderGame,
+    ValidityState
+)
 from server.games.game_results import GameOutcome
-from server.games.ladder_game import LadderGame
 from server.rating import RatingType
 from server.rating_service.rating_service import RatingService
 from tests.unit_tests.conftest import add_connected_players

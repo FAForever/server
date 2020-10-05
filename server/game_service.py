@@ -14,10 +14,13 @@ from .games import (
     CustomGame,
     FeaturedMod,
     FeaturedModType,
-    LadderGame
+    Game,
+    GameState,
+    LadderGame,
+    ValidityState,
+    VisibilityState
 )
-from .games.game import Game, GameState, VisibilityState
-from .games.typedefs import EndedGameInfo, ValidityState
+from .games.typedefs import EndedGameInfo
 from .matchmaker import MatchmakerQueue
 from .message_queue_service import MessageQueueService
 from .players import Player
