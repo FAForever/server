@@ -76,6 +76,7 @@ class PlayerParty():
 
     def clear(self):
         self._members.clear()
+        self.invited_players.clear()
 
     def to_dict(self):
         return {
