@@ -99,10 +99,17 @@ class PartyService(Service):
             # TODO: Localize with a proper message
             raise ClientError("You are not invited to that party (anymore)", recoverable=True)
 
-        if recipient in self.player_parties:
-            await self.leave_party(recipient)
+        old_party = self.player_parties.get(recipient)
+        if old_party is not None:
+            # Preserve state (like faction selection) from the old party
+            member = old_party.get_member_by_player(recipient)
+            assert member is not None
 
-        party.add_player(recipient)
+            await self.leave_party(recipient)
+            party.add_member(member)
+        else:
+            party.add_player(recipient)
+
         self.player_parties[recipient] = party
         self.mark_dirty(party)
 

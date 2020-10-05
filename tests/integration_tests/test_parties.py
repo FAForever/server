@@ -125,6 +125,102 @@ async def test_invite_party_workflow(lobby_server, party_service):
     assert party_service.player_parties == {}
 
 
+@fast_forward(60)
+async def test_player_switches_parties(lobby_server):
+    """
+    1. Player sends party invite
+    2. Player accepts party invite
+    3. Player sets factions
+    4. Another player sends party invite
+    5. Player accepts other party invite
+    """
+    test_id, _, proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+
+    rhiza_id, _, proto2 = await connect_and_sign_in(
+        ("rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+
+    test_2_id, _, proto3 = await connect_and_sign_in(
+        ("test2", "test2"), lobby_server
+    )
+
+    await read_until_command(proto, "game_info")
+    await read_until_command(proto2, "game_info")
+    await read_until_command(proto3, "game_info")
+
+    # 1. Player sends party invite
+    await invite_to_party(proto, rhiza_id)
+    await read_until_command(proto2, "party_invite")
+
+    # 2. Player accepts party invite
+    await accept_party_invite(proto2, test_id)
+    await read_until_command(proto, "update_party")
+    await read_until_command(proto2, "update_party")
+
+    # 3. Player sets factions
+    await proto2.send_message({
+        "command": "set_party_factions",
+        "factions": ["uef"]
+    })
+    msg1 = await read_until_command(proto, "update_party")
+    msg2 = await read_until_command(proto2, "update_party")
+    assert msg1 == msg2
+    assert msg1 == {
+        "command": "update_party",
+        "owner": test_id,
+        "members": [
+            {
+                "factions": ["uef", "aeon", "cybran", "seraphim"],
+                "player": test_id,
+            },
+            {
+                "factions": ["uef"],
+                "player": rhiza_id,
+            }
+        ]
+    }
+
+    # 4. Another player sends party invite
+    await invite_to_party(proto3, rhiza_id)
+    await read_until_command(proto2, "party_invite")
+
+    # 5. Player accepts other party invite
+    await accept_party_invite(proto2, test_2_id)
+    msg1 = await read_until_command(proto, "update_party")
+    msg2 = await read_until_command(proto2, "update_party")
+    assert msg1 == msg2
+    assert msg1 == {
+        "command": "update_party",
+        "owner": test_id,
+        "members": [
+            {
+                "factions": ["uef", "aeon", "cybran", "seraphim"],
+                "player": test_id,
+            }
+        ]
+    }
+    msg1 = await read_until_command(proto2, "update_party")
+    msg2 = await read_until_command(proto3, "update_party")
+
+    assert msg1 == msg2
+    assert msg1 == {
+        "command": "update_party",
+        "owner": test_2_id,
+        "members": [
+            {
+                "factions": ["uef", "aeon", "cybran", "seraphim"],
+                "player": test_2_id,
+            },
+            {
+                "factions": ["uef"],
+                "player": rhiza_id,
+            }
+        ]
+    }
+
+
 async def test_invite_non_existent_player(lobby_server):
     _, _, proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server

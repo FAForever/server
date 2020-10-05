@@ -16,7 +16,7 @@ class GroupInvite(NamedTuple):
         return time.time() - self.created_at >= PARTY_INVITE_TIMEOUT
 
 
-class PlayerParty:
+class PlayerParty():
     def __init__(self, owner: Player):
         self._members = {
             owner: PartyMember(owner)
@@ -53,6 +53,9 @@ class PlayerParty:
         del self._members[player]
         if player == self.owner:
             self.invited_players.clear()
+
+    def add_member(self, member: PartyMember) -> None:
+        self._members[member.player] = member
 
     def add_invited_player(self, player: Player) -> None:
         self.invited_players[player] = GroupInvite(player, time.time())
