@@ -10,10 +10,9 @@ from tests.unit_tests.conftest import add_connected_players
 pytestmark = pytest.mark.asyncio
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def custom_game(event_loop, database, game_service, game_stats_service):
-    game = CustomGame(42, database, game_service, game_stats_service)
-    yield game
+    return CustomGame(42, database, game_service, game_stats_service)
 
 
 async def test_rate_game_early_abort_no_enforce(

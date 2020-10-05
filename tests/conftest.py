@@ -81,7 +81,7 @@ async def global_database(request):
 
 
 @pytest.fixture
-async def database(request, event_loop):
+async def database(request):
     def opt(val):
         return request.config.getoption(val)
     host, user, pw, name, port = (
@@ -91,7 +91,7 @@ async def database(request, event_loop):
         opt("--mysql_database"),
         opt("--mysql_port")
     )
-    db = MockDatabase(event_loop)
+    db = MockDatabase(asyncio.get_running_loop())
 
     await db.connect(
         host=host,

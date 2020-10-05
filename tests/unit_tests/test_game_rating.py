@@ -75,24 +75,21 @@ def get_persisted_results(mock_service):
     return PersistedResults(rating_type, new_ratings, outcomes)
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def game(event_loop, database, game_service, game_stats_service):
-    game = Game(
+    return Game(
         42, database, game_service, game_stats_service, rating_type=RatingType.GLOBAL
     )
-    yield game
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def custom_game(event_loop, database, game_service, game_stats_service):
-    game = CustomGame(42, database, game_service, game_stats_service)
-    yield game
+    return CustomGame(42, database, game_service, game_stats_service)
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def ladder_game(event_loop, database, game_service, game_stats_service):
-    game = LadderGame(42, database, game_service, game_stats_service)
-    yield game
+    return LadderGame(42, database, game_service, game_stats_service)
 
 
 def add_players_with_rating(player_factory, game, ratings, teams):
