@@ -89,11 +89,14 @@ def _synchronize(
     lock: Optional[asyncio.Lock] = None
 ) -> AsyncFunc:
     """Wrap an async function with an async lock."""
-    if lock is None:
-        lock = asyncio.Lock()
-
     @wraps(function)
     async def wrapped(*args, **kwargs):
+        nonlocal lock
+
+        # During testing, functions are called from multiple loops
+        if lock is None or lock._loop != asyncio.get_event_loop():
+            lock = asyncio.Lock()
+
         async with lock:
             return await function(*args, **kwargs)
 

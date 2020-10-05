@@ -1,7 +1,9 @@
 import asyncio
 import functools
+import time
 from concurrent.futures import CancelledError, TimeoutError
 
+import mock
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
@@ -406,3 +408,33 @@ async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
     matchmaker_queue.on_match_found.assert_called_once_with(
         s2, s3, matchmaker_queue
     )
+
+
+@pytest.mark.asyncio
+async def test_find_matches_synchronized(queue_factory):
+    is_matching = False
+
+    def make_matches(*args):
+        nonlocal is_matching
+
+        assert not is_matching, "Function call not synchronized"
+        is_matching = True
+
+        time.sleep(0.2)
+
+        is_matching = False
+        return []
+
+    with mock.patch(
+        "server.matchmaker.matchmaker_queue.make_matches",
+        make_matches
+    ):
+        queues = [queue_factory(f"Queue{i}") for i in range(5)]
+        # Ensure that find_matches does not short circuit
+        for queue in queues:
+            queue._queue = {mock.Mock(): 1, mock.Mock(): 2}
+            queue.find_teams = mock.Mock()
+
+        await asyncio.gather(*[
+            queue.find_matches() for queue in queues
+        ])
