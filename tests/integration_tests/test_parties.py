@@ -30,10 +30,8 @@ async def test_invite_party_workflow(lobby_server, party_service):
         1. Player sends party invite
         2. Player accepts party invite
         3. Player sets factions
-        4. Player readies up
-        5. Player unreadies
-        6. Player kicks other player from party
-        7. Player leaves party
+        4. Player kicks other player from party
+        5. Player leaves party
     """
     test_id, _, proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
@@ -65,12 +63,10 @@ async def test_invite_party_workflow(lobby_server, party_service):
             {
                 "factions": ["uef", "aeon", "cybran", "seraphim"],
                 "player": test_id,
-                "ready": False
             },
             {
                 "factions": ["uef", "aeon", "cybran", "seraphim"],
                 "player": rhiza_id,
-                "ready": False
             }
         ]
     }
@@ -89,63 +85,15 @@ async def test_invite_party_workflow(lobby_server, party_service):
             {
                 "factions": ["uef"],
                 "player": test_id,
-                "ready": False
             },
             {
                 "factions": ["uef", "aeon", "cybran", "seraphim"],
                 "player": rhiza_id,
-                "ready": False
             }
         ]
     }
 
-    # 4. Player readies up
-    await proto2.send_message({"command": "ready_party"})
-
-    msg1 = await read_until_command(proto, "update_party")
-    msg2 = await read_until_command(proto2, "update_party")
-    assert msg1 == msg2
-    assert msg1 == {
-        "command": "update_party",
-        "owner": test_id,
-        "members": [
-            {
-                "factions": ["uef"],
-                "player": test_id,
-                "ready": False
-            },
-            {
-                "factions": ["uef", "aeon", "cybran", "seraphim"],
-                "player": rhiza_id,
-                "ready": True
-            }
-        ]
-    }
-
-    # 5. Player unreadies
-    await proto2.send_message({"command": "unready_party"})
-
-    msg1 = await read_until_command(proto, "update_party")
-    msg2 = await read_until_command(proto2, "update_party")
-    assert msg1 == msg2
-    assert msg1 == {
-        "command": "update_party",
-        "owner": test_id,
-        "members": [
-            {
-                "factions": ["uef"],
-                "player": test_id,
-                "ready": False
-            },
-            {
-                "factions": ["uef", "aeon", "cybran", "seraphim"],
-                "player": rhiza_id,
-                "ready": False
-            }
-        ]
-    }
-
-    # 6. Player kicks other player from party
+    # 4. Player kicks other player from party
     await proto.send_message({
         "command": "kick_player_from_party",
         "kicked_player_id": rhiza_id,
@@ -160,12 +108,11 @@ async def test_invite_party_workflow(lobby_server, party_service):
             {
                 "factions": ["uef"],
                 "player": test_id,
-                "ready": False
             }
         ]
     }
 
-    # 7. Player leaves party
+    # 5. Player leaves party
     await proto.send_message({"command": "leave_party"})
 
     msg = await read_until_command(proto, "update_party")
@@ -342,14 +289,13 @@ async def test_set_party_factions_duplicate(lobby_server):
             {
                 "factions": ["uef"],
                 "player": test_id,
-                "ready": False
             }
         ]
     }
 
 
 async def test_set_party_factions_empty(lobby_server):
-    test_id, _, proto = await connect_and_sign_in(
+    _, _, proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
 

@@ -1070,13 +1070,6 @@ class LobbyConnection:
 
         await self.party_service.kick_player_from_party(self.player, kicked_player)
 
-    @player_idle
-    async def command_ready_party(self, message):
-        await self.party_service.ready_player(self.player)
-
-    async def command_unready_party(self, message):
-        await self.party_service.unready_player(self.player)
-
     async def command_leave_party(self, _message):
         self.ladder_service.cancel_search(self.player)
         await self.party_service.leave_party(self.player)

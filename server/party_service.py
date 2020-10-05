@@ -144,34 +144,6 @@ class PartyService(Service):
 
         self.mark_dirty(party)
 
-    async def ready_player(self, player: Player):
-        if player not in self.player_parties:
-            self.player_parties[player] = PlayerParty(player)
-
-        party = self.player_parties[player]
-
-        if party.get_member_by_player(player).ready:
-            # Client state appears to be out of date
-            await party.send_party(player)
-            return
-
-        party.ready_player(player)
-        self.mark_dirty(party)
-
-    async def unready_player(self, player: Player):
-        if player not in self.player_parties:
-            self.player_parties[player] = PlayerParty(player)
-
-        party = self.player_parties[player]
-
-        if not party.get_member_by_player(player).ready:
-            # Client state appears to be out of date
-            await party.send_party(player)
-            return
-
-        party.unready_player(player)
-        self.mark_dirty(party)
-
     def set_factions(self, player: Player, factions: List[Faction]):
         if player not in self.player_parties:
             self.player_parties[player] = PlayerParty(player)

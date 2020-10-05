@@ -189,8 +189,6 @@ With most carrying a footer containing:
 * `{command: accept_party_invite, sender_id: <...>}`: Accept the party invite from the given player
 * `{command: kick_player_from_party, kicked_player_id: <...>}`: Kick a player from a party you own
 * `{command: leave_party}`: Leave the party you are currently in
-* `{command: ready_party}`: Ready up in your party
-* `{command: unready_party}`: Un-ready in your party
 
 ##### Misc
 

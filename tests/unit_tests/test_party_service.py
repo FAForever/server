@@ -1,4 +1,3 @@
-import asyncio
 from unittest.mock import Mock
 
 import pytest
@@ -8,7 +7,6 @@ from server.exceptions import ClientError
 from server.factions import Faction
 from server.party_service import PartyService
 from server.team_matchmaker import PlayerParty
-from tests.utils import fast_forward
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
@@ -223,131 +221,6 @@ async def test_leave_party_then_join_another(party_service, player_factory):
 
     # One of the players tries to create another party
     party_service.invite_player_to_party(player1, player3)
-
-
-async def test_ready_player(party_service, player_factory):
-    sender = player_factory(player_id=1)
-    receiver = player_factory(player_id=2)
-
-    party_service.invite_player_to_party(sender, receiver)
-
-    assert not party_service.player_parties[sender].is_ready()
-    await party_service.ready_player(sender)
-    assert party_service.player_parties[sender].is_ready()
-
-
-@fast_forward(3)
-async def test_ready_player_twice(party_service, player_factory):
-    sender = player_factory(player_id=1)
-    receiver = player_factory(player_id=2)
-
-    party_service.invite_player_to_party(sender, receiver)
-
-    assert not party_service.player_parties[sender].is_ready()
-    await party_service.ready_player(sender)
-    assert party_service.player_parties[sender].is_ready()
-    await asyncio.sleep(1)
-    sender.write_message.assert_called_once()
-    sender.send_message.assert_not_called()
-
-    await party_service.ready_player(sender)
-    await asyncio.sleep(1)
-    sender.write_message.assert_called_once()
-    sender.send_message.assert_called_once()
-
-
-@fast_forward(3)
-async def test_ready_player_twice_messages(party_service, player_factory):
-    sender = player_factory(player_id=1)
-    receiver = player_factory(player_id=2)
-
-    party_service.invite_player_to_party(sender, receiver)
-    await party_service.accept_invite(receiver, sender)
-
-    await party_service.ready_player(sender)
-    await asyncio.sleep(1)
-    assert sender.write_message.call_count == 1
-    assert receiver.write_message.call_count == 2
-
-    await party_service.ready_player(sender)
-    await asyncio.sleep(1)
-    assert sender.write_message.call_count == 1
-    assert receiver.write_message.call_count == 2
-
-
-async def test_ready_player_nonexistent(party_service, player_factory):
-    player = player_factory(player_id=1)
-
-    await party_service.ready_player(player)
-
-    assert party_service.player_parties[player]
-
-
-async def test_unready_player(party_service, player_factory):
-    sender = player_factory(player_id=1)
-    receiver = player_factory(player_id=2)
-
-    party_service.invite_player_to_party(sender, receiver)
-    await party_service.ready_player(sender)
-
-    assert party_service.player_parties[sender].is_ready()
-    await party_service.unready_player(sender)
-    assert not party_service.player_parties[sender].is_ready()
-
-
-@fast_forward(3)
-async def test_unready_player_twice(party_service, player_factory):
-    sender = player_factory(player_id=1)
-    receiver = player_factory(player_id=2)
-
-    party_service.invite_player_to_party(sender, receiver)
-    await party_service.ready_player(sender)
-
-    assert party_service.player_parties[sender].is_ready()
-    await party_service.unready_player(sender)
-    assert not party_service.player_parties[sender].is_ready()
-    await asyncio.sleep(1)
-    assert sender.write_message.call_count == 1
-    sender.send_message.assert_not_called()
-
-    await party_service.unready_player(sender)
-    await asyncio.sleep(1)
-    assert sender.write_message.call_count == 1
-    sender.send_message.assert_called_once()
-
-
-@fast_forward(5)
-async def test_unready_player_twice_messages(party_service, player_factory):
-    sender = player_factory(player_id=1)
-    receiver = player_factory(player_id=2)
-
-    party_service.invite_player_to_party(sender, receiver)
-    assert receiver.write_message.call_count == 1
-    await party_service.accept_invite(receiver, sender)
-    await asyncio.sleep(1)
-    assert receiver.write_message.call_count == 2
-    await party_service.ready_player(sender)
-    await asyncio.sleep(1)
-    assert receiver.write_message.call_count == 3
-
-    await party_service.unready_player(sender)
-    await asyncio.sleep(1)
-    assert sender.write_message.call_count == 3
-    assert receiver.write_message.call_count == 4
-
-    await party_service.unready_player(sender)
-    await asyncio.sleep(1)
-    assert sender.write_message.call_count == 3
-    assert receiver.write_message.call_count == 4
-    sender.send_message.assert_called_once()
-
-
-async def test_unready_player_nonexistent(party_service, player_factory):
-    player = player_factory(player_id=1)
-
-    await party_service.unready_player(player)
-
-    assert party_service.player_parties[player]
 
 
 async def test_set_factions(party_service, player_factory):
