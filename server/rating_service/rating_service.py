@@ -84,21 +84,26 @@ class RatingService(Service):
 
     async def _handle_rating_queue(self) -> None:
         self._logger.debug("RatingService started!")
-        while self._accept_input or not self._queue.empty():
-            summary = await self._queue.get()
-            self._logger.debug("Now rating request %s", summary)
+        try:
+            while self._accept_input or not self._queue.empty():
+                summary = await self._queue.get()
+                self._logger.debug("Now rating request %s", summary)
 
-            try:
-                await self._rate(summary)
-            except GameRatingError:
-                self._logger.warning("Error rating game %s", summary)
-            except Exception:  # pragma: no cover
-                self._logger.exception("Failed rating request %s", summary)
-            else:
-                self._logger.debug("Done rating request.")
+                try:
+                    await self._rate(summary)
+                except GameRatingError:
+                    self._logger.warning("Error rating game %s", summary)
+                except Exception:  # pragma: no cover
+                    self._logger.exception("Failed rating request %s", summary)
+                else:
+                    self._logger.debug("Done rating request.")
 
-            self._queue.task_done()
-            rating_service_backlog.set(self._queue.qsize())
+                self._queue.task_done()
+                rating_service_backlog.set(self._queue.qsize())
+        except Exception:
+            self._logger.critical(
+                "Unexpected exception while handling rating queue."
+            )
 
         self._logger.debug("RatingService stopped.")
 
