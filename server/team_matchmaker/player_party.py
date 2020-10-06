@@ -2,6 +2,7 @@ import time
 from typing import FrozenSet, List, NamedTuple, Optional
 
 from server.factions import Faction
+from server.matchmaker import Search
 from server.players import Player
 from server.team_matchmaker.party_member import PartyMember
 
@@ -67,6 +68,10 @@ class PlayerParty():
 
     def set_factions(self, player: Player, factions: List[Faction]) -> None:
         self._members[player].factions = factions
+
+    def on_matched(self, search1: Search, search2: Search) -> None:
+        for member in self:
+            member.set_player_faction()
 
     async def send_party(self, player: Player) -> None:
         await player.send_message({

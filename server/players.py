@@ -80,14 +80,10 @@ class Player:
 
     @faction.setter
     def faction(self, value: Union[str, int, Faction]) -> None:
-        if isinstance(value, str):
-            self._faction = Faction.from_string(value)
-        elif isinstance(value, int):
-            self._faction = Faction(value)
-        elif isinstance(value, Faction):
+        if isinstance(value, Faction):
             self._faction = value
         else:
-            raise TypeError(f"Unsupported faction type {type(value)}!")
+            self._faction = Faction.from_value(value)
 
     def power(self) -> int:
         """An artifact of the old permission system. The client still uses this

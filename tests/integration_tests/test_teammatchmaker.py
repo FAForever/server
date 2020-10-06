@@ -169,7 +169,7 @@ async def test_game_matchmaking_with_parties(lobby_server):
 
     await proto1.send_message({
         "command": "set_party_factions",
-        "factions": ["uef"]
+        "factions": ["seraphim"]
     })
     await proto2.send_message({
         "command": "set_party_factions",
@@ -191,6 +191,11 @@ async def test_game_matchmaking_with_parties(lobby_server):
         "command": "game_matchmaking",
         "queue_name": "tmm2v2",
         "state": "start",
+    })
+    # Change faction selection after queueing
+    await proto1.send_message({
+        "command": "set_party_factions",
+        "factions": ["uef"]
     })
     await proto3.send_message({
         "command": "game_matchmaking",

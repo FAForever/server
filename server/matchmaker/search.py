@@ -2,7 +2,7 @@ import asyncio
 import itertools
 import math
 import time
-from typing import List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 from trueskill import Rating, quality
 
@@ -11,6 +11,9 @@ from server.rating import RatingType
 from ..config import config
 from ..decorators import with_logger
 from ..players import Player
+
+Match = Tuple["Search", "Search"]
+OnMatchedCallback = Callable[["Search", "Search"], Any]
 
 
 @with_logger
@@ -23,7 +26,8 @@ class Search:
         self,
         players: List[Player],
         start_time: Optional[float] = None,
-        rating_type: str = RatingType.LADDER_1V1
+        rating_type: str = RatingType.LADDER_1V1,
+        on_matched: OnMatchedCallback = lambda _1, _2: None
     ):
         """
         Default ctor for a search
@@ -42,6 +46,7 @@ class Search:
         self.start_time = start_time or time.time()
         self._match = asyncio.Future()
         self._failed_matching_attempts = 0
+        self.on_matched = on_matched
 
         # Precompute this
         self.quality_against_self = self.quality_with(self)
@@ -201,6 +206,8 @@ class Search:
         """
         self._logger.info("Matched %s with %s", self.players, other.players)
 
+        self.on_matched(self, other)
+
         for player, raw_rating in zip(self.players, self.raw_ratings):
             if self.is_ladder1v1_search() and self._is_ladder_newbie(player):
                 mean, dev = raw_rating
@@ -307,6 +314,3 @@ class CombinedSearch(Search):
 
     def __str__(self):
         return "CombinedSearch({})".format(",".join(str(s) for s in self.searches))
-
-
-Match = Tuple[Search, Search]

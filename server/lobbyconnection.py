@@ -855,16 +855,17 @@ class LobbyConnection:
                     recoverable=True
                 )
 
-            for member in party:
-                member.set_player_faction()
-
             # TODO: Remove this legacy behavior, use party instead
             if "faction" in message:
-                self.player.faction = message["faction"]
+                party.set_factions(
+                    self.player,
+                    [Faction.from_value(message["faction"])]
+                )
 
             self.ladder_service.start_search(
                 players,
-                queue_name=queue_name
+                queue_name=queue_name,
+                on_matched=party.on_matched
             )
 
     @ice_only
@@ -1075,7 +1076,7 @@ class LobbyConnection:
         await self.party_service.leave_party(self.player)
 
     async def command_set_party_factions(self, message):
-        factions = set(Faction.from_string(str(i).lower()) for i in message["factions"])
+        factions = set(Faction.from_value(v) for v in message["factions"])
 
         if not factions:
             raise ClientError(
