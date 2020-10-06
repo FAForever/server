@@ -62,6 +62,7 @@ async def test_load_from_database(ladder_service, queue_factory):
         ]
 
 
+@fast_forward(5)
 async def test_load_from_database_new_data(ladder_service, database):
     async with database.acquire() as conn:
         result = await conn.execute(matchmaker_queue.insert().values(
@@ -92,13 +93,15 @@ async def test_start_game_1v1(
     ladder_service: LadderService,
     game_service: GameService,
     player_factory,
+    monkeypatch,
 ):
     queue = ladder_service.queues["ladder1v1"]
     p1 = player_factory("Dostya", player_id=1, with_lobby_connection=True)
     p2 = player_factory("Rhiza", player_id=2, with_lobby_connection=True)
 
-    with mock.patch("server.games.game.Game.wait_hosted", CoroutineMock()):
-        await ladder_service.start_game([p1], [p2], queue)
+    monkeypatch.setattr(LadderGame, "wait_hosted", CoroutineMock())
+    monkeypatch.setattr(LadderGame, "wait_launched", CoroutineMock())
+    await ladder_service.start_game([p1], [p2], queue)
 
     game = game_service[game_service.game_id_counter]
 
@@ -108,8 +111,10 @@ async def test_start_game_1v1(
     assert game.rating_type == queue.rating_type
     assert game.max_players == 2
 
+    LadderGame.wait_launched.assert_called_once()
 
-@fast_forward(120)
+
+@fast_forward(35)
 async def test_start_game_timeout(
     ladder_service: LadderService,
     player_factory,
@@ -131,6 +136,7 @@ async def test_start_game_with_teams(
     ladder_service: LadderService,
     game_service: GameService,
     player_factory,
+    monkeypatch
 ):
     queue = ladder_service.queues["tmm2v2"]
     p1 = player_factory("Dostya", player_id=1, with_lobby_connection=True)
@@ -140,8 +146,9 @@ async def test_start_game_with_teams(
 
     game_service.ladder_maps = [(1, "scmp_007", "maps/scmp_007.zip")]
 
-    with mock.patch("server.games.game.Game.wait_hosted", CoroutineMock()):
-        await ladder_service.start_game([p1, p3], [p2, p4], queue)
+    monkeypatch.setattr(LadderGame, "wait_hosted", CoroutineMock())
+    monkeypatch.setattr(LadderGame, "wait_launched", CoroutineMock())
+    await ladder_service.start_game([p1, p3], [p2, p4], queue)
 
     game = game_service[game_service.game_id_counter]
 
@@ -152,6 +159,8 @@ async def test_start_game_with_teams(
     assert isinstance(game, LadderGame)
     assert game.rating_type == queue.rating_type
     assert game.max_players == 4
+
+    LadderGame.wait_launched.assert_called_once()
 
 
 async def test_inform_player(ladder_service: LadderService, player_factory):
