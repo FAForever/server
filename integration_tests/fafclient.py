@@ -17,6 +17,7 @@ class FAFClient(object):
         # TODO: make this configurable via a command line arg?
         self.faf_uid_path = "faf-uid"
         self.player_id = None
+        self.player_name = None
 
     def is_connected(self):
         return self.proto and self.proto.is_connected()
@@ -52,6 +53,16 @@ class FAFClient(object):
     async def read_until_command(self, command, timeout=60):
         return await read_until_command(self.proto, command, timeout=timeout)
 
+    async def read_until_game_launch(self, uid):
+        return await self.read_until(
+            lambda msg: (
+                msg.get("command") == "game_info" and
+                msg["host"] == "test" and
+                msg["launched_at"] is not None
+                and msg["uid"] == uid
+            )
+        )
+
     # Commonly used functionality here
     async def ping(self):
         await self.send_command("ping")
@@ -82,6 +93,7 @@ class FAFClient(object):
         })
         msg = await self.read_until_command("welcome")
         self.player_id = msg["id"]
+        self.player_name = msg["login"]
         return msg
 
     def get_unique_id(self, session):
@@ -150,7 +162,12 @@ class FAFClient(object):
                 "args": [player_id, option, value]
             })
 
-    async def get_player_ratings(self, *names, timeout=30):
+    async def get_player_ratings(
+        self,
+        *names,
+        rating_type="global",
+        timeout=30
+    ):
         """
         Wait for `player_info` messages until all player names have been found.
         Then return a dictionary containing all those players ratings
@@ -159,7 +176,7 @@ class FAFClient(object):
         while set(ratings.keys()) != set(names):
             msg = await self.read_until_command("player_info", timeout=timeout)
             ratings.update({
-                player_info["login"]: player_info["global_rating"]
+                player_info["login"]: player_info["ratings"][rating_type]["rating"]
                 for player_info in msg["players"]
             })
         return ratings

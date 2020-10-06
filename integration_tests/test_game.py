@@ -23,13 +23,7 @@ async def simulate_game_launch(host, *guests):
     await host.send_gpg_command("GameState", "Launching")
 
     for client in all_clients:
-        await client.read_until(
-            lambda msg: (
-                msg.get("command") == "game_info" and
-                msg["host"] == "test" and
-                msg["launched_at"] is not None
-            )
-        )
+        await client.read_until_game_launch(game_id)
 
 
 async def simulate_result_reports(host, *guests, results=[]):
