@@ -699,7 +699,7 @@ async def test_broadcast(lobbyconnection: LobbyConnection, player_factory):
         tuna.id: tuna
     }
     lobbyconnection.player_service.__iter__.side_effect = data.values().__iter__
-    lobbyconnection.send_warning = CoroutineMock()
+    lobbyconnection.write_warning = Mock()
 
     await lobbyconnection.on_message_received({
         "command": "admin",
@@ -707,8 +707,8 @@ async def test_broadcast(lobbyconnection: LobbyConnection, player_factory):
         "message": "This is a test message"
     })
 
-    player.lobby_connection.send_warning.assert_called_with("This is a test message")
-    tuna.lobby_connection.send_warning.assert_called_with("This is a test message")
+    player.lobby_connection.write_warning.assert_called_with("This is a test message")
+    tuna.lobby_connection.write_warning.assert_called_with("This is a test message")
 
 
 async def test_broadcast_during_disconnect(lobbyconnection: LobbyConnection, player_factory):
@@ -724,7 +724,7 @@ async def test_broadcast_during_disconnect(lobbyconnection: LobbyConnection, pla
         tuna.id: tuna
     }
     lobbyconnection.player_service.__iter__.side_effect = data.values().__iter__
-    lobbyconnection.send_warning = CoroutineMock()
+    lobbyconnection.write_warning = Mock()
 
     # This should not leak any exceptions
     await lobbyconnection.on_message_received({
@@ -733,7 +733,7 @@ async def test_broadcast_during_disconnect(lobbyconnection: LobbyConnection, pla
         "message": "This is a test message"
     })
 
-    player.lobby_connection.send_warning.assert_called_with("This is a test message")
+    player.lobby_connection.write_warning.assert_called_with("This is a test message")
 
 
 async def test_broadcast_connection_error(lobbyconnection: LobbyConnection, player_factory):
@@ -741,13 +741,13 @@ async def test_broadcast_connection_error(lobbyconnection: LobbyConnection, play
     player.lobby_connection = lobbyconnection
     player.id = 1
     tuna = player_factory("Tuna", player_id=55, with_lobby_connection=True)
-    tuna.lobby_connection.send_warning.side_effect = ConnectionError("Some error")
+    tuna.lobby_connection.write_warning.side_effect = DisconnectedError("Some error")
     data = {
         player.id: player,
         tuna.id: tuna
     }
     lobbyconnection.player_service.__iter__.side_effect = data.values().__iter__
-    lobbyconnection.send_warning = CoroutineMock()
+    lobbyconnection.write_warning = Mock()
 
     # This should not leak any exceptions
     await lobbyconnection.on_message_received({
@@ -756,7 +756,7 @@ async def test_broadcast_connection_error(lobbyconnection: LobbyConnection, play
         "message": "This is a test message"
     })
 
-    player.lobby_connection.send_warning.assert_called_with("This is a test message")
+    player.lobby_connection.write_warning.assert_called_with("This is a test message")
 
 
 async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnection: LobbyConnection, mocker):

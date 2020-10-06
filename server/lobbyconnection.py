@@ -361,20 +361,17 @@ class LobbyConnection:
             if await self.player_service.has_permission_role(
                 self.player, "ADMIN_BROADCAST_MESSAGE"
             ):
-                tasks = []
                 for player in self.player_service:
                     # Check if object still exists:
                     # https://docs.python.org/3/library/weakref.html#weak-reference-objects
                     if player.lobby_connection is not None:
-                        tasks.append(
-                            player.lobby_connection.send_warning(message_text)
-                        )
+                        with contextlib.suppress(DisconnectedError):
+                            player.lobby_connection.write_warning(message_text)
 
                 self._logger.info(
                     "%s broadcasting message to all players: %s",
                     self.player.login, message_text
                 )
-                await asyncio_.gather_without_exceptions(tasks, Exception)
         elif action == "join_channel":
             if await self.player_service.has_permission_role(
                 self.player, "ADMIN_JOIN_CHANNEL"
@@ -595,10 +592,12 @@ class LobbyConnection:
         if old_player:
             self._logger.debug("player {} already signed in: {}".format(self.player.id, old_player))
             if old_player.lobby_connection is not None:
-                old_player.lobby_connection.write_warning(
-                    "You have been signed out because you signed in elsewhere.",
-                    fatal=True
-                )
+                with contextlib.suppress(DisconnectedError):
+                    old_player.lobby_connection.write_warning(
+                        "You have been signed out because you signed in "
+                        "elsewhere.",
+                        fatal=True
+                    )
 
         await self.player_service.fetch_player_data(self.player)
 
