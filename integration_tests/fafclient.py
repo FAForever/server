@@ -57,7 +57,6 @@ class FAFClient(object):
         return await self.read_until(
             lambda msg: (
                 msg.get("command") == "game_info" and
-                msg["host"] == "test" and
                 msg["launched_at"] is not None
                 and msg["uid"] == uid
             )
