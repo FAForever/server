@@ -9,8 +9,9 @@ from asynctest import CoroutineMock
 from trueskill import Rating
 
 from server.gameconnection import GameConnection, GameConnectionState
-from server.games import CoopGame, CustomGame
-from server.games.game import (
+from server.games import (
+    CoopGame,
+    CustomGame,
     Game,
     GameError,
     GameState,

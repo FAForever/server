@@ -7,8 +7,7 @@ from asynctest import CoroutineMock, exhaust_callbacks
 
 from server import GameConnection
 from server.abc.base_game import GameConnectionState
-from server.games import Game
-from server.games.game import GameState, ValidityState, Victory
+from server.games import Game, GameState, ValidityState, Victory
 from server.players import PlayerState
 from server.protocol import DisconnectedError
 

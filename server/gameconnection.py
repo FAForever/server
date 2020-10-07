@@ -10,7 +10,7 @@ from .config import TRACE
 from .db.models import coop_leaderboard, coop_map, teamkills
 from .decorators import with_logger
 from .game_service import GameService
-from .games.game import Game, GameError, GameState, ValidityState, Victory
+from .games import Game, GameError, GameState, ValidityState, Victory
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, GpgNetServerProtocol, Protocol

@@ -6,10 +6,15 @@ import pytest
 from asynctest import CoroutineMock
 from trueskill import Rating
 
-from server.games.custom_game import CustomGame
-from server.games.game import Game, GameError, GameState, ValidityState
+from server.games import (
+    CustomGame,
+    Game,
+    GameError,
+    GameState,
+    LadderGame,
+    ValidityState
+)
 from server.games.game_results import GameOutcome
-from server.games.ladder_game import LadderGame
 from server.rating import RatingType
 from server.rating_service.rating_service import RatingService
 from tests.unit_tests.conftest import add_connected_players
@@ -75,24 +80,21 @@ def get_persisted_results(mock_service):
     return PersistedResults(rating_type, new_ratings, outcomes)
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def game(event_loop, database, game_service, game_stats_service):
-    game = Game(
+    return Game(
         42, database, game_service, game_stats_service, rating_type=RatingType.GLOBAL
     )
-    yield game
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def custom_game(event_loop, database, game_service, game_stats_service):
-    game = CustomGame(42, database, game_service, game_stats_service)
-    yield game
+    return CustomGame(42, database, game_service, game_stats_service)
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def ladder_game(event_loop, database, game_service, game_stats_service):
-    game = LadderGame(42, database, game_service, game_stats_service)
-    yield game
+    return LadderGame(42, database, game_service, game_stats_service)
 
 
 def add_players_with_rating(player_factory, game, ratings, teams):
