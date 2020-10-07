@@ -100,9 +100,12 @@ class RatingService(Service):
 
                 self._queue.task_done()
                 rating_service_backlog.set(self._queue.qsize())
+        except asyncio.CancelledError:
+            pass
         except Exception:
             self._logger.critical(
-                "Unexpected exception while handling rating queue."
+                "Unexpected exception while handling rating queue.",
+                exc_info=True
             )
 
         self._logger.debug("RatingService stopped.")
