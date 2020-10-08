@@ -172,6 +172,7 @@ async def test_game_matchmaking_timeout(lobby_server):
     assert msg2["mod"] == "ladder1v1"
 
 
+@fast_forward(15)
 async def test_game_matchmaking_cancel(lobby_server):
     proto = await queue_player_for_matchmaking(
         ("ladder1", "ladder1"),
@@ -191,6 +192,15 @@ async def test_game_matchmaking_cancel(lobby_server):
         "queue_name": "ladder1v1",
         "state": "stop",
     }
+
+    # Extra message even though the player is not in a queue
+    await proto.send_message({
+        "command": "game_matchmaking",
+        "state": "stop",
+        "queue": "ladder1v1"
+    })
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(proto, "search_info", timeout=5)
 
 
 @fast_forward(50)

@@ -211,7 +211,15 @@ class LadderService(Service):
         """
         Cancel search for a specific player/queue.
         """
-        cancelled_search = self._searches[initiator][queue_name]
+        cancelled_search = self._searches[initiator].get(queue_name)
+        if cancelled_search is None:
+            self._logger.debug(
+                "Ignoring request to cancel a search that does not exist: "
+                "%s, %s",
+                initiator,
+                queue_name
+            )
+            return
         cancelled_search.cancel()
 
         for player in cancelled_search.players:
