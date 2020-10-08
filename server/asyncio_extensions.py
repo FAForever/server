@@ -114,18 +114,11 @@ class _partial(object):
 
 
 @overload
-def synchronized() -> AsyncDecorator:
-    ...
-
-
+def synchronized() -> AsyncDecorator: ...
 @overload
-def synchronized(function: AsyncFunc) -> AsyncFunc:
-    ...
-
-
+def synchronized(function: AsyncFunc) -> AsyncFunc: ...
 @overload
-def synchronized(lock: Optional[asyncio.Lock]) -> AsyncDecorator:
-    ...
+def synchronized(lock: Optional[AsyncLockable]) -> AsyncDecorator: ...
 
 
 def synchronized(*args):
@@ -161,18 +154,11 @@ def _synchronize(
 
 
 @overload
-def synchronizedmethod() -> AsyncDecorator:
-    ...
-
-
+def synchronizedmethod() -> AsyncDecorator: ...
 @overload
-def synchronizedmethod(function: AsyncFunc) -> AsyncFunc:
-    ...
-
-
+def synchronizedmethod(function: AsyncFunc) -> AsyncFunc: ...
 @overload
-def synchronizedmethod(lock_name: Optional[str]) -> AsyncDecorator:
-    ...
+def synchronizedmethod(lock_name: Optional[str]) -> AsyncDecorator: ...
 
 
 def synchronizedmethod(*args):
