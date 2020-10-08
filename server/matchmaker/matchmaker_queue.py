@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 import server.metrics as metrics
 
-from ..asyncio_extensions import synchronized
+from ..asyncio_extensions import SpinLock, synchronized
 from ..decorators import with_logger
 from ..players import PlayerState
 from .algorithm import make_matches, make_teams, make_teams_from_single
@@ -127,7 +127,7 @@ class MatchmakerQueue:
             if search in self._queue:
                 del self._queue[search]
 
-    @synchronized
+    @synchronized(SpinLock(sleep_duration=1))
     async def find_matches(self) -> None:
         """
         Perform the matchmaking algorithm.

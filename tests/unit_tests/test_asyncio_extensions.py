@@ -4,6 +4,7 @@ import pytest
 from asynctest import CoroutineMock
 
 from server.asyncio_extensions import (
+    SpinLock,
     gather_without_exceptions,
     synchronized,
     synchronizedmethod
@@ -52,6 +53,37 @@ async def test_gather_without_exceptions_subclass():
     ], ConnectionError)
 
     completes_correctly.assert_called_once()
+
+
+@fast_forward(15)
+async def test_spinlock():
+    lock = SpinLock(0.2)
+
+    held_resource = False
+
+    async def get_resource():
+        nonlocal held_resource
+
+        async with lock:
+            assert held_resource is False
+            assert lock.locked() is True
+
+            held_resource = True
+            await asyncio.sleep(1)
+            held_resource = False
+
+    await asyncio.gather(*[get_resource() for _ in range(10)])
+
+    with pytest.raises(RuntimeError):
+        lock.release()
+
+
+async def test_spinlock_repr():
+    lock = SpinLock()
+
+    assert "unlocked" in repr(lock)
+    await lock.acquire()
+    assert "locked" in repr(lock) and "un" not in repr(lock)
 
 
 @fast_forward(500)
