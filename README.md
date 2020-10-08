@@ -1,5 +1,5 @@
 # FA Forever - Server
-![python](https://img.shields.io/badge/python-3.7-blue)
+![python](https://img.shields.io/badge/python-3.9-blue)
 [![Build Status](https://travis-ci.org/FAForever/server.svg?branch=develop)](https://travis-ci.org/FAForever/server)
 [![Coveralls Status](https://img.shields.io/coveralls/FAForever/server/develop.svg)](https://coveralls.io/github/FAForever/server)
 [![semver](https://img.shields.io/badge/license-GPLv3-blue)](license.txt)

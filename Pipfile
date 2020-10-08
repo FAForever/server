@@ -37,4 +37,4 @@ asynctest = "*"
 hypothesis = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.9"

@@ -1,9 +1,9 @@
-FROM python:3.7-slim
+FROM python:3.9-slim
 
 # Need git for installing aiomysql
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
-        git && \
+        git g++ && \
     apt-get clean
 RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
