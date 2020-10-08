@@ -16,7 +16,10 @@ async def null_callback(*args):
 def wrap_func(func):
     """wrap in a coroutine"""
     if not asyncio.iscoroutinefunction(func):
-        return asyncio.coroutine(func)
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            func(*args, **kwargs)
+        return wrapper
     return func
 
 

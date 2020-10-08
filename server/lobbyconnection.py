@@ -16,7 +16,6 @@ from sqlalchemy import and_, func, select
 import server.metrics as metrics
 from server.db import FAFDatabase
 
-from . import asyncio_extensions as asyncio_
 from .abc.base_game import GameConnectionState, InitMode
 from .config import TRACE, config
 from .db.models import (
@@ -127,8 +126,7 @@ class LobbyConnection:
 
         return str(self.session)
 
-    @asyncio.coroutine
-    def on_connection_made(self, protocol: Protocol, peername: Address):
+    async def on_connection_made(self, protocol: Protocol, peername: Address):
         self.protocol = protocol
         self.peer_address = peername
         metrics.server_connections.inc()
