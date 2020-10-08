@@ -1,0 +1,9 @@
+[tool.isort]
+multi_line_output = 3
+known_first_party = ["server", "tests", "integration_tests"]
+default_section = "THIRDPARTY"
+
+[tool.pytest.ini_options]
+# Ignore DeprecationWarnings in third party libraries caused by internal python changes
+filterwarnings = ["ignore:.*Python 3\\.8.*:DeprecationWarning:^(?!server).*"]
+markers = ["slow: marks tests as slow."]

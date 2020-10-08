@@ -41,12 +41,6 @@ def pytest_addoption(parser):
     parser.addoption("--mysql_port",     action="store", default=int(config.DB_PORT), help="mysql port to use for tests")
 
 
-def pytest_configure(config):
-    config.addinivalue_line(
-        "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
-    )
-
-
 @pytest.fixture(scope="session", autouse=True)
 async def test_data(request):
     db = await global_database(request)
