@@ -77,7 +77,7 @@ def oauth2_server(event_loop):
         await site.start()
 
     event_loop.run_until_complete(start_app())
-    yield (host, port)
+    yield host, port
     event_loop.run_until_complete(runner.cleanup())
 
 

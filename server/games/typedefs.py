@@ -86,7 +86,7 @@ class ValidityState(Enum):
     OTHER_UNRANK = 24
 
 
-class FeaturedModType():
+class FeaturedModType:
     """
     String constants for featured mod technical_name
     """

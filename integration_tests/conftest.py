@@ -12,7 +12,7 @@ async def client_factory():
     Create new clients connected to the test server and automatically
     disconnect them when the test ends
     """
-    class Manager():
+    class Manager:
         def __init__(self):
             self.clients = []
 

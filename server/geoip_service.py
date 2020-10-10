@@ -129,7 +129,7 @@ class GeoIpService(Service):
                 f_in = extract_file(tar, "GeoLite2-Country.mmdb")
                 with open(self.file_path, "wb") as f_out:
                     shutil.copyfileobj(f_in, f_out)
-        except (tarfile.TarError) as e:    # pragma: no cover
+        except tarfile.TarError as e:    # pragma: no cover
             self._logger.warning("Failed to extract downloaded file!")
             raise e
         self._logger.info("New database download complete")

@@ -5,7 +5,7 @@ from trueskill import Rating
 
 # Values correspond to legacy table names. This will be fixed when db gets
 # migrated.
-class RatingType():
+class RatingType:
     GLOBAL = "global"
     LADDER_1V1 = "ladder_1v1"
 
@@ -49,7 +49,7 @@ class PlayerRatings(RatingTypeMap[Tuple[float, float]]):
             return super().__getitem__(key)
 
 
-class InclusiveRange():
+class InclusiveRange:
     """
     A simple inclusive range.
 

@@ -99,4 +99,4 @@ class ApiAccessor:
         )
         if status != 200:
             self._logger.error("API returned error: [%i] %s", status, data)
-        return (status, data)
+        return status, data
