@@ -1,5 +1,4 @@
 import asyncio
-import contextlib
 import itertools
 import re
 from collections import defaultdict
@@ -32,7 +31,6 @@ from .game_service import GameService
 from .games import LadderGame
 from .matchmaker import MapPool, MatchmakerQueue, Search
 from .players import Player, PlayerState
-from .protocol import DisconnectedError
 from .rating import RatingType
 from .types import GameLaunchOptions, Map
 
@@ -407,12 +405,12 @@ class LadderService(Service):
                 # think it is searching for ladder, even though the server has
                 # already removed it from the queue.
 
-                # TODO: Graceful handling of NoneType errors due to disconnect
                 await asyncio.gather(*[
                     guest.lobby_connection.launch_game(
                         game, is_host=False, options=game_options(guest)
                     )
                     for guest in all_guests
+                    if guest.lobby_connection is not None
                 ])
             await game.wait_launched(30)
             self._logger.debug("Ladder game launched successfully")
@@ -420,11 +418,10 @@ class LadderService(Service):
             if game:
                 await game.on_game_end()
             self._logger.exception("Failed to start ladder game!")
+
             msg = {"command": "match_cancelled"}
-            with contextlib.suppress(DisconnectedError):
-                await asyncio.gather(*[
-                    player.send_message(msg) for player in all_players
-                ])
+            for player in all_players:
+                player.write_message(msg)
 
     async def get_game_history(
         self,
