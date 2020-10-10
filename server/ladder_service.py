@@ -210,7 +210,7 @@ class LadderService(Service):
         """
         Cancel search for a specific player/queue.
         """
-        cancelled_search = self._searches[initiator].get(queue_name)
+        cancelled_search = self._clear_search(initiator, queue_name)
         if cancelled_search is None:
             self._logger.debug(
                 "Ignoring request to cancel a search that does not exist: "
@@ -222,7 +222,6 @@ class LadderService(Service):
         cancelled_search.cancel()
 
         for player in cancelled_search.players:
-            del self._searches[player][queue_name]
             player.write_message({
                 "command": "search_info",
                 "queue_name": queue_name,
@@ -236,6 +235,24 @@ class LadderService(Service):
         self._logger.info(
             "%s stopped searching for %s", cancelled_search, queue_name
         )
+
+    def _clear_search(
+        self,
+        initiator: Player,
+        queue_name: str
+    ) -> Optional[Search]:
+        """
+        Remove a search from the searches dictionary.
+
+        Does NOT cancel the search.
+        """
+        search = self._searches[initiator].get(queue_name)
+
+        if search is not None:
+            for player in search.players:
+                del self._searches[player][queue_name]
+
+        return search
 
     def write_rating_progress(self, player: Player, rating_type: str) -> None:
         if player not in self._informed_players:
@@ -285,6 +302,11 @@ class LadderService(Service):
             for player in s1.players + s2.players:
                 player.write_message(msg)
 
+                # Ensure that we don't emit a "search_info: stop" message for
+                # the search that succeeded
+                self._clear_search(player, queue.name)
+
+                # Cancel any other searches
                 self.cancel_search(player)
 
             asyncio.create_task(
