@@ -295,6 +295,7 @@ class LadderService(Service):
         self._logger.debug(
             "Starting %s game between %s and %s", queue.name, team1, team2
         )
+        game = None
         try:
             host = team1[0]
             all_players = team1 + team2
@@ -366,9 +367,7 @@ class LadderService(Service):
                 game, is_host=True, options=game_options(host)
             )
             try:
-                hosted = await game.await_hosted()
-                if not hosted:
-                    raise TimeoutError("Host left lobby")
+                await game.wait_hosted(30)
             finally:
                 # TODO: Once the client supports `match_cancelled`, don't
                 # send `launch_game` to the client if the host timed out. Until
@@ -383,9 +382,11 @@ class LadderService(Service):
                     )
                     for guest in all_guests
                 ])
-                # TODO: Wait for players to join here
+            await game.wait_launched(30)
             self._logger.debug("Ladder game launched successfully")
         except Exception:
+            if game:
+                await game.on_game_end()
             self._logger.exception("Failed to start ladder game!")
             msg = {"command": "match_cancelled"}
             with contextlib.suppress(DisconnectedError):

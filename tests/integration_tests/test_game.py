@@ -7,7 +7,6 @@ from server.protocol import Protocol
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until, read_until_command
-from .test_matchmaker import queue_players_for_matchmaking
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
@@ -38,6 +37,12 @@ async def join_game(proto: Protocol, uid: int):
     await asyncio.sleep(0.5)
 
 
+async def client_response(proto):
+    msg = await read_until_command(proto, "game_launch")
+    await open_fa(proto)
+    return msg
+
+
 async def open_fa(proto):
     """Simulate FA opening"""
 
@@ -51,6 +56,45 @@ async def open_fa(proto):
         "command": "GameState",
         "args": ["Lobby"]
     })
+
+
+async def queue_player_for_matchmaking(user, lobby_server):
+    _, _, proto = await connect_and_sign_in(user, lobby_server)
+    await read_until_command(proto, "game_info")
+    await proto.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef"
+    })
+    await read_until_command(proto, "search_info")
+
+    return proto
+
+
+async def queue_players_for_matchmaking(lobby_server):
+    proto1 = await queue_player_for_matchmaking(
+        ("ladder1", "ladder1"),
+        lobby_server
+    )
+    _, _, proto2 = await connect_and_sign_in(
+        ("ladder2", "ladder2"),
+        lobby_server
+    )
+
+    await read_until_command(proto2, "game_info")
+
+    await proto2.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": 1  # Python client sends factions as numbers
+    })
+    await read_until_command(proto2, "search_info")
+
+    # If the players did not match, this will fail due to a timeout error
+    await read_until_command(proto1, "match_found")
+    await read_until_command(proto2, "match_found")
+
+    return proto1, proto2
 
 
 async def get_player_ratings(proto, *names, rating_type="global"):

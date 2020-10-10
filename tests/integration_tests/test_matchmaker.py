@@ -11,47 +11,14 @@ from server.db.models import (
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until, read_until_command
+from .test_game import (
+    client_response,
+    open_fa,
+    queue_player_for_matchmaking,
+    queue_players_for_matchmaking
+)
 
 pytestmark = pytest.mark.asyncio
-
-
-async def queue_player_for_matchmaking(user, lobby_server):
-    _, _, proto = await connect_and_sign_in(user, lobby_server)
-    await read_until_command(proto, "game_info")
-    await proto.send_message({
-        "command": "game_matchmaking",
-        "state": "start",
-        "faction": "uef"
-    })
-    await read_until_command(proto, "search_info")
-
-    return proto
-
-
-async def queue_players_for_matchmaking(lobby_server):
-    proto1 = await queue_player_for_matchmaking(
-        ("ladder1", "ladder1"),
-        lobby_server
-    )
-    _, _, proto2 = await connect_and_sign_in(
-        ("ladder2", "ladder2"),
-        lobby_server
-    )
-
-    await read_until_command(proto2, "game_info")
-
-    await proto2.send_message({
-        "command": "game_matchmaking",
-        "state": "start",
-        "faction": 1  # Python client sends factions as numbers
-    })
-    await read_until_command(proto2, "search_info")
-
-    # If the players did not match, this will fail due to a timeout error
-    await read_until_command(proto1, "match_found")
-    await read_until_command(proto2, "match_found")
-
-    return proto1, proto2
 
 
 @fast_forward(70)
@@ -59,16 +26,7 @@ async def test_game_launch_message(lobby_server):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
 
     msg1 = await read_until_command(proto1, "game_launch")
-    await proto1.send_message({
-        "command": "GameState",
-        "target": "game",
-        "args": ["Idle"]
-    })
-    await proto1.send_message({
-        "command": "GameState",
-        "target": "game",
-        "args": ["Lobby"]
-    })
+    await open_fa(proto1)
     msg2 = await read_until_command(proto2, "game_launch")
 
     assert msg1["uid"] == msg2["uid"]
@@ -88,29 +46,11 @@ async def test_game_matchmaking_start(lobby_server, database):
 
     # The player that queued last will be the host
     msg = await read_until_command(host, "game_launch")
-    await host.send_message({
-        "command": "GameState",
-        "target": "game",
-        "args": ["Idle"]
-    })
-    await host.send_message({
-        "command": "GameState",
-        "target": "game",
-        "args": ["Lobby"]
-    })
+    await open_fa(host)
     await read_until_command(host, "game_info")
 
     await read_until_command(guest, "game_launch")
-    await guest.send_message({
-        "command": "GameState",
-        "target": "game",
-        "args": ["Idle"]
-    })
-    await guest.send_message({
-        "command": "GameState",
-        "target": "game",
-        "args": ["Lobby"]
-    })
+    await open_fa(guest)
     await read_until_command(host, "game_info")
     await read_until_command(guest, "game_info")
     await asyncio.sleep(0.5)
@@ -154,22 +94,56 @@ async def test_game_matchmaking_start(lobby_server, database):
 
 
 @fast_forward(120)
-async def test_game_matchmaking_timeout(lobby_server):
+async def test_game_matchmaking_timeout(lobby_server, game_service):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
 
-    # The player that queued last will be the host
-    msg2 = await read_until_command(proto2, "game_launch")
+    msg1, msg2 = await asyncio.gather(
+        read_until_command(proto1, "game_launch"),
+        read_until_command(proto2, "game_launch")
+    )
     # LEGACY BEHAVIOUR: The host does not respond with the appropriate GameState
     # so the match is cancelled. However, the client does not know how to
     # handle `match_cancelled` messages so we still send `game_launch` to
     # prevent the client from showing that it is searching when it really isn't.
-    msg1 = await read_until_command(proto1, "game_launch")
     await read_until_command(proto2, "match_cancelled")
     await read_until_command(proto1, "match_cancelled")
 
     assert msg1["uid"] == msg2["uid"]
     assert msg1["mod"] == "ladder1v1"
     assert msg2["mod"] == "ladder1v1"
+
+    # Ensure that the game is cleaned up
+    await read_until(
+        proto1,
+        lambda msg: msg["command"] == "game_info" and msg["state"] == "closed"
+        # TODO: Timeout parameter
+    )
+    assert game_service._games == {}
+
+
+@fast_forward(120)
+async def test_game_matchmaking_timeout_guest(lobby_server, game_service):
+    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+
+    msg1, msg2 = await asyncio.gather(
+        client_response(proto1),
+        client_response(proto2)
+    )
+    # GameState Launching is never sent
+    await read_until_command(proto2, "match_cancelled")
+    await read_until_command(proto1, "match_cancelled")
+
+    assert msg1["uid"] == msg2["uid"]
+    assert msg1["mod"] == "ladder1v1"
+    assert msg2["mod"] == "ladder1v1"
+
+    # Ensure that the game is cleaned up
+    await read_until(
+        proto1,
+        lambda msg: msg["command"] == "game_info" and msg["state"] == "closed",
+        # TODO: Timeout parameter
+    )
+    assert game_service._games == {}
 
 
 @fast_forward(15)

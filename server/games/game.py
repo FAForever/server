@@ -115,6 +115,7 @@ class Game:
         }
         self.mods = {}
         self._is_hosted = asyncio.Future()
+        self._launch_fut = asyncio.Future()
 
         self._logger.debug("%s created", self)
         asyncio.get_event_loop().create_task(self.timeout_game())
@@ -124,7 +125,9 @@ class Game:
         tm = 30 if self.game_mode != FeaturedModType.COOP else 60
         await asyncio.sleep(tm)
         if self.state is GameState.INITIALIZING:
-            self._is_hosted.set_exception(TimeoutError("Game setup timed out"))
+            self._is_hosted.set_exception(
+                asyncio.TimeoutError("Game setup timed out")
+            )
             self._logger.debug("Game setup timed out.. Cancelling game")
             await self.on_game_end()
 
@@ -232,12 +235,15 @@ class Game:
 
         return list(teams.values()) + ffa_players
 
-    async def await_hosted(self):
-        return await asyncio.wait_for(self._is_hosted, None)
+    async def wait_hosted(self, timeout: float):
+        return await asyncio.wait_for(self._is_hosted, timeout=timeout)
 
-    def set_hosted(self, value: bool = True):
+    def set_hosted(self):
         if not self._is_hosted.done():
-            self._is_hosted.set_result(value)
+            self._is_hosted.set_result(None)
+
+    async def wait_launched(self, timeout: float):
+        return await asyncio.wait_for(self._launch_fut, timeout=timeout)
 
     async def add_result(
         self, reporter: int, army: int, result_type: str, score: int
@@ -405,8 +411,6 @@ class Game:
         except Exception:    # pragma: no cover
             self._logger.exception("Error during game end")
         finally:
-            self.set_hosted(value=False)
-
             self.state = GameState.ENDED
 
             self.game_service.mark_dirty(self)
@@ -648,10 +652,12 @@ class Game:
         self._players_with_unsent_army_stats = list(self._players)
 
         self.state = GameState.LIVE
-        self._logger.info("Game launched")
 
         await self.on_game_launched()
         await self.validate_game_settings()
+
+        self._launch_fut.set_result(None)
+        self._logger.info("Game launched")
 
     async def on_game_launched(self):
         for player in self.players:
