@@ -108,7 +108,7 @@ async def test_game_matchmaking_multiqueue(lobby_server):
         "faction": "uef",
         "queue_name": "ladder1v1"
     })
-    await read_until_command(protos[0], "search_info")
+    await read_until_command(protos[0], "search_info", state="start")
     await asyncio.gather(*[
         proto.send_message({
             "command": "game_matchmaking",
@@ -118,17 +118,12 @@ async def test_game_matchmaking_multiqueue(lobby_server):
         })
         for proto in protos
     ])
-    msg = await read_until(
+    msg = await read_until_command(
         protos[0],
-        lambda msg: (
-            msg["command"] == "search_info" and msg["queue_name"] == "ladder1v1"
-        )
+        "search_info",
+        queue_name="ladder1v1"
     )
-    assert msg == {
-        "command": "search_info",
-        "queue_name": "ladder1v1",
-        "state": "stop"
-    }
+    assert msg["state"] == "stop"
     msgs = await asyncio.gather(*[client_response(proto) for proto in protos])
 
     uid = set(msg["uid"] for msg in msgs)

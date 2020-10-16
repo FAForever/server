@@ -113,10 +113,11 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
     assert msg2["mod"] == "ladder1v1"
 
     # Ensure that the game is cleaned up
-    await read_until(
+    await read_until_command(
         proto1,
-        lambda msg: msg["command"] == "game_info" and msg["state"] == "closed"
-        # TODO: Timeout parameter
+        "game_info",
+        state="closed",
+        timeout=5
     )
     assert game_service._games == {}
 
@@ -138,10 +139,11 @@ async def test_game_matchmaking_timeout_guest(lobby_server, game_service):
     assert msg2["mod"] == "ladder1v1"
 
     # Ensure that the game is cleaned up
-    await read_until(
+    await read_until_command(
         proto1,
-        lambda msg: msg["command"] == "game_info" and msg["state"] == "closed",
-        # TODO: Timeout parameter
+        "game_info",
+        state="closed",
+        timeout=5
     )
     assert game_service._games == {}
 

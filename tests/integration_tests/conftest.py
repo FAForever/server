@@ -200,10 +200,15 @@ async def read_until(
 async def read_until_command(
     proto: Protocol,
     command: str,
-    timeout: float = 60
+    timeout: float = 60,
+    **kwargs
 ) -> Dict[str, Any]:
+    kwargs["command"] = command
     return await asyncio.wait_for(
-        _read_until(proto, lambda msg: msg.get("command") == command),
+        _read_until(
+            proto,
+            lambda msg: all(msg[k] == v for k, v in kwargs.items())
+        ),
         timeout=timeout
     )
 
