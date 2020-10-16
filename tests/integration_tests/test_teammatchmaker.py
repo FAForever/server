@@ -139,6 +139,55 @@ async def test_game_matchmaking_multiqueue(lobby_server):
 
 
 @fast_forward(60)
+async def test_game_matchmaking_multiqueue_timeout(lobby_server):
+    protos, _ = await connect_players(lobby_server)
+
+    await asyncio.gather(*[
+        read_until_command(proto, "game_info") for proto in protos
+    ])
+
+    await protos[0].send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "cybran",
+        "queue_name": "ladder1v1"
+    })
+    await read_until_command(protos[0], "search_info", state="start")
+    await asyncio.gather(*[
+        proto.send_message({
+            "command": "game_matchmaking",
+            "state": "start",
+            "faction": "seraphim",
+            "queue_name": "tmm2v2"
+        })
+        for proto in protos
+    ])
+    msg = await read_until_command(
+        protos[0],
+        "search_info",
+        queue_name="ladder1v1"
+    )
+    assert msg["state"] == "stop"
+
+    # Don't send any GPGNet messages so the match times out
+    await read_until_command(protos[0], "match_cancelled")
+
+    # Player's state is reset so they are able to queue again
+    await protos[0].send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef"
+    })
+    await read_until_command(
+        protos[0],
+        "search_info",
+        state="start",
+        queue_name="ladder1v1",
+        timeout=5
+    )
+
+
+@fast_forward(60)
 async def test_game_matchmaking_multiqueue_multimatch(lobby_server):
     """
     Scenario where both queues could possibly generate a match.
@@ -210,6 +259,20 @@ async def test_game_matchmaking_timeout(lobby_server):
     await asyncio.gather(*[
         read_until_command(proto, "match_cancelled") for proto in protos
     ])
+
+    # Player's state is reset so they are able to queue again
+    await protos[0].send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef"
+    })
+    await read_until_command(
+        protos[0],
+        "search_info",
+        state="start",
+        queue_name="ladder1v1",
+        timeout=5
+    )
 
 
 @fast_forward(60)

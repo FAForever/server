@@ -121,6 +121,14 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
     )
     assert game_service._games == {}
 
+    # Player's state is reset so they are able to queue again
+    await proto1.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef"
+    })
+    await read_until_command(proto1, "search_info", state="start", timeout=5)
+
 
 @fast_forward(120)
 async def test_game_matchmaking_timeout_guest(lobby_server, game_service):
@@ -146,6 +154,14 @@ async def test_game_matchmaking_timeout_guest(lobby_server, game_service):
         timeout=5
     )
     assert game_service._games == {}
+
+    # Player's state is reset so they are able to queue again
+    await proto1.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef"
+    })
+    await read_until_command(proto1, "search_info", state="start", timeout=5)
 
 
 @fast_forward(15)

@@ -131,6 +131,8 @@ async def test_start_game_timeout(
     assert p1.lobby_connection.launch_game.called
     # TODO: Once client supports `match_cancelled` change this to `assert not ...`
     assert p2.lobby_connection.launch_game.called
+    assert p1.state is PlayerState.IDLE
+    assert p2.state is PlayerState.IDLE
 
 
 async def test_start_game_with_teams(

@@ -421,6 +421,7 @@ class LadderService(Service):
 
             msg = {"command": "match_cancelled"}
             for player in all_players:
+                player.state = PlayerState.IDLE
                 player.write_message(msg)
 
     async def get_game_history(
