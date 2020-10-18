@@ -41,7 +41,7 @@ from .players import Player, PlayerState
 from .protocol import DisconnectedError, Protocol
 from .rating import InclusiveRange, RatingType
 from .types import Address, GameLaunchOptions
-
+from .games.typedefs import GameType
 
 class ClientError(Exception):
     """
@@ -938,7 +938,8 @@ class LobbyConnection:
             # options are. Currently, options for ladder are hardcoded into the
             # client.
             "name": game.name,
-            "init_mode": game.init_mode.value,
+            "game_type": GameType.to_string(self.game_type),
+            "init_mode": game.init_mode.value, # init_mode is deprecated
             **options._asdict()
         }
 
