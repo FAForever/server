@@ -10,6 +10,7 @@ from server.games import LadderGame
 from server.ladder_service import game_name
 from server.matchmaker import MatchmakerQueue
 from server.players import PlayerState
+from server.rating import RatingType
 from server.types import Map
 from tests.utils import fast_forward
 
@@ -125,11 +126,13 @@ async def test_start_game_timeout(
 
     await ladder_service.start_game([p1], [p2], queue)
 
-    p1.lobby_connection.send.assert_called_once_with({"command": "match_cancelled"})
-    p2.lobby_connection.send.assert_called_once_with({"command": "match_cancelled"})
+    p1.lobby_connection.write.assert_called_once_with({"command": "match_cancelled"})
+    p2.lobby_connection.write.assert_called_once_with({"command": "match_cancelled"})
     assert p1.lobby_connection.launch_game.called
     # TODO: Once client supports `match_cancelled` change this to `assert not ...`
     assert p2.lobby_connection.launch_game.called
+    assert p1.state is PlayerState.IDLE
+    assert p2.state is PlayerState.IDLE
 
 
 async def test_start_game_with_teams(
@@ -163,7 +166,7 @@ async def test_start_game_with_teams(
     LadderGame.wait_launched.assert_called_once()
 
 
-async def test_inform_player(ladder_service: LadderService, player_factory):
+async def test_write_rating_progress(ladder_service: LadderService, player_factory):
     p1 = player_factory(
         "Dostya",
         player_id=1,
@@ -171,16 +174,16 @@ async def test_inform_player(ladder_service: LadderService, player_factory):
         with_lobby_connection=True
     )
 
-    ladder_service.inform_player(p1)
+    ladder_service.write_rating_progress(p1, RatingType.LADDER_1V1)
 
     # Message is sent after the first call
     p1.lobby_connection.write.assert_called_once()
-    ladder_service.inform_player(p1)
+    ladder_service.write_rating_progress(p1, RatingType.LADDER_1V1)
     p1.lobby_connection.write.reset_mock()
     # But not after the second
     p1.lobby_connection.write.assert_not_called()
     await ladder_service.on_connection_lost(p1)
-    ladder_service.inform_player(p1)
+    ladder_service.write_rating_progress(p1, RatingType.LADDER_1V1)
 
     # But it is called if the player relogs
     p1.lobby_connection.write.assert_called_once()
@@ -339,6 +342,50 @@ async def test_start_search_multiqueue_multiple_players(
     assert "tmm2v2" not in ladder_service._searches[p2]
 
 
+async def test_game_start_cancels_search(
+    ladder_service: LadderService,
+    player_factory,
+    queue_factory,
+    event_loop
+):
+    ladder_service.queues["tmm2v2"] = queue_factory("tmm2v2")
+
+    p1 = player_factory(
+        "Dostya",
+        player_id=1,
+        ladder_rating=(1000, 10),
+        with_lobby_connection=True
+    )
+
+    p2 = player_factory(
+        "Brackman",
+        player_id=2,
+        ladder_rating=(1000, 10),
+        with_lobby_connection=True
+    )
+    ladder_service.start_search([p1], "ladder1v1")
+    ladder_service.start_search([p2], "ladder1v1")
+    ladder_service.start_search([p1], "tmm2v2")
+    ladder_service.start_search([p2], "tmm2v2")
+    await exhaust_callbacks(event_loop)
+
+    assert "ladder1v1" in ladder_service._searches[p1]
+    assert "tmm2v2" in ladder_service._searches[p1]
+    assert "ladder1v1" in ladder_service._searches[p2]
+    assert "tmm2v2" in ladder_service._searches[p2]
+
+    ladder_service.on_match_found(
+        ladder_service._searches[p1]["ladder1v1"],
+        ladder_service._searches[p2]["ladder1v1"],
+        ladder_service.queues["ladder1v1"]
+    )
+
+    assert "ladder1v1" not in ladder_service._searches[p1]
+    assert "tmm2v2" not in ladder_service._searches[p1]
+    assert "ladder1v1" not in ladder_service._searches[p2]
+    assert "tmm2v2" not in ladder_service._searches[p2]
+
+
 async def test_start_and_cancel_search(
     ladder_service: LadderService,
     player_factory,
@@ -446,14 +493,14 @@ async def test_start_game_called_on_match(ladder_service: LadderService, player_
     )
 
     ladder_service.start_game = CoroutineMock()
-    ladder_service.inform_player = CoroutineMock()
+    ladder_service.write_rating_progress = CoroutineMock()
 
     ladder_service.start_search([p1], "ladder1v1")
     ladder_service.start_search([p2], "ladder1v1")
 
     await asyncio.sleep(2)
 
-    ladder_service.inform_player.assert_called()
+    ladder_service.write_rating_progress.assert_called()
     ladder_service.start_game.assert_called_once()
 
 
@@ -623,14 +670,14 @@ async def test_game_name_many_teams(player_factory):
     assert game_name([p1], [p2], [p3], [p4]) == "Dostya Vs QAI Vs Rhiza Vs Kale"
 
 
-async def test_inform_player_message(
+async def test_write_rating_progress_message(
     ladder_service: LadderService,
     player_factory
 ):
     player = player_factory(ladder_rating=(1500, 500))
     player.write_message = CoroutineMock()
 
-    ladder_service.inform_player(player)
+    ladder_service.write_rating_progress(player, RatingType.LADDER_1V1)
 
     player.write_message.assert_called_once_with({
         "command": "notice",
@@ -647,14 +694,38 @@ async def test_inform_player_message(
     })
 
 
-async def test_inform_player_message_2(
+async def test_write_rating_progress_message_2(
     ladder_service: LadderService,
     player_factory
 ):
     player = player_factory(ladder_rating=(1500, 400.1235))
     player.write_message = CoroutineMock()
 
-    ladder_service.inform_player(player)
+    ladder_service.write_rating_progress(player, RatingType.LADDER_1V1)
+
+    player.write_message.assert_called_once_with({
+        "command": "notice",
+        "style": "info",
+        "text": (
+            "The system is still learning you.<b><br><br>"
+            "The learning phase is 40% complete<b>"
+        )
+    })
+
+
+async def test_write_rating_progress_other_rating(
+    ladder_service: LadderService,
+    player_factory
+):
+    player = player_factory(
+        ladder_rating=(1500, 500),
+        global_rating=(1500, 400.1235)
+    )
+    player.write_message = CoroutineMock()
+
+    # There's no reason we would call it with global, but the logic is the same
+    # and global is an available rating that's not ladder
+    ladder_service.write_rating_progress(player, RatingType.GLOBAL)
 
     player.write_message.assert_called_once_with({
         "command": "notice",

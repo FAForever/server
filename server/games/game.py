@@ -236,14 +236,20 @@ class Game:
         return list(teams.values()) + ffa_players
 
     async def wait_hosted(self, timeout: float):
-        return await asyncio.wait_for(self._is_hosted, timeout=timeout)
+        return await asyncio.wait_for(
+            asyncio.shield(self._is_hosted),
+            timeout=timeout
+        )
 
     def set_hosted(self):
         if not self._is_hosted.done():
             self._is_hosted.set_result(None)
 
     async def wait_launched(self, timeout: float):
-        return await asyncio.wait_for(self._launch_fut, timeout=timeout)
+        return await asyncio.wait_for(
+            asyncio.shield(self._launch_fut),
+            timeout=timeout
+        )
 
     async def add_result(
         self, reporter: int, army: int, result_type: str, score: int

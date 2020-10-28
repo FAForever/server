@@ -4,13 +4,27 @@ Some helper functions for common async tasks.
 import asyncio
 import inspect
 import logging
+from asyncio.locks import _ContextManagerMixin
 from functools import wraps
-from typing import Any, Callable, Coroutine, List, Optional, Type, overload
+from typing import (
+    Any,
+    Callable,
+    Coroutine,
+    List,
+    Optional,
+    Type,
+    Union,
+    overload
+)
+
+logger = logging.getLogger(__name__)
 
 AsyncFunc = Callable[..., Coroutine[Any, Any, Any]]
 AsyncDecorator = Callable[[AsyncFunc], AsyncFunc]
 
-logger = logging.getLogger(__name__)
+
+# TODO: Need python >= 3.8 for typing.Protocol
+AsyncLockable = Union[asyncio.Lock, "SpinLock"]
 
 
 async def gather_without_exceptions(
@@ -30,6 +44,50 @@ async def gather_without_exceptions(
                 "Ignoring error in gather_without_exceptions", exc_info=True
             )
     return results
+
+
+# Based on python3.8 asyncio.Lock
+# https://github.com/python/cpython/blob/6c6c256df3636ff6f6136820afaefa5a10a3ac33/Lib/asyncio/locks.py#L106
+class SpinLock(_ContextManagerMixin):
+    """
+    An asyncio spinlock. The advantage of using this over asyncio.Lock is that
+    it can be called accross multiple event loops at the cost of being less
+    performant. As with any spinlock, it's best used in situations where
+    concurrent access is unlikely.
+    """
+
+    def __init__(self, sleep_duration: float = 0.01):
+        self.sleep_duration = sleep_duration
+        self._locked = False
+
+    def __repr__(self) -> str:
+        res = super().__repr__()
+        extra = 'locked' if self._locked else 'unlocked'
+        return f'<{res[1:-1]} [{extra}]>'
+
+    def locked(self) -> bool:
+        """Return True if lock is acquired."""
+        return self._locked
+
+    async def acquire(self) -> bool:
+        """
+        Sleeps repeatedly for sleep_duration until the lock is unlocked, then
+        sets it to locked and returns True.
+        """
+        while self._locked:
+            await asyncio.sleep(self.sleep_duration)
+
+        self._locked = True
+        return True
+
+    def release(self) -> None:
+        """
+        When invoked on an unlocked lock, a RuntimeError is raised.
+        """
+        if self._locked:
+            self._locked = False
+        else:
+            raise RuntimeError('Lock is not acquired.')
 
 
 class _partial(object):
@@ -56,18 +114,11 @@ class _partial(object):
 
 
 @overload
-def synchronized() -> AsyncDecorator:
-    ...
-
-
+def synchronized() -> AsyncDecorator: ...
 @overload
-def synchronized(function: AsyncFunc) -> AsyncFunc:
-    ...
-
-
+def synchronized(function: AsyncFunc) -> AsyncFunc: ...
 @overload
-def synchronized(lock: Optional[asyncio.Lock]) -> AsyncDecorator:
-    ...
+def synchronized(lock: Optional[AsyncLockable]) -> AsyncDecorator: ...
 
 
 def synchronized(*args):
@@ -86,14 +137,16 @@ def synchronized(*args):
 
 def _synchronize(
     function: AsyncFunc,
-    lock: Optional[asyncio.Lock] = None
+    lock: Optional[AsyncLockable] = None
 ) -> AsyncFunc:
     """Wrap an async function with an async lock."""
-    if lock is None:
-        lock = asyncio.Lock()
-
     @wraps(function)
     async def wrapped(*args, **kwargs):
+        nonlocal lock
+
+        if lock is None:
+            lock = asyncio.Lock()
+
         async with lock:
             return await function(*args, **kwargs)
 
@@ -101,18 +154,11 @@ def _synchronize(
 
 
 @overload
-def synchronizedmethod() -> AsyncDecorator:
-    ...
-
-
+def synchronizedmethod() -> AsyncDecorator: ...
 @overload
-def synchronizedmethod(function: AsyncFunc) -> AsyncFunc:
-    ...
-
-
+def synchronizedmethod(function: AsyncFunc) -> AsyncFunc: ...
 @overload
-def synchronizedmethod(lock_name: Optional[str]) -> AsyncDecorator:
-    ...
+def synchronizedmethod(lock_name: Optional[str]) -> AsyncDecorator: ...
 
 
 def synchronizedmethod(*args):

@@ -113,12 +113,21 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
     assert msg2["mod"] == "ladder1v1"
 
     # Ensure that the game is cleaned up
-    await read_until(
+    await read_until_command(
         proto1,
-        lambda msg: msg["command"] == "game_info" and msg["state"] == "closed"
-        # TODO: Timeout parameter
+        "game_info",
+        state="closed",
+        timeout=5
     )
     assert game_service._games == {}
+
+    # Player's state is reset so they are able to queue again
+    await proto1.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef"
+    })
+    await read_until_command(proto1, "search_info", state="start", timeout=5)
 
 
 @fast_forward(120)
@@ -138,12 +147,21 @@ async def test_game_matchmaking_timeout_guest(lobby_server, game_service):
     assert msg2["mod"] == "ladder1v1"
 
     # Ensure that the game is cleaned up
-    await read_until(
+    await read_until_command(
         proto1,
-        lambda msg: msg["command"] == "game_info" and msg["state"] == "closed",
-        # TODO: Timeout parameter
+        "game_info",
+        state="closed",
+        timeout=5
     )
     assert game_service._games == {}
+
+    # Player's state is reset so they are able to queue again
+    await proto1.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef"
+    })
+    await read_until_command(proto1, "search_info", state="start", timeout=5)
 
 
 @fast_forward(15)

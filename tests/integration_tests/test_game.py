@@ -66,7 +66,13 @@ async def queue_player_for_matchmaking(user, lobby_server):
         "state": "start",
         "faction": "uef"
     })
-    await read_until_command(proto, "search_info")
+    await read_until_command(
+        proto,
+        "search_info",
+        state="start",
+        queue_name="ladder1v1",
+        timeout=5
+    )
 
     return proto
 
@@ -438,13 +444,11 @@ async def test_gamestate_ended_clears_references(
         "args": ["Ended"]
     })
 
-    await read_until(
+    await read_until_command(
         test_proto,
-        lambda msg: (
-            msg["command"] == "game_info"
-            and msg["state"] == "closed"
-            and msg["num_players"] == 2
-        )
+        "game_info",
+        state="closed",
+        num_players=2
     )
     await asyncio.sleep(0.1)
     gc.collect()

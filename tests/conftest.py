@@ -20,6 +20,7 @@ from server.api.oauth_session import OAuth2Session
 from server.config import TRACE, config
 from server.db import FAFDatabase
 from server.game_service import GameService
+from server.games import FeaturedModType
 from server.geoip_service import GeoIpService
 from server.lobbyconnection import LobbyConnection
 from server.matchmaker import MatchmakerQueue
@@ -273,6 +274,7 @@ def queue_factory():
         queue_id += 1
         return MatchmakerQueue(
             game_service=mock.Mock(),
+            on_match_found=mock.Mock(),
             name=name,
             queue_id=queue_id,
             featured_mod=mod,
@@ -284,7 +286,14 @@ def queue_factory():
 
 @pytest.fixture
 def matchmaker_queue(game_service) -> MatchmakerQueue:
-    queue = MatchmakerQueue(game_service, "ladder1v1test", 1, "ladder1v1", 2)
+    queue = MatchmakerQueue(
+        game_service,
+        mock.Mock(),
+        "ladder1v1test",
+        FeaturedModType.LADDER_1V1,
+        RatingType.LADDER_1V1,
+        1
+    )
     return queue
 
 

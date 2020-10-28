@@ -1,22 +1,26 @@
 import asyncio
 import functools
-import random
-from collections import deque
+import time
 from concurrent.futures import CancelledError, TimeoutError
 
+import mock
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
 import server.config as config
 from server.matchmaker import CombinedSearch, MapPool, PopTimer, Search
+from server.players import PlayerState
 from server.rating import RatingType
-from tests.utils import fast_forward
 
 
 @pytest.fixture(scope="session")
 def player_factory(player_factory):
-    return functools.partial(player_factory, ladder_games=(config.NEWBIE_MIN_GAMES + 1))
+    return functools.partial(
+        player_factory,
+        ladder_games=(config.NEWBIE_MIN_GAMES + 1),
+        state=PlayerState.SEARCHING_LADDER
+    )
 
 
 @pytest.fixture
@@ -312,30 +316,6 @@ def test_queue_multiple_map_pools(
         assert queue.get_map_pool_for_rating(rating) is None
 
 
-@fast_forward(3)
-@pytest.mark.asyncio
-async def test_queue_matches(matchmaker_queue):
-    matches = [random.randrange(0, 1 << 20) for _ in range(20)]
-    matchmaker_queue._matches = deque(matches)
-
-    async def call_shutdown():
-        await asyncio.sleep(1)
-        matchmaker_queue.shutdown()
-
-    asyncio.create_task(call_shutdown())
-    collected_matches = [match async for match in matchmaker_queue.iter_matches()]
-
-    assert collected_matches == matches
-
-
-@pytest.mark.asyncio
-async def test_shutdown_matchmaker(matchmaker_queue):
-    matchmaker_queue.shutdown()
-    # Verify that no matches are yielded after shutdown is called
-    async for _ in matchmaker_queue.iter_matches():
-        assert False
-
-
 @pytest.mark.asyncio
 async def test_queue_many(matchmaker_queue, player_factory):
     p1, p2, p3 = player_factory("Dostya", ladder_rating=(2200, 150)), \
@@ -354,6 +334,9 @@ async def test_queue_many(matchmaker_queue, player_factory):
     assert not s1.is_matched
     assert s2.is_matched
     assert s3.is_matched
+    matchmaker_queue.on_match_found.assert_called_once_with(
+        s2, s3, matchmaker_queue
+    )
 
 
 @pytest.mark.asyncio
@@ -393,12 +376,13 @@ async def test_queue_cancel(matchmaker_queue, matchmaker_players):
 
     assert not s1.is_matched
     assert not s2.is_matched
+    matchmaker_queue.on_match_found.assert_not_called()
 
 
 @pytest.mark.asyncio
 async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
     # Turn list of players into map from ids to players.
-    p0, p1, p2, p3, _ = matchmaker_players_all_match
+    _, p1, p2, p3, _ = matchmaker_players_all_match
     (s1, s2, s3) = (Search([p1]),
                     Search([p2]),
                     Search([p3]))
@@ -421,3 +405,36 @@ async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
     assert s2.is_matched
     assert s3.is_matched
     assert len(matchmaker_queue._queue) == 0
+    matchmaker_queue.on_match_found.assert_called_once_with(
+        s2, s3, matchmaker_queue
+    )
+
+
+@pytest.mark.asyncio
+async def test_find_matches_synchronized(queue_factory):
+    is_matching = False
+
+    def make_matches(*args):
+        nonlocal is_matching
+
+        assert not is_matching, "Function call not synchronized"
+        is_matching = True
+
+        time.sleep(0.2)
+
+        is_matching = False
+        return []
+
+    with mock.patch(
+        "server.matchmaker.matchmaker_queue.make_matches",
+        make_matches
+    ):
+        queues = [queue_factory(f"Queue{i}") for i in range(5)]
+        # Ensure that find_matches does not short circuit
+        for queue in queues:
+            queue._queue = {mock.Mock(): 1, mock.Mock(): 2}
+            queue.find_teams = mock.Mock()
+
+        await asyncio.gather(*[
+            queue.find_matches() for queue in queues
+        ])

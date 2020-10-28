@@ -107,21 +107,22 @@ class Player:
     def is_moderator(self) -> bool:
         return "faf_moderators_global" in self.user_groups
 
-    async def send_message(self, message) -> None:
+    async def send_message(self, message: dict) -> None:
         """
         Try to send a message to this player.
 
-        :raises: DisconnectedError if the player has disconnected
+        :raises: DisconnectedError if the player has disconnected.
         """
         if self.lobby_connection is None:
             raise DisconnectedError("Player has disconnected!")
 
         await self.lobby_connection.send(message)
 
-    def write_message(self, message) -> None:
+    def write_message(self, message: dict) -> None:
         """
-        Try to queue a message to be sent this player. Only call this from
-        broadcasting functions. Does nothing if the player has disconnected.
+        Try to queue a message to be sent to this player.
+
+        Does nothing if the player has disconnected.
         """
         if self.lobby_connection is None:
             return

@@ -170,26 +170,45 @@ async def perform_login(
     })
 
 
-async def read_until(
-    proto: Protocol, pred: Callable[[Dict[str, Any]], bool]
+async def _read_until(
+    proto: Protocol,
+    pred: Callable[[Dict[str, Any]], bool]
 ) -> Dict[str, Any]:
     while True:
         msg = await proto.read_message()
         try:
             if pred(msg):
                 return msg
-        except (KeyError, ValueError):
-            logging.getLogger().info("read_until predicate raised during message: {}".format(msg))
+        except KeyError:
             pass
+        except Exception:
+            logging.getLogger().warning(
+                "read_until predicate raised during message: %s",
+                msg,
+                exc_info=True
+            )
+
+
+async def read_until(
+    proto: Protocol,
+    pred: Callable[[Dict[str, Any]], bool],
+    timeout: float = 60
+) -> Dict[str, Any]:
+    return await asyncio.wait_for(_read_until(proto, pred), timeout=timeout)
 
 
 async def read_until_command(
     proto: Protocol,
     command: str,
-    timeout: float = 60
+    timeout: float = 60,
+    **kwargs
 ) -> Dict[str, Any]:
+    kwargs["command"] = command
     return await asyncio.wait_for(
-        read_until(proto, lambda msg: msg.get("command") == command),
+        _read_until(
+            proto,
+            lambda msg: all(msg[k] == v for k, v in kwargs.items())
+        ),
         timeout=timeout
     )
 

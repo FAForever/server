@@ -44,13 +44,13 @@ class FAFClient(object):
         """Convenience for sending commands"""
         await self.send_message({"command": command, **kwargs})
 
-    async def read_until(self, predicate, timeout=60):
+    async def read_until(self, predicate, timeout=5):
         return await asyncio.wait_for(
             read_until(self.proto, predicate),
             timeout=timeout
         )
 
-    async def read_until_command(self, command, timeout=60):
+    async def read_until_command(self, command, timeout=5):
         return await read_until_command(self.proto, command, timeout=timeout)
 
     async def read_until_game_launch(self, uid):
@@ -129,6 +129,19 @@ class FAFClient(object):
 
         # HACK: Yield long enough for the server to process our message
         await asyncio.sleep(0.5)
+
+    async def join_queue(self, queue_name, faction="uef"):
+        await self.send_message({
+            "command": "game_matchmaking",
+            "state": "start",
+            "queue_name": queue_name,
+            "faction": faction
+        })
+        await self.read_until(lambda msg: msg == {
+            "command": "search_info",
+            "state": "start",
+            "queue_name": queue_name
+        })
 
     async def open_fa(self):
         """Simulate FA opening"""
