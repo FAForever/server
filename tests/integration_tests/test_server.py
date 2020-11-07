@@ -5,7 +5,6 @@ import pytest
 from sqlalchemy import and_, select
 
 from server.db.models import avatars, avatars_list, ban
-from server.players import PlayerState
 from tests.utils import fast_forward
 
 from .conftest import (
@@ -375,12 +374,20 @@ async def test_play_game_while_queueing(lobby_server):
     })
 
     await proto.send_message({"command": "game_host"})
-    msg = await read_until_command(proto, "invalid_state")
-    assert msg == {"command": "invalid_state", "state": PlayerState.SEARCHING_LADDER.value}
+    msg = await read_until_command(proto, "notice")
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "Can't host a game while in state SEARCHING_LADDER"
+    }
 
     await proto.send_message({"command": "game_join"})
-    msg = await read_until_command(proto, "invalid_state")
-    assert msg == {"command": "invalid_state", "state": PlayerState.SEARCHING_LADDER.value}
+    msg = await read_until_command(proto, "notice")
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "Can't join a game while in state SEARCHING_LADDER"
+    }
 
 
 @pytest.mark.parametrize("command", ["game_host", "game_join"])

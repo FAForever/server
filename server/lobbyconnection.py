@@ -748,7 +748,9 @@ class LobbyConnection:
             raise KeyError("invalid action")
 
     def ice_only(func):
-        """ Ensures that a handler function is not invoked from a non ICE client"""
+        """
+        Ensures that a handler function is not invoked from a non ICE client.
+        """
         @wraps(func)
         async def wrapper(self, message):
             if self._attempted_connectivity_test:
@@ -756,18 +758,26 @@ class LobbyConnection:
             return await func(self, message)
         return wrapper
 
-    def player_idle(func):
-        """ Ensures that a handler function is not invoked unless the player state is IDLE"""
-        @wraps(func)
-        async def wrapper(self, message):
-            if self.player.state != PlayerState.IDLE:
-                await self.send({"command": "invalid_state", "state": self.player.state.value})
-                return
-            return await func(self, message)
-        return wrapper
+    def player_idle(state_text):
+        """
+        Ensures that a handler function is not invoked unless the player state
+        is IDLE.
+        """
+        def decorator(func):
+            @wraps(func)
+            async def wrapper(self, message):
+                if self.player.state != PlayerState.IDLE:
+                    raise ClientError(
+                        f"Can't {state_text} while in state "
+                        f"{self.player.state.name}",
+                        recoverable=True
+                    )
+                return await func(self, message)
+            return wrapper
+        return decorator
 
     @ice_only
-    @player_idle
+    @player_idle("join a game")
     async def command_game_join(self, message):
         """
         We are going to join a game.
@@ -831,21 +841,17 @@ class LobbyConnection:
                 recoverable=True
             )
 
-        busy = False
         for member in party:
             player = member.player
             if player.state not in (
                 PlayerState.IDLE,
                 PlayerState.SEARCHING_LADDER
             ):
-                busy = True
-                await self.send({
-                    "command": "invalid_state",
-                    "state": player.state.value,
-                    "player": player.id
-                })
-        if busy:
-            return
+                raise ClientError(
+                    f"Can't join a queue while {player.login} is in state "
+                    f"{player.state.name}",
+                    recoverable=True
+                )
 
         if state == "start":
             players = party.players
@@ -869,7 +875,7 @@ class LobbyConnection:
             )
 
     @ice_only
-    @player_idle
+    @player_idle("host a game")
     async def command_game_host(self, message):
         assert isinstance(self.player, Player)
 
@@ -1041,7 +1047,7 @@ class LobbyConnection:
             "ttl": ttl
         })
 
-    @player_idle
+    @player_idle("invite a player")
     async def command_invite_to_party(self, message):
         recipient = self.player_service.get_player(message["recipient_id"])
         if recipient is None:
@@ -1053,7 +1059,7 @@ class LobbyConnection:
 
         self.party_service.invite_player_to_party(self.player, recipient)
 
-    @player_idle
+    @player_idle("join a party")
     async def command_accept_party_invite(self, message):
         sender = self.player_service.get_player(message["sender_id"])
         if sender is None:
@@ -1062,7 +1068,7 @@ class LobbyConnection:
 
         await self.party_service.accept_invite(self.player, sender)
 
-    @player_idle
+    @player_idle("kick a player")
     async def command_kick_player_from_party(self, message):
         kicked_player = self.player_service.get_player(message["kicked_player_id"])
         if kicked_player is None:

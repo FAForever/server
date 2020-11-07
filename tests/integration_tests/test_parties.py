@@ -1,6 +1,5 @@
 import pytest
 
-from server.players import PlayerState
 from server.protocol import Protocol
 from tests.utils import fast_forward
 
@@ -316,15 +315,27 @@ async def test_party_while_queuing(lobby_server):
 
     await proto.send_message({"command": "invite_to_party"})
     msg = await proto.read_message()
-    assert msg == {"command": "invalid_state", "state": PlayerState.SEARCHING_LADDER.value}
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "Can't invite a player while in state SEARCHING_LADDER"
+    }
 
     await proto.send_message({"command": "accept_party_invite"})
     msg = await proto.read_message()
-    assert msg == {"command": "invalid_state", "state": PlayerState.SEARCHING_LADDER.value}
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "Can't join a party while in state SEARCHING_LADDER"
+    }
 
     await proto.send_message({"command": "kick_player_from_party"})
     msg = await proto.read_message()
-    assert msg == {"command": "invalid_state", "state": PlayerState.SEARCHING_LADDER.value}
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "Can't kick a player while in state SEARCHING_LADDER"
+    }
 
 
 @fast_forward(60)
