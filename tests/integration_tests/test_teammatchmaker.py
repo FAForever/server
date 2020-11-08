@@ -303,7 +303,7 @@ async def test_game_matchmaking_multiqueue_multimatch(lobby_server):
     msg1 = await read_until_command(protos[0], "match_found")
     msg2 = await read_until_command(protos[1], "match_found")
 
-    matched_queue = msg1["queue"]
+    matched_queue = msg1["queue_name"]
     if matched_queue == "ladder1v1":
         with pytest.raises(asyncio.TimeoutError):
             await read_until_command(protos[2], "match_found", timeout=3)

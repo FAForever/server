@@ -304,7 +304,7 @@ class LadderService(Service):
         so it should only perform fast operations.
         """
         try:
-            msg = {"command": "match_found", "queue": queue.name}
+            msg = {"command": "match_found", "queue_name": queue.name}
 
             for player in s1.players + s2.players:
                 player.write_message(msg)

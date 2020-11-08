@@ -188,8 +188,8 @@ async def test_game_matchmaking_cancel(lobby_server):
     # Extra message even though the player is not in a queue
     await proto.send_message({
         "command": "game_matchmaking",
-        "state": "stop",
-        "queue": "ladder1v1"
+        "queue_name": "ladder1v1",
+        "state": "stop"
     })
     with pytest.raises(asyncio.TimeoutError):
         await read_until_command(proto, "search_info", timeout=5)
