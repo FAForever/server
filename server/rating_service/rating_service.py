@@ -283,7 +283,11 @@ class RatingService(Service):
                         scoreTime=func.now(),
                     )
                 )
-                await conn.execute(gps_update_sql)
+                result = await conn.execute(gps_update_sql)
+                num_results = result.rowcount
+                if int(num_results) == 0:
+                    self._logger.warning("gps_update_sql resultset is empty")
+                    break
 
                 rating_type_id = self._rating_type_ids[rating_type]
 
