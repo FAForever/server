@@ -161,9 +161,11 @@ class Game:
         else:
             return frozenset(
                 player
-                for player in self._players
-                if self.get_player_option(player.id, "Army") is not None
-                and self.get_player_option(player.id, "Army") >= 0
+                for player, army in (
+                    (player, self.get_player_option(player.id, "Army"))
+                    for player in self._players
+                )
+                if army is not None and army >= 0
             )
 
     @property
@@ -820,7 +822,10 @@ class Game:
         self._process_pending_army_stats()
 
     def is_visible_to_player(self, player: Player) -> bool:
-        if player == self.host or player in self.players:
+        if self.host is None:
+            return False
+
+        if player == self.host or player in self._connections:
             return True
 
         mean, dev = player.ratings[self.rating_type]
@@ -829,9 +834,6 @@ class Game:
             self.enforce_rating_range
             and displayed_rating not in self.displayed_rating_range
         ):
-            return False
-
-        if self.host is None:
             return False
 
         if self.visibility is VisibilityState.FRIENDS:
