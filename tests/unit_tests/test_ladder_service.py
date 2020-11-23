@@ -387,6 +387,41 @@ async def test_game_start_cancels_search(
     assert "tmm2v2" not in ladder_service._searches[p2]
 
 
+async def test_on_match_found_sets_player_state(
+    ladder_service: LadderService,
+    player_factory,
+    event_loop
+):
+    p1 = player_factory(
+        "Dostya",
+        player_id=1,
+        ladder_rating=(1000, 10),
+        with_lobby_connection=True
+    )
+
+    p2 = player_factory(
+        "Brackman",
+        player_id=2,
+        ladder_rating=(1000, 10),
+        with_lobby_connection=True
+    )
+    ladder_service.start_search([p1], "ladder1v1")
+    ladder_service.start_search([p2], "ladder1v1")
+    await exhaust_callbacks(event_loop)
+
+    assert p1.state is PlayerState.SEARCHING_LADDER
+    assert p2.state is PlayerState.SEARCHING_LADDER
+
+    ladder_service.on_match_found(
+        ladder_service._searches[p1]["ladder1v1"],
+        ladder_service._searches[p2]["ladder1v1"],
+        ladder_service.queues["ladder1v1"]
+    )
+
+    assert p1.state is PlayerState.STARTING_AUTOMATCH
+    assert p2.state is PlayerState.STARTING_AUTOMATCH
+
+
 async def test_start_and_cancel_search(
     ladder_service: LadderService,
     player_factory,

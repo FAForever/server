@@ -307,14 +307,18 @@ class LadderService(Service):
             msg = {"command": "match_found", "queue_name": queue.name}
 
             for player in s1.players + s2.players:
+                player.state = PlayerState.STARTING_AUTOMATCH
                 player.write_message(msg)
 
-                # Ensure that we don't emit a "search_info: stop" message for
-                # the search that succeeded
-                self._clear_search(player, queue.name)
-
                 # Cancel any other searches
-                self.cancel_search(player)
+                queue_names = list(
+                    name for name in self._searches[player].keys()
+                    if name != queue.name
+                )
+                for queue_name in queue_names:
+                    self._cancel_search(player, queue_name)
+
+                self._clear_search(player, queue.name)
 
             asyncio.create_task(
                 self.start_game(s1.players, s2.players, queue)

@@ -17,6 +17,7 @@ class PlayerState(Enum):
     HOSTING = 3
     JOINING = 4
     SEARCHING_LADDER = 5
+    STARTING_AUTOMATCH = 6
 
 
 class Player:
