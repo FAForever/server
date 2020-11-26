@@ -13,6 +13,7 @@ from asynctest import exhaust_callbacks
 from server import GameService, ServerInstance, run_control_server
 from server.db.models import login
 from server.ladder_service import LadderService
+from server.party_service import PartyService
 from server.protocol import Protocol, QDataStreamProtocol
 from server.rating_service.rating_service import RatingService
 from server.servercontext import ServerContext
@@ -28,13 +29,20 @@ async def ladder_service(mocker, database, game_service):
     mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1)
     ladder_service = LadderService(database, game_service)
     await ladder_service.initialize()
-
     yield ladder_service
-
     await ladder_service.shutdown()
 
 
 @pytest.fixture
+async def party_service(game_service):
+    service = PartyService(game_service)
+    await service.initialize()
+
+    yield service
+
+    await service.shutdown()
+
+
 async def mock_rating(database, mock_players):
     service = RatingService(database, mock_players)
     await service.initialize()
@@ -46,8 +54,16 @@ async def mock_rating(database, mock_players):
 
 @pytest.fixture
 async def lobby_server(
-    event_loop, database, player_service, game_service, geoip_service,
-    ladder_service, rating_service, message_queue_service, policy_server
+    event_loop,
+    database,
+    player_service,
+    game_service,
+    geoip_service,
+    ladder_service,
+    rating_service,
+    message_queue_service,
+    party_service,
+    policy_server
 ):
     with mock.patch(
         "server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL",
@@ -65,7 +81,8 @@ async def lobby_server(
                 "game_service": game_service,
                 "ladder_service": ladder_service,
                 "rating_service": rating_service,
-                "message_queue_service": message_queue_service
+                "message_queue_service": message_queue_service,
+                "party_service": party_service
             }
         )
         ctx = await instance.listen(("127.0.0.1", None))

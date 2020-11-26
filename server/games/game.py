@@ -858,7 +858,7 @@ class Game:
             "sim_mods": self.mods,
             "mapname": self.map_folder_name,
             "map_file_path": self.map_file_path,
-            "host": self.host.login if self.host else '',
+            "host": self.host.login if self.host else "",
             "num_players": len(self.players),
             "max_players": self.max_players,
             "launched_at": self.launched_at,
@@ -900,6 +900,6 @@ class Game:
 
     def __str__(self):
         return "Game({},{},{},{})".format(
-            self.id, self.host.login if self.host else '', self.map_file_path,
+            self.id, self.host.login if self.host else "", self.map_file_path,
             len(self.players)
         )

@@ -97,7 +97,7 @@ async def queue_players_for_matchmaking(lobby_server):
     await read_until_command(proto2, "search_info")
 
     # If the players did not match, this will fail due to a timeout error
-    await read_until_command(proto1, "match_found")
+    await read_until_command(proto1, "match_found", timeout=30)
     await read_until_command(proto2, "match_found")
 
     return proto1, proto2

@@ -65,6 +65,9 @@ insert into login (id, login, email, password, steamid, create_time) values
   (3, 'Rhiza', 'rhiza@aeon.example.com', SHA2('puff_the_magic_dragon', 256), null, '2000-01-01 00:00:00'),
   (4, 'No_UID', 'uid@uef.example.com', SHA2('his_pw', 256), null, '2000-01-01 00:00:00'),
   (5, 'postman', 'postman@postman.com', SHA2('postman', 256), null, '2000-01-01 00:00:00'),
+  (7, 'test2', 'test2@example.com', SHA2('test2', 256), null, '2000-01-01 00:00:00'),
+  (8, 'test3', 'test3@example.com', SHA2('test3', 256), null, '2000-01-01 00:00:00'),
+  (9, 'test4', 'test4@example.com', SHA2('test3', 256), null, '2000-01-01 00:00:00'),
   (10,  'friends', 'friends@example.com', SHA2('friends', 256),  null, '2000-01-01 00:00:00'),
   (20,  'moderator', 'moderator@example.com', SHA2('moderator', 256), null, '2000-01-01 00:00:00'),
   (50,  'player_service1', 'ps1@example.com', SHA2('player_service1', 256), null, '2000-01-01 00:00:00'),
@@ -82,11 +85,7 @@ insert into login (id, login, email, password, steamid, create_time) values
   (204, 'ban_46_hour', 'ban_46_hour_expiration@example.com', SHA2('ban_46_hour', 256), null, '2000-01-01 00:00:00'),
   (300, 'steam_id', 'steam_id@example.com', SHA2('steam_id', 256), 34632, '2000-01-01 00:00:00')
 ;
--- New accounts for testing account age check
 insert into login (id, login, email, password) values (6, 'newbie', 'noob@example.com', SHA2('password', 256));
-insert into login (id, login, email, password, steamid) values (7, 'steambie', 'steambie@example.com', SHA2('password', 256), 111111);
--- Test IPv6
-insert into login (id, login, email, password, ip) values (8, 'ipv6', 'ipv6@example.com', SHA2('ipv6', 256), '0000:0000:0000:0000:0000:0000:127.127.127.127');
 
 -- Name history
 insert into name_history (id, change_time, user_id, previous_name) values

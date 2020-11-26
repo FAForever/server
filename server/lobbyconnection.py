@@ -6,17 +6,16 @@ import random
 import urllib.parse
 import urllib.request
 from datetime import datetime
+from functools import wraps
 from typing import Optional
 
 import aiohttp
-import humanize
 import pymysql
 from sqlalchemy import and_, func, select
 
 import server.metrics as metrics
 from server.db import FAFDatabase
 
-from . import asyncio_extensions as asyncio_
 from .abc.base_game import GameConnectionState, InitMode
 from .config import TRACE, config
 from .db.models import (
@@ -29,6 +28,8 @@ from .db.models import (
 )
 from .db.models import login as t_login
 from .decorators import timed, with_logger
+from .exceptions import AuthenticationError, BanError, ClientError
+from .factions import Faction
 from .game_service import GameService
 from .gameconnection import GameConnection
 from .games import FeaturedModType, GameState, VisibilityState
@@ -36,52 +37,12 @@ from .geoip_service import GeoIpService
 from .ice_servers.coturn import CoturnHMAC
 from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
+from .party_service import PartyService
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, Protocol
 from .rating import InclusiveRange, RatingType
 from .types import Address, GameLaunchOptions
-
-
-class ClientError(Exception):
-    """
-    Represents a ClientError
-
-    If recoverable is False, it is expected that the
-    connection be terminated immediately.
-    """
-    def __init__(self, message, recoverable=True, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.message = message
-        self.recoverable = recoverable
-
-
-class BanError(Exception):
-    def __init__(self, ban_expiry, ban_reason, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.ban_expiry = ban_expiry
-        self.ban_reason = ban_reason
-
-    def message(self):
-        return (f"You are banned from FAF {self._ban_duration_text()}. <br>"
-                f"Reason : <br>"
-                f"{self.ban_reason}")
-
-    def _ban_duration_text(self):
-        ban_duration = self.ban_expiry - datetime.utcnow()
-        if ban_duration.days > 365 * 100:
-            return "forever"
-        humanized_ban_duration = humanize.precisedelta(
-            ban_duration,
-            minimum_unit="hours"
-        )
-        return f"for {humanized_ban_duration}"
-
-
-class AuthenticationError(Exception):
-    def __init__(self, message, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.message = message
 
 
 @with_logger
@@ -94,7 +55,8 @@ class LobbyConnection:
         players: PlayerService,
         nts_client: Optional[TwilioNTS],
         geoip: GeoIpService,
-        ladder_service: LadderService
+        ladder_service: LadderService,
+        party_service: PartyService
     ):
         self._db = database
         self.geoip_service = geoip
@@ -103,6 +65,7 @@ class LobbyConnection:
         self.nts_client = nts_client
         self.coturn_generator = CoturnHMAC(config.COTURN_HOSTS, config.COTURN_KEYS)
         self.ladder_service = ladder_service
+        self.party_service = party_service
         self._authenticated = False
         self.player = None  # type: Player
         self.game_connection = None  # type: GameConnection
@@ -127,8 +90,7 @@ class LobbyConnection:
 
         return str(self.session)
 
-    @asyncio.coroutine
-    def on_connection_made(self, protocol: Protocol, peername: Address):
+    async def on_connection_made(self, protocol: Protocol, peername: Address):
         self.protocol = protocol
         self.peer_address = peername
         metrics.server_connections.inc()
@@ -785,14 +747,42 @@ class LobbyConnection:
         else:
             raise KeyError("invalid action")
 
+    def ice_only(func):
+        """
+        Ensures that a handler function is not invoked from a non ICE client.
+        """
+        @wraps(func)
+        async def wrapper(self, message):
+            if self._attempted_connectivity_test:
+                raise ClientError("Cannot join game. Please update your client to the newest version.")
+            return await func(self, message)
+        return wrapper
+
+    def player_idle(state_text):
+        """
+        Ensures that a handler function is not invoked unless the player state
+        is IDLE.
+        """
+        def decorator(func):
+            @wraps(func)
+            async def wrapper(self, message):
+                if self.player.state != PlayerState.IDLE:
+                    raise ClientError(
+                        f"Can't {state_text} while in state "
+                        f"{self.player.state.name}",
+                        recoverable=True
+                    )
+                return await func(self, message)
+            return wrapper
+        return decorator
+
+    @ice_only
+    @player_idle("join a game")
     async def command_game_join(self, message):
         """
         We are going to join a game.
         """
         assert isinstance(self.player, Player)
-
-        if self._attempted_connectivity_test:
-            raise ClientError("Cannot join game. Please update your client to the newest version.")
 
         await self.abort_connection_if_banned()
 
@@ -832,35 +822,62 @@ class LobbyConnection:
 
         await self.launch_game(game, is_host=False)
 
+    @ice_only
     async def command_game_matchmaking(self, message):
         queue_name = str(
             message.get("queue_name") or message.get("mod", "ladder1v1")
         )
         state = str(message["state"])
 
-        if self._attempted_connectivity_test:
-            raise ClientError("Cannot host game. Please update your client to the newest version.")
-
         if state == "stop":
             self.ladder_service.cancel_search(self.player, queue_name)
             return
 
-        if state == "start":
-            assert self.player is not None
-            # Faction can be either the name (e.g. 'uef') or the enum value (e.g. 1)
-            self.player.faction = message["faction"]
+        party = self.party_service.get_party(self.player)
 
-            # TODO: Put player parties here
-            self.ladder_service.start_search(
-                [self.player],
-                queue_name=queue_name
+        if self.player is not party.owner:
+            raise ClientError(
+                "Only the party owner may enter the party into a queue.",
+                recoverable=True
             )
 
+        for member in party:
+            player = member.player
+            if player.state not in (
+                PlayerState.IDLE,
+                PlayerState.SEARCHING_LADDER
+            ):
+                raise ClientError(
+                    f"Can't join a queue while {player.login} is in state "
+                    f"{player.state.name}",
+                    recoverable=True
+                )
+
+        if state == "start":
+            players = party.players
+            if len(players) > self.ladder_service.queues[queue_name].team_size:
+                raise ClientError(
+                    "Your party is too large to join that queue!",
+                    recoverable=True
+                )
+
+            # TODO: Remove this legacy behavior, use party instead
+            if "faction" in message:
+                party.set_factions(
+                    self.player,
+                    [Faction.from_value(message["faction"])]
+                )
+
+            self.ladder_service.start_search(
+                players,
+                queue_name=queue_name,
+                on_matched=party.on_matched
+            )
+
+    @ice_only
+    @player_idle("host a game")
     async def command_game_host(self, message):
         assert isinstance(self.player, Player)
-
-        if self._attempted_connectivity_test:
-            raise ClientError("Cannot join game. Please update your client to the newest version.")
 
         await self.abort_connection_if_banned()
 
@@ -1030,6 +1047,51 @@ class LobbyConnection:
             "ttl": ttl
         })
 
+    @player_idle("invite a player")
+    async def command_invite_to_party(self, message):
+        recipient = self.player_service.get_player(message["recipient_id"])
+        if recipient is None:
+            # TODO: Client localized message
+            raise ClientError("The invited player doesn't exist", recoverable=True)
+
+        if self.player.id in recipient.foes:
+            return
+
+        self.party_service.invite_player_to_party(self.player, recipient)
+
+    @player_idle("join a party")
+    async def command_accept_party_invite(self, message):
+        sender = self.player_service.get_player(message["sender_id"])
+        if sender is None:
+            # TODO: Client localized message
+            raise ClientError("The inviting player doesn't exist", recoverable=True)
+
+        await self.party_service.accept_invite(self.player, sender)
+
+    @player_idle("kick a player")
+    async def command_kick_player_from_party(self, message):
+        kicked_player = self.player_service.get_player(message["kicked_player_id"])
+        if kicked_player is None:
+            # TODO: Client localized message
+            raise ClientError("The kicked player doesn't exist", recoverable=True)
+
+        await self.party_service.kick_player_from_party(self.player, kicked_player)
+
+    async def command_leave_party(self, _message):
+        self.ladder_service.cancel_search(self.player)
+        await self.party_service.leave_party(self.player)
+
+    async def command_set_party_factions(self, message):
+        factions = set(Faction.from_value(v) for v in message["factions"])
+
+        if not factions:
+            raise ClientError(
+                "You must select at least one faction.",
+                recoverable=True
+            )
+
+        self.party_service.set_factions(self.player, list(factions))
+
     async def send_warning(self, message: str, fatal: bool = False):
         """
         Display a warning message to the client
@@ -1086,6 +1148,7 @@ class LobbyConnection:
             )
             await self.ladder_service.on_connection_lost(self.player)
             self.player_service.remove_player(self.player)
+            await self.party_service.on_player_disconnected(self.player)
 
     async def abort_connection_if_banned(self):
         async with self._db.acquire() as conn:

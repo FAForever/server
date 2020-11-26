@@ -201,7 +201,7 @@ class GeoIpService(Service):
         """
             Look up an ip address in the db and return it's country code.
         """
-        default_value = ''
+        default_value = ""
         if self.db is None:
             return default_value
 

@@ -93,6 +93,20 @@ async def test_game_matchmaking_start(lobby_server, database):
         assert row["technical_name"] == "ladder1v1"
 
 
+@fast_forward(15)
+async def test_game_matchmaking_start_while_matched(lobby_server):
+    proto1, _ = await queue_players_for_matchmaking(lobby_server)
+
+    # Trying to queue again after match was found should generate an error
+    await proto1.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+    })
+
+    msg = await read_until_command(proto1, "notice", style="error", timeout=5)
+    assert msg["text"].startswith("Can't join a queue while ladder1 is in")
+
+
 @fast_forward(120)
 async def test_game_matchmaking_timeout(lobby_server, game_service):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
@@ -188,8 +202,8 @@ async def test_game_matchmaking_cancel(lobby_server):
     # Extra message even though the player is not in a queue
     await proto.send_message({
         "command": "game_matchmaking",
-        "state": "stop",
-        "queue": "ladder1v1"
+        "queue_name": "ladder1v1",
+        "state": "stop"
     })
     with pytest.raises(asyncio.TimeoutError):
         await read_until_command(proto, "search_info", timeout=5)

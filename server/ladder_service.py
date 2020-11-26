@@ -29,7 +29,7 @@ from .db.models import (
 from .decorators import with_logger
 from .game_service import GameService
 from .games import LadderGame
-from .matchmaker import MapPool, MatchmakerQueue, Search
+from .matchmaker import MapPool, MatchmakerQueue, OnMatchedCallback, Search
 from .players import Player, PlayerState
 from .rating import RatingType
 from .types import GameLaunchOptions, Map
@@ -163,14 +163,23 @@ class LadderService(Service):
             ))
         return matchmaker_queues
 
-    def start_search(self, players: List[Player], queue_name: str):
+    def start_search(
+        self,
+        players: List[Player],
+        queue_name: str,
+        on_matched: OnMatchedCallback = lambda _1, _2: None
+    ):
         # Cancel any existing searches that players have for this queue
         for player in players:
             if queue_name in self._searches[player]:
                 self._cancel_search(player, queue_name)
 
         queue = self.queues[queue_name]
-        search = Search(players, rating_type=queue.rating_type)
+        search = Search(
+            players,
+            rating_type=queue.rating_type,
+            on_matched=on_matched
+        )
 
         for player in players:
             player.state = PlayerState.SEARCHING_LADDER
@@ -295,17 +304,21 @@ class LadderService(Service):
         so it should only perform fast operations.
         """
         try:
-            msg = {"command": "match_found", "queue": queue.name}
+            msg = {"command": "match_found", "queue_name": queue.name}
 
             for player in s1.players + s2.players:
+                player.state = PlayerState.STARTING_AUTOMATCH
                 player.write_message(msg)
 
-                # Ensure that we don't emit a "search_info: stop" message for
-                # the search that succeeded
-                self._clear_search(player, queue.name)
-
                 # Cancel any other searches
-                self.cancel_search(player)
+                queue_names = list(
+                    name for name in self._searches[player].keys()
+                    if name != queue.name
+                )
+                for queue_name in queue_names:
+                    self._cancel_search(player, queue_name)
+
+                self._clear_search(player, queue.name)
 
             asyncio.create_task(
                 self.start_game(s1.players, s2.players, queue)

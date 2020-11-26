@@ -31,6 +31,7 @@ async def test_multiple_contexts(
     ladder_service,
     tmp_user,
     policy_server,
+    party_service,
     event_loop
 ):
     config.USE_POLICY_SERVER = False
@@ -46,6 +47,7 @@ async def test_multiple_contexts(
             "player_service": player_service,
             "geo_ip_service": geoip_service,
             "ladder_service": ladder_service,
+            "party_service": party_service,
         }
     )
     await instance.listen(("127.0.0.1", 8111), QDataStreamProtocol)

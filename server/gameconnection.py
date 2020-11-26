@@ -496,7 +496,7 @@ class GameConnection(GpgNetServerProtocol):
         if self.game:
             self.game_service.mark_dirty(self.game)
 
-    async def abort(self, log_message: str = ''):
+    async def abort(self, log_message: str = ""):
         """
         Abort the connection
 
