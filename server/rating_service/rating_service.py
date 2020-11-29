@@ -286,7 +286,7 @@ class RatingService(Service):
                 result = await conn.execute(gps_update_sql)
 
                 if not result.rowcount:
-                    self._logger.warning("gps_update_sql resultset is empty")
+                    self._logger.warning("gps_update_sql resultset is empty for game_id %i", game_id)
                     return
 
                 rating_type_id = self._rating_type_ids[rating_type]
