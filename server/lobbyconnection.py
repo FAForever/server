@@ -956,6 +956,7 @@ class LobbyConnection:
             # client.
             "name": game.name,
             "init_mode": game.init_mode.value,
+            "rating_type": game.rating_type,
             **options._asdict()
         }
 
