@@ -330,6 +330,7 @@ async def test_command_game_join_calls_join_game(
         "mod": "faf",
         "name": "Test Game Name",
         "init_mode": InitMode.NORMAL_LOBBY.value,
+        "rating_type": "global",
     }
     lobbyconnection.send.assert_called_with(expected_reply)
 
@@ -368,6 +369,7 @@ async def test_command_game_join_uid_as_str(
         "uid": 42,
         "name": "Test Game Name",
         "init_mode": InitMode.NORMAL_LOBBY.value,
+        "rating_type": "global",
     }
     lobbyconnection.send.assert_called_with(expected_reply)
 
