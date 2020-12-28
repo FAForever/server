@@ -129,8 +129,8 @@ def ugame(database, players):
 
 
 def make_game(database, uid, players):
-    from server.games import Game
     from server.abc.base_game import InitMode
+    from server.games import Game
     mock_parent = CoroutineMock()
     game = asynctest.create_autospec(spec=Game(uid, database, mock_parent,
                                                CoroutineMock()))
