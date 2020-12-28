@@ -1,0 +1,69 @@
+# Run unit tests
+name: Test
+
+on: [push, pull_request]
+
+env:
+  FAF_DB_VERSION: v106
+
+jobs:
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
+
+      - name: Install dependencies with pipenv
+        run: |
+          pip install pipenv
+          pipenv sync --dev
+          pipenv install --dev isort flake8
+
+      - run: pipenv run isort --recursive --diff
+      - run: pipenv run flake8
+
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
+
+      - name: Setup Database
+        run: |
+        git clone https://github.com/FAForever/db.git faf-db
+            && pushd faf-db
+            && git checkout ${FAF_DB_VERSION}
+            && ./ci/bootstrap.sh
+            && popd
+        docker exec -i faf-db mysql -uroot -pbanana faf -e "select * from login;"
+
+      - name: Install dependencies with pipenv
+        run: |
+          pip install pipenv
+          pipenv sync --dev
+
+      - run: pipenv run tests
+      - run: sed -i.bak s#/code/#$(pwd)/#g .coverage
+      - run: coveralls
+
+  docker-build:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2
+
+        - name: Build docker image
+          run: docker build --build-arg GITHUB_REF -t test_image .
+
+        - name: Test image
+          run: |
+            docker run --rm -d --name test_container -p 8000:8000 test_image
+            docker run --link test_container:test_container waisbrot/wait
+            nc -z localhost 8001

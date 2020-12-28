@@ -1,0 +1,21 @@
+# Build docker image
+name: Build
+
+on:
+  release:
+    types: [published, created, edited]
+
+jobs:
+  docker-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build and publish docker image
+        uses: docker/build-push-action@v1.1.1
+        with:
+          repository: faforever/faf-python-server
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          build-args: GITHUB_REF=${GITHUB_REF}
+          tag_with_ref: true

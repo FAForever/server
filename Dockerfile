@@ -16,8 +16,8 @@ RUN pipenv install --ignore-pipfile --system --deploy
 
 ADD . /code/
 
-ARG TRAVIS_TAG
-ENV VERSION=$TRAVIS_TAG
+ARG GITHUB_REF
+ENV VERSION=$GITHUB_REF
 RUN python3 -m pip install -e .
 
 # Main entrypoint and the default command that will be run
