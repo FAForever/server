@@ -7,7 +7,8 @@ env:
   FAF_DB_VERSION: v106
 
 jobs:
-  static-analysis:
+  # Static Analysis
+  isort:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -17,17 +18,45 @@ jobs:
         with:
           python-version: 3.7
 
-      - name: Install dependencies with pipenv
-        run: |
-          pip install pipenv
-          pipenv sync --dev
-          pipenv install --dev isort flake8
+      - name: Install dependencies
+        run: pip install isort
 
-      - run: pipenv run isort --recursive --diff
-      - run: pipenv run flake8
+      - run: isort . --check --diff
 
+  flake8:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
+
+      - name: Install dependencies
+        run: pip install flake8
+
+      - run: flake8
+
+  # Tests
   unit-test:
     runs-on: ubuntu-latest
+    services:
+      faf-db:
+        image: mysql:5.7
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping --silent"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        env:
+          MYSQL_ROOT_PASSWORD: banana
+          MYSQL_DATABASE: faf
+          MYSQL_USER: faf-python-server
+          MYSQL_PASSWORD: banana
+
     steps:
       - uses: actions/checkout@v2
 
@@ -36,14 +65,16 @@ jobs:
         with:
           python-version: 3.7
 
-      - name: Setup Database
+      - name: Run flyway db migrations
+        env:
+          FLYWAY_URL: jdbc:mysql://localhost/faf?useSSL=false
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: banana
+          FLYWAY_LOCATIONS: filesystem:db/migrations
         run: |
-        git clone https://github.com/FAForever/db.git faf-db
-            && pushd faf-db
-            && git checkout ${FAF_DB_VERSION}
-            && ./ci/bootstrap.sh
-            && popd
-        docker exec -i faf-db mysql -uroot -pbanana faf -e "select * from login;"
+          git clone --depth 1 --branch ${FAF_DB_VERSION} https://github.com/FAForever/db
+          wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/6.5.3/flyway-commandline-6.5.3-linux-x64.tar.gz | tar xz
+          flyway-6.5.3/flyway migrate
 
       - name: Install dependencies with pipenv
         run: |
@@ -52,7 +83,10 @@ jobs:
 
       - run: pipenv run tests
       - run: sed -i.bak s#/code/#$(pwd)/#g .coverage
-      - run: coveralls
+      - name: Report coverage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pipenv run coveralls
 
   docker-build:
       runs-on: ubuntu-latest
@@ -64,6 +98,5 @@ jobs:
 
         - name: Test image
           run: |
-            docker run --rm -d --name test_container -p 8000:8000 test_image
-            docker run --link test_container:test_container waisbrot/wait
+            docker run --rm -d -p 8001:8001 test_image
             nc -z localhost 8001
