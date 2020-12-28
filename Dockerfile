@@ -16,14 +16,14 @@ RUN pipenv install --ignore-pipfile --system --deploy
 
 ADD . /code/
 
-ARG TRAVIS_TAG
-ENV VERSION=$TRAVIS_TAG
+ARG GITHUB_REF
+ENV VERSION=$GITHUB_REF
 RUN python3 -m pip install -e .
 
 # Main entrypoint and the default command that will be run
 CMD ["/usr/local/bin/python3", "server.py"]
 
-# Game server runs on 8000/tcp, lobby server runs on 8001/tcp, nat echo server runs on 30351/udp
-EXPOSE 8000 8001 30351
+# lobby server runs on 8001/tcp (QDataStream) and 8002/tcp (JSON)
+EXPOSE 8001 8002
 
 RUN python3 -V
