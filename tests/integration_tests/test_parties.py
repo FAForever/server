@@ -280,7 +280,37 @@ async def test_accept_invite_non_existent(lobby_server):
     await accept_party_invite(proto, 2)
 
     msg = await proto.read_message()
-    assert msg == {"command": "notice", "style": "error", "text": "The inviting player doesn't exist"}
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "The inviting player doesn't exist"
+    }
+
+
+async def test_accept_while_party_queued(lobby_server):
+    test_id, _, proto1 = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    rhiza_id, _, proto2 = await connect_and_sign_in(
+        ("rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+
+    await read_until_command(proto1, "game_info")
+    await invite_to_party(proto1, rhiza_id)
+    await proto1.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+    })
+
+    await read_until_command(proto2, "party_invite")
+    await accept_party_invite(proto2, test_id)
+
+    msg = await proto2.read_message()
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "That party is already in queue"
+    }
 
 
 async def test_kick_player_non_existent(lobby_server):

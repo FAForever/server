@@ -6,6 +6,7 @@ from asynctest import CoroutineMock
 from server.exceptions import ClientError
 from server.factions import Faction
 from server.party_service import PartyService
+from server.players import PlayerState
 from server.team_matchmaker import PlayerParty
 
 # All test coroutines will be treated as marked.
@@ -90,6 +91,17 @@ async def test_accept_invite_two_invites(party_service, player_factory):
     assert receiver in party_service.player_parties
     assert sender2 in party_service.player_parties[receiver]
     assert sender1 not in party_service.player_parties[receiver]
+
+
+async def test_accept_invite_while_queued(party_service, player_factory):
+    sender = player_factory(player_id=1)
+    receiver = player_factory(player_id=2)
+
+    party_service.invite_player_to_party(sender, receiver)
+    sender.state = PlayerState.SEARCHING_LADDER
+
+    with pytest.raises(ClientError):
+        await party_service.accept_invite(receiver, sender)
 
 
 async def test_invite_player_to_party_not_owner(party_service, player_factory):

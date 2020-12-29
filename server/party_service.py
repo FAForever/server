@@ -5,7 +5,7 @@ from .decorators import with_logger
 from .exceptions import ClientError
 from .factions import Faction
 from .game_service import GameService
-from .players import Player
+from .players import Player, PlayerState
 from .team_matchmaker.player_party import PlayerParty
 from .timing import at_interval
 
@@ -98,6 +98,10 @@ class PartyService(Service):
         ):
             # TODO: Localize with a proper message
             raise ClientError("You are not invited to that party (anymore)", recoverable=True)
+
+        if sender.state is PlayerState.SEARCHING_LADDER:
+            # TODO: Localize with a proper message
+            raise ClientError("That party is already in queue", recoverable=True)
 
         old_party = self.player_parties.get(recipient)
         if old_party is not None:
