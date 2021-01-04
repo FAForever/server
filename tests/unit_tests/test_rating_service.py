@@ -343,3 +343,18 @@ async def test_game_rating_error_handled(rating_service, game_info, bad_game_inf
     service._logger.warning.assert_called()
     # second game: results have been saved.
     service._persist_rating_changes.assert_called_once()
+
+
+async def test_game_update_empty_resultset(rating_service):
+    service = rating_service
+    game_id = 2
+    player_id = 1
+    rating_type = RatingType.GLOBAL
+    old_ratings = {player_id: Rating(1000, 500)}
+    after_mean = 1234
+    new_ratings = {player_id: Rating(after_mean, 400)}
+    outcomes = {player_id: GameOutcome.VICTORY}
+
+    await service._persist_rating_changes(
+        game_id, rating_type, old_ratings, new_ratings, outcomes
+    )
