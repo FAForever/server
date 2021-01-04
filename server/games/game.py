@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import re
 import time
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -43,12 +42,9 @@ class GameError(Exception):
     pass
 
 
-class Game:
+class Game():
     """
     Object that lasts for the lifetime of a game on FAF.
-    """
-    """
-    The initialization mode to use for the Game.
     """
     init_mode = InitMode.NORMAL_LOBBY
     game_type = GameType.CUSTOM
@@ -85,7 +81,7 @@ class Game:
         self.visibility = VisibilityState.PUBLIC
         self.max_players = max_players
         self.host = host
-        self.name = self.sanitize_name(name)
+        self.name = name
         self.map_id = None
         self.map_file_path = f"maps/{map_}.zip"
         self.map_scenario_path = None
@@ -130,6 +126,22 @@ class Game:
             )
             self._logger.debug("Game setup timed out.. Cancelling game")
             await self.on_game_end()
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value: str):
+        """
+        Avoids the game name to crash the mysql INSERT query by being longer
+        than the column's max size.
+        """
+        if not value.isascii():
+            raise ValueError("Name must be ascii!")
+
+        max_len = game_stats.c.gameName.type.length
+        self._name = value[:max_len]
 
     @property
     def armies(self):
@@ -441,7 +453,7 @@ class Game:
                     {self.get_player_outcome(player) for player in team}
                     for team in basic_info.teams
                 ]
-                #TODO Remove override once game result messages are reliable
+                # TODO: Remove override once game result messages are reliable
                 team_outcomes = (
                     self._outcome_override_hook()
                     or resolve_game(team_player_partial_outcomes)
@@ -776,14 +788,6 @@ class Game:
                 "Failed to update game_player_stats. Query args %s:", query_args
             )
             raise
-
-    def sanitize_name(self, name: str) -> str:
-        """
-        Replaces sequences of non-latin characters with an underscore and truncates the string to 128 characters
-        Avoids the game name to crash the mysql INSERT query by being longer than the column's max size or by
-        containing non-latin1 characters
-        """
-        return re.sub("[^\x20-\xFF]+", "_", name)[:128]
 
     async def mark_invalid(self, new_validity_state: ValidityState):
         self._logger.info(

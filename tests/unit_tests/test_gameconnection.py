@@ -358,7 +358,7 @@ async def test_handle_action_GameOption(game: Game, game_connection: GameConnect
     await game_connection.handle_action("GameOption", ["ScenarioFile", "C:\\Maps\\Some_Map"])
     assert game.map_file_path == "maps/some_map.zip"
     await game_connection.handle_action("GameOption", ["Title", "All welcome"])
-    assert game.name == game.sanitize_name("All welcome")
+    assert game.name == "All welcome"
     await game_connection.handle_action("GameOption", ["ArbitraryKey", "ArbitraryValue"])
     assert game.gameOptions["ArbitraryKey"] == "ArbitraryValue"
 

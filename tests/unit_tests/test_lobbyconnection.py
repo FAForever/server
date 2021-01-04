@@ -471,7 +471,7 @@ async def test_command_game_host_calls_host_game_invalid_title(
     })
     assert mock_games.create_game.mock_calls == []
     lobbyconnection.send.assert_called_once_with(
-        dict(command="notice", style="error", text="Non-ascii characters in game name detected."))
+        dict(command="notice", style="error", text="Title must contain only ascii characters."))
 
 
 async def test_abort(mocker, lobbyconnection):
