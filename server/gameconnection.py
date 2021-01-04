@@ -235,7 +235,8 @@ class GameConnection(GpgNetServerProtocol):
                 self.game.map_scenario_path.split("/")[2].lower()
             )
         elif key == "Title":
-            self.game.name = self.game.sanitize_name(value)
+            with contextlib.suppress(ValueError):
+                self.game.name = value
 
         self._mark_dirty()
 

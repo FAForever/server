@@ -883,16 +883,8 @@ class LobbyConnection:
 
         visibility = VisibilityState(message["visibility"])
         title = message.get("title") or f"{self.player.login}'s game"
-
-        try:
-            title.encode("ascii")
-        except UnicodeEncodeError:
-            await self.send({
-                "command": "notice",
-                "style": "error",
-                "text": "Non-ascii characters in game name detected."
-            })
-            return
+        if not title.isascii():
+            raise ClientError("Title must contain only ascii characters.")
 
         mod = message.get("mod") or FeaturedModType.FAF
         mapname = message.get("mapname") or "scmp_007"

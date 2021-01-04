@@ -142,7 +142,7 @@ game_stats = Table(
     Column("gameMod",   Integer,        ForeignKey("game_featuredMods.id"), nullable=False),
     Column("host",      Integer,        nullable=False),
     Column("mapId",     Integer),
-    Column("gameName",  String,         nullable=False),
+    Column("gameName",  String(128),    nullable=False),
     Column("validity",  Integer,        nullable=False),
 )
 
