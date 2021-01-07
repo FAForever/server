@@ -148,7 +148,7 @@ def make_player(
     state=PlayerState.IDLE,
     global_rating=None,
     ladder_rating=None,
-    numGames=0,
+    global_games=0,
     ladder_games=0,
     **kwargs
 ):
@@ -158,7 +158,7 @@ def make_player(
     }.items() if v is not None}
 
     games = {
-        RatingType.GLOBAL: numGames,
+        RatingType.GLOBAL: global_games,
         RatingType.LADDER_1V1: ladder_games
     }
 
@@ -174,7 +174,7 @@ def player_factory():
         state=PlayerState.IDLE,
         global_rating=None,
         ladder_rating=None,
-        numGames=0,
+        global_games=0,
         ladder_games=0,
         with_lobby_connection=False,
         **kwargs
@@ -183,7 +183,7 @@ def player_factory():
             state=state,
             global_rating=global_rating,
             ladder_rating=ladder_rating,
-            numGames=numGames,
+            global_games=global_games,
             ladder_games=ladder_games,
             login=login,
             **kwargs
