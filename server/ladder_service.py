@@ -354,7 +354,7 @@ class LadderService(Service):
                 limit=config.LADDER_ANTI_REPETITION_LIMIT
             )
             rating = min(
-                newbie_adjusted_ladder_mean(player)
+                newbie_adjusted_mean(player, queue.rating_type)
                 for player in all_players
             )
             pool = queue.get_map_pool_for_rating(rating)
@@ -510,10 +510,10 @@ def _team_name(team: List[Player]) -> str:
     return f"Team {name}"
 
 
-def newbie_adjusted_ladder_mean(player: Player):
-    """Get ladder rating mean with new player's always returning a mean of 0"""
-    if player.game_count[RatingType.LADDER_1V1] > config.NEWBIE_MIN_GAMES:
-        return player.ratings[RatingType.LADDER_1V1][0]
+def newbie_adjusted_mean(player: Player, rating_type: str) -> float:
+    """Get rating mean with new player's always returning a mean of 0"""
+    if player.game_count[rating_type] > config.NEWBIE_MIN_GAMES:
+        return player.ratings[rating_type][0]
     else:
         return 0
 
