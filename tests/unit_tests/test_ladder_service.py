@@ -3,15 +3,18 @@ from unittest import mock
 
 import pytest
 from asynctest import CoroutineMock, create_autospec, exhaust_callbacks
+from hypothesis import given
+from hypothesis import strategies as st
 
 from server import GameService, LadderService
 from server.db.models import matchmaker_queue, matchmaker_queue_map_pool
 from server.games import LadderGame
 from server.ladder_service import game_name
-from server.matchmaker import MatchmakerQueue
+from server.matchmaker import MapPool, MatchmakerQueue
 from server.players import PlayerState
 from server.rating import RatingType
 from server.types import Map
+from tests.conftest import make_player
 from tests.utils import fast_forward
 
 pytestmark = pytest.mark.asyncio
@@ -148,8 +151,6 @@ async def test_start_game_with_teams(
     p3 = player_factory("QAI", player_id=3, with_lobby_connection=True)
     p4 = player_factory("Hall", player_id=4, with_lobby_connection=True)
 
-    game_service.ladder_maps = [(1, "scmp_007", "maps/scmp_007.zip")]
-
     monkeypatch.setattr(LadderGame, "wait_hosted", CoroutineMock())
     monkeypatch.setattr(LadderGame, "wait_launched", CoroutineMock())
     await ladder_service.start_game([p1, p3], [p2, p4], queue)
@@ -165,6 +166,63 @@ async def test_start_game_with_teams(
     assert game.max_players == 4
 
     LadderGame.wait_launched.assert_called_once()
+
+
+@pytest.mark.filterwarnings("ignore:.*uses the '.*' fixture")
+@given(
+    team1=st.lists(
+        st.sampled_from((
+            make_player(player_id=1, global_rating=(500, 10)),
+            make_player(player_id=3, global_rating=(1000, 10)),
+            make_player(player_id=5, global_rating=(2000, 10))
+        )),
+        min_size=3,
+        max_size=3,
+        unique=True
+    ),
+    team2=st.lists(
+        st.sampled_from((
+            make_player(player_id=2, global_rating=(500, 10)),
+            make_player(player_id=4, global_rating=(1000, 10)),
+            make_player(player_id=6, global_rating=(2000, 10))
+        )),
+        min_size=3,
+        max_size=3,
+        unique=True
+    )
+)
+async def test_start_game_start_spots(
+    ladder_service: LadderService,
+    game_service: GameService,
+    queue_factory,
+    monkeypatch,
+    team1,
+    team2
+):
+    queue = queue_factory(
+        "test_3v3",
+        mod="faf",
+        team_size=3,
+        rating_type=RatingType.GLOBAL
+    )
+    queue.add_map_pool(
+        MapPool(1, "test", [Map(1, "scmp_007", "maps/scmp_007.zip")]),
+        min_rating=None,
+        max_rating=None
+    )
+
+    monkeypatch.setattr(LadderGame, "wait_hosted", CoroutineMock())
+    monkeypatch.setattr(LadderGame, "wait_launched", CoroutineMock())
+    await ladder_service.start_game(team1, team2, queue)
+
+    game = game_service[game_service.game_id_counter]
+
+    def get_start_spot(player_id) -> int:
+        return game.get_player_option(player_id, "StartSpot")
+
+    assert get_start_spot(1) == get_start_spot(2) - 1
+    assert get_start_spot(3) == get_start_spot(4) - 1
+    assert get_start_spot(5) == get_start_spot(6) - 1
 
 
 async def test_write_rating_progress(ladder_service: LadderService, player_factory):

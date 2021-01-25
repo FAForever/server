@@ -1,5 +1,6 @@
 import asyncio
 import itertools
+import random
 import re
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
@@ -335,6 +336,8 @@ class LadderService(Service):
         team2: List[Player],
         queue: MatchmakerQueue
     ) -> None:
+        assert len(team1) == len(team2)
+
         self._logger.debug(
             "Starting %s game between %s and %s", queue.name, team1, team2
         )
@@ -374,9 +377,19 @@ class LadderService(Service):
             game.init_mode = InitMode.AUTO_LOBBY
             game.map_file_path = map_path
 
-            for i, player in enumerate(alternate(team1, team2)):
-                if player is None:
-                    continue
+            def get_player_mean(player):
+                return player.ratings[queue.rating_type][0]
+
+            team1 = sorted(team1, key=get_player_mean)
+            team2 = sorted(team2, key=get_player_mean)
+
+            # Shuffle the teams such that direct opponents remain the same
+            zipped_teams = list(zip(team1, team2))
+            random.shuffle(zipped_teams)
+
+            for i, player in enumerate(
+                player for pair in zipped_teams for player in pair
+            ):
                 # FA uses lua and lua arrays are 1-indexed
                 slot = i + 1
                 # 2 if even, 3 if odd
@@ -516,15 +529,3 @@ def newbie_adjusted_mean(player: Player, rating_type: str) -> float:
         return player.ratings[rating_type][0]
     else:
         return 0
-
-
-def alternate(iter1, iter2):
-    """
-    Merge elements from two iterables, inserting None if one iterable is shorter.
-
-    # Example
-    list(alternate([1, 2, 3], ["a", "b"])) == [1, "a", 2, "b", 3, None]
-    """
-    for i, j in itertools.zip_longest(iter1, iter2):
-        yield i
-        yield j
