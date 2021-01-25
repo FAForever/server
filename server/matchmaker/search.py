@@ -204,20 +204,21 @@ class Search:
         :param other:
         :return:
         """
-        self._logger.info("Matched %s with %s", self.players, other.players)
+        self._logger.info("Matched %s with %s", self, other)
 
         self.on_matched(self, other)
 
         for player, raw_rating in zip(self.players, self.raw_ratings):
             if self.is_ladder1v1_search() and self._is_ladder_newbie(player):
                 mean, dev = raw_rating
-                adjusted_mean = self.adjusted_rating(player)
-                self._logger.info("Adjusted mean rating for {player} with {ladder_games} games from {mean} to {adjusted_mean}".format(
-                    player=player,
-                    ladder_games=player.game_count[RatingType.LADDER_1V1],
-                    mean=mean,
-                    adjusted_mean=adjusted_mean
-                ))
+                adjusted_mean, adjusted_dev = self.adjusted_rating(player)
+                self._logger.info(
+                    "Adjusted mean rating for %s with %d games from %.1f to %.1f",
+                    player.login,
+                    player.game_count[self.rating_type],
+                    mean,
+                    adjusted_mean
+                )
         self._match.set_result(other)
 
     async def await_match(self):
@@ -234,10 +235,20 @@ class Search:
         """
         self._match.cancel()
 
-    def __str__(self):
-        return "Search({}, {}, {})".format(self.players, self.match_threshold, self.search_expansion)
+    def __str__(self) -> str:
+        return (
+            f"Search({self.rating_type}, {self._players_repr()}, threshold="
+            f"{self.match_threshold:.2}, expansion={self.search_expansion:.2})"
+        )
 
-    def __repr__(self):
+    def _players_repr(self) -> str:
+        contents = ', '.join(
+            f"Player({p.login}, {p.id}, {p.ratings[self.rating_type]})"
+            for p in self.players
+        )
+        return f"[{contents}]"
+
+    def __repr__(self) -> str:
         """For debugging"""
         return f"Search({[p.login for p in self.players]})"
 

@@ -195,9 +195,7 @@ class LadderService(Service):
 
             self._searches[player][queue_name] = search
 
-        self._logger.info(
-            "%s are searching for '%s': %s", players, queue_name, search
-        )
+        self._logger.info("%s started searching for %s", search, queue_name)
 
         asyncio.create_task(queue.search(search))
 
@@ -339,7 +337,10 @@ class LadderService(Service):
         assert len(team1) == len(team2)
 
         self._logger.debug(
-            "Starting %s game between %s and %s", queue.name, team1, team2
+            "Starting %s game between %s and %s",
+            queue.name,
+            [p.login for p in team1],
+            [p.login for p in team2]
         )
         game = None
         try:
