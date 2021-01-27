@@ -832,7 +832,7 @@ class LobbyConnection:
 
         party = self.party_service.get_party(self.player)
 
-        if self.player is not party.owner:
+        if self.player != party.owner:
             raise ClientError(
                 "Only the party owner may enter the party into a queue.",
                 recoverable=True
