@@ -275,3 +275,16 @@ class PlayerService(Service):
                 self._logger.debug(
                     "Could not send shutdown message to %s: %s", player, ex
                 )
+
+    def on_connection_lost(self, conn: "LobbyConnection") -> None:
+        if not conn.player:
+            return
+
+        self.remove_player(conn.player)
+
+        self._logger.debug(
+            "Removed player %d, %s, %d",
+            conn.player.id,
+            conn.player.login,
+            conn.session
+        )

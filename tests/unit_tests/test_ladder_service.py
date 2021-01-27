@@ -234,16 +234,16 @@ async def test_write_rating_progress(ladder_service: LadderService, player_facto
     )
 
     ladder_service.write_rating_progress(p1, RatingType.LADDER_1V1)
-
     # Message is sent after the first call
     p1.lobby_connection.write.assert_called_once()
+
     ladder_service.write_rating_progress(p1, RatingType.LADDER_1V1)
     p1.lobby_connection.write.reset_mock()
     # But not after the second
     p1.lobby_connection.write.assert_not_called()
-    await ladder_service.on_connection_lost(p1)
-    ladder_service.write_rating_progress(p1, RatingType.LADDER_1V1)
 
+    ladder_service.on_connection_lost(p1.lobby_connection)
+    ladder_service.write_rating_progress(p1, RatingType.LADDER_1V1)
     # But it is called if the player relogs
     p1.lobby_connection.write.assert_called_once()
 

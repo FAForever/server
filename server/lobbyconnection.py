@@ -97,16 +97,12 @@ class LobbyConnection:
 
     async def abort(self, logspam=""):
         self._authenticated = False
-        if self.player:
-            self._logger.warning(
-                "Client %s dropped. %s", self.player.login, logspam
-            )
-            self.player_service.remove_player(self.player)
-            self.player = None
-        else:
-            self._logger.warning(
-                "Aborting %s. %s", self.peer_address.host, logspam
-            )
+
+        identity = self.player.login if self.player else self.peer_address.host
+        self._logger.warning(
+            "Aborting connection for %s. %s", identity, logspam
+        )
+
         if self.game_connection:
             await self.game_connection.abort()
 
@@ -1129,20 +1125,13 @@ class LobbyConnection:
         async def nop(*args, **kwargs):
             return
         self.send = nop
+
         if self.game_connection:
             self._logger.debug(
                 "Lost lobby connection killing game connection for player %s",
                 self.game_connection.player.id
             )
             await self.game_connection.on_connection_lost()
-
-        if self.player:
-            self._logger.debug(
-                "Lost lobby connection removing player %s", self.player.id
-            )
-            await self.ladder_service.on_connection_lost(self.player)
-            self.player_service.remove_player(self.player)
-            await self.party_service.on_player_disconnected(self.player)
 
     async def abort_connection_if_banned(self):
         async with self._db.acquire() as conn:

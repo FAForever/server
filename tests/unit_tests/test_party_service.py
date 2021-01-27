@@ -257,10 +257,10 @@ async def test_set_factions_creates_party(party_service, player_factory):
 
 
 async def test_player_disconnected(party_service, player_factory):
-    sender = player_factory(player_id=1)
+    sender = player_factory(player_id=1, with_lobby_connection=True)
     receiver = player_factory(player_id=2)
 
     party_service.invite_player_to_party(sender, receiver)
-    await party_service.on_player_disconnected(sender)
+    party_service.on_connection_lost(sender.lobby_connection)
 
     assert sender not in party_service.player_parties

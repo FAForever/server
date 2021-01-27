@@ -482,7 +482,11 @@ class LadderService(Service):
                 ])
         return result
 
-    async def on_connection_lost(self, player):
+    def on_connection_lost(self, conn: "LobbyConnection") -> None:
+        if not conn.player:
+            return
+
+        player = conn.player
         self.cancel_search(player)
         del self._searches[player]
         if player in self._informed_players:

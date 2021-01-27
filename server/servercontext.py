@@ -1,9 +1,10 @@
 import asyncio
 import socket
-from typing import Callable, Dict, Type
+from typing import Callable, Dict, Iterable, Type
 
 import server.metrics as metrics
 
+from .core import Service
 from .decorators import with_logger
 from .lobbyconnection import LobbyConnection
 from .protocol import Protocol, QDataStreamProtocol
@@ -20,12 +21,14 @@ class ServerContext:
         self,
         name: str,
         connection_factory: Callable[[], LobbyConnection],
+        services: Iterable[Service],
         protocol_class: Type[Protocol] = QDataStreamProtocol,
     ):
         super().__init__()
         self.name = name
         self._server = None
         self._connection_factory = connection_factory
+        self._services = services
         self.connections: Dict[LobbyConnection, Protocol] = {}
         self.protocol_class = protocol_class
 
@@ -98,7 +101,21 @@ class ServerContext:
             self._logger.exception(ex)
         finally:
             del self.connections[connection]
-            metrics.user_connections.labels(connection.user_agent, connection.version).dec()
             await protocol.close()
             await connection.on_connection_lost()
+
+            for service in self._services:
+                try:
+                    service.on_connection_lost(connection)
+                except Exception:
+                    self._logger.warning(
+                        "Unexpected exception in %s.on_connection_lost",
+                        service.__class__.__name__,
+                        exc_info=True
+                    )
+
             self._logger.debug("%s: Client disconnected", self.name)
+            metrics.user_connections.labels(
+                connection.user_agent,
+                connection.version
+            ).dec()

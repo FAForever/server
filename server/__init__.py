@@ -149,13 +149,13 @@ class ServerInstance(object):
 
             if dirty_queues:
                 self.write_broadcast({
-                        "command": "matchmaker_info",
-                        "queues": [queue.to_dict() for queue in dirty_queues]
-                    }
-                )
+                    "command": "matchmaker_info",
+                    "queues": [queue.to_dict() for queue in dirty_queues]
+                })
 
             if dirty_players:
-                self.write_broadcast({
+                self.write_broadcast(
+                    {
                         "command": "player_info",
                         "players": [player.to_dict() for player in dirty_players]
                     },
@@ -199,6 +199,7 @@ class ServerInstance(object):
         ctx = ServerContext(
             f"{self.name}[{protocol_class.__name__}]",
             self.connection_factory,
+            list(self.services.values()),
             protocol_class
         )
         self.contexts.add(ctx)

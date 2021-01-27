@@ -484,3 +484,25 @@ async def test_game_ratings_initialized_based_on_global(lobby_server):
             }
         ]
     }
+
+
+@fast_forward(30)
+async def test_party_cleanup_on_abort(lobby_server):
+    for _ in range(3):
+        _, _, proto = await connect_and_sign_in(
+            ("test", "test_password"), lobby_server
+        )
+        await read_until_command(proto, "game_info")
+
+        await proto.send_message({
+            "command": "game_matchmaking",
+            "state": "start",
+            "mod": "tmm2v2"
+        })
+        # The queue was successful. This would time out on failure.
+        await read_until_command(proto, "search_info", state="start")
+
+        # Trigger an abort
+        await proto.send_message({"some": "garbage"})
+
+        # Loop to reconnect

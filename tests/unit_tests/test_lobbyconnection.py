@@ -1001,18 +1001,10 @@ async def test_command_matchmaker_info(
 
 
 async def test_connection_lost(lobbyconnection):
+    lobbyconnection.game_connection = asynctest.create_autospec(GameConnection)
     await lobbyconnection.on_connection_lost()
 
-    lobbyconnection.ladder_service.on_connection_lost.assert_called_once_with(lobbyconnection.player)
-    lobbyconnection.player_service.remove_player.assert_called_once_with(lobbyconnection.player)
-
-
-async def test_connection_lost_no_player(lobbyconnection):
-    lobbyconnection.player = None
-    await lobbyconnection.on_connection_lost()
-
-    lobbyconnection.ladder_service.on_connection_lost.assert_not_called()
-    lobbyconnection.player_service.remove_player.assert_not_called()
+    lobbyconnection.game_connection.on_connection_lost.assert_called_once()
 
 
 async def test_connection_lost_send(lobbyconnection, mock_protocol):
