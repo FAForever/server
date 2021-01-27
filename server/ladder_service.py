@@ -455,7 +455,7 @@ class LadderService(Service):
         self,
         players: List[Player],
         queue_id: int,
-        limit=3
+        limit: int = 3
     ) -> List[int]:
         async with self._db.acquire() as conn:
             result = []
