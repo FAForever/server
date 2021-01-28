@@ -904,8 +904,8 @@ class Game():
     def __hash__(self):
         return self.id.__hash__()
 
-    def __str__(self):
-        return "Game({},{},{},{})".format(
-            self.id, self.host.login if self.host else "", self.map_file_path,
-            len(self.players)
+    def __str__(self) -> str:
+        return (
+            f"Game({self.id}, {self.host.login if self.host else ''}, "
+            f"{self.map_file_path})"
         )

@@ -247,7 +247,7 @@ class _MatchingGraph:
 
     @staticmethod
     def is_possible_match(search: Search, other: Search, quality: float) -> bool:
-        log_string = "Quality between %s and %s: %s thresholds: [%s, %s]."
+        log_string = "Quality between %s and %s: %.3f thresholds: [%.3f, %.3f]."
         log_args = (
             search, other, quality,
             search.match_threshold, other.match_threshold
