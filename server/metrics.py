@@ -43,7 +43,7 @@ matchmaker_queue_pop = Gauge(
 user_connections = Gauge(
     "server_user_connections",
     "Number of users currently connected to server",
-    ["user_agent"],
+    ["user_agent","version"],
 )
 
 user_logins = Counter(
