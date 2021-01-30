@@ -149,17 +149,10 @@ async def test_multiqueue(client_factory):
         await client.join_queue("ladder1v1")
 
     await client1.read_until_command("match_found", timeout=60)
-    msg1 = await client1.read_until_command("search_info")
-    msg2 = await client1.read_until_command("search_info")
+    msg = await client1.read_until_command("search_info")
 
-    assert {
+    assert msg == {
         "command": "search_info",
         "queue_name": "tmm2v2",
         "state": "stop"
-    } in (msg1, msg2)
-
-    assert {
-        "command": "search_info",
-        "queue_name": "ladder1v1",
-        "state": "stop"
-    } in (msg1, msg2)
+    }
