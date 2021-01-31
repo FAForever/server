@@ -16,7 +16,7 @@ pytestmark = pytest.mark.asyncio
 def mock_server(event_loop):
     class MockServer:
         def __init__(self):
-            self.protocol, self.peername, self.user_agent = None, None, None
+            self.protocol, self.peername, self.user_agent, self.version = None, None, None, None
             self.on_connection_lost = CoroutineMock()
 
         async def on_connection_made(self, protocol, peername):
