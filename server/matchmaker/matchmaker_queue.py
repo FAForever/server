@@ -63,7 +63,7 @@ class MatchmakerQueue:
         self.on_match_found = on_match_found
         self._is_running = True
 
-        self.timer = PopTimer(self.name)
+        self.timer = PopTimer(self)
 
     def add_map_pool(
         self,
@@ -95,7 +95,7 @@ class MatchmakerQueue:
         """
         self._logger.debug("MatchmakerQueue initialized for %s", self.name)
         while self._is_running:
-            await self.timer.next_pop(lambda: len(self._queue))
+            await self.timer.next_pop()
 
             await self.find_matches()
 

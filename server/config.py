@@ -89,10 +89,10 @@ class ConfigurationStore:
         self.LADDER_SEARCH_EXPANSION_STEP = 0.05
         # The maximum amount of time in seconds) to wait between pops.
         self.QUEUE_POP_TIME_MAX = 180
-        # The number of players we would like to have in the queue when it pops. The
-        # queue pop time will be adjusted based on the current rate of players queuing
-        # to try and hit this number.
-        self.QUEUE_POP_DESIRED_PLAYERS = 8
+        # The number of possible matches we would like to have when the queue
+        # pops. The queue pop time will be adjusted based on the current rate of
+        # players queuing to try and hit this number.
+        self.QUEUE_POP_DESIRED_MATCHES = 4
         # How many previous queue sizes to consider
         self.QUEUE_POP_TIME_MOVING_AVG_SIZE = 5
 
