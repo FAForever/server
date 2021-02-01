@@ -73,7 +73,7 @@ class LobbyConnection:
         self.session = int(random.randrange(0, 4294967295))
         self.protocol: Protocol = None
         self.user_agent = None
-        self._version = None
+        self.version = None
 
         self._attempted_connectivity_test = False
 
@@ -402,15 +402,16 @@ class LobbyConnection:
         return player_id, real_username, steamid
 
     def _set_user_agent_and_version(self, user_agent, version):
-        metrics.user_connections.labels(str(self.user_agent)).dec()
+        metrics.user_connections.labels(str(self.user_agent), str(self.version)).dec()
         self.user_agent = user_agent
-        metrics.user_connections.labels(str(self.user_agent)).inc()
 
         # only count a new version if it previously wasn't set
         # to avoid double counting
-        if self._version is None and version is not None:
+        if self.version is None and version is not None:
             metrics.user_agent_version.labels(str(version)).inc()
-        self._version = version
+        self.version = version
+
+        metrics.user_connections.labels(str(self.user_agent), str(self.version)).inc()
 
     async def _check_user_agent(self):
         if not self.user_agent or "downlords-faf-client" not in self.user_agent:

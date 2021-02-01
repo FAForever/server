@@ -84,7 +84,7 @@ class ServerContext:
 
         try:
             await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info("peername")))
-            metrics.user_connections.labels("None").inc()
+            metrics.user_connections.labels("None", "None").inc()
             while protocol.is_connected():
                 message = await protocol.read_message()
                 with metrics.connection_on_message_received.time():
@@ -98,7 +98,7 @@ class ServerContext:
             self._logger.exception(ex)
         finally:
             del self.connections[connection]
-            metrics.user_connections.labels(connection.user_agent).dec()
+            metrics.user_connections.labels(connection.user_agent, connection.version).dec()
             await protocol.close()
             await connection.on_connection_lost()
             self._logger.debug("%s: Client disconnected", self.name)
