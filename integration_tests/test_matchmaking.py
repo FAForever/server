@@ -95,14 +95,16 @@ async def test_ladder_1v1_game(client_factory):
     })
 
     player_positions = {}
+    is_host = True
 
     async def handle_game_launch(client):
-        msg = await client.read_until_command("game_launch")
+        nonlocal is_host
+        msg = await client.read_until_command("game_launch", timeout=30)
         await client.open_fa()
 
         player_positions[client.player_name] = msg["map_position"]
-        if msg["map_position"] == 1:
-            # player is host
+        if is_host:
+            is_host = False
             peer_msg = await client.read_until_command("ConnectToPeer")
             peer_id = peer_msg["args"][1]
             await client.configure_joining_player(peer_id, 2)
@@ -149,17 +151,10 @@ async def test_multiqueue(client_factory):
         await client.join_queue("ladder1v1")
 
     await client1.read_until_command("match_found", timeout=60)
-    msg1 = await client1.read_until_command("search_info")
-    msg2 = await client1.read_until_command("search_info")
+    msg = await client1.read_until_command("search_info")
 
-    assert {
+    assert msg == {
         "command": "search_info",
         "queue_name": "tmm2v2",
         "state": "stop"
-    } in (msg1, msg2)
-
-    assert {
-        "command": "search_info",
-        "queue_name": "ladder1v1",
-        "state": "stop"
-    } in (msg1, msg2)
+    }
