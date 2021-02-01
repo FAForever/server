@@ -827,14 +827,10 @@ async def test_write_rating_progress_message_2(
 
     ladder_service.write_rating_progress(player, RatingType.LADDER_1V1)
 
-    player.write_message.assert_called_once_with({
-        "command": "notice",
-        "style": "info",
-        "text": (
-            "The system is still learning you.<b><br><br>"
-            "The learning phase is 40% complete<b>"
-        )
-    })
+    player.write_message.assert_called_once()
+    assert player.write_message.call_args[0][0].get("command") == "notice"
+    assert player.write_message.call_args[0][0].get("style") == "info"
+    assert "40%" in player.write_message.call_args[0][0].get("text", "")
 
 
 async def test_write_rating_progress_other_rating(
@@ -851,11 +847,7 @@ async def test_write_rating_progress_other_rating(
     # and global is an available rating that's not ladder
     ladder_service.write_rating_progress(player, RatingType.GLOBAL)
 
-    player.write_message.assert_called_once_with({
-        "command": "notice",
-        "style": "info",
-        "text": (
-            "The system is still learning you.<b><br><br>"
-            "The learning phase is 40% complete<b>"
-        )
-    })
+    player.write_message.assert_called_once()
+    assert player.write_message.call_args[0][0].get("command") == "notice"
+    assert player.write_message.call_args[0][0].get("style") == "info"
+    assert "40%" in player.write_message.call_args[0][0].get("text", "")

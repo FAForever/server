@@ -285,8 +285,11 @@ class LadderService(Service):
                     "command": "notice",
                     "style": "info",
                     "text": (
-                        "The system is still learning you.<b><br><br>The "
-                        f"learning phase is {progress:.0f}% complete<b>"
+                        "The matchmaking system is calibrating your skill level; "
+                        "your first few games may be slightly more imbalanced "
+                        "as the system attempts to learn your capability as a player."
+                        "<b><br><br>"
+                        f"The learning phase is {progress:.0f}% completed<b>"
                     )
                 })
 
