@@ -158,3 +158,17 @@ async def test_multiqueue(client_factory):
         "queue_name": "tmm2v2",
         "state": "stop"
     }
+
+
+async def test_party_cleanup_on_abort(client_factory):
+    for _ in range(2):
+        client, _ = await client_factory.login("test")
+        await client.read_until_command("game_info")
+
+        # This would time out on failure.
+        await client.join_queue("tmm2v2")
+
+        # Trigger an abort
+        await client.send_message({"some": "garbage"})
+
+        # Loop to reconnect
