@@ -143,10 +143,12 @@ class PartyService(Service):
             raise ClientError("You are not in a party.", recoverable=True)
 
         party = self.player_parties[player]
-        party.remove_player(player)
+        self._remove_player_from_party(player, party)
         # TODO: Remove?
         await party.send_party(player)
 
+    def _remove_player_from_party(self, player, party):
+        party.remove_player(player)
         del self.player_parties[player]
 
         if party.is_disbanded():
@@ -180,6 +182,11 @@ class PartyService(Service):
         # TODO: Send a special "disbanded" command?
         self.write_broadcast_party(party, members=members)
 
-    async def on_player_disconnected(self, player):
-        if player in self.player_parties:
-            await self.leave_party(player)
+    def on_connection_lost(self, conn: "LobbyConnection") -> None:
+        if not conn.player or conn.player not in self.player_parties:
+            return
+
+        self._remove_player_from_party(
+            conn.player,
+            self.player_parties[conn.player]
+        )

@@ -42,6 +42,12 @@ class Service(metaclass=ServiceMeta):
         """
         pass  # pragma: no cover
 
+    def on_connection_lost(self, conn) -> None:
+        """
+        Called every time a connection ends.
+        """
+        pass  # pragma: no cover
+
 
 def create_services(injectables: Dict[str, object] = {}) -> Dict[str, Service]:
     """

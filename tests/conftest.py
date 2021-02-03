@@ -194,6 +194,7 @@ def player_factory():
             # to live for the full lifetime of the player object
             p.__owned_lobby_connection = asynctest.create_autospec(LobbyConnection)
             p.lobby_connection = p.__owned_lobby_connection
+            p.lobby_connection.player = p
         return p
 
     return make
