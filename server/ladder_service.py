@@ -439,7 +439,7 @@ class LadderService(Service):
                     for guest in all_guests
                     if guest.lobby_connection is not None
                 ])
-            await game.wait_launched(30)
+            await game.wait_launched(30 + 10 * len(all_guests))
             self._logger.debug("Ladder game launched successfully")
         except Exception:
             if game:
