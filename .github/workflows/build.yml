@@ -17,5 +17,5 @@ jobs:
           repository: faforever/faf-python-server
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          build-args: GITHUB_REF=${GITHUB_REF}
+          build_args: GITHUB_REF=${GITHUB_REF}
           tag_with_ref: true
