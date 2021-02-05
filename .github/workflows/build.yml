@@ -11,11 +11,15 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Extract tag name
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+
       - name: Build and publish docker image
         uses: docker/build-push-action@v1.1.1
         with:
           repository: faforever/faf-python-server
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          build_args: GITHUB_REF=${GITHUB_REF}
+          build_args: GITHUB_REF=${{ steps.vars.outputs.tag }}
           tag_with_ref: true
