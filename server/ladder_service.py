@@ -288,8 +288,8 @@ class LadderService(Service):
                         "The matchmaking system is calibrating your skill level; "
                         "your first few games may be slightly more imbalanced "
                         "as the system attempts to learn your capability as a player."
-                        "<b><br><br>"
-                        f"The learning phase is {progress:.0f}% completed<b>"
+                        "<br><br>"
+                        f"<b>The learning phase is {progress:.0f}% completed</b>"
                     )
                 })
 
