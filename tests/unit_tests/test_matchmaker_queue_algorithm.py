@@ -301,6 +301,8 @@ def test_random_newbie_matching_is_symmetric(player_factory):
     searches = [s1, s2, s3, s4, s5, s6]
     matches = algorithm.RandomlyMatchNewbies().find(searches)
 
+    assert matches
+
     for search in matches:
         opponent = matches[search]
         assert matches[opponent] == search
@@ -310,6 +312,7 @@ def test_newbies_are_forcefully_matched_with_newbies(player_factory):
     newbie1 = Search([player_factory(0, 500, ladder_games=9)])
     newbie2 = Search([player_factory(1500, 500, ladder_games=9)])
     pro = Search([player_factory(1500, 10, ladder_games=100)])
+    pro.register_failed_matching_attempt()
 
     searches = [newbie1, pro, newbie2]
     matches = algorithm.RandomlyMatchNewbies().find(searches)
@@ -318,19 +321,94 @@ def test_newbies_are_forcefully_matched_with_newbies(player_factory):
     assert matches[newbie2] == newbie1
 
 
+def test_newbie_team_matched_with_newbie_team(player_factory):
+    newbie1 = Search([
+        player_factory(0, 500, ladder_games=9),
+        player_factory(0, 500, ladder_games=9)
+    ])
+    newbie2 = Search([
+        player_factory(1500, 500, ladder_games=9),
+        player_factory(1500, 500, ladder_games=9)
+    ])
+
+    searches = [newbie1, newbie2]
+    matches = algorithm.RandomlyMatchNewbies().find(searches)
+
+    assert matches[newbie1] == newbie2
+    assert matches[newbie2] == newbie1
+
+
+def test_partial_newbie_team_matched_with_newbie_team(player_factory):
+    partial_newbie = Search([
+        player_factory(0, 500, ladder_games=9),
+        player_factory(0, 500, ladder_games=100)
+    ])
+    newbie = Search([
+        player_factory(1500, 500, ladder_games=9),
+        player_factory(1500, 500, ladder_games=9)
+    ])
+
+    searches = [partial_newbie, newbie]
+    matches = algorithm.RandomlyMatchNewbies().find(searches)
+
+    assert matches[partial_newbie] == newbie
+    assert matches[newbie] == partial_newbie
+
+
+def test_newbie_and_top_rated_team_not_matched_randomly(player_factory):
+    newbie_and_top_rated = Search([
+        player_factory(0, 500, ladder_games=9),
+        player_factory(2500, 10, ladder_games=1000)
+    ])
+    newbie = Search([
+        player_factory(1500, 500, ladder_games=9),
+        player_factory(1500, 500, ladder_games=9)
+    ])
+
+    searches = [newbie_and_top_rated, newbie]
+    matches = algorithm.RandomlyMatchNewbies().find(searches)
+
+    assert not matches
+
+
 def test_unmatched_newbies_forcefully_match_pros(player_factory):
     newbie = Search([player_factory(1500, 500, ladder_games=0)])
     pro = Search([player_factory(1400, 10, ladder_games=100)])
 
     searches = [newbie, pro]
     matches = algorithm.RandomlyMatchNewbies().find(searches)
+    # No match if the pro is on their first attempt
+    assert len(matches) == 0
 
+    pro.register_failed_matching_attempt()
+    matches = algorithm.RandomlyMatchNewbies().find(searches)
     assert len(matches) == 2
 
 
-def test_unmatched_newbies_do_notforcefully_match_top_players(player_factory):
+def test_newbie_team_matched_with_pro_team(player_factory):
+    newbie = Search([
+        player_factory(1500, 500, ladder_games=0),
+        player_factory(1500, 500, ladder_games=0)
+    ])
+    pro = Search([
+        player_factory(1400, 10, ladder_games=100),
+        player_factory(1400, 10, ladder_games=100)
+    ])
+
+    searches = [newbie, pro]
+    matches = algorithm.RandomlyMatchNewbies().find(searches)
+    # No match if the pros are on their first attempt
+    assert len(matches) == 0
+
+    pro.register_failed_matching_attempt()
+    matches = algorithm.RandomlyMatchNewbies().find(searches)
+    assert len(matches) == 2
+
+
+def test_unmatched_newbies_do_not_forcefully_match_top_players(player_factory):
     newbie = Search([player_factory(1500, 500, ladder_games=0)])
     top_player = Search([player_factory(2500, 10, ladder_games=100)])
+    top_player.register_failed_matching_attempt()
 
     searches = [newbie, top_player]
     matches = algorithm.RandomlyMatchNewbies().find(searches)
@@ -338,11 +416,18 @@ def test_unmatched_newbies_do_notforcefully_match_top_players(player_factory):
     assert len(matches) == 0
 
 
-def test_unmatched_newbies_do_not_forcefully_match_teams(player_factory):
-    newbie = Search([player_factory(1500, 500, ladder_games=0)])
-    team = Search([player_factory(1500, 100), player_factory(1500, 100)])
+def test_newbie_team_dos_not_match_with_top_players_team(player_factory):
+    newbie = Search([
+        player_factory(1500, 500, ladder_games=0),
+        player_factory(1500, 500, ladder_games=0)
+    ])
+    top_player = Search([
+        player_factory(2500, 10, ladder_games=100),
+        player_factory(2500, 10, ladder_games=100)
+    ])
+    top_player.register_failed_matching_attempt()
 
-    searches = [newbie, team]
+    searches = [newbie, top_player]
     matches = algorithm.RandomlyMatchNewbies().find(searches)
 
     assert len(matches) == 0
@@ -354,6 +439,7 @@ def unmatched_newbie_teams_do_not_forcefully_match_pros(player_factory):
         player_factory(1500, 500, ladder_games=0)
     ])
     pro = Search([player_factory(1800, 10, ladder_games=100)])
+    pro.register_failed_matching_attempt()
 
     searches = [newbie_team, pro]
     matches = algorithm.RandomlyMatchNewbies().find(searches)
@@ -366,6 +452,7 @@ def test_odd_number_of_unmatched_newbies(player_factory):
     newbie2 = Search([player_factory(750, 500, ladder_games=9)])
     newbie3 = Search([player_factory(1500, 500, ladder_games=9)])
     pro = Search([player_factory(1500, 10, ladder_games=100)])
+    pro.register_failed_matching_attempt()
 
     searches = [newbie1, pro, newbie2, newbie3]
     matches = algorithm.RandomlyMatchNewbies().find(searches)
@@ -379,10 +466,14 @@ def test_matchmaker(player_factory):
     newbie_force_matched = Search([player_factory(200, 400, ladder_games=9)])
 
     pro_that_matches1 = Search([player_factory(1800, 60, ladder_games=101)])
+    pro_that_matches1.register_failed_matching_attempt()
     pro_that_matches2 = Search([player_factory(1750, 50, ladder_games=100)])
+    pro_that_matches2.register_failed_matching_attempt()
     pro_alone = Search([player_factory(1550, 50, ladder_games=100)])
+    pro_alone.register_failed_matching_attempt()
 
     top_player = Search([player_factory(2100, 50, ladder_games=200)])
+    top_player.register_failed_matching_attempt()
 
     searches = [
         newbie_that_matches1,
