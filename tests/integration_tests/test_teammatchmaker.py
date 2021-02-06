@@ -71,7 +71,7 @@ async def test_info_message(lobby_server):
         boundaries = queue["boundary_80s"]
 
         if queue["queue_name"] == "tmm2v2":
-            assert boundaries == [[1300, 1700]]
+            assert boundaries == [[300, 700]]
         else:
             assert boundaries == []
 

@@ -110,28 +110,25 @@ class RandomlyMatchNewbies(MatchmakingPolicy):
     def find(self, searches: Iterable[Search]) -> Dict[Search, Search]:
         self.matches.clear()
 
-        unmatched_newbies = [
-            search for search in searches
-            if search.is_single_ladder_newbie()
-        ]
+        unmatched_newbies = []
+        first_opponent = None
+        for search in searches:
+            if search.has_top_player():
+                continue
+
+            if search.has_newbie():
+                unmatched_newbies.append(search)
+            elif not first_opponent and search.failed_matching_attempts >= 1:
+                first_opponent = search
 
         while len(unmatched_newbies) >= 2:
             newbie1 = unmatched_newbies.pop()
             newbie2 = unmatched_newbies.pop()
             self._match(newbie1, newbie2)
 
-        if len(unmatched_newbies) == 1:
+        if unmatched_newbies and first_opponent:
             newbie = unmatched_newbies[0]
-
-            default_if_no_available_opponent = None
-
-            opponent = next((
-                search for search in searches
-                if search != newbie and search not in self.matches
-                and search.is_single_party() and search.has_no_top_player()
-            ), default_if_no_available_opponent)
-            if opponent is not default_if_no_available_opponent:
-                self._match(newbie, opponent)
+            self._match(newbie, first_opponent)
 
         return self.matches
 

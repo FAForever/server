@@ -51,43 +51,39 @@ class Search:
         # Precompute this
         self.quality_against_self = self.quality_with(self)
 
-    @staticmethod
-    def adjusted_rating(player: Player):
+    def adjusted_rating(self, player: Player):
         """
         Returns an adjusted mean with a simple linear interpolation between current mean and a specified base mean
         """
-        mean, dev = player.ratings[RatingType.LADDER_1V1]
-        adjusted_mean = ((config.NEWBIE_MIN_GAMES - player.game_count[RatingType.LADDER_1V1]) * config.NEWBIE_BASE_MEAN
-                         + player.game_count[RatingType.LADDER_1V1] * mean) / config.NEWBIE_MIN_GAMES
+        mean, dev = player.ratings[self.rating_type]
+        game_count = player.game_count[self.rating_type]
+        adjusted_mean = ((config.NEWBIE_MIN_GAMES - game_count) * config.NEWBIE_BASE_MEAN
+                         + game_count * mean) / config.NEWBIE_MIN_GAMES
         return adjusted_mean, dev
 
-    @staticmethod
-    def _is_ladder_newbie(player: Player) -> bool:
-        return player.game_count[RatingType.LADDER_1V1] <= config.NEWBIE_MIN_GAMES
-
-    def is_ladder1v1_search(self) -> bool:
-        return self.rating_type == RatingType.LADDER_1V1
+    def is_newbie(self, player: Player) -> bool:
+        return player.game_count[self.rating_type] <= config.NEWBIE_MIN_GAMES
 
     def is_single_party(self) -> bool:
         return len(self.players) == 1
 
-    def is_single_ladder_newbie(self) -> bool:
-        return (
-            self.is_single_party()
-            and self._is_ladder_newbie(self.players[0])
-            and self.is_ladder1v1_search()
-        )
+    def has_newbie(self) -> bool:
+        for player in self.players:
+            if self.is_newbie(player):
+                return True
 
-    def has_no_top_player(self) -> bool:
+        return False
+
+    def has_top_player(self) -> bool:
         max_rating = max(map(lambda rating_tuple: rating_tuple[0], self.ratings))
-        return max_rating < config.TOP_PLAYER_MIN_RATING
+        return max_rating >= config.TOP_PLAYER_MIN_RATING
 
     @property
     def ratings(self):
         ratings = []
         for player, rating in zip(self.players, self.raw_ratings):
             # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
-            if self.is_ladder1v1_search() and self._is_ladder_newbie(player):
+            if self.is_newbie(player):
                 rating = self.adjusted_rating(player)
             ratings.append(rating)
         return ratings
@@ -209,7 +205,7 @@ class Search:
         self.on_matched(self, other)
 
         for player, raw_rating in zip(self.players, self.raw_ratings):
-            if self.is_ladder1v1_search() and self._is_ladder_newbie(player):
+            if self.is_newbie(player):
                 mean, dev = raw_rating
                 adjusted_mean, adjusted_dev = self.adjusted_rating(player)
                 self._logger.info(

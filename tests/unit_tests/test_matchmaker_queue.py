@@ -14,6 +14,15 @@ from server.players import PlayerState
 from server.rating import RatingType
 
 
+@st.composite
+def st_rating(draw):
+    """Strategy for generating rating tuples"""
+    return (
+        draw(st.floats(min_value=-100., max_value=2500.)),
+        draw(st.floats(min_value=0.001, max_value=500.))
+    )
+
+
 @pytest.fixture(scope="session")
 def player_factory(player_factory):
     return functools.partial(
@@ -42,37 +51,32 @@ def matchmaker_players_all_match(player_factory):
            player_factory("Rhiza", player_id=5, ladder_rating=(1500, 50))
 
 
-def test_is_ladder_newbie(matchmaker_players):
-    pro, _, _, _, _, newbie = matchmaker_players
-    assert Search._is_ladder_newbie(pro) is False
-    assert Search._is_ladder_newbie(newbie)
+def test_newbie_detection(matchmaker_players):
+    pro, joe, _, _, _, newbie = matchmaker_players
+    pro_search = Search([pro])
+    newbie_search = Search([newbie])
+    newb_team_search = Search([joe, newbie])
+    pro_team_search = Search([pro, joe])
 
-
-def test_is_single_newbie(matchmaker_players):
-    pro, _, _, _, _, newbie = matchmaker_players
-
-    single_newbie = Search([newbie])
-    single_pro = Search([pro])
-    two_newbies = Search([newbie, newbie])
-    two_pros = Search([pro, pro])
-    two_mixed = Search([newbie, pro])
-
-    assert single_newbie.is_single_ladder_newbie()
-    assert single_pro.is_single_ladder_newbie() is False
-    assert two_newbies.is_single_ladder_newbie() is False
-    assert two_pros.is_single_ladder_newbie() is False
-    assert two_mixed.is_single_ladder_newbie() is False
+    assert pro_search.has_newbie() is False
+    assert pro_search.is_newbie(pro) is False
+    assert newbie_search.has_newbie() is True
+    assert newbie_search.is_newbie(newbie) is True
+    assert newb_team_search.has_newbie() is True
+    assert pro_team_search.has_newbie() is False
 
 
 def test_newbies_have_adjusted_rating(matchmaker_players):
     pro, _, _, _, _, newbie = matchmaker_players
     s1, s6 = Search([pro]), Search([newbie])
     assert s1.ratings[0] == pro.ratings[RatingType.LADDER_1V1]
-    assert s6.ratings[0] != newbie.ratings[RatingType.LADDER_1V1]
+    assert s6.ratings[0] < newbie.ratings[RatingType.LADDER_1V1]
 
 
-def test_search_threshold(matchmaker_players):
-    s = Search([matchmaker_players[0]])
+@given(rating=st_rating())
+def test_search_threshold(player_factory, rating):
+    player = player_factory("Player", ladder_rating=rating)
+    s = Search([player])
     assert s.match_threshold <= 1
     assert s.match_threshold >= 0
 
@@ -103,10 +107,13 @@ def test_search_threshold_of_team_new_players_is_low(player_factory):
     assert s.match_threshold <= 0.4
 
 
-def test_search_quality_equivalence(matchmaker_players):
-    p1, _, _, p4, _, _ = matchmaker_players
-    s1, s4 = Search([p1]), Search([p4])
-    assert s1.quality_with(s4) == s4.quality_with(s1)
+@given(rating1=st_rating(), rating2=st_rating())
+def test_search_quality_equivalence(player_factory, rating1, rating2):
+    p1 = player_factory("Player1", ladder_rating=rating1)
+    p2 = player_factory("Player2", ladder_rating=rating2)
+    s1 = Search([p1])
+    s2 = Search([p2])
+    assert s1.quality_with(s2) == s2.quality_with(s1)
 
 
 def test_search_quality(matchmaker_players):
