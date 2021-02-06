@@ -18,7 +18,7 @@ class CoopGame(Game):
             "TeamSpawn": "fixed",
             "RevealedCivilians": "No",
             "Difficulty": 3,
-            "Expansion": 1
+            "Expansion": "true"
         })
 
     async def validate_game_mode_settings(self):
@@ -31,6 +31,6 @@ class CoopGame(Game):
             "TeamSpawn": ("fixed", ValidityState.SPAWN_NOT_FIXED),
             "RevealedCivilians": ("No", ValidityState.CIVILIANS_REVEALED),
             "Difficulty": (3, ValidityState.WRONG_DIFFICULTY),
-            "Expansion": (1, ValidityState.EXPANSION_DISABLED),
+            "Expansion": ("true", ValidityState.EXPANSION_DISABLED),
         }
         await self._validate_game_options(valid_options)
