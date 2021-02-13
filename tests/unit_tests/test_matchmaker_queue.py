@@ -207,13 +207,20 @@ async def test_search_await(matchmaker_players):
 
 def test_combined_search_attributes(matchmaker_players):
     p1, p2, p3, _, _, _ = matchmaker_players
-    search = CombinedSearch(Search([p1, p2]), Search([p3]))
+    s1 = Search([p1, p2])
+    s2 = Search([p3])
+    s2.register_failed_matching_attempt()
+    search = CombinedSearch(s1, s2)
     assert search.players == [p1, p2, p3]
     assert search.raw_ratings == [
         p1.ratings[RatingType.LADDER_1V1],
         p2.ratings[RatingType.LADDER_1V1],
         p3.ratings[RatingType.LADDER_1V1]
     ]
+    assert search.failed_matching_attempts == 1
+
+    search.register_failed_matching_attempt()
+    assert search.failed_matching_attempts == 2
 
 
 def test_queue_time_until_next_pop(queue_factory):

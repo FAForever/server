@@ -38,7 +38,7 @@ async def join_game(proto: Protocol, uid: int):
 
 
 async def client_response(proto):
-    msg = await read_until_command(proto, "game_launch")
+    msg = await read_until_command(proto, "game_launch", timeout=5)
     await open_fa(proto)
     return msg
 

@@ -217,6 +217,71 @@ async def test_game_matchmaking_with_parties(lobby_server):
         assert msg["faction"] == i + 1
 
 
+@fast_forward(30)
+async def test_newbie_matchmaking_with_parties(lobby_server):
+    # Two completely new tmm players
+    id1, _, proto1 = await connect_and_sign_in(
+        ("ladder1", "ladder1"), lobby_server
+    )
+    id2, _, proto2 = await connect_and_sign_in(
+        ("ladder2", "ladder2"), lobby_server
+    )
+    # Two more experienced players
+    _, _, proto3 = await connect_and_sign_in(
+        ("tmm1", "tmm1"), lobby_server
+    )
+    _, _, proto4 = await connect_and_sign_in(
+        ("tmm2", "tmm2"), lobby_server
+    )
+    protos = (proto1, proto2, proto3, proto4)
+
+    await asyncio.gather(*[
+        read_until_command(proto, "game_info") for proto in protos
+    ])
+
+    # Setup new players in a party
+    await proto1.send_message({
+        "command": "invite_to_party",
+        "recipient_id": id2
+    })
+    await read_until_command(proto2, "party_invite")
+    await proto2.send_message({
+        "command": "accept_party_invite",
+        "sender_id": id1
+    })
+    await read_until_command(proto1, "update_party")
+
+    # Queue all players
+    await proto1.send_message({
+        "command": "game_matchmaking",
+        "queue_name": "tmm2v2",
+        "state": "start",
+    })
+    # The tmm players are queuing solo
+    await proto3.send_message({
+        "command": "game_matchmaking",
+        "queue_name": "tmm2v2",
+        "state": "start",
+    })
+    await proto4.send_message({
+        "command": "game_matchmaking",
+        "queue_name": "tmm2v2",
+        "state": "start",
+    })
+
+    msgs = await asyncio.gather(*[client_response(proto) for proto in protos])
+
+    uid = set(msg["uid"] for msg in msgs)
+    assert len(uid) == 1
+    for msg in msgs:
+        assert msg["init_mode"] == 1
+        assert "None" not in msg["name"]
+        assert msg["mod"] == "faf"
+        assert msg["expected_players"] == 4
+        assert msg["team"] in (2, 3)
+        assert msg["map_position"] in (1, 2, 3, 4)
+
+
 @fast_forward(60)
 async def test_game_matchmaking_multiqueue_timeout(lobby_server):
     protos, _ = await connect_players(lobby_server)
