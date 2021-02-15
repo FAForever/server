@@ -271,9 +271,8 @@ class CombinedSearch(Search):
         return list(itertools.chain(*[s.raw_ratings for s in self.searches]))
 
     @property
-    def failed_matching_attempts(self) -> List[int]:
-        """Used for logging so returning a different type here is fine"""
-        return [search.failed_matching_attempts for search in self.searches]
+    def failed_matching_attempts(self) -> int:
+        return max(search.failed_matching_attempts for search in self.searches)
 
     def register_failed_matching_attempt(self):
         for search in self.searches:

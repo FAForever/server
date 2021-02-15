@@ -78,6 +78,8 @@ insert into login (id, login, email, password, steamid, create_time) values
   (102, 'ladder3', 'ladder3@example.com', SHA2('ladder3', 256), null, '2000-01-01 00:00:00'),
   (103, 'ladder4', 'ladder4@example.com', SHA2('ladder4', 256), null, '2000-01-01 00:00:00'),
   (104, 'ladder_ban', 'ladder_ban@example.com', SHA2('ladder_ban', 256), null, '2000-01-01 00:00:00'),
+  (105, 'tmm1', 'tmm1@example.com', SHA2('tmm1', 256), null, '2000-01-01 00:00:00'),
+  (106, 'tmm2', 'tmm2@example.com', SHA2('tmm2', 256), null, '2000-01-01 00:00:00'),
   (200, 'banme', 'banme@example.com', SHA2('banme', 256), null, '2000-01-01 00:00:00'),
   (201, 'ban_revoked', 'ban_revoked@example.com', SHA2('ban_revoked', 256), null, '2000-01-01 00:00:00'),
   (202, 'ban_expired', 'ban_expired@example.com', SHA2('ban_expired', 256), null, '2000-01-01 00:00:00'),
@@ -118,7 +120,9 @@ insert into leaderboard_rating (login_id, mean, deviation, total_games, leaderbo
   (101, 1500, 500, 0, 1),
   (101, 1500, 500, 0, 2),
   (102, 1500, 500, 0, 1),
-  (102, 1500, 500, 0, 2)
+  (102, 1500, 500, 0, 2),
+  (105, 1400, 150, 20, 3),
+  (106, 1500, 75, 20, 3)
 ;
 
 -- legacy table for global rating

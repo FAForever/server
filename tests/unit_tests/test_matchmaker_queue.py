@@ -109,8 +109,16 @@ def test_search_threshold_of_team_new_players_is_low(player_factory):
 
 @given(rating1=st_rating(), rating2=st_rating())
 def test_search_quality_equivalence(player_factory, rating1, rating2):
-    p1 = player_factory("Player1", ladder_rating=rating1)
-    p2 = player_factory("Player2", ladder_rating=rating2)
+    p1 = player_factory(
+        "Player1",
+        ladder_rating=rating1,
+        with_lobby_connection=False
+    )
+    p2 = player_factory(
+        "Player2",
+        ladder_rating=rating2,
+        with_lobby_connection=False
+    )
     s1 = Search([p1])
     s2 = Search([p2])
     assert s1.quality_with(s2) == s2.quality_with(s1)
@@ -199,13 +207,20 @@ async def test_search_await(matchmaker_players):
 
 def test_combined_search_attributes(matchmaker_players):
     p1, p2, p3, _, _, _ = matchmaker_players
-    search = CombinedSearch(Search([p1, p2]), Search([p3]))
+    s1 = Search([p1, p2])
+    s2 = Search([p3])
+    s2.register_failed_matching_attempt()
+    search = CombinedSearch(s1, s2)
     assert search.players == [p1, p2, p3]
     assert search.raw_ratings == [
         p1.ratings[RatingType.LADDER_1V1],
         p2.ratings[RatingType.LADDER_1V1],
         p3.ratings[RatingType.LADDER_1V1]
     ]
+    assert search.failed_matching_attempts == 1
+
+    search.register_failed_matching_attempt()
+    assert search.failed_matching_attempts == 2
 
 
 def test_queue_time_until_next_pop(queue_factory):
