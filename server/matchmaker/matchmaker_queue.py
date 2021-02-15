@@ -95,17 +95,26 @@ class MatchmakerQueue:
         """
         self._logger.debug("MatchmakerQueue initialized for %s", self.name)
         while self._is_running:
-            await self.timer.next_pop()
+            try:
+                await self.timer.next_pop()
 
-            await self.find_matches()
+                await self.find_matches()
 
-            number_of_unmatched_searches = len(self._queue)
-            metrics.unmatched_searches.labels(self.name).set(number_of_unmatched_searches)
+                number_of_unmatched_searches = len(self._queue)
+                metrics.unmatched_searches.labels(self.name).set(
+                    number_of_unmatched_searches
+                )
 
-            # Any searches in the queue at this point were unable to find a
-            # match this round and will have higher priority next round.
+                # Any searches in the queue at this point were unable to find a
+                # match this round and will have higher priority next round.
 
-            self.game_service.mark_dirty(self)
+                self.game_service.mark_dirty(self)
+            except Exception:
+                self._logger.exception(
+                    "Unexpected error during queue pop timer loop!"
+                )
+                # To avoid potential busy loops
+                await asyncio.sleep(1)
 
     async def search(self, search: Search) -> None:
         """
