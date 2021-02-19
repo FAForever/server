@@ -34,3 +34,9 @@ class CoopGame(Game):
             "Expansion": ("true", ValidityState.EXPANSION_DISABLED),
         }
         await self._validate_game_options(valid_options)
+
+    async def process_game_results(self):
+        """
+        When a coop game ends, we don't expect there to be any game results.
+        """
+        pass
