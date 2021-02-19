@@ -13,14 +13,7 @@ from server.matchmaker import CombinedSearch, MapPool, PopTimer, Search
 from server.players import PlayerState
 from server.rating import RatingType
 
-
-@st.composite
-def st_rating(draw):
-    """Strategy for generating rating tuples"""
-    return (
-        draw(st.floats(min_value=-100., max_value=2500.)),
-        draw(st.floats(min_value=0.001, max_value=500.))
-    )
+from .strategies import st_rating
 
 
 @pytest.fixture(scope="session")

@@ -180,11 +180,13 @@ def make_game(database, uid, players):
 
 
 def make_player(
+    login=None,
     state=PlayerState.IDLE,
     global_rating=None,
     ladder_rating=None,
     global_games=0,
     ladder_games=0,
+    with_lobby_connection=False,
     **kwargs
 ):
     ratings = {k: v for k, v in {
@@ -197,42 +199,22 @@ def make_player(
         RatingType.LADDER_1V1: ladder_games
     }
 
-    p = Player(ratings=ratings, game_count=games, **kwargs)
+    p = Player(login=login, ratings=ratings, game_count=games, **kwargs)
     p.state = state
+
+    if with_lobby_connection:
+        # lobby_connection is a weak reference, but we want the mock
+        # to live for the full lifetime of the player object
+        p.__owned_lobby_connection = asynctest.create_autospec(LobbyConnection)
+        p.lobby_connection = p.__owned_lobby_connection
+        p.lobby_connection.player = p
+
     return p
 
 
 @pytest.fixture(scope="session")
 def player_factory():
-    def make(
-        login=None,
-        state=PlayerState.IDLE,
-        global_rating=None,
-        ladder_rating=None,
-        global_games=0,
-        ladder_games=0,
-        with_lobby_connection=False,
-        **kwargs
-    ):
-        p = make_player(
-            state=state,
-            global_rating=global_rating,
-            ladder_rating=ladder_rating,
-            global_games=global_games,
-            ladder_games=ladder_games,
-            login=login,
-            **kwargs
-        )
-
-        if with_lobby_connection:
-            # lobby_connection is a weak reference, but we want the mock
-            # to live for the full lifetime of the player object
-            p.__owned_lobby_connection = asynctest.create_autospec(LobbyConnection)
-            p.lobby_connection = p.__owned_lobby_connection
-            p.lobby_connection.player = p
-        return p
-
-    return make
+    return make_player
 
 
 @pytest.fixture
