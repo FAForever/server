@@ -10,6 +10,7 @@ from sqlalchemy import and_, bindparam
 from sqlalchemy.sql.functions import now as sql_now
 
 from server.config import FFA_TEAM
+from server.db import deadlock_retry_execute
 from server.db.models import (
     game_player_stats,
     game_stats,
@@ -524,16 +525,16 @@ class Game():
                 )
 
             update_statement = game_player_stats.update().where(
-                    and_(
-                        game_player_stats.c.gameId == bindparam("game_id"),
-                        game_player_stats.c.playerId == bindparam("player_id"),
-                    )
-                ).values(
-                    score=bindparam("score"),
-                    scoreTime=sql_now(),
-                    result=bindparam("result"),
+                and_(
+                    game_player_stats.c.gameId == bindparam("game_id"),
+                    game_player_stats.c.playerId == bindparam("player_id"),
                 )
-            await conn.execute(update_statement, rows)
+            ).values(
+                score=bindparam("score"),
+                scoreTime=sql_now(),
+                result=bindparam("result"),
+            )
+            await deadlock_retry_execute(conn, update_statement, rows)
 
     def get_basic_info(self) -> BasicGameInfo:
         return BasicGameInfo(
