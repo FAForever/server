@@ -166,7 +166,9 @@ class Player:
                 f"{self.ratings[RatingType.LADDER_1V1]})")
 
     def __repr__(self) -> str:
-        return self.__str__()
+        return (f"Player(login={self.login}, session={self.session}, "
+                f"id={self.id}, ratings={dict(self.ratings)}, "
+                f"clan={self.clan}, game_count={dict(self.game_count)})")
 
     def __hash__(self) -> int:
         return self.id
