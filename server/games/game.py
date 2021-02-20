@@ -136,12 +136,19 @@ class Game():
     @name.setter
     def name(self, value: str):
         """
-        Avoids the game name to crash the mysql INSERT query by being longer
-        than the column's max size.
+        Verifies that names only contain ascii characters.
         """
         if not value.isascii():
             raise ValueError("Name must be ascii!")
 
+        self.set_name_unchecked(value)
+
+    def set_name_unchecked(self, value: str):
+        """
+        Sets the game name without doing any validity checks.
+
+        Truncates the game name to avoid crashing mysql INSERT statements.
+        """
         max_len = game_stats.c.gameName.type.length
         self._name = value[:max_len]
 
