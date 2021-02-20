@@ -23,21 +23,6 @@ jobs:
 
       - run: isort . --check --diff
 
-  flake8:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Setup Python
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.7
-
-      - name: Install dependencies
-        run: pip install flake8
-
-      - run: flake8
-
   # Tests
   unit-test:
     runs-on: ubuntu-latest
