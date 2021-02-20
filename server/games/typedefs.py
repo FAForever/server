@@ -1,5 +1,5 @@
 from enum import Enum, unique
-from typing import Dict, List, NamedTuple, Optional, Set
+from typing import Any, Dict, List, NamedTuple, Optional, Set
 
 from server.games.game_results import GameOutcome
 from server.players import Player
@@ -190,3 +190,30 @@ class EndedGameInfo(NamedTuple):
                 for team_summary in self.team_summaries
             ],
         }
+
+
+class _FATrue(object):
+    __slots__ = ()
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, str):
+            other = other.lower()
+
+        return other in (True, "true", "on", "yes", 1)
+
+
+class _FAFalse(object):
+    __slots__ = ()
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, str):
+            other = other.lower()
+
+        return other in (False, "false", "off", "no", 0)
+
+
+class FA(object):
+    __slots__ = ()
+
+    TRUE = _FATrue()
+    FALSE = _FAFalse()

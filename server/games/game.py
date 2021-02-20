@@ -27,6 +27,7 @@ from server.rating import InclusiveRange, RatingType
 from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
 from .typedefs import (
+    FA,
     BasicGameInfo,
     EndedGameInfo,
     FeaturedModType,
@@ -617,11 +618,11 @@ class Game():
             await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
             return
         valid_options = {
-            "AIReplacement": ("Off", ValidityState.HAS_AI_PLAYERS),
+            "AIReplacement": (FA.FALSE, ValidityState.HAS_AI_PLAYERS),
             "FogOfWar": ("explored", ValidityState.NO_FOG_OF_WAR),
-            "CheatsEnabled": ("false", ValidityState.CHEATS_ENABLED),
-            "PrebuiltUnits": ("Off", ValidityState.PREBUILT_ENABLED),
-            "NoRushOption": ("Off", ValidityState.NORUSH_ENABLED),
+            "CheatsEnabled": (FA.FALSE, ValidityState.CHEATS_ENABLED),
+            "PrebuiltUnits": (FA.FALSE, ValidityState.PREBUILT_ENABLED),
+            "NoRushOption": (FA.FALSE, ValidityState.NORUSH_ENABLED),
             "RestrictedCategories": (0, ValidityState.BAD_UNIT_RESTRICTIONS),
             "TeamLock": ("locked", ValidityState.UNLOCKED_TEAMS)
         }
