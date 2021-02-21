@@ -3,15 +3,15 @@ import hashlib
 import logging
 import textwrap
 from collections import defaultdict
-from typing import Any, Callable, Dict, Tuple, Type
 from unittest import mock
 
 import asynctest
 import pytest
 from aiohttp import web
 from asynctest import exhaust_callbacks
+from typing import Any, Callable, Dict, Tuple, Type
 
-from server import GameService, ServerInstance, run_control_server, run_lobby_server
+from server import GameService, ServerInstance, run_control_server
 from server.config import config
 from server.db.models import login
 from server.ladder_service import LadderService
