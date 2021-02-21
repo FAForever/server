@@ -13,7 +13,7 @@ from server.rating import RatingType
 from .strategies import st_searches_list
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def player_factory(player_factory):
     def make(
         mean: int = 1500,
@@ -26,7 +26,7 @@ def player_factory(player_factory):
             ladder_rating=(mean, deviation),
             ladder_games=ladder_games,
             login=name,
-            with_lobby_connection=False,
+            lobby_connection_spec=None,
         )
         return player
     return make

@@ -186,7 +186,7 @@ def make_player(
     ladder_rating=None,
     global_games=0,
     ladder_games=0,
-    with_lobby_connection=False,
+    lobby_connection_spec=None,
     **kwargs
 ):
     ratings = {k: v for k, v in {
@@ -202,10 +202,19 @@ def make_player(
     p = Player(login=login, ratings=ratings, game_count=games, **kwargs)
     p.state = state
 
-    if with_lobby_connection:
+    if lobby_connection_spec:
+        if not isinstance(lobby_connection_spec, str):
+            conn = mock.Mock(spec=lobby_connection_spec)
+        elif lobby_connection_spec == "mock":
+            conn = mock.Mock(spec=LobbyConnection)
+        elif lobby_connection_spec == "auto":
+            conn = asynctest.create_autospec(LobbyConnection)
+        else:
+            raise ValueError(f"Unknown spec type '{lobby_connection_spec}'")
+
         # lobby_connection is a weak reference, but we want the mock
         # to live for the full lifetime of the player object
-        p.__owned_lobby_connection = asynctest.create_autospec(LobbyConnection)
+        p.__owned_lobby_connection = conn
         p.lobby_connection = p.__owned_lobby_connection
         p.lobby_connection.player = p
 

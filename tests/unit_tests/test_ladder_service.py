@@ -6,7 +6,7 @@ from asynctest import CoroutineMock, create_autospec, exhaust_callbacks
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from server import LadderService
+from server import LadderService, LobbyConnection
 from server.db.models import matchmaker_queue, matchmaker_queue_map_pool
 from server.games import LadderGame
 from server.ladder_service import game_name
@@ -96,8 +96,8 @@ async def test_load_from_database_new_data(ladder_service, database):
 
 
 @given(
-    player1=st_players("p1", player_id=1),
-    player2=st_players("p2", player_id=2)
+    player1=st_players("p1", player_id=1, lobby_connection_spec="mock"),
+    player2=st_players("p2", player_id=2, lobby_connection_spec="mock")
 )
 @settings(deadline=300)
 @autocontext("ladder_and_game_service_context", "monkeypatch_context")
@@ -114,8 +114,9 @@ async def test_start_game_1v1(
     monkeypatch.setattr(LadderGame, "wait_launched", CoroutineMock())
     monkeypatch.setattr(LadderGame, "timeout_game", CoroutineMock())
     for player in (player1, player2):
-        player.__owned_lobby_connection = mock.Mock(launch_game=CoroutineMock())
-        player.lobby_connection = player.__owned_lobby_connection
+        player.lobby_connection.launch_game = CoroutineMock(
+            spec=LobbyConnection.launch_game
+        )
 
     await ladder_service.start_game([player1], [player2], queue)
 
@@ -137,8 +138,8 @@ async def test_start_game_timeout(
     player_factory,
 ):
     queue = ladder_service.queues["ladder1v1"]
-    p1 = player_factory("Dostya", player_id=1, with_lobby_connection=True)
-    p2 = player_factory("Rhiza", player_id=2, with_lobby_connection=True)
+    p1 = player_factory("Dostya", player_id=1, lobby_connection_spec="auto")
+    p2 = player_factory("Rhiza", player_id=2, lobby_connection_spec="auto")
 
     await ladder_service.start_game([p1], [p2], queue)
 
@@ -152,10 +153,10 @@ async def test_start_game_timeout(
 
 
 @given(
-    player1=st_players("p1", player_id=1),
-    player3=st_players("p2", player_id=3),
-    player2=st_players("p3", player_id=2),
-    player4=st_players("p4", player_id=4)
+    player1=st_players("p1", player_id=1, lobby_connection_spec="mock"),
+    player2=st_players("p2", player_id=2, lobby_connection_spec="mock"),
+    player3=st_players("p3", player_id=3, lobby_connection_spec="mock"),
+    player4=st_players("p4", player_id=4, lobby_connection_spec="mock")
 )
 @settings(deadline=300)
 @autocontext("ladder_and_game_service_context", "monkeypatch_context")
@@ -174,8 +175,9 @@ async def test_start_game_with_teams(
     monkeypatch.setattr(LadderGame, "wait_launched", CoroutineMock())
     monkeypatch.setattr(LadderGame, "timeout_game", CoroutineMock())
     for player in (player1, player2, player3, player4):
-        player.__owned_lobby_connection = mock.Mock(launch_game=CoroutineMock())
-        player.lobby_connection = player.__owned_lobby_connection
+        player.lobby_connection.launch_game = CoroutineMock(
+            spec=LobbyConnection.launch_game
+        )
 
     await ladder_service.start_game(
         [player1, player3],
@@ -259,7 +261,7 @@ async def test_write_rating_progress(ladder_service: LadderService, player_facto
         "Dostya",
         player_id=1,
         ladder_rating=(1500, 500),
-        with_lobby_connection=True
+        lobby_connection_spec="auto"
     )
 
     ladder_service.write_rating_progress(p1, RatingType.LADDER_1V1)
@@ -287,15 +289,13 @@ async def test_search_info_message(
     p1 = player_factory(
         "Dostya",
         player_id=1,
-        ladder_rating=(1000, 10),
-        with_lobby_connection=True
+        ladder_rating=(1000, 10)
     )
     p1.write_message = CoroutineMock()
     p2 = player_factory(
         "Rhiza",
         player_id=2,
-        ladder_rating=(1000, 10),
-        with_lobby_connection=True
+        ladder_rating=(1000, 10)
     )
     p2.write_message = CoroutineMock()
 
@@ -350,9 +350,7 @@ async def test_start_search_multiqueue(
 ):
     ladder_service.queues["tmm2v2"] = queue_factory("tmm2v2")
 
-    p1 = player_factory(
-        "Dostya", ladder_rating=(1000, 10), with_lobby_connection=True
-    )
+    p1 = player_factory("Dostya", ladder_rating=(1000, 10))
 
     ladder_service.start_search([p1], "ladder1v1")
 
@@ -379,15 +377,13 @@ async def test_start_search_multiqueue_multiple_players(
     p1 = player_factory(
         "Dostya",
         player_id=1,
-        ladder_rating=(1000, 10),
-        with_lobby_connection=True
+        ladder_rating=(1000, 10)
     )
 
     p2 = player_factory(
         "Brackman",
         player_id=2,
-        ladder_rating=(1000, 10),
-        with_lobby_connection=True
+        ladder_rating=(1000, 10)
     )
 
     ladder_service.start_search([p1, p2], "ladder1v1")
@@ -427,15 +423,13 @@ async def test_game_start_cancels_search(
     p1 = player_factory(
         "Dostya",
         player_id=1,
-        ladder_rating=(1000, 10),
-        with_lobby_connection=True
+        ladder_rating=(1000, 10)
     )
 
     p2 = player_factory(
         "Brackman",
         player_id=2,
-        ladder_rating=(1000, 10),
-        with_lobby_connection=True
+        ladder_rating=(1000, 10)
     )
     ladder_service.start_search([p1], "ladder1v1")
     ladder_service.start_search([p2], "ladder1v1")
@@ -466,15 +460,13 @@ async def test_on_match_found_sets_player_state(
     p1 = player_factory(
         "Dostya",
         player_id=1,
-        ladder_rating=(1000, 10),
-        with_lobby_connection=True
+        ladder_rating=(1000, 10)
     )
 
     p2 = player_factory(
         "Brackman",
         player_id=2,
-        ladder_rating=(1000, 10),
-        with_lobby_connection=True
+        ladder_rating=(1000, 10)
     )
     ladder_service.start_search([p1], "ladder1v1")
     ladder_service.start_search([p2], "ladder1v1")
@@ -497,7 +489,12 @@ async def test_start_and_cancel_search(
     player_factory,
     event_loop,
 ):
-    p1 = player_factory("Dostya", player_id=1, ladder_rating=(1500, 500), ladder_games=0)
+    p1 = player_factory(
+        "Dostya",
+        player_id=1,
+        ladder_rating=(1500, 500),
+        ladder_games=0
+    )
 
     ladder_service.start_search([p1], "ladder1v1")
     search = ladder_service._searches[p1]["ladder1v1"]
@@ -522,8 +519,7 @@ async def test_start_search_cancels_previous_search(
         "Dostya",
         player_id=1,
         ladder_rating=(1500, 500),
-        ladder_games=0,
-        with_lobby_connection=True
+        ladder_games=0
     )
 
     ladder_service.start_search([p1], "ladder1v1")
@@ -548,7 +544,12 @@ async def test_cancel_all_searches(
     player_factory,
     event_loop,
 ):
-    p1 = player_factory(login="Dostya", player_id=1, ladder_rating=(1500, 500), ladder_games=0)
+    p1 = player_factory(
+        "Dostya",
+        player_id=1,
+        ladder_rating=(1500, 500),
+        ladder_games=0
+    )
 
     ladder_service.start_search([p1], "ladder1v1")
     search = ladder_service._searches[p1]["ladder1v1"]
@@ -569,8 +570,18 @@ async def test_cancel_twice(
     ladder_service: LadderService,
     player_factory,
 ):
-    p1 = player_factory(login="Dostya", player_id=1, ladder_rating=(1500, 500), ladder_games=0)
-    p2 = player_factory(login="Brackman", player_id=2, ladder_rating=(2000, 500), ladder_games=0)
+    p1 = player_factory(
+        "Dostya",
+        player_id=1,
+        ladder_rating=(1500, 500),
+        ladder_games=0
+    )
+    p2 = player_factory(
+        "Brackman",
+        player_id=2,
+        ladder_rating=(2000, 500),
+        ladder_games=0
+    )
 
     ladder_service.start_search([p1], "ladder1v1")
     search = ladder_service._searches[p1]["ladder1v1"]
@@ -596,15 +607,13 @@ async def test_start_game_called_on_match(
         "Dostya",
         player_id=1,
         ladder_rating=(2300, 64),
-        ladder_games=0,
-        with_lobby_connection=True
+        ladder_games=0
     )
     p2 = player_factory(
         "QAI",
         player_id=2,
         ladder_rating=(2350, 125),
-        ladder_games=0,
-        with_lobby_connection=True
+        ladder_games=0
     )
 
     ladder_service.start_game = CoroutineMock()

@@ -16,7 +16,7 @@ from server.rating import RatingType
 from .strategies import st_rating
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def player_factory(player_factory):
     return functools.partial(
         player_factory,
@@ -102,16 +102,8 @@ def test_search_threshold_of_team_new_players_is_low(player_factory):
 
 @given(rating1=st_rating(), rating2=st_rating())
 def test_search_quality_equivalence(player_factory, rating1, rating2):
-    p1 = player_factory(
-        "Player1",
-        ladder_rating=rating1,
-        with_lobby_connection=False
-    )
-    p2 = player_factory(
-        "Player2",
-        ladder_rating=rating2,
-        with_lobby_connection=False
-    )
+    p1 = player_factory("Player1", ladder_rating=rating1)
+    p2 = player_factory("Player2", ladder_rating=rating2)
     s1 = Search([p1])
     s2 = Search([p2])
     assert s1.quality_with(s2) == s2.quality_with(s1)

@@ -60,7 +60,7 @@ def test_game_info_invalid():
 
 @pytest.fixture
 def mock_player(player_factory):
-    return player_factory("Dummy", player_id=42, with_lobby_connection=False)
+    return player_factory("Dummy", player_id=42, lobby_connection_spec=None)
 
 
 @pytest.fixture
@@ -197,7 +197,7 @@ async def test_command_create_account_returns_error(lobbyconnection):
 
 async def test_double_login(lobbyconnection, mock_players, player_factory):
     lobbyconnection.check_policy_conformity = CoroutineMock(return_value=True)
-    old_player = player_factory(with_lobby_connection=True)
+    old_player = player_factory(lobby_connection_spec="auto")
     old_player.lobby_connection.player = old_player
     mock_players.get_player.return_value = old_player
 
@@ -219,7 +219,7 @@ async def test_double_login(lobbyconnection, mock_players, player_factory):
 async def test_double_login_disconnected(lobbyconnection, mock_players, player_factory):
     lobbyconnection.abort = CoroutineMock()
     lobbyconnection.check_policy_conformity = CoroutineMock(return_value=True)
-    old_player = player_factory(with_lobby_connection=True)
+    old_player = player_factory(lobby_connection_spec="auto")
     mock_players.get_player.return_value = old_player
 
     old_player.lobby_connection.send_warning.side_effect = DisconnectedError("Test disconnect")
@@ -552,7 +552,7 @@ async def test_coop_list(mocker, lobbyconnection):
 async def test_command_admin_closelobby(mocker, lobbyconnection, player_factory):
     player = lobbyconnection.player
     player.id = 1
-    tuna = player_factory("Tuna", player_id=55, with_lobby_connection=True)
+    tuna = player_factory("Tuna", player_id=55, lobby_connection_spec="auto")
     data = {
         player.id: player,
         tuna.id: tuna
@@ -571,7 +571,7 @@ async def test_command_admin_closelobby(mocker, lobbyconnection, player_factory)
 async def test_command_admin_closeFA(lobbyconnection, player_factory):
     player = lobbyconnection.player
     player.id = 1
-    tuna = player_factory("Tuna", player_id=55, with_lobby_connection=True)
+    tuna = player_factory("Tuna", player_id=55, lobby_connection_spec="auto")
     data = {
         player.id: player,
         tuna.id: tuna
@@ -716,7 +716,7 @@ async def test_broadcast(lobbyconnection: LobbyConnection, player_factory):
     player = lobbyconnection.player
     player.lobby_connection = lobbyconnection
     player.id = 1
-    tuna = player_factory("Tuna", player_id=55, with_lobby_connection=True)
+    tuna = player_factory("Tuna", player_id=55, lobby_connection_spec="auto")
     data = {
         player.id: player,
         tuna.id: tuna
@@ -741,7 +741,7 @@ async def test_broadcast_during_disconnect(lobbyconnection: LobbyConnection, pla
     # To simulate when a player has been recently disconnected so that they
     # still appear in the player_service list, but their lobby_connection
     # object has already been destroyed
-    tuna = player_factory("Tuna", player_id=55, with_lobby_connection=False)
+    tuna = player_factory("Tuna", player_id=55, lobby_connection_spec="auto")
     data = {
         player.id: player,
         tuna.id: tuna
@@ -763,7 +763,7 @@ async def test_broadcast_connection_error(lobbyconnection: LobbyConnection, play
     player = lobbyconnection.player
     player.lobby_connection = lobbyconnection
     player.id = 1
-    tuna = player_factory("Tuna", player_id=55, with_lobby_connection=True)
+    tuna = player_factory("Tuna", player_id=55, lobby_connection_spec="auto")
     tuna.lobby_connection.write_warning.side_effect = DisconnectedError("Some error")
     data = {
         player.id: player,
@@ -934,7 +934,7 @@ async def test_command_game_matchmaking_not_party_owner(
     mock_player,
     player_factory
 ):
-    party_owner = player_factory(player_id=2, with_lobby_connection=False)
+    party_owner = player_factory(player_id=2, lobby_connection_spec="auto")
     party = PlayerParty(party_owner)
     party.add_player(mock_player)
     lobbyconnection.player.id = 1

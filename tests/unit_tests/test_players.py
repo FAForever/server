@@ -115,7 +115,7 @@ def test_write_message():
 
 
 def test_write_message_while_disconnecting(player_factory):
-    p = player_factory("Test", with_lobby_connection=True)
+    p = player_factory("Test", lobby_connection_spec="auto")
     p.lobby_connection.write.side_effect = DisconnectedError()
 
     # Should not raise
