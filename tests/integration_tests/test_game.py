@@ -12,11 +12,18 @@ from .conftest import connect_and_sign_in, read_until, read_until_command
 pytestmark = pytest.mark.asyncio
 
 
-async def host_game(proto: Protocol) -> int:
+async def host_game(
+    proto: Protocol,
+    *,
+    mod: str = "faf",
+    visibility: str = "public",
+    **kwargs
+) -> int:
     await proto.send_message({
         "command": "game_host",
-        "mod": "faf",
-        "visibility": "public"
+        "mod": mod,
+        "visibility": visibility,
+        **kwargs
     })
     msg = await read_until_command(proto, "game_launch")
     game_id = int(msg["uid"])

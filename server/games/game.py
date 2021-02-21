@@ -27,6 +27,7 @@ from server.rating import InclusiveRange, RatingType
 from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
 from .typedefs import (
+    FA,
     BasicGameInfo,
     EndedGameInfo,
     FeaturedModType,
@@ -418,14 +419,7 @@ class Game():
                     await self.mark_invalid(ValidityState.MUTUAL_DRAW)
                     return
 
-                if not self._results:
-                    await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
-                    return
-
-                await self.persist_results()
-
-                game_results = await self.resolve_game_results()
-                await self.game_service.publish_game_results(game_results)
+                await self.process_game_results()
 
                 self._process_pending_army_stats()
         except Exception:    # pragma: no cover
@@ -437,6 +431,16 @@ class Game():
 
     async def _run_pre_rate_validity_checks(self):
         pass
+
+    async def process_game_results(self):
+        if not self._results:
+            await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
+            return
+
+        await self.persist_results()
+
+        game_results = await self.resolve_game_results()
+        await self.game_service.publish_game_results(game_results)
 
     async def resolve_game_results(self) -> EndedGameInfo:
         if self.state not in (GameState.LIVE, GameState.ENDED):
@@ -614,11 +618,11 @@ class Game():
             await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
             return
         valid_options = {
-            "AIReplacement": ("Off", ValidityState.HAS_AI_PLAYERS),
+            "AIReplacement": (FA.FALSE, ValidityState.HAS_AI_PLAYERS),
             "FogOfWar": ("explored", ValidityState.NO_FOG_OF_WAR),
-            "CheatsEnabled": ("false", ValidityState.CHEATS_ENABLED),
-            "PrebuiltUnits": ("Off", ValidityState.PREBUILT_ENABLED),
-            "NoRushOption": ("Off", ValidityState.NORUSH_ENABLED),
+            "CheatsEnabled": (FA.FALSE, ValidityState.CHEATS_ENABLED),
+            "PrebuiltUnits": (FA.FALSE, ValidityState.PREBUILT_ENABLED),
+            "NoRushOption": (FA.FALSE, ValidityState.NORUSH_ENABLED),
             "RestrictedCategories": (0, ValidityState.BAD_UNIT_RESTRICTIONS),
             "TeamLock": ("locked", ValidityState.UNLOCKED_TEAMS)
         }

@@ -1,6 +1,7 @@
 from server.abc.base_game import InitMode
 
-from .game import Game, GameType, ValidityState, Victory
+from .game import Game
+from .typedefs import FA, GameType, ValidityState, Victory
 
 
 class CoopGame(Game):
@@ -18,7 +19,7 @@ class CoopGame(Game):
             "TeamSpawn": "fixed",
             "RevealedCivilians": "No",
             "Difficulty": 3,
-            "Expansion": 1
+            "Expansion": "true"
         })
 
     async def validate_game_mode_settings(self):
@@ -29,8 +30,14 @@ class CoopGame(Game):
         valid_options = {
             "Victory": (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
             "TeamSpawn": ("fixed", ValidityState.SPAWN_NOT_FIXED),
-            "RevealedCivilians": ("No", ValidityState.CIVILIANS_REVEALED),
+            "RevealedCivilians": (FA.FALSE, ValidityState.CIVILIANS_REVEALED),
             "Difficulty": (3, ValidityState.WRONG_DIFFICULTY),
-            "Expansion": (1, ValidityState.EXPANSION_DISABLED),
+            "Expansion": (FA.TRUE, ValidityState.EXPANSION_DISABLED),
         }
         await self._validate_game_options(valid_options)
+
+    async def process_game_results(self):
+        """
+        When a coop game ends, we don't expect there to be any game results.
+        """
+        pass
