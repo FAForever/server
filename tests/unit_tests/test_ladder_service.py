@@ -570,7 +570,10 @@ async def test_cancel_twice(ladder_service: LadderService, player_factory):
 
 
 @fast_forward(5)
-async def test_start_game_called_on_match(ladder_service: LadderService, player_factory):
+async def test_start_game_called_on_match(
+    ladder_service: LadderService,
+    player_factory,
+):
     p1 = player_factory(
         "Dostya",
         player_id=1,
@@ -591,8 +594,9 @@ async def test_start_game_called_on_match(ladder_service: LadderService, player_
 
     ladder_service.start_search([p1], "ladder1v1")
     ladder_service.start_search([p2], "ladder1v1")
+    search1 = ladder_service._searches[p1]["ladder1v1"]
 
-    await asyncio.sleep(2)
+    await search1.await_match()
 
     ladder_service.write_rating_progress.assert_called()
     ladder_service.start_game.assert_called_once()
