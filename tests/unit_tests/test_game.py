@@ -41,7 +41,7 @@ def coop_game(database, game_service, game_stats_service):
     return CoopGame(42, database, game_service, game_stats_service)
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def custom_game(database, game_service, game_stats_service):
     return CustomGame(42, database, game_service, game_stats_service)
 
