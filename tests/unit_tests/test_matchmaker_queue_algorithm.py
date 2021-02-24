@@ -640,7 +640,7 @@ def test_make_buckets_performance(bench, player_factory):
     with bench:
         algorithm._make_buckets(searches)
 
-    assert bench.elapsed() < 0.1
+    assert bench.elapsed() < 0.15
 
 
 def test_make_teams_1(player_factory):
