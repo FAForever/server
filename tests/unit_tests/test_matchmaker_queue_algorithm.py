@@ -161,43 +161,51 @@ def test_match_graph_will_not_include_matches_below_threshold_quality(player_fac
     }
 
 
-# https://github.com/HypothesisWorks/hypothesis/issues/377
-@pytest.mark.filterwarnings("ignore:.*'caplog' fixture")
 @pytest.mark.parametrize("build_func", (
     algorithm._MatchingGraph.build_full,
     algorithm._MatchingGraph.build_fast
 ))
 @given(searches=st_searches_list(max_players=2))
 @settings(deadline=300)
-def test_matching_graph_symmetric(caplog, build_func, searches):
-    caplog.set_level(logging.INFO)
+def test_matching_graph_symmetric(
+    request,
+    caplog_context,
+    build_func,
+    searches
+):
+    with caplog_context(request) as caplog:
+        caplog.set_level(logging.INFO)
 
-    graph = build_func(searches)
+        graph = build_func(searches)
 
-    # Verify that any edge also has the reverse edge
-    for search, neighbors in graph.items():
-        for other, quality in neighbors:
-            assert (search, quality) in graph[other]
+        # Verify that any edge also has the reverse edge
+        for search, neighbors in graph.items():
+            for other, quality in neighbors:
+                assert (search, quality) in graph[other]
 
 
-# https://github.com/HypothesisWorks/hypothesis/issues/377
-@pytest.mark.filterwarnings("ignore:.*'caplog' fixture")
 @pytest.mark.parametrize("build_func", (
     algorithm._MatchingGraph.build_full,
     algorithm._MatchingGraph.build_fast
 ))
 @given(searches=st_searches_list(max_players=2))
 @settings(deadline=300)
-def test_stable_marriage_produces_symmetric_matchings(caplog, build_func, searches):
-    caplog.set_level(logging.INFO)
+def test_stable_marriage_produces_symmetric_matchings(
+    request,
+    caplog_context,
+    build_func,
+    searches
+):
+    with caplog_context(request) as caplog:
+        caplog.set_level(logging.INFO)
 
-    ranks = build_func(searches)
+        ranks = build_func(searches)
 
-    matches = algorithm.StableMarriage().find(ranks)
+        matches = algorithm.StableMarriage().find(ranks)
 
-    for search in matches:
-        opponent = matches[search]
-        assert matches[opponent] == search
+        for search in matches:
+            opponent = matches[search]
+            assert matches[opponent] == search
 
 
 def test_stable_marriage(player_factory):

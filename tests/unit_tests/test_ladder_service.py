@@ -168,7 +168,6 @@ async def test_start_game_with_teams(
     LadderGame.wait_launched.assert_called_once()
 
 
-@pytest.mark.filterwarnings("ignore:.*uses the '.*' fixture")
 @given(
     team1=st.lists(
         st.sampled_from((
@@ -192,37 +191,41 @@ async def test_start_game_with_teams(
     )
 )
 async def test_start_game_start_spots(
-    ladder_service: LadderService,
-    game_service: GameService,
+    ladder_and_game_service_context,
+    monkeypatch_context,
     queue_factory,
-    monkeypatch,
     team1,
     team2
 ):
-    queue = queue_factory(
-        "test_3v3",
-        mod="faf",
-        team_size=3,
-        rating_type=RatingType.GLOBAL
-    )
-    queue.add_map_pool(
-        MapPool(1, "test", [Map(1, "scmp_007", "maps/scmp_007.zip")]),
-        min_rating=None,
-        max_rating=None
-    )
+    async with ladder_and_game_service_context() as (
+        ladder_service,
+        game_service
+    ):
+        with monkeypatch_context() as monkeypatch:
+            queue = queue_factory(
+                "test_3v3",
+                mod="faf",
+                team_size=3,
+                rating_type=RatingType.GLOBAL
+            )
+            queue.add_map_pool(
+                MapPool(1, "test", [Map(1, "scmp_007", "maps/scmp_007.zip")]),
+                min_rating=None,
+                max_rating=None
+            )
 
-    monkeypatch.setattr(LadderGame, "wait_hosted", CoroutineMock())
-    monkeypatch.setattr(LadderGame, "wait_launched", CoroutineMock())
-    await ladder_service.start_game(team1, team2, queue)
+            monkeypatch.setattr(LadderGame, "wait_hosted", CoroutineMock())
+            monkeypatch.setattr(LadderGame, "wait_launched", CoroutineMock())
+            await ladder_service.start_game(team1, team2, queue)
 
-    game = game_service[game_service.game_id_counter]
+            game = game_service[game_service.game_id_counter]
 
-    def get_start_spot(player_id) -> int:
-        return game.get_player_option(player_id, "StartSpot")
+            def get_start_spot(player_id) -> int:
+                return game.get_player_option(player_id, "StartSpot")
 
-    assert get_start_spot(1) == get_start_spot(2) - 1
-    assert get_start_spot(3) == get_start_spot(4) - 1
-    assert get_start_spot(5) == get_start_spot(6) - 1
+            assert get_start_spot(1) == get_start_spot(2) - 1
+            assert get_start_spot(3) == get_start_spot(4) - 1
+            assert get_start_spot(5) == get_start_spot(6) - 1
 
 
 async def test_write_rating_progress(ladder_service: LadderService, player_factory):

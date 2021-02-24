@@ -1,4 +1,4 @@
-from contextlib import AbstractContextManager
+from contextlib import AbstractContextManager, asynccontextmanager
 from time import perf_counter
 from unittest import mock
 
@@ -12,6 +12,52 @@ from server.gameconnection import GameConnection, GameConnectionState
 from server.games import Game
 from server.ladder_service import LadderService
 from server.protocol import QDataStreamProtocol
+
+
+@pytest.fixture(scope="session")
+def ladder_and_game_service_context(
+    request,
+    database_context,
+):
+    @asynccontextmanager
+    async def make_ladder_and_game_service():
+        async with database_context(request) as database:
+            with mock.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1):
+                game_service = GameService(
+                    database,
+                    player_service=mock.Mock(),
+                    game_stats_service=mock.Mock(),
+                    rating_service=mock.Mock(),
+                    message_queue_service=mock.Mock(
+                        declare_exchange=CoroutineMock()
+                    )
+                )
+                ladder_service = LadderService(database, game_service)
+
+                await game_service.initialize()
+                await ladder_service.initialize()
+
+                yield ladder_service, game_service
+
+                await game_service.shutdown()
+                await ladder_service.shutdown()
+
+    return make_ladder_and_game_service
+
+
+@pytest.fixture
+async def ladder_service(
+    mocker,
+    database,
+    game_service: GameService,
+):
+    mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1)
+    ladder_service = LadderService(database, game_service)
+    await ladder_service.initialize()
+
+    yield ladder_service
+
+    await ladder_service.shutdown()
 
 
 @pytest.fixture
@@ -64,21 +110,6 @@ def game_stats_service():
     service.process_game_stats = CoroutineMock()
     service.reset_mock()
     return service
-
-
-@pytest.fixture
-async def ladder_service(
-    mocker,
-    database,
-    game_service: GameService,
-):
-    mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1)
-    ladder_service = LadderService(database, game_service)
-    await ladder_service.initialize()
-
-    yield ladder_service
-
-    await ladder_service.shutdown()
 
 
 def add_connected_player(game: Game, player):
