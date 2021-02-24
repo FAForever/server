@@ -365,20 +365,17 @@ def game_stats_service(event_service, achievement_service):
 
 
 @pytest.fixture
-def coturn_hosts() -> Iterable:
+def coturn_hosts() -> Iterable[str]:
     return ["a", "b", "c", "d"]
 
 
 @pytest.fixture
-def coturn_keys(coturn_hosts) -> Iterable:
-    keys_list = []
-    for host in coturn_hosts:
-        keys_list.append(f"secret_{host}")
-    return keys_list
+def coturn_keys(coturn_hosts) -> Iterable[str]:
+    return [f"secret_{host}" for host in coturn_hosts]
 
 
 @pytest.fixture
-def coturn_credentials() -> Iterable:
+def coturn_credentials() -> Iterable[str]:
     return [
         "mO/6NHZaG4fwCf7mVuaWNRS7Atw=",
         "uSjJUafCX3fEQTGK3NI+mUe6UDo=",
