@@ -59,15 +59,11 @@ async def test_multiple_contexts(
 
     # Connect one client to each context
     _, _, proto1 = await connect_and_sign_in(
-        await tmp_user("QDataStreamUser"),
-        ctx_1,
-        QDataStreamProtocol
+        await tmp_user("QDataStreamUser"), ctx_1
     )
 
     _, _, proto2 = await connect_and_sign_in(
-        await tmp_user("SimpleJsonUser"),
-        ctx_2,
-        SimpleJsonProtocol
+        await tmp_user("SimpleJsonUser"), ctx_2
     )
 
     # Verify that the users can see each other
@@ -89,4 +85,6 @@ async def test_multiple_contexts(
     assert msg["uid"] == game_id
 
     await instance.shutdown()
+    await proto1.close()
+    await proto2.close()
     await exhaust_callbacks(event_loop)
