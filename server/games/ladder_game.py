@@ -6,7 +6,8 @@ from server.config import config
 from server.players import Player
 from server.rating import RatingType
 
-from .game import Game, GameOutcome, GameType
+from .game import Game, GameType
+from .game_results import ArmyOutcome, GameOutcome
 from .typedefs import FeaturedModType
 
 logger = logging.getLogger(__name__)
@@ -27,8 +28,8 @@ class LadderGame(Game):
         new_kwargs.update(kwargs)
         super().__init__(id_, *args, **new_kwargs)
 
-    def is_winner(self, player: Player):
-        return self.get_player_outcome(player) is GameOutcome.VICTORY
+    def is_winner(self, player: Player) -> bool:
+        return self.get_player_outcome(player) is ArmyOutcome.VICTORY
 
     def get_army_score(self, army: int) -> int:
         """

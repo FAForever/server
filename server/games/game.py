@@ -17,6 +17,8 @@ from server.db.models import (
     matchmaker_queue_game
 )
 from server.games.game_results import (
+    ArmyOutcome,
+    ArmyReportedOutcome,
     GameOutcome,
     GameResolutionError,
     GameResultReport,
@@ -293,9 +295,13 @@ class Game():
             return
 
         try:
-            outcome = GameOutcome(result_type.upper())
+            outcome = ArmyReportedOutcome(result_type.upper())
         except ValueError:
-            outcome = GameOutcome.UNKNOWN
+            self._logger.debug(
+                "Ignoring result reported by %s for army %s: %s %s",
+                reporter, army, result_type, score
+            )
+            return
 
         result = GameResultReport(reporter, army, outcome, score)
         self._results.add(result)
@@ -826,10 +832,10 @@ class Game():
     def get_army_score(self, army):
         return self._results.score(army)
 
-    def get_player_outcome(self, player):
+    def get_player_outcome(self, player: Player) -> ArmyOutcome:
         army = self.get_player_option(player.id, "Army")
         if army is None:
-            return GameOutcome.UNKNOWN
+            return ArmyOutcome.UNKNOWN
 
         return self._results.outcome(army)
 

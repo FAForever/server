@@ -19,7 +19,7 @@ from server.games import (
     Victory,
     VisibilityState
 )
-from server.games.game_results import GameOutcome
+from server.games.game_results import ArmyOutcome
 from server.rating import InclusiveRange, RatingType
 from tests.unit_tests.conftest import (
     add_connected_player,
@@ -135,7 +135,7 @@ async def test_add_result_unknown(game, game_add_players):
     players = game_add_players(game, 5, team=1)
     await game.launch()
     await game.add_result(0, 1, "something invalid", 5)
-    assert game.get_player_outcome(players[0]) is GameOutcome.UNKNOWN
+    assert game.get_player_outcome(players[0]) is ArmyOutcome.UNKNOWN
 
 
 async def test_ffa_not_rated(game, game_add_players):
@@ -516,10 +516,10 @@ async def test_game_get_player_outcome_ignores_unknown_results(
 
     await game.add_result(0, 0, "defeat", 0)
     await game.add_result(0, 0, "score", 0)
-    assert game.get_player_outcome(players[0]) is GameOutcome.DEFEAT
+    assert game.get_player_outcome(players[0]) is ArmyOutcome.DEFEAT
 
     await game.add_result(0, 1, "score", 0)
-    assert game.get_player_outcome(players[1]) is GameOutcome.UNKNOWN
+    assert game.get_player_outcome(players[1]) is ArmyOutcome.UNKNOWN
 
 
 async def test_on_game_end_single_player_gives_unknown_result(game):
@@ -659,9 +659,9 @@ async def test_persist_results_called_with_two_players(game, game_add_players):
     assert game.get_army_score(1) == 5
     for player in game.players:
         if game.get_player_option(player.id, "Army") == 1:
-            assert game.get_player_outcome(player) is GameOutcome.VICTORY
+            assert game.get_player_outcome(player) is ArmyOutcome.VICTORY
         else:
-            assert game.get_player_outcome(player) is GameOutcome.UNKNOWN
+            assert game.get_player_outcome(player) is ArmyOutcome.UNKNOWN
 
 
 async def test_persist_results_called_for_unranked(game, game_add_players):
@@ -677,17 +677,17 @@ async def test_persist_results_called_for_unranked(game, game_add_players):
     assert len(game.players) == 2
     for player in game.players:
         if game.get_player_option(player.id, "Army") == 1:
-            assert game.get_player_outcome(player) is GameOutcome.VICTORY
+            assert game.get_player_outcome(player) is ArmyOutcome.VICTORY
         else:
-            assert game.get_player_outcome(player) is GameOutcome.UNKNOWN
+            assert game.get_player_outcome(player) is ArmyOutcome.UNKNOWN
 
     await game.load_results()
     assert game.get_army_score(1) == 5
     for player in game.players:
         if game.get_player_option(player.id, "Army") == 1:
-            assert game.get_player_outcome(player) is GameOutcome.VICTORY
+            assert game.get_player_outcome(player) is ArmyOutcome.VICTORY
         else:
-            assert game.get_player_outcome(player) is GameOutcome.UNKNOWN
+            assert game.get_player_outcome(player) is ArmyOutcome.UNKNOWN
 
 
 async def test_get_army_score_conflicting_results_clear_winner(
@@ -823,8 +823,8 @@ async def test_game_outcomes(game: Game, database, players):
 
     host_outcome = game.get_player_outcome(players.hosting)
     guest_outcome = game.get_player_outcome(players.joining)
-    assert host_outcome is GameOutcome.VICTORY
-    assert guest_outcome is GameOutcome.DEFEAT
+    assert host_outcome is ArmyOutcome.VICTORY
+    assert guest_outcome is ArmyOutcome.DEFEAT
 
     default_values_before_end = {(players.hosting.id, 0), (players.joining.id, 0)}
     assert await game_player_scores(database, game) == default_values_before_end
@@ -845,8 +845,8 @@ async def test_game_outcomes_no_results(game: Game, database, players):
 
     host_outcome = game.get_player_outcome(players.hosting)
     guest_outcome = game.get_player_outcome(players.joining)
-    assert host_outcome is GameOutcome.UNKNOWN
-    assert guest_outcome is GameOutcome.UNKNOWN
+    assert host_outcome is ArmyOutcome.UNKNOWN
+    assert guest_outcome is ArmyOutcome.UNKNOWN
 
     await game.on_game_end()
     expected_scores = {(players.hosting.id, 0), (players.joining.id, 0)}
@@ -868,8 +868,8 @@ async def test_game_outcomes_conflicting(game: Game, database, players):
 
     host_outcome = game.get_player_outcome(players.hosting)
     guest_outcome = game.get_player_outcome(players.joining)
-    assert host_outcome is GameOutcome.CONFLICTING
-    assert guest_outcome is GameOutcome.CONFLICTING
+    assert host_outcome is ArmyOutcome.CONFLICTING
+    assert guest_outcome is ArmyOutcome.CONFLICTING
     # No guarantees on scores for conflicting results.
 
 
