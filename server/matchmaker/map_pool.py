@@ -1,9 +1,9 @@
 import random
 from collections import Counter
-from typing import Iterable
+from typing import Iterable, Union
 
 from ..decorators import with_logger
-from ..types import Map
+from ..types import Map, NeroxisGeneratedMap
 
 
 @with_logger
@@ -12,7 +12,7 @@ class MapPool(object):
         self,
         map_pool_id: int,
         name: str,
-        maps: Iterable[Map] = ()
+        maps: Iterable[Union[Map, NeroxisGeneratedMap]] = ()
     ):
         self.id = map_pool_id
         self.name = name
@@ -46,7 +46,9 @@ class MapPool(object):
                 least_common = least_common[:i]
                 break
 
-        return self.maps[random.choice(least_common)[0]]
+        weights = [self.maps[id_].weight for id_, _ in least_common]
+
+        return self.maps[random.choices(least_common, weights=weights, k=1)[0][0]].get_map()
 
     def __repr__(self):
         return f"MapPool({self.id}, {self.name}, {list(self.maps.values())})"

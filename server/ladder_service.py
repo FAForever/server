@@ -1,5 +1,6 @@
 import asyncio
 import itertools
+import json
 import random
 import re
 from collections import defaultdict
@@ -33,7 +34,7 @@ from .games import LadderGame
 from .matchmaker import MapPool, MatchmakerQueue, OnMatchedCallback, Search
 from .players import Player, PlayerState
 from .rating import RatingType
-from .types import GameLaunchOptions, Map
+from .types import GameLaunchOptions, Map, NeroxisGeneratedMap
 
 
 @with_logger
@@ -107,9 +108,11 @@ class LadderService(Service):
             select([
                 map_pool.c.id,
                 map_pool.c.name,
+                map_pool_map_version.c.weight,
+                map_pool_map_version.c.map_params,
                 map_version.c.map_id,
                 map_version.c.filename,
-                t_map.c.display_name
+                t_map.c.display_name,
             ]).select_from(
                 map_pool.outerjoin(map_pool_map_version)
                 .outerjoin(map_version)
@@ -125,8 +128,41 @@ class LadderService(Service):
             _, map_list = map_pool_maps[id_]
             if row.map_id is not None:
                 map_list.append(
-                    Map(row.map_id, row.display_name, row.filename)
+                    Map(row.map_id, row.display_name, row.filename, row.weight)
                 )
+            elif row.map_params is not None:
+                try:
+                    params = json.loads(row.map_params)
+                    map_type = params["type"]
+                    if map_type != "neroxis":
+                        raise Exception("Unsupported map type")
+
+                    map_size_pixels = int(params["size"])
+                    if map_size_pixels <= 0:
+                        raise Exception("Map size is zero or negative")
+
+                    if map_size_pixels & (map_size_pixels - 1) != 0:
+                        raise Exception("Map size is not a power of 2")
+
+                    spawns = int(params["spawns"])
+                    version = params["version"]
+                    map_list.append(
+                        NeroxisGeneratedMap.of(
+                            version,
+                            spawns,
+                            map_size_pixels,
+                            row.weight
+                        )
+                    )
+
+                except Exception:
+                    self._logger.warning(
+                        "Failed to load map in map pool id %d "
+                        "parameters specified as %s",
+                        row.id,
+                        row.map_params,
+                        exc_info=True
+                    )
 
         return map_pool_maps
 
@@ -367,7 +403,7 @@ class LadderService(Service):
             pool = queue.get_map_pool_for_rating(rating)
             if not pool:
                 raise RuntimeError(f"No map pool available for rating {rating}!")
-            map_id, map_name, map_path = pool.choose_map(played_map_ids)
+            map_id, map_name, map_path, _ = pool.choose_map(played_map_ids)
 
             game = self.game_service.create_game(
                 game_class=LadderGame,

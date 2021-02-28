@@ -200,7 +200,7 @@ insert into map_version (id, description, max_players, width, height, version, f
   (15, 'SCMP 015', 8, 512, 512, 1, 'maps/scmp_015.zip', 0, 1, 15),
   (16, 'SCMP 015', 8, 512, 512, 2, 'maps/scmp_015.v0002.zip', 0, 1, 15),
   (17, 'SCMP 015', 8, 512, 512, 3, 'maps/scmp_015.v0003.zip', 0, 1, 15),
-  (18, 'Sneaky_Map', 8, 512, 512, 1, "maps/neroxis_map_generator_sneaky_map.zip", 0, 0, 16);
+  (18, 'Sneaky_Map', 8, 512, 512, 1, 'maps/neroxis_map_generator_sneaky_map.zip', 0, 0, 16);
 
 insert into ladder_map (id, idmap) values
   (1,1),
@@ -272,7 +272,8 @@ insert into game_player_stats (gameId, playerId, AI, faction, color, team, place
 insert into matchmaker_queue (id, technical_name, featured_mod_id, leaderboard_id, name_key, team_size, enabled) values
   (1, "ladder1v1", 6, 2, "matchmaker.ladder1v1", 1, true),
   (2, "tmm2v2", 1, 3, "matchmaker.tmm2v2", 2, true),
-  (3, "disabled", 1, 1, "matchmaker.disabled", 4, false);
+  (3, "disabled", 1, 1, "matchmaker.disabled", 4, false),
+  (4, "neroxis1v1", 1, 2, "matchmaker.neroxis", 1, true);
 
 insert into matchmaker_queue_game (matchmaker_queue_id, game_stats_id) values
   (1, 1),
@@ -301,18 +302,24 @@ insert into matchmaker_queue_game (matchmaker_queue_id, game_stats_id) values
 insert into map_pool (id, name) values
   (1, "Ladder1v1 season 1: 5-10k"),
   (2, "Ladder1v1 season 1: all"),
-  (3, "Large maps");
+  (3, "Large maps"),
+  (4, "Generated Maps with Errors");
 
-insert into map_pool_map_version (map_pool_id, map_version_id) values
-  (1, 15), (1, 16), (1, 17),
-  (2, 11), (2, 14), (2, 15), (2, 16), (2, 17),
-  (3, 1),  (3, 2),  (3, 3);
+insert into map_pool_map_version (map_pool_id, map_version_id, weight, map_params) values
+  (1, 15, 1, NULL), (1, 16, 1, NULL), (1, 17, 1, NULL),
+  (2, 11, 1, NULL), (2, 14, 1, NULL), (2, 15, 1, NULL), (2, 16, 1, NULL), (2, 17, 1, NULL),
+  (3, 1, 1, NULL),  (3, 2, 1, NULL),  (3, 3, 1, NULL),
+  (4, NULL, 1, '{"type": "neroxis", "size": 512, "spawns": 2, "version": "0.0.0"}'),
+  (4, NULL, 1, '{"type": "neroxis", "size": 513, "spawns": 2, "version": "0.0.0"}'),
+  (4, NULL, 1, '{"type": "neroxis", "size": 0, "spawns": 2, "version": "0.0.0"}'),
+  (4, NULL, 1, '{"type": "beroxis", "size": 512, "spawns": 2, "version": "0.0.0"}');
 
 insert into matchmaker_queue_map_pool (matchmaker_queue_id, map_pool_id, min_rating, max_rating) values
   (1, 1, NULL, 800),
   (1, 2, 800, NULL),
   (1, 3, 1000, NULL),
-  (2, 3, NULL, NULL);
+  (2, 3, NULL, NULL),
+  (4, 4, NULL, NULL);
 
 insert into friends_and_foes (user_id, subject_id, `status`) values
   (1, 3, 'FOE'),

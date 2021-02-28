@@ -13,7 +13,7 @@ from server.ladder_service import game_name
 from server.matchmaker import MapPool, MatchmakerQueue
 from server.players import PlayerState
 from server.rating import RatingType
-from server.types import Map
+from server.types import Map, NeroxisGeneratedMap
 from tests.conftest import make_player
 from tests.utils import autocontext, fast_forward
 
@@ -48,7 +48,7 @@ async def test_load_from_database(ladder_service, queue_factory):
     for _ in range(3):
         await ladder_service.update_data()
 
-        assert len(ladder_service.queues) == 2
+        assert len(ladder_service.queues) == 3
 
         queue = ladder_service.queues["ladder1v1"]
         assert queue.name == "ladder1v1"
@@ -65,6 +65,13 @@ async def test_load_from_database(ladder_service, queue_factory):
             Map(id=1, name="SCMP_001", path="maps/scmp_001.zip"),
             Map(id=2, name="SCMP_002", path="maps/scmp_002.zip"),
             Map(id=3, name="SCMP_003", path="maps/scmp_003.zip"),
+        ]
+
+        queue = ladder_service.queues["neroxis1v1"]
+        assert queue.name == "neroxis1v1"
+        assert len(queue.map_pools) == 1
+        assert list(queue.map_pools[4][0].maps.values()) == [
+            NeroxisGeneratedMap.of("0.0.0", 2, 512),
         ]
 
 
