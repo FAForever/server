@@ -13,7 +13,7 @@ from server.ladder_service import game_name
 from server.matchmaker import MapPool, MatchmakerQueue
 from server.players import PlayerState
 from server.rating import RatingType
-from server.types import Map
+from server.types import Map, NeroxisGeneratedMap
 from tests.conftest import make_player
 from tests.utils import autocontext, fast_forward
 
@@ -48,7 +48,7 @@ async def test_load_from_database(ladder_service, queue_factory):
     for _ in range(3):
         await ladder_service.update_data()
 
-        assert len(ladder_service.queues) == 2
+        assert len(ladder_service.queues) == 3
 
         queue = ladder_service.queues["ladder1v1"]
         assert queue.name == "ladder1v1"
@@ -67,18 +67,26 @@ async def test_load_from_database(ladder_service, queue_factory):
             Map(id=3, name="SCMP_003", path="maps/scmp_003.zip"),
         ]
 
+        queue = ladder_service.queues["neroxis1v1"]
+        assert queue.name == "neroxis1v1"
+        assert len(queue.map_pools) == 1
+        assert list(queue.map_pools[4][0].maps.values()) == [
+            NeroxisGeneratedMap.of({"version": "0.0.0", "spawns": 2, "size": 512, "type": "neroxis"}),
+        ]
+
 
 @fast_forward(5)
 async def test_load_from_database_new_data(ladder_service, database):
     async with database.acquire() as conn:
-        result = await conn.execute(matchmaker_queue.insert().values(
+        await conn.execute(matchmaker_queue.insert().values(
+            id=5,
             technical_name="test",
             featured_mod_id=1,
             leaderboard_id=1,
             name_key="test.name"
         ))
         await conn.execute(matchmaker_queue_map_pool.insert().values(
-            matchmaker_queue_id=result.lastrowid,
+            matchmaker_queue_id=5,
             map_pool_id=1
         ))
 

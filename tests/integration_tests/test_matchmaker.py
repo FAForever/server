@@ -1,4 +1,5 @@
 import asyncio
+import re
 
 import pytest
 from sqlalchemy import select
@@ -38,6 +39,18 @@ async def test_game_launch_message(lobby_server):
     assert msg1["expected_players"] == msg2["expected_players"] == 2
     assert msg1["map_position"] == 1
     assert msg2["map_position"] == 2
+
+
+@fast_forward(70)
+async def test_game_launch_message_map_generator(lobby_server):
+    proto1, proto2 = await queue_players_for_matchmaking(lobby_server, queue_name="neroxis1v1")
+
+    msg1 = await read_until_command(proto1, "game_launch")
+    await open_fa(proto1)
+    msg2 = await read_until_command(proto2, "game_launch")
+
+    assert msg1["mapname"] == msg2["mapname"]
+    assert re.match("neroxis_map_generator_0.0.0_[0-9a-z]{13}_aiea", msg1["mapname"])
 
 
 @fast_forward(15)
@@ -153,8 +166,8 @@ async def test_game_matchmaking_timeout_guest(lobby_server, game_service):
         client_response(proto2)
     )
     # GameState Launching is never sent
-    await read_until_command(proto2, "match_cancelled")
-    await read_until_command(proto1, "match_cancelled")
+    await read_until_command(proto2, "match_cancelled", timeout=120)
+    await read_until_command(proto1, "match_cancelled", timeout=120)
 
     assert msg1["uid"] == msg2["uid"]
     assert msg1["mod"] == "ladder1v1"
@@ -182,7 +195,8 @@ async def test_game_matchmaking_timeout_guest(lobby_server, game_service):
 async def test_game_matchmaking_cancel(lobby_server):
     proto = await queue_player_for_matchmaking(
         ("ladder1", "ladder1"),
-        lobby_server
+        lobby_server,
+        queue_name="ladder1v1"
     )
 
     await proto.send_message({

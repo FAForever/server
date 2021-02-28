@@ -1,5 +1,5 @@
 import asyncio
-import itertools
+import json
 import random
 import re
 from collections import defaultdict
@@ -32,8 +32,7 @@ from .game_service import GameService
 from .games import LadderGame
 from .matchmaker import MapPool, MatchmakerQueue, OnMatchedCallback, Search
 from .players import Player, PlayerState
-from .rating import RatingType
-from .types import GameLaunchOptions, Map
+from .types import GameLaunchOptions, Map, NeroxisGeneratedMap
 
 
 @with_logger
@@ -107,6 +106,8 @@ class LadderService(Service):
             select([
                 map_pool.c.id,
                 map_pool.c.name,
+                map_pool_map_version.c.weight,
+                map_pool_map_version.c.map_params,
                 map_version.c.map_id,
                 map_version.c.filename,
                 t_map.c.display_name
@@ -125,8 +126,23 @@ class LadderService(Service):
             _, map_list = map_pool_maps[id_]
             if row.map_id is not None:
                 map_list.append(
-                    Map(row.map_id, row.display_name, row.filename)
+                    Map(row.map_id, row.display_name, row.filename, row.weight)
                 )
+            elif row.map_params is not None:
+                try:
+                    params = json.loads(row.map_params)
+                    map_type = params["type"]
+                    if map_type == "neroxis":
+                        map_list.append(NeroxisGeneratedMap.of(params=params, weight=row.weight))
+
+                except Exception:
+                    self._logger.warning(
+                        "Failed to load map in map pool %d"
+                        "parameters specified as %s",
+                        row.id,
+                        row.map_params,
+                        exc_info=True
+                    )
 
         return map_pool_maps
 
@@ -367,7 +383,7 @@ class LadderService(Service):
             pool = queue.get_map_pool_for_rating(rating)
             if not pool:
                 raise RuntimeError(f"No map pool available for rating {rating}!")
-            map_id, map_name, map_path = pool.choose_map(played_map_ids)
+            _, _, map_path, _ = pool.choose_map(played_map_ids)
 
             game = self.game_service.create_game(
                 game_class=LadderGame,
@@ -410,6 +426,7 @@ class LadderService(Service):
             mapname = re.match("maps/(.+).zip", map_path).group(1)
             # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
             # Really in the future, just send a better description
+
             self._logger.debug("Starting ladder game: %s", game)
             # Options shared by all players
             options = GameLaunchOptions(
@@ -428,7 +445,7 @@ class LadderService(Service):
                 game, is_host=True, options=game_options(host)
             )
             try:
-                await game.wait_hosted(30)
+                await game.wait_hosted(60)
             finally:
                 # TODO: Once the client supports `match_cancelled`, don't
                 # send `launch_game` to the client if the host timed out. Until
@@ -443,7 +460,7 @@ class LadderService(Service):
                     for guest in all_guests
                     if guest.lobby_connection is not None
                 ])
-            await game.wait_launched(30 + 10 * len(all_guests))
+            await game.wait_launched(60 + 10 * len(all_guests))
             self._logger.debug("Ladder game launched successfully")
         except Exception:
             if game:
