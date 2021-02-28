@@ -5,6 +5,7 @@ from sqlalchemy import and_, select
 
 from server.db.models import leaderboard_rating
 from server.games import GameState, LadderGame, ValidityState
+from server.games.game_results import GameOutcome
 from server.rating import RatingType
 from tests.unit_tests.test_game import add_connected_players
 
@@ -69,6 +70,23 @@ async def test_is_winner_on_draw(laddergame, players):
 
     assert not laddergame.is_winner(players.hosting)
     assert not laddergame.is_winner(players.joining)
+
+
+async def test_game_result_draw_bug(laddergame, players):
+    laddergame.state = GameState.LOBBY
+    add_connected_players(laddergame, [players.hosting, players.joining])
+    await laddergame.launch()
+
+    await laddergame.add_result(players.hosting.id, 0, "defeat", -10)
+    await laddergame.add_result(players.hosting.id, 0, "score", 1)
+    await laddergame.add_result(players.joining.id, 1, "defeat", -10)
+
+    assert not laddergame.is_winner(players.hosting)
+    assert not laddergame.is_winner(players.joining)
+
+    results = await laddergame.resolve_game_results()
+    for summary in results.team_summaries:
+        assert summary.outcome is GameOutcome.DRAW
 
 
 async def test_rate_game(laddergame: LadderGame, database, game_add_players):
