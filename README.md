@@ -1,6 +1,6 @@
 # FA Forever - Server
 ![python](https://img.shields.io/badge/python-3.7-blue)
-[![Build Status](https://travis-ci.org/FAForever/server.svg?branch=develop)](https://travis-ci.org/FAForever/server)
+![Build Status](https://github.com/FAForever/server/actions/workflows/test.yml/badge.svg?branch=develop)
 [![codecov](https://codecov.io/gh/FAForever/server/branch/develop/graph/badge.svg?token=55ndgNQdUv)](https://codecov.io/gh/FAForever/server)
 [![semver](https://img.shields.io/badge/license-GPLv3-blue)](license.txt)
 
