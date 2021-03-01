@@ -68,10 +68,12 @@ jobs:
 
       - run: pipenv run tests
       - run: sed -i.bak s#/code/#$(pwd)/#g .coverage
+
       - name: Report coverage
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pipenv run coveralls
+        uses: codecov/codecov-action@v1
+        with:
+          files: .coverage
+          fail_ci_if_error: true
 
   docker-build:
       runs-on: ubuntu-latest
