@@ -107,7 +107,6 @@ def add_players_with_rating(player_factory, game, ratings, teams):
                 player_id=i,
                 global_rating=rating,
                 ladder_rating=rating,
-                with_lobby_connection=False,
             ),
             team,
         )
@@ -857,7 +856,6 @@ async def test_single_wrong_report_still_rated_correctly(game: Game, player_fact
             login=f"{player_id}",
             player_id=player_id,
             global_rating=Rating(old_rating, 250),
-            with_lobby_connection=False,
         )
         for team in log_dict["teams"].values()
         for player_id in team

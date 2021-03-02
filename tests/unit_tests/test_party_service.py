@@ -21,10 +21,10 @@ async def party_service(game_service):
     await service.shutdown()
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def player_factory(player_factory):
     def make(*args, **kwargs):
-        passed_kwargs = dict(with_lobby_connection=False)
+        passed_kwargs = dict(lobby_connection_spec=None)
         passed_kwargs.update(kwargs)
         player = player_factory(*args, **passed_kwargs)
         player.send_message = CoroutineMock()
@@ -257,7 +257,7 @@ async def test_set_factions_creates_party(party_service, player_factory):
 
 
 async def test_player_disconnected(party_service, player_factory):
-    sender = player_factory(player_id=1, with_lobby_connection=True)
+    sender = player_factory(player_id=1, lobby_connection_spec="auto")
     receiver = player_factory(player_id=2)
 
     party_service.invite_player_to_party(sender, receiver)

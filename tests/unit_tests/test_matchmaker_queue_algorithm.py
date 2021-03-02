@@ -9,43 +9,11 @@ from hypothesis import strategies as st
 from server import config
 from server.matchmaker import Search, algorithm
 from server.rating import RatingType
-from tests.conftest import make_player
+
+from .strategies import st_searches_list
 
 
-@st.composite
-def st_players(draw, name="Player"):
-    """Strategy for generating Player objects"""
-    return make_player(
-        ladder_rating=(draw(st.floats(0, 2500)), draw(st.floats(1, 500))),
-        ladder_games=draw(st.integers(0, 1000)),
-        login=name
-    )
-
-
-@st.composite
-def st_searches(draw, num_players=1):
-    """Strategy for generating Search objects"""
-    return Search([
-        draw(st_players(f"p{i}")) for i in range(num_players)
-    ])
-
-
-@st.composite
-def st_searches_list(draw, min_players=1, max_players=10, max_size=30):
-    """Strategy for generating a list of Search objects"""
-    return draw(
-        st.lists(
-            st_searches(
-                num_players=draw(
-                    st.integers(min_value=min_players, max_value=max_players)
-                )
-            ),
-            max_size=max_size
-        )
-    )
-
-
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def player_factory(player_factory):
     def make(
         mean: int = 1500,
@@ -58,7 +26,7 @@ def player_factory(player_factory):
             ladder_rating=(mean, deviation),
             ladder_games=ladder_games,
             login=name,
-            with_lobby_connection=False,
+            lobby_connection_spec=None,
         )
         return player
     return make

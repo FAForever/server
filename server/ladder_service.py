@@ -373,13 +373,14 @@ class LadderService(Service):
                 game_class=LadderGame,
                 game_mode=queue.featured_mod,
                 host=host,
-                name=game_name(team1, team2),
+                name="Matchmaker Game",
                 matchmaker_queue_id=queue.id,
                 rating_type=queue.rating_type,
                 max_players=len(all_players)
             )
             game.init_mode = InitMode.AUTO_LOBBY
             game.map_file_path = map_path
+            game.set_name_unchecked(game_name(team1, team2))
 
             def get_player_mean(player):
                 return player.ratings[queue.rating_type][0]

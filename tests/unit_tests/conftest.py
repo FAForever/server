@@ -149,7 +149,7 @@ def game_add_players(player_factory):
                 player_id=i+1,
                 login=f"Player {i + 1}",
                 global_rating=(1500, 500),
-                with_lobby_connection=False
+                lobby_connection_spec=None
             )
             players.append(p)
 
