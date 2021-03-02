@@ -67,7 +67,6 @@ jobs:
           pipenv sync --dev
 
       - run: pipenv run tests
-      - run: sed -i.bak s#/code/#$(pwd)/#g .coverage
 
       - name: Report coverage
         uses: codecov/codecov-action@v1
