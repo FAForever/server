@@ -3,7 +3,7 @@ from unittest import mock
 
 import pytest
 from asynctest import CoroutineMock, create_autospec, exhaust_callbacks
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from server import GameService, LadderService
@@ -171,9 +171,9 @@ async def test_start_game_with_teams(
 @given(
     team1=st.lists(
         st.sampled_from((
-            make_player(player_id=1, global_rating=(500, 10)),
-            make_player(player_id=3, global_rating=(1000, 10)),
-            make_player(player_id=5, global_rating=(2000, 10))
+            make_player("p1", player_id=1, global_rating=(500, 10)),
+            make_player("p3", player_id=3, global_rating=(1000, 10)),
+            make_player("p5", player_id=5, global_rating=(2000, 10))
         )),
         min_size=3,
         max_size=3,
@@ -181,15 +181,16 @@ async def test_start_game_with_teams(
     ),
     team2=st.lists(
         st.sampled_from((
-            make_player(player_id=2, global_rating=(500, 10)),
-            make_player(player_id=4, global_rating=(1000, 10)),
-            make_player(player_id=6, global_rating=(2000, 10))
+            make_player("p2", player_id=2, global_rating=(500, 10)),
+            make_player("p4", player_id=4, global_rating=(1000, 10)),
+            make_player("p6", player_id=6, global_rating=(2000, 10))
         )),
         min_size=3,
         max_size=3,
         unique=True
     )
 )
+@settings(deadline=300)
 @autocontext("ladder_and_game_service_context", "monkeypatch_context")
 async def test_start_game_start_spots(
     ladder_and_game_service,
