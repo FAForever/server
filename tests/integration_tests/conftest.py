@@ -2,7 +2,7 @@ import asyncio
 import hashlib
 import logging
 from collections import defaultdict
-from typing import Any, Callable, Dict, Tuple, Type
+from typing import Any, Callable, Dict, Tuple
 from unittest import mock
 
 import asynctest
@@ -14,7 +14,7 @@ from server import GameService, ServerInstance, run_control_server
 from server.db.models import login
 from server.ladder_service import LadderService
 from server.party_service import PartyService
-from server.protocol import Protocol, QDataStreamProtocol
+from server.protocol import Protocol
 from server.rating_service.rating_service import RatingService
 from server.servercontext import ServerContext
 
@@ -86,11 +86,16 @@ async def lobby_server(
             }
         )
         ctx = await instance.listen(("127.0.0.1", None))
+        ctx.__connected_client_protos = []
         player_service.is_uniqueid_exempt = lambda id: True
 
         yield ctx
 
         ctx.close()
+        # Close connected protocol objects
+        # https://github.com/FAForever/server/issues/717
+        for proto in ctx.__connected_client_protos:
+            proto.writer.close()
         await ctx.wait_closed()
         await exhaust_callbacks(event_loop)
 
@@ -163,13 +168,13 @@ async def tmp_user(database):
     return make_user
 
 
-async def connect_client(
-    server: ServerContext,
-    protocol_class: Type[Protocol] = QDataStreamProtocol
-) -> Protocol:
-    return protocol_class(
+async def connect_client(server: ServerContext) -> Protocol:
+    proto = server.protocol_class(
         *(await asyncio.open_connection(*server.sockets[0].getsockname()))
     )
+    if hasattr(server, "__connected_client_protos"):
+        server.__connected_client_protos.append(proto)
+    return proto
 
 
 async def perform_login(
@@ -240,9 +245,8 @@ async def get_session(proto):
 async def connect_and_sign_in(
     credentials,
     lobby_server: ServerContext,
-    protocol_class: Type[Protocol] = QDataStreamProtocol
 ):
-    proto = await connect_client(lobby_server, protocol_class=protocol_class)
+    proto = await connect_client(lobby_server)
     session = await get_session(proto)
     await perform_login(proto, credentials)
     hello = await read_until_command(proto, "welcome", timeout=120)

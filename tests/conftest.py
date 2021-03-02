@@ -8,6 +8,7 @@ these should be put in the ``conftest.py'' relative to it.
 
 import asyncio
 import logging
+from contextlib import asynccontextmanager, contextmanager
 from typing import Iterable
 from unittest import mock
 
@@ -48,6 +49,29 @@ def pytest_configure(config):
     )
 
 
+@pytest.fixture(scope="session")
+def caplog_context():
+    """
+    Returns a context manager for user controlled cleanup.
+
+    `Hypothesis` tests should not use function scoped fixtures as they will not
+    be reset between examples. Use this fixture instead to ensure that cleanup
+    happens every time the test function is called.
+    """
+    @contextmanager
+    def make_caplog_context(request):
+        result = pytest.LogCaptureFixture(request.node, _ispytest=True)
+        yield result
+        result._finalize()
+
+    return make_caplog_context
+
+
+@pytest.fixture(scope="session")
+def monkeypatch_context():
+    return pytest.MonkeyPatch.context
+
+
 @pytest.fixture(scope="session", autouse=True)
 async def test_data(request):
     db = await global_database(request)
@@ -81,30 +105,41 @@ async def global_database(request):
     return db
 
 
+@pytest.fixture(scope="session")
+def database_context():
+    @asynccontextmanager
+    async def make_database(request):
+        def opt(val):
+            return request.config.getoption(val)
+
+        host, user, pw, name, port = (
+            opt("--mysql_host"),
+            opt("--mysql_username"),
+            opt("--mysql_password"),
+            opt("--mysql_database"),
+            opt("--mysql_port")
+        )
+        db = MockDatabase(asyncio.get_running_loop())
+
+        await db.connect(
+            host=host,
+            user=user,
+            password=pw or None,
+            port=port,
+            db=name
+        )
+
+        yield db
+
+        await db.close()
+
+    return make_database
+
+
 @pytest.fixture
-async def database(request):
-    def opt(val):
-        return request.config.getoption(val)
-    host, user, pw, name, port = (
-        opt("--mysql_host"),
-        opt("--mysql_username"),
-        opt("--mysql_password"),
-        opt("--mysql_database"),
-        opt("--mysql_port")
-    )
-    db = MockDatabase(asyncio.get_running_loop())
-
-    await db.connect(
-        host=host,
-        user=user,
-        password=pw or None,
-        port=port,
-        db=name
-    )
-
-    yield db
-
-    await db.close()
+async def database(request, database_context):
+    async with database_context(request) as db:
+        yield db
 
 
 @pytest.fixture
@@ -239,8 +274,11 @@ async def message_queue_service():
 
 @pytest.fixture
 async def game_service(
-    database, player_service, game_stats_service,
-    rating_service, message_queue_service
+    database,
+    player_service,
+    game_stats_service,
+    rating_service,
+    message_queue_service
 ):
     game_service = GameService(
         database,
@@ -298,7 +336,7 @@ def matchmaker_queue(game_service) -> MatchmakerQueue:
     return queue
 
 
-@pytest.fixture()
+@pytest.fixture
 def api_accessor():
     session = asynctest.create_autospec(OAuth2Session)
     session.request.return_value = (200, "test")
@@ -327,20 +365,17 @@ def game_stats_service(event_service, achievement_service):
 
 
 @pytest.fixture
-def coturn_hosts() -> Iterable:
+def coturn_hosts() -> Iterable[str]:
     return ["a", "b", "c", "d"]
 
 
 @pytest.fixture
-def coturn_keys(coturn_hosts) -> Iterable:
-    keys_list = []
-    for host in coturn_hosts:
-        keys_list.append(f"secret_{host}")
-    return keys_list
+def coturn_keys(coturn_hosts) -> Iterable[str]:
+    return [f"secret_{host}" for host in coturn_hosts]
 
 
 @pytest.fixture
-def coturn_credentials() -> Iterable:
+def coturn_credentials() -> Iterable[str]:
     return [
         "mO/6NHZaG4fwCf7mVuaWNRS7Atw=",
         "uSjJUafCX3fEQTGK3NI+mUe6UDo=",

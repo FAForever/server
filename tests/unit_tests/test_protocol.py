@@ -12,6 +12,16 @@ from server.protocol import DisconnectedError, QDataStreamProtocol
 pytestmark = pytest.mark.asyncio
 
 
+@pytest.fixture(scope="session")
+def protocol_factory():
+    async def make_protocol():
+        rsock, _ = socketpair()
+        reader, writer = await asyncio.open_connection(sock=rsock)
+        return QDataStreamProtocol(reader, writer)
+
+    return make_protocol
+
+
 @pytest.fixture
 def socket_pair():
     """A pair of connected sockets."""
@@ -122,7 +132,6 @@ async def test_unpacks_evil_qstring(protocol, reader):
     assert message == {"command": "ask_session"}
 
 
-@pytest.mark.filterwarnings("ignore:.*'(protocol|reader)' fixture")
 @given(message=st_messages())
 @example(message={
     "Some": "crazy",
@@ -130,8 +139,11 @@ async def test_unpacks_evil_qstring(protocol, reader):
     "with": 1000
 })
 @settings(max_examples=300)
-async def test_QDataStreamProtocol_pack_unpack(protocol, reader, message):
-    reader.feed_data(QDataStreamProtocol.pack_message(json.dumps(message)))
+async def test_QDataStreamProtocol_pack_unpack(protocol_factory, message):
+    protocol = await protocol_factory()
+    protocol.reader.feed_data(
+        QDataStreamProtocol.pack_message(json.dumps(message))
+    )
 
     assert message == await protocol.read_message()
 
