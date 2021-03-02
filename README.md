@@ -1,8 +1,8 @@
 # FA Forever - Server
+![Build Status](https://github.com/FAForever/server/actions/workflows/test.yml/badge.svg?branch=develop)
+[![codecov](https://codecov.io/gh/FAForever/server/branch/develop/graph/badge.svg?token=55ndgNQdUv)](https://codecov.io/gh/FAForever/server)
+[![license](https://img.shields.io/badge/license-GPLv3-blue)](license.txt)
 ![python](https://img.shields.io/badge/python-3.7-blue)
-[![Build Status](https://travis-ci.org/FAForever/server.svg?branch=develop)](https://travis-ci.org/FAForever/server)
-[![Coveralls Status](https://img.shields.io/coveralls/FAForever/server/develop.svg)](https://coveralls.io/github/FAForever/server)
-[![semver](https://img.shields.io/badge/license-GPLv3-blue)](license.txt)
 
 This is the source code for the
 [Forged Alliance Forever](https://www.faforever.com/) lobby server.
