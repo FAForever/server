@@ -66,12 +66,12 @@ jobs:
           pip install pipenv
           pipenv sync --dev
 
-      - run: pipenv run tests
+      - run: pipenv run tests --cov-report=xml
 
       - name: Report coverage
         uses: codecov/codecov-action@v1
         with:
-          files: .coverage
+          files: coverage.xml
           fail_ci_if_error: true
 
   docker-build:
