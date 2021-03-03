@@ -4,7 +4,7 @@ import json
 import random
 import re
 from collections import defaultdict
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 import aiocron
 from sqlalchemy import and_, func, select, text, true
@@ -131,41 +131,7 @@ class LadderService(Service):
                     Map(row.map_id, row.display_name, row.filename, row.weight)
                 )
             elif row.map_params is not None:
-                try:
-                    params = json.loads(row.map_params)
-                    map_type = params["type"]
-                    if map_type != "neroxis":
-                        raise Exception("Unsupported map type")
-
-                    map_size_pixels = int(params["size"])
-                    if map_size_pixels <= 0:
-                        raise Exception("Map size is zero or negative")
-
-                    if map_size_pixels & (map_size_pixels - 1) != 0:
-                        raise Exception("Map size is not a power of 2")
-
-                    spawns = int(params["spawns"])
-                    if spawns % 2 != 0:
-                        raise Exception("spawns is not a multiple of 2")
-
-                    version = params["version"]
-                    map_list.append(
-                        NeroxisGeneratedMap.of(
-                            version,
-                            spawns,
-                            map_size_pixels,
-                            row.weight
-                        )
-                    )
-
-                except Exception:
-                    self._logger.warning(
-                        "Failed to load map in map pool id %d "
-                        "parameters specified as %s",
-                        row.id,
-                        row.map_params,
-                        exc_info=True
-                    )
+                self.parse_map_params(map_list, row.map_params, row.weight)
 
         return map_pool_maps
 
@@ -202,6 +168,42 @@ class LadderService(Service):
                 row.max_rating
             ))
         return matchmaker_queues
+
+    def parse_map_params(self, map_list: List[Union[Map, NeroxisGeneratedMap]], map_params: str, weight: int):
+        try:
+            params = json.loads(map_params)
+            map_type = params["type"]
+            if map_type != "neroxis":
+                raise Exception("Unsupported map type")
+
+            map_size_pixels = int(params["size"])
+            if map_size_pixels <= 0:
+                raise Exception("Map size is zero or negative")
+
+            if map_size_pixels & (map_size_pixels - 1) != 0:
+                raise Exception("Map size is not a power of 2")
+
+            spawns = int(params["spawns"])
+            if spawns % 2 != 0:
+                raise Exception("spawns is not a multiple of 2")
+
+            version = params["version"]
+            map_list.append(
+                NeroxisGeneratedMap.of(
+                    version,
+                    spawns,
+                    map_size_pixels,
+                    weight
+                )
+            )
+
+        except Exception:
+            self._logger.warning(
+                "Failed to load map in map pool"
+                "parameters specified as %s",
+                map_params,
+                exc_info=True
+            )
 
     def start_search(
         self,

@@ -260,7 +260,7 @@ map_pool_map_version = Table(
     Column("map_pool_id",       Integer,    ForeignKey("map_pool.id"),     nullable=False),
     Column("map_version_id",    Integer,    ForeignKey("map_version.id"),  nullable=True),
     Column("weight",            Integer,    nullable=False),
-    Column("map_params",  Text,       nullable=True),
+    Column("map_params",        Text,       nullable=True),
 )
 
 map_version = Table(
