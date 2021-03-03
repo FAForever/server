@@ -66,10 +66,11 @@ def test_choose_map_generated_map(map_pool_factory):
     spawn_byte = spawns.to_bytes(1, 'big')
     option_bytes = spawn_byte + size_byte
     option_str = base64.b32encode(option_bytes).decode("ascii").replace("=", "").lower()
+    seed_match = "[0-9a-z]{13}"
 
     assert chosen_map.id == map_id
-    assert re.match(f"maps/neroxis_map_generator_{version}_.*_{option_str}.zip", chosen_map.path)
-    assert re.match(f"neroxis_map_generator_{version}_.*_{option_str}", chosen_map.name)
+    assert re.match(f"maps/neroxis_map_generator_{version}_{seed_match}_{option_str}.zip", chosen_map.path)
+    assert re.match(f"neroxis_map_generator_{version}_{seed_match}_{option_str}", chosen_map.name)
     assert chosen_map.weight == 1
 
 

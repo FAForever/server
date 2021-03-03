@@ -145,6 +145,9 @@ class LadderService(Service):
                         raise Exception("Map size is not a power of 2")
 
                     spawns = int(params["spawns"])
+                    if spawns % 2 != 0:
+                        raise Exception("spawns is not a multiple of 2")
+
                     version = params["version"]
                     map_list.append(
                         NeroxisGeneratedMap.of(
