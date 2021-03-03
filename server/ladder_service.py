@@ -112,7 +112,7 @@ class LadderService(Service):
                 map_pool_map_version.c.map_params,
                 map_version.c.map_id,
                 map_version.c.filename,
-                t_map.c.display_name,
+                t_map.c.display_name
             ]).select_from(
                 map_pool.outerjoin(map_pool_map_version)
                 .outerjoin(map_version)
