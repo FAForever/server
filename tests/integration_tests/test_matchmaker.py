@@ -1,4 +1,6 @@
 import asyncio
+import base64
+import re
 
 import pytest
 from sqlalchemy import select
@@ -38,6 +40,27 @@ async def test_game_launch_message(lobby_server):
     assert msg1["expected_players"] == msg2["expected_players"] == 2
     assert msg1["map_position"] == 1
     assert msg2["map_position"] == 2
+
+
+@fast_forward(70)
+async def test_game_launch_message_map_generator(lobby_server):
+    size = 512
+    spawns = 2
+    version = "0.0.0"
+    size_byte = (size // 64).to_bytes(1, 'big')
+    spawn_byte = spawns.to_bytes(1, 'big')
+    option_bytes = spawn_byte + size_byte
+    option_str = base64.b32encode(option_bytes).decode("ascii").replace("=", "").lower()
+    seed_match = "[0-9a-z]{13}"
+
+    proto1, proto2 = await queue_players_for_matchmaking(lobby_server, queue_name="neroxis1v1")
+
+    msg1 = await read_until_command(proto1, "game_launch")
+    await open_fa(proto1)
+    msg2 = await read_until_command(proto2, "game_launch")
+
+    assert msg1["mapname"] == msg2["mapname"]
+    assert re.match(f"neroxis_map_generator_{version}_{seed_match}_{option_str}", msg1["mapname"])
 
 
 @fast_forward(15)
@@ -182,7 +205,8 @@ async def test_game_matchmaking_timeout_guest(lobby_server, game_service):
 async def test_game_matchmaking_cancel(lobby_server):
     proto = await queue_player_for_matchmaking(
         ("ladder1", "ladder1"),
-        lobby_server
+        lobby_server,
+        queue_name="ladder1v1"
     )
 
     await proto.send_message({
