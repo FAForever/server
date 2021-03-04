@@ -72,7 +72,6 @@ class Unit(Enum):
     # Other units
     MERCY = "daa0206"
     FIRE_BEETLE = "xrl0302"
-    SALVATION = "xab2307"
 
 
 ACUS = [
