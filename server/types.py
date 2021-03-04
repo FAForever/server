@@ -1,6 +1,6 @@
-from typing import NamedTuple, Optional, Union
-import random
 import base64
+import random
+from typing import NamedTuple, Optional
 
 
 class Address(NamedTuple):

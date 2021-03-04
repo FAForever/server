@@ -1,5 +1,5 @@
-import random
 import base64
+import random
 import re
 
 import pytest
