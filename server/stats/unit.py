@@ -16,21 +16,26 @@ class Unit(Enum):
     IAZYNE = "xsa0303"
 
     # Experimentals
+    # Aeon
     PARAGON = "xab1401"
-    MAVOR = "ueb2401"
-    YOLONA_OSS = "xsb2401"
-    CZAR = "ueb2401"
-    SOUL_RIPPER = "ura0401"
-    AHWASSA = "xsa0402"
-    SCATHIS = "url0401"
+    CZAR = "uaa0310"
     GALACTIC_COLOSSUS = "ual0401"
+    TEMPEST = "uas0401"
+    SALVATION = "xab2307"
+    #UEF
+    MAVOR = "ueb2401"
+    FATBOY = "uel0401"
+    NOVAX_CENTER = "xeb2402"
+    ATLANTIS = "ues0401"
+    #Cybran
+    SOUL_RIPPER = "ura0401"
+    SCATHIS = "url0401"
     MONKEYLORD = "url0402"
     MEGALITH = "xrl0403"
-    FATBOY = "uel0401"
+    #Sera
+    YOLONA_OSS = "xsb2401"
+    AHWASSA = "xsa0402"
     YTHOTHA = "xsl0401"
-    TEMPEST = "uas0401"
-    ATLANTIS = "ues0401"
-    NOVAX_CENTER = "xeb2402"
 
     # Transporters
     CHARIOT = "uaa0107"
@@ -106,7 +111,8 @@ EXPERIMENTALS = [
     Unit.GALACTIC_COLOSSUS,
     Unit.SOUL_RIPPER,
     Unit.MEGALITH,
-    Unit.NOVAX_CENTER
+    Unit.NOVAX_CENTER,
+    Unit.SALVATION
 ]
 
 TRANSPORTS = [
