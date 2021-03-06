@@ -456,7 +456,7 @@ async def test_game_matchmaking_timeout(lobby_server):
         await read_until_command(protos[1], "search_info", state="start", timeout=5)
 
 
-@fast_forward(60)
+@fast_forward(120)
 async def test_game_ratings(lobby_server):
     protos, ids = await queue_players_for_matchmaking(lobby_server)
 

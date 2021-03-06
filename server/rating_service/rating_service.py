@@ -22,7 +22,7 @@ from server.games.game_results import GameOutcome
 from server.message_queue_service import MessageQueueService
 from server.metrics import rating_service_backlog
 from server.player_service import PlayerService
-from server.rating import RatingType, RatingTypeMap
+from server.rating import Leaderboard, RatingType
 
 from .game_rater import GameRater, GameRatingError
 from .typedefs import (
@@ -63,6 +63,7 @@ class RatingService(Service):
         self._queue = asyncio.Queue()
         self._task = None
         self._rating_type_ids = None
+        self.leaderboards: Dict[str, Leaderboard] = {}
         self._message_queue_service = message_queue_service
 
     async def initialize(self) -> None:
@@ -78,14 +79,35 @@ class RatingService(Service):
 
     async def update_data(self):
         async with self._db.acquire() as conn:
-            sql = select([leaderboard])
+            initializer = leaderboard.alias()
+            sql = select([
+                leaderboard.c.id,
+                leaderboard.c.technical_name,
+                initializer.c.technical_name.label("initializer")
+            ]).select_from(
+                leaderboard.outerjoin(
+                    initializer,
+                    leaderboard.c.initializer_id == initializer.c.id
+                )
+            )
             result = await conn.execute(sql)
             rows = await result.fetchall()
 
-        self._rating_type_ids = RatingTypeMap(
-            None,
-            ((row["technical_name"], row["id"]) for row in rows)
-        )
+            self.leaderboards.clear()
+            self._rating_type_ids = {}
+            for row in rows:
+                self.leaderboards[row.technical_name] = Leaderboard(
+                    row.id,
+                    row.technical_name
+                )
+                self._rating_type_ids[row.technical_name] = row.id
+
+            # Link the initializers
+            for row in rows:
+                current = self.leaderboards[row.technical_name]
+                init = self.leaderboards.get(row.initializer)
+                if init:
+                    current.initializer = init
 
     async def enqueue(self, game_info: Dict) -> None:
         if not self._accept_input:

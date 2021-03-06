@@ -17,7 +17,7 @@ from server.games.typedefs import (
     TeamRatingSummary,
     ValidityState
 )
-from server.rating import RatingType
+from server.rating import Leaderboard, RatingType
 from server.rating_service.rating_service import (
     RatingService,
     ServiceNotReadyError
@@ -153,14 +153,23 @@ async def test_get_rating_uninitialized(uninitialized_service):
         await service._get_player_rating(1, RatingType.GLOBAL)
 
 
-async def test_load_rating_type_ids(uninitialized_service):
+async def test_load_from_database(uninitialized_service):
     service = uninitialized_service
+    assert service._rating_type_ids is None
+    assert service.leaderboards == {}
+
     await service.update_data()
 
     assert service._rating_type_ids == {
         "global": 1,
         "ladder_1v1": 2,
         "tmm_2v2": 3
+    }
+    global_ = Leaderboard(1, "global")
+    assert service.leaderboards == {
+        "global": global_,
+        "ladder_1v1": Leaderboard(2, "ladder_1v1"),
+        "tmm_2v2": Leaderboard(3, "tmm_2v2", global_)
     }
 
 

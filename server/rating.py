@@ -2,13 +2,46 @@
 Type definitions for player ratings
 """
 
+from dataclasses import dataclass
 from typing import DefaultDict, Optional, Tuple, TypeVar, Union
 
 from trueskill import Rating
 
+from server.weakattr import WeakAttribute
 
-# Values correspond to legacy table names. This will be fixed when db gets
-# migrated.
+
+@dataclass(init=False)
+class Leaderboard():
+    id: int
+    technical_name: str
+    # Need the type annotation here so that the dataclass decorator sees it as
+    # a field and includes it in generated methods (such as __eq__)
+    initializer: WeakAttribute["Leaderboard"] = WeakAttribute["Leaderboard"]()
+
+    def __init__(
+        self,
+        id: int,
+        technical_name: str,
+        initializer: Optional["Leaderboard"] = None
+    ):
+        self.id = id
+        self.technical_name = technical_name
+        if initializer:
+            self.initializer = initializer
+
+    def __repr__(self) -> str:
+        initializer = self.initializer
+        initializer_name = "None"
+        if initializer:
+            initializer_name = initializer.technical_name
+        return (
+            f"{self.__class__.__name__}("
+            f"id={self.id}, technical_name={self.technical_name}, "
+            f"initializer={initializer_name})"
+        )
+
+
+# Some places have references to these ratings hardcoded.
 class RatingType():
     GLOBAL = "global"
     LADDER_1V1 = "ladder_1v1"

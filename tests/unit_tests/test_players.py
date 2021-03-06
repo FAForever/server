@@ -7,11 +7,21 @@ from trueskill import Rating
 from server.factions import Faction
 from server.players import Player
 from server.protocol import DisconnectedError
-from server.rating import RatingType
+from server.rating import Leaderboard, RatingType
 
 
-def test_ratings():
-    p = Player("Schroedinger")
+@pytest.fixture
+def leaderboards():
+    global_ = Leaderboard(1, "global")
+    return {
+        "global": global_,
+        "ladder_1v1": Leaderboard(2, "ladder_1v1"),
+        "tmm_2v2": Leaderboard(3, "tmm_2v2", global_)
+    }
+
+
+def test_ratings(leaderboards):
+    p = Player("Schroedinger", leaderboards=leaderboards)
     p.ratings[RatingType.GLOBAL] = (1500, 20)
     assert p.ratings[RatingType.GLOBAL] == (1500, 20)
     p.ratings[RatingType.GLOBAL] = Rating(1700, 20)
