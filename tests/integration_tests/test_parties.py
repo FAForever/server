@@ -296,6 +296,8 @@ async def test_accept_while_party_queued(lobby_server):
     )
 
     await read_until_command(proto1, "game_info")
+    await read_until_command(proto2, "game_info")
+
     await invite_to_party(proto1, rhiza_id)
     await proto1.send_message({
         "command": "game_matchmaking",
