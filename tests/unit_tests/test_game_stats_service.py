@@ -8,7 +8,7 @@ from asynctest import CoroutineMock
 from server.factions import Faction
 from server.games import Game
 from server.games.game_results import (
-    GameOutcome,
+    ArmyReportedOutcome,
     GameResultReport,
     GameResultReports
 )
@@ -49,7 +49,7 @@ def game(database, game_stats_service, player):
     game = Game(1, database, Mock(), game_stats_service)
     game._player_options[player.id] = {"Army": 1}
     game._results = GameResultReports(1)
-    game._results.add(GameResultReport(1, 1, GameOutcome.VICTORY, 0))
+    game._results.add(GameResultReport(1, 1, ArmyReportedOutcome.VICTORY, 0))
     return game
 
 

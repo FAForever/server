@@ -3,7 +3,7 @@ from typing import List
 from server.config import config
 from server.core import Service
 from server.games import FeaturedModType, Game
-from server.games.game_results import GameOutcome
+from server.games.game_results import ArmyOutcome
 from server.players import Player
 from server.stats.achievement_service import *
 from server.stats.event_service import *
@@ -48,7 +48,7 @@ class GameStatsService(Service):
             return
 
         army_result = game.get_player_outcome(player)
-        if army_result is GameOutcome.UNKNOWN:
+        if army_result is ArmyOutcome.UNKNOWN:
             self._logger.warning("No army result available for player %s", player.login)
             return
 
@@ -61,7 +61,7 @@ class GameStatsService(Service):
         e_queue = []
         self._logger.debug("Army result for %s => %s ", player, army_result)
 
-        survived = army_result is GameOutcome.VICTORY
+        survived = army_result is ArmyOutcome.VICTORY
         blueprint_stats = stats["blueprints"]
         unit_stats = stats["units"]
         scored_highest = highest_scorer == player.login

@@ -2,7 +2,10 @@ import asyncio
 import gc
 
 import pytest
+from sqlalchemy import select
 
+from server.db.models import game_player_stats
+from server.games.game_results import GameOutcome
 from server.protocol import Protocol
 from tests.utils import fast_forward
 
@@ -337,6 +340,74 @@ async def test_partial_game_ended_rates_game(lobby_server, tmp_user):
 
 
 @fast_forward(15)
+async def test_ladder_game_draw_bug(lobby_server, database):
+    """
+    This simulates the infamous "draw bug" where a player could self destruct
+    their own ACU in order to kill the enemy ACU and be awarded a victory
+    instead of a draw.
+    """
+    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+
+    msg1, msg2 = await asyncio.gather(*[
+        client_response(proto) for proto in (proto1, proto2)
+    ])
+    game_id = msg1["uid"]
+    army1 = msg1["map_position"]
+    army2 = msg2["map_position"]
+
+    for proto in (proto1, proto2):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameState",
+            "args": ["Launching"]
+        })
+    await read_until(
+        proto1,
+        lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
+    )
+
+    # Player 1 ctrl-k's
+    for result in (
+        [army1, "defeat -10"],
+        [army1, "score 1"],
+        [army2, "defeat -10"]
+    ):
+        for proto in (proto1, proto2):
+            await proto1.send_message({
+                "target": "game",
+                "command": "GameResult",
+                "args": result
+            })
+
+    for proto in (proto1, proto2):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameEnded",
+            "args": []
+        })
+
+    ratings = await get_player_ratings(
+        proto1, "ladder1", "ladder2",
+        rating_type="ladder_1v1"
+    )
+
+    # Both start at (1500, 500).
+    # When rated as a draw the means should barely change.
+    assert abs(ratings["ladder1"][0] - 1500.) < 1
+    assert abs(ratings["ladder2"][0] - 1500.) < 1
+
+    async with database.acquire() as conn:
+        result = await conn.execute(
+            select([game_player_stats]).where(
+                game_player_stats.c.gameId == game_id
+            )
+        )
+        async for row in result:
+            assert row.result == GameOutcome.DEFEAT
+            assert row.score == 0
+
+
+@fast_forward(15)
 async def test_ladder_game_not_joinable(lobby_server):
     """
     We should not be able to join AUTO_LOBBY games using the `game_join` command.
@@ -348,16 +419,7 @@ async def test_ladder_game_not_joinable(lobby_server):
     await read_until_command(test_proto, "game_info")
 
     msg = await read_until_command(proto1, "game_launch")
-    await proto1.send_message({
-        "command": "GameState",
-        "target": "game",
-        "args": ["Idle"]
-    })
-    await proto1.send_message({
-        "command": "GameState",
-        "target": "game",
-        "args": ["Lobby"]
-    })
+    await open_fa(proto1)
 
     game_uid = msg["uid"]
 

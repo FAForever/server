@@ -1,6 +1,7 @@
 import pytest
 
 from server.games.game_results import (
+    ArmyOutcome,
     GameOutcome,
     GameResolutionError,
     resolve_game
@@ -8,9 +9,13 @@ from server.games.game_results import (
 
 
 def test_only_rate_with_two_parties():
-    one_party = [{GameOutcome.VICTORY}]
-    two_parties = [{GameOutcome.VICTORY}, {GameOutcome.DEFEAT}]
-    three_parties = [{GameOutcome.VICTORY}, {GameOutcome.DEFEAT}, {GameOutcome.DEFEAT}]
+    one_party = [{ArmyOutcome.VICTORY}]
+    two_parties = [{ArmyOutcome.VICTORY}, {ArmyOutcome.DEFEAT}]
+    three_parties = [
+        {ArmyOutcome.VICTORY},
+        {ArmyOutcome.DEFEAT},
+        {ArmyOutcome.DEFEAT}
+    ]
 
     with pytest.raises(GameResolutionError):
         resolve_game(one_party)
@@ -22,7 +27,7 @@ def test_only_rate_with_two_parties():
 
 
 def testresolve():
-    team_outcomes = [{GameOutcome.VICTORY}, {GameOutcome.DEFEAT}]
+    team_outcomes = [{ArmyOutcome.VICTORY}, {ArmyOutcome.DEFEAT}]
 
     ranks = resolve_game(team_outcomes)
 
@@ -33,97 +38,73 @@ def test_ranks_all_1v1_possibilities():
     """
     Document expectations for all outcomes of 1v1 games.
     Assumes that the order of teams doesn't matter.
-    With six possible outcomes there are 21 possibilities.
+    With five possible outcomes there are 15 possibilities.
     """
-    team_outcomes = [{GameOutcome.VICTORY}, {GameOutcome.VICTORY}]
+    team_outcomes = [{ArmyOutcome.VICTORY}, {ArmyOutcome.VICTORY}]
     with pytest.raises(GameResolutionError):
         resolve_game(team_outcomes)
 
-    team_outcomes = [{GameOutcome.VICTORY}, {GameOutcome.DEFEAT}]
+    team_outcomes = [{ArmyOutcome.VICTORY}, {ArmyOutcome.DEFEAT}]
     ranks = resolve_game(team_outcomes)
     assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
 
-    team_outcomes = [{GameOutcome.VICTORY}, {GameOutcome.DRAW}]
+    team_outcomes = [{ArmyOutcome.VICTORY}, {ArmyOutcome.DRAW}]
     resolve_game(team_outcomes)
     assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
 
-    team_outcomes = [{GameOutcome.VICTORY}, {GameOutcome.MUTUAL_DRAW}]
+    team_outcomes = [{ArmyOutcome.VICTORY}, {ArmyOutcome.UNKNOWN}]
     ranks = resolve_game(team_outcomes)
     assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
 
-    team_outcomes = [{GameOutcome.VICTORY}, {GameOutcome.UNKNOWN}]
+    team_outcomes = [{ArmyOutcome.VICTORY}, {ArmyOutcome.CONFLICTING}]
     ranks = resolve_game(team_outcomes)
     assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
 
-    team_outcomes = [{GameOutcome.VICTORY}, {GameOutcome.CONFLICTING}]
-    ranks = resolve_game(team_outcomes)
-    assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
-
-    team_outcomes = [{GameOutcome.DEFEAT}, {GameOutcome.DEFEAT}]
+    team_outcomes = [{ArmyOutcome.DEFEAT}, {ArmyOutcome.DEFEAT}]
     ranks = resolve_game(team_outcomes)
     assert ranks == [GameOutcome.DRAW, GameOutcome.DRAW]
 
-    team_outcomes = [{GameOutcome.DEFEAT}, {GameOutcome.DRAW}]
+    team_outcomes = [{ArmyOutcome.DEFEAT}, {ArmyOutcome.DRAW}]
     with pytest.raises(GameResolutionError):
         resolve_game(team_outcomes)
 
-    team_outcomes = [{GameOutcome.DEFEAT}, {GameOutcome.MUTUAL_DRAW}]
+    team_outcomes = [{ArmyOutcome.DEFEAT}, {ArmyOutcome.UNKNOWN}]
     with pytest.raises(GameResolutionError):
         resolve_game(team_outcomes)
 
-    team_outcomes = [{GameOutcome.DEFEAT}, {GameOutcome.UNKNOWN}]
+    team_outcomes = [{ArmyOutcome.DEFEAT}, {ArmyOutcome.CONFLICTING}]
     with pytest.raises(GameResolutionError):
         resolve_game(team_outcomes)
 
-    team_outcomes = [{GameOutcome.DEFEAT}, {GameOutcome.CONFLICTING}]
-    with pytest.raises(GameResolutionError):
-        resolve_game(team_outcomes)
-
-    team_outcomes = [{GameOutcome.DRAW}, {GameOutcome.DRAW}]
+    team_outcomes = [{ArmyOutcome.DRAW}, {ArmyOutcome.DRAW}]
     ranks = resolve_game(team_outcomes)
     assert ranks == [GameOutcome.DRAW, GameOutcome.DRAW]
 
-    team_outcomes = [{GameOutcome.DRAW}, {GameOutcome.MUTUAL_DRAW}]
-    ranks = resolve_game(team_outcomes)
-    assert ranks == [GameOutcome.DRAW, GameOutcome.DRAW]
-
-    team_outcomes = [{GameOutcome.DRAW}, {GameOutcome.UNKNOWN}]
+    team_outcomes = [{ArmyOutcome.DRAW}, {ArmyOutcome.UNKNOWN}]
     with pytest.raises(GameResolutionError):
         resolve_game(team_outcomes)
 
-    team_outcomes = [{GameOutcome.DRAW}, {GameOutcome.CONFLICTING}]
+    team_outcomes = [{ArmyOutcome.DRAW}, {ArmyOutcome.CONFLICTING}]
     with pytest.raises(GameResolutionError):
         resolve_game(team_outcomes)
 
-    team_outcomes = [{GameOutcome.MUTUAL_DRAW}, {GameOutcome.MUTUAL_DRAW}]
-    ranks = resolve_game(team_outcomes)
-    assert ranks == [GameOutcome.DRAW, GameOutcome.DRAW]
-
-    team_outcomes = [{GameOutcome.MUTUAL_DRAW}, {GameOutcome.UNKNOWN}]
+    team_outcomes = [{ArmyOutcome.UNKNOWN}, {ArmyOutcome.UNKNOWN}]
     with pytest.raises(GameResolutionError):
         resolve_game(team_outcomes)
 
-    team_outcomes = [{GameOutcome.MUTUAL_DRAW}, {GameOutcome.CONFLICTING}]
+    team_outcomes = [{ArmyOutcome.UNKNOWN}, {ArmyOutcome.CONFLICTING}]
     with pytest.raises(GameResolutionError):
         resolve_game(team_outcomes)
 
-    team_outcomes = [{GameOutcome.UNKNOWN}, {GameOutcome.UNKNOWN}]
-    with pytest.raises(GameResolutionError):
-        resolve_game(team_outcomes)
-
-    team_outcomes = [{GameOutcome.UNKNOWN}, {GameOutcome.CONFLICTING}]
-    with pytest.raises(GameResolutionError):
-        resolve_game(team_outcomes)
-
-    team_outcomes = [{GameOutcome.CONFLICTING}, {GameOutcome.CONFLICTING}]
+    team_outcomes = [{ArmyOutcome.CONFLICTING}, {ArmyOutcome.CONFLICTING}]
     with pytest.raises(GameResolutionError):
         resolve_game(team_outcomes)
 
 
 def test_team_outcome_ignores_unknown():
     team_outcomes = [
-        {GameOutcome.VICTORY, GameOutcome.UNKNOWN},
-        {GameOutcome.DEFEAT, GameOutcome.UNKNOWN},
+        {ArmyOutcome.VICTORY, ArmyOutcome.UNKNOWN},
+        {ArmyOutcome.DEFEAT, ArmyOutcome.UNKNOWN},
     ]
 
     ranks = resolve_game(team_outcomes)
@@ -132,18 +113,8 @@ def test_team_outcome_ignores_unknown():
 
 def test_team_outcome_throws_if_unilateral_draw():
     team_outcomes = [
-        {GameOutcome.DRAW, GameOutcome.DEFEAT},
-        {GameOutcome.DEFEAT, GameOutcome.UNKNOWN},
-    ]
-
-    with pytest.raises(GameResolutionError):
-        resolve_game(team_outcomes)
-
-
-def test_team_outcome_throws_if_unilateral_mutual_draw():
-    team_outcomes = [
-        {GameOutcome.MUTUAL_DRAW, GameOutcome.DEFEAT},
-        {GameOutcome.DEFEAT, GameOutcome.UNKNOWN},
+        {ArmyOutcome.DRAW, ArmyOutcome.DEFEAT},
+        {ArmyOutcome.DEFEAT, ArmyOutcome.UNKNOWN},
     ]
 
     with pytest.raises(GameResolutionError):
@@ -152,8 +123,8 @@ def test_team_outcome_throws_if_unilateral_mutual_draw():
 
 def test_team_outcome_victory_has_priority_over_defeat():
     team_outcomes = [
-        {GameOutcome.VICTORY, GameOutcome.DEFEAT},
-        {GameOutcome.DEFEAT, GameOutcome.DEFEAT},
+        {ArmyOutcome.VICTORY, ArmyOutcome.DEFEAT},
+        {ArmyOutcome.DEFEAT, ArmyOutcome.DEFEAT},
     ]
 
     ranks = resolve_game(team_outcomes)
@@ -163,8 +134,8 @@ def test_team_outcome_victory_has_priority_over_defeat():
 
 def test_team_outcome_victory_has_priority_over_draw():
     team_outcomes = [
-        {GameOutcome.VICTORY, GameOutcome.DRAW},
-        {GameOutcome.DRAW, GameOutcome.DEFEAT},
+        {ArmyOutcome.VICTORY, ArmyOutcome.DRAW},
+        {ArmyOutcome.DRAW, ArmyOutcome.DEFEAT},
     ]
 
     ranks = resolve_game(team_outcomes)
@@ -174,8 +145,8 @@ def test_team_outcome_victory_has_priority_over_draw():
 
 def test_team_outcome_no_double_victory():
     team_outcomes = [
-        {GameOutcome.VICTORY, GameOutcome.VICTORY},
-        {GameOutcome.VICTORY, GameOutcome.DEFEAT},
+        {ArmyOutcome.VICTORY, ArmyOutcome.VICTORY},
+        {ArmyOutcome.VICTORY, ArmyOutcome.DEFEAT},
     ]
 
     with pytest.raises(GameResolutionError):
@@ -184,8 +155,8 @@ def test_team_outcome_no_double_victory():
 
 def test_team_outcome_unranked_if_ambiguous():
     team_outcomes = [
-        {GameOutcome.UNKNOWN, GameOutcome.DEFEAT},
-        {GameOutcome.DEFEAT, GameOutcome.DEFEAT},
+        {ArmyOutcome.UNKNOWN, ArmyOutcome.DEFEAT},
+        {ArmyOutcome.DEFEAT, ArmyOutcome.DEFEAT},
     ]
 
     with pytest.raises(GameResolutionError):

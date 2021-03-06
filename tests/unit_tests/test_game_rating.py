@@ -156,7 +156,6 @@ async def test_rating_summary_missing_team_raises_game_error(game, players):
 
 
 async def test_resolve_game_fails_if_not_launched(custom_game, players):
-    rating_service = custom_game.game_service._rating_service
     custom_game.state = GameState.LOBBY
     add_connected_players(custom_game, [players.hosting, players.joining])
     custom_game.set_player_option(players.hosting.id, "Team", 2)
