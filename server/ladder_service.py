@@ -422,6 +422,11 @@ class LadderService(Service):
             mapname = re.match("maps/(.+).zip", map_path).group(1)
             # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
             # Really in the future, just send a better description
+
+            additional_timeout = 0
+            if "neroxis_map_generator" in mapname:
+                additional_timeout += 30
+
             self._logger.debug("Starting ladder game: %s", game)
             # Options shared by all players
             options = GameLaunchOptions(
@@ -440,7 +445,7 @@ class LadderService(Service):
                 game, is_host=True, options=game_options(host)
             )
             try:
-                await game.wait_hosted(30)
+                await game.wait_hosted(30 + additional_timeout)
             finally:
                 # TODO: Once the client supports `match_cancelled`, don't
                 # send `launch_game` to the client if the host timed out. Until
@@ -455,7 +460,7 @@ class LadderService(Service):
                     for guest in all_guests
                     if guest.lobby_connection is not None
                 ])
-            await game.wait_launched(30 + 10 * len(all_guests))
+            await game.wait_launched(30 + 10 * len(all_guests) + additional_timeout)
             self._logger.debug("Ladder game launched successfully")
         except Exception:
             if game:
