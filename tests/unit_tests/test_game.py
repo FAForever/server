@@ -20,6 +20,7 @@ from server.games import (
     VisibilityState
 )
 from server.games.game_results import ArmyOutcome
+from server.games.typedefs import FeaturedModType
 from server.rating import InclusiveRange, RatingType
 from tests.unit_tests.conftest import (
     add_connected_player,
@@ -78,15 +79,34 @@ async def test_validate_game_settings(game: Game, game_add_players):
         ("RestrictedCategories", 1, ValidityState.BAD_UNIT_RESTRICTIONS),
         ("TeamLock", "unlocked", ValidityState.UNLOCKED_TEAMS)
     ]
+    mods = (
+        FeaturedModType.FAF,
+        FeaturedModType.LADDER_1V1,
+        FeaturedModType.EQUILIBRIUM,
+        "AnythingReally"
+    )
 
     game.state = GameState.LOBBY
     game_add_players(game, 2)
 
-    await check_game_settings(game, settings)
+    for featured_mod in mods:
+        game._logger.info("Setting mod to %s", featured_mod)
+        game.game_mode = featured_mod
 
-    game.validity = ValidityState.VALID
-    await game.validate_game_settings()
-    assert game.validity is ValidityState.VALID
+        for i, player in enumerate(game.players):
+            game.set_player_option(player.id, "Team", i + 2)
+
+        await check_game_settings(game, settings)
+
+        game.validity = ValidityState.VALID
+        await game.validate_game_settings()
+        assert game.validity is ValidityState.VALID
+
+        for player in game.players:
+            game.set_player_option(player.id, "Team", 2)
+
+        await game.validate_game_settings()
+        assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
 
 async def test_validate_game_settings_coop(coop_game: Game):
