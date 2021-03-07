@@ -480,7 +480,7 @@ async def test_game_ratings(lobby_server):
 
 @fast_forward(60)
 async def test_game_ratings_initialized_based_on_global(lobby_server):
-    _, _, proto = await connect_and_sign_in(
+    test_id, _, proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
 
@@ -517,37 +517,36 @@ async def test_game_ratings_initialized_based_on_global(lobby_server):
         "mod": "tmm2v2"
     })
 
-    msg = await read_until(proto, lambda msg: (
-        msg["command"] == "player_info" and
-        "tmm_2v2" in msg["players"][0]["ratings"]
-    ))
-    assert msg == {
-        "command": "player_info",
-        "players": [
-            {
-                "id": 1,
-                "login": "test",
-                "clan": "678",
-                "country": "",
-                "ratings": {
-                    "global": {
-                        "rating": [2000.0, 125.0],
-                        "number_of_games": 5
-                    },
-                    "ladder_1v1": {
-                        "rating": [2000.0, 125.0],
-                        "number_of_games": 5
-                    },
-                    "tmm_2v2": {
-                        "rating": [2000.0, 250.0],
-                        "number_of_games": 0
-                    }
-                },
-                "global_rating": [2000.0, 125.0],
-                "ladder_rating": [2000.0, 125.0],
-                "number_of_games": 5,
+    # Need to connect another user to guarantee triggering a message containing
+    # the updated player info
+    _, _, proto2 = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+
+    msg = await read_until_command(proto2, "player_info")
+    player = list(filter(lambda p: p["id"] == test_id, msg["players"]))[0]
+    assert player == {
+        "id": 1,
+        "login": "test",
+        "clan": "678",
+        "country": "",
+        "ratings": {
+            "global": {
+                "rating": [2000.0, 125.0],
+                "number_of_games": 5
+            },
+            "ladder_1v1": {
+                "rating": [2000.0, 125.0],
+                "number_of_games": 5
+            },
+            "tmm_2v2": {
+                "rating": [2000.0, 250.0],
+                "number_of_games": 0
             }
-        ]
+        },
+        "global_rating": [2000.0, 125.0],
+        "ladder_rating": [2000.0, 125.0],
+        "number_of_games": 5,
     }
 
 
