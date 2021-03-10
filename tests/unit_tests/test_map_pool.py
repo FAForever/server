@@ -41,13 +41,13 @@ def test_choose_map_with_weights(map_pool_factory):
         Map(1, "some_map", "maps/some_map.v001.zip", 1),
         Map(2, "some_map", "maps/some_map.v001.zip", 1),
         Map(3, "some_map", "maps/some_map.v001.zip", 1),
-        Map(4, "CHOOSE_ME", "maps/choose_me.v001.zip", 1000000),
+        Map(4, "CHOOSE_ME", "maps/choose_me.v001.zip", 10000000),
     ])
 
     # Make the probability very low that the test passes because we got lucky
     for _ in range(20):
         chosen_map = map_pool.choose_map()
-        assert chosen_map == (4, "CHOOSE_ME", "maps/choose_me.v001.zip", 1000000)
+        assert chosen_map == (4, "CHOOSE_ME", "maps/choose_me.v001.zip", 10000000)
 
 
 def test_choose_map_generated_map(map_pool_factory):
@@ -86,6 +86,24 @@ def test_choose_map_all_maps_played(map_pool_factory):
 
     assert chosen_map is not None
     assert chosen_map in maps
+
+
+def test_choose_map_all_played_but_generated_map_doesnt_dominate(map_pool_factory):
+    maps = [
+        Map(1, "some_map", "maps/some_map.v001.zip", 1000000),
+        Map(2, "some_map", "maps/some_map.v001.zip", 1000000),
+        Map(3, "some_map", "maps/some_map.v001.zip", 1000000),
+        NeroxisGeneratedMap.of("0.0.0", 2, 512, 1),
+    ]
+    map_pool = map_pool_factory(maps=maps)
+
+    # Make the probability very low that the test passes because we got lucky
+    for _ in range(20):
+        chosen_map = map_pool.choose_map([1, 2, 3])
+
+        assert chosen_map is not None
+        assert chosen_map in maps
+        assert chosen_map.id in [1, 2, 3]
 
 
 def test_choose_map_all_maps_played_not_in_pool(map_pool_factory):

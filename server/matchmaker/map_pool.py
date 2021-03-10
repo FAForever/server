@@ -39,10 +39,15 @@ class MapPool(object):
         counter.update(id_ for id_ in played_map_ids if id_ in self.maps)
 
         least_common = counter.most_common()[::-1]
-        least_count = least_common[0][1]
+        least_count = 1
+        for map_count in least_common:
+            if not (isinstance(self.maps[map_count[0]], NeroxisGeneratedMap)):
+                least_count = map_count[1]
+                break
+
         # Trim off the maps with higher play counts
         for i, (_, count) in enumerate(least_common):
-            if count != least_count:
+            if count > least_count:
                 least_common = least_common[:i]
                 break
 
