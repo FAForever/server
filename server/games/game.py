@@ -647,12 +647,8 @@ class Game():
 
     async def validate_game_mode_settings(self):
         """
-        Checks which only apply to the faf or ladder1v1 mode
-        Override this in a child game class for custom checks
+        A subset of checks that need to be overridden in coop games.
         """
-        if self.game_mode not in (FeaturedModType.FAF, FeaturedModType.LADDER_1V1):
-            return
-
         if None in self.teams or not self.is_even:
             await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
             return
