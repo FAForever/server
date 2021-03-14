@@ -137,7 +137,7 @@ class LadderService(Service):
 
                 except Exception:
                     self._logger.warning(
-                        "Failed to load map in map pool %d"
+                        "Failed to load map in map pool %d "
                         "parameters specified as %s",
                         row.id,
                         row.map_params,

@@ -45,6 +45,8 @@ class NeroxisGeneratedMap(NamedTuple):
 
     @classmethod
     def of(cls, params: dict, weight: int = 1):
+        assert params["type"] == "neroxis"
+
         map_size_pixels = int(params["size"])
 
         if map_size_pixels <= 0:

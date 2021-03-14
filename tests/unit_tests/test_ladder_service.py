@@ -79,14 +79,14 @@ async def test_load_from_database(ladder_service, queue_factory):
 async def test_load_from_database_new_data(ladder_service, database):
     async with database.acquire() as conn:
         await conn.execute(matchmaker_queue.insert().values(
-            id=5,
+            id=1000000,
             technical_name="test",
             featured_mod_id=1,
             leaderboard_id=1,
             name_key="test.name"
         ))
         await conn.execute(matchmaker_queue_map_pool.insert().values(
-            matchmaker_queue_id=5,
+            matchmaker_queue_id=1000000,
             map_pool_id=1
         ))
 
