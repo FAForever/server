@@ -33,94 +33,68 @@ DELETE FROM avatars_list;
 DELETE FROM ban;
 DELETE FROM clan_membership;
 DELETE FROM clan;
-DELETE
-FROM game_player_stats;
-DELETE
-FROM game_review;
-DELETE
-FROM game_reviews_summary;
-DELETE
-FROM game_stats;
-DELETE
-FROM game_featuredMods;
-DELETE
-FROM ladder_division_score;
-DELETE
-FROM ladder_division;
-DELETE
-FROM lobby_admin;
-DELETE
-FROM name_history;
-DELETE
-FROM user_group_assignment;
-DELETE
-FROM login;
-DELETE
-FROM email_domain_blacklist;
-DELETE
-FROM leaderboard_rating_journal;
-DELETE
-FROM leaderboard_rating;
-DELETE
-FROM leaderboard;
-DELETE
-FROM matchmaker_queue;
-DELETE
-FROM matchmaker_queue_game;
-DELETE
-FROM matchmaker_queue_map_pool;
-DELETE
-FROM map_pool;
-DELETE
-FROM map_pool_map_version;
-DELETE
-FROM user_group;
-DELETE
-FROM group_permission_assignment;
+DELETE FROM game_player_stats;
+DELETE FROM game_review;
+DELETE FROM game_reviews_summary;
+DELETE FROM game_stats;
+DELETE FROM game_featuredMods;
+DELETE FROM ladder_division_score;
+DELETE FROM ladder_division;
+DELETE FROM lobby_admin;
+DELETE FROM name_history;
+DELETE FROM user_group_assignment;
+DELETE FROM login;
+DELETE FROM email_domain_blacklist;
+DELETE FROM leaderboard_rating_journal;
+DELETE FROM leaderboard_rating;
+DELETE FROM leaderboard;
+DELETE FROM matchmaker_queue;
+DELETE FROM matchmaker_queue_game;
+DELETE FROM matchmaker_queue_map_pool;
+DELETE FROM map_pool;
+DELETE FROM map_pool_map_version;
+DELETE FROM user_group;
+DELETE FROM group_permission_assignment;
 
-SET
-FOREIGN_KEY_CHECKS=1;
+SET FOREIGN_KEY_CHECKS=1;
 
 -- Login table
 -- Most accounts get a creation time in the past so that they pass account
 -- age check.
-insert into login (id, login, email, password, steamid, create_time)
-values (1, 'test', 'test@example.com', SHA2('test_password', 256), null, '2000-01-01 00:00:00'),
-       (2, 'Dostya', 'dostya@cybran.example.com', SHA2('vodka', 256), null, '2000-01-01 00:00:00'),
-       (3, 'Rhiza', 'rhiza@aeon.example.com', SHA2('puff_the_magic_dragon', 256), null, '2000-01-01 00:00:00'),
-       (4, 'No_UID', 'uid@uef.example.com', SHA2('his_pw', 256), null, '2000-01-01 00:00:00'),
-       (5, 'postman', 'postman@postman.com', SHA2('postman', 256), null, '2000-01-01 00:00:00'),
-       (7, 'test2', 'test2@example.com', SHA2('test2', 256), null, '2000-01-01 00:00:00'),
-       (8, 'test3', 'test3@example.com', SHA2('test3', 256), null, '2000-01-01 00:00:00'),
-       (9, 'test4', 'test4@example.com', SHA2('test3', 256), null, '2000-01-01 00:00:00'),
-       (10, 'friends', 'friends@example.com', SHA2('friends', 256), null, '2000-01-01 00:00:00'),
-       (20, 'moderator', 'moderator@example.com', SHA2('moderator', 256), null, '2000-01-01 00:00:00'),
-       (50, 'player_service1', 'ps1@example.com', SHA2('player_service1', 256), null, '2000-01-01 00:00:00'),
-       (51, 'player_service2', 'ps2@example.com', SHA2('player_service2', 256), null, '2000-01-01 00:00:00'),
-       (52, 'player_service3', 'ps3@example.com', SHA2('player_service3', 256), null, '2000-01-01 00:00:00'),
-       (100, 'ladder1', 'ladder1@example.com', SHA2('ladder1', 256), null, '2000-01-01 00:00:00'),
-       (101, 'ladder2', 'ladder2@example.com', SHA2('ladder2', 256), null, '2000-01-01 00:00:00'),
-       (102, 'ladder3', 'ladder3@example.com', SHA2('ladder3', 256), null, '2000-01-01 00:00:00'),
-       (103, 'ladder4', 'ladder4@example.com', SHA2('ladder4', 256), null, '2000-01-01 00:00:00'),
-       (104, 'ladder_ban', 'ladder_ban@example.com', SHA2('ladder_ban', 256), null, '2000-01-01 00:00:00'),
-       (105, 'tmm1', 'tmm1@example.com', SHA2('tmm1', 256), null, '2000-01-01 00:00:00'),
-       (106, 'tmm2', 'tmm2@example.com', SHA2('tmm2', 256), null, '2000-01-01 00:00:00'),
-       (200, 'banme', 'banme@example.com', SHA2('banme', 256), null, '2000-01-01 00:00:00'),
-       (201, 'ban_revoked', 'ban_revoked@example.com', SHA2('ban_revoked', 256), null, '2000-01-01 00:00:00'),
-       (202, 'ban_expired', 'ban_expired@example.com', SHA2('ban_expired', 256), null, '2000-01-01 00:00:00'),
-       (203, 'ban_long_time', 'ban_null_expiration@example.com', SHA2('ban_long_time', 256), null,
-        '2000-01-01 00:00:00'),
-       (204, 'ban_46_hour', 'ban_46_hour_expiration@example.com', SHA2('ban_46_hour', 256), null,
-        '2000-01-01 00:00:00'),
-       (300, 'steam_id', 'steam_id@example.com', SHA2('steam_id', 256), 34632, '2000-01-01 00:00:00')
+insert into login (id, login, email, password, steamid, create_time) values
+  (1, 'test', 'test@example.com', SHA2('test_password', 256),    null, '2000-01-01 00:00:00'),
+  (2, 'Dostya', 'dostya@cybran.example.com', SHA2('vodka', 256), null, '2000-01-01 00:00:00'),
+  (3, 'Rhiza', 'rhiza@aeon.example.com', SHA2('puff_the_magic_dragon', 256), null, '2000-01-01 00:00:00'),
+  (4, 'No_UID', 'uid@uef.example.com', SHA2('his_pw', 256), null, '2000-01-01 00:00:00'),
+  (5, 'postman', 'postman@postman.com', SHA2('postman', 256), null, '2000-01-01 00:00:00'),
+  (7, 'test2', 'test2@example.com', SHA2('test2', 256), null, '2000-01-01 00:00:00'),
+  (8, 'test3', 'test3@example.com', SHA2('test3', 256), null, '2000-01-01 00:00:00'),
+  (9, 'test4', 'test4@example.com', SHA2('test3', 256), null, '2000-01-01 00:00:00'),
+  (10,  'friends', 'friends@example.com', SHA2('friends', 256),  null, '2000-01-01 00:00:00'),
+  (20,  'moderator', 'moderator@example.com', SHA2('moderator', 256), null, '2000-01-01 00:00:00'),
+  (50,  'player_service1', 'ps1@example.com', SHA2('player_service1', 256), null, '2000-01-01 00:00:00'),
+  (51,  'player_service2', 'ps2@example.com', SHA2('player_service2', 256), null,  '2000-01-01 00:00:00'),
+  (52,  'player_service3', 'ps3@example.com', SHA2('player_service3', 256), null, '2000-01-01 00:00:00'),
+  (100, 'ladder1', 'ladder1@example.com', SHA2('ladder1', 256), null, '2000-01-01 00:00:00'),
+  (101, 'ladder2', 'ladder2@example.com', SHA2('ladder2', 256), null, '2000-01-01 00:00:00'),
+  (102, 'ladder3', 'ladder3@example.com', SHA2('ladder3', 256), null, '2000-01-01 00:00:00'),
+  (103, 'ladder4', 'ladder4@example.com', SHA2('ladder4', 256), null, '2000-01-01 00:00:00'),
+  (104, 'ladder_ban', 'ladder_ban@example.com', SHA2('ladder_ban', 256), null, '2000-01-01 00:00:00'),
+  (105, 'tmm1', 'tmm1@example.com', SHA2('tmm1', 256), null, '2000-01-01 00:00:00'),
+  (106, 'tmm2', 'tmm2@example.com', SHA2('tmm2', 256), null, '2000-01-01 00:00:00'),
+  (200, 'banme', 'banme@example.com', SHA2('banme', 256), null, '2000-01-01 00:00:00'),
+  (201, 'ban_revoked', 'ban_revoked@example.com', SHA2('ban_revoked', 256), null, '2000-01-01 00:00:00'),
+  (202, 'ban_expired', 'ban_expired@example.com', SHA2('ban_expired', 256), null, '2000-01-01 00:00:00'),
+  (203, 'ban_long_time', 'ban_null_expiration@example.com', SHA2('ban_long_time', 256), null, '2000-01-01 00:00:00'),
+  (204, 'ban_46_hour', 'ban_46_hour_expiration@example.com', SHA2('ban_46_hour', 256), null, '2000-01-01 00:00:00'),
+  (300, 'steam_id', 'steam_id@example.com', SHA2('steam_id', 256), 34632, '2000-01-01 00:00:00')
 ;
-insert into login (id, login, email, password)
-values (6, 'newbie', 'noob@example.com', SHA2('password', 256));
+insert into login (id, login, email, password) values (6, 'newbie', 'noob@example.com', SHA2('password', 256));
 
 -- Name history
-insert into name_history (id, change_time, user_id, previous_name)
-values (1, date_sub(now(), interval 12 month), 1, 'test_maniac'),
-       (2, date_sub(now(), interval 1 month), 2, 'YoungDostya');
+insert into name_history (id, change_time, user_id, previous_name) values
+  (1, date_sub(now(), interval 12 month), 1, 'test_maniac'),
+  (2, date_sub(now(), interval 1 month), 2, 'YoungDostya');
 
 insert into user_group (id, technical_name, public, name_key)
 values (1, 'faf_server_administrators', true, 'admins'),
@@ -128,33 +102,25 @@ values (1, 'faf_server_administrators', true, 'admins'),
 
 -- Permissions
 insert into group_permission_assignment (id, group_id, permission_id)
-values (1, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'),
-        (SELECT id from group_permission WHERE technical_name = 'ADMIN_BROADCAST_MESSAGE')),
-       (2, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'),
-        (SELECT id from group_permission WHERE technical_name = 'ADMIN_KICK_SERVER')),
-       (3, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'),
-        (SELECT id from group_permission WHERE technical_name = 'ADMIN_JOIN_CHANNEL')),
-       (4, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'),
-        (SELECT id from group_permission WHERE technical_name = 'ADMIN_KICK_SERVER'));
+values (1, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_BROADCAST_MESSAGE')),
+       (2, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_KICK_SERVER')),
+       (3, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_JOIN_CHANNEL')),
+       (4, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_KICK_SERVER'));
 
-insert into lobby_admin (user_id, `group`)
-values (1, 2);
-insert into user_group_assignment(user_id, group_id)
-values (1, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'));
-insert into user_group_assignment(user_id, group_id)
-values (2, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
-insert into user_group_assignment(user_id, group_id)
-values (20, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
+insert into lobby_admin (user_id, `group`) values (1, 2);
+insert into user_group_assignment(user_id, group_id) values (1, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'));
+insert into user_group_assignment(user_id, group_id) values (2, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
+insert into user_group_assignment(user_id, group_id) values (20, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
 
-insert into leaderboard (id, technical_name, name_key, description_key)
-values (1, "global", "leaderboard.global.name", "leaderboard.global.desc"),
-       (2, "ladder_1v1", "leaderboard.ladder_1v1.name", "leaderboard.ladder_1v1.desc"),
-       (3, "tmm_2v2", "leaderboard.tmm_2v2.name", "leaderboard.tmm_2v2.desc");
+insert into leaderboard (id, technical_name, name_key, description_key) values
+  (1, "global", "leaderboard.global.name", "leaderboard.global.desc"),
+  (2, "ladder_1v1", "leaderboard.ladder_1v1.name", "leaderboard.ladder_1v1.desc"),
+  (3, "tmm_2v2", "leaderboard.tmm_2v2.name", "leaderboard.tmm_2v2.desc");
 
 
-insert into leaderboard_rating (login_id, mean, deviation, total_games, leaderboard_id)
-values (1, 2000, 125, 5, 1),
-       (1, 2000, 125, 5, 2),
+insert into leaderboard_rating (login_id, mean, deviation, total_games, leaderboard_id) values
+  (1, 2000, 125, 5, 1),
+  (1, 2000, 125, 5, 2),
   (2, 1500, 75, 2, 1),
   (2, 1500, 75, 2, 2),
   (3, 1650, 62.52, 2, 1),
@@ -322,63 +288,55 @@ insert into matchmaker_queue (id, technical_name, featured_mod_id, leaderboard_i
   (4, "neroxis1v1", 1, 2, "matchmaker.neroxis", 1, true);
 
 insert into matchmaker_queue_game (matchmaker_queue_id, game_stats_id) values
-                                                                           (1, 1),
-                                                                           (1, 41935),
-                                                                           (1, 41936),
-                                                                           (1, 41937),
-                                                                           (1, 41938),
-                                                                           (1, 41939),
-                                                                           (1, 41940),
-                                                                           (1, 41941),
-                                                                           (1, 41942),
-                                                                           (1, 41943),
-                                                                           (1, 41944),
-                                                                           (1, 41945),
-                                                                           (1, 41946),
-                                                                           (1, 41947),
-                                                                           (1, 41948),
-                                                                           (2, 41949),
-                                                                           (2, 41950),
-                                                                           (2, 41951),
-                                                                           (2, 41952),
-                                                                           (2, 41953),
-                                                                           (2, 41954),
-                                                                           (2, 41955);
+  (1, 1),
+  (1, 41935),
+  (1, 41936),
+  (1, 41937),
+  (1, 41938),
+  (1, 41939),
+  (1, 41940),
+  (1, 41941),
+  (1, 41942),
+  (1, 41943),
+  (1, 41944),
+  (1, 41945),
+  (1, 41946),
+  (1, 41947),
+  (1, 41948),
+  (2, 41949),
+  (2, 41950),
+  (2, 41951),
+  (2, 41952),
+  (2, 41953),
+  (2, 41954),
+  (2, 41955);
 
-insert into map_pool (id, name)
-values (1, "Ladder1v1 season 1: 5-10k"),
-       (2, "Ladder1v1 season 1: all"),
-       (3, "Large maps"),
-       (4, "Generated Maps with Errors");
+insert into map_pool (id, name) values
+  (1, "Ladder1v1 season 1: 5-10k"),
+  (2, "Ladder1v1 season 1: all"),
+  (3, "Large maps"),
+  (4, "Generated Maps with Errors");
 
-insert into map_pool_map_version (map_pool_id, map_version_id, weight, map_params)
-values (1, 15, 1, NULL),
-       (1, 16, 1, NULL),
-       (1, 17, 1, NULL),
-       (2, 11, 1, NULL),
-       (2, 14, 1, NULL),
-       (2, 15, 1, NULL),
-       (2, 16, 1, NULL),
-       (2, 17, 1, NULL),
-       (3, 1, 1, NULL),
-       (3, 2, 1, NULL),
-       (3, 3, 1, NULL),
-       (4, NULL, 1, '{"type": "neroxis", "size": 512, "spawns": 2, "version": "0.0.0"}'),
-       -- Bad Generated Map Parameters should not be included in pool
-       (4, NULL, 1, '{"type": "neroxis", "size": 513, "spawns": 2, "version": "0.0.0"}'),
-       (4, NULL, 1, '{"type": "neroxis", "size": 0, "spawns": 2, "version": "0.0.0"}'),
-       (4, NULL, 1, '{"type": "neroxis", "size": 512, "spawns": 3, "version": "0.0.0"}'),
-       (4, NULL, 1, '{"type": "beroxis", "size": 512, "spawns": 2, "version": "0.0.0"}');
+insert into map_pool_map_version (map_pool_id, map_version_id, weight, map_params) values
+  (1, 15, 1, NULL), (1, 16, 1, NULL), (1, 17, 1, NULL),
+  (2, 11, 1, NULL), (2, 14, 1, NULL), (2, 15, 1, NULL), (2, 16, 1, NULL), (2, 17, 1, NULL),
+  (3, 1, 1, NULL), (3, 2, 1, NULL), (3, 3, 1, NULL),
+  (4, NULL, 1, '{"type": "neroxis", "size": 512, "spawns": 2, "version": "0.0.0"}'),
+  -- Bad Generated Map Parameters should not be included in pool
+  (4, NULL, 1, '{"type": "neroxis", "size": 513, "spawns": 2, "version": "0.0.0"}'),
+  (4, NULL, 1, '{"type": "neroxis", "size": 0, "spawns": 2, "version": "0.0.0"}'),
+  (4, NULL, 1, '{"type": "neroxis", "size": 512, "spawns": 3, "version": "0.0.0"}'),
+  (4, NULL, 1, '{"type": "beroxis", "size": 512, "spawns": 2, "version": "0.0.0"}');
 
-insert into matchmaker_queue_map_pool (matchmaker_queue_id, map_pool_id, min_rating, max_rating)
-values (1, 1, NULL, 800),
-       (1, 2, 800, NULL),
-       (1, 3, 1000, NULL),
-       (2, 3, NULL, NULL),
-       (4, 4, NULL, NULL);
+insert into matchmaker_queue_map_pool (matchmaker_queue_id, map_pool_id, min_rating, max_rating) values
+  (1, 1, NULL, 800),
+  (1, 2, 800, NULL),
+  (1, 3, 1000, NULL),
+  (2, 3, NULL, NULL),
+  (4, 4, NULL, NULL);
 
-insert into friends_and_foes (user_id, subject_id, `status`)
-values (1, 3, 'FOE'),
+insert into friends_and_foes (user_id, subject_id, `status`) values
+  (1, 3, 'FOE'),
   (2, 1, 'FRIEND'),
   (10, 1, 'FRIEND');
 
