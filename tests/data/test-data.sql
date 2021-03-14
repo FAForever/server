@@ -96,16 +96,16 @@ insert into name_history (id, change_time, user_id, previous_name) values
   (1, date_sub(now(), interval 12 month), 1, 'test_maniac'),
   (2, date_sub(now(), interval 1 month), 2, 'YoungDostya');
 
-insert into user_group (id, technical_name, public, name_key)
-values (1, 'faf_server_administrators', true, 'admins'),
-       (2, 'faf_moderators_global', true, 'mods');
+insert into user_group (id, technical_name, public, name_key) values
+  (1, 'faf_server_administrators', true, 'admins'),
+  (2, 'faf_moderators_global', true, 'mods');
 
 -- Permissions
-insert into group_permission_assignment (id, group_id, permission_id)
-values (1, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_BROADCAST_MESSAGE')),
-       (2, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_KICK_SERVER')),
-       (3, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_JOIN_CHANNEL')),
-       (4, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_KICK_SERVER'));
+insert into group_permission_assignment (id, group_id, permission_id) values
+  (1, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_BROADCAST_MESSAGE')),
+  (2, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_KICK_SERVER')),
+  (3, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_JOIN_CHANNEL')),
+  (4, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_KICK_SERVER'));
 
 insert into lobby_admin (user_id, `group`) values (1, 2);
 insert into user_group_assignment(user_id, group_id) values (1, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'));
