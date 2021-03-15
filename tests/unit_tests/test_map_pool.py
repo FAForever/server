@@ -66,9 +66,9 @@ def test_choose_map_generated_map(map_pool_factory):
 
     chosen_map = map_pool.choose_map([])
 
-    map_id = -int.from_bytes(bytes(f'{version}_{spawns}_{size}', encoding="ascii"), 'big')
-    size_byte = (size // 64).to_bytes(1, 'big')
-    spawn_byte = spawns.to_bytes(1, 'big')
+    map_id = -int.from_bytes(bytes(f"{version}_{spawns}_{size}", encoding="ascii"), "big")
+    size_byte = (size // 64).to_bytes(1, "big")
+    spawn_byte = spawns.to_bytes(1, "big")
     option_bytes = spawn_byte + size_byte
     option_str = base64.b32encode(option_bytes).decode("ascii").replace("=", "").lower()
     seed_match = "[0-9a-z]{13}"
