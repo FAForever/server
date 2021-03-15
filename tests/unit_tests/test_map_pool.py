@@ -56,7 +56,12 @@ def test_choose_map_generated_map(map_pool_factory):
     size = 512
 
     map_pool = map_pool_factory(maps=[
-        NeroxisGeneratedMap.of({"version": "0.0.0", "spawns": 2, "size": 512, "type": "neroxis"}),
+        NeroxisGeneratedMap.of({
+            "version": "0.0.0",
+            "spawns": 2,
+            "size": 512,
+            "type": "neroxis"
+        }),
     ])
 
     chosen_map = map_pool.choose_map([])
