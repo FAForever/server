@@ -132,8 +132,8 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
     # so the match is cancelled. However, the client does not know how to
     # handle `match_cancelled` messages so we still send `game_launch` to
     # prevent the client from showing that it is searching when it really isn't.
-    await read_until_command(proto2, "match_cancelled")
-    await read_until_command(proto1, "match_cancelled")
+    await read_until_command(proto2, "match_cancelled", timeout=120)
+    await read_until_command(proto1, "match_cancelled", timeout=120)
 
     assert msg1["uid"] == msg2["uid"]
     assert msg1["mod"] == "ladder1v1"
@@ -229,7 +229,7 @@ async def test_game_matchmaking_disconnect(lobby_server):
     # One player disconnects before the game has launched
     await proto1.close()
 
-    msg = await read_until_command(proto2, "match_cancelled")
+    msg = await read_until_command(proto2, "match_cancelled", timeout=120)
 
     assert msg == {"command": "match_cancelled"}
 

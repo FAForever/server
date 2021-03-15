@@ -314,7 +314,7 @@ async def test_game_matchmaking_multiqueue_timeout(lobby_server):
     assert msg["state"] == "stop"
 
     # Don't send any GPGNet messages so the match times out
-    await read_until_command(protos[0], "match_cancelled")
+    await read_until_command(protos[0], "match_cancelled", timeout=120)
 
     # Player's state is reset so they are able to queue again
     await protos[0].send_message({
@@ -401,7 +401,7 @@ async def test_game_matchmaking_timeout(lobby_server):
 
     # We don't send the `GameState: Lobby` command so the game should time out
     await asyncio.gather(*[
-        read_until_command(proto, "match_cancelled") for proto in protos
+        read_until_command(proto, "match_cancelled", timeout=120) for proto in protos
     ])
 
     # Player's state is reset so they are able to queue again
