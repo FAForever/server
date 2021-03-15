@@ -1,3 +1,4 @@
+import asyncio
 from server.abc.base_game import InitMode
 
 from .game import Game
@@ -21,6 +22,7 @@ class CoopGame(Game):
             "Difficulty": 3,
             "Expansion": "true"
         })
+        asyncio.get_event_loop().create_task(self.timeout_game(60))
 
     async def validate_game_mode_settings(self):
         """
