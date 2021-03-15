@@ -135,8 +135,11 @@ class LadderService(Service):
                     if map_type == "neroxis":
                         map_list.append(NeroxisGeneratedMap.of(params=params, weight=row.weight))
                     else:
-                        self._logger.warning("Unsupported map type %s with parameters %s",
-                                             map_type, row.map_params)
+                        self._logger.warning(
+                            "Unsupported map type %s with parameters %s",
+                             map_type,
+                             row.map_params
+                        )
 
                 except Exception:
                     self._logger.warning(

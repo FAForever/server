@@ -93,7 +93,12 @@ def test_choose_map_all_played_but_generated_map_doesnt_dominate(map_pool_factor
         Map(1, "some_map", "maps/some_map.v001.zip", 1000000),
         Map(2, "some_map", "maps/some_map.v001.zip", 1000000),
         Map(3, "some_map", "maps/some_map.v001.zip", 1000000),
-        NeroxisGeneratedMap.of({"version": "0.0.0", "spawns": 2, "size": 512, "type": "neroxis"}),
+        NeroxisGeneratedMap.of({
+            "version": "0.0.0",
+            "spawns": 2,
+            "size": 512,
+            "type": "neroxis"
+        }),
     ]
     map_pool = map_pool_factory(maps=maps)
 

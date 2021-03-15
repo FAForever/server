@@ -61,7 +61,7 @@ class NeroxisGeneratedMap(NamedTuple):
 
         version = params["version"]
         return NeroxisGeneratedMap(
-            -int.from_bytes(bytes(f'{version}_{spawns}_{map_size_pixels}', encoding="ascii"), 'big'),
+            -int.from_bytes(bytes(f"{version}_{spawns}_{map_size_pixels}", encoding="ascii"), "big"),
             version,
             spawns,
             map_size_pixels,
@@ -73,12 +73,12 @@ class NeroxisGeneratedMap(NamedTuple):
             Generate a map name based on the version and parameters. If invalid parameters are specified
             hand back None
         """
-        seed_bytes = random.getrandbits(64).to_bytes(8, 'big')
-        size_byte = (self.map_size_pixels // 64).to_bytes(1, 'big')
-        spawn_byte = self.spawns.to_bytes(1, 'big')
+        seed_bytes = random.getrandbits(64).to_bytes(8, "big")
+        size_byte = (self.map_size_pixels // 64).to_bytes(1, "big")
+        spawn_byte = self.spawns.to_bytes(1, "big")
         option_bytes = spawn_byte + size_byte
         seed_str = base64.b32encode(seed_bytes).decode("ascii").replace("=", "").lower()
         option_str = base64.b32encode(option_bytes).decode("ascii").replace("=", "").lower()
-        map_name = f'neroxis_map_generator_{self.version}_{seed_str}_{option_str}'
-        map_path = f'maps/{map_name}.zip'
+        map_name = f"neroxis_map_generator_{self.version}_{seed_str}_{option_str}"
+        map_path = f"maps/{map_name}.zip"
         return Map(self.id, map_name, map_path, self.weight)
