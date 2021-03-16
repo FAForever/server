@@ -133,7 +133,7 @@ class LadderService(Service):
                     params = json.loads(row.map_params)
                     map_type = params["type"]
                     if map_type == "neroxis":
-                        map_list.append(NeroxisGeneratedMap.of(params=params, weight=row.weight))
+                        map_list.append(NeroxisGeneratedMap.of(params, row.weight))
                     else:
                         self._logger.warning(
                             "Unsupported map type %s in pool %s",
