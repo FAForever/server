@@ -1,0 +1,3866 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>server.lobbyconnection API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>server.lobbyconnection</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import asyncio
+import contextlib
+import hashlib
+import json
+import random
+import urllib.parse
+import urllib.request
+from datetime import datetime
+from functools import wraps
+from typing import Optional
+
+import aiohttp
+import pymysql
+from sqlalchemy import and_, func, select
+
+import server.metrics as metrics
+from server.db import FAFDatabase
+
+from .abc.base_game import GameConnectionState, InitMode
+from .config import TRACE, config
+from .db.models import (
+    avatars,
+    avatars_list,
+    ban,
+    coop_map,
+    friends_and_foes,
+    lobby_ban
+)
+from .db.models import login as t_login
+from .decorators import timed, with_logger
+from .exceptions import AuthenticationError, BanError, ClientError
+from .factions import Faction
+from .game_service import GameService
+from .gameconnection import GameConnection
+from .games import FeaturedModType, GameState, VisibilityState
+from .geoip_service import GeoIpService
+from .ice_servers.coturn import CoturnHMAC
+from .ice_servers.nts import TwilioNTS
+from .ladder_service import LadderService
+from .party_service import PartyService
+from .player_service import PlayerService
+from .players import Player, PlayerState
+from .protocol import DisconnectedError, Protocol
+from .rating import InclusiveRange, RatingType
+from .types import Address, GameLaunchOptions
+
+
+@with_logger
+class LobbyConnection:
+    @timed()
+    def __init__(
+        self,
+        database: FAFDatabase,
+        game_service: GameService,
+        players: PlayerService,
+        nts_client: Optional[TwilioNTS],
+        geoip: GeoIpService,
+        ladder_service: LadderService,
+        party_service: PartyService
+    ):
+        self._db = database
+        self.geoip_service = geoip
+        self.game_service = game_service
+        self.player_service = players
+        self.nts_client = nts_client
+        self.coturn_generator = CoturnHMAC(config.COTURN_HOSTS, config.COTURN_KEYS)
+        self.ladder_service = ladder_service
+        self.party_service = party_service
+        self._authenticated = False
+        self.player = None  # type: Player
+        self.game_connection = None  # type: GameConnection
+        self.peer_address = None  # type: Optional[Address]
+        self.session = int(random.randrange(0, 4294967295))
+        self.protocol: Protocol = None
+        self.user_agent = None
+        self.version = None
+
+        self._attempted_connectivity_test = False
+
+        self._logger.debug(&#34;LobbyConnection initialized&#34;)
+
+    @property
+    def authenticated(self):
+        return self._authenticated
+
+    def get_user_identifier(self) -&gt; str:
+        &#34;&#34;&#34;For logging purposes&#34;&#34;&#34;
+        if self.player:
+            return self.player.login
+
+        return str(self.session)
+
+    async def on_connection_made(self, protocol: Protocol, peername: Address):
+        self.protocol = protocol
+        self.peer_address = peername
+        metrics.server_connections.inc()
+
+    async def abort(self, logspam=&#34;&#34;):
+        self._authenticated = False
+
+        identity = self.player.login if self.player else self.peer_address.host
+        self._logger.warning(
+            &#34;Aborting connection for %s. %s&#34;, identity, logspam
+        )
+
+        if self.game_connection:
+            await self.game_connection.abort()
+
+        await self.protocol.close()
+
+    async def ensure_authenticated(self, cmd):
+        if not self._authenticated:
+            if cmd not in [&#34;hello&#34;, &#34;ask_session&#34;, &#34;create_account&#34;, &#34;ping&#34;, &#34;pong&#34;, &#34;Bottleneck&#34;]:  # Bottleneck is sent by the game during reconnect
+                metrics.unauth_messages.labels(cmd).inc()
+                await self.abort(&#34;Message invalid for unauthenticated connection: %s&#34; % cmd)
+                return False
+        return True
+
+    async def on_message_received(self, message):
+        &#34;&#34;&#34;
+        Dispatches incoming messages
+        &#34;&#34;&#34;
+        self._logger.log(TRACE, &#34;&lt;&lt; %s: %s&#34;, self.get_user_identifier(), message)
+
+        try:
+            cmd = message[&#34;command&#34;]
+            if not await self.ensure_authenticated(cmd):
+                return
+            target = message.get(&#34;target&#34;)
+            if target == &#34;game&#34;:
+                if not self.game_connection:
+                    return
+
+                await self.game_connection.handle_action(cmd, message.get(&#34;args&#34;, []))
+                return
+
+            if target == &#34;connectivity&#34; and message.get(&#34;command&#34;) == &#34;InitiateTest&#34;:
+                self._attempted_connectivity_test = True
+                raise ClientError(&#34;Your client version is no longer supported. Please update to the newest version: https://faforever.com&#34;)
+
+            handler = getattr(self, &#34;command_{}&#34;.format(cmd))
+            await handler(message)
+
+        except AuthenticationError as ex:
+            await self.send({
+                &#34;command&#34;: &#34;authentication_failed&#34;,
+                &#34;text&#34;: ex.message
+            })
+        except BanError as ex:
+            await self.send({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;error&#34;,
+                &#34;text&#34;: ex.message()
+            })
+            await self.abort(ex.message())
+        except ClientError as ex:
+            self._logger.warning(&#34;Client error: %s&#34;, ex.message)
+            await self.send({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;error&#34;,
+                &#34;text&#34;: ex.message
+            })
+            if not ex.recoverable:
+                await self.abort(ex.message)
+        except (KeyError, ValueError) as ex:
+            self._logger.exception(ex)
+            await self.abort(&#34;Garbage command: {}&#34;.format(message))
+        except ConnectionError as e:
+            # Propagate connection errors to the ServerContext error handler.
+            raise e
+        except Exception as ex:  # pragma: no cover
+            await self.send({&#34;command&#34;: &#34;invalid&#34;})
+            self._logger.exception(ex)
+            await self.abort(&#34;Error processing command&#34;)
+
+    async def command_ping(self, msg):
+        await self.send({&#34;command&#34;: &#34;pong&#34;})
+
+    async def command_pong(self, msg):
+        pass
+
+    async def command_create_account(self, message):
+        raise ClientError(&#34;FAF no longer supports direct registration. Please use the website to register.&#34;, recoverable=True)
+
+    async def command_coop_list(self, message):
+        &#34;&#34;&#34; Request for coop map list&#34;&#34;&#34;
+        async with self._db.acquire() as conn:
+            result = await conn.execute(select([coop_map]))
+
+            maps = []
+            campaigns = [
+                &#34;FA Campaign&#34;,
+                &#34;Aeon Vanilla Campaign&#34;,
+                &#34;Cybran Vanilla Campaign&#34;,
+                &#34;UEF Vanilla Campaign&#34;,
+                &#34;Custom Missions&#34;
+            ]
+            async for row in result:
+                json_to_send = {
+                    &#34;command&#34;: &#34;coop_info&#34;,
+                    &#34;name&#34;: row[&#34;name&#34;],
+                    &#34;description&#34;: row[&#34;description&#34;],
+                    &#34;filename&#34;: row[&#34;filename&#34;],
+                    &#34;featured_mod&#34;: &#34;coop&#34;
+                }
+                if row[&#34;type&#34;] &lt; len(campaigns):
+                    json_to_send[&#34;type&#34;] = campaigns[row[&#34;type&#34;]]
+                else:
+                    # Don&#39;t sent corrupt data to the client...
+                    self._logger.error(&#34;Unknown coop type!&#34;)
+                    continue
+                json_to_send[&#34;uid&#34;] = row[&#34;id&#34;]
+                maps.append(json_to_send)
+
+        await self.protocol.send_messages(maps)
+
+    async def command_matchmaker_info(self, message):
+        await self.send({
+            &#34;command&#34;: &#34;matchmaker_info&#34;,
+            &#34;queues&#34;: [queue.to_dict() for queue in self.ladder_service.queues.values()]
+        })
+
+    async def send_game_list(self):
+        await self.send({
+            &#34;command&#34;: &#34;game_info&#34;,
+            &#34;games&#34;: [game.to_dict() for game in self.game_service.open_games]
+        })
+
+    async def command_social_remove(self, message):
+        if &#34;friend&#34; in message:
+            subject_id = message[&#34;friend&#34;]
+            player_attr = self.player.friends
+        elif &#34;foe&#34; in message:
+            subject_id = message[&#34;foe&#34;]
+            player_attr = self.player.foes
+        else:
+            await self.abort(&#34;No-op social_remove.&#34;)
+            return
+
+        async with self._db.acquire() as conn:
+            await conn.execute(friends_and_foes.delete().where(and_(
+                friends_and_foes.c.user_id == self.player.id,
+                friends_and_foes.c.subject_id == subject_id
+            )))
+
+        with contextlib.suppress(KeyError):
+            player_attr.remove(subject_id)
+
+    async def command_social_add(self, message):
+        if &#34;friend&#34; in message:
+            status = &#34;FRIEND&#34;
+            subject_id = message[&#34;friend&#34;]
+            player_attr = self.player.friends
+        elif &#34;foe&#34; in message:
+            status = &#34;FOE&#34;
+            subject_id = message[&#34;foe&#34;]
+            player_attr = self.player.foes
+        else:
+            return
+
+        async with self._db.acquire() as conn:
+            await conn.execute(friends_and_foes.insert().values(
+                user_id=self.player.id,
+                status=status,
+                subject_id=subject_id,
+            ))
+
+        player_attr.add(subject_id)
+
+    async def kick(self):
+        await self.send({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;kick&#34;,
+        })
+        await self.abort()
+
+    async def send_updated_achievements(self, updated_achievements):
+        await self.send({
+            &#34;command&#34;: &#34;updated_achievements&#34;,
+            &#34;updated_achievements&#34;: updated_achievements
+        })
+
+    async def command_admin(self, message):
+        action = message[&#34;action&#34;]
+
+        if action == &#34;closeFA&#34;:
+            if await self.player_service.has_permission_role(
+                self.player, &#34;ADMIN_KICK_SERVER&#34;
+            ):
+                player = self.player_service[message[&#34;user_id&#34;]]
+                if player:
+                    self._logger.info(
+                        &#34;Administrative action: %s closed game for %s&#34;,
+                        self.player, player
+                    )
+                    with contextlib.suppress(DisconnectedError):
+                        await player.send_message({
+                            &#34;command&#34;: &#34;notice&#34;,
+                            &#34;style&#34;: &#34;kill&#34;,
+                        })
+
+        elif action == &#34;closelobby&#34;:
+            if await self.player_service.has_permission_role(
+                self.player, &#34;ADMIN_KICK_SERVER&#34;
+            ):
+                player = self.player_service[message[&#34;user_id&#34;]]
+                if player and player.lobby_connection is not None:
+                    self._logger.info(
+                        &#34;Administrative action: %s closed client for %s&#34;,
+                        self.player, player
+                    )
+                    with contextlib.suppress(DisconnectedError):
+                        await player.lobby_connection.kick()
+
+        elif action == &#34;broadcast&#34;:
+            message_text = message.get(&#34;message&#34;)
+            if not message_text:
+                return
+            if await self.player_service.has_permission_role(
+                self.player, &#34;ADMIN_BROADCAST_MESSAGE&#34;
+            ):
+                for player in self.player_service:
+                    # Check if object still exists:
+                    # https://docs.python.org/3/library/weakref.html#weak-reference-objects
+                    if player.lobby_connection is not None:
+                        with contextlib.suppress(DisconnectedError):
+                            player.lobby_connection.write_warning(message_text)
+
+                self._logger.info(
+                    &#34;%s broadcasting message to all players: %s&#34;,
+                    self.player.login, message_text
+                )
+        elif action == &#34;join_channel&#34;:
+            if await self.player_service.has_permission_role(
+                self.player, &#34;ADMIN_JOIN_CHANNEL&#34;
+            ):
+                user_ids = message[&#34;user_ids&#34;]
+                channel = message[&#34;channel&#34;]
+
+                for user_id in user_ids:
+                    player = self.player_service[user_id]
+                    if player:
+                        player.write_message({
+                            &#34;command&#34;: &#34;social&#34;,
+                            &#34;autojoin&#34;: [channel]
+                        })
+
+    async def check_user_login(self, conn, username, password):
+        # TODO: Hash passwords server-side so the hashing actually *does* something.
+        result = await conn.execute(
+            select([
+                t_login.c.id,
+                t_login.c.login,
+                t_login.c.password,
+                t_login.c.steamid,
+                t_login.c.create_time,
+                lobby_ban.c.reason,
+                lobby_ban.c.expires_at
+            ]).select_from(t_login.outerjoin(lobby_ban))
+            .where(t_login.c.login == username)
+            .order_by(lobby_ban.c.expires_at.desc())
+        )
+
+        auth_error_message = &#34;Login not found or password incorrect. They are case sensitive.&#34;
+        row = await result.fetchone()
+        if not row:
+            metrics.user_logins.labels(&#34;failure&#34;).inc()
+            raise AuthenticationError(auth_error_message)
+
+        player_id = row[t_login.c.id]
+        real_username = row[t_login.c.login]
+        dbPassword = row[t_login.c.password]
+        steamid = row[t_login.c.steamid]
+        create_time = row[t_login.c.create_time]
+        ban_reason = row[lobby_ban.c.reason]
+        ban_expiry = row[lobby_ban.c.expires_at]
+
+        if dbPassword != password:
+            metrics.user_logins.labels(&#34;failure&#34;).inc()
+            raise AuthenticationError(auth_error_message)
+
+        now = datetime.utcnow()
+        if ban_reason is not None and now &lt; ban_expiry:
+            self._logger.debug(&#34;Rejected login from banned user: %s, %s, %s&#34;,
+                               player_id, username, self.session)
+            raise BanError(ban_expiry, ban_reason)
+
+        # New accounts are prevented from playing if they didn&#39;t link to steam
+
+        if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() &gt; config.FORCE_STEAM_LINK_AFTER_DATE:
+            self._logger.debug(&#34;Rejected login from new user: %s, %s, %s&#34;, player_id, username, self.session)
+            raise ClientError(
+                &#39;Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on &lt;a href=&#34;{steamlink_url}&#34;&gt;{steamlink_url}&lt;/a&gt;.&#39;.format(steamlink_url=config.WWW_URL + &#34;/account/link&#34;),
+                recoverable=False)
+
+        self._logger.debug(&#34;Login from: %s, %s, %s&#34;, player_id, username, self.session)
+
+        return player_id, real_username, steamid
+
+    def _set_user_agent_and_version(self, user_agent, version):
+        metrics.user_connections.labels(str(self.user_agent), str(self.version)).dec()
+        self.user_agent = user_agent
+
+        # only count a new version if it previously wasn&#39;t set
+        # to avoid double counting
+        if self.version is None and version is not None:
+            metrics.user_agent_version.labels(str(version)).inc()
+        self.version = version
+
+        metrics.user_connections.labels(str(self.user_agent), str(self.version)).inc()
+
+    async def _check_user_agent(self):
+        if not self.user_agent or &#34;downlords-faf-client&#34; not in self.user_agent:
+            await self.send_warning(
+                &#34;You are using an unofficial client version! &#34;
+                &#34;Some features might not work as expected. &#34;
+                &#34;If you experience any problems please download the latest &#34;
+                &#34;version of the official client from &#34;
+                f&#39;&lt;a href=&#34;{config.WWW_URL}&#34;&gt;{config.WWW_URL}&lt;/a&gt;&#39;
+            )
+
+    async def check_policy_conformity(self, player_id, uid_hash, session, ignore_result=False):
+        if not config.USE_POLICY_SERVER:
+            return True
+
+        url = config.FAF_POLICY_SERVER_BASE_URL + &#34;/verify&#34;
+        payload = {
+            &#34;player_id&#34;: player_id,
+            &#34;uid_hash&#34;: uid_hash,
+            &#34;session&#34;: session
+        }
+        headers = {
+            &#34;content-type&#34;: &#34;application/json&#34;,
+            &#34;cache-control&#34;: &#34;no-cache&#34;
+        }
+
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.post(url, json=payload, headers=headers) as resp:
+                response = await resp.json()
+
+        if ignore_result:
+            return True
+
+        if response.get(&#34;result&#34;, &#34;&#34;) == &#34;vm&#34;:
+            self._logger.debug(&#34;Using VM: %d: %s&#34;, player_id, uid_hash)
+            await self.send({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;error&#34;,
+                &#34;text&#34;: (
+                    &#34;You need to link your account to Steam in order to use &#34;
+                    &#34;FAF in a virtual machine. Please contact an admin or &#34;
+                    &#34;moderator on the forums if you feel this is a false &#34;
+                    &#34;positive.&#34;
+                )
+            })
+            await self.send_warning(&#34;Your computer seems to be a virtual machine.&lt;br&gt;&lt;br&gt;In order to &#34;
+                                    &#34;log in from a VM, you have to link your account to Steam: &lt;a href=&#39;&#34; +
+                                    config.WWW_URL + &#34;/account/link&#39;&gt;&#34; +
+                                    config.WWW_URL + &#34;/account/link&lt;/a&gt;.&lt;br&gt;If you need an exception, please contact an &#34;
+                                                     &#34;admin or moderator on the forums&#34;, fatal=True)
+
+        if response.get(&#34;result&#34;, &#34;&#34;) == &#34;already_associated&#34;:
+            self._logger.warning(&#34;UID hit: %d: %s&#34;, player_id, uid_hash)
+            await self.send_warning(&#34;Your computer is already associated with another FAF account.&lt;br&gt;&lt;br&gt;In order to &#34;
+                                    &#34;log in with an additional account, you have to link it to Steam: &lt;a href=&#39;&#34; +
+                                    config.WWW_URL + &#34;/account/link&#39;&gt;&#34; +
+                                    config.WWW_URL + &#34;/account/link&lt;/a&gt;.&lt;br&gt;If you need an exception, please contact an &#34;
+                                                     &#34;admin or moderator on the forums&#34;, fatal=True)
+            return False
+
+        if response.get(&#34;result&#34;, &#34;&#34;) == &#34;fraudulent&#34;:
+            self._logger.info(&#34;Banning player %s for fraudulent looking login.&#34;, player_id)
+            await self.send_warning(&#34;Fraudulent login attempt detected. As a precautionary measure, your account has been &#34;
+                                    &#34;banned permanently. Please contact an admin or moderator on the forums if you feel this is &#34;
+                                    &#34;a false positive.&#34;,
+                                    fatal=True)
+
+            async with self._db.acquire() as conn:
+                try:
+                    ban_reason = &#34;Auto-banned because of fraudulent login attempt&#34;
+                    ban_level = &#34;GLOBAL&#34;
+                    await conn.execute(
+                        ban.insert().values(
+                            player_id=player_id,
+                            author_id=player_id,
+                            reason=ban_reason,
+                            level=ban_level,
+                        )
+                    )
+                except pymysql.MySQLError as e:
+                    raise ClientError(&#34;Banning failed: {}&#34;.format(e))
+
+            return False
+
+        return response.get(&#34;result&#34;, &#34;&#34;) == &#34;honest&#34;
+
+    async def command_hello(self, message):
+        login = message[&#34;login&#34;].strip()
+        password = message[&#34;password&#34;]
+
+        async with self._db.acquire() as conn:
+            player_id, login, steamid = await self.check_user_login(conn, login, password)
+            metrics.user_logins.labels(&#34;success&#34;).inc()
+
+            await conn.execute(
+                t_login.update().where(
+                    t_login.c.id == player_id
+                ).values(
+                    ip=self.peer_address.host,
+                    user_agent=self.user_agent,
+                    last_login=func.now()
+                )
+            )
+
+            conforms_policy = await self.check_policy_conformity(
+                player_id, message[&#34;unique_id&#34;], self.session,
+                ignore_result=(
+                    steamid is not None or
+                    self.player_service.is_uniqueid_exempt(player_id)
+                )
+            )
+            if not conforms_policy:
+                return
+
+            # Update the user&#39;s IRC registration (why the fuck is this here?!)
+            m = hashlib.md5()
+            m.update(password.encode())
+            passwordmd5 = m.hexdigest()
+            m = hashlib.md5()
+            # Since the password is hashed on the client, what we get at this point is really
+            # md5(md5(sha256(password))). This is entirely insane.
+            m.update(passwordmd5.encode())
+            irc_pass = &#34;md5:&#34; + str(m.hexdigest())
+
+            try:
+                await conn.execute(
+                    &#34;UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s&#34;,
+                    (irc_pass, login)
+                )
+            except (pymysql.OperationalError, pymysql.ProgrammingError):
+                self._logger.error(&#34;Failure updating NickServ password for %s&#34;, login)
+
+        self.player = Player(
+            login=str(login),
+            session=self.session,
+            player_id=player_id,
+            lobby_connection=self
+        )
+
+        old_player = self.player_service.get_player(self.player.id)
+        if old_player:
+            self._logger.debug(&#34;player {} already signed in: {}&#34;.format(self.player.id, old_player))
+            if old_player.lobby_connection is not None:
+                with contextlib.suppress(DisconnectedError):
+                    old_player.lobby_connection.write_warning(
+                        &#34;You have been signed out because you signed in &#34;
+                        &#34;elsewhere.&#34;,
+                        fatal=True
+                    )
+
+        await self.player_service.fetch_player_data(self.player)
+
+        self.player_service[self.player.id] = self.player
+        self._authenticated = True
+
+        # Country
+        # -------
+        self.player.country = self.geoip_service.country(self.peer_address.host)
+
+        # Send the player their own player info.
+        await self.send({
+            &#34;command&#34;: &#34;welcome&#34;,
+            &#34;me&#34;: self.player.to_dict(),
+
+            # For backwards compatibility for old clients. For now.
+            &#34;id&#34;: self.player.id,
+            &#34;login&#34;: login
+        })
+
+        # Tell player about everybody online. This must happen after &#34;welcome&#34;.
+        await self.send({
+            &#34;command&#34;: &#34;player_info&#34;,
+            &#34;players&#34;: [player.to_dict() for player in self.player_service]
+        })
+
+        # Tell everyone else online about us. This must happen after all the player_info messages.
+        # This ensures that no other client will perform an operation that interacts with the
+        # incoming user, allowing the client to make useful assumptions: it can be certain it has
+        # initialised its local player service before it is going to get messages that want to
+        # query it.
+        self.player_service.mark_dirty(self.player)
+
+        friends = []
+        foes = []
+        async with self._db.acquire() as conn:
+            result = await conn.execute(
+                select([
+                    friends_and_foes.c.subject_id,
+                    friends_and_foes.c.status
+                ]).where(
+                    friends_and_foes.c.user_id == self.player.id
+                )
+            )
+
+            async for row in result:
+                target_id, status = row[&#34;subject_id&#34;], row[&#34;status&#34;]
+                if status == &#34;FRIEND&#34;:
+                    friends.append(target_id)
+                else:
+                    foes.append(target_id)
+
+        self.player.friends = set(friends)
+        self.player.foes = set(foes)
+
+        channels = []
+        if self.player.is_moderator():
+            channels.append(&#34;#moderators&#34;)
+
+        if self.player.clan is not None:
+            channels.append(f&#34;#{self.player.clan}_clan&#34;)
+
+        json_to_send = {
+            &#34;command&#34;: &#34;social&#34;,
+            &#34;autojoin&#34;: channels,
+            &#34;channels&#34;: channels,
+            &#34;friends&#34;: friends,
+            &#34;foes&#34;: foes,
+            &#34;power&#34;: self.player.power()
+        }
+        await self.send(json_to_send)
+
+        await self.send_game_list()
+
+    async def command_restore_game_session(self, message):
+        assert self.player is not None
+
+        game_id = int(message.get(&#34;game_id&#34;))
+
+        # Restore the player&#39;s game connection, if the game still exists and is live
+        if not game_id or game_id not in self.game_service:
+            await self.send_warning(&#34;The game you were connected to does no longer exist&#34;)
+            return
+
+        game = self.game_service[game_id]  # type: Game
+        if game.state is not GameState.LOBBY and game.state is not GameState.LIVE:
+            await self.send_warning(&#34;The game you were connected to is no longer available&#34;)
+            return
+
+        self._logger.debug(&#34;Restoring game session of player %s to game %s&#34;, self.player, game)
+        self.game_connection = GameConnection(
+            database=self._db,
+            game=game,
+            player=self.player,
+            protocol=self.protocol,
+            player_service=self.player_service,
+            games=self.game_service,
+            state=GameConnectionState.CONNECTED_TO_HOST
+        )
+
+        game.add_game_connection(self.game_connection)
+        self.player.state = PlayerState.PLAYING
+        self.player.game = game
+
+    async def command_ask_session(self, message):
+        user_agent = message.get(&#34;user_agent&#34;)
+        version = message.get(&#34;version&#34;)
+        self._set_user_agent_and_version(user_agent, version)
+        await self._check_user_agent()
+        await self.send({&#34;command&#34;: &#34;session&#34;, &#34;session&#34;: self.session})
+
+    async def command_avatar(self, message):
+        action = message[&#34;action&#34;]
+
+        if action == &#34;list_avatar&#34;:
+            avatarList = []
+
+            async with self._db.acquire() as conn:
+                result = await conn.execute(
+                    select([
+                        avatars_list.c.url,
+                        avatars_list.c.tooltip
+                    ]).select_from(
+                        avatars.outerjoin(
+                            avatars_list
+                        )
+                    ).where(
+                        avatars.c.idUser == self.player.id
+                    )
+                )
+
+                async for row in result:
+                    avatar = {&#34;url&#34;: row[&#34;url&#34;], &#34;tooltip&#34;: row[&#34;tooltip&#34;]}
+                    avatarList.append(avatar)
+
+                if avatarList:
+                    await self.send({&#34;command&#34;: &#34;avatar&#34;, &#34;avatarlist&#34;: avatarList})
+
+        elif action == &#34;select&#34;:
+            avatar_url = message[&#34;avatar&#34;]
+
+            async with self._db.acquire() as conn:
+                if avatar_url is not None:
+                    result = await conn.execute(
+                        select([
+                            avatars_list.c.id, avatars_list.c.tooltip
+                        ]).select_from(
+                            avatars.join(avatars_list)
+                        ).where(
+                            and_(
+                                avatars_list.c.url == avatar_url,
+                                avatars.c.idUser == self.player.id
+                            )
+                        )
+                    )
+                    row = await result.fetchone()
+                    if not row:
+                        return
+
+                await conn.execute(
+                    avatars.update().where(
+                        avatars.c.idUser == self.player.id
+                    ).values(
+                        selected=0
+                    )
+                )
+                self.player.avatar = None
+
+                if avatar_url is not None:
+                    await conn.execute(
+                        avatars.update().where(
+                            and_(
+                                avatars.c.idUser == self.player.id,
+                                avatars.c.idAvatar == row[avatars_list.c.id]
+                            )
+                        ).values(
+                            selected=1
+                        )
+                    )
+                    self.player.avatar = {
+                        &#34;url&#34;: avatar_url,
+                        &#34;tooltip&#34;: row[avatars_list.c.tooltip]
+                    }
+                self.player_service.mark_dirty(self.player)
+        else:
+            raise KeyError(&#34;invalid action&#34;)
+
+    def ice_only(func):
+        &#34;&#34;&#34;
+        Ensures that a handler function is not invoked from a non ICE client.
+        &#34;&#34;&#34;
+        @wraps(func)
+        async def wrapper(self, message):
+            if self._attempted_connectivity_test:
+                raise ClientError(&#34;Cannot join game. Please update your client to the newest version.&#34;)
+            return await func(self, message)
+        return wrapper
+
+    def player_idle(state_text):
+        &#34;&#34;&#34;
+        Ensures that a handler function is not invoked unless the player state
+        is IDLE.
+        &#34;&#34;&#34;
+        def decorator(func):
+            @wraps(func)
+            async def wrapper(self, message):
+                if self.player.state != PlayerState.IDLE:
+                    raise ClientError(
+                        f&#34;Can&#39;t {state_text} while in state &#34;
+                        f&#34;{self.player.state.name}&#34;,
+                        recoverable=True
+                    )
+                return await func(self, message)
+            return wrapper
+        return decorator
+
+    @ice_only
+    @player_idle(&#34;join a game&#34;)
+    async def command_game_join(self, message):
+        &#34;&#34;&#34;
+        We are going to join a game.
+        &#34;&#34;&#34;
+        assert isinstance(self.player, Player)
+
+        await self.abort_connection_if_banned()
+
+        uuid = int(message[&#34;uid&#34;])
+        password = message.get(&#34;password&#34;)
+
+        self._logger.debug(&#34;joining: %d with pw: %s&#34;, uuid, password)
+        try:
+            game = self.game_service[uuid]
+        except KeyError:
+            await self.send({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;info&#34;,
+                &#34;text&#34;: &#34;The host has left the game.&#34;
+            })
+            return
+
+        if not game or game.state is not GameState.LOBBY:
+            self._logger.debug(&#34;Game not in lobby state: %s state %s&#34;, game, game.state)
+            await self.send({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;info&#34;,
+                &#34;text&#34;: &#34;The game you are trying to join is not ready.&#34;
+            })
+            return
+
+        if game.init_mode != InitMode.NORMAL_LOBBY:
+            raise ClientError(&#34;The game cannot be joined in this way.&#34;)
+
+        if game.password != password:
+            await self.send({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;info&#34;,
+                &#34;text&#34;: &#34;Bad password (it&#39;s case sensitive).&#34;
+            })
+            return
+
+        await self.launch_game(game, is_host=False)
+
+    @ice_only
+    async def command_game_matchmaking(self, message):
+        queue_name = str(
+            message.get(&#34;queue_name&#34;) or message.get(&#34;mod&#34;, &#34;ladder1v1&#34;)
+        )
+        state = str(message[&#34;state&#34;])
+
+        if state == &#34;stop&#34;:
+            self.ladder_service.cancel_search(self.player, queue_name)
+            return
+
+        party = self.party_service.get_party(self.player)
+
+        if self.player != party.owner:
+            raise ClientError(
+                &#34;Only the party owner may enter the party into a queue.&#34;,
+                recoverable=True
+            )
+
+        for member in party:
+            player = member.player
+            if player.state not in (
+                PlayerState.IDLE,
+                PlayerState.SEARCHING_LADDER
+            ):
+                raise ClientError(
+                    f&#34;Can&#39;t join a queue while {player.login} is in state &#34;
+                    f&#34;{player.state.name}&#34;,
+                    recoverable=True
+                )
+
+        if state == &#34;start&#34;:
+            players = party.players
+            if len(players) &gt; self.ladder_service.queues[queue_name].team_size:
+                raise ClientError(
+                    &#34;Your party is too large to join that queue!&#34;,
+                    recoverable=True
+                )
+
+            # TODO: Remove this legacy behavior, use party instead
+            if &#34;faction&#34; in message:
+                party.set_factions(
+                    self.player,
+                    [Faction.from_value(message[&#34;faction&#34;])]
+                )
+
+            self.ladder_service.start_search(
+                players,
+                queue_name=queue_name,
+                on_matched=party.on_matched
+            )
+
+    @ice_only
+    @player_idle(&#34;host a game&#34;)
+    async def command_game_host(self, message):
+        assert isinstance(self.player, Player)
+
+        await self.abort_connection_if_banned()
+
+        visibility = VisibilityState(message[&#34;visibility&#34;])
+        title = message.get(&#34;title&#34;) or f&#34;{self.player.login}&#39;s game&#34;
+        if not title.isascii():
+            raise ClientError(&#34;Title must contain only ascii characters.&#34;)
+
+        mod = message.get(&#34;mod&#34;) or FeaturedModType.FAF
+        mapname = message.get(&#34;mapname&#34;) or &#34;scmp_007&#34;
+        password = message.get(&#34;password&#34;)
+        game_mode = mod.lower()
+        rating_min = message.get(&#34;rating_min&#34;)
+        rating_max = message.get(&#34;rating_max&#34;)
+        enforce_rating_range = bool(message.get(&#34;enforce_rating_range&#34;, False))
+        if rating_min is not None:
+            rating_min = float(rating_min)
+        if rating_max is not None:
+            rating_max = float(rating_max)
+
+        game = self.game_service.create_game(
+            visibility=visibility,
+            game_mode=game_mode,
+            host=self.player,
+            name=title,
+            mapname=mapname,
+            password=password,
+            rating_type=RatingType.GLOBAL,
+            displayed_rating_range=InclusiveRange(rating_min, rating_max),
+            enforce_rating_range=enforce_rating_range
+        )
+        await self.launch_game(game, is_host=True)
+
+    async def launch_game(
+        self,
+        game,
+        is_host=False,
+        options=GameLaunchOptions(),
+    ):
+        assert self.player is not None
+        # TODO: Fix setting up a ridiculous amount of cyclic pointers here
+        if self.game_connection:
+            await self.game_connection.abort(&#34;Player launched a new game&#34;)
+
+        if is_host:
+            game.host = self.player
+
+        self.game_connection = GameConnection(
+            database=self._db,
+            game=game,
+            player=self.player,
+            protocol=self.protocol,
+            player_service=self.player_service,
+            games=self.game_service
+        )
+
+        self.player.state = PlayerState.HOSTING if is_host else PlayerState.JOINING
+        self.player.game = game
+        cmd = {
+            &#34;command&#34;: &#34;game_launch&#34;,
+            &#34;args&#34;: [&#34;/numgames&#34;, self.player.game_count[game.rating_type]],
+            &#34;uid&#34;: game.id,
+            &#34;mod&#34;: game.game_mode,
+            # Following parameters may not be used by the client yet. They are
+            # needed for setting up auto-lobby style matches such as ladder, gw,
+            # and team machmaking where the server decides what these game
+            # options are. Currently, options for ladder are hardcoded into the
+            # client.
+            &#34;name&#34;: game.name,
+            &#34;init_mode&#34;: game.init_mode.value,
+            &#34;rating_type&#34;: game.rating_type,
+            **options._asdict()
+        }
+
+        await self.send({k: v for k, v in cmd.items() if v is not None})
+
+    async def command_modvault(self, message):
+        type = message[&#34;type&#34;]
+
+        async with self._db.acquire() as conn:
+            if type == &#34;start&#34;:
+                result = await conn.execute(&#34;SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon FROM table_mod ORDER BY likes DESC LIMIT 100&#34;)
+
+                async for row in result:
+                    uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = (row[i] for i in range(12))
+                    try:
+                        link = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/&#34; + filename)
+                        thumbstr = &#34;&#34;
+                        if icon:
+                            thumbstr = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/mods_thumbs/&#34; + urllib.parse.quote(icon))
+
+                        out = dict(command=&#34;modvault_info&#34;, thumbnail=thumbstr, link=link, bugreports=[],
+                                   comments=[], description=description, played=played, likes=likes,
+                                   downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
+                                   ui=ui)
+                        await self.send(out)
+                    except:
+                        self._logger.error(&#34;Error handling table_mod row (uid: {})&#34;.format(uid), exc_info=True)
+
+            elif type == &#34;like&#34;:
+                canLike = True
+                uid = message[&#34;uid&#34;]
+                result = await conn.execute(&#34;SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likers FROM `table_mod` WHERE uid = %s LIMIT 1&#34;, (uid,))
+
+                row = await result.fetchone()
+                uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = (row[i] for i in range(13))
+                link = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/&#34; + filename)
+                thumbstr = &#34;&#34;
+                if icon:
+                    thumbstr = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/mods_thumbs/&#34; + urllib.parse.quote(icon))
+
+                out = dict(command=&#34;modvault_info&#34;, thumbnail=thumbstr, link=link, bugreports=[],
+                           comments=[], description=description, played=played, likes=likes + 1,
+                           downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
+                           ui=ui)
+
+                try:
+                    likers = json.loads(likerList)
+                    if self.player.id in likers:
+                        canLike = False
+                    else:
+                        likers.append(self.player.id)
+                except:
+                    likers = []
+
+                # TODO: Avoid sending all the mod info in the world just because we liked it?
+                if canLike:
+                    await conn.execute(
+                        &#34;UPDATE mod_stats s &#34;
+                        &#34;JOIN mod_version v ON v.mod_id = s.mod_id &#34;
+                        &#34;SET s.likes = s.likes + 1, likers=%s WHERE v.uid = %s&#34;,
+                        json.dumps(likers), uid)
+                    await self.send(out)
+
+            elif type == &#34;download&#34;:
+                uid = message[&#34;uid&#34;]
+                await conn.execute(
+                    &#34;UPDATE mod_stats s &#34;
+                    &#34;JOIN mod_version v ON v.mod_id = s.mod_id &#34;
+                    &#34;SET downloads=downloads+1 WHERE v.uid = %s&#34;, uid)
+            else:
+                raise ValueError(&#34;invalid type argument&#34;)
+
+    async def command_ice_servers(self, message):
+        if not self.player:
+            return
+
+        ttl = config.TWILIO_TTL
+        ice_servers = self.coturn_generator.server_tokens(
+            username=self.player.id,
+            ttl=ttl
+        )
+
+        if self.nts_client:
+            ice_servers += await self.nts_client.server_tokens(ttl=ttl)
+
+        await self.send({
+            &#34;command&#34;: &#34;ice_servers&#34;,
+            &#34;ice_servers&#34;: ice_servers,
+            &#34;ttl&#34;: ttl
+        })
+
+    @player_idle(&#34;invite a player&#34;)
+    async def command_invite_to_party(self, message):
+        recipient = self.player_service.get_player(message[&#34;recipient_id&#34;])
+        if recipient is None:
+            # TODO: Client localized message
+            raise ClientError(&#34;The invited player doesn&#39;t exist&#34;, recoverable=True)
+
+        if self.player.id in recipient.foes:
+            return
+
+        self.party_service.invite_player_to_party(self.player, recipient)
+
+    @player_idle(&#34;join a party&#34;)
+    async def command_accept_party_invite(self, message):
+        sender = self.player_service.get_player(message[&#34;sender_id&#34;])
+        if sender is None:
+            # TODO: Client localized message
+            raise ClientError(&#34;The inviting player doesn&#39;t exist&#34;, recoverable=True)
+
+        await self.party_service.accept_invite(self.player, sender)
+
+    @player_idle(&#34;kick a player&#34;)
+    async def command_kick_player_from_party(self, message):
+        kicked_player = self.player_service.get_player(message[&#34;kicked_player_id&#34;])
+        if kicked_player is None:
+            # TODO: Client localized message
+            raise ClientError(&#34;The kicked player doesn&#39;t exist&#34;, recoverable=True)
+
+        await self.party_service.kick_player_from_party(self.player, kicked_player)
+
+    async def command_leave_party(self, _message):
+        self.ladder_service.cancel_search(self.player)
+        await self.party_service.leave_party(self.player)
+
+    async def command_set_party_factions(self, message):
+        factions = set(Faction.from_value(v) for v in message[&#34;factions&#34;])
+
+        if not factions:
+            raise ClientError(
+                &#34;You must select at least one faction.&#34;,
+                recoverable=True
+            )
+
+        self.party_service.set_factions(self.player, list(factions))
+
+    async def send_warning(self, message: str, fatal: bool = False):
+        &#34;&#34;&#34;
+        Display a warning message to the client
+        :param message: Warning message to display
+        :param fatal: Whether or not the warning is fatal.
+                      If the client receives a fatal warning it should disconnect
+                      and not attempt to reconnect.
+        :return: None
+        &#34;&#34;&#34;
+        await self.send({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;info&#34; if not fatal else &#34;error&#34;,
+            &#34;text&#34;: message
+        })
+        if fatal:
+            await self.abort(message)
+
+    def write_warning(self, message: str, fatal: bool = False):
+        &#34;&#34;&#34;
+        Like send_warning, but does not await the data to be sent.
+        &#34;&#34;&#34;
+        self.write({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;info&#34; if not fatal else &#34;error&#34;,
+            &#34;text&#34;: message
+        })
+        if fatal:
+            asyncio.create_task(self.abort(message))
+
+    async def send(self, message):
+        &#34;&#34;&#34;Send a message and wait for it to be sent.&#34;&#34;&#34;
+        self.write(message)
+        await self.protocol.drain()
+
+    def write(self, message):
+        &#34;&#34;&#34;Write a message into the send buffer.&#34;&#34;&#34;
+        self._logger.log(TRACE, &#34;&gt;&gt; %s: %s&#34;, self.get_user_identifier(), message)
+        self.protocol.write_message(message)
+
+    async def on_connection_lost(self):
+        async def nop(*args, **kwargs):
+            return
+        self.send = nop
+
+        if self.game_connection:
+            self._logger.debug(
+                &#34;Lost lobby connection killing game connection for player %s&#34;,
+                self.game_connection.player.id
+            )
+            await self.game_connection.on_connection_lost()
+
+    async def abort_connection_if_banned(self):
+        async with self._db.acquire() as conn:
+            now = datetime.utcnow()
+            result = await conn.execute(
+                select([lobby_ban.c.reason, lobby_ban.c.expires_at])
+                .where(lobby_ban.c.idUser == self.player.id)
+                .order_by(lobby_ban.c.expires_at.desc())
+            )
+
+            data = await result.fetchone()
+            if data is None:
+                return
+
+            ban_expiry = data[ban.c.expires_at]
+            ban_reason = data[ban.c.reason]
+            if now &lt; ban_expiry:
+                self._logger.debug(&#34;Aborting connection of banned user: %s, %s, %s&#34;,
+                                   self.player.id, self.player.login, self.session)
+                raise BanError(ban_expiry, ban_reason)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="server.lobbyconnection.LobbyConnection"><code class="flex name class">
+<span>class <span class="ident">LobbyConnection</span></span>
+<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>, players: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>, nts_client: Union[<a title="server.ice_servers.nts.TwilioNTS" href="ice_servers/nts.html#server.ice_servers.nts.TwilioNTS">TwilioNTS</a>, NoneType], geoip: <a title="server.geoip_service.GeoIpService" href="geoip_service.html#server.geoip_service.GeoIpService">GeoIpService</a>, ladder_service: <a title="server.ladder_service.LadderService" href="ladder_service.html#server.ladder_service.LadderService">LadderService</a>, party_service: <a title="server.party_service.PartyService" href="party_service.html#server.party_service.PartyService">PartyService</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class LobbyConnection:
+    @timed()
+    def __init__(
+        self,
+        database: FAFDatabase,
+        game_service: GameService,
+        players: PlayerService,
+        nts_client: Optional[TwilioNTS],
+        geoip: GeoIpService,
+        ladder_service: LadderService,
+        party_service: PartyService
+    ):
+        self._db = database
+        self.geoip_service = geoip
+        self.game_service = game_service
+        self.player_service = players
+        self.nts_client = nts_client
+        self.coturn_generator = CoturnHMAC(config.COTURN_HOSTS, config.COTURN_KEYS)
+        self.ladder_service = ladder_service
+        self.party_service = party_service
+        self._authenticated = False
+        self.player = None  # type: Player
+        self.game_connection = None  # type: GameConnection
+        self.peer_address = None  # type: Optional[Address]
+        self.session = int(random.randrange(0, 4294967295))
+        self.protocol: Protocol = None
+        self.user_agent = None
+        self.version = None
+
+        self._attempted_connectivity_test = False
+
+        self._logger.debug(&#34;LobbyConnection initialized&#34;)
+
+    @property
+    def authenticated(self):
+        return self._authenticated
+
+    def get_user_identifier(self) -&gt; str:
+        &#34;&#34;&#34;For logging purposes&#34;&#34;&#34;
+        if self.player:
+            return self.player.login
+
+        return str(self.session)
+
+    async def on_connection_made(self, protocol: Protocol, peername: Address):
+        self.protocol = protocol
+        self.peer_address = peername
+        metrics.server_connections.inc()
+
+    async def abort(self, logspam=&#34;&#34;):
+        self._authenticated = False
+
+        identity = self.player.login if self.player else self.peer_address.host
+        self._logger.warning(
+            &#34;Aborting connection for %s. %s&#34;, identity, logspam
+        )
+
+        if self.game_connection:
+            await self.game_connection.abort()
+
+        await self.protocol.close()
+
+    async def ensure_authenticated(self, cmd):
+        if not self._authenticated:
+            if cmd not in [&#34;hello&#34;, &#34;ask_session&#34;, &#34;create_account&#34;, &#34;ping&#34;, &#34;pong&#34;, &#34;Bottleneck&#34;]:  # Bottleneck is sent by the game during reconnect
+                metrics.unauth_messages.labels(cmd).inc()
+                await self.abort(&#34;Message invalid for unauthenticated connection: %s&#34; % cmd)
+                return False
+        return True
+
+    async def on_message_received(self, message):
+        &#34;&#34;&#34;
+        Dispatches incoming messages
+        &#34;&#34;&#34;
+        self._logger.log(TRACE, &#34;&lt;&lt; %s: %s&#34;, self.get_user_identifier(), message)
+
+        try:
+            cmd = message[&#34;command&#34;]
+            if not await self.ensure_authenticated(cmd):
+                return
+            target = message.get(&#34;target&#34;)
+            if target == &#34;game&#34;:
+                if not self.game_connection:
+                    return
+
+                await self.game_connection.handle_action(cmd, message.get(&#34;args&#34;, []))
+                return
+
+            if target == &#34;connectivity&#34; and message.get(&#34;command&#34;) == &#34;InitiateTest&#34;:
+                self._attempted_connectivity_test = True
+                raise ClientError(&#34;Your client version is no longer supported. Please update to the newest version: https://faforever.com&#34;)
+
+            handler = getattr(self, &#34;command_{}&#34;.format(cmd))
+            await handler(message)
+
+        except AuthenticationError as ex:
+            await self.send({
+                &#34;command&#34;: &#34;authentication_failed&#34;,
+                &#34;text&#34;: ex.message
+            })
+        except BanError as ex:
+            await self.send({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;error&#34;,
+                &#34;text&#34;: ex.message()
+            })
+            await self.abort(ex.message())
+        except ClientError as ex:
+            self._logger.warning(&#34;Client error: %s&#34;, ex.message)
+            await self.send({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;error&#34;,
+                &#34;text&#34;: ex.message
+            })
+            if not ex.recoverable:
+                await self.abort(ex.message)
+        except (KeyError, ValueError) as ex:
+            self._logger.exception(ex)
+            await self.abort(&#34;Garbage command: {}&#34;.format(message))
+        except ConnectionError as e:
+            # Propagate connection errors to the ServerContext error handler.
+            raise e
+        except Exception as ex:  # pragma: no cover
+            await self.send({&#34;command&#34;: &#34;invalid&#34;})
+            self._logger.exception(ex)
+            await self.abort(&#34;Error processing command&#34;)
+
+    async def command_ping(self, msg):
+        await self.send({&#34;command&#34;: &#34;pong&#34;})
+
+    async def command_pong(self, msg):
+        pass
+
+    async def command_create_account(self, message):
+        raise ClientError(&#34;FAF no longer supports direct registration. Please use the website to register.&#34;, recoverable=True)
+
+    async def command_coop_list(self, message):
+        &#34;&#34;&#34; Request for coop map list&#34;&#34;&#34;
+        async with self._db.acquire() as conn:
+            result = await conn.execute(select([coop_map]))
+
+            maps = []
+            campaigns = [
+                &#34;FA Campaign&#34;,
+                &#34;Aeon Vanilla Campaign&#34;,
+                &#34;Cybran Vanilla Campaign&#34;,
+                &#34;UEF Vanilla Campaign&#34;,
+                &#34;Custom Missions&#34;
+            ]
+            async for row in result:
+                json_to_send = {
+                    &#34;command&#34;: &#34;coop_info&#34;,
+                    &#34;name&#34;: row[&#34;name&#34;],
+                    &#34;description&#34;: row[&#34;description&#34;],
+                    &#34;filename&#34;: row[&#34;filename&#34;],
+                    &#34;featured_mod&#34;: &#34;coop&#34;
+                }
+                if row[&#34;type&#34;] &lt; len(campaigns):
+                    json_to_send[&#34;type&#34;] = campaigns[row[&#34;type&#34;]]
+                else:
+                    # Don&#39;t sent corrupt data to the client...
+                    self._logger.error(&#34;Unknown coop type!&#34;)
+                    continue
+                json_to_send[&#34;uid&#34;] = row[&#34;id&#34;]
+                maps.append(json_to_send)
+
+        await self.protocol.send_messages(maps)
+
+    async def command_matchmaker_info(self, message):
+        await self.send({
+            &#34;command&#34;: &#34;matchmaker_info&#34;,
+            &#34;queues&#34;: [queue.to_dict() for queue in self.ladder_service.queues.values()]
+        })
+
+    async def send_game_list(self):
+        await self.send({
+            &#34;command&#34;: &#34;game_info&#34;,
+            &#34;games&#34;: [game.to_dict() for game in self.game_service.open_games]
+        })
+
+    async def command_social_remove(self, message):
+        if &#34;friend&#34; in message:
+            subject_id = message[&#34;friend&#34;]
+            player_attr = self.player.friends
+        elif &#34;foe&#34; in message:
+            subject_id = message[&#34;foe&#34;]
+            player_attr = self.player.foes
+        else:
+            await self.abort(&#34;No-op social_remove.&#34;)
+            return
+
+        async with self._db.acquire() as conn:
+            await conn.execute(friends_and_foes.delete().where(and_(
+                friends_and_foes.c.user_id == self.player.id,
+                friends_and_foes.c.subject_id == subject_id
+            )))
+
+        with contextlib.suppress(KeyError):
+            player_attr.remove(subject_id)
+
+    async def command_social_add(self, message):
+        if &#34;friend&#34; in message:
+            status = &#34;FRIEND&#34;
+            subject_id = message[&#34;friend&#34;]
+            player_attr = self.player.friends
+        elif &#34;foe&#34; in message:
+            status = &#34;FOE&#34;
+            subject_id = message[&#34;foe&#34;]
+            player_attr = self.player.foes
+        else:
+            return
+
+        async with self._db.acquire() as conn:
+            await conn.execute(friends_and_foes.insert().values(
+                user_id=self.player.id,
+                status=status,
+                subject_id=subject_id,
+            ))
+
+        player_attr.add(subject_id)
+
+    async def kick(self):
+        await self.send({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;kick&#34;,
+        })
+        await self.abort()
+
+    async def send_updated_achievements(self, updated_achievements):
+        await self.send({
+            &#34;command&#34;: &#34;updated_achievements&#34;,
+            &#34;updated_achievements&#34;: updated_achievements
+        })
+
+    async def command_admin(self, message):
+        action = message[&#34;action&#34;]
+
+        if action == &#34;closeFA&#34;:
+            if await self.player_service.has_permission_role(
+                self.player, &#34;ADMIN_KICK_SERVER&#34;
+            ):
+                player = self.player_service[message[&#34;user_id&#34;]]
+                if player:
+                    self._logger.info(
+                        &#34;Administrative action: %s closed game for %s&#34;,
+                        self.player, player
+                    )
+                    with contextlib.suppress(DisconnectedError):
+                        await player.send_message({
+                            &#34;command&#34;: &#34;notice&#34;,
+                            &#34;style&#34;: &#34;kill&#34;,
+                        })
+
+        elif action == &#34;closelobby&#34;:
+            if await self.player_service.has_permission_role(
+                self.player, &#34;ADMIN_KICK_SERVER&#34;
+            ):
+                player = self.player_service[message[&#34;user_id&#34;]]
+                if player and player.lobby_connection is not None:
+                    self._logger.info(
+                        &#34;Administrative action: %s closed client for %s&#34;,
+                        self.player, player
+                    )
+                    with contextlib.suppress(DisconnectedError):
+                        await player.lobby_connection.kick()
+
+        elif action == &#34;broadcast&#34;:
+            message_text = message.get(&#34;message&#34;)
+            if not message_text:
+                return
+            if await self.player_service.has_permission_role(
+                self.player, &#34;ADMIN_BROADCAST_MESSAGE&#34;
+            ):
+                for player in self.player_service:
+                    # Check if object still exists:
+                    # https://docs.python.org/3/library/weakref.html#weak-reference-objects
+                    if player.lobby_connection is not None:
+                        with contextlib.suppress(DisconnectedError):
+                            player.lobby_connection.write_warning(message_text)
+
+                self._logger.info(
+                    &#34;%s broadcasting message to all players: %s&#34;,
+                    self.player.login, message_text
+                )
+        elif action == &#34;join_channel&#34;:
+            if await self.player_service.has_permission_role(
+                self.player, &#34;ADMIN_JOIN_CHANNEL&#34;
+            ):
+                user_ids = message[&#34;user_ids&#34;]
+                channel = message[&#34;channel&#34;]
+
+                for user_id in user_ids:
+                    player = self.player_service[user_id]
+                    if player:
+                        player.write_message({
+                            &#34;command&#34;: &#34;social&#34;,
+                            &#34;autojoin&#34;: [channel]
+                        })
+
+    async def check_user_login(self, conn, username, password):
+        # TODO: Hash passwords server-side so the hashing actually *does* something.
+        result = await conn.execute(
+            select([
+                t_login.c.id,
+                t_login.c.login,
+                t_login.c.password,
+                t_login.c.steamid,
+                t_login.c.create_time,
+                lobby_ban.c.reason,
+                lobby_ban.c.expires_at
+            ]).select_from(t_login.outerjoin(lobby_ban))
+            .where(t_login.c.login == username)
+            .order_by(lobby_ban.c.expires_at.desc())
+        )
+
+        auth_error_message = &#34;Login not found or password incorrect. They are case sensitive.&#34;
+        row = await result.fetchone()
+        if not row:
+            metrics.user_logins.labels(&#34;failure&#34;).inc()
+            raise AuthenticationError(auth_error_message)
+
+        player_id = row[t_login.c.id]
+        real_username = row[t_login.c.login]
+        dbPassword = row[t_login.c.password]
+        steamid = row[t_login.c.steamid]
+        create_time = row[t_login.c.create_time]
+        ban_reason = row[lobby_ban.c.reason]
+        ban_expiry = row[lobby_ban.c.expires_at]
+
+        if dbPassword != password:
+            metrics.user_logins.labels(&#34;failure&#34;).inc()
+            raise AuthenticationError(auth_error_message)
+
+        now = datetime.utcnow()
+        if ban_reason is not None and now &lt; ban_expiry:
+            self._logger.debug(&#34;Rejected login from banned user: %s, %s, %s&#34;,
+                               player_id, username, self.session)
+            raise BanError(ban_expiry, ban_reason)
+
+        # New accounts are prevented from playing if they didn&#39;t link to steam
+
+        if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() &gt; config.FORCE_STEAM_LINK_AFTER_DATE:
+            self._logger.debug(&#34;Rejected login from new user: %s, %s, %s&#34;, player_id, username, self.session)
+            raise ClientError(
+                &#39;Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on &lt;a href=&#34;{steamlink_url}&#34;&gt;{steamlink_url}&lt;/a&gt;.&#39;.format(steamlink_url=config.WWW_URL + &#34;/account/link&#34;),
+                recoverable=False)
+
+        self._logger.debug(&#34;Login from: %s, %s, %s&#34;, player_id, username, self.session)
+
+        return player_id, real_username, steamid
+
+    def _set_user_agent_and_version(self, user_agent, version):
+        metrics.user_connections.labels(str(self.user_agent), str(self.version)).dec()
+        self.user_agent = user_agent
+
+        # only count a new version if it previously wasn&#39;t set
+        # to avoid double counting
+        if self.version is None and version is not None:
+            metrics.user_agent_version.labels(str(version)).inc()
+        self.version = version
+
+        metrics.user_connections.labels(str(self.user_agent), str(self.version)).inc()
+
+    async def _check_user_agent(self):
+        if not self.user_agent or &#34;downlords-faf-client&#34; not in self.user_agent:
+            await self.send_warning(
+                &#34;You are using an unofficial client version! &#34;
+                &#34;Some features might not work as expected. &#34;
+                &#34;If you experience any problems please download the latest &#34;
+                &#34;version of the official client from &#34;
+                f&#39;&lt;a href=&#34;{config.WWW_URL}&#34;&gt;{config.WWW_URL}&lt;/a&gt;&#39;
+            )
+
+    async def check_policy_conformity(self, player_id, uid_hash, session, ignore_result=False):
+        if not config.USE_POLICY_SERVER:
+            return True
+
+        url = config.FAF_POLICY_SERVER_BASE_URL + &#34;/verify&#34;
+        payload = {
+            &#34;player_id&#34;: player_id,
+            &#34;uid_hash&#34;: uid_hash,
+            &#34;session&#34;: session
+        }
+        headers = {
+            &#34;content-type&#34;: &#34;application/json&#34;,
+            &#34;cache-control&#34;: &#34;no-cache&#34;
+        }
+
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.post(url, json=payload, headers=headers) as resp:
+                response = await resp.json()
+
+        if ignore_result:
+            return True
+
+        if response.get(&#34;result&#34;, &#34;&#34;) == &#34;vm&#34;:
+            self._logger.debug(&#34;Using VM: %d: %s&#34;, player_id, uid_hash)
+            await self.send({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;error&#34;,
+                &#34;text&#34;: (
+                    &#34;You need to link your account to Steam in order to use &#34;
+                    &#34;FAF in a virtual machine. Please contact an admin or &#34;
+                    &#34;moderator on the forums if you feel this is a false &#34;
+                    &#34;positive.&#34;
+                )
+            })
+            await self.send_warning(&#34;Your computer seems to be a virtual machine.&lt;br&gt;&lt;br&gt;In order to &#34;
+                                    &#34;log in from a VM, you have to link your account to Steam: &lt;a href=&#39;&#34; +
+                                    config.WWW_URL + &#34;/account/link&#39;&gt;&#34; +
+                                    config.WWW_URL + &#34;/account/link&lt;/a&gt;.&lt;br&gt;If you need an exception, please contact an &#34;
+                                                     &#34;admin or moderator on the forums&#34;, fatal=True)
+
+        if response.get(&#34;result&#34;, &#34;&#34;) == &#34;already_associated&#34;:
+            self._logger.warning(&#34;UID hit: %d: %s&#34;, player_id, uid_hash)
+            await self.send_warning(&#34;Your computer is already associated with another FAF account.&lt;br&gt;&lt;br&gt;In order to &#34;
+                                    &#34;log in with an additional account, you have to link it to Steam: &lt;a href=&#39;&#34; +
+                                    config.WWW_URL + &#34;/account/link&#39;&gt;&#34; +
+                                    config.WWW_URL + &#34;/account/link&lt;/a&gt;.&lt;br&gt;If you need an exception, please contact an &#34;
+                                                     &#34;admin or moderator on the forums&#34;, fatal=True)
+            return False
+
+        if response.get(&#34;result&#34;, &#34;&#34;) == &#34;fraudulent&#34;:
+            self._logger.info(&#34;Banning player %s for fraudulent looking login.&#34;, player_id)
+            await self.send_warning(&#34;Fraudulent login attempt detected. As a precautionary measure, your account has been &#34;
+                                    &#34;banned permanently. Please contact an admin or moderator on the forums if you feel this is &#34;
+                                    &#34;a false positive.&#34;,
+                                    fatal=True)
+
+            async with self._db.acquire() as conn:
+                try:
+                    ban_reason = &#34;Auto-banned because of fraudulent login attempt&#34;
+                    ban_level = &#34;GLOBAL&#34;
+                    await conn.execute(
+                        ban.insert().values(
+                            player_id=player_id,
+                            author_id=player_id,
+                            reason=ban_reason,
+                            level=ban_level,
+                        )
+                    )
+                except pymysql.MySQLError as e:
+                    raise ClientError(&#34;Banning failed: {}&#34;.format(e))
+
+            return False
+
+        return response.get(&#34;result&#34;, &#34;&#34;) == &#34;honest&#34;
+
+    async def command_hello(self, message):
+        login = message[&#34;login&#34;].strip()
+        password = message[&#34;password&#34;]
+
+        async with self._db.acquire() as conn:
+            player_id, login, steamid = await self.check_user_login(conn, login, password)
+            metrics.user_logins.labels(&#34;success&#34;).inc()
+
+            await conn.execute(
+                t_login.update().where(
+                    t_login.c.id == player_id
+                ).values(
+                    ip=self.peer_address.host,
+                    user_agent=self.user_agent,
+                    last_login=func.now()
+                )
+            )
+
+            conforms_policy = await self.check_policy_conformity(
+                player_id, message[&#34;unique_id&#34;], self.session,
+                ignore_result=(
+                    steamid is not None or
+                    self.player_service.is_uniqueid_exempt(player_id)
+                )
+            )
+            if not conforms_policy:
+                return
+
+            # Update the user&#39;s IRC registration (why the fuck is this here?!)
+            m = hashlib.md5()
+            m.update(password.encode())
+            passwordmd5 = m.hexdigest()
+            m = hashlib.md5()
+            # Since the password is hashed on the client, what we get at this point is really
+            # md5(md5(sha256(password))). This is entirely insane.
+            m.update(passwordmd5.encode())
+            irc_pass = &#34;md5:&#34; + str(m.hexdigest())
+
+            try:
+                await conn.execute(
+                    &#34;UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s&#34;,
+                    (irc_pass, login)
+                )
+            except (pymysql.OperationalError, pymysql.ProgrammingError):
+                self._logger.error(&#34;Failure updating NickServ password for %s&#34;, login)
+
+        self.player = Player(
+            login=str(login),
+            session=self.session,
+            player_id=player_id,
+            lobby_connection=self
+        )
+
+        old_player = self.player_service.get_player(self.player.id)
+        if old_player:
+            self._logger.debug(&#34;player {} already signed in: {}&#34;.format(self.player.id, old_player))
+            if old_player.lobby_connection is not None:
+                with contextlib.suppress(DisconnectedError):
+                    old_player.lobby_connection.write_warning(
+                        &#34;You have been signed out because you signed in &#34;
+                        &#34;elsewhere.&#34;,
+                        fatal=True
+                    )
+
+        await self.player_service.fetch_player_data(self.player)
+
+        self.player_service[self.player.id] = self.player
+        self._authenticated = True
+
+        # Country
+        # -------
+        self.player.country = self.geoip_service.country(self.peer_address.host)
+
+        # Send the player their own player info.
+        await self.send({
+            &#34;command&#34;: &#34;welcome&#34;,
+            &#34;me&#34;: self.player.to_dict(),
+
+            # For backwards compatibility for old clients. For now.
+            &#34;id&#34;: self.player.id,
+            &#34;login&#34;: login
+        })
+
+        # Tell player about everybody online. This must happen after &#34;welcome&#34;.
+        await self.send({
+            &#34;command&#34;: &#34;player_info&#34;,
+            &#34;players&#34;: [player.to_dict() for player in self.player_service]
+        })
+
+        # Tell everyone else online about us. This must happen after all the player_info messages.
+        # This ensures that no other client will perform an operation that interacts with the
+        # incoming user, allowing the client to make useful assumptions: it can be certain it has
+        # initialised its local player service before it is going to get messages that want to
+        # query it.
+        self.player_service.mark_dirty(self.player)
+
+        friends = []
+        foes = []
+        async with self._db.acquire() as conn:
+            result = await conn.execute(
+                select([
+                    friends_and_foes.c.subject_id,
+                    friends_and_foes.c.status
+                ]).where(
+                    friends_and_foes.c.user_id == self.player.id
+                )
+            )
+
+            async for row in result:
+                target_id, status = row[&#34;subject_id&#34;], row[&#34;status&#34;]
+                if status == &#34;FRIEND&#34;:
+                    friends.append(target_id)
+                else:
+                    foes.append(target_id)
+
+        self.player.friends = set(friends)
+        self.player.foes = set(foes)
+
+        channels = []
+        if self.player.is_moderator():
+            channels.append(&#34;#moderators&#34;)
+
+        if self.player.clan is not None:
+            channels.append(f&#34;#{self.player.clan}_clan&#34;)
+
+        json_to_send = {
+            &#34;command&#34;: &#34;social&#34;,
+            &#34;autojoin&#34;: channels,
+            &#34;channels&#34;: channels,
+            &#34;friends&#34;: friends,
+            &#34;foes&#34;: foes,
+            &#34;power&#34;: self.player.power()
+        }
+        await self.send(json_to_send)
+
+        await self.send_game_list()
+
+    async def command_restore_game_session(self, message):
+        assert self.player is not None
+
+        game_id = int(message.get(&#34;game_id&#34;))
+
+        # Restore the player&#39;s game connection, if the game still exists and is live
+        if not game_id or game_id not in self.game_service:
+            await self.send_warning(&#34;The game you were connected to does no longer exist&#34;)
+            return
+
+        game = self.game_service[game_id]  # type: Game
+        if game.state is not GameState.LOBBY and game.state is not GameState.LIVE:
+            await self.send_warning(&#34;The game you were connected to is no longer available&#34;)
+            return
+
+        self._logger.debug(&#34;Restoring game session of player %s to game %s&#34;, self.player, game)
+        self.game_connection = GameConnection(
+            database=self._db,
+            game=game,
+            player=self.player,
+            protocol=self.protocol,
+            player_service=self.player_service,
+            games=self.game_service,
+            state=GameConnectionState.CONNECTED_TO_HOST
+        )
+
+        game.add_game_connection(self.game_connection)
+        self.player.state = PlayerState.PLAYING
+        self.player.game = game
+
+    async def command_ask_session(self, message):
+        user_agent = message.get(&#34;user_agent&#34;)
+        version = message.get(&#34;version&#34;)
+        self._set_user_agent_and_version(user_agent, version)
+        await self._check_user_agent()
+        await self.send({&#34;command&#34;: &#34;session&#34;, &#34;session&#34;: self.session})
+
+    async def command_avatar(self, message):
+        action = message[&#34;action&#34;]
+
+        if action == &#34;list_avatar&#34;:
+            avatarList = []
+
+            async with self._db.acquire() as conn:
+                result = await conn.execute(
+                    select([
+                        avatars_list.c.url,
+                        avatars_list.c.tooltip
+                    ]).select_from(
+                        avatars.outerjoin(
+                            avatars_list
+                        )
+                    ).where(
+                        avatars.c.idUser == self.player.id
+                    )
+                )
+
+                async for row in result:
+                    avatar = {&#34;url&#34;: row[&#34;url&#34;], &#34;tooltip&#34;: row[&#34;tooltip&#34;]}
+                    avatarList.append(avatar)
+
+                if avatarList:
+                    await self.send({&#34;command&#34;: &#34;avatar&#34;, &#34;avatarlist&#34;: avatarList})
+
+        elif action == &#34;select&#34;:
+            avatar_url = message[&#34;avatar&#34;]
+
+            async with self._db.acquire() as conn:
+                if avatar_url is not None:
+                    result = await conn.execute(
+                        select([
+                            avatars_list.c.id, avatars_list.c.tooltip
+                        ]).select_from(
+                            avatars.join(avatars_list)
+                        ).where(
+                            and_(
+                                avatars_list.c.url == avatar_url,
+                                avatars.c.idUser == self.player.id
+                            )
+                        )
+                    )
+                    row = await result.fetchone()
+                    if not row:
+                        return
+
+                await conn.execute(
+                    avatars.update().where(
+                        avatars.c.idUser == self.player.id
+                    ).values(
+                        selected=0
+                    )
+                )
+                self.player.avatar = None
+
+                if avatar_url is not None:
+                    await conn.execute(
+                        avatars.update().where(
+                            and_(
+                                avatars.c.idUser == self.player.id,
+                                avatars.c.idAvatar == row[avatars_list.c.id]
+                            )
+                        ).values(
+                            selected=1
+                        )
+                    )
+                    self.player.avatar = {
+                        &#34;url&#34;: avatar_url,
+                        &#34;tooltip&#34;: row[avatars_list.c.tooltip]
+                    }
+                self.player_service.mark_dirty(self.player)
+        else:
+            raise KeyError(&#34;invalid action&#34;)
+
+    def ice_only(func):
+        &#34;&#34;&#34;
+        Ensures that a handler function is not invoked from a non ICE client.
+        &#34;&#34;&#34;
+        @wraps(func)
+        async def wrapper(self, message):
+            if self._attempted_connectivity_test:
+                raise ClientError(&#34;Cannot join game. Please update your client to the newest version.&#34;)
+            return await func(self, message)
+        return wrapper
+
+    def player_idle(state_text):
+        &#34;&#34;&#34;
+        Ensures that a handler function is not invoked unless the player state
+        is IDLE.
+        &#34;&#34;&#34;
+        def decorator(func):
+            @wraps(func)
+            async def wrapper(self, message):
+                if self.player.state != PlayerState.IDLE:
+                    raise ClientError(
+                        f&#34;Can&#39;t {state_text} while in state &#34;
+                        f&#34;{self.player.state.name}&#34;,
+                        recoverable=True
+                    )
+                return await func(self, message)
+            return wrapper
+        return decorator
+
+    @ice_only
+    @player_idle(&#34;join a game&#34;)
+    async def command_game_join(self, message):
+        &#34;&#34;&#34;
+        We are going to join a game.
+        &#34;&#34;&#34;
+        assert isinstance(self.player, Player)
+
+        await self.abort_connection_if_banned()
+
+        uuid = int(message[&#34;uid&#34;])
+        password = message.get(&#34;password&#34;)
+
+        self._logger.debug(&#34;joining: %d with pw: %s&#34;, uuid, password)
+        try:
+            game = self.game_service[uuid]
+        except KeyError:
+            await self.send({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;info&#34;,
+                &#34;text&#34;: &#34;The host has left the game.&#34;
+            })
+            return
+
+        if not game or game.state is not GameState.LOBBY:
+            self._logger.debug(&#34;Game not in lobby state: %s state %s&#34;, game, game.state)
+            await self.send({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;info&#34;,
+                &#34;text&#34;: &#34;The game you are trying to join is not ready.&#34;
+            })
+            return
+
+        if game.init_mode != InitMode.NORMAL_LOBBY:
+            raise ClientError(&#34;The game cannot be joined in this way.&#34;)
+
+        if game.password != password:
+            await self.send({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;info&#34;,
+                &#34;text&#34;: &#34;Bad password (it&#39;s case sensitive).&#34;
+            })
+            return
+
+        await self.launch_game(game, is_host=False)
+
+    @ice_only
+    async def command_game_matchmaking(self, message):
+        queue_name = str(
+            message.get(&#34;queue_name&#34;) or message.get(&#34;mod&#34;, &#34;ladder1v1&#34;)
+        )
+        state = str(message[&#34;state&#34;])
+
+        if state == &#34;stop&#34;:
+            self.ladder_service.cancel_search(self.player, queue_name)
+            return
+
+        party = self.party_service.get_party(self.player)
+
+        if self.player != party.owner:
+            raise ClientError(
+                &#34;Only the party owner may enter the party into a queue.&#34;,
+                recoverable=True
+            )
+
+        for member in party:
+            player = member.player
+            if player.state not in (
+                PlayerState.IDLE,
+                PlayerState.SEARCHING_LADDER
+            ):
+                raise ClientError(
+                    f&#34;Can&#39;t join a queue while {player.login} is in state &#34;
+                    f&#34;{player.state.name}&#34;,
+                    recoverable=True
+                )
+
+        if state == &#34;start&#34;:
+            players = party.players
+            if len(players) &gt; self.ladder_service.queues[queue_name].team_size:
+                raise ClientError(
+                    &#34;Your party is too large to join that queue!&#34;,
+                    recoverable=True
+                )
+
+            # TODO: Remove this legacy behavior, use party instead
+            if &#34;faction&#34; in message:
+                party.set_factions(
+                    self.player,
+                    [Faction.from_value(message[&#34;faction&#34;])]
+                )
+
+            self.ladder_service.start_search(
+                players,
+                queue_name=queue_name,
+                on_matched=party.on_matched
+            )
+
+    @ice_only
+    @player_idle(&#34;host a game&#34;)
+    async def command_game_host(self, message):
+        assert isinstance(self.player, Player)
+
+        await self.abort_connection_if_banned()
+
+        visibility = VisibilityState(message[&#34;visibility&#34;])
+        title = message.get(&#34;title&#34;) or f&#34;{self.player.login}&#39;s game&#34;
+        if not title.isascii():
+            raise ClientError(&#34;Title must contain only ascii characters.&#34;)
+
+        mod = message.get(&#34;mod&#34;) or FeaturedModType.FAF
+        mapname = message.get(&#34;mapname&#34;) or &#34;scmp_007&#34;
+        password = message.get(&#34;password&#34;)
+        game_mode = mod.lower()
+        rating_min = message.get(&#34;rating_min&#34;)
+        rating_max = message.get(&#34;rating_max&#34;)
+        enforce_rating_range = bool(message.get(&#34;enforce_rating_range&#34;, False))
+        if rating_min is not None:
+            rating_min = float(rating_min)
+        if rating_max is not None:
+            rating_max = float(rating_max)
+
+        game = self.game_service.create_game(
+            visibility=visibility,
+            game_mode=game_mode,
+            host=self.player,
+            name=title,
+            mapname=mapname,
+            password=password,
+            rating_type=RatingType.GLOBAL,
+            displayed_rating_range=InclusiveRange(rating_min, rating_max),
+            enforce_rating_range=enforce_rating_range
+        )
+        await self.launch_game(game, is_host=True)
+
+    async def launch_game(
+        self,
+        game,
+        is_host=False,
+        options=GameLaunchOptions(),
+    ):
+        assert self.player is not None
+        # TODO: Fix setting up a ridiculous amount of cyclic pointers here
+        if self.game_connection:
+            await self.game_connection.abort(&#34;Player launched a new game&#34;)
+
+        if is_host:
+            game.host = self.player
+
+        self.game_connection = GameConnection(
+            database=self._db,
+            game=game,
+            player=self.player,
+            protocol=self.protocol,
+            player_service=self.player_service,
+            games=self.game_service
+        )
+
+        self.player.state = PlayerState.HOSTING if is_host else PlayerState.JOINING
+        self.player.game = game
+        cmd = {
+            &#34;command&#34;: &#34;game_launch&#34;,
+            &#34;args&#34;: [&#34;/numgames&#34;, self.player.game_count[game.rating_type]],
+            &#34;uid&#34;: game.id,
+            &#34;mod&#34;: game.game_mode,
+            # Following parameters may not be used by the client yet. They are
+            # needed for setting up auto-lobby style matches such as ladder, gw,
+            # and team machmaking where the server decides what these game
+            # options are. Currently, options for ladder are hardcoded into the
+            # client.
+            &#34;name&#34;: game.name,
+            &#34;init_mode&#34;: game.init_mode.value,
+            &#34;rating_type&#34;: game.rating_type,
+            **options._asdict()
+        }
+
+        await self.send({k: v for k, v in cmd.items() if v is not None})
+
+    async def command_modvault(self, message):
+        type = message[&#34;type&#34;]
+
+        async with self._db.acquire() as conn:
+            if type == &#34;start&#34;:
+                result = await conn.execute(&#34;SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon FROM table_mod ORDER BY likes DESC LIMIT 100&#34;)
+
+                async for row in result:
+                    uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = (row[i] for i in range(12))
+                    try:
+                        link = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/&#34; + filename)
+                        thumbstr = &#34;&#34;
+                        if icon:
+                            thumbstr = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/mods_thumbs/&#34; + urllib.parse.quote(icon))
+
+                        out = dict(command=&#34;modvault_info&#34;, thumbnail=thumbstr, link=link, bugreports=[],
+                                   comments=[], description=description, played=played, likes=likes,
+                                   downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
+                                   ui=ui)
+                        await self.send(out)
+                    except:
+                        self._logger.error(&#34;Error handling table_mod row (uid: {})&#34;.format(uid), exc_info=True)
+
+            elif type == &#34;like&#34;:
+                canLike = True
+                uid = message[&#34;uid&#34;]
+                result = await conn.execute(&#34;SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likers FROM `table_mod` WHERE uid = %s LIMIT 1&#34;, (uid,))
+
+                row = await result.fetchone()
+                uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = (row[i] for i in range(13))
+                link = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/&#34; + filename)
+                thumbstr = &#34;&#34;
+                if icon:
+                    thumbstr = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/mods_thumbs/&#34; + urllib.parse.quote(icon))
+
+                out = dict(command=&#34;modvault_info&#34;, thumbnail=thumbstr, link=link, bugreports=[],
+                           comments=[], description=description, played=played, likes=likes + 1,
+                           downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
+                           ui=ui)
+
+                try:
+                    likers = json.loads(likerList)
+                    if self.player.id in likers:
+                        canLike = False
+                    else:
+                        likers.append(self.player.id)
+                except:
+                    likers = []
+
+                # TODO: Avoid sending all the mod info in the world just because we liked it?
+                if canLike:
+                    await conn.execute(
+                        &#34;UPDATE mod_stats s &#34;
+                        &#34;JOIN mod_version v ON v.mod_id = s.mod_id &#34;
+                        &#34;SET s.likes = s.likes + 1, likers=%s WHERE v.uid = %s&#34;,
+                        json.dumps(likers), uid)
+                    await self.send(out)
+
+            elif type == &#34;download&#34;:
+                uid = message[&#34;uid&#34;]
+                await conn.execute(
+                    &#34;UPDATE mod_stats s &#34;
+                    &#34;JOIN mod_version v ON v.mod_id = s.mod_id &#34;
+                    &#34;SET downloads=downloads+1 WHERE v.uid = %s&#34;, uid)
+            else:
+                raise ValueError(&#34;invalid type argument&#34;)
+
+    async def command_ice_servers(self, message):
+        if not self.player:
+            return
+
+        ttl = config.TWILIO_TTL
+        ice_servers = self.coturn_generator.server_tokens(
+            username=self.player.id,
+            ttl=ttl
+        )
+
+        if self.nts_client:
+            ice_servers += await self.nts_client.server_tokens(ttl=ttl)
+
+        await self.send({
+            &#34;command&#34;: &#34;ice_servers&#34;,
+            &#34;ice_servers&#34;: ice_servers,
+            &#34;ttl&#34;: ttl
+        })
+
+    @player_idle(&#34;invite a player&#34;)
+    async def command_invite_to_party(self, message):
+        recipient = self.player_service.get_player(message[&#34;recipient_id&#34;])
+        if recipient is None:
+            # TODO: Client localized message
+            raise ClientError(&#34;The invited player doesn&#39;t exist&#34;, recoverable=True)
+
+        if self.player.id in recipient.foes:
+            return
+
+        self.party_service.invite_player_to_party(self.player, recipient)
+
+    @player_idle(&#34;join a party&#34;)
+    async def command_accept_party_invite(self, message):
+        sender = self.player_service.get_player(message[&#34;sender_id&#34;])
+        if sender is None:
+            # TODO: Client localized message
+            raise ClientError(&#34;The inviting player doesn&#39;t exist&#34;, recoverable=True)
+
+        await self.party_service.accept_invite(self.player, sender)
+
+    @player_idle(&#34;kick a player&#34;)
+    async def command_kick_player_from_party(self, message):
+        kicked_player = self.player_service.get_player(message[&#34;kicked_player_id&#34;])
+        if kicked_player is None:
+            # TODO: Client localized message
+            raise ClientError(&#34;The kicked player doesn&#39;t exist&#34;, recoverable=True)
+
+        await self.party_service.kick_player_from_party(self.player, kicked_player)
+
+    async def command_leave_party(self, _message):
+        self.ladder_service.cancel_search(self.player)
+        await self.party_service.leave_party(self.player)
+
+    async def command_set_party_factions(self, message):
+        factions = set(Faction.from_value(v) for v in message[&#34;factions&#34;])
+
+        if not factions:
+            raise ClientError(
+                &#34;You must select at least one faction.&#34;,
+                recoverable=True
+            )
+
+        self.party_service.set_factions(self.player, list(factions))
+
+    async def send_warning(self, message: str, fatal: bool = False):
+        &#34;&#34;&#34;
+        Display a warning message to the client
+        :param message: Warning message to display
+        :param fatal: Whether or not the warning is fatal.
+                      If the client receives a fatal warning it should disconnect
+                      and not attempt to reconnect.
+        :return: None
+        &#34;&#34;&#34;
+        await self.send({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;info&#34; if not fatal else &#34;error&#34;,
+            &#34;text&#34;: message
+        })
+        if fatal:
+            await self.abort(message)
+
+    def write_warning(self, message: str, fatal: bool = False):
+        &#34;&#34;&#34;
+        Like send_warning, but does not await the data to be sent.
+        &#34;&#34;&#34;
+        self.write({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;info&#34; if not fatal else &#34;error&#34;,
+            &#34;text&#34;: message
+        })
+        if fatal:
+            asyncio.create_task(self.abort(message))
+
+    async def send(self, message):
+        &#34;&#34;&#34;Send a message and wait for it to be sent.&#34;&#34;&#34;
+        self.write(message)
+        await self.protocol.drain()
+
+    def write(self, message):
+        &#34;&#34;&#34;Write a message into the send buffer.&#34;&#34;&#34;
+        self._logger.log(TRACE, &#34;&gt;&gt; %s: %s&#34;, self.get_user_identifier(), message)
+        self.protocol.write_message(message)
+
+    async def on_connection_lost(self):
+        async def nop(*args, **kwargs):
+            return
+        self.send = nop
+
+        if self.game_connection:
+            self._logger.debug(
+                &#34;Lost lobby connection killing game connection for player %s&#34;,
+                self.game_connection.player.id
+            )
+            await self.game_connection.on_connection_lost()
+
+    async def abort_connection_if_banned(self):
+        async with self._db.acquire() as conn:
+            now = datetime.utcnow()
+            result = await conn.execute(
+                select([lobby_ban.c.reason, lobby_ban.c.expires_at])
+                .where(lobby_ban.c.idUser == self.player.id)
+                .order_by(lobby_ban.c.expires_at.desc())
+            )
+
+            data = await result.fetchone()
+            if data is None:
+                return
+
+            ban_expiry = data[ban.c.expires_at]
+            ban_reason = data[ban.c.reason]
+            if now &lt; ban_expiry:
+                self._logger.debug(&#34;Aborting connection of banned user: %s, %s, %s&#34;,
+                                   self.player.id, self.player.login, self.session)
+                raise BanError(ban_expiry, ban_reason)</code></pre>
+</details>
+<h3>Instance variables</h3>
+<dl>
+<dt id="server.lobbyconnection.LobbyConnection.authenticated"><code class="name">var <span class="ident">authenticated</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def authenticated(self):
+    return self._authenticated</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="server.lobbyconnection.LobbyConnection.abort"><code class="name flex">
+<span>async def <span class="ident">abort</span></span>(<span>self, logspam='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def abort(self, logspam=&#34;&#34;):
+    self._authenticated = False
+
+    identity = self.player.login if self.player else self.peer_address.host
+    self._logger.warning(
+        &#34;Aborting connection for %s. %s&#34;, identity, logspam
+    )
+
+    if self.game_connection:
+        await self.game_connection.abort()
+
+    await self.protocol.close()</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.abort_connection_if_banned"><code class="name flex">
+<span>async def <span class="ident">abort_connection_if_banned</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def abort_connection_if_banned(self):
+    async with self._db.acquire() as conn:
+        now = datetime.utcnow()
+        result = await conn.execute(
+            select([lobby_ban.c.reason, lobby_ban.c.expires_at])
+            .where(lobby_ban.c.idUser == self.player.id)
+            .order_by(lobby_ban.c.expires_at.desc())
+        )
+
+        data = await result.fetchone()
+        if data is None:
+            return
+
+        ban_expiry = data[ban.c.expires_at]
+        ban_reason = data[ban.c.reason]
+        if now &lt; ban_expiry:
+            self._logger.debug(&#34;Aborting connection of banned user: %s, %s, %s&#34;,
+                               self.player.id, self.player.login, self.session)
+            raise BanError(ban_expiry, ban_reason)</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.check_policy_conformity"><code class="name flex">
+<span>async def <span class="ident">check_policy_conformity</span></span>(<span>self, player_id, uid_hash, session, ignore_result=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def check_policy_conformity(self, player_id, uid_hash, session, ignore_result=False):
+    if not config.USE_POLICY_SERVER:
+        return True
+
+    url = config.FAF_POLICY_SERVER_BASE_URL + &#34;/verify&#34;
+    payload = {
+        &#34;player_id&#34;: player_id,
+        &#34;uid_hash&#34;: uid_hash,
+        &#34;session&#34;: session
+    }
+    headers = {
+        &#34;content-type&#34;: &#34;application/json&#34;,
+        &#34;cache-control&#34;: &#34;no-cache&#34;
+    }
+
+    async with aiohttp.ClientSession(raise_for_status=True) as session:
+        async with session.post(url, json=payload, headers=headers) as resp:
+            response = await resp.json()
+
+    if ignore_result:
+        return True
+
+    if response.get(&#34;result&#34;, &#34;&#34;) == &#34;vm&#34;:
+        self._logger.debug(&#34;Using VM: %d: %s&#34;, player_id, uid_hash)
+        await self.send({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;error&#34;,
+            &#34;text&#34;: (
+                &#34;You need to link your account to Steam in order to use &#34;
+                &#34;FAF in a virtual machine. Please contact an admin or &#34;
+                &#34;moderator on the forums if you feel this is a false &#34;
+                &#34;positive.&#34;
+            )
+        })
+        await self.send_warning(&#34;Your computer seems to be a virtual machine.&lt;br&gt;&lt;br&gt;In order to &#34;
+                                &#34;log in from a VM, you have to link your account to Steam: &lt;a href=&#39;&#34; +
+                                config.WWW_URL + &#34;/account/link&#39;&gt;&#34; +
+                                config.WWW_URL + &#34;/account/link&lt;/a&gt;.&lt;br&gt;If you need an exception, please contact an &#34;
+                                                 &#34;admin or moderator on the forums&#34;, fatal=True)
+
+    if response.get(&#34;result&#34;, &#34;&#34;) == &#34;already_associated&#34;:
+        self._logger.warning(&#34;UID hit: %d: %s&#34;, player_id, uid_hash)
+        await self.send_warning(&#34;Your computer is already associated with another FAF account.&lt;br&gt;&lt;br&gt;In order to &#34;
+                                &#34;log in with an additional account, you have to link it to Steam: &lt;a href=&#39;&#34; +
+                                config.WWW_URL + &#34;/account/link&#39;&gt;&#34; +
+                                config.WWW_URL + &#34;/account/link&lt;/a&gt;.&lt;br&gt;If you need an exception, please contact an &#34;
+                                                 &#34;admin or moderator on the forums&#34;, fatal=True)
+        return False
+
+    if response.get(&#34;result&#34;, &#34;&#34;) == &#34;fraudulent&#34;:
+        self._logger.info(&#34;Banning player %s for fraudulent looking login.&#34;, player_id)
+        await self.send_warning(&#34;Fraudulent login attempt detected. As a precautionary measure, your account has been &#34;
+                                &#34;banned permanently. Please contact an admin or moderator on the forums if you feel this is &#34;
+                                &#34;a false positive.&#34;,
+                                fatal=True)
+
+        async with self._db.acquire() as conn:
+            try:
+                ban_reason = &#34;Auto-banned because of fraudulent login attempt&#34;
+                ban_level = &#34;GLOBAL&#34;
+                await conn.execute(
+                    ban.insert().values(
+                        player_id=player_id,
+                        author_id=player_id,
+                        reason=ban_reason,
+                        level=ban_level,
+                    )
+                )
+            except pymysql.MySQLError as e:
+                raise ClientError(&#34;Banning failed: {}&#34;.format(e))
+
+        return False
+
+    return response.get(&#34;result&#34;, &#34;&#34;) == &#34;honest&#34;</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.check_user_login"><code class="name flex">
+<span>async def <span class="ident">check_user_login</span></span>(<span>self, conn, username, password)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def check_user_login(self, conn, username, password):
+    # TODO: Hash passwords server-side so the hashing actually *does* something.
+    result = await conn.execute(
+        select([
+            t_login.c.id,
+            t_login.c.login,
+            t_login.c.password,
+            t_login.c.steamid,
+            t_login.c.create_time,
+            lobby_ban.c.reason,
+            lobby_ban.c.expires_at
+        ]).select_from(t_login.outerjoin(lobby_ban))
+        .where(t_login.c.login == username)
+        .order_by(lobby_ban.c.expires_at.desc())
+    )
+
+    auth_error_message = &#34;Login not found or password incorrect. They are case sensitive.&#34;
+    row = await result.fetchone()
+    if not row:
+        metrics.user_logins.labels(&#34;failure&#34;).inc()
+        raise AuthenticationError(auth_error_message)
+
+    player_id = row[t_login.c.id]
+    real_username = row[t_login.c.login]
+    dbPassword = row[t_login.c.password]
+    steamid = row[t_login.c.steamid]
+    create_time = row[t_login.c.create_time]
+    ban_reason = row[lobby_ban.c.reason]
+    ban_expiry = row[lobby_ban.c.expires_at]
+
+    if dbPassword != password:
+        metrics.user_logins.labels(&#34;failure&#34;).inc()
+        raise AuthenticationError(auth_error_message)
+
+    now = datetime.utcnow()
+    if ban_reason is not None and now &lt; ban_expiry:
+        self._logger.debug(&#34;Rejected login from banned user: %s, %s, %s&#34;,
+                           player_id, username, self.session)
+        raise BanError(ban_expiry, ban_reason)
+
+    # New accounts are prevented from playing if they didn&#39;t link to steam
+
+    if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() &gt; config.FORCE_STEAM_LINK_AFTER_DATE:
+        self._logger.debug(&#34;Rejected login from new user: %s, %s, %s&#34;, player_id, username, self.session)
+        raise ClientError(
+            &#39;Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on &lt;a href=&#34;{steamlink_url}&#34;&gt;{steamlink_url}&lt;/a&gt;.&#39;.format(steamlink_url=config.WWW_URL + &#34;/account/link&#34;),
+            recoverable=False)
+
+    self._logger.debug(&#34;Login from: %s, %s, %s&#34;, player_id, username, self.session)
+
+    return player_id, real_username, steamid</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_accept_party_invite"><code class="name flex">
+<span>async def <span class="ident">command_accept_party_invite</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@player_idle(&#34;join a party&#34;)
+async def command_accept_party_invite(self, message):
+    sender = self.player_service.get_player(message[&#34;sender_id&#34;])
+    if sender is None:
+        # TODO: Client localized message
+        raise ClientError(&#34;The inviting player doesn&#39;t exist&#34;, recoverable=True)
+
+    await self.party_service.accept_invite(self.player, sender)</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_admin"><code class="name flex">
+<span>async def <span class="ident">command_admin</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_admin(self, message):
+    action = message[&#34;action&#34;]
+
+    if action == &#34;closeFA&#34;:
+        if await self.player_service.has_permission_role(
+            self.player, &#34;ADMIN_KICK_SERVER&#34;
+        ):
+            player = self.player_service[message[&#34;user_id&#34;]]
+            if player:
+                self._logger.info(
+                    &#34;Administrative action: %s closed game for %s&#34;,
+                    self.player, player
+                )
+                with contextlib.suppress(DisconnectedError):
+                    await player.send_message({
+                        &#34;command&#34;: &#34;notice&#34;,
+                        &#34;style&#34;: &#34;kill&#34;,
+                    })
+
+    elif action == &#34;closelobby&#34;:
+        if await self.player_service.has_permission_role(
+            self.player, &#34;ADMIN_KICK_SERVER&#34;
+        ):
+            player = self.player_service[message[&#34;user_id&#34;]]
+            if player and player.lobby_connection is not None:
+                self._logger.info(
+                    &#34;Administrative action: %s closed client for %s&#34;,
+                    self.player, player
+                )
+                with contextlib.suppress(DisconnectedError):
+                    await player.lobby_connection.kick()
+
+    elif action == &#34;broadcast&#34;:
+        message_text = message.get(&#34;message&#34;)
+        if not message_text:
+            return
+        if await self.player_service.has_permission_role(
+            self.player, &#34;ADMIN_BROADCAST_MESSAGE&#34;
+        ):
+            for player in self.player_service:
+                # Check if object still exists:
+                # https://docs.python.org/3/library/weakref.html#weak-reference-objects
+                if player.lobby_connection is not None:
+                    with contextlib.suppress(DisconnectedError):
+                        player.lobby_connection.write_warning(message_text)
+
+            self._logger.info(
+                &#34;%s broadcasting message to all players: %s&#34;,
+                self.player.login, message_text
+            )
+    elif action == &#34;join_channel&#34;:
+        if await self.player_service.has_permission_role(
+            self.player, &#34;ADMIN_JOIN_CHANNEL&#34;
+        ):
+            user_ids = message[&#34;user_ids&#34;]
+            channel = message[&#34;channel&#34;]
+
+            for user_id in user_ids:
+                player = self.player_service[user_id]
+                if player:
+                    player.write_message({
+                        &#34;command&#34;: &#34;social&#34;,
+                        &#34;autojoin&#34;: [channel]
+                    })</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_ask_session"><code class="name flex">
+<span>async def <span class="ident">command_ask_session</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_ask_session(self, message):
+    user_agent = message.get(&#34;user_agent&#34;)
+    version = message.get(&#34;version&#34;)
+    self._set_user_agent_and_version(user_agent, version)
+    await self._check_user_agent()
+    await self.send({&#34;command&#34;: &#34;session&#34;, &#34;session&#34;: self.session})</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_avatar"><code class="name flex">
+<span>async def <span class="ident">command_avatar</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_avatar(self, message):
+    action = message[&#34;action&#34;]
+
+    if action == &#34;list_avatar&#34;:
+        avatarList = []
+
+        async with self._db.acquire() as conn:
+            result = await conn.execute(
+                select([
+                    avatars_list.c.url,
+                    avatars_list.c.tooltip
+                ]).select_from(
+                    avatars.outerjoin(
+                        avatars_list
+                    )
+                ).where(
+                    avatars.c.idUser == self.player.id
+                )
+            )
+
+            async for row in result:
+                avatar = {&#34;url&#34;: row[&#34;url&#34;], &#34;tooltip&#34;: row[&#34;tooltip&#34;]}
+                avatarList.append(avatar)
+
+            if avatarList:
+                await self.send({&#34;command&#34;: &#34;avatar&#34;, &#34;avatarlist&#34;: avatarList})
+
+    elif action == &#34;select&#34;:
+        avatar_url = message[&#34;avatar&#34;]
+
+        async with self._db.acquire() as conn:
+            if avatar_url is not None:
+                result = await conn.execute(
+                    select([
+                        avatars_list.c.id, avatars_list.c.tooltip
+                    ]).select_from(
+                        avatars.join(avatars_list)
+                    ).where(
+                        and_(
+                            avatars_list.c.url == avatar_url,
+                            avatars.c.idUser == self.player.id
+                        )
+                    )
+                )
+                row = await result.fetchone()
+                if not row:
+                    return
+
+            await conn.execute(
+                avatars.update().where(
+                    avatars.c.idUser == self.player.id
+                ).values(
+                    selected=0
+                )
+            )
+            self.player.avatar = None
+
+            if avatar_url is not None:
+                await conn.execute(
+                    avatars.update().where(
+                        and_(
+                            avatars.c.idUser == self.player.id,
+                            avatars.c.idAvatar == row[avatars_list.c.id]
+                        )
+                    ).values(
+                        selected=1
+                    )
+                )
+                self.player.avatar = {
+                    &#34;url&#34;: avatar_url,
+                    &#34;tooltip&#34;: row[avatars_list.c.tooltip]
+                }
+            self.player_service.mark_dirty(self.player)
+    else:
+        raise KeyError(&#34;invalid action&#34;)</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_coop_list"><code class="name flex">
+<span>async def <span class="ident">command_coop_list</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Request for coop map list</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_coop_list(self, message):
+    &#34;&#34;&#34; Request for coop map list&#34;&#34;&#34;
+    async with self._db.acquire() as conn:
+        result = await conn.execute(select([coop_map]))
+
+        maps = []
+        campaigns = [
+            &#34;FA Campaign&#34;,
+            &#34;Aeon Vanilla Campaign&#34;,
+            &#34;Cybran Vanilla Campaign&#34;,
+            &#34;UEF Vanilla Campaign&#34;,
+            &#34;Custom Missions&#34;
+        ]
+        async for row in result:
+            json_to_send = {
+                &#34;command&#34;: &#34;coop_info&#34;,
+                &#34;name&#34;: row[&#34;name&#34;],
+                &#34;description&#34;: row[&#34;description&#34;],
+                &#34;filename&#34;: row[&#34;filename&#34;],
+                &#34;featured_mod&#34;: &#34;coop&#34;
+            }
+            if row[&#34;type&#34;] &lt; len(campaigns):
+                json_to_send[&#34;type&#34;] = campaigns[row[&#34;type&#34;]]
+            else:
+                # Don&#39;t sent corrupt data to the client...
+                self._logger.error(&#34;Unknown coop type!&#34;)
+                continue
+            json_to_send[&#34;uid&#34;] = row[&#34;id&#34;]
+            maps.append(json_to_send)
+
+    await self.protocol.send_messages(maps)</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_create_account"><code class="name flex">
+<span>async def <span class="ident">command_create_account</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_create_account(self, message):
+    raise ClientError(&#34;FAF no longer supports direct registration. Please use the website to register.&#34;, recoverable=True)</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_game_host"><code class="name flex">
+<span>async def <span class="ident">command_game_host</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@ice_only
+@player_idle(&#34;host a game&#34;)
+async def command_game_host(self, message):
+    assert isinstance(self.player, Player)
+
+    await self.abort_connection_if_banned()
+
+    visibility = VisibilityState(message[&#34;visibility&#34;])
+    title = message.get(&#34;title&#34;) or f&#34;{self.player.login}&#39;s game&#34;
+    if not title.isascii():
+        raise ClientError(&#34;Title must contain only ascii characters.&#34;)
+
+    mod = message.get(&#34;mod&#34;) or FeaturedModType.FAF
+    mapname = message.get(&#34;mapname&#34;) or &#34;scmp_007&#34;
+    password = message.get(&#34;password&#34;)
+    game_mode = mod.lower()
+    rating_min = message.get(&#34;rating_min&#34;)
+    rating_max = message.get(&#34;rating_max&#34;)
+    enforce_rating_range = bool(message.get(&#34;enforce_rating_range&#34;, False))
+    if rating_min is not None:
+        rating_min = float(rating_min)
+    if rating_max is not None:
+        rating_max = float(rating_max)
+
+    game = self.game_service.create_game(
+        visibility=visibility,
+        game_mode=game_mode,
+        host=self.player,
+        name=title,
+        mapname=mapname,
+        password=password,
+        rating_type=RatingType.GLOBAL,
+        displayed_rating_range=InclusiveRange(rating_min, rating_max),
+        enforce_rating_range=enforce_rating_range
+    )
+    await self.launch_game(game, is_host=True)</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_game_join"><code class="name flex">
+<span>async def <span class="ident">command_game_join</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>We are going to join a game.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@ice_only
+@player_idle(&#34;join a game&#34;)
+async def command_game_join(self, message):
+    &#34;&#34;&#34;
+    We are going to join a game.
+    &#34;&#34;&#34;
+    assert isinstance(self.player, Player)
+
+    await self.abort_connection_if_banned()
+
+    uuid = int(message[&#34;uid&#34;])
+    password = message.get(&#34;password&#34;)
+
+    self._logger.debug(&#34;joining: %d with pw: %s&#34;, uuid, password)
+    try:
+        game = self.game_service[uuid]
+    except KeyError:
+        await self.send({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;info&#34;,
+            &#34;text&#34;: &#34;The host has left the game.&#34;
+        })
+        return
+
+    if not game or game.state is not GameState.LOBBY:
+        self._logger.debug(&#34;Game not in lobby state: %s state %s&#34;, game, game.state)
+        await self.send({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;info&#34;,
+            &#34;text&#34;: &#34;The game you are trying to join is not ready.&#34;
+        })
+        return
+
+    if game.init_mode != InitMode.NORMAL_LOBBY:
+        raise ClientError(&#34;The game cannot be joined in this way.&#34;)
+
+    if game.password != password:
+        await self.send({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;info&#34;,
+            &#34;text&#34;: &#34;Bad password (it&#39;s case sensitive).&#34;
+        })
+        return
+
+    await self.launch_game(game, is_host=False)</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_game_matchmaking"><code class="name flex">
+<span>async def <span class="ident">command_game_matchmaking</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@ice_only
+async def command_game_matchmaking(self, message):
+    queue_name = str(
+        message.get(&#34;queue_name&#34;) or message.get(&#34;mod&#34;, &#34;ladder1v1&#34;)
+    )
+    state = str(message[&#34;state&#34;])
+
+    if state == &#34;stop&#34;:
+        self.ladder_service.cancel_search(self.player, queue_name)
+        return
+
+    party = self.party_service.get_party(self.player)
+
+    if self.player != party.owner:
+        raise ClientError(
+            &#34;Only the party owner may enter the party into a queue.&#34;,
+            recoverable=True
+        )
+
+    for member in party:
+        player = member.player
+        if player.state not in (
+            PlayerState.IDLE,
+            PlayerState.SEARCHING_LADDER
+        ):
+            raise ClientError(
+                f&#34;Can&#39;t join a queue while {player.login} is in state &#34;
+                f&#34;{player.state.name}&#34;,
+                recoverable=True
+            )
+
+    if state == &#34;start&#34;:
+        players = party.players
+        if len(players) &gt; self.ladder_service.queues[queue_name].team_size:
+            raise ClientError(
+                &#34;Your party is too large to join that queue!&#34;,
+                recoverable=True
+            )
+
+        # TODO: Remove this legacy behavior, use party instead
+        if &#34;faction&#34; in message:
+            party.set_factions(
+                self.player,
+                [Faction.from_value(message[&#34;faction&#34;])]
+            )
+
+        self.ladder_service.start_search(
+            players,
+            queue_name=queue_name,
+            on_matched=party.on_matched
+        )</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_hello"><code class="name flex">
+<span>async def <span class="ident">command_hello</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_hello(self, message):
+    login = message[&#34;login&#34;].strip()
+    password = message[&#34;password&#34;]
+
+    async with self._db.acquire() as conn:
+        player_id, login, steamid = await self.check_user_login(conn, login, password)
+        metrics.user_logins.labels(&#34;success&#34;).inc()
+
+        await conn.execute(
+            t_login.update().where(
+                t_login.c.id == player_id
+            ).values(
+                ip=self.peer_address.host,
+                user_agent=self.user_agent,
+                last_login=func.now()
+            )
+        )
+
+        conforms_policy = await self.check_policy_conformity(
+            player_id, message[&#34;unique_id&#34;], self.session,
+            ignore_result=(
+                steamid is not None or
+                self.player_service.is_uniqueid_exempt(player_id)
+            )
+        )
+        if not conforms_policy:
+            return
+
+        # Update the user&#39;s IRC registration (why the fuck is this here?!)
+        m = hashlib.md5()
+        m.update(password.encode())
+        passwordmd5 = m.hexdigest()
+        m = hashlib.md5()
+        # Since the password is hashed on the client, what we get at this point is really
+        # md5(md5(sha256(password))). This is entirely insane.
+        m.update(passwordmd5.encode())
+        irc_pass = &#34;md5:&#34; + str(m.hexdigest())
+
+        try:
+            await conn.execute(
+                &#34;UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s&#34;,
+                (irc_pass, login)
+            )
+        except (pymysql.OperationalError, pymysql.ProgrammingError):
+            self._logger.error(&#34;Failure updating NickServ password for %s&#34;, login)
+
+    self.player = Player(
+        login=str(login),
+        session=self.session,
+        player_id=player_id,
+        lobby_connection=self
+    )
+
+    old_player = self.player_service.get_player(self.player.id)
+    if old_player:
+        self._logger.debug(&#34;player {} already signed in: {}&#34;.format(self.player.id, old_player))
+        if old_player.lobby_connection is not None:
+            with contextlib.suppress(DisconnectedError):
+                old_player.lobby_connection.write_warning(
+                    &#34;You have been signed out because you signed in &#34;
+                    &#34;elsewhere.&#34;,
+                    fatal=True
+                )
+
+    await self.player_service.fetch_player_data(self.player)
+
+    self.player_service[self.player.id] = self.player
+    self._authenticated = True
+
+    # Country
+    # -------
+    self.player.country = self.geoip_service.country(self.peer_address.host)
+
+    # Send the player their own player info.
+    await self.send({
+        &#34;command&#34;: &#34;welcome&#34;,
+        &#34;me&#34;: self.player.to_dict(),
+
+        # For backwards compatibility for old clients. For now.
+        &#34;id&#34;: self.player.id,
+        &#34;login&#34;: login
+    })
+
+    # Tell player about everybody online. This must happen after &#34;welcome&#34;.
+    await self.send({
+        &#34;command&#34;: &#34;player_info&#34;,
+        &#34;players&#34;: [player.to_dict() for player in self.player_service]
+    })
+
+    # Tell everyone else online about us. This must happen after all the player_info messages.
+    # This ensures that no other client will perform an operation that interacts with the
+    # incoming user, allowing the client to make useful assumptions: it can be certain it has
+    # initialised its local player service before it is going to get messages that want to
+    # query it.
+    self.player_service.mark_dirty(self.player)
+
+    friends = []
+    foes = []
+    async with self._db.acquire() as conn:
+        result = await conn.execute(
+            select([
+                friends_and_foes.c.subject_id,
+                friends_and_foes.c.status
+            ]).where(
+                friends_and_foes.c.user_id == self.player.id
+            )
+        )
+
+        async for row in result:
+            target_id, status = row[&#34;subject_id&#34;], row[&#34;status&#34;]
+            if status == &#34;FRIEND&#34;:
+                friends.append(target_id)
+            else:
+                foes.append(target_id)
+
+    self.player.friends = set(friends)
+    self.player.foes = set(foes)
+
+    channels = []
+    if self.player.is_moderator():
+        channels.append(&#34;#moderators&#34;)
+
+    if self.player.clan is not None:
+        channels.append(f&#34;#{self.player.clan}_clan&#34;)
+
+    json_to_send = {
+        &#34;command&#34;: &#34;social&#34;,
+        &#34;autojoin&#34;: channels,
+        &#34;channels&#34;: channels,
+        &#34;friends&#34;: friends,
+        &#34;foes&#34;: foes,
+        &#34;power&#34;: self.player.power()
+    }
+    await self.send(json_to_send)
+
+    await self.send_game_list()</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_ice_servers"><code class="name flex">
+<span>async def <span class="ident">command_ice_servers</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_ice_servers(self, message):
+    if not self.player:
+        return
+
+    ttl = config.TWILIO_TTL
+    ice_servers = self.coturn_generator.server_tokens(
+        username=self.player.id,
+        ttl=ttl
+    )
+
+    if self.nts_client:
+        ice_servers += await self.nts_client.server_tokens(ttl=ttl)
+
+    await self.send({
+        &#34;command&#34;: &#34;ice_servers&#34;,
+        &#34;ice_servers&#34;: ice_servers,
+        &#34;ttl&#34;: ttl
+    })</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_invite_to_party"><code class="name flex">
+<span>async def <span class="ident">command_invite_to_party</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@player_idle(&#34;invite a player&#34;)
+async def command_invite_to_party(self, message):
+    recipient = self.player_service.get_player(message[&#34;recipient_id&#34;])
+    if recipient is None:
+        # TODO: Client localized message
+        raise ClientError(&#34;The invited player doesn&#39;t exist&#34;, recoverable=True)
+
+    if self.player.id in recipient.foes:
+        return
+
+    self.party_service.invite_player_to_party(self.player, recipient)</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_kick_player_from_party"><code class="name flex">
+<span>async def <span class="ident">command_kick_player_from_party</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@player_idle(&#34;kick a player&#34;)
+async def command_kick_player_from_party(self, message):
+    kicked_player = self.player_service.get_player(message[&#34;kicked_player_id&#34;])
+    if kicked_player is None:
+        # TODO: Client localized message
+        raise ClientError(&#34;The kicked player doesn&#39;t exist&#34;, recoverable=True)
+
+    await self.party_service.kick_player_from_party(self.player, kicked_player)</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_leave_party"><code class="name flex">
+<span>async def <span class="ident">command_leave_party</span></span>(<span>self, _message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_leave_party(self, _message):
+    self.ladder_service.cancel_search(self.player)
+    await self.party_service.leave_party(self.player)</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_matchmaker_info"><code class="name flex">
+<span>async def <span class="ident">command_matchmaker_info</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_matchmaker_info(self, message):
+    await self.send({
+        &#34;command&#34;: &#34;matchmaker_info&#34;,
+        &#34;queues&#34;: [queue.to_dict() for queue in self.ladder_service.queues.values()]
+    })</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_modvault"><code class="name flex">
+<span>async def <span class="ident">command_modvault</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_modvault(self, message):
+    type = message[&#34;type&#34;]
+
+    async with self._db.acquire() as conn:
+        if type == &#34;start&#34;:
+            result = await conn.execute(&#34;SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon FROM table_mod ORDER BY likes DESC LIMIT 100&#34;)
+
+            async for row in result:
+                uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = (row[i] for i in range(12))
+                try:
+                    link = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/&#34; + filename)
+                    thumbstr = &#34;&#34;
+                    if icon:
+                        thumbstr = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/mods_thumbs/&#34; + urllib.parse.quote(icon))
+
+                    out = dict(command=&#34;modvault_info&#34;, thumbnail=thumbstr, link=link, bugreports=[],
+                               comments=[], description=description, played=played, likes=likes,
+                               downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
+                               ui=ui)
+                    await self.send(out)
+                except:
+                    self._logger.error(&#34;Error handling table_mod row (uid: {})&#34;.format(uid), exc_info=True)
+
+        elif type == &#34;like&#34;:
+            canLike = True
+            uid = message[&#34;uid&#34;]
+            result = await conn.execute(&#34;SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likers FROM `table_mod` WHERE uid = %s LIMIT 1&#34;, (uid,))
+
+            row = await result.fetchone()
+            uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = (row[i] for i in range(13))
+            link = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/&#34; + filename)
+            thumbstr = &#34;&#34;
+            if icon:
+                thumbstr = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/mods_thumbs/&#34; + urllib.parse.quote(icon))
+
+            out = dict(command=&#34;modvault_info&#34;, thumbnail=thumbstr, link=link, bugreports=[],
+                       comments=[], description=description, played=played, likes=likes + 1,
+                       downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
+                       ui=ui)
+
+            try:
+                likers = json.loads(likerList)
+                if self.player.id in likers:
+                    canLike = False
+                else:
+                    likers.append(self.player.id)
+            except:
+                likers = []
+
+            # TODO: Avoid sending all the mod info in the world just because we liked it?
+            if canLike:
+                await conn.execute(
+                    &#34;UPDATE mod_stats s &#34;
+                    &#34;JOIN mod_version v ON v.mod_id = s.mod_id &#34;
+                    &#34;SET s.likes = s.likes + 1, likers=%s WHERE v.uid = %s&#34;,
+                    json.dumps(likers), uid)
+                await self.send(out)
+
+        elif type == &#34;download&#34;:
+            uid = message[&#34;uid&#34;]
+            await conn.execute(
+                &#34;UPDATE mod_stats s &#34;
+                &#34;JOIN mod_version v ON v.mod_id = s.mod_id &#34;
+                &#34;SET downloads=downloads+1 WHERE v.uid = %s&#34;, uid)
+        else:
+            raise ValueError(&#34;invalid type argument&#34;)</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_ping"><code class="name flex">
+<span>async def <span class="ident">command_ping</span></span>(<span>self, msg)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_ping(self, msg):
+    await self.send({&#34;command&#34;: &#34;pong&#34;})</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_pong"><code class="name flex">
+<span>async def <span class="ident">command_pong</span></span>(<span>self, msg)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_pong(self, msg):
+    pass</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_restore_game_session"><code class="name flex">
+<span>async def <span class="ident">command_restore_game_session</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_restore_game_session(self, message):
+    assert self.player is not None
+
+    game_id = int(message.get(&#34;game_id&#34;))
+
+    # Restore the player&#39;s game connection, if the game still exists and is live
+    if not game_id or game_id not in self.game_service:
+        await self.send_warning(&#34;The game you were connected to does no longer exist&#34;)
+        return
+
+    game = self.game_service[game_id]  # type: Game
+    if game.state is not GameState.LOBBY and game.state is not GameState.LIVE:
+        await self.send_warning(&#34;The game you were connected to is no longer available&#34;)
+        return
+
+    self._logger.debug(&#34;Restoring game session of player %s to game %s&#34;, self.player, game)
+    self.game_connection = GameConnection(
+        database=self._db,
+        game=game,
+        player=self.player,
+        protocol=self.protocol,
+        player_service=self.player_service,
+        games=self.game_service,
+        state=GameConnectionState.CONNECTED_TO_HOST
+    )
+
+    game.add_game_connection(self.game_connection)
+    self.player.state = PlayerState.PLAYING
+    self.player.game = game</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_set_party_factions"><code class="name flex">
+<span>async def <span class="ident">command_set_party_factions</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_set_party_factions(self, message):
+    factions = set(Faction.from_value(v) for v in message[&#34;factions&#34;])
+
+    if not factions:
+        raise ClientError(
+            &#34;You must select at least one faction.&#34;,
+            recoverable=True
+        )
+
+    self.party_service.set_factions(self.player, list(factions))</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_social_add"><code class="name flex">
+<span>async def <span class="ident">command_social_add</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_social_add(self, message):
+    if &#34;friend&#34; in message:
+        status = &#34;FRIEND&#34;
+        subject_id = message[&#34;friend&#34;]
+        player_attr = self.player.friends
+    elif &#34;foe&#34; in message:
+        status = &#34;FOE&#34;
+        subject_id = message[&#34;foe&#34;]
+        player_attr = self.player.foes
+    else:
+        return
+
+    async with self._db.acquire() as conn:
+        await conn.execute(friends_and_foes.insert().values(
+            user_id=self.player.id,
+            status=status,
+            subject_id=subject_id,
+        ))
+
+    player_attr.add(subject_id)</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_social_remove"><code class="name flex">
+<span>async def <span class="ident">command_social_remove</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_social_remove(self, message):
+    if &#34;friend&#34; in message:
+        subject_id = message[&#34;friend&#34;]
+        player_attr = self.player.friends
+    elif &#34;foe&#34; in message:
+        subject_id = message[&#34;foe&#34;]
+        player_attr = self.player.foes
+    else:
+        await self.abort(&#34;No-op social_remove.&#34;)
+        return
+
+    async with self._db.acquire() as conn:
+        await conn.execute(friends_and_foes.delete().where(and_(
+            friends_and_foes.c.user_id == self.player.id,
+            friends_and_foes.c.subject_id == subject_id
+        )))
+
+    with contextlib.suppress(KeyError):
+        player_attr.remove(subject_id)</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.ensure_authenticated"><code class="name flex">
+<span>async def <span class="ident">ensure_authenticated</span></span>(<span>self, cmd)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def ensure_authenticated(self, cmd):
+    if not self._authenticated:
+        if cmd not in [&#34;hello&#34;, &#34;ask_session&#34;, &#34;create_account&#34;, &#34;ping&#34;, &#34;pong&#34;, &#34;Bottleneck&#34;]:  # Bottleneck is sent by the game during reconnect
+            metrics.unauth_messages.labels(cmd).inc()
+            await self.abort(&#34;Message invalid for unauthenticated connection: %s&#34; % cmd)
+            return False
+    return True</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.get_user_identifier"><code class="name flex">
+<span>def <span class="ident">get_user_identifier</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<div class="desc"><p>For logging purposes</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_user_identifier(self) -&gt; str:
+    &#34;&#34;&#34;For logging purposes&#34;&#34;&#34;
+    if self.player:
+        return self.player.login
+
+    return str(self.session)</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.ice_only"><code class="name flex">
+<span>def <span class="ident">ice_only</span></span>(<span>func)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Ensures that a handler function is not invoked from a non ICE client.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ice_only(func):
+    &#34;&#34;&#34;
+    Ensures that a handler function is not invoked from a non ICE client.
+    &#34;&#34;&#34;
+    @wraps(func)
+    async def wrapper(self, message):
+        if self._attempted_connectivity_test:
+            raise ClientError(&#34;Cannot join game. Please update your client to the newest version.&#34;)
+        return await func(self, message)
+    return wrapper</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.kick"><code class="name flex">
+<span>async def <span class="ident">kick</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def kick(self):
+    await self.send({
+        &#34;command&#34;: &#34;notice&#34;,
+        &#34;style&#34;: &#34;kick&#34;,
+    })
+    await self.abort()</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.launch_game"><code class="name flex">
+<span>async def <span class="ident">launch_game</span></span>(<span>self, game, is_host=False, options=GameLaunchOptions(mapname=None, team=None, faction=None, expected_players=None, map_position=None))</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def launch_game(
+    self,
+    game,
+    is_host=False,
+    options=GameLaunchOptions(),
+):
+    assert self.player is not None
+    # TODO: Fix setting up a ridiculous amount of cyclic pointers here
+    if self.game_connection:
+        await self.game_connection.abort(&#34;Player launched a new game&#34;)
+
+    if is_host:
+        game.host = self.player
+
+    self.game_connection = GameConnection(
+        database=self._db,
+        game=game,
+        player=self.player,
+        protocol=self.protocol,
+        player_service=self.player_service,
+        games=self.game_service
+    )
+
+    self.player.state = PlayerState.HOSTING if is_host else PlayerState.JOINING
+    self.player.game = game
+    cmd = {
+        &#34;command&#34;: &#34;game_launch&#34;,
+        &#34;args&#34;: [&#34;/numgames&#34;, self.player.game_count[game.rating_type]],
+        &#34;uid&#34;: game.id,
+        &#34;mod&#34;: game.game_mode,
+        # Following parameters may not be used by the client yet. They are
+        # needed for setting up auto-lobby style matches such as ladder, gw,
+        # and team machmaking where the server decides what these game
+        # options are. Currently, options for ladder are hardcoded into the
+        # client.
+        &#34;name&#34;: game.name,
+        &#34;init_mode&#34;: game.init_mode.value,
+        &#34;rating_type&#34;: game.rating_type,
+        **options._asdict()
+    }
+
+    await self.send({k: v for k, v in cmd.items() if v is not None})</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.on_connection_lost"><code class="name flex">
+<span>async def <span class="ident">on_connection_lost</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def on_connection_lost(self):
+    async def nop(*args, **kwargs):
+        return
+    self.send = nop
+
+    if self.game_connection:
+        self._logger.debug(
+            &#34;Lost lobby connection killing game connection for player %s&#34;,
+            self.game_connection.player.id
+        )
+        await self.game_connection.on_connection_lost()</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.on_connection_made"><code class="name flex">
+<span>async def <span class="ident">on_connection_made</span></span>(<span>self, protocol: <a title="server.protocol.protocol.Protocol" href="protocol/protocol.html#server.protocol.protocol.Protocol">Protocol</a>, peername: <a title="server.types.Address" href="types.html#server.types.Address">Address</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def on_connection_made(self, protocol: Protocol, peername: Address):
+    self.protocol = protocol
+    self.peer_address = peername
+    metrics.server_connections.inc()</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.on_message_received"><code class="name flex">
+<span>async def <span class="ident">on_message_received</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Dispatches incoming messages</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def on_message_received(self, message):
+    &#34;&#34;&#34;
+    Dispatches incoming messages
+    &#34;&#34;&#34;
+    self._logger.log(TRACE, &#34;&lt;&lt; %s: %s&#34;, self.get_user_identifier(), message)
+
+    try:
+        cmd = message[&#34;command&#34;]
+        if not await self.ensure_authenticated(cmd):
+            return
+        target = message.get(&#34;target&#34;)
+        if target == &#34;game&#34;:
+            if not self.game_connection:
+                return
+
+            await self.game_connection.handle_action(cmd, message.get(&#34;args&#34;, []))
+            return
+
+        if target == &#34;connectivity&#34; and message.get(&#34;command&#34;) == &#34;InitiateTest&#34;:
+            self._attempted_connectivity_test = True
+            raise ClientError(&#34;Your client version is no longer supported. Please update to the newest version: https://faforever.com&#34;)
+
+        handler = getattr(self, &#34;command_{}&#34;.format(cmd))
+        await handler(message)
+
+    except AuthenticationError as ex:
+        await self.send({
+            &#34;command&#34;: &#34;authentication_failed&#34;,
+            &#34;text&#34;: ex.message
+        })
+    except BanError as ex:
+        await self.send({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;error&#34;,
+            &#34;text&#34;: ex.message()
+        })
+        await self.abort(ex.message())
+    except ClientError as ex:
+        self._logger.warning(&#34;Client error: %s&#34;, ex.message)
+        await self.send({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;error&#34;,
+            &#34;text&#34;: ex.message
+        })
+        if not ex.recoverable:
+            await self.abort(ex.message)
+    except (KeyError, ValueError) as ex:
+        self._logger.exception(ex)
+        await self.abort(&#34;Garbage command: {}&#34;.format(message))
+    except ConnectionError as e:
+        # Propagate connection errors to the ServerContext error handler.
+        raise e
+    except Exception as ex:  # pragma: no cover
+        await self.send({&#34;command&#34;: &#34;invalid&#34;})
+        self._logger.exception(ex)
+        await self.abort(&#34;Error processing command&#34;)</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.player_idle"><code class="name flex">
+<span>def <span class="ident">player_idle</span></span>(<span>state_text)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Ensures that a handler function is not invoked unless the player state
+is IDLE.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def player_idle(state_text):
+    &#34;&#34;&#34;
+    Ensures that a handler function is not invoked unless the player state
+    is IDLE.
+    &#34;&#34;&#34;
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(self, message):
+            if self.player.state != PlayerState.IDLE:
+                raise ClientError(
+                    f&#34;Can&#39;t {state_text} while in state &#34;
+                    f&#34;{self.player.state.name}&#34;,
+                    recoverable=True
+                )
+            return await func(self, message)
+        return wrapper
+    return decorator</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.send"><code class="name flex">
+<span>async def <span class="ident">send</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Send a message and wait for it to be sent.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def send(self, message):
+    &#34;&#34;&#34;Send a message and wait for it to be sent.&#34;&#34;&#34;
+    self.write(message)
+    await self.protocol.drain()</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.send_game_list"><code class="name flex">
+<span>async def <span class="ident">send_game_list</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def send_game_list(self):
+    await self.send({
+        &#34;command&#34;: &#34;game_info&#34;,
+        &#34;games&#34;: [game.to_dict() for game in self.game_service.open_games]
+    })</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.send_updated_achievements"><code class="name flex">
+<span>async def <span class="ident">send_updated_achievements</span></span>(<span>self, updated_achievements)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def send_updated_achievements(self, updated_achievements):
+    await self.send({
+        &#34;command&#34;: &#34;updated_achievements&#34;,
+        &#34;updated_achievements&#34;: updated_achievements
+    })</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.send_warning"><code class="name flex">
+<span>async def <span class="ident">send_warning</span></span>(<span>self, message: str, fatal: bool = False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Display a warning message to the client
+:param message: Warning message to display
+:param fatal: Whether or not the warning is fatal.
+If the client receives a fatal warning it should disconnect
+and not attempt to reconnect.
+:return: None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def send_warning(self, message: str, fatal: bool = False):
+    &#34;&#34;&#34;
+    Display a warning message to the client
+    :param message: Warning message to display
+    :param fatal: Whether or not the warning is fatal.
+                  If the client receives a fatal warning it should disconnect
+                  and not attempt to reconnect.
+    :return: None
+    &#34;&#34;&#34;
+    await self.send({
+        &#34;command&#34;: &#34;notice&#34;,
+        &#34;style&#34;: &#34;info&#34; if not fatal else &#34;error&#34;,
+        &#34;text&#34;: message
+    })
+    if fatal:
+        await self.abort(message)</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.write"><code class="name flex">
+<span>def <span class="ident">write</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Write a message into the send buffer.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write(self, message):
+    &#34;&#34;&#34;Write a message into the send buffer.&#34;&#34;&#34;
+    self._logger.log(TRACE, &#34;&gt;&gt; %s: %s&#34;, self.get_user_identifier(), message)
+    self.protocol.write_message(message)</code></pre>
+</details>
+</dd>
+<dt id="server.lobbyconnection.LobbyConnection.write_warning"><code class="name flex">
+<span>def <span class="ident">write_warning</span></span>(<span>self, message: str, fatal: bool = False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Like send_warning, but does not await the data to be sent.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_warning(self, message: str, fatal: bool = False):
+    &#34;&#34;&#34;
+    Like send_warning, but does not await the data to be sent.
+    &#34;&#34;&#34;
+    self.write({
+        &#34;command&#34;: &#34;notice&#34;,
+        &#34;style&#34;: &#34;info&#34; if not fatal else &#34;error&#34;,
+        &#34;text&#34;: message
+    })
+    if fatal:
+        asyncio.create_task(self.abort(message))</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="server" href="index.html">server</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="server.lobbyconnection.LobbyConnection" href="#server.lobbyconnection.LobbyConnection">LobbyConnection</a></code></h4>
+<ul class="">
+<li><code><a title="server.lobbyconnection.LobbyConnection.abort" href="#server.lobbyconnection.LobbyConnection.abort">abort</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.abort_connection_if_banned" href="#server.lobbyconnection.LobbyConnection.abort_connection_if_banned">abort_connection_if_banned</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.authenticated" href="#server.lobbyconnection.LobbyConnection.authenticated">authenticated</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.check_policy_conformity" href="#server.lobbyconnection.LobbyConnection.check_policy_conformity">check_policy_conformity</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.check_user_login" href="#server.lobbyconnection.LobbyConnection.check_user_login">check_user_login</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_accept_party_invite" href="#server.lobbyconnection.LobbyConnection.command_accept_party_invite">command_accept_party_invite</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_admin" href="#server.lobbyconnection.LobbyConnection.command_admin">command_admin</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_ask_session" href="#server.lobbyconnection.LobbyConnection.command_ask_session">command_ask_session</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_avatar" href="#server.lobbyconnection.LobbyConnection.command_avatar">command_avatar</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_coop_list" href="#server.lobbyconnection.LobbyConnection.command_coop_list">command_coop_list</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_create_account" href="#server.lobbyconnection.LobbyConnection.command_create_account">command_create_account</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_game_host" href="#server.lobbyconnection.LobbyConnection.command_game_host">command_game_host</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_game_join" href="#server.lobbyconnection.LobbyConnection.command_game_join">command_game_join</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_game_matchmaking" href="#server.lobbyconnection.LobbyConnection.command_game_matchmaking">command_game_matchmaking</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_hello" href="#server.lobbyconnection.LobbyConnection.command_hello">command_hello</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_ice_servers" href="#server.lobbyconnection.LobbyConnection.command_ice_servers">command_ice_servers</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_invite_to_party" href="#server.lobbyconnection.LobbyConnection.command_invite_to_party">command_invite_to_party</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_kick_player_from_party" href="#server.lobbyconnection.LobbyConnection.command_kick_player_from_party">command_kick_player_from_party</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_leave_party" href="#server.lobbyconnection.LobbyConnection.command_leave_party">command_leave_party</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_matchmaker_info" href="#server.lobbyconnection.LobbyConnection.command_matchmaker_info">command_matchmaker_info</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_modvault" href="#server.lobbyconnection.LobbyConnection.command_modvault">command_modvault</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_ping" href="#server.lobbyconnection.LobbyConnection.command_ping">command_ping</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_pong" href="#server.lobbyconnection.LobbyConnection.command_pong">command_pong</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_restore_game_session" href="#server.lobbyconnection.LobbyConnection.command_restore_game_session">command_restore_game_session</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_set_party_factions" href="#server.lobbyconnection.LobbyConnection.command_set_party_factions">command_set_party_factions</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_social_add" href="#server.lobbyconnection.LobbyConnection.command_social_add">command_social_add</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_social_remove" href="#server.lobbyconnection.LobbyConnection.command_social_remove">command_social_remove</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.ensure_authenticated" href="#server.lobbyconnection.LobbyConnection.ensure_authenticated">ensure_authenticated</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.get_user_identifier" href="#server.lobbyconnection.LobbyConnection.get_user_identifier">get_user_identifier</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.ice_only" href="#server.lobbyconnection.LobbyConnection.ice_only">ice_only</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.kick" href="#server.lobbyconnection.LobbyConnection.kick">kick</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.launch_game" href="#server.lobbyconnection.LobbyConnection.launch_game">launch_game</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.on_connection_lost" href="#server.lobbyconnection.LobbyConnection.on_connection_lost">on_connection_lost</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.on_connection_made" href="#server.lobbyconnection.LobbyConnection.on_connection_made">on_connection_made</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.on_message_received" href="#server.lobbyconnection.LobbyConnection.on_message_received">on_message_received</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.player_idle" href="#server.lobbyconnection.LobbyConnection.player_idle">player_idle</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.send" href="#server.lobbyconnection.LobbyConnection.send">send</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.send_game_list" href="#server.lobbyconnection.LobbyConnection.send_game_list">send_game_list</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.send_updated_achievements" href="#server.lobbyconnection.LobbyConnection.send_updated_achievements">send_updated_achievements</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.send_warning" href="#server.lobbyconnection.LobbyConnection.send_warning">send_warning</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.write" href="#server.lobbyconnection.LobbyConnection.write">write</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.write_warning" href="#server.lobbyconnection.LobbyConnection.write_warning">write_warning</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>

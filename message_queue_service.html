@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>server.message_queue_service API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>server.message_queue_service</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import asyncio
+import json
+from typing import Dict
+
+import aio_pika
+from aio_pika import DeliveryMode, ExchangeType
+from aio_pika.exceptions import ProbableAuthenticationError
+
+from .asyncio_extensions import synchronizedmethod
+from .config import TRACE, config
+from .core import Service
+from .decorators import with_logger
+
+
+class ConnectionAttemptFailed(ConnectionError):
+    pass
+
+
+@with_logger
+class MessageQueueService(Service):
+    def __init__(self) -&gt; None:
+        &#34;&#34;&#34;
+        Service handling connection to the message queue
+        and providing an interface to publish messages.
+        &#34;&#34;&#34;
+        self._logger.debug(&#34;Message queue service created.&#34;)
+        self._connection = None
+        self._channel = None
+        self._exchanges = {}
+        self._exchange_types = {}
+        self._is_ready = False
+
+        config.register_callback(&#34;MQ_USER&#34;, self.reconnect)
+        config.register_callback(&#34;MQ_PASSWORD&#34;, self.reconnect)
+        config.register_callback(&#34;MQ_VHOST&#34;, self.reconnect)
+        config.register_callback(&#34;MQ_SERVER&#34;, self.reconnect)
+        config.register_callback(&#34;MQ_PORT&#34;, self.reconnect)
+
+    @synchronizedmethod(&#34;initialization_lock&#34;)
+    async def initialize(self) -&gt; None:
+        if self._is_ready:
+            return
+
+        try:
+            await self._connect()
+        except ConnectionAttemptFailed:
+            return
+        self._is_ready = True
+
+    async def _connect(self) -&gt; None:
+        try:
+            self._connection = await aio_pika.connect_robust(
+                &#34;amqp://{user}:{password}@{server}:{port}/{vhost}&#34;.format(
+                    user=config.MQ_USER,
+                    password=config.MQ_PASSWORD,
+                    vhost=config.MQ_VHOST,
+                    server=config.MQ_SERVER,
+                    port=config.MQ_PORT,
+                ),
+                loop=asyncio.get_running_loop(),
+            )
+        except ConnectionError as e:
+            self._logger.warning(
+                &#34;Unable to connect to RabbitMQ. Is it running?&#34;, exc_info=True
+            )
+            raise ConnectionAttemptFailed from e
+        except ProbableAuthenticationError as e:
+            self._logger.warning(
+                &#34;Unable to connect to RabbitMQ. Incorrect credentials?&#34;, exc_info=True
+            )
+            raise ConnectionAttemptFailed from e
+        except Exception as e:
+            self._logger.warning(
+                &#34;Unable to connect to RabbitMQ due to unhandled excpetion %s. Incorrect vhost?&#34;,
+                e,
+                exc_info=True,
+            )
+            raise ConnectionAttemptFailed from e
+
+        self._channel = await self._connection.channel(publisher_confirms=False)
+        self._logger.debug(&#34;Connected to RabbitMQ %r&#34;, self._connection)
+
+    async def declare_exchange(
+        self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC
+    ) -&gt; None:
+        await self.initialize()
+        if not self._is_ready:
+            self._logger.warning(
+                &#34;Not connected to RabbitMQ, unable to declare exchange.&#34;
+            )
+            return
+
+        await self._declare_exchange(exchange_name, exchange_type)
+
+    async def _declare_exchange(
+        self, exchange_name: str, exchange_type: ExchangeType
+    ) -&gt; None:
+        new_exchange = await self._channel.declare_exchange(
+            exchange_name, exchange_type
+        )
+
+        self._exchanges[exchange_name] = new_exchange
+        self._exchange_types[exchange_name] = exchange_type
+
+    @synchronizedmethod(&#34;initialization_lock&#34;)
+    async def shutdown(self) -&gt; None:
+        self._is_ready = False
+        await self._shutdown()
+
+    async def _shutdown(self) -&gt; None:
+        if self._channel is not None:
+            await self._channel.close()
+            self._channel = None
+
+        if self._connection is not None:
+            await self._connection.close()
+            self._connection = None
+
+    async def publish(
+        self,
+        exchange_name: str,
+        routing: str,
+        payload: Dict,
+        delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+    ) -&gt; None:
+        if not self._is_ready:
+            self._logger.warning(
+                &#34;Not connected to RabbitMQ, unable to publish message.&#34;
+            )
+            return
+
+        exchange = self._exchanges.get(exchange_name)
+        if exchange is None:
+            raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
+
+        message = aio_pika.Message(
+            json.dumps(payload).encode(), delivery_mode=delivery_mode
+        )
+
+        async with self._channel.transaction():
+            await exchange.publish(message, routing_key=routing)
+            self._logger.log(
+                TRACE, &#34;Published message %s to %s/%s&#34;, payload, exchange_name, routing
+            )
+
+    @synchronizedmethod(&#34;initialization_lock&#34;)
+    async def reconnect(self) -&gt; None:
+        self._is_ready = False
+        await self._shutdown()
+
+        try:
+            await self._connect()
+        except ConnectionAttemptFailed:
+            return
+
+        for exchange_name in list(self._exchanges.keys()):
+            await self._declare_exchange(
+                exchange_name, self._exchange_types[exchange_name]
+            )
+        self._is_ready = True</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="server.message_queue_service.ConnectionAttemptFailed"><code class="flex name class">
+<span>class <span class="ident">ConnectionAttemptFailed</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Connection error.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ConnectionAttemptFailed(ConnectionError):
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.ConnectionError</li>
+<li>builtins.OSError</li>
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="server.message_queue_service.MessageQueueService"><code class="flex name class">
+<span>class <span class="ident">MessageQueueService</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>All services should inherit from this class.</p>
+<p>Services are singleton objects which manage some server task.</p>
+<p>Service handling connection to the message queue
+and providing an interface to publish messages.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MessageQueueService(Service):
+    def __init__(self) -&gt; None:
+        &#34;&#34;&#34;
+        Service handling connection to the message queue
+        and providing an interface to publish messages.
+        &#34;&#34;&#34;
+        self._logger.debug(&#34;Message queue service created.&#34;)
+        self._connection = None
+        self._channel = None
+        self._exchanges = {}
+        self._exchange_types = {}
+        self._is_ready = False
+
+        config.register_callback(&#34;MQ_USER&#34;, self.reconnect)
+        config.register_callback(&#34;MQ_PASSWORD&#34;, self.reconnect)
+        config.register_callback(&#34;MQ_VHOST&#34;, self.reconnect)
+        config.register_callback(&#34;MQ_SERVER&#34;, self.reconnect)
+        config.register_callback(&#34;MQ_PORT&#34;, self.reconnect)
+
+    @synchronizedmethod(&#34;initialization_lock&#34;)
+    async def initialize(self) -&gt; None:
+        if self._is_ready:
+            return
+
+        try:
+            await self._connect()
+        except ConnectionAttemptFailed:
+            return
+        self._is_ready = True
+
+    async def _connect(self) -&gt; None:
+        try:
+            self._connection = await aio_pika.connect_robust(
+                &#34;amqp://{user}:{password}@{server}:{port}/{vhost}&#34;.format(
+                    user=config.MQ_USER,
+                    password=config.MQ_PASSWORD,
+                    vhost=config.MQ_VHOST,
+                    server=config.MQ_SERVER,
+                    port=config.MQ_PORT,
+                ),
+                loop=asyncio.get_running_loop(),
+            )
+        except ConnectionError as e:
+            self._logger.warning(
+                &#34;Unable to connect to RabbitMQ. Is it running?&#34;, exc_info=True
+            )
+            raise ConnectionAttemptFailed from e
+        except ProbableAuthenticationError as e:
+            self._logger.warning(
+                &#34;Unable to connect to RabbitMQ. Incorrect credentials?&#34;, exc_info=True
+            )
+            raise ConnectionAttemptFailed from e
+        except Exception as e:
+            self._logger.warning(
+                &#34;Unable to connect to RabbitMQ due to unhandled excpetion %s. Incorrect vhost?&#34;,
+                e,
+                exc_info=True,
+            )
+            raise ConnectionAttemptFailed from e
+
+        self._channel = await self._connection.channel(publisher_confirms=False)
+        self._logger.debug(&#34;Connected to RabbitMQ %r&#34;, self._connection)
+
+    async def declare_exchange(
+        self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC
+    ) -&gt; None:
+        await self.initialize()
+        if not self._is_ready:
+            self._logger.warning(
+                &#34;Not connected to RabbitMQ, unable to declare exchange.&#34;
+            )
+            return
+
+        await self._declare_exchange(exchange_name, exchange_type)
+
+    async def _declare_exchange(
+        self, exchange_name: str, exchange_type: ExchangeType
+    ) -&gt; None:
+        new_exchange = await self._channel.declare_exchange(
+            exchange_name, exchange_type
+        )
+
+        self._exchanges[exchange_name] = new_exchange
+        self._exchange_types[exchange_name] = exchange_type
+
+    @synchronizedmethod(&#34;initialization_lock&#34;)
+    async def shutdown(self) -&gt; None:
+        self._is_ready = False
+        await self._shutdown()
+
+    async def _shutdown(self) -&gt; None:
+        if self._channel is not None:
+            await self._channel.close()
+            self._channel = None
+
+        if self._connection is not None:
+            await self._connection.close()
+            self._connection = None
+
+    async def publish(
+        self,
+        exchange_name: str,
+        routing: str,
+        payload: Dict,
+        delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+    ) -&gt; None:
+        if not self._is_ready:
+            self._logger.warning(
+                &#34;Not connected to RabbitMQ, unable to publish message.&#34;
+            )
+            return
+
+        exchange = self._exchanges.get(exchange_name)
+        if exchange is None:
+            raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
+
+        message = aio_pika.Message(
+            json.dumps(payload).encode(), delivery_mode=delivery_mode
+        )
+
+        async with self._channel.transaction():
+            await exchange.publish(message, routing_key=routing)
+            self._logger.log(
+                TRACE, &#34;Published message %s to %s/%s&#34;, payload, exchange_name, routing
+            )
+
+    @synchronizedmethod(&#34;initialization_lock&#34;)
+    async def reconnect(self) -&gt; None:
+        self._is_ready = False
+        await self._shutdown()
+
+        try:
+            await self._connect()
+        except ConnectionAttemptFailed:
+            return
+
+        for exchange_name in list(self._exchanges.keys()):
+            await self._declare_exchange(
+                exchange_name, self._exchange_types[exchange_name]
+            )
+        self._is_ready = True</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.message_queue_service.MessageQueueService.services"><code class="name">var <span class="ident">services</span> : Dict[str, type]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="server.message_queue_service.MessageQueueService.declare_exchange"><code class="name flex">
+<span>async def <span class="ident">declare_exchange</span></span>(<span>self, exchange_name: str, exchange_type: aio_pika.exchange.ExchangeType = ExchangeType.TOPIC) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def declare_exchange(
+    self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC
+) -&gt; None:
+    await self.initialize()
+    if not self._is_ready:
+        self._logger.warning(
+            &#34;Not connected to RabbitMQ, unable to declare exchange.&#34;
+        )
+        return
+
+    await self._declare_exchange(exchange_name, exchange_type)</code></pre>
+</details>
+</dd>
+<dt id="server.message_queue_service.MessageQueueService.publish"><code class="name flex">
+<span>async def <span class="ident">publish</span></span>(<span>self, exchange_name: str, routing: str, payload: Dict, delivery_mode: aio_pika.message.DeliveryMode = DeliveryMode.PERSISTENT) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def publish(
+    self,
+    exchange_name: str,
+    routing: str,
+    payload: Dict,
+    delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+) -&gt; None:
+    if not self._is_ready:
+        self._logger.warning(
+            &#34;Not connected to RabbitMQ, unable to publish message.&#34;
+        )
+        return
+
+    exchange = self._exchanges.get(exchange_name)
+    if exchange is None:
+        raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
+
+    message = aio_pika.Message(
+        json.dumps(payload).encode(), delivery_mode=delivery_mode
+    )
+
+    async with self._channel.transaction():
+        await exchange.publish(message, routing_key=routing)
+        self._logger.log(
+            TRACE, &#34;Published message %s to %s/%s&#34;, payload, exchange_name, routing
+        )</code></pre>
+</details>
+</dd>
+<dt id="server.message_queue_service.MessageQueueService.reconnect"><code class="name flex">
+<span>async def <span class="ident">reconnect</span></span>(<span>self) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@synchronizedmethod(&#34;initialization_lock&#34;)
+async def reconnect(self) -&gt; None:
+    self._is_ready = False
+    await self._shutdown()
+
+    try:
+        await self._connect()
+    except ConnectionAttemptFailed:
+        return
+
+    for exchange_name in list(self._exchanges.keys()):
+        await self._declare_exchange(
+            exchange_name, self._exchange_types[exchange_name]
+        )
+    self._is_ready = True</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
+<ul class="hlist">
+<li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
+<li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
+<li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="server" href="index.html">server</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="server.message_queue_service.ConnectionAttemptFailed" href="#server.message_queue_service.ConnectionAttemptFailed">ConnectionAttemptFailed</a></code></h4>
+</li>
+<li>
+<h4><code><a title="server.message_queue_service.MessageQueueService" href="#server.message_queue_service.MessageQueueService">MessageQueueService</a></code></h4>
+<ul class="">
+<li><code><a title="server.message_queue_service.MessageQueueService.declare_exchange" href="#server.message_queue_service.MessageQueueService.declare_exchange">declare_exchange</a></code></li>
+<li><code><a title="server.message_queue_service.MessageQueueService.publish" href="#server.message_queue_service.MessageQueueService.publish">publish</a></code></li>
+<li><code><a title="server.message_queue_service.MessageQueueService.reconnect" href="#server.message_queue_service.MessageQueueService.reconnect">reconnect</a></code></li>
+<li><code><a title="server.message_queue_service.MessageQueueService.services" href="#server.message_queue_service.MessageQueueService.services">services</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>

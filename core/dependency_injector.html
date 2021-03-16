@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>server.core.dependency_injector API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>server.core.dependency_injector</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import inspect
+from collections import ChainMap, defaultdict
+from typing import Dict, List
+
+DependencyGraph = Dict[str, List[str]]
+
+
+class DependencyInjector(object):
+    &#34;&#34;&#34;
+    Does dependency injection.
+
+    Dependencies are resolved by parameter name. So if a class has init method
+    ```
+    def __init__(self, hello, world):
+        pass
+    ```
+    the injector will look for two dependencies, called `hello` and `world`.
+    These could either be an object registered with `add_injectables`, or an
+    instance of another class passed to `build_classes`.
+
+    Injected arguments are only ever constructed once. So if two classes both
+    depend on an object called `hello`, then they will both receive the same
+    instance of the object called `hello` (whether that is an injectable, or
+    another class in the class list).
+
+    # Example
+    ```
+    class SomeClass(object):
+        def __init__(self, external):
+            self.external = external
+
+    class SomeOtherClass(object):
+        def __init__(self, some_class):
+            self.some_class = some_class
+
+    injector = DependencyInjector()
+    injector.add_injectables(external=object())
+    classes = injector.build_classes({
+        &#34;some_class&#34;: SomeClass,
+        &#34;other&#34;: SomeOtherClass
+    })
+
+    assert isinstance(classes[&#34;some_class&#34;], SomeClass)
+    assert isinstance(classes[&#34;other&#34;], SomeOtherClass)
+    assert classes[&#34;other&#34;].some_class is classes[&#34;some_class&#34;]
+    ```
+
+    &#34;&#34;&#34;
+
+    def __init__(self) -&gt; None:
+        # Objects which are available to the constructors of injected objects
+        self.injectables: Dict[str, object] = {}
+
+    def add_injectables(
+        self, injectables: Dict[str, object] = {}, **kwargs: object
+    ) -&gt; None:
+        &#34;&#34;&#34;
+        Register additional objects that can be requested by injected classes.
+        &#34;&#34;&#34;
+        self.injectables.update(injectables)
+        self.injectables.update(kwargs)
+
+    def build_classes(
+        self, classes: Dict[str, type] = {}, **kwargs: type
+    ) -&gt; Dict[str, object]:
+        &#34;&#34;&#34;
+        Resolve dependencies by name and instantiate each class.
+        &#34;&#34;&#34;
+        # kwargs is temporary so we won&#39;t be messing with the caller&#39;s data
+        kwargs.update(classes)
+        classes = kwargs
+
+        dep = self._make_dependency_graph(classes)
+        # Can get away with a shallow copy because dep values are not modified
+        # in-place.
+        param_map = dep.copy()
+
+        instances = self._build_classes_from_dependencies(
+            dep, classes, param_map
+        )
+        self.add_injectables(**instances)
+        return instances
+
+    def _make_dependency_graph(self, classes: Dict[str, type]) -&gt; DependencyGraph:
+        &#34;&#34;&#34;
+        Build dependency graph
+        &#34;&#34;&#34;
+        graph: DependencyGraph = defaultdict(list)
+        for name in self.injectables:
+            graph[name] = []
+
+        for obj_name, klass in classes.items():
+            signature = inspect.signature(klass.__init__)
+            # Strip off the `self` parameter
+            params = list(signature.parameters.values())[1:]
+            graph[obj_name] = [param.name for param in params]
+
+        return graph
+
+    def _build_classes_from_dependencies(
+        self,
+        dep: DependencyGraph,
+        classes: Dict[str, type],
+        param_map: Dict[str, List[str]]
+    ) -&gt; Dict[str, object]:
+        &#34;&#34;&#34;
+        Tries to build all classes in the dependency graph. Raises RuntimeError
+        if some dependencies are not available or there was a cyclic dependency.
+        &#34;&#34;&#34;
+        instances: Dict[str, object] = {}
+        resolved = ChainMap(instances, self.injectables)
+
+        while True:
+            if not dep:
+                return instances
+
+            # Find all services with no dependencies (leaves of our graph)
+            leaves = [
+                name for name, dependencies in dep.items() if not dependencies
+            ]
+            if not leaves:
+                # Find which dependencies could not be resolved
+                missing = {
+                    d for dependencies in dep.values()
+                    for d in dependencies if d not in dep
+                }
+                if missing:
+                    raise RuntimeError(
+                        f&#34;Some dependencies could not be resolved: {missing}&#34;
+                    )
+                else:
+                    cycle = tuple(dep.keys())
+                    raise RuntimeError(
+                        f&#34;Could not resolve cyclic dependency: {cycle}&#34;
+                    )
+
+            # Build all objects with no dependencies
+            for obj_name in leaves:
+                if obj_name not in resolved:
+                    klass = classes[obj_name]
+                    param_names = param_map[obj_name]
+
+                    # Build instances using the objects we&#39;ve resolved so far
+                    instances[obj_name] = klass(**{
+                        param: resolved[param]
+                        for param in param_names
+                    })
+                elif obj_name in classes:
+                    instances[obj_name] = resolved[obj_name]
+
+                del dep[obj_name]
+
+            # Remove leaves from the dependency graph
+            for name, dependencies in dep.items():
+                dep[name] = [d for d in dependencies if d not in leaves]</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="server.core.dependency_injector.DependencyInjector"><code class="flex name class">
+<span>class <span class="ident">DependencyInjector</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Does dependency injection.</p>
+<p>Dependencies are resolved by parameter name. So if a class has init method</p>
+<pre><code>def __init__(self, hello, world):
+    pass
+</code></pre>
+<p>the injector will look for two dependencies, called <code>hello</code> and <code>world</code>.
+These could either be an object registered with <code>add_injectables</code>, or an
+instance of another class passed to <code>build_classes</code>.</p>
+<p>Injected arguments are only ever constructed once. So if two classes both
+depend on an object called <code>hello</code>, then they will both receive the same
+instance of the object called <code>hello</code> (whether that is an injectable, or
+another class in the class list).</p>
+<h1 id="example">Example</h1>
+<pre><code>class SomeClass(object):
+    def __init__(self, external):
+        self.external = external
+
+class SomeOtherClass(object):
+    def __init__(self, some_class):
+        self.some_class = some_class
+
+injector = DependencyInjector()
+injector.add_injectables(external=object())
+classes = injector.build_classes({
+    &quot;some_class&quot;: SomeClass,
+    &quot;other&quot;: SomeOtherClass
+})
+
+assert isinstance(classes[&quot;some_class&quot;], SomeClass)
+assert isinstance(classes[&quot;other&quot;], SomeOtherClass)
+assert classes[&quot;other&quot;].some_class is classes[&quot;some_class&quot;]
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DependencyInjector(object):
+    &#34;&#34;&#34;
+    Does dependency injection.
+
+    Dependencies are resolved by parameter name. So if a class has init method
+    ```
+    def __init__(self, hello, world):
+        pass
+    ```
+    the injector will look for two dependencies, called `hello` and `world`.
+    These could either be an object registered with `add_injectables`, or an
+    instance of another class passed to `build_classes`.
+
+    Injected arguments are only ever constructed once. So if two classes both
+    depend on an object called `hello`, then they will both receive the same
+    instance of the object called `hello` (whether that is an injectable, or
+    another class in the class list).
+
+    # Example
+    ```
+    class SomeClass(object):
+        def __init__(self, external):
+            self.external = external
+
+    class SomeOtherClass(object):
+        def __init__(self, some_class):
+            self.some_class = some_class
+
+    injector = DependencyInjector()
+    injector.add_injectables(external=object())
+    classes = injector.build_classes({
+        &#34;some_class&#34;: SomeClass,
+        &#34;other&#34;: SomeOtherClass
+    })
+
+    assert isinstance(classes[&#34;some_class&#34;], SomeClass)
+    assert isinstance(classes[&#34;other&#34;], SomeOtherClass)
+    assert classes[&#34;other&#34;].some_class is classes[&#34;some_class&#34;]
+    ```
+
+    &#34;&#34;&#34;
+
+    def __init__(self) -&gt; None:
+        # Objects which are available to the constructors of injected objects
+        self.injectables: Dict[str, object] = {}
+
+    def add_injectables(
+        self, injectables: Dict[str, object] = {}, **kwargs: object
+    ) -&gt; None:
+        &#34;&#34;&#34;
+        Register additional objects that can be requested by injected classes.
+        &#34;&#34;&#34;
+        self.injectables.update(injectables)
+        self.injectables.update(kwargs)
+
+    def build_classes(
+        self, classes: Dict[str, type] = {}, **kwargs: type
+    ) -&gt; Dict[str, object]:
+        &#34;&#34;&#34;
+        Resolve dependencies by name and instantiate each class.
+        &#34;&#34;&#34;
+        # kwargs is temporary so we won&#39;t be messing with the caller&#39;s data
+        kwargs.update(classes)
+        classes = kwargs
+
+        dep = self._make_dependency_graph(classes)
+        # Can get away with a shallow copy because dep values are not modified
+        # in-place.
+        param_map = dep.copy()
+
+        instances = self._build_classes_from_dependencies(
+            dep, classes, param_map
+        )
+        self.add_injectables(**instances)
+        return instances
+
+    def _make_dependency_graph(self, classes: Dict[str, type]) -&gt; DependencyGraph:
+        &#34;&#34;&#34;
+        Build dependency graph
+        &#34;&#34;&#34;
+        graph: DependencyGraph = defaultdict(list)
+        for name in self.injectables:
+            graph[name] = []
+
+        for obj_name, klass in classes.items():
+            signature = inspect.signature(klass.__init__)
+            # Strip off the `self` parameter
+            params = list(signature.parameters.values())[1:]
+            graph[obj_name] = [param.name for param in params]
+
+        return graph
+
+    def _build_classes_from_dependencies(
+        self,
+        dep: DependencyGraph,
+        classes: Dict[str, type],
+        param_map: Dict[str, List[str]]
+    ) -&gt; Dict[str, object]:
+        &#34;&#34;&#34;
+        Tries to build all classes in the dependency graph. Raises RuntimeError
+        if some dependencies are not available or there was a cyclic dependency.
+        &#34;&#34;&#34;
+        instances: Dict[str, object] = {}
+        resolved = ChainMap(instances, self.injectables)
+
+        while True:
+            if not dep:
+                return instances
+
+            # Find all services with no dependencies (leaves of our graph)
+            leaves = [
+                name for name, dependencies in dep.items() if not dependencies
+            ]
+            if not leaves:
+                # Find which dependencies could not be resolved
+                missing = {
+                    d for dependencies in dep.values()
+                    for d in dependencies if d not in dep
+                }
+                if missing:
+                    raise RuntimeError(
+                        f&#34;Some dependencies could not be resolved: {missing}&#34;
+                    )
+                else:
+                    cycle = tuple(dep.keys())
+                    raise RuntimeError(
+                        f&#34;Could not resolve cyclic dependency: {cycle}&#34;
+                    )
+
+            # Build all objects with no dependencies
+            for obj_name in leaves:
+                if obj_name not in resolved:
+                    klass = classes[obj_name]
+                    param_names = param_map[obj_name]
+
+                    # Build instances using the objects we&#39;ve resolved so far
+                    instances[obj_name] = klass(**{
+                        param: resolved[param]
+                        for param in param_names
+                    })
+                elif obj_name in classes:
+                    instances[obj_name] = resolved[obj_name]
+
+                del dep[obj_name]
+
+            # Remove leaves from the dependency graph
+            for name, dependencies in dep.items():
+                dep[name] = [d for d in dependencies if d not in leaves]</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="server.core.dependency_injector.DependencyInjector.add_injectables"><code class="name flex">
+<span>def <span class="ident">add_injectables</span></span>(<span>self, injectables: Dict[str, object] = {}, **kwargs: object) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Register additional objects that can be requested by injected classes.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_injectables(
+    self, injectables: Dict[str, object] = {}, **kwargs: object
+) -&gt; None:
+    &#34;&#34;&#34;
+    Register additional objects that can be requested by injected classes.
+    &#34;&#34;&#34;
+    self.injectables.update(injectables)
+    self.injectables.update(kwargs)</code></pre>
+</details>
+</dd>
+<dt id="server.core.dependency_injector.DependencyInjector.build_classes"><code class="name flex">
+<span>def <span class="ident">build_classes</span></span>(<span>self, classes: Dict[str, type] = {}, **kwargs: type) ‑> Dict[str, object]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Resolve dependencies by name and instantiate each class.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def build_classes(
+    self, classes: Dict[str, type] = {}, **kwargs: type
+) -&gt; Dict[str, object]:
+    &#34;&#34;&#34;
+    Resolve dependencies by name and instantiate each class.
+    &#34;&#34;&#34;
+    # kwargs is temporary so we won&#39;t be messing with the caller&#39;s data
+    kwargs.update(classes)
+    classes = kwargs
+
+    dep = self._make_dependency_graph(classes)
+    # Can get away with a shallow copy because dep values are not modified
+    # in-place.
+    param_map = dep.copy()
+
+    instances = self._build_classes_from_dependencies(
+        dep, classes, param_map
+    )
+    self.add_injectables(**instances)
+    return instances</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="server.core" href="index.html">server.core</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="server.core.dependency_injector.DependencyInjector" href="#server.core.dependency_injector.DependencyInjector">DependencyInjector</a></code></h4>
+<ul class="">
+<li><code><a title="server.core.dependency_injector.DependencyInjector.add_injectables" href="#server.core.dependency_injector.DependencyInjector.add_injectables">add_injectables</a></code></li>
+<li><code><a title="server.core.dependency_injector.DependencyInjector.build_classes" href="#server.core.dependency_injector.DependencyInjector.build_classes">build_classes</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>

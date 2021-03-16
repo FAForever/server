@@ -1,0 +1,3073 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>server.games API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>server.games</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from typing import NamedTuple
+
+from .coop import CoopGame
+from .custom_game import CustomGame
+from .game import Game, GameError
+from .ladder_game import LadderGame
+from .typedefs import (
+    FeaturedModType,
+    GameState,
+    ValidityState,
+    Victory,
+    VisibilityState
+)
+
+
+class FeaturedMod(NamedTuple):
+    id: int
+    name: str
+    full_name: str
+    description: str
+    publish: bool
+    order: int
+
+
+__all__ = (
+    &#34;CoopGame&#34;,
+    &#34;CustomGame&#34;,
+    &#34;FeaturedMod&#34;,
+    &#34;FeaturedModType&#34;,
+    &#34;Game&#34;,
+    &#34;GameError&#34;,
+    &#34;GameState&#34;,
+    &#34;LadderGame&#34;,
+    &#34;ValidityState&#34;,
+    &#34;Victory&#34;,
+    &#34;VisibilityState&#34;,
+)</code></pre>
+</details>
+</section>
+<section>
+<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+<dl>
+<dt><code class="name"><a title="server.games.coop" href="coop.html">server.games.coop</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="server.games.custom_game" href="custom_game.html">server.games.custom_game</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="server.games.game" href="game.html">server.games.game</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="server.games.game_results" href="game_results.html">server.games.game_results</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="server.games.ladder_game" href="ladder_game.html">server.games.ladder_game</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="server.games.typedefs" href="typedefs.html">server.games.typedefs</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="server.games.CoopGame"><code class="flex name class">
+<span>class <span class="ident">CoopGame</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class for coop game</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CoopGame(Game):
+    &#34;&#34;&#34;Class for coop game&#34;&#34;&#34;
+    init_mode = InitMode.NORMAL_LOBBY
+    game_type = GameType.COOP
+
+    def __init__(self, *args, **kwargs):
+        kwargs[&#34;game_mode&#34;] = &#34;coop&#34;
+        super().__init__(*args, **kwargs)
+
+        self.validity = ValidityState.COOP_NOT_RANKED
+        self.gameOptions.update({
+            &#34;Victory&#34;: Victory.SANDBOX,
+            &#34;TeamSpawn&#34;: &#34;fixed&#34;,
+            &#34;RevealedCivilians&#34;: &#34;No&#34;,
+            &#34;Difficulty&#34;: 3,
+            &#34;Expansion&#34;: &#34;true&#34;
+        })
+        asyncio.get_event_loop().create_task(self.timeout_game(60))
+
+    async def validate_game_mode_settings(self):
+        &#34;&#34;&#34;
+        Checks which only apply to the coop mode
+        &#34;&#34;&#34;
+
+        valid_options = {
+            &#34;Victory&#34;: (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
+            &#34;TeamSpawn&#34;: (&#34;fixed&#34;, ValidityState.SPAWN_NOT_FIXED),
+            &#34;RevealedCivilians&#34;: (FA.FALSE, ValidityState.CIVILIANS_REVEALED),
+            &#34;Difficulty&#34;: (3, ValidityState.WRONG_DIFFICULTY),
+            &#34;Expansion&#34;: (FA.TRUE, ValidityState.EXPANSION_DISABLED),
+        }
+        await self._validate_game_options(valid_options)
+
+    async def process_game_results(self):
+        &#34;&#34;&#34;
+        When a coop game ends, we don&#39;t expect there to be any game results.
+        &#34;&#34;&#34;
+        pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="server.games.game.Game" href="game.html#server.games.game.Game">Game</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.games.CoopGame.game_type"><code class="name">var <span class="ident">game_type</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.CoopGame.init_mode"><code class="name">var <span class="ident">init_mode</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="server.games.CoopGame.process_game_results"><code class="name flex">
+<span>async def <span class="ident">process_game_results</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>When a coop game ends, we don't expect there to be any game results.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def process_game_results(self):
+    &#34;&#34;&#34;
+    When a coop game ends, we don&#39;t expect there to be any game results.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
+<dt id="server.games.CoopGame.validate_game_mode_settings"><code class="name flex">
+<span>async def <span class="ident">validate_game_mode_settings</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Checks which only apply to the coop mode</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def validate_game_mode_settings(self):
+    &#34;&#34;&#34;
+    Checks which only apply to the coop mode
+    &#34;&#34;&#34;
+
+    valid_options = {
+        &#34;Victory&#34;: (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
+        &#34;TeamSpawn&#34;: (&#34;fixed&#34;, ValidityState.SPAWN_NOT_FIXED),
+        &#34;RevealedCivilians&#34;: (FA.FALSE, ValidityState.CIVILIANS_REVEALED),
+        &#34;Difficulty&#34;: (3, ValidityState.WRONG_DIFFICULTY),
+        &#34;Expansion&#34;: (FA.TRUE, ValidityState.EXPANSION_DISABLED),
+    }
+    await self._validate_game_options(valid_options)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="server.games.game.Game" href="game.html#server.games.game.Game">Game</a></b></code>:
+<ul class="hlist">
+<li><code><a title="server.games.game.Game.add_game_connection" href="game.html#server.games.game.Game.add_game_connection">add_game_connection</a></code></li>
+<li><code><a title="server.games.game.Game.add_result" href="game.html#server.games.game.Game.add_result">add_result</a></code></li>
+<li><code><a title="server.games.game.Game.clear_slot" href="game.html#server.games.game.Game.clear_slot">clear_slot</a></code></li>
+<li><code><a title="server.games.game.Game.get_player_option" href="game.html#server.games.game.Game.get_player_option">get_player_option</a></code></li>
+<li><code><a title="server.games.game.Game.get_team_sets" href="game.html#server.games.game.Game.get_team_sets">get_team_sets</a></code></li>
+<li><code><a title="server.games.game.Game.is_even" href="game.html#server.games.game.Game.is_even">is_even</a></code></li>
+<li><code><a title="server.games.game.Game.launch" href="game.html#server.games.game.Game.launch">launch</a></code></li>
+<li><code><a title="server.games.game.Game.load_results" href="game.html#server.games.game.Game.load_results">load_results</a></code></li>
+<li><code><a title="server.games.game.Game.map_folder_name" href="game.html#server.games.game.Game.map_folder_name">map_folder_name</a></code></li>
+<li><code><a title="server.games.game.Game.persist_results" href="game.html#server.games.game.Game.persist_results">persist_results</a></code></li>
+<li><code><a title="server.games.game.Game.players" href="game.html#server.games.game.Game.players">players</a></code></li>
+<li><code><a title="server.games.game.Game.remove_game_connection" href="game.html#server.games.game.Game.remove_game_connection">remove_game_connection</a></code></li>
+<li><code><a title="server.games.game.Game.set_ai_option" href="game.html#server.games.game.Game.set_ai_option">set_ai_option</a></code></li>
+<li><code><a title="server.games.game.Game.set_name_unchecked" href="game.html#server.games.game.Game.set_name_unchecked">set_name_unchecked</a></code></li>
+<li><code><a title="server.games.game.Game.set_player_option" href="game.html#server.games.game.Game.set_player_option">set_player_option</a></code></li>
+<li><code><a title="server.games.game.Game.teams" href="game.html#server.games.game.Game.teams">teams</a></code></li>
+<li><code><a title="server.games.game.Game.update_game_stats" href="game.html#server.games.game.Game.update_game_stats">update_game_stats</a></code></li>
+<li><code><a title="server.games.game.Game.validate_game_settings" href="game.html#server.games.game.Game.validate_game_settings">validate_game_settings</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="server.games.CustomGame"><code class="flex name class">
+<span>class <span class="ident">CustomGame</span></span>
+<span>(</span><span>id_, *args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Object that lasts for the lifetime of a game on FAF.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CustomGame(Game):
+    init_mode = InitMode.NORMAL_LOBBY
+    game_type = GameType.CUSTOM
+
+    def __init__(self, id_, *args, **kwargs):
+        new_kwargs = {
+            &#34;rating_type&#34;: RatingType.GLOBAL
+        }
+        new_kwargs.update(kwargs)
+        super().__init__(id_, *args, **new_kwargs)
+        asyncio.get_event_loop().create_task(self.timeout_game())
+
+    async def _run_pre_rate_validity_checks(self):
+        limit = len(self.players) * 60
+        if not self.enforce_rating and time.time() - self.launched_at &lt; limit:
+            await self.mark_invalid(ValidityState.TOO_SHORT)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="server.games.game.Game" href="game.html#server.games.game.Game">Game</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.games.CustomGame.game_type"><code class="name">var <span class="ident">game_type</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.CustomGame.init_mode"><code class="name">var <span class="ident">init_mode</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="server.games.game.Game" href="game.html#server.games.game.Game">Game</a></b></code>:
+<ul class="hlist">
+<li><code><a title="server.games.game.Game.add_game_connection" href="game.html#server.games.game.Game.add_game_connection">add_game_connection</a></code></li>
+<li><code><a title="server.games.game.Game.add_result" href="game.html#server.games.game.Game.add_result">add_result</a></code></li>
+<li><code><a title="server.games.game.Game.clear_slot" href="game.html#server.games.game.Game.clear_slot">clear_slot</a></code></li>
+<li><code><a title="server.games.game.Game.get_player_option" href="game.html#server.games.game.Game.get_player_option">get_player_option</a></code></li>
+<li><code><a title="server.games.game.Game.get_team_sets" href="game.html#server.games.game.Game.get_team_sets">get_team_sets</a></code></li>
+<li><code><a title="server.games.game.Game.is_even" href="game.html#server.games.game.Game.is_even">is_even</a></code></li>
+<li><code><a title="server.games.game.Game.launch" href="game.html#server.games.game.Game.launch">launch</a></code></li>
+<li><code><a title="server.games.game.Game.load_results" href="game.html#server.games.game.Game.load_results">load_results</a></code></li>
+<li><code><a title="server.games.game.Game.map_folder_name" href="game.html#server.games.game.Game.map_folder_name">map_folder_name</a></code></li>
+<li><code><a title="server.games.game.Game.persist_results" href="game.html#server.games.game.Game.persist_results">persist_results</a></code></li>
+<li><code><a title="server.games.game.Game.players" href="game.html#server.games.game.Game.players">players</a></code></li>
+<li><code><a title="server.games.game.Game.remove_game_connection" href="game.html#server.games.game.Game.remove_game_connection">remove_game_connection</a></code></li>
+<li><code><a title="server.games.game.Game.set_ai_option" href="game.html#server.games.game.Game.set_ai_option">set_ai_option</a></code></li>
+<li><code><a title="server.games.game.Game.set_name_unchecked" href="game.html#server.games.game.Game.set_name_unchecked">set_name_unchecked</a></code></li>
+<li><code><a title="server.games.game.Game.set_player_option" href="game.html#server.games.game.Game.set_player_option">set_player_option</a></code></li>
+<li><code><a title="server.games.game.Game.teams" href="game.html#server.games.game.Game.teams">teams</a></code></li>
+<li><code><a title="server.games.game.Game.update_game_stats" href="game.html#server.games.game.Game.update_game_stats">update_game_stats</a></code></li>
+<li><code><a title="server.games.game.Game.validate_game_mode_settings" href="game.html#server.games.game.Game.validate_game_mode_settings">validate_game_mode_settings</a></code></li>
+<li><code><a title="server.games.game.Game.validate_game_settings" href="game.html#server.games.game.Game.validate_game_settings">validate_game_settings</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="server.games.FeaturedMod"><code class="flex name class">
+<span>class <span class="ident">FeaturedMod</span></span>
+<span>(</span><span>id: int, name: str, full_name: str, description: str, publish: bool, order: int)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>FeaturedMod(id, name, full_name, description, publish, order)</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FeaturedMod(NamedTuple):
+    id: int
+    name: str
+    full_name: str
+    description: str
+    publish: bool
+    order: int</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.tuple</li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="server.games.FeaturedMod.description"><code class="name">var <span class="ident">description</span> : str</code></dt>
+<dd>
+<div class="desc"><p>Alias for field number 3</p></div>
+</dd>
+<dt id="server.games.FeaturedMod.full_name"><code class="name">var <span class="ident">full_name</span> : str</code></dt>
+<dd>
+<div class="desc"><p>Alias for field number 2</p></div>
+</dd>
+<dt id="server.games.FeaturedMod.id"><code class="name">var <span class="ident">id</span> : int</code></dt>
+<dd>
+<div class="desc"><p>Alias for field number 0</p></div>
+</dd>
+<dt id="server.games.FeaturedMod.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dd>
+<div class="desc"><p>Alias for field number 1</p></div>
+</dd>
+<dt id="server.games.FeaturedMod.order"><code class="name">var <span class="ident">order</span> : int</code></dt>
+<dd>
+<div class="desc"><p>Alias for field number 5</p></div>
+</dd>
+<dt id="server.games.FeaturedMod.publish"><code class="name">var <span class="ident">publish</span> : bool</code></dt>
+<dd>
+<div class="desc"><p>Alias for field number 4</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="server.games.FeaturedModType"><code class="flex name class">
+<span>class <span class="ident">FeaturedModType</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>String constants for featured mod technical_name</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FeaturedModType():
+    &#34;&#34;&#34;
+    String constants for featured mod technical_name
+    &#34;&#34;&#34;
+
+    COOP = &#34;coop&#34;
+    EQUILIBRIUM = &#34;equilibrium&#34;
+    FAF = &#34;faf&#34;
+    FAFBETA = &#34;fafbeta&#34;
+    LADDER_1V1 = &#34;ladder1v1&#34;</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.games.FeaturedModType.COOP"><code class="name">var <span class="ident">COOP</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.FeaturedModType.EQUILIBRIUM"><code class="name">var <span class="ident">EQUILIBRIUM</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.FeaturedModType.FAF"><code class="name">var <span class="ident">FAF</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.FeaturedModType.FAFBETA"><code class="name">var <span class="ident">FAFBETA</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.FeaturedModType.LADDER_1V1"><code class="name">var <span class="ident">LADDER_1V1</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="server.games.Game"><code class="flex name class">
+<span>class <span class="ident">Game</span></span>
+<span>(</span><span>id_: int, database: FAFDatabase, game_service: GameService, game_stats_service: GameStatsService, host: Union[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>, NoneType] = None, name: str = 'None', map_: str = 'SCMP_007', game_mode: str = 'faf', matchmaker_queue_id: Union[int, NoneType] = None, rating_type: Union[str, NoneType] = None, displayed_rating_range: Union[<a title="server.rating.InclusiveRange" href="../rating.html#server.rating.InclusiveRange">InclusiveRange</a>, NoneType] = None, enforce_rating_range: bool = False, max_players: int = 12)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Object that lasts for the lifetime of a game on FAF.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Game():
+    &#34;&#34;&#34;
+    Object that lasts for the lifetime of a game on FAF.
+    &#34;&#34;&#34;
+    init_mode = InitMode.NORMAL_LOBBY
+    game_type = GameType.CUSTOM
+
+    def __init__(
+        self,
+        id_: int,
+        database: &#34;FAFDatabase&#34;,
+        game_service: &#34;GameService&#34;,
+        game_stats_service: &#34;GameStatsService&#34;,
+        host: Optional[Player] = None,
+        name: str = &#34;None&#34;,
+        map_: str = &#34;SCMP_007&#34;,
+        game_mode: str = FeaturedModType.FAF,
+        matchmaker_queue_id: Optional[int] = None,
+        rating_type: Optional[str] = None,
+        displayed_rating_range: Optional[InclusiveRange] = None,
+        enforce_rating_range: bool = False,
+        max_players: int = 12,
+    ):
+        self._db = database
+        self._results = GameResultReports(id_)
+        self._army_stats_list = []
+        self._players_with_unsent_army_stats = []
+        self._game_stats_service = game_stats_service
+        self.game_service = game_service
+        self._player_options: Dict[int, Dict[str, Any]] = defaultdict(dict)
+        self.launched_at = None
+        self.ended = False
+        self._logger = logging.getLogger(
+            &#34;{}.{}&#34;.format(self.__class__.__qualname__, id_)
+        )
+        self.id = id_
+        self.visibility = VisibilityState.PUBLIC
+        self.max_players = max_players
+        self.host = host
+        self.name = name
+        self.map_id = None
+        self.map_file_path = f&#34;maps/{map_}.zip&#34;
+        self.map_scenario_path = None
+        self.password = None
+        self._players = []
+        self.AIs = {}
+        self.desyncs = 0
+        self.validity = ValidityState.VALID
+        self.game_mode = game_mode
+        self.rating_type = rating_type or RatingType.GLOBAL
+        self.displayed_rating_range = displayed_rating_range or InclusiveRange()
+        self.enforce_rating_range = enforce_rating_range
+        self.matchmaker_queue_id = matchmaker_queue_id
+        self.state = GameState.INITIALIZING
+        self._connections = {}
+        self.enforce_rating = False
+        self.gameOptions = {
+            &#34;FogOfWar&#34;: &#34;explored&#34;,
+            &#34;GameSpeed&#34;: &#34;normal&#34;,
+            &#34;Victory&#34;: Victory.DEMORALIZATION,
+            &#34;CheatsEnabled&#34;: &#34;false&#34;,
+            &#34;PrebuiltUnits&#34;: &#34;Off&#34;,
+            &#34;NoRushOption&#34;: &#34;Off&#34;,
+            &#34;TeamLock&#34;: &#34;locked&#34;,
+            &#34;AIReplacement&#34;: &#34;Off&#34;,
+            &#34;RestrictedCategories&#34;: 0
+        }
+        self.mods = {}
+        self._is_hosted = asyncio.Future()
+        self._launch_fut = asyncio.Future()
+
+        self._logger.debug(&#34;%s created&#34;, self)
+
+    async def timeout_game(self, timeout: int = 30):
+        await asyncio.sleep(timeout)
+        if self.state is GameState.INITIALIZING:
+            self._is_hosted.set_exception(
+                asyncio.TimeoutError(&#34;Game setup timed out&#34;)
+            )
+            self._logger.debug(&#34;Game setup timed out.. Cancelling game&#34;)
+            await self.on_game_end()
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value: str):
+        &#34;&#34;&#34;
+        Verifies that names only contain ascii characters.
+        &#34;&#34;&#34;
+        if not value.isascii():
+            raise ValueError(&#34;Name must be ascii!&#34;)
+
+        self.set_name_unchecked(value)
+
+    def set_name_unchecked(self, value: str):
+        &#34;&#34;&#34;
+        Sets the game name without doing any validity checks.
+
+        Truncates the game name to avoid crashing mysql INSERT statements.
+        &#34;&#34;&#34;
+        max_len = game_stats.c.gameName.type.length
+        self._name = value[:max_len]
+
+    @property
+    def armies(self):
+        return frozenset(
+            self.get_player_option(player.id, &#34;Army&#34;)
+            for player in self.players
+        )
+
+    @property
+    def is_mutually_agreed_draw(self) -&gt; bool:
+        return self._results.is_mutually_agreed_draw(self.armies)
+
+    @property
+    def players(self):
+        &#34;&#34;&#34;
+        Players in the game
+
+        Depending on the state, it is either:
+          - (LOBBY) The currently connected players
+          - (LIVE) Players who participated in the game
+          - Empty list
+        :return: frozenset
+        &#34;&#34;&#34;
+        if self.state is GameState.LOBBY:
+            return frozenset(
+                player for player in self._connections.keys()
+                if player.id in self._player_options
+            )
+        else:
+            return frozenset(
+                player
+                for player, army in (
+                    (player, self.get_player_option(player.id, &#34;Army&#34;))
+                    for player in self._players
+                )
+                if army is not None and army &gt;= 0
+            )
+
+    @property
+    def connections(self):
+        return self._connections.values()
+
+    @property
+    def teams(self):
+        &#34;&#34;&#34;
+        A set of all teams of this game&#39;s players.
+        &#34;&#34;&#34;
+        return frozenset(
+            self.get_player_option(player.id, &#34;Team&#34;)
+            for player in self.players
+        )
+
+    @property
+    def is_ffa(self) -&gt; bool:
+        if len(self.players) &lt; 3:
+            return False
+
+        return FFA_TEAM in self.teams
+
+    @property
+    def is_multi_team(self) -&gt; bool:
+        return len(self.teams) &gt; 2
+
+    @property
+    def has_ai(self) -&gt; bool:
+        return len(self.AIs) &gt; 0
+
+    @property
+    def is_even(self) -&gt; bool:
+        &#34;&#34;&#34;
+        Returns True iff all teams have the same player count, taking into account that players on the FFA team are in individual teams.
+        Special cases:
+         - Returns True if there are zero teams.
+         - Returns False if there is a single team.
+        &#34;&#34;&#34;
+        teams = self.get_team_sets()
+        if len(teams) == 0:
+            return True
+        if len(teams) == 1:
+            return False
+
+        team_sizes = set(len(team) for team in teams)
+        return len(team_sizes) == 1
+
+    def get_team_sets(self) -&gt; List[Set[Player]]:
+        &#34;&#34;&#34;
+        Returns a list of teams represented as sets of players.
+        Note that FFA players will be separated into individual teams.
+        &#34;&#34;&#34;
+        if None in self.teams:
+            raise GameError(
+                &#34;Missing team for at least one player. (player, team): {}&#34;
+                .format([(player, self.get_player_option(player.id, &#34;Team&#34;))
+                        for player in self.players])
+            )
+
+        teams = defaultdict(set)
+        ffa_players = []
+        for player in self.players:
+            team_id = self.get_player_option(player.id, &#34;Team&#34;)
+            if team_id == FFA_TEAM:
+                ffa_players.append({player})
+            else:
+                teams[team_id].add(player)
+
+        return list(teams.values()) + ffa_players
+
+    async def wait_hosted(self, timeout: float):
+        return await asyncio.wait_for(
+            asyncio.shield(self._is_hosted),
+            timeout=timeout
+        )
+
+    def set_hosted(self):
+        if not self._is_hosted.done():
+            self._is_hosted.set_result(None)
+
+    async def wait_launched(self, timeout: float):
+        return await asyncio.wait_for(
+            asyncio.shield(self._launch_fut),
+            timeout=timeout
+        )
+
+    async def add_result(
+        self, reporter: int, army: int, result_type: str, score: int
+    ):
+        &#34;&#34;&#34;
+        As computed by the game.
+        :param reporter: player ID
+        :param army: the army number being reported for
+        :param result_type: a string representing the result
+        :param score: an arbitrary number assigned with the result
+        :return:
+        &#34;&#34;&#34;
+        if army not in self.armies:
+            self._logger.debug(
+                &#34;Ignoring results for unknown army %s: %s %s reported by: %s&#34;,
+                army, result_type, score, reporter
+            )
+            return
+
+        try:
+            outcome = ArmyReportedOutcome(result_type.upper())
+        except ValueError:
+            self._logger.debug(
+                &#34;Ignoring result reported by %s for army %s: %s %s&#34;,
+                reporter, army, result_type, score
+            )
+            return
+
+        result = GameResultReport(reporter, army, outcome, score)
+        self._results.add(result)
+        self._logger.info(
+            &#34;%s reported result for army %s: %s %s&#34;, reporter, army,
+            result_type, score
+        )
+
+        self._process_pending_army_stats()
+
+    def _process_pending_army_stats(self):
+        for player in self._players_with_unsent_army_stats:
+            army = self.get_player_option(player.id, &#34;Army&#34;)
+            if army not in self._results:
+                continue
+
+            for result in self._results[army]:
+                if result.outcome is not GameOutcome.UNKNOWN:
+                    self._process_army_stats_for_player(player)
+                    break
+
+    def _process_army_stats_for_player(self, player):
+        try:
+            if (
+                len(self._army_stats_list) == 0
+                or self.gameOptions[&#34;CheatsEnabled&#34;] != &#34;false&#34;
+            ):
+                return
+
+            self._players_with_unsent_army_stats.remove(player)
+            # Stat processing contacts the API and can take quite a while so
+            # we don&#39;t want to await it
+            asyncio.create_task(
+                self._game_stats_service.process_game_stats(
+                    player, self, self._army_stats_list
+                )
+            )
+        except Exception:
+            # Never let an error in processing army stats cascade
+            self._logger.exception(
+                &#34;Army stats could not be processed from player %s in game %s&#34;,
+                player, self
+            )
+
+    def add_game_connection(self, game_connection):
+        &#34;&#34;&#34;
+        Add a game connection to this game
+        :param game_connection:
+        :return:
+        &#34;&#34;&#34;
+        if game_connection.state != GameConnectionState.CONNECTED_TO_HOST:
+            raise GameError(
+                f&#34;Invalid GameConnectionState: {game_connection.state}&#34;
+            )
+        if self.state is not GameState.LOBBY and self.state is not GameState.LIVE:
+            raise GameError(f&#34;Invalid GameState: {self.state}&#34;)
+
+        self._logger.info(&#34;Added game connection %s&#34;, game_connection)
+        self._connections[game_connection.player] = game_connection
+
+    async def remove_game_connection(self, game_connection):
+        &#34;&#34;&#34;
+        Remove a game connection from this game
+
+        Will trigger on_game_end if there are no more active connections to the game
+        :param peer:
+        :param
+        :return: None
+        &#34;&#34;&#34;
+        if game_connection not in self._connections.values():
+            return
+
+        player = game_connection.player
+        del self._connections[player]
+        del player.game
+
+        if self.state is GameState.LOBBY and player.id in self._player_options:
+            del self._player_options[player.id]
+
+        await self.check_sim_end()
+
+        self._logger.info(&#34;Removed game connection %s&#34;, game_connection)
+
+        host_left_lobby = (
+            player == self.host and self.state is not GameState.LIVE
+        )
+
+        if self.state is not GameState.ENDED and (
+            self.ended or
+            len(self._connections) == 0 or
+            host_left_lobby
+        ):
+            await self.on_game_end()
+        else:
+            self._process_pending_army_stats()
+
+    async def check_sim_end(self):
+        if self.ended:
+            return
+        if self.state is not GameState.LIVE:
+            return
+        if [conn for conn in self.connections if not conn.finished_sim]:
+            return
+        self.ended = True
+        async with self._db.acquire() as conn:
+            await conn.execute(
+                game_stats.update().where(
+                    game_stats.c.id == self.id
+                ).values(
+                    endTime=sql_now()
+                )
+            )
+
+    async def on_game_end(self):
+        try:
+            if self.state is GameState.LOBBY:
+                self._logger.info(&#34;Game cancelled pre launch&#34;)
+            elif self.state is GameState.INITIALIZING:
+                self._logger.info(&#34;Game cancelled pre initialization&#34;)
+            elif self.state is GameState.LIVE:
+                self._logger.info(&#34;Game finished normally&#34;)
+
+                if self.desyncs &gt; 20:
+                    await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
+                    return
+
+                if time.time() - self.launched_at &gt; 4 * 60 and self.is_mutually_agreed_draw:
+                    self._logger.info(&#34;Game is a mutual draw&#34;)
+                    await self.mark_invalid(ValidityState.MUTUAL_DRAW)
+                    return
+
+                await self.process_game_results()
+
+                self._process_pending_army_stats()
+        except Exception:    # pragma: no cover
+            self._logger.exception(&#34;Error during game end&#34;)
+        finally:
+            self.state = GameState.ENDED
+
+            self.game_service.mark_dirty(self)
+
+    async def _run_pre_rate_validity_checks(self):
+        pass
+
+    async def process_game_results(self):
+        if not self._results:
+            await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
+            return
+
+        await self.persist_results()
+
+        game_results = await self.resolve_game_results()
+        await self.game_service.publish_game_results(game_results)
+
+    async def resolve_game_results(self) -&gt; EndedGameInfo:
+        if self.state not in (GameState.LIVE, GameState.ENDED):
+            raise GameError(&#34;Cannot rate game that has not been launched.&#34;)
+
+        await self._run_pre_rate_validity_checks()
+
+        basic_info = self.get_basic_info()
+        team_outcomes = [GameOutcome.UNKNOWN for _ in basic_info.teams]
+
+        if self.validity is ValidityState.VALID:
+            try:
+                team_player_partial_outcomes = [
+                    {self.get_player_outcome(player) for player in team}
+                    for team in basic_info.teams
+                ]
+                # TODO: Remove override once game result messages are reliable
+                team_outcomes = (
+                    self._outcome_override_hook()
+                    or resolve_game(team_player_partial_outcomes)
+                )
+            except GameResolutionError:
+                await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
+
+        try:
+            commander_kills = {
+                army_stats[&#34;name&#34;]: army_stats[&#34;units&#34;][&#34;cdr&#34;][&#34;kills&#34;]
+                for army_stats in self._army_stats_list
+            }
+        except KeyError:
+            commander_kills = {}
+
+        return EndedGameInfo.from_basic(
+            basic_info, self.validity, team_outcomes, commander_kills
+        )
+
+    def _outcome_override_hook(self) -&gt; Optional[List[GameOutcome]]:
+        return None
+
+    async def load_results(self):
+        &#34;&#34;&#34;
+        Load results from the database
+        :return:
+        &#34;&#34;&#34;
+        self._results = await GameResultReports.from_db(self._db, self.id)
+
+    async def persist_results(self):
+        &#34;&#34;&#34;
+        Persist game results into the database
+
+        Requires the game to have been launched and the appropriate rows to exist in the database.
+        :return:
+        &#34;&#34;&#34;
+
+        self._logger.debug(&#34;Saving scores from game %s&#34;, self.id)
+        scores = {}
+        for player in self.players:
+            army = self.get_player_option(player.id, &#34;Army&#34;)
+            outcome = self.get_player_outcome(player)
+            score = self.get_army_score(army)
+            scores[player] = (score, outcome)
+            self._logger.info(
+                &#34;Result for army %s, player: %s: score %s, outcome %s&#34;,
+                army, player, score, outcome
+            )
+
+        async with self._db.acquire() as conn:
+            rows = []
+            for player, (score, outcome) in scores.items():
+                self._logger.info(
+                    &#34;Score for player %s: score %s, outcome %s&#34;,
+                    player, score, outcome,
+                )
+                rows.append(
+                    {
+                        &#34;score&#34;: score,
+                        &#34;result&#34;: outcome.name.upper(),
+                        &#34;game_id&#34;: self.id,
+                        &#34;player_id&#34;: player.id,
+                    }
+                )
+
+            update_statement = game_player_stats.update().where(
+                and_(
+                    game_player_stats.c.gameId == bindparam(&#34;game_id&#34;),
+                    game_player_stats.c.playerId == bindparam(&#34;player_id&#34;),
+                )
+            ).values(
+                score=bindparam(&#34;score&#34;),
+                scoreTime=sql_now(),
+                result=bindparam(&#34;result&#34;),
+            )
+            await deadlock_retry_execute(conn, update_statement, rows)
+
+    def get_basic_info(self) -&gt; BasicGameInfo:
+        return BasicGameInfo(
+            self.id,
+            self.rating_type,
+            self.map_id,
+            self.game_mode,
+            list(self.mods.keys()),
+            self.get_team_sets(),
+        )
+
+    def set_player_option(self, player_id: int, key: str, value: Any):
+        &#34;&#34;&#34;
+        Set game-associative options for given player, by id
+
+        :param player_id: The given player&#39;s id
+        :param key: option key string
+        :param value: option value
+        &#34;&#34;&#34;
+        self._player_options[player_id][key] = value
+
+    def get_player_option(self, player_id: int, key: str) -&gt; Optional[Any]:
+        &#34;&#34;&#34;
+        Retrieve game-associative options for given player, by their uid
+        :param player_id: The id of the player
+        :param key: The name of the option
+        &#34;&#34;&#34;
+        return self._player_options[player_id].get(key)
+
+    def set_ai_option(self, name, key, value):
+        &#34;&#34;&#34;
+        This is a noop for now
+        :param name: Name of the AI
+        :param key: option key string
+        :param value: option value
+        :return:
+        &#34;&#34;&#34;
+        if name not in self.AIs:
+            self.AIs[name] = {}
+        self.AIs[name][key] = value
+
+    def clear_slot(self, slot_index):
+        &#34;&#34;&#34;
+        A somewhat awkward message while we&#39;re still half-slot-associated with a bunch of data.
+
+        Just makes sure that any players associated with this
+        slot aren&#39;t assigned an army or team, and deletes any AI&#39;s.
+        :param slot_index:
+        :return:
+        &#34;&#34;&#34;
+        for player in self.players:
+            if self.get_player_option(player.id, &#34;StartSpot&#34;) == slot_index:
+                self.set_player_option(player.id, &#34;Team&#34;, -1)
+                self.set_player_option(player.id, &#34;Army&#34;, -1)
+                self.set_player_option(player.id, &#34;StartSpot&#34;, -1)
+
+        to_remove = []
+        for ai in self.AIs:
+            if self.AIs[ai][&#34;StartSpot&#34;] == slot_index:
+                to_remove.append(ai)
+        for item in to_remove:
+            del self.AIs[item]
+
+    async def validate_game_settings(self):
+        &#34;&#34;&#34;
+        Mark the game invalid if it has non-compliant options
+        &#34;&#34;&#34;
+
+        # Only allow ranked mods
+        for mod_id in self.mods.keys():
+            if mod_id not in self.game_service.ranked_mods:
+                await self.mark_invalid(ValidityState.BAD_MOD)
+                return
+
+        if self.has_ai:
+            await self.mark_invalid(ValidityState.HAS_AI_PLAYERS)
+            return
+        if self.is_multi_team:
+            await self.mark_invalid(ValidityState.MULTI_TEAM)
+            return
+        if self.is_ffa:
+            await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
+            return
+        valid_options = {
+            &#34;AIReplacement&#34;: (FA.FALSE, ValidityState.HAS_AI_PLAYERS),
+            &#34;FogOfWar&#34;: (&#34;explored&#34;, ValidityState.NO_FOG_OF_WAR),
+            &#34;CheatsEnabled&#34;: (FA.FALSE, ValidityState.CHEATS_ENABLED),
+            &#34;PrebuiltUnits&#34;: (FA.FALSE, ValidityState.PREBUILT_ENABLED),
+            &#34;NoRushOption&#34;: (FA.FALSE, ValidityState.NORUSH_ENABLED),
+            &#34;RestrictedCategories&#34;: (0, ValidityState.BAD_UNIT_RESTRICTIONS),
+            &#34;TeamLock&#34;: (&#34;locked&#34;, ValidityState.UNLOCKED_TEAMS)
+        }
+        if await self._validate_game_options(valid_options) is False:
+            return
+
+        await self.validate_game_mode_settings()
+
+    async def validate_game_mode_settings(self):
+        &#34;&#34;&#34;
+        A subset of checks that need to be overridden in coop games.
+        &#34;&#34;&#34;
+        if None in self.teams or not self.is_even:
+            await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
+            return
+
+        if len(self.players) &lt; 2:
+            await self.mark_invalid(ValidityState.SINGLE_PLAYER)
+            return
+
+        valid_options = {
+            &#34;Victory&#34;: (Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION)
+        }
+        await self._validate_game_options(valid_options)
+
+    async def _validate_game_options(
+        self, valid_options: Dict[str, Tuple[Any, ValidityState]]
+    ) -&gt; bool:
+        for key, value in self.gameOptions.items():
+            if key in valid_options:
+                (valid_value, validity_state) = valid_options[key]
+                if self.gameOptions[key] != valid_value:
+                    await self.mark_invalid(validity_state)
+                    return False
+        return True
+
+    async def launch(self):
+        &#34;&#34;&#34;
+        Mark the game as live.
+
+        Freezes the set of active players so they are remembered if they drop.
+        :return: None
+        &#34;&#34;&#34;
+        assert self.state is GameState.LOBBY
+        self.launched_at = time.time()
+        self._players = self.players
+        self._players_with_unsent_army_stats = list(self._players)
+
+        self.state = GameState.LIVE
+
+        await self.on_game_launched()
+        await self.validate_game_settings()
+
+        self._launch_fut.set_result(None)
+        self._logger.info(&#34;Game launched&#34;)
+
+    async def on_game_launched(self):
+        for player in self.players:
+            player.state = PlayerState.PLAYING
+        await self.update_game_stats()
+        await self.update_game_player_stats()
+
+    async def update_game_stats(self):
+        &#34;&#34;&#34;
+        Runs at game-start to populate the game_stats table (games that start are ones we actually
+        care about recording stats for, after all).
+        &#34;&#34;&#34;
+        assert self.host is not None
+
+        async with self._db.acquire() as conn:
+            # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
+            # so, and grab the map id at the same time.
+            result = await conn.execute(
+                &#34;SELECT id, ranked FROM map_version &#34;
+                &#34;WHERE lower(filename) = lower(%s)&#34;, (self.map_file_path, )
+            )
+            row = await result.fetchone()
+
+        is_generated = (self.map_file_path and &#34;neroxis_map_generator&#34; in self.map_file_path)
+
+        if row:
+            self.map_id = row[&#34;id&#34;]
+
+        if (
+            self.validity is ValidityState.VALID
+            and ((row and not row.ranked) or (not row and not is_generated))
+        ):
+            await self.mark_invalid(ValidityState.BAD_MAP)
+
+        modId = self.game_service.featured_mods[self.game_mode].id
+
+        # Write out the game_stats record.
+        # In some cases, games can be invalidated while running: we check for those cases when
+        # the game ends and update this record as appropriate.
+
+        game_type = str(self.gameOptions.get(&#34;Victory&#34;).value)
+
+        async with self._db.acquire() as conn:
+            await conn.execute(
+                game_stats.insert().values(
+                    id=self.id,
+                    gameType=game_type,
+                    gameMod=modId,
+                    host=self.host.id,
+                    mapId=self.map_id,
+                    gameName=self.name,
+                    validity=self.validity.value,
+                )
+            )
+
+            if self.matchmaker_queue_id is not None:
+                await conn.execute(
+                    matchmaker_queue_game.insert().values(
+                        matchmaker_queue_id=self.matchmaker_queue_id,
+                        game_stats_id=self.id,
+                    )
+                )
+
+    async def update_game_player_stats(self):
+        query_args = []
+        for player in self.players:
+            options = {
+                key: self.get_player_option(player.id, key)
+                for key in [&#34;Team&#34;, &#34;StartSpot&#34;, &#34;Color&#34;, &#34;Faction&#34;]
+            }
+
+            is_observer = (
+                options[&#34;Team&#34;] is None
+                or options[&#34;Team&#34;] &lt; 0
+                or options[&#34;StartSpot&#34;] is None
+                or options[&#34;StartSpot&#34;] &lt; 0
+            )
+            if is_observer:
+                continue
+
+            # DEPRECATED: Rating changes are persisted by the rating service
+            # in the `leaderboard_rating_journal` table.
+            mean, deviation = player.ratings[self.rating_type]
+
+            query_args.append(
+                {
+                    &#34;gameId&#34;: self.id,
+                    &#34;playerId&#34;: player.id,
+                    &#34;faction&#34;: options[&#34;Faction&#34;],
+                    &#34;color&#34;: options[&#34;Color&#34;],
+                    &#34;team&#34;: options[&#34;Team&#34;],
+                    &#34;place&#34;: options[&#34;StartSpot&#34;],
+                    &#34;mean&#34;: mean,
+                    &#34;deviation&#34;: deviation,
+                    &#34;AI&#34;: 0,
+                    &#34;score&#34;: 0,
+                }
+            )
+        if not query_args:
+            self._logger.warning(&#34;No player options available!&#34;)
+            return
+
+        try:
+            async with self._db.acquire() as conn:
+                await conn.execute(game_player_stats.insert().values(query_args))
+        except pymysql.MySQLError:
+            self._logger.exception(
+                &#34;Failed to update game_player_stats. Query args %s:&#34;, query_args
+            )
+            raise
+
+    async def mark_invalid(self, new_validity_state: ValidityState):
+        self._logger.info(
+            &#34;Marked as invalid because: %s&#34;, repr(new_validity_state)
+        )
+        self.validity = new_validity_state
+
+        # If we haven&#39;t started yet, the invalidity will be persisted to the database when we start.
+        # Otherwise, we have to do a special update query to write this information out.
+        if self.state is not GameState.LIVE:
+            return
+
+        # Currently, we can only end up here if a game desynced or was a custom game that terminated
+        # too quickly.
+        async with self._db.acquire() as conn:
+            await conn.execute(
+                game_stats.update().where(
+                    game_stats.c.id == self.id
+                ).values(
+                    validity=new_validity_state.value
+                )
+            )
+
+    def get_army_score(self, army):
+        return self._results.score(army)
+
+    def get_player_outcome(self, player: Player) -&gt; ArmyOutcome:
+        army = self.get_player_option(player.id, &#34;Army&#34;)
+        if army is None:
+            return ArmyOutcome.UNKNOWN
+
+        return self._results.outcome(army)
+
+    def report_army_stats(self, stats_json):
+        self._army_stats_list = json.loads(stats_json)[&#34;stats&#34;]
+        self._process_pending_army_stats()
+
+    def is_visible_to_player(self, player: Player) -&gt; bool:
+        if self.host is None:
+            return False
+
+        if player == self.host or player in self._connections:
+            return True
+
+        mean, dev = player.ratings[self.rating_type]
+        displayed_rating = mean - 3 * dev
+        if (
+            self.enforce_rating_range
+            and displayed_rating not in self.displayed_rating_range
+        ):
+            return False
+
+        if self.visibility is VisibilityState.FRIENDS:
+            return player.id in self.host.friends
+        else:
+            return player.id not in self.host.foes
+
+    def to_dict(self):
+        client_state = {
+            GameState.LOBBY: &#34;open&#34;,
+            GameState.LIVE: &#34;playing&#34;,
+            GameState.ENDED: &#34;closed&#34;,
+            GameState.INITIALIZING: &#34;closed&#34;,
+        }.get(self.state, &#34;closed&#34;)
+        return {
+            &#34;command&#34;: &#34;game_info&#34;,
+            &#34;visibility&#34;: self.visibility.value,
+            &#34;password_protected&#34;: self.password is not None,
+            &#34;uid&#34;: self.id,
+            &#34;title&#34;: self.name,
+            &#34;state&#34;: client_state,
+            &#34;game_type&#34;: GameType.to_string(self.game_type),
+            &#34;featured_mod&#34;: self.game_mode,
+            &#34;sim_mods&#34;: self.mods,
+            &#34;mapname&#34;: self.map_folder_name,
+            &#34;map_file_path&#34;: self.map_file_path,
+            &#34;host&#34;: self.host.login if self.host else &#34;&#34;,
+            &#34;num_players&#34;: len(self.players),
+            &#34;max_players&#34;: self.max_players,
+            &#34;launched_at&#34;: self.launched_at,
+            &#34;rating_type&#34;: self.rating_type,
+            &#34;rating_min&#34;: self.displayed_rating_range.lo,
+            &#34;rating_max&#34;: self.displayed_rating_range.hi,
+            &#34;enforce_rating_range&#34;: self.enforce_rating_range,
+            &#34;teams&#34;: {
+                team: [
+                    player.login for player in self.players
+                    if self.get_player_option(player.id, &#34;Team&#34;) == team
+                ]
+                for team in self.teams
+            }
+        }
+
+    @property
+    def map_folder_name(self):
+        &#34;&#34;&#34;
+        Map folder name
+        :return:
+        &#34;&#34;&#34;
+        try:
+            return str(self.map_scenario_path.split(&#34;/&#34;)[2]).lower()
+        except (IndexError, AttributeError):
+            if self.map_file_path:
+                return self.map_file_path[5:-4].lower()
+            else:
+                return &#34;scmp_009&#34;
+
+    def __eq__(self, other):
+        if not isinstance(other, Game):
+            return False
+        else:
+            return self.id == other.id
+
+    def __hash__(self):
+        return self.id.__hash__()
+
+    def __str__(self) -&gt; str:
+        return (
+            f&#34;Game({self.id}, {self.host.login if self.host else &#39;&#39;}, &#34;
+            f&#34;{self.map_file_path})&#34;
+        )</code></pre>
+</details>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="server.games.coop.CoopGame" href="coop.html#server.games.coop.CoopGame">CoopGame</a></li>
+<li><a title="server.games.custom_game.CustomGame" href="custom_game.html#server.games.custom_game.CustomGame">CustomGame</a></li>
+<li><a title="server.games.ladder_game.LadderGame" href="ladder_game.html#server.games.ladder_game.LadderGame">LadderGame</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.games.Game.game_type"><code class="name">var <span class="ident">game_type</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.Game.init_mode"><code class="name">var <span class="ident">init_mode</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="server.games.Game.armies"><code class="name">var <span class="ident">armies</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def armies(self):
+    return frozenset(
+        self.get_player_option(player.id, &#34;Army&#34;)
+        for player in self.players
+    )</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.connections"><code class="name">var <span class="ident">connections</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def connections(self):
+    return self._connections.values()</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.has_ai"><code class="name">var <span class="ident">has_ai</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def has_ai(self) -&gt; bool:
+    return len(self.AIs) &gt; 0</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.is_even"><code class="name">var <span class="ident">is_even</span> : bool</code></dt>
+<dd>
+<div class="desc"><p>Returns True iff all teams have the same player count, taking into account that players on the FFA team are in individual teams.
+Special cases:
+- Returns True if there are zero teams.
+- Returns False if there is a single team.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def is_even(self) -&gt; bool:
+    &#34;&#34;&#34;
+    Returns True iff all teams have the same player count, taking into account that players on the FFA team are in individual teams.
+    Special cases:
+     - Returns True if there are zero teams.
+     - Returns False if there is a single team.
+    &#34;&#34;&#34;
+    teams = self.get_team_sets()
+    if len(teams) == 0:
+        return True
+    if len(teams) == 1:
+        return False
+
+    team_sizes = set(len(team) for team in teams)
+    return len(team_sizes) == 1</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.is_ffa"><code class="name">var <span class="ident">is_ffa</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def is_ffa(self) -&gt; bool:
+    if len(self.players) &lt; 3:
+        return False
+
+    return FFA_TEAM in self.teams</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.is_multi_team"><code class="name">var <span class="ident">is_multi_team</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def is_multi_team(self) -&gt; bool:
+    return len(self.teams) &gt; 2</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.is_mutually_agreed_draw"><code class="name">var <span class="ident">is_mutually_agreed_draw</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def is_mutually_agreed_draw(self) -&gt; bool:
+    return self._results.is_mutually_agreed_draw(self.armies)</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.map_folder_name"><code class="name">var <span class="ident">map_folder_name</span></code></dt>
+<dd>
+<div class="desc"><p>Map folder name
+:return:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def map_folder_name(self):
+    &#34;&#34;&#34;
+    Map folder name
+    :return:
+    &#34;&#34;&#34;
+    try:
+        return str(self.map_scenario_path.split(&#34;/&#34;)[2]).lower()
+    except (IndexError, AttributeError):
+        if self.map_file_path:
+            return self.map_file_path[5:-4].lower()
+        else:
+            return &#34;scmp_009&#34;</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.name"><code class="name">var <span class="ident">name</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def name(self):
+    return self._name</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.players"><code class="name">var <span class="ident">players</span></code></dt>
+<dd>
+<div class="desc"><p>Players in the game</p>
+<p>Depending on the state, it is either:
+- (LOBBY) The currently connected players
+- (LIVE) Players who participated in the game
+- Empty list
+:return: frozenset</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def players(self):
+    &#34;&#34;&#34;
+    Players in the game
+
+    Depending on the state, it is either:
+      - (LOBBY) The currently connected players
+      - (LIVE) Players who participated in the game
+      - Empty list
+    :return: frozenset
+    &#34;&#34;&#34;
+    if self.state is GameState.LOBBY:
+        return frozenset(
+            player for player in self._connections.keys()
+            if player.id in self._player_options
+        )
+    else:
+        return frozenset(
+            player
+            for player, army in (
+                (player, self.get_player_option(player.id, &#34;Army&#34;))
+                for player in self._players
+            )
+            if army is not None and army &gt;= 0
+        )</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.teams"><code class="name">var <span class="ident">teams</span></code></dt>
+<dd>
+<div class="desc"><p>A set of all teams of this game's players.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def teams(self):
+    &#34;&#34;&#34;
+    A set of all teams of this game&#39;s players.
+    &#34;&#34;&#34;
+    return frozenset(
+        self.get_player_option(player.id, &#34;Team&#34;)
+        for player in self.players
+    )</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="server.games.Game.add_game_connection"><code class="name flex">
+<span>def <span class="ident">add_game_connection</span></span>(<span>self, game_connection)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Add a game connection to this game
+:param game_connection:
+:return:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_game_connection(self, game_connection):
+    &#34;&#34;&#34;
+    Add a game connection to this game
+    :param game_connection:
+    :return:
+    &#34;&#34;&#34;
+    if game_connection.state != GameConnectionState.CONNECTED_TO_HOST:
+        raise GameError(
+            f&#34;Invalid GameConnectionState: {game_connection.state}&#34;
+        )
+    if self.state is not GameState.LOBBY and self.state is not GameState.LIVE:
+        raise GameError(f&#34;Invalid GameState: {self.state}&#34;)
+
+    self._logger.info(&#34;Added game connection %s&#34;, game_connection)
+    self._connections[game_connection.player] = game_connection</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.add_result"><code class="name flex">
+<span>async def <span class="ident">add_result</span></span>(<span>self, reporter: int, army: int, result_type: str, score: int)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>As computed by the game.
+:param reporter: player ID
+:param army: the army number being reported for
+:param result_type: a string representing the result
+:param score: an arbitrary number assigned with the result
+:return:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def add_result(
+    self, reporter: int, army: int, result_type: str, score: int
+):
+    &#34;&#34;&#34;
+    As computed by the game.
+    :param reporter: player ID
+    :param army: the army number being reported for
+    :param result_type: a string representing the result
+    :param score: an arbitrary number assigned with the result
+    :return:
+    &#34;&#34;&#34;
+    if army not in self.armies:
+        self._logger.debug(
+            &#34;Ignoring results for unknown army %s: %s %s reported by: %s&#34;,
+            army, result_type, score, reporter
+        )
+        return
+
+    try:
+        outcome = ArmyReportedOutcome(result_type.upper())
+    except ValueError:
+        self._logger.debug(
+            &#34;Ignoring result reported by %s for army %s: %s %s&#34;,
+            reporter, army, result_type, score
+        )
+        return
+
+    result = GameResultReport(reporter, army, outcome, score)
+    self._results.add(result)
+    self._logger.info(
+        &#34;%s reported result for army %s: %s %s&#34;, reporter, army,
+        result_type, score
+    )
+
+    self._process_pending_army_stats()</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.check_sim_end"><code class="name flex">
+<span>async def <span class="ident">check_sim_end</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def check_sim_end(self):
+    if self.ended:
+        return
+    if self.state is not GameState.LIVE:
+        return
+    if [conn for conn in self.connections if not conn.finished_sim]:
+        return
+    self.ended = True
+    async with self._db.acquire() as conn:
+        await conn.execute(
+            game_stats.update().where(
+                game_stats.c.id == self.id
+            ).values(
+                endTime=sql_now()
+            )
+        )</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.clear_slot"><code class="name flex">
+<span>def <span class="ident">clear_slot</span></span>(<span>self, slot_index)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A somewhat awkward message while we're still half-slot-associated with a bunch of data.</p>
+<p>Just makes sure that any players associated with this
+slot aren't assigned an army or team, and deletes any AI's.
+:param slot_index:
+:return:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def clear_slot(self, slot_index):
+    &#34;&#34;&#34;
+    A somewhat awkward message while we&#39;re still half-slot-associated with a bunch of data.
+
+    Just makes sure that any players associated with this
+    slot aren&#39;t assigned an army or team, and deletes any AI&#39;s.
+    :param slot_index:
+    :return:
+    &#34;&#34;&#34;
+    for player in self.players:
+        if self.get_player_option(player.id, &#34;StartSpot&#34;) == slot_index:
+            self.set_player_option(player.id, &#34;Team&#34;, -1)
+            self.set_player_option(player.id, &#34;Army&#34;, -1)
+            self.set_player_option(player.id, &#34;StartSpot&#34;, -1)
+
+    to_remove = []
+    for ai in self.AIs:
+        if self.AIs[ai][&#34;StartSpot&#34;] == slot_index:
+            to_remove.append(ai)
+    for item in to_remove:
+        del self.AIs[item]</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.get_army_score"><code class="name flex">
+<span>def <span class="ident">get_army_score</span></span>(<span>self, army)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_army_score(self, army):
+    return self._results.score(army)</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.get_basic_info"><code class="name flex">
+<span>def <span class="ident">get_basic_info</span></span>(<span>self) ‑> <a title="server.games.typedefs.BasicGameInfo" href="typedefs.html#server.games.typedefs.BasicGameInfo">BasicGameInfo</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_basic_info(self) -&gt; BasicGameInfo:
+    return BasicGameInfo(
+        self.id,
+        self.rating_type,
+        self.map_id,
+        self.game_mode,
+        list(self.mods.keys()),
+        self.get_team_sets(),
+    )</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.get_player_option"><code class="name flex">
+<span>def <span class="ident">get_player_option</span></span>(<span>self, player_id: int, key: str) ‑> Union[Any, NoneType]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieve game-associative options for given player, by their uid
+:param player_id: The id of the player
+:param key: The name of the option</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_player_option(self, player_id: int, key: str) -&gt; Optional[Any]:
+    &#34;&#34;&#34;
+    Retrieve game-associative options for given player, by their uid
+    :param player_id: The id of the player
+    :param key: The name of the option
+    &#34;&#34;&#34;
+    return self._player_options[player_id].get(key)</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.get_player_outcome"><code class="name flex">
+<span>def <span class="ident">get_player_outcome</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> <a title="server.games.game_results.ArmyOutcome" href="game_results.html#server.games.game_results.ArmyOutcome">ArmyOutcome</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_player_outcome(self, player: Player) -&gt; ArmyOutcome:
+    army = self.get_player_option(player.id, &#34;Army&#34;)
+    if army is None:
+        return ArmyOutcome.UNKNOWN
+
+    return self._results.outcome(army)</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.get_team_sets"><code class="name flex">
+<span>def <span class="ident">get_team_sets</span></span>(<span>self) ‑> List[Set[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns a list of teams represented as sets of players.
+Note that FFA players will be separated into individual teams.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_team_sets(self) -&gt; List[Set[Player]]:
+    &#34;&#34;&#34;
+    Returns a list of teams represented as sets of players.
+    Note that FFA players will be separated into individual teams.
+    &#34;&#34;&#34;
+    if None in self.teams:
+        raise GameError(
+            &#34;Missing team for at least one player. (player, team): {}&#34;
+            .format([(player, self.get_player_option(player.id, &#34;Team&#34;))
+                    for player in self.players])
+        )
+
+    teams = defaultdict(set)
+    ffa_players = []
+    for player in self.players:
+        team_id = self.get_player_option(player.id, &#34;Team&#34;)
+        if team_id == FFA_TEAM:
+            ffa_players.append({player})
+        else:
+            teams[team_id].add(player)
+
+    return list(teams.values()) + ffa_players</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.is_visible_to_player"><code class="name flex">
+<span>def <span class="ident">is_visible_to_player</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> bool</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_visible_to_player(self, player: Player) -&gt; bool:
+    if self.host is None:
+        return False
+
+    if player == self.host or player in self._connections:
+        return True
+
+    mean, dev = player.ratings[self.rating_type]
+    displayed_rating = mean - 3 * dev
+    if (
+        self.enforce_rating_range
+        and displayed_rating not in self.displayed_rating_range
+    ):
+        return False
+
+    if self.visibility is VisibilityState.FRIENDS:
+        return player.id in self.host.friends
+    else:
+        return player.id not in self.host.foes</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.launch"><code class="name flex">
+<span>async def <span class="ident">launch</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Mark the game as live.</p>
+<p>Freezes the set of active players so they are remembered if they drop.
+:return: None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def launch(self):
+    &#34;&#34;&#34;
+    Mark the game as live.
+
+    Freezes the set of active players so they are remembered if they drop.
+    :return: None
+    &#34;&#34;&#34;
+    assert self.state is GameState.LOBBY
+    self.launched_at = time.time()
+    self._players = self.players
+    self._players_with_unsent_army_stats = list(self._players)
+
+    self.state = GameState.LIVE
+
+    await self.on_game_launched()
+    await self.validate_game_settings()
+
+    self._launch_fut.set_result(None)
+    self._logger.info(&#34;Game launched&#34;)</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.load_results"><code class="name flex">
+<span>async def <span class="ident">load_results</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Load results from the database
+:return:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def load_results(self):
+    &#34;&#34;&#34;
+    Load results from the database
+    :return:
+    &#34;&#34;&#34;
+    self._results = await GameResultReports.from_db(self._db, self.id)</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.mark_invalid"><code class="name flex">
+<span>async def <span class="ident">mark_invalid</span></span>(<span>self, new_validity_state: <a title="server.games.typedefs.ValidityState" href="typedefs.html#server.games.typedefs.ValidityState">ValidityState</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def mark_invalid(self, new_validity_state: ValidityState):
+    self._logger.info(
+        &#34;Marked as invalid because: %s&#34;, repr(new_validity_state)
+    )
+    self.validity = new_validity_state
+
+    # If we haven&#39;t started yet, the invalidity will be persisted to the database when we start.
+    # Otherwise, we have to do a special update query to write this information out.
+    if self.state is not GameState.LIVE:
+        return
+
+    # Currently, we can only end up here if a game desynced or was a custom game that terminated
+    # too quickly.
+    async with self._db.acquire() as conn:
+        await conn.execute(
+            game_stats.update().where(
+                game_stats.c.id == self.id
+            ).values(
+                validity=new_validity_state.value
+            )
+        )</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.on_game_end"><code class="name flex">
+<span>async def <span class="ident">on_game_end</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def on_game_end(self):
+    try:
+        if self.state is GameState.LOBBY:
+            self._logger.info(&#34;Game cancelled pre launch&#34;)
+        elif self.state is GameState.INITIALIZING:
+            self._logger.info(&#34;Game cancelled pre initialization&#34;)
+        elif self.state is GameState.LIVE:
+            self._logger.info(&#34;Game finished normally&#34;)
+
+            if self.desyncs &gt; 20:
+                await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
+                return
+
+            if time.time() - self.launched_at &gt; 4 * 60 and self.is_mutually_agreed_draw:
+                self._logger.info(&#34;Game is a mutual draw&#34;)
+                await self.mark_invalid(ValidityState.MUTUAL_DRAW)
+                return
+
+            await self.process_game_results()
+
+            self._process_pending_army_stats()
+    except Exception:    # pragma: no cover
+        self._logger.exception(&#34;Error during game end&#34;)
+    finally:
+        self.state = GameState.ENDED
+
+        self.game_service.mark_dirty(self)</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.on_game_launched"><code class="name flex">
+<span>async def <span class="ident">on_game_launched</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def on_game_launched(self):
+    for player in self.players:
+        player.state = PlayerState.PLAYING
+    await self.update_game_stats()
+    await self.update_game_player_stats()</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.persist_results"><code class="name flex">
+<span>async def <span class="ident">persist_results</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Persist game results into the database</p>
+<p>Requires the game to have been launched and the appropriate rows to exist in the database.
+:return:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def persist_results(self):
+    &#34;&#34;&#34;
+    Persist game results into the database
+
+    Requires the game to have been launched and the appropriate rows to exist in the database.
+    :return:
+    &#34;&#34;&#34;
+
+    self._logger.debug(&#34;Saving scores from game %s&#34;, self.id)
+    scores = {}
+    for player in self.players:
+        army = self.get_player_option(player.id, &#34;Army&#34;)
+        outcome = self.get_player_outcome(player)
+        score = self.get_army_score(army)
+        scores[player] = (score, outcome)
+        self._logger.info(
+            &#34;Result for army %s, player: %s: score %s, outcome %s&#34;,
+            army, player, score, outcome
+        )
+
+    async with self._db.acquire() as conn:
+        rows = []
+        for player, (score, outcome) in scores.items():
+            self._logger.info(
+                &#34;Score for player %s: score %s, outcome %s&#34;,
+                player, score, outcome,
+            )
+            rows.append(
+                {
+                    &#34;score&#34;: score,
+                    &#34;result&#34;: outcome.name.upper(),
+                    &#34;game_id&#34;: self.id,
+                    &#34;player_id&#34;: player.id,
+                }
+            )
+
+        update_statement = game_player_stats.update().where(
+            and_(
+                game_player_stats.c.gameId == bindparam(&#34;game_id&#34;),
+                game_player_stats.c.playerId == bindparam(&#34;player_id&#34;),
+            )
+        ).values(
+            score=bindparam(&#34;score&#34;),
+            scoreTime=sql_now(),
+            result=bindparam(&#34;result&#34;),
+        )
+        await deadlock_retry_execute(conn, update_statement, rows)</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.process_game_results"><code class="name flex">
+<span>async def <span class="ident">process_game_results</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def process_game_results(self):
+    if not self._results:
+        await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
+        return
+
+    await self.persist_results()
+
+    game_results = await self.resolve_game_results()
+    await self.game_service.publish_game_results(game_results)</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.remove_game_connection"><code class="name flex">
+<span>async def <span class="ident">remove_game_connection</span></span>(<span>self, game_connection)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Remove a game connection from this game</p>
+<p>Will trigger on_game_end if there are no more active connections to the game
+:param peer:
+:param
+:return: None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def remove_game_connection(self, game_connection):
+    &#34;&#34;&#34;
+    Remove a game connection from this game
+
+    Will trigger on_game_end if there are no more active connections to the game
+    :param peer:
+    :param
+    :return: None
+    &#34;&#34;&#34;
+    if game_connection not in self._connections.values():
+        return
+
+    player = game_connection.player
+    del self._connections[player]
+    del player.game
+
+    if self.state is GameState.LOBBY and player.id in self._player_options:
+        del self._player_options[player.id]
+
+    await self.check_sim_end()
+
+    self._logger.info(&#34;Removed game connection %s&#34;, game_connection)
+
+    host_left_lobby = (
+        player == self.host and self.state is not GameState.LIVE
+    )
+
+    if self.state is not GameState.ENDED and (
+        self.ended or
+        len(self._connections) == 0 or
+        host_left_lobby
+    ):
+        await self.on_game_end()
+    else:
+        self._process_pending_army_stats()</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.report_army_stats"><code class="name flex">
+<span>def <span class="ident">report_army_stats</span></span>(<span>self, stats_json)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def report_army_stats(self, stats_json):
+    self._army_stats_list = json.loads(stats_json)[&#34;stats&#34;]
+    self._process_pending_army_stats()</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.resolve_game_results"><code class="name flex">
+<span>async def <span class="ident">resolve_game_results</span></span>(<span>self) ‑> <a title="server.games.typedefs.EndedGameInfo" href="typedefs.html#server.games.typedefs.EndedGameInfo">EndedGameInfo</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def resolve_game_results(self) -&gt; EndedGameInfo:
+    if self.state not in (GameState.LIVE, GameState.ENDED):
+        raise GameError(&#34;Cannot rate game that has not been launched.&#34;)
+
+    await self._run_pre_rate_validity_checks()
+
+    basic_info = self.get_basic_info()
+    team_outcomes = [GameOutcome.UNKNOWN for _ in basic_info.teams]
+
+    if self.validity is ValidityState.VALID:
+        try:
+            team_player_partial_outcomes = [
+                {self.get_player_outcome(player) for player in team}
+                for team in basic_info.teams
+            ]
+            # TODO: Remove override once game result messages are reliable
+            team_outcomes = (
+                self._outcome_override_hook()
+                or resolve_game(team_player_partial_outcomes)
+            )
+        except GameResolutionError:
+            await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
+
+    try:
+        commander_kills = {
+            army_stats[&#34;name&#34;]: army_stats[&#34;units&#34;][&#34;cdr&#34;][&#34;kills&#34;]
+            for army_stats in self._army_stats_list
+        }
+    except KeyError:
+        commander_kills = {}
+
+    return EndedGameInfo.from_basic(
+        basic_info, self.validity, team_outcomes, commander_kills
+    )</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.set_ai_option"><code class="name flex">
+<span>def <span class="ident">set_ai_option</span></span>(<span>self, name, key, value)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This is a noop for now
+:param name: Name of the AI
+:param key: option key string
+:param value: option value
+:return:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_ai_option(self, name, key, value):
+    &#34;&#34;&#34;
+    This is a noop for now
+    :param name: Name of the AI
+    :param key: option key string
+    :param value: option value
+    :return:
+    &#34;&#34;&#34;
+    if name not in self.AIs:
+        self.AIs[name] = {}
+    self.AIs[name][key] = value</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.set_hosted"><code class="name flex">
+<span>def <span class="ident">set_hosted</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_hosted(self):
+    if not self._is_hosted.done():
+        self._is_hosted.set_result(None)</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.set_name_unchecked"><code class="name flex">
+<span>def <span class="ident">set_name_unchecked</span></span>(<span>self, value: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Sets the game name without doing any validity checks.</p>
+<p>Truncates the game name to avoid crashing mysql INSERT statements.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_name_unchecked(self, value: str):
+    &#34;&#34;&#34;
+    Sets the game name without doing any validity checks.
+
+    Truncates the game name to avoid crashing mysql INSERT statements.
+    &#34;&#34;&#34;
+    max_len = game_stats.c.gameName.type.length
+    self._name = value[:max_len]</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.set_player_option"><code class="name flex">
+<span>def <span class="ident">set_player_option</span></span>(<span>self, player_id: int, key: str, value: Any)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set game-associative options for given player, by id</p>
+<p>:param player_id: The given player's id
+:param key: option key string
+:param value: option value</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_player_option(self, player_id: int, key: str, value: Any):
+    &#34;&#34;&#34;
+    Set game-associative options for given player, by id
+
+    :param player_id: The given player&#39;s id
+    :param key: option key string
+    :param value: option value
+    &#34;&#34;&#34;
+    self._player_options[player_id][key] = value</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.timeout_game"><code class="name flex">
+<span>async def <span class="ident">timeout_game</span></span>(<span>self, timeout: int = 30)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def timeout_game(self, timeout: int = 30):
+    await asyncio.sleep(timeout)
+    if self.state is GameState.INITIALIZING:
+        self._is_hosted.set_exception(
+            asyncio.TimeoutError(&#34;Game setup timed out&#34;)
+        )
+        self._logger.debug(&#34;Game setup timed out.. Cancelling game&#34;)
+        await self.on_game_end()</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.to_dict"><code class="name flex">
+<span>def <span class="ident">to_dict</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_dict(self):
+    client_state = {
+        GameState.LOBBY: &#34;open&#34;,
+        GameState.LIVE: &#34;playing&#34;,
+        GameState.ENDED: &#34;closed&#34;,
+        GameState.INITIALIZING: &#34;closed&#34;,
+    }.get(self.state, &#34;closed&#34;)
+    return {
+        &#34;command&#34;: &#34;game_info&#34;,
+        &#34;visibility&#34;: self.visibility.value,
+        &#34;password_protected&#34;: self.password is not None,
+        &#34;uid&#34;: self.id,
+        &#34;title&#34;: self.name,
+        &#34;state&#34;: client_state,
+        &#34;game_type&#34;: GameType.to_string(self.game_type),
+        &#34;featured_mod&#34;: self.game_mode,
+        &#34;sim_mods&#34;: self.mods,
+        &#34;mapname&#34;: self.map_folder_name,
+        &#34;map_file_path&#34;: self.map_file_path,
+        &#34;host&#34;: self.host.login if self.host else &#34;&#34;,
+        &#34;num_players&#34;: len(self.players),
+        &#34;max_players&#34;: self.max_players,
+        &#34;launched_at&#34;: self.launched_at,
+        &#34;rating_type&#34;: self.rating_type,
+        &#34;rating_min&#34;: self.displayed_rating_range.lo,
+        &#34;rating_max&#34;: self.displayed_rating_range.hi,
+        &#34;enforce_rating_range&#34;: self.enforce_rating_range,
+        &#34;teams&#34;: {
+            team: [
+                player.login for player in self.players
+                if self.get_player_option(player.id, &#34;Team&#34;) == team
+            ]
+            for team in self.teams
+        }
+    }</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.update_game_player_stats"><code class="name flex">
+<span>async def <span class="ident">update_game_player_stats</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def update_game_player_stats(self):
+    query_args = []
+    for player in self.players:
+        options = {
+            key: self.get_player_option(player.id, key)
+            for key in [&#34;Team&#34;, &#34;StartSpot&#34;, &#34;Color&#34;, &#34;Faction&#34;]
+        }
+
+        is_observer = (
+            options[&#34;Team&#34;] is None
+            or options[&#34;Team&#34;] &lt; 0
+            or options[&#34;StartSpot&#34;] is None
+            or options[&#34;StartSpot&#34;] &lt; 0
+        )
+        if is_observer:
+            continue
+
+        # DEPRECATED: Rating changes are persisted by the rating service
+        # in the `leaderboard_rating_journal` table.
+        mean, deviation = player.ratings[self.rating_type]
+
+        query_args.append(
+            {
+                &#34;gameId&#34;: self.id,
+                &#34;playerId&#34;: player.id,
+                &#34;faction&#34;: options[&#34;Faction&#34;],
+                &#34;color&#34;: options[&#34;Color&#34;],
+                &#34;team&#34;: options[&#34;Team&#34;],
+                &#34;place&#34;: options[&#34;StartSpot&#34;],
+                &#34;mean&#34;: mean,
+                &#34;deviation&#34;: deviation,
+                &#34;AI&#34;: 0,
+                &#34;score&#34;: 0,
+            }
+        )
+    if not query_args:
+        self._logger.warning(&#34;No player options available!&#34;)
+        return
+
+    try:
+        async with self._db.acquire() as conn:
+            await conn.execute(game_player_stats.insert().values(query_args))
+    except pymysql.MySQLError:
+        self._logger.exception(
+            &#34;Failed to update game_player_stats. Query args %s:&#34;, query_args
+        )
+        raise</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.update_game_stats"><code class="name flex">
+<span>async def <span class="ident">update_game_stats</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Runs at game-start to populate the game_stats table (games that start are ones we actually
+care about recording stats for, after all).</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def update_game_stats(self):
+    &#34;&#34;&#34;
+    Runs at game-start to populate the game_stats table (games that start are ones we actually
+    care about recording stats for, after all).
+    &#34;&#34;&#34;
+    assert self.host is not None
+
+    async with self._db.acquire() as conn:
+        # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
+        # so, and grab the map id at the same time.
+        result = await conn.execute(
+            &#34;SELECT id, ranked FROM map_version &#34;
+            &#34;WHERE lower(filename) = lower(%s)&#34;, (self.map_file_path, )
+        )
+        row = await result.fetchone()
+
+    is_generated = (self.map_file_path and &#34;neroxis_map_generator&#34; in self.map_file_path)
+
+    if row:
+        self.map_id = row[&#34;id&#34;]
+
+    if (
+        self.validity is ValidityState.VALID
+        and ((row and not row.ranked) or (not row and not is_generated))
+    ):
+        await self.mark_invalid(ValidityState.BAD_MAP)
+
+    modId = self.game_service.featured_mods[self.game_mode].id
+
+    # Write out the game_stats record.
+    # In some cases, games can be invalidated while running: we check for those cases when
+    # the game ends and update this record as appropriate.
+
+    game_type = str(self.gameOptions.get(&#34;Victory&#34;).value)
+
+    async with self._db.acquire() as conn:
+        await conn.execute(
+            game_stats.insert().values(
+                id=self.id,
+                gameType=game_type,
+                gameMod=modId,
+                host=self.host.id,
+                mapId=self.map_id,
+                gameName=self.name,
+                validity=self.validity.value,
+            )
+        )
+
+        if self.matchmaker_queue_id is not None:
+            await conn.execute(
+                matchmaker_queue_game.insert().values(
+                    matchmaker_queue_id=self.matchmaker_queue_id,
+                    game_stats_id=self.id,
+                )
+            )</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.validate_game_mode_settings"><code class="name flex">
+<span>async def <span class="ident">validate_game_mode_settings</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A subset of checks that need to be overridden in coop games.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def validate_game_mode_settings(self):
+    &#34;&#34;&#34;
+    A subset of checks that need to be overridden in coop games.
+    &#34;&#34;&#34;
+    if None in self.teams or not self.is_even:
+        await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
+        return
+
+    if len(self.players) &lt; 2:
+        await self.mark_invalid(ValidityState.SINGLE_PLAYER)
+        return
+
+    valid_options = {
+        &#34;Victory&#34;: (Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION)
+    }
+    await self._validate_game_options(valid_options)</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.validate_game_settings"><code class="name flex">
+<span>async def <span class="ident">validate_game_settings</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Mark the game invalid if it has non-compliant options</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def validate_game_settings(self):
+    &#34;&#34;&#34;
+    Mark the game invalid if it has non-compliant options
+    &#34;&#34;&#34;
+
+    # Only allow ranked mods
+    for mod_id in self.mods.keys():
+        if mod_id not in self.game_service.ranked_mods:
+            await self.mark_invalid(ValidityState.BAD_MOD)
+            return
+
+    if self.has_ai:
+        await self.mark_invalid(ValidityState.HAS_AI_PLAYERS)
+        return
+    if self.is_multi_team:
+        await self.mark_invalid(ValidityState.MULTI_TEAM)
+        return
+    if self.is_ffa:
+        await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
+        return
+    valid_options = {
+        &#34;AIReplacement&#34;: (FA.FALSE, ValidityState.HAS_AI_PLAYERS),
+        &#34;FogOfWar&#34;: (&#34;explored&#34;, ValidityState.NO_FOG_OF_WAR),
+        &#34;CheatsEnabled&#34;: (FA.FALSE, ValidityState.CHEATS_ENABLED),
+        &#34;PrebuiltUnits&#34;: (FA.FALSE, ValidityState.PREBUILT_ENABLED),
+        &#34;NoRushOption&#34;: (FA.FALSE, ValidityState.NORUSH_ENABLED),
+        &#34;RestrictedCategories&#34;: (0, ValidityState.BAD_UNIT_RESTRICTIONS),
+        &#34;TeamLock&#34;: (&#34;locked&#34;, ValidityState.UNLOCKED_TEAMS)
+    }
+    if await self._validate_game_options(valid_options) is False:
+        return
+
+    await self.validate_game_mode_settings()</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.wait_hosted"><code class="name flex">
+<span>async def <span class="ident">wait_hosted</span></span>(<span>self, timeout: float)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def wait_hosted(self, timeout: float):
+    return await asyncio.wait_for(
+        asyncio.shield(self._is_hosted),
+        timeout=timeout
+    )</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.wait_launched"><code class="name flex">
+<span>async def <span class="ident">wait_launched</span></span>(<span>self, timeout: float)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def wait_launched(self, timeout: float):
+    return await asyncio.wait_for(
+        asyncio.shield(self._launch_fut),
+        timeout=timeout
+    )</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="server.games.GameError"><code class="flex name class">
+<span>class <span class="ident">GameError</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Common base class for all non-exit exceptions.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GameError(Exception):
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="server.games.GameState"><code class="flex name class">
+<span>class <span class="ident">GameState</span></span>
+<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>An enumeration.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GameState(Enum):
+    INITIALIZING = 0
+    LOBBY = 1
+    LIVE = 2
+    ENDED = 3</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.games.GameState.ENDED"><code class="name">var <span class="ident">ENDED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.GameState.INITIALIZING"><code class="name">var <span class="ident">INITIALIZING</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.GameState.LIVE"><code class="name">var <span class="ident">LIVE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.GameState.LOBBY"><code class="name">var <span class="ident">LOBBY</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="server.games.LadderGame"><code class="flex name class">
+<span>class <span class="ident">LadderGame</span></span>
+<span>(</span><span>id_, *args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class for 1v1 ladder games</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class LadderGame(Game):
+    &#34;&#34;&#34;Class for 1v1 ladder games&#34;&#34;&#34;
+
+    init_mode = InitMode.AUTO_LOBBY
+    game_type = GameType.MATCHMAKER
+
+    def __init__(self, id_, *args, **kwargs):
+        new_kwargs = {
+            &#34;game_mode&#34;: FeaturedModType.LADDER_1V1,
+            &#34;rating_type&#34;: RatingType.LADDER_1V1,
+            &#34;max_players&#34;: 2,
+        }
+        new_kwargs.update(kwargs)
+        super().__init__(id_, *args, **new_kwargs)
+
+    def is_winner(self, player: Player) -&gt; bool:
+        return self.get_player_outcome(player) is ArmyOutcome.VICTORY
+
+    def get_army_score(self, army: int) -&gt; int:
+        &#34;&#34;&#34;
+        We override this function so that ladder game scores are only reported
+        as 1 for win and 0 for anything else.
+        &#34;&#34;&#34;
+        return self._results.victory_only_score(army)
+
+    def _outcome_override_hook(self) -&gt; Optional[List[GameOutcome]]:
+        if not config.LADDER_1V1_OUTCOME_OVERRIDE or len(self.players) &gt; 2:
+            return None
+        team_sets = self.get_team_sets()
+        army_scores = [
+            self._results.score(self.get_player_option(team_set.pop().id, &#34;Army&#34;))
+            for team_set in team_sets
+        ]
+        if army_scores[0] &gt; army_scores[1]:
+            return [GameOutcome.VICTORY, GameOutcome.DEFEAT]
+        elif army_scores[0] &lt; army_scores[1]:
+            return [GameOutcome.DEFEAT, GameOutcome.VICTORY]
+        else:
+            return [GameOutcome.DRAW, GameOutcome.DRAW]</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="server.games.game.Game" href="game.html#server.games.game.Game">Game</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.games.LadderGame.game_type"><code class="name">var <span class="ident">game_type</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.LadderGame.init_mode"><code class="name">var <span class="ident">init_mode</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="server.games.LadderGame.get_army_score"><code class="name flex">
+<span>def <span class="ident">get_army_score</span></span>(<span>self, army: int) ‑> int</span>
+</code></dt>
+<dd>
+<div class="desc"><p>We override this function so that ladder game scores are only reported
+as 1 for win and 0 for anything else.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_army_score(self, army: int) -&gt; int:
+    &#34;&#34;&#34;
+    We override this function so that ladder game scores are only reported
+    as 1 for win and 0 for anything else.
+    &#34;&#34;&#34;
+    return self._results.victory_only_score(army)</code></pre>
+</details>
+</dd>
+<dt id="server.games.LadderGame.is_winner"><code class="name flex">
+<span>def <span class="ident">is_winner</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> bool</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_winner(self, player: Player) -&gt; bool:
+    return self.get_player_outcome(player) is ArmyOutcome.VICTORY</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="server.games.game.Game" href="game.html#server.games.game.Game">Game</a></b></code>:
+<ul class="hlist">
+<li><code><a title="server.games.game.Game.add_game_connection" href="game.html#server.games.game.Game.add_game_connection">add_game_connection</a></code></li>
+<li><code><a title="server.games.game.Game.add_result" href="game.html#server.games.game.Game.add_result">add_result</a></code></li>
+<li><code><a title="server.games.game.Game.clear_slot" href="game.html#server.games.game.Game.clear_slot">clear_slot</a></code></li>
+<li><code><a title="server.games.game.Game.get_player_option" href="game.html#server.games.game.Game.get_player_option">get_player_option</a></code></li>
+<li><code><a title="server.games.game.Game.get_team_sets" href="game.html#server.games.game.Game.get_team_sets">get_team_sets</a></code></li>
+<li><code><a title="server.games.game.Game.is_even" href="game.html#server.games.game.Game.is_even">is_even</a></code></li>
+<li><code><a title="server.games.game.Game.launch" href="game.html#server.games.game.Game.launch">launch</a></code></li>
+<li><code><a title="server.games.game.Game.load_results" href="game.html#server.games.game.Game.load_results">load_results</a></code></li>
+<li><code><a title="server.games.game.Game.map_folder_name" href="game.html#server.games.game.Game.map_folder_name">map_folder_name</a></code></li>
+<li><code><a title="server.games.game.Game.persist_results" href="game.html#server.games.game.Game.persist_results">persist_results</a></code></li>
+<li><code><a title="server.games.game.Game.players" href="game.html#server.games.game.Game.players">players</a></code></li>
+<li><code><a title="server.games.game.Game.remove_game_connection" href="game.html#server.games.game.Game.remove_game_connection">remove_game_connection</a></code></li>
+<li><code><a title="server.games.game.Game.set_ai_option" href="game.html#server.games.game.Game.set_ai_option">set_ai_option</a></code></li>
+<li><code><a title="server.games.game.Game.set_name_unchecked" href="game.html#server.games.game.Game.set_name_unchecked">set_name_unchecked</a></code></li>
+<li><code><a title="server.games.game.Game.set_player_option" href="game.html#server.games.game.Game.set_player_option">set_player_option</a></code></li>
+<li><code><a title="server.games.game.Game.teams" href="game.html#server.games.game.Game.teams">teams</a></code></li>
+<li><code><a title="server.games.game.Game.update_game_stats" href="game.html#server.games.game.Game.update_game_stats">update_game_stats</a></code></li>
+<li><code><a title="server.games.game.Game.validate_game_mode_settings" href="game.html#server.games.game.Game.validate_game_mode_settings">validate_game_mode_settings</a></code></li>
+<li><code><a title="server.games.game.Game.validate_game_settings" href="game.html#server.games.game.Game.validate_game_settings">validate_game_settings</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="server.games.ValidityState"><code class="flex name class">
+<span>class <span class="ident">ValidityState</span></span>
+<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>An enumeration.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ValidityState(Enum):
+    VALID = 0
+    TOO_MANY_DESYNCS = 1
+    WRONG_VICTORY_CONDITION = 2
+    NO_FOG_OF_WAR = 3
+    CHEATS_ENABLED = 4
+    PREBUILT_ENABLED = 5
+    NORUSH_ENABLED = 6
+    BAD_UNIT_RESTRICTIONS = 7
+    BAD_MAP = 8
+    TOO_SHORT = 9
+    BAD_MOD = 10
+    COOP_NOT_RANKED = 11
+    MUTUAL_DRAW = 12
+    SINGLE_PLAYER = 13
+    FFA_NOT_RANKED = 14
+    UNEVEN_TEAMS_NOT_RANKED = 15
+    UNKNOWN_RESULT = 16
+    UNLOCKED_TEAMS = 17
+    MULTI_TEAM = 18
+    HAS_AI_PLAYERS = 19
+    CIVILIANS_REVEALED = 20
+    WRONG_DIFFICULTY = 21
+    EXPANSION_DISABLED = 22
+    SPAWN_NOT_FIXED = 23
+    OTHER_UNRANK = 24</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.games.ValidityState.BAD_MAP"><code class="name">var <span class="ident">BAD_MAP</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.BAD_MOD"><code class="name">var <span class="ident">BAD_MOD</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.BAD_UNIT_RESTRICTIONS"><code class="name">var <span class="ident">BAD_UNIT_RESTRICTIONS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.CHEATS_ENABLED"><code class="name">var <span class="ident">CHEATS_ENABLED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.CIVILIANS_REVEALED"><code class="name">var <span class="ident">CIVILIANS_REVEALED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.COOP_NOT_RANKED"><code class="name">var <span class="ident">COOP_NOT_RANKED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.EXPANSION_DISABLED"><code class="name">var <span class="ident">EXPANSION_DISABLED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.FFA_NOT_RANKED"><code class="name">var <span class="ident">FFA_NOT_RANKED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.HAS_AI_PLAYERS"><code class="name">var <span class="ident">HAS_AI_PLAYERS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.MULTI_TEAM"><code class="name">var <span class="ident">MULTI_TEAM</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.MUTUAL_DRAW"><code class="name">var <span class="ident">MUTUAL_DRAW</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.NORUSH_ENABLED"><code class="name">var <span class="ident">NORUSH_ENABLED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.NO_FOG_OF_WAR"><code class="name">var <span class="ident">NO_FOG_OF_WAR</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.OTHER_UNRANK"><code class="name">var <span class="ident">OTHER_UNRANK</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.PREBUILT_ENABLED"><code class="name">var <span class="ident">PREBUILT_ENABLED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.SINGLE_PLAYER"><code class="name">var <span class="ident">SINGLE_PLAYER</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.SPAWN_NOT_FIXED"><code class="name">var <span class="ident">SPAWN_NOT_FIXED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.TOO_MANY_DESYNCS"><code class="name">var <span class="ident">TOO_MANY_DESYNCS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.TOO_SHORT"><code class="name">var <span class="ident">TOO_SHORT</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.UNEVEN_TEAMS_NOT_RANKED"><code class="name">var <span class="ident">UNEVEN_TEAMS_NOT_RANKED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.UNKNOWN_RESULT"><code class="name">var <span class="ident">UNKNOWN_RESULT</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.UNLOCKED_TEAMS"><code class="name">var <span class="ident">UNLOCKED_TEAMS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.VALID"><code class="name">var <span class="ident">VALID</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.WRONG_DIFFICULTY"><code class="name">var <span class="ident">WRONG_DIFFICULTY</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.WRONG_VICTORY_CONDITION"><code class="name">var <span class="ident">WRONG_VICTORY_CONDITION</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="server.games.Victory"><code class="flex name class">
+<span>class <span class="ident">Victory</span></span>
+<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>An enumeration.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Victory(Enum):
+    DEMORALIZATION = 0
+    DOMINATION = 1
+    ERADICATION = 2
+    SANDBOX = 3</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.games.Victory.DEMORALIZATION"><code class="name">var <span class="ident">DEMORALIZATION</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.Victory.DOMINATION"><code class="name">var <span class="ident">DOMINATION</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.Victory.ERADICATION"><code class="name">var <span class="ident">ERADICATION</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.Victory.SANDBOX"><code class="name">var <span class="ident">SANDBOX</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="server.games.VisibilityState"><code class="flex name class">
+<span>class <span class="ident">VisibilityState</span></span>
+<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>An enumeration.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class VisibilityState(Enum):
+    PUBLIC = &#34;public&#34;
+    FRIENDS = &#34;friends&#34;</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.games.VisibilityState.FRIENDS"><code class="name">var <span class="ident">FRIENDS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.VisibilityState.PUBLIC"><code class="name">var <span class="ident">PUBLIC</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="server" href="../index.html">server</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<ul>
+<li><code><a title="server.games.coop" href="coop.html">server.games.coop</a></code></li>
+<li><code><a title="server.games.custom_game" href="custom_game.html">server.games.custom_game</a></code></li>
+<li><code><a title="server.games.game" href="game.html">server.games.game</a></code></li>
+<li><code><a title="server.games.game_results" href="game_results.html">server.games.game_results</a></code></li>
+<li><code><a title="server.games.ladder_game" href="ladder_game.html">server.games.ladder_game</a></code></li>
+<li><code><a title="server.games.typedefs" href="typedefs.html">server.games.typedefs</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="server.games.CoopGame" href="#server.games.CoopGame">CoopGame</a></code></h4>
+<ul class="">
+<li><code><a title="server.games.CoopGame.game_type" href="#server.games.CoopGame.game_type">game_type</a></code></li>
+<li><code><a title="server.games.CoopGame.init_mode" href="#server.games.CoopGame.init_mode">init_mode</a></code></li>
+<li><code><a title="server.games.CoopGame.process_game_results" href="#server.games.CoopGame.process_game_results">process_game_results</a></code></li>
+<li><code><a title="server.games.CoopGame.validate_game_mode_settings" href="#server.games.CoopGame.validate_game_mode_settings">validate_game_mode_settings</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.games.CustomGame" href="#server.games.CustomGame">CustomGame</a></code></h4>
+<ul class="">
+<li><code><a title="server.games.CustomGame.game_type" href="#server.games.CustomGame.game_type">game_type</a></code></li>
+<li><code><a title="server.games.CustomGame.init_mode" href="#server.games.CustomGame.init_mode">init_mode</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.games.FeaturedMod" href="#server.games.FeaturedMod">FeaturedMod</a></code></h4>
+<ul class="two-column">
+<li><code><a title="server.games.FeaturedMod.description" href="#server.games.FeaturedMod.description">description</a></code></li>
+<li><code><a title="server.games.FeaturedMod.full_name" href="#server.games.FeaturedMod.full_name">full_name</a></code></li>
+<li><code><a title="server.games.FeaturedMod.id" href="#server.games.FeaturedMod.id">id</a></code></li>
+<li><code><a title="server.games.FeaturedMod.name" href="#server.games.FeaturedMod.name">name</a></code></li>
+<li><code><a title="server.games.FeaturedMod.order" href="#server.games.FeaturedMod.order">order</a></code></li>
+<li><code><a title="server.games.FeaturedMod.publish" href="#server.games.FeaturedMod.publish">publish</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.games.FeaturedModType" href="#server.games.FeaturedModType">FeaturedModType</a></code></h4>
+<ul class="">
+<li><code><a title="server.games.FeaturedModType.COOP" href="#server.games.FeaturedModType.COOP">COOP</a></code></li>
+<li><code><a title="server.games.FeaturedModType.EQUILIBRIUM" href="#server.games.FeaturedModType.EQUILIBRIUM">EQUILIBRIUM</a></code></li>
+<li><code><a title="server.games.FeaturedModType.FAF" href="#server.games.FeaturedModType.FAF">FAF</a></code></li>
+<li><code><a title="server.games.FeaturedModType.FAFBETA" href="#server.games.FeaturedModType.FAFBETA">FAFBETA</a></code></li>
+<li><code><a title="server.games.FeaturedModType.LADDER_1V1" href="#server.games.FeaturedModType.LADDER_1V1">LADDER_1V1</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.games.Game" href="#server.games.Game">Game</a></code></h4>
+<ul class="">
+<li><code><a title="server.games.Game.add_game_connection" href="#server.games.Game.add_game_connection">add_game_connection</a></code></li>
+<li><code><a title="server.games.Game.add_result" href="#server.games.Game.add_result">add_result</a></code></li>
+<li><code><a title="server.games.Game.armies" href="#server.games.Game.armies">armies</a></code></li>
+<li><code><a title="server.games.Game.check_sim_end" href="#server.games.Game.check_sim_end">check_sim_end</a></code></li>
+<li><code><a title="server.games.Game.clear_slot" href="#server.games.Game.clear_slot">clear_slot</a></code></li>
+<li><code><a title="server.games.Game.connections" href="#server.games.Game.connections">connections</a></code></li>
+<li><code><a title="server.games.Game.game_type" href="#server.games.Game.game_type">game_type</a></code></li>
+<li><code><a title="server.games.Game.get_army_score" href="#server.games.Game.get_army_score">get_army_score</a></code></li>
+<li><code><a title="server.games.Game.get_basic_info" href="#server.games.Game.get_basic_info">get_basic_info</a></code></li>
+<li><code><a title="server.games.Game.get_player_option" href="#server.games.Game.get_player_option">get_player_option</a></code></li>
+<li><code><a title="server.games.Game.get_player_outcome" href="#server.games.Game.get_player_outcome">get_player_outcome</a></code></li>
+<li><code><a title="server.games.Game.get_team_sets" href="#server.games.Game.get_team_sets">get_team_sets</a></code></li>
+<li><code><a title="server.games.Game.has_ai" href="#server.games.Game.has_ai">has_ai</a></code></li>
+<li><code><a title="server.games.Game.init_mode" href="#server.games.Game.init_mode">init_mode</a></code></li>
+<li><code><a title="server.games.Game.is_even" href="#server.games.Game.is_even">is_even</a></code></li>
+<li><code><a title="server.games.Game.is_ffa" href="#server.games.Game.is_ffa">is_ffa</a></code></li>
+<li><code><a title="server.games.Game.is_multi_team" href="#server.games.Game.is_multi_team">is_multi_team</a></code></li>
+<li><code><a title="server.games.Game.is_mutually_agreed_draw" href="#server.games.Game.is_mutually_agreed_draw">is_mutually_agreed_draw</a></code></li>
+<li><code><a title="server.games.Game.is_visible_to_player" href="#server.games.Game.is_visible_to_player">is_visible_to_player</a></code></li>
+<li><code><a title="server.games.Game.launch" href="#server.games.Game.launch">launch</a></code></li>
+<li><code><a title="server.games.Game.load_results" href="#server.games.Game.load_results">load_results</a></code></li>
+<li><code><a title="server.games.Game.map_folder_name" href="#server.games.Game.map_folder_name">map_folder_name</a></code></li>
+<li><code><a title="server.games.Game.mark_invalid" href="#server.games.Game.mark_invalid">mark_invalid</a></code></li>
+<li><code><a title="server.games.Game.name" href="#server.games.Game.name">name</a></code></li>
+<li><code><a title="server.games.Game.on_game_end" href="#server.games.Game.on_game_end">on_game_end</a></code></li>
+<li><code><a title="server.games.Game.on_game_launched" href="#server.games.Game.on_game_launched">on_game_launched</a></code></li>
+<li><code><a title="server.games.Game.persist_results" href="#server.games.Game.persist_results">persist_results</a></code></li>
+<li><code><a title="server.games.Game.players" href="#server.games.Game.players">players</a></code></li>
+<li><code><a title="server.games.Game.process_game_results" href="#server.games.Game.process_game_results">process_game_results</a></code></li>
+<li><code><a title="server.games.Game.remove_game_connection" href="#server.games.Game.remove_game_connection">remove_game_connection</a></code></li>
+<li><code><a title="server.games.Game.report_army_stats" href="#server.games.Game.report_army_stats">report_army_stats</a></code></li>
+<li><code><a title="server.games.Game.resolve_game_results" href="#server.games.Game.resolve_game_results">resolve_game_results</a></code></li>
+<li><code><a title="server.games.Game.set_ai_option" href="#server.games.Game.set_ai_option">set_ai_option</a></code></li>
+<li><code><a title="server.games.Game.set_hosted" href="#server.games.Game.set_hosted">set_hosted</a></code></li>
+<li><code><a title="server.games.Game.set_name_unchecked" href="#server.games.Game.set_name_unchecked">set_name_unchecked</a></code></li>
+<li><code><a title="server.games.Game.set_player_option" href="#server.games.Game.set_player_option">set_player_option</a></code></li>
+<li><code><a title="server.games.Game.teams" href="#server.games.Game.teams">teams</a></code></li>
+<li><code><a title="server.games.Game.timeout_game" href="#server.games.Game.timeout_game">timeout_game</a></code></li>
+<li><code><a title="server.games.Game.to_dict" href="#server.games.Game.to_dict">to_dict</a></code></li>
+<li><code><a title="server.games.Game.update_game_player_stats" href="#server.games.Game.update_game_player_stats">update_game_player_stats</a></code></li>
+<li><code><a title="server.games.Game.update_game_stats" href="#server.games.Game.update_game_stats">update_game_stats</a></code></li>
+<li><code><a title="server.games.Game.validate_game_mode_settings" href="#server.games.Game.validate_game_mode_settings">validate_game_mode_settings</a></code></li>
+<li><code><a title="server.games.Game.validate_game_settings" href="#server.games.Game.validate_game_settings">validate_game_settings</a></code></li>
+<li><code><a title="server.games.Game.wait_hosted" href="#server.games.Game.wait_hosted">wait_hosted</a></code></li>
+<li><code><a title="server.games.Game.wait_launched" href="#server.games.Game.wait_launched">wait_launched</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.games.GameError" href="#server.games.GameError">GameError</a></code></h4>
+</li>
+<li>
+<h4><code><a title="server.games.GameState" href="#server.games.GameState">GameState</a></code></h4>
+<ul class="">
+<li><code><a title="server.games.GameState.ENDED" href="#server.games.GameState.ENDED">ENDED</a></code></li>
+<li><code><a title="server.games.GameState.INITIALIZING" href="#server.games.GameState.INITIALIZING">INITIALIZING</a></code></li>
+<li><code><a title="server.games.GameState.LIVE" href="#server.games.GameState.LIVE">LIVE</a></code></li>
+<li><code><a title="server.games.GameState.LOBBY" href="#server.games.GameState.LOBBY">LOBBY</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.games.LadderGame" href="#server.games.LadderGame">LadderGame</a></code></h4>
+<ul class="">
+<li><code><a title="server.games.LadderGame.game_type" href="#server.games.LadderGame.game_type">game_type</a></code></li>
+<li><code><a title="server.games.LadderGame.get_army_score" href="#server.games.LadderGame.get_army_score">get_army_score</a></code></li>
+<li><code><a title="server.games.LadderGame.init_mode" href="#server.games.LadderGame.init_mode">init_mode</a></code></li>
+<li><code><a title="server.games.LadderGame.is_winner" href="#server.games.LadderGame.is_winner">is_winner</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.games.ValidityState" href="#server.games.ValidityState">ValidityState</a></code></h4>
+<ul class="">
+<li><code><a title="server.games.ValidityState.BAD_MAP" href="#server.games.ValidityState.BAD_MAP">BAD_MAP</a></code></li>
+<li><code><a title="server.games.ValidityState.BAD_MOD" href="#server.games.ValidityState.BAD_MOD">BAD_MOD</a></code></li>
+<li><code><a title="server.games.ValidityState.BAD_UNIT_RESTRICTIONS" href="#server.games.ValidityState.BAD_UNIT_RESTRICTIONS">BAD_UNIT_RESTRICTIONS</a></code></li>
+<li><code><a title="server.games.ValidityState.CHEATS_ENABLED" href="#server.games.ValidityState.CHEATS_ENABLED">CHEATS_ENABLED</a></code></li>
+<li><code><a title="server.games.ValidityState.CIVILIANS_REVEALED" href="#server.games.ValidityState.CIVILIANS_REVEALED">CIVILIANS_REVEALED</a></code></li>
+<li><code><a title="server.games.ValidityState.COOP_NOT_RANKED" href="#server.games.ValidityState.COOP_NOT_RANKED">COOP_NOT_RANKED</a></code></li>
+<li><code><a title="server.games.ValidityState.EXPANSION_DISABLED" href="#server.games.ValidityState.EXPANSION_DISABLED">EXPANSION_DISABLED</a></code></li>
+<li><code><a title="server.games.ValidityState.FFA_NOT_RANKED" href="#server.games.ValidityState.FFA_NOT_RANKED">FFA_NOT_RANKED</a></code></li>
+<li><code><a title="server.games.ValidityState.HAS_AI_PLAYERS" href="#server.games.ValidityState.HAS_AI_PLAYERS">HAS_AI_PLAYERS</a></code></li>
+<li><code><a title="server.games.ValidityState.MULTI_TEAM" href="#server.games.ValidityState.MULTI_TEAM">MULTI_TEAM</a></code></li>
+<li><code><a title="server.games.ValidityState.MUTUAL_DRAW" href="#server.games.ValidityState.MUTUAL_DRAW">MUTUAL_DRAW</a></code></li>
+<li><code><a title="server.games.ValidityState.NORUSH_ENABLED" href="#server.games.ValidityState.NORUSH_ENABLED">NORUSH_ENABLED</a></code></li>
+<li><code><a title="server.games.ValidityState.NO_FOG_OF_WAR" href="#server.games.ValidityState.NO_FOG_OF_WAR">NO_FOG_OF_WAR</a></code></li>
+<li><code><a title="server.games.ValidityState.OTHER_UNRANK" href="#server.games.ValidityState.OTHER_UNRANK">OTHER_UNRANK</a></code></li>
+<li><code><a title="server.games.ValidityState.PREBUILT_ENABLED" href="#server.games.ValidityState.PREBUILT_ENABLED">PREBUILT_ENABLED</a></code></li>
+<li><code><a title="server.games.ValidityState.SINGLE_PLAYER" href="#server.games.ValidityState.SINGLE_PLAYER">SINGLE_PLAYER</a></code></li>
+<li><code><a title="server.games.ValidityState.SPAWN_NOT_FIXED" href="#server.games.ValidityState.SPAWN_NOT_FIXED">SPAWN_NOT_FIXED</a></code></li>
+<li><code><a title="server.games.ValidityState.TOO_MANY_DESYNCS" href="#server.games.ValidityState.TOO_MANY_DESYNCS">TOO_MANY_DESYNCS</a></code></li>
+<li><code><a title="server.games.ValidityState.TOO_SHORT" href="#server.games.ValidityState.TOO_SHORT">TOO_SHORT</a></code></li>
+<li><code><a title="server.games.ValidityState.UNEVEN_TEAMS_NOT_RANKED" href="#server.games.ValidityState.UNEVEN_TEAMS_NOT_RANKED">UNEVEN_TEAMS_NOT_RANKED</a></code></li>
+<li><code><a title="server.games.ValidityState.UNKNOWN_RESULT" href="#server.games.ValidityState.UNKNOWN_RESULT">UNKNOWN_RESULT</a></code></li>
+<li><code><a title="server.games.ValidityState.UNLOCKED_TEAMS" href="#server.games.ValidityState.UNLOCKED_TEAMS">UNLOCKED_TEAMS</a></code></li>
+<li><code><a title="server.games.ValidityState.VALID" href="#server.games.ValidityState.VALID">VALID</a></code></li>
+<li><code><a title="server.games.ValidityState.WRONG_DIFFICULTY" href="#server.games.ValidityState.WRONG_DIFFICULTY">WRONG_DIFFICULTY</a></code></li>
+<li><code><a title="server.games.ValidityState.WRONG_VICTORY_CONDITION" href="#server.games.ValidityState.WRONG_VICTORY_CONDITION">WRONG_VICTORY_CONDITION</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.games.Victory" href="#server.games.Victory">Victory</a></code></h4>
+<ul class="">
+<li><code><a title="server.games.Victory.DEMORALIZATION" href="#server.games.Victory.DEMORALIZATION">DEMORALIZATION</a></code></li>
+<li><code><a title="server.games.Victory.DOMINATION" href="#server.games.Victory.DOMINATION">DOMINATION</a></code></li>
+<li><code><a title="server.games.Victory.ERADICATION" href="#server.games.Victory.ERADICATION">ERADICATION</a></code></li>
+<li><code><a title="server.games.Victory.SANDBOX" href="#server.games.Victory.SANDBOX">SANDBOX</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.games.VisibilityState" href="#server.games.VisibilityState">VisibilityState</a></code></h4>
+<ul class="">
+<li><code><a title="server.games.VisibilityState.FRIENDS" href="#server.games.VisibilityState.FRIENDS">FRIENDS</a></code></li>
+<li><code><a title="server.games.VisibilityState.PUBLIC" href="#server.games.VisibilityState.PUBLIC">PUBLIC</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>

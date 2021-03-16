@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>server.geoip_service API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>server.geoip_service</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import asyncio
+import hashlib
+import os
+import shutil
+import tarfile
+from datetime import datetime
+from typing import IO
+
+import aiocron
+import aiohttp
+import geoip2.database
+from maxminddb.errors import InvalidDatabaseError
+
+from .config import config
+from .core import Service
+from .decorators import with_logger
+from .timing import Timer
+
+
+@with_logger
+class GeoIpService(Service):
+    &#34;&#34;&#34;
+        Service for managing the GeoIp database. This includes an asyncio crontab
+    which periodically checks if the current file is out of date. If it is, then
+    the service will try to download a new file from tue url in ``server.config``.
+
+        Provides an interface for getting data out of the database.
+    &#34;&#34;&#34;
+
+    def __init__(self):
+        self.refresh_file_path()
+        config.register_callback(&#34;GEO_IP_DATABASE_PATH&#34;, self.refresh_file_path)
+
+        self.db = None
+        self.db_update_time = None
+
+        self.check_geoip_db_file_updated()
+
+    def refresh_file_path(self):
+        self.file_path = config.GEO_IP_DATABASE_PATH
+
+    async def initialize(self) -&gt; None:
+        await self.check_update_geoip_db()
+        # crontab: min hour day month day_of_week
+        # Run every Wednesday because GeoLite2 is updated every first Tuesday
+        # of the month.
+        self._update_cron = aiocron.crontab(
+            &#34;0 0 0 * * 3&#34;, func=self.check_update_geoip_db
+        )
+        self._check_file_timer = Timer(
+            60 * 10, self.check_geoip_db_file_updated, start=True
+        )
+
+    def check_geoip_db_file_updated(self):
+        &#34;&#34;&#34;
+            Checks if the local database file has been updated by a server admin
+        and loads it if it has.
+        &#34;&#34;&#34;
+        if not os.path.isfile(self.file_path):
+            return
+
+        if self.db is None:
+            # We haven&#39;t loaded the file before
+            self.load_db()
+        else:
+            assert self.db_update_time is not None
+            # We have loaded the file, so check if it has been updated
+
+            date_modified = datetime.fromtimestamp(
+                os.path.getmtime(self.file_path)
+            )
+            if date_modified &gt; self.db_update_time:
+                self.load_db()
+
+    async def check_update_geoip_db(self) -&gt; None:
+        &#34;&#34;&#34;
+            Check if the geoip database is old and update it if so.
+        &#34;&#34;&#34;
+        if not config.GEO_IP_LICENSE_KEY:
+            self._logger.warning(
+                &#34;GEO_IP_LICENSE_KEY not set! Unable to download GeoIP database!&#34;
+            )
+            return
+
+        self._logger.debug(&#34;Checking if geoip database needs updating&#34;)
+        try:
+            date_modified = datetime.fromtimestamp(
+                os.path.getmtime(self.file_path)
+            )
+            delta = datetime.now() - date_modified
+
+            if delta.days &gt; config.GEO_IP_DATABASE_MAX_AGE_DAYS:
+                self._logger.info(&#34;Geoip database is out of date&#34;)
+                await self.download_geoip_db()
+        except FileNotFoundError:    # pragma: no cover
+            self._logger.warning(&#34;Geoip database is missing...&#34;)
+            await self.download_geoip_db()
+        except asyncio.TimeoutError:    # pragma: no cover
+            self._logger.warning(
+                &#34;Failed to download database file! &#34;
+                &#34;Check the network connection and try again&#34;
+            )
+        except Exception as e:    # pragma: no cover
+            self._logger.exception(e)
+            raise e
+
+        self.load_db()
+
+    async def download_geoip_db(self) -&gt; None:
+        &#34;&#34;&#34;
+            Download the geoip database to a file. If the downloaded file is not
+        a valid gzip file, then it does NOT overwrite the old file.
+        &#34;&#34;&#34;
+        assert config.GEO_IP_LICENSE_KEY is not None
+
+        self._logger.info(&#34;Downloading new geoip database&#34;)
+
+        # Download new file to a temp location
+        temp_file_path = &#34;/tmp/geoip.mmdb.tar.gz&#34;
+        await self._download_file(
+            config.GEO_IP_DATABASE_URL,
+            config.GEO_IP_LICENSE_KEY,
+            temp_file_path
+        )
+
+        # Unzip the archive and overwrite the old file
+        try:
+            with tarfile.open(temp_file_path, &#34;r:gz&#34;) as tar:
+                f_in = extract_file(tar, &#34;GeoLite2-Country.mmdb&#34;)
+                with open(self.file_path, &#34;wb&#34;) as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+        except (tarfile.TarError) as e:    # pragma: no cover
+            self._logger.warning(&#34;Failed to extract downloaded file!&#34;)
+            raise e
+        self._logger.info(&#34;New database download complete&#34;)
+
+    async def _download_file(self, url: str, license_key: str, file_path: str) -&gt; None:
+        &#34;&#34;&#34;
+            Download a file using aiohttp and save it to a file.
+
+            :param url: The url to download from
+            :param file_path: Path to save the file at
+        &#34;&#34;&#34;
+
+        chunk_size = 1024
+        params = {
+            &#34;edition_id&#34;: &#34;GeoLite2-Country&#34;,
+            &#34;license_key&#34;: license_key,
+            &#34;suffix&#34;: &#34;tar.gz&#34;
+        }
+
+        async def get_checksum(session):
+            async with session.get(url, params={
+                **params,
+                &#34;suffix&#34;: params[&#34;suffix&#34;] + &#34;.md5&#34;
+            }, timeout=60 * 20) as resp:
+                return await resp.text()
+
+        async def get_db_file_with_checksum(session):
+            hasher = hashlib.md5()
+            async with session.get(url, params=params, timeout=60 * 20) as resp:
+                with open(file_path, &#34;wb&#34;) as f:
+                    while True:
+                        chunk = await resp.content.read(chunk_size)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        hasher.update(chunk)
+
+            return hasher.hexdigest()
+
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            checksum, our_hash = await asyncio.gather(
+                get_checksum(session),
+                get_db_file_with_checksum(session)
+            )
+
+        if checksum != our_hash:
+            raise Exception(
+                f&#34;Hashes did not match! Expected {checksum} got {our_hash}&#34;
+            )
+
+    def load_db(self) -&gt; None:
+        &#34;&#34;&#34;
+            Loads the database into memory.
+        &#34;&#34;&#34;
+        try:
+            # Set the time first, if the file is corrupted we don&#39;t need to try
+            # loading it again anyways
+            self.db_update_time = datetime.now()
+            self.db = geoip2.database.Reader(self.file_path)
+            self._logger.info(
+                &#34;File loaded successfully from %s&#34;, self.file_path
+            )
+        except (InvalidDatabaseError, FileNotFoundError, ValueError):
+            self._logger.exception(
+                &#34;Failed to load maxmind db! Maybe the download was interrupted&#34;
+            )
+
+    def country(self, address: str) -&gt; str:
+        &#34;&#34;&#34;
+            Look up an ip address in the db and return it&#39;s country code.
+        &#34;&#34;&#34;
+        default_value = &#34;&#34;
+        if self.db is None:
+            return default_value
+
+        try:
+            return str(self.db.country(address).country.iso_code)
+        except geoip2.errors.AddressNotFoundError:
+            return default_value
+        except ValueError as e:    # pragma: no cover
+            self._logger.exception(&#34;ValueError: %s&#34;, e)
+            return default_value
+
+
+def extract_file(tar: tarfile.TarFile, name: str) -&gt; IO[bytes]:
+    &#34;&#34;&#34;
+    Helper for getting a file handle to the database file in the tar archive.
+    This is needed because we don&#39;t necessarily know the name of it&#39;s containing
+    folder.
+
+    :raises: TarError if the tar archive does not contain the databse file
+    &#34;&#34;&#34;
+    mmdb = next(
+        (m for m in tar.getmembers() if
+            m.name.endswith(name)
+            and m.isfile()),
+        None
+    )
+    if mmdb is None:
+        # Because we verified the checksum earlier, this should only be
+        # possible if maxmind actually served us a bad file
+        raise tarfile.TarError(&#34;Tar archive did not contain the database file!&#34;)
+
+    f = tar.extractfile(mmdb)
+
+    if f is None:
+        raise tarfile.TarError(&#34;Tar archive did not contain the database file!&#34;)
+
+    return f</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="server.geoip_service.extract_file"><code class="name flex">
+<span>def <span class="ident">extract_file</span></span>(<span>tar: tarfile.TarFile, name: str) ‑> IO[bytes]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Helper for getting a file handle to the database file in the tar archive.
+This is needed because we don't necessarily know the name of it's containing
+folder.</p>
+<p>:raises: TarError if the tar archive does not contain the databse file</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_file(tar: tarfile.TarFile, name: str) -&gt; IO[bytes]:
+    &#34;&#34;&#34;
+    Helper for getting a file handle to the database file in the tar archive.
+    This is needed because we don&#39;t necessarily know the name of it&#39;s containing
+    folder.
+
+    :raises: TarError if the tar archive does not contain the databse file
+    &#34;&#34;&#34;
+    mmdb = next(
+        (m for m in tar.getmembers() if
+            m.name.endswith(name)
+            and m.isfile()),
+        None
+    )
+    if mmdb is None:
+        # Because we verified the checksum earlier, this should only be
+        # possible if maxmind actually served us a bad file
+        raise tarfile.TarError(&#34;Tar archive did not contain the database file!&#34;)
+
+    f = tar.extractfile(mmdb)
+
+    if f is None:
+        raise tarfile.TarError(&#34;Tar archive did not contain the database file!&#34;)
+
+    return f</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="server.geoip_service.GeoIpService"><code class="flex name class">
+<span>class <span class="ident">GeoIpService</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Service for managing the GeoIp database. This includes an asyncio crontab
+which periodically checks if the current file is out of date. If it is, then
+the service will try to download a new file from tue url in <code><a title="server.config" href="config.html">server.config</a></code>.</p>
+<pre><code>Provides an interface for getting data out of the database.
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GeoIpService(Service):
+    &#34;&#34;&#34;
+        Service for managing the GeoIp database. This includes an asyncio crontab
+    which periodically checks if the current file is out of date. If it is, then
+    the service will try to download a new file from tue url in ``server.config``.
+
+        Provides an interface for getting data out of the database.
+    &#34;&#34;&#34;
+
+    def __init__(self):
+        self.refresh_file_path()
+        config.register_callback(&#34;GEO_IP_DATABASE_PATH&#34;, self.refresh_file_path)
+
+        self.db = None
+        self.db_update_time = None
+
+        self.check_geoip_db_file_updated()
+
+    def refresh_file_path(self):
+        self.file_path = config.GEO_IP_DATABASE_PATH
+
+    async def initialize(self) -&gt; None:
+        await self.check_update_geoip_db()
+        # crontab: min hour day month day_of_week
+        # Run every Wednesday because GeoLite2 is updated every first Tuesday
+        # of the month.
+        self._update_cron = aiocron.crontab(
+            &#34;0 0 0 * * 3&#34;, func=self.check_update_geoip_db
+        )
+        self._check_file_timer = Timer(
+            60 * 10, self.check_geoip_db_file_updated, start=True
+        )
+
+    def check_geoip_db_file_updated(self):
+        &#34;&#34;&#34;
+            Checks if the local database file has been updated by a server admin
+        and loads it if it has.
+        &#34;&#34;&#34;
+        if not os.path.isfile(self.file_path):
+            return
+
+        if self.db is None:
+            # We haven&#39;t loaded the file before
+            self.load_db()
+        else:
+            assert self.db_update_time is not None
+            # We have loaded the file, so check if it has been updated
+
+            date_modified = datetime.fromtimestamp(
+                os.path.getmtime(self.file_path)
+            )
+            if date_modified &gt; self.db_update_time:
+                self.load_db()
+
+    async def check_update_geoip_db(self) -&gt; None:
+        &#34;&#34;&#34;
+            Check if the geoip database is old and update it if so.
+        &#34;&#34;&#34;
+        if not config.GEO_IP_LICENSE_KEY:
+            self._logger.warning(
+                &#34;GEO_IP_LICENSE_KEY not set! Unable to download GeoIP database!&#34;
+            )
+            return
+
+        self._logger.debug(&#34;Checking if geoip database needs updating&#34;)
+        try:
+            date_modified = datetime.fromtimestamp(
+                os.path.getmtime(self.file_path)
+            )
+            delta = datetime.now() - date_modified
+
+            if delta.days &gt; config.GEO_IP_DATABASE_MAX_AGE_DAYS:
+                self._logger.info(&#34;Geoip database is out of date&#34;)
+                await self.download_geoip_db()
+        except FileNotFoundError:    # pragma: no cover
+            self._logger.warning(&#34;Geoip database is missing...&#34;)
+            await self.download_geoip_db()
+        except asyncio.TimeoutError:    # pragma: no cover
+            self._logger.warning(
+                &#34;Failed to download database file! &#34;
+                &#34;Check the network connection and try again&#34;
+            )
+        except Exception as e:    # pragma: no cover
+            self._logger.exception(e)
+            raise e
+
+        self.load_db()
+
+    async def download_geoip_db(self) -&gt; None:
+        &#34;&#34;&#34;
+            Download the geoip database to a file. If the downloaded file is not
+        a valid gzip file, then it does NOT overwrite the old file.
+        &#34;&#34;&#34;
+        assert config.GEO_IP_LICENSE_KEY is not None
+
+        self._logger.info(&#34;Downloading new geoip database&#34;)
+
+        # Download new file to a temp location
+        temp_file_path = &#34;/tmp/geoip.mmdb.tar.gz&#34;
+        await self._download_file(
+            config.GEO_IP_DATABASE_URL,
+            config.GEO_IP_LICENSE_KEY,
+            temp_file_path
+        )
+
+        # Unzip the archive and overwrite the old file
+        try:
+            with tarfile.open(temp_file_path, &#34;r:gz&#34;) as tar:
+                f_in = extract_file(tar, &#34;GeoLite2-Country.mmdb&#34;)
+                with open(self.file_path, &#34;wb&#34;) as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+        except (tarfile.TarError) as e:    # pragma: no cover
+            self._logger.warning(&#34;Failed to extract downloaded file!&#34;)
+            raise e
+        self._logger.info(&#34;New database download complete&#34;)
+
+    async def _download_file(self, url: str, license_key: str, file_path: str) -&gt; None:
+        &#34;&#34;&#34;
+            Download a file using aiohttp and save it to a file.
+
+            :param url: The url to download from
+            :param file_path: Path to save the file at
+        &#34;&#34;&#34;
+
+        chunk_size = 1024
+        params = {
+            &#34;edition_id&#34;: &#34;GeoLite2-Country&#34;,
+            &#34;license_key&#34;: license_key,
+            &#34;suffix&#34;: &#34;tar.gz&#34;
+        }
+
+        async def get_checksum(session):
+            async with session.get(url, params={
+                **params,
+                &#34;suffix&#34;: params[&#34;suffix&#34;] + &#34;.md5&#34;
+            }, timeout=60 * 20) as resp:
+                return await resp.text()
+
+        async def get_db_file_with_checksum(session):
+            hasher = hashlib.md5()
+            async with session.get(url, params=params, timeout=60 * 20) as resp:
+                with open(file_path, &#34;wb&#34;) as f:
+                    while True:
+                        chunk = await resp.content.read(chunk_size)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        hasher.update(chunk)
+
+            return hasher.hexdigest()
+
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            checksum, our_hash = await asyncio.gather(
+                get_checksum(session),
+                get_db_file_with_checksum(session)
+            )
+
+        if checksum != our_hash:
+            raise Exception(
+                f&#34;Hashes did not match! Expected {checksum} got {our_hash}&#34;
+            )
+
+    def load_db(self) -&gt; None:
+        &#34;&#34;&#34;
+            Loads the database into memory.
+        &#34;&#34;&#34;
+        try:
+            # Set the time first, if the file is corrupted we don&#39;t need to try
+            # loading it again anyways
+            self.db_update_time = datetime.now()
+            self.db = geoip2.database.Reader(self.file_path)
+            self._logger.info(
+                &#34;File loaded successfully from %s&#34;, self.file_path
+            )
+        except (InvalidDatabaseError, FileNotFoundError, ValueError):
+            self._logger.exception(
+                &#34;Failed to load maxmind db! Maybe the download was interrupted&#34;
+            )
+
+    def country(self, address: str) -&gt; str:
+        &#34;&#34;&#34;
+            Look up an ip address in the db and return it&#39;s country code.
+        &#34;&#34;&#34;
+        default_value = &#34;&#34;
+        if self.db is None:
+            return default_value
+
+        try:
+            return str(self.db.country(address).country.iso_code)
+        except geoip2.errors.AddressNotFoundError:
+            return default_value
+        except ValueError as e:    # pragma: no cover
+            self._logger.exception(&#34;ValueError: %s&#34;, e)
+            return default_value</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.geoip_service.GeoIpService.services"><code class="name">var <span class="ident">services</span> : Dict[str, type]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="server.geoip_service.GeoIpService.check_geoip_db_file_updated"><code class="name flex">
+<span>def <span class="ident">check_geoip_db_file_updated</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Checks if the local database file has been updated by a server admin
+and loads it if it has.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_geoip_db_file_updated(self):
+    &#34;&#34;&#34;
+        Checks if the local database file has been updated by a server admin
+    and loads it if it has.
+    &#34;&#34;&#34;
+    if not os.path.isfile(self.file_path):
+        return
+
+    if self.db is None:
+        # We haven&#39;t loaded the file before
+        self.load_db()
+    else:
+        assert self.db_update_time is not None
+        # We have loaded the file, so check if it has been updated
+
+        date_modified = datetime.fromtimestamp(
+            os.path.getmtime(self.file_path)
+        )
+        if date_modified &gt; self.db_update_time:
+            self.load_db()</code></pre>
+</details>
+</dd>
+<dt id="server.geoip_service.GeoIpService.check_update_geoip_db"><code class="name flex">
+<span>async def <span class="ident">check_update_geoip_db</span></span>(<span>self) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check if the geoip database is old and update it if so.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def check_update_geoip_db(self) -&gt; None:
+    &#34;&#34;&#34;
+        Check if the geoip database is old and update it if so.
+    &#34;&#34;&#34;
+    if not config.GEO_IP_LICENSE_KEY:
+        self._logger.warning(
+            &#34;GEO_IP_LICENSE_KEY not set! Unable to download GeoIP database!&#34;
+        )
+        return
+
+    self._logger.debug(&#34;Checking if geoip database needs updating&#34;)
+    try:
+        date_modified = datetime.fromtimestamp(
+            os.path.getmtime(self.file_path)
+        )
+        delta = datetime.now() - date_modified
+
+        if delta.days &gt; config.GEO_IP_DATABASE_MAX_AGE_DAYS:
+            self._logger.info(&#34;Geoip database is out of date&#34;)
+            await self.download_geoip_db()
+    except FileNotFoundError:    # pragma: no cover
+        self._logger.warning(&#34;Geoip database is missing...&#34;)
+        await self.download_geoip_db()
+    except asyncio.TimeoutError:    # pragma: no cover
+        self._logger.warning(
+            &#34;Failed to download database file! &#34;
+            &#34;Check the network connection and try again&#34;
+        )
+    except Exception as e:    # pragma: no cover
+        self._logger.exception(e)
+        raise e
+
+    self.load_db()</code></pre>
+</details>
+</dd>
+<dt id="server.geoip_service.GeoIpService.country"><code class="name flex">
+<span>def <span class="ident">country</span></span>(<span>self, address: str) ‑> str</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Look up an ip address in the db and return it's country code.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def country(self, address: str) -&gt; str:
+    &#34;&#34;&#34;
+        Look up an ip address in the db and return it&#39;s country code.
+    &#34;&#34;&#34;
+    default_value = &#34;&#34;
+    if self.db is None:
+        return default_value
+
+    try:
+        return str(self.db.country(address).country.iso_code)
+    except geoip2.errors.AddressNotFoundError:
+        return default_value
+    except ValueError as e:    # pragma: no cover
+        self._logger.exception(&#34;ValueError: %s&#34;, e)
+        return default_value</code></pre>
+</details>
+</dd>
+<dt id="server.geoip_service.GeoIpService.download_geoip_db"><code class="name flex">
+<span>async def <span class="ident">download_geoip_db</span></span>(<span>self) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Download the geoip database to a file. If the downloaded file is not
+a valid gzip file, then it does NOT overwrite the old file.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def download_geoip_db(self) -&gt; None:
+    &#34;&#34;&#34;
+        Download the geoip database to a file. If the downloaded file is not
+    a valid gzip file, then it does NOT overwrite the old file.
+    &#34;&#34;&#34;
+    assert config.GEO_IP_LICENSE_KEY is not None
+
+    self._logger.info(&#34;Downloading new geoip database&#34;)
+
+    # Download new file to a temp location
+    temp_file_path = &#34;/tmp/geoip.mmdb.tar.gz&#34;
+    await self._download_file(
+        config.GEO_IP_DATABASE_URL,
+        config.GEO_IP_LICENSE_KEY,
+        temp_file_path
+    )
+
+    # Unzip the archive and overwrite the old file
+    try:
+        with tarfile.open(temp_file_path, &#34;r:gz&#34;) as tar:
+            f_in = extract_file(tar, &#34;GeoLite2-Country.mmdb&#34;)
+            with open(self.file_path, &#34;wb&#34;) as f_out:
+                shutil.copyfileobj(f_in, f_out)
+    except (tarfile.TarError) as e:    # pragma: no cover
+        self._logger.warning(&#34;Failed to extract downloaded file!&#34;)
+        raise e
+    self._logger.info(&#34;New database download complete&#34;)</code></pre>
+</details>
+</dd>
+<dt id="server.geoip_service.GeoIpService.load_db"><code class="name flex">
+<span>def <span class="ident">load_db</span></span>(<span>self) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Loads the database into memory.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_db(self) -&gt; None:
+    &#34;&#34;&#34;
+        Loads the database into memory.
+    &#34;&#34;&#34;
+    try:
+        # Set the time first, if the file is corrupted we don&#39;t need to try
+        # loading it again anyways
+        self.db_update_time = datetime.now()
+        self.db = geoip2.database.Reader(self.file_path)
+        self._logger.info(
+            &#34;File loaded successfully from %s&#34;, self.file_path
+        )
+    except (InvalidDatabaseError, FileNotFoundError, ValueError):
+        self._logger.exception(
+            &#34;Failed to load maxmind db! Maybe the download was interrupted&#34;
+        )</code></pre>
+</details>
+</dd>
+<dt id="server.geoip_service.GeoIpService.refresh_file_path"><code class="name flex">
+<span>def <span class="ident">refresh_file_path</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def refresh_file_path(self):
+    self.file_path = config.GEO_IP_DATABASE_PATH</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
+<ul class="hlist">
+<li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
+<li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
+<li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="server" href="index.html">server</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="server.geoip_service.extract_file" href="#server.geoip_service.extract_file">extract_file</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="server.geoip_service.GeoIpService" href="#server.geoip_service.GeoIpService">GeoIpService</a></code></h4>
+<ul class="">
+<li><code><a title="server.geoip_service.GeoIpService.check_geoip_db_file_updated" href="#server.geoip_service.GeoIpService.check_geoip_db_file_updated">check_geoip_db_file_updated</a></code></li>
+<li><code><a title="server.geoip_service.GeoIpService.check_update_geoip_db" href="#server.geoip_service.GeoIpService.check_update_geoip_db">check_update_geoip_db</a></code></li>
+<li><code><a title="server.geoip_service.GeoIpService.country" href="#server.geoip_service.GeoIpService.country">country</a></code></li>
+<li><code><a title="server.geoip_service.GeoIpService.download_geoip_db" href="#server.geoip_service.GeoIpService.download_geoip_db">download_geoip_db</a></code></li>
+<li><code><a title="server.geoip_service.GeoIpService.load_db" href="#server.geoip_service.GeoIpService.load_db">load_db</a></code></li>
+<li><code><a title="server.geoip_service.GeoIpService.refresh_file_path" href="#server.geoip_service.GeoIpService.refresh_file_path">refresh_file_path</a></code></li>
+<li><code><a title="server.geoip_service.GeoIpService.services" href="#server.geoip_service.GeoIpService.services">services</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>

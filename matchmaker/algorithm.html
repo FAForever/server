@@ -1,0 +1,1089 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>server.matchmaker.algorithm API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>server.matchmaker.algorithm</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import itertools
+import math
+import random
+import statistics as stats
+from collections import OrderedDict
+from typing import (
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar
+)
+
+from ..decorators import with_logger
+from .search import CombinedSearch, Match, Search
+
+T = TypeVar(&#34;T&#34;)
+WeightedGraph = Dict[Search, List[Tuple[Search, float]]]
+Buckets = Dict[Search, List[Tuple[Search, float]]]
+
+
+def make_matches(searches: Iterable[Search]) -&gt; List[Match]:
+    &#34;&#34;&#34;
+    Main entrypoint for the matchmaker algorithm.
+    &#34;&#34;&#34;
+    return Matchmaker(searches).find()
+
+
+@with_logger
+class MatchmakingPolicy(object):
+    def __init__(self):
+        self.matches: Dict[Search, Search] = {}
+
+    def _match(self, s1: Search, s2: Search):
+        self._logger.debug(f&#34;Matching %s and %s ({self.__class__})&#34;, s1, s2)
+        self.matches[s1] = s2
+        self.matches[s2] = s1
+
+    def _unmatch(self, s1: Search):
+        s2 = self.matches[s1]
+        self._logger.debug(f&#34;Unmatching %s and %s ({self.__class__})&#34;, s1, s2)
+        assert self.matches[s2] == s1
+        del self.matches[s1]
+        del self.matches[s2]
+
+
+class StableMarriage(MatchmakingPolicy):
+    def find(self, ranks: WeightedGraph) -&gt; Dict[Search, Search]:
+        &#34;&#34;&#34; Perform the stable matching algorithm until a maximal stable matching
+        is found.
+        &#34;&#34;&#34;
+        self.matches.clear()
+
+        max_degree = max((len(edges) for edges in ranks.values()), default=0)
+        for i in range(max_degree):
+            self._logger.debug(
+                &#34;Round %i of stable marriage, currently %i matches&#34;, i,
+                len(self.matches) // 2
+            )
+            # Do one round of proposals
+            if len(self.matches) == len(ranks):
+                # Everyone found a match so we are done
+                break
+
+            for search in ranks:
+                if search in self.matches:
+                    continue
+
+                if not ranks[search]:
+                    # Preference list exhausted
+                    continue
+
+                preferred, quality = ranks[search].pop()
+
+                self._logger.debug(
+                    &#34;Quality between %s and %s: %f thresholds: [%f, %f]&#34;,
+                    search, preferred, quality,
+                    search.match_threshold,
+                    preferred.match_threshold
+                )
+
+                self._propose(search, preferred, quality)
+
+        return self.matches
+
+    def _propose(self, search: Search, preferred: Search, new_quality: float):
+        &#34;&#34;&#34; An unmatched search proposes to it&#39;s preferred opponent.
+
+        If the opponent is not matched, they become matched. If the opponent is
+        matched, but prefers this new search to its current one, then the opponent
+        unmatches from its previous adversary and matches with the new search instead.
+        &#34;&#34;&#34;
+        if preferred not in self.matches:
+            self._match(search, preferred)
+            return
+
+        current_match = self.matches[preferred]
+        current_quality = preferred.quality_with(current_match)
+
+        if new_quality &gt; current_quality:
+            # Found a better match
+            self._unmatch(preferred)
+            self._match(search, preferred)
+
+
+class RandomlyMatchNewbies(MatchmakingPolicy):
+    def find(self, searches: Iterable[Search]) -&gt; Dict[Search, Search]:
+        self.matches.clear()
+
+        unmatched_newbies = []
+        first_opponent = None
+        for search in searches:
+            if search.has_top_player():
+                continue
+
+            if search.has_newbie():
+                unmatched_newbies.append(search)
+            elif not first_opponent and search.failed_matching_attempts &gt;= 1:
+                first_opponent = search
+
+        while len(unmatched_newbies) &gt;= 2:
+            newbie1 = unmatched_newbies.pop()
+            newbie2 = unmatched_newbies.pop()
+            self._match(newbie1, newbie2)
+
+        if unmatched_newbies and first_opponent:
+            newbie = unmatched_newbies[0]
+            self._match(newbie, first_opponent)
+
+        return self.matches
+
+
+@with_logger
+class Matchmaker(object):
+    def __init__(self, searches: Iterable[Search]):
+        self.searches = searches
+        self.matches: Dict[Search, Search] = {}
+
+    def find(self) -&gt; List[Match]:
+        self._logger.debug(&#34;Matching with stable marriage...&#34;)
+        searches = list(self.searches)
+        if len(searches) &lt; 30:
+            ranks = _MatchingGraph.build_full(searches)
+        else:
+            ranks = _MatchingGraph.build_fast(searches)
+        _MatchingGraph.remove_isolated(ranks)
+        self.matches.update(StableMarriage().find(ranks))
+
+        remaining_searches = [
+            search for search in self.searches if search not in self.matches
+        ]
+        self._logger.debug(&#34;Matching randomly for remaining newbies...&#34;)
+        self.matches.update(RandomlyMatchNewbies().find(remaining_searches))
+
+        self._register_unmatched_searches()
+
+        return self._remove_duplicates()
+
+    def _register_unmatched_searches(self):
+        &#34;&#34;&#34;
+        Tells all unmatched searches that they went through a failed matching
+        attempt.
+        &#34;&#34;&#34;
+        for search in self.searches:
+            if search in self.matches:
+                continue
+
+            search.register_failed_matching_attempt()
+            self._logger.debug(
+                &#34;Search %s remained unmatched at threshold %f in attempt number %s&#34;,
+                search, search.match_threshold, search.failed_matching_attempts
+            )
+
+    def _remove_duplicates(self) -&gt; List[Match]:
+        matches_set: Set[Match] = set()
+        for s1, s2 in self.matches.items():
+            if (s1, s2) in matches_set or (s2, s1) in matches_set:
+                continue
+            matches_set.add((s1, s2))
+        return list(matches_set)
+
+
+@with_logger
+class _MatchingGraph:
+    @staticmethod
+    def build_full(searches: List[Search]) -&gt; WeightedGraph:
+        &#34;&#34;&#34; A graph in adjacency list representation, whose nodes are the searches
+        and whose edges are the possible matchings for each node. Checks every
+        possible edge for inclusion in the graph.
+
+        Note that the highest quality searches come at the end of the list so that
+        it can be used as a stack with .pop().
+
+        Time complexity: O(n^2)
+        &#34;&#34;&#34;
+        adj_list = {search: [] for search in searches}
+
+        # Generate every edge. There are &#39;len(searches) choose 2&#39; of these.
+        for search, other in itertools.combinations(searches, 2):
+            quality = search.quality_with(other)
+            if not _MatchingGraph.is_possible_match(search, other, quality):
+                continue
+
+            # Add the edge in both directions
+            adj_list[search].append((other, quality))
+            adj_list[other].append((search, quality))
+
+        # Sort edges by their weights i.e. match quality
+        for search, neighbors in adj_list.items():
+            neighbors.sort(key=lambda edge: edge[1])
+
+        return adj_list
+
+    @staticmethod
+    def build_fast(searches: List[Search]) -&gt; WeightedGraph:
+        &#34;&#34;&#34; Builds approximately the same graph as `build_full`, but does not
+        check every possible edge.
+
+        Time complexity: O(n*log(n))
+        &#34;&#34;&#34;
+        adj_list = {search: [] for search in searches}
+        # Sort all searches by players average trueskill mean
+        searches = sorted(searches, key=avg_mean)
+        # Now compute quality with `num_to_check` nearby searches on either side
+        num_to_check = int(math.log(max(16, len(searches)), 2)) // 2
+        for i, search in enumerate(searches):
+            for other in searches[i+1:i+1+num_to_check]:
+                quality = search.quality_with(other)
+                if not _MatchingGraph.is_possible_match(search, other, quality):
+                    continue
+
+                # Add the edge in both directions
+                adj_list[search].append((other, quality))
+                adj_list[other].append((search, quality))
+
+        # Sort edges by their weights i.e. match quality
+        for search, neighbors in adj_list.items():
+            neighbors.sort(key=lambda edge: edge[1])
+
+        return adj_list
+
+    @staticmethod
+    def is_possible_match(search: Search, other: Search, quality: float) -&gt; bool:
+        log_string = &#34;Quality between %s and %s: %.3f thresholds: [%.3f, %.3f].&#34;
+        log_args = (
+            search, other, quality,
+            search.match_threshold, other.match_threshold
+        )
+
+        if search._match_quality_acceptable(other, quality):
+            _MatchingGraph._logger.debug(
+                f&#34;{log_string} Will be considered during stable marriage.&#34;,
+                *log_args
+            )
+            return True
+        else:
+            _MatchingGraph._logger.debug(
+                f&#34;{log_string} Will be discarded for stable marriage.&#34;,
+                *log_args
+            )
+            return False
+
+    @staticmethod
+    def remove_isolated(graph: WeightedGraph):
+        &#34;&#34;&#34; Remove any searches that have no possible matchings.
+
+        Note: This assumes that edges are undirected. Calling this on directed
+        graphs will produce incorrect results. &#34;&#34;&#34;
+        for search, neighbors in list(graph.items()):
+            if not neighbors:
+                del graph[search]
+
+
+def avg_mean(search: Search) -&gt; float:
+    &#34;&#34;&#34;
+    Get the average of all trueskill means for a search counting means with
+    high deviation as 0.
+    &#34;&#34;&#34;
+    return stats.mean(mean if dev &lt; 250 else 0 for mean, dev in search.ratings)
+
+
+def rotate(list_: List[T], amount: int) -&gt; List[T]:
+    return list_[amount:] + list_[:amount]
+
+
+def make_teams_from_single(
+    searches: List[Search],
+    size: int
+) -&gt; Tuple[List[Search], List[Search]]:
+    &#34;&#34;&#34;
+    Make teams in the special case where all players are solo queued (no
+    parties).
+
+    Tries to put players of similar skill on the same team as long as there are
+    enough such players to form at least 2 teams. If there are not enough
+    similar players for two teams, then distributes similarly rated players
+    accross different teams.
+
+    # Algorithm
+    1. Group players into &#34;buckets&#34; by rating. This is a sort of heuristic for
+        determining which players have similar rating.
+    2. Create as many games as possible within each bucket.
+    3. Create games from remaining players by balancing teams with players from
+        different buckets.
+    &#34;&#34;&#34;
+    assert all(len(s.players) == 1 for s in searches)
+
+    # Make buckets
+    buckets = _make_buckets(searches)
+    remaining: List[Tuple[Search, float]] = []
+
+    new_searches: List[Search] = []
+    # Match up players within buckets
+    for bucket in buckets.values():
+        # Always produce an even number of teams
+        num_groups = len(bucket) // (size * 2)
+        num_teams = num_groups * 2
+        num_players = num_teams * size
+
+        selected = random.sample(bucket, num_players)
+        # TODO: Optimize?
+        remaining.extend(s for s in bucket if s not in selected)
+        # Sort by trueskill mean
+        selected.sort(key=lambda item: item[1])
+        new_searches.extend(_distribute(selected, size))
+
+    # Match up players accross buckets
+    remaining.sort(key=lambda item: item[1])
+    while len(remaining) &gt;= size:
+        if len(remaining) &gt;= 2 * size:
+            # enough for at least 2 teams
+            selected = remaining[:2 * size]
+            new_searches.extend(_distribute(selected, size))
+        else:
+            selected = remaining[:size]
+            new_searches.append(CombinedSearch(*[s for s, m in selected]))
+
+        remaining = [item for item in remaining if item not in selected]
+
+    return new_searches, [search for search, _ in remaining]
+
+
+def _make_buckets(searches: List[Search]) -&gt; Buckets:
+    &#34;&#34;&#34;
+    Group players together by similar rating.
+
+    # Algorithm
+    1. Choose a random player as the &#34;pivot&#34;.
+    2. Find all players with rating within 100 pts of this player and place
+        them in a bucket.
+    3. Repeat with remaining players.
+    &#34;&#34;&#34;
+    remaining = list(map(lambda s: (s, avg_mean(s)), searches))
+    buckets: Buckets = {}
+
+    while remaining:
+        # Choose a pivot
+        pivot, mean = random.choice(remaining)
+        low, high = mean - 100, mean + 100
+
+        # Partition remaining based on how close their means are
+        bucket, not_bucket = [], []
+        for item in remaining:
+            (_, other_mean) = item
+            if low &lt;= other_mean &lt;= high:
+                bucket.append(item)
+            else:
+                not_bucket.append(item)
+
+        buckets[pivot] = bucket
+        remaining = not_bucket
+
+    return buckets
+
+
+def _distribute(
+    items: List[Tuple[Search, float]],
+    team_size: int
+) -&gt; Iterator[CombinedSearch]:
+    &#34;&#34;&#34;
+    Distributes a sorted list into teams of a given size in a balanced manner.
+    Player &#34;skill&#34; is determined by their position in the list.
+
+    For example (using numbers to represent list positions)
+    ```
+    _distribute([1,2,3,4], 2) == [[1,4], [2,3]]
+    ```
+    In this simple scenario, one team gets the best and the worst player and
+    the other player gets the two in the middle. This is the only way of
+    distributing these 4 items into 2 teams such that there is no obviously
+    favored team.
+    &#34;&#34;&#34;
+    num_teams = len(items) // team_size
+    teams: List[List[Search]] = [[] for _ in range(num_teams)]
+    half = len(items) // 2
+    # Rotate the second half of the list
+    rotated = items[:half] + rotate(items[half:], half // 2)
+    for i, (search, _) in enumerate(rotated):
+        # Distribute the pairs to the appropriate team
+        teams[i % num_teams].append(search)
+
+    return (CombinedSearch(*team) for team in teams)
+
+
+def make_teams(
+    searches: List[Search],
+    size: int
+) -&gt; Tuple[List[Search], List[Search]]:
+    &#34;&#34;&#34;
+    Tries to group as many searches together into teams of the given size as
+    possible. Returns the new grouped searches, and the remaining searches that
+    were not succesfully grouped.
+
+    Does not try to balance teams so it should be used only as a last resort.
+    &#34;&#34;&#34;
+
+    searches_by_size = _make_searches_by_size(searches)
+
+    new_searches = []
+    for search in searches:
+        if len(search.players) &gt; size:
+            continue
+
+        new_search = _make_team_for_search(search, searches_by_size, size)
+        if new_search:
+            new_searches.append(new_search)
+
+    return new_searches, list(itertools.chain(*searches_by_size.values()))
+
+
+def _make_searches_by_size(searches: List[Search]) -&gt; Dict[int, Set[Search]]:
+    &#34;&#34;&#34;
+    Creates a lookup table indexed by number of players in the search.
+    &#34;&#34;&#34;
+
+    searches_by_size: Dict[int, Set[Search]] = OrderedDict()
+
+    # Would be easier with defaultdict, but we want to preserve key order
+    for search in searches:
+        size = len(search.players)
+        if size not in searches_by_size:
+            searches_by_size[size] = set()
+        searches_by_size[size].add(search)
+
+    return searches_by_size
+
+
+def _make_team_for_search(
+    search: Search,
+    searches_by_size: Dict[int, Set[Search]],
+    size: int
+) -&gt; Optional[Search]:
+    &#34;&#34;&#34;
+    Match this search with other searches to create a new team of `size`
+    members.
+    &#34;&#34;&#34;
+
+    num_players = len(search.players)
+    if search not in searches_by_size[num_players]:
+        return None
+    searches_by_size[num_players].remove(search)
+
+    if num_players == size:
+        return search
+
+    num_needed = size - num_players
+    try_size = num_needed
+    new_search = search
+    while num_needed &gt; 0:
+        if try_size == 0:
+            _uncombine(new_search, searches_by_size)
+            return None
+
+        try:
+            other = searches_by_size[try_size].pop()
+            new_search = CombinedSearch(new_search, other)
+            num_needed -= try_size
+            try_size = num_needed
+        except KeyError:
+            try_size -= 1
+
+    return new_search
+
+
+def _uncombine(
+    search: Search,
+    searches_by_size: Dict[int, Set[Search]]
+) -&gt; None:
+    &#34;&#34;&#34;
+    Adds all of the searches in search back to their respective spots in
+    `searches_by_size`.
+    &#34;&#34;&#34;
+
+    if not isinstance(search, CombinedSearch):
+        searches_by_size[len(search.players)].add(search)
+        return
+
+    for s in search.searches:
+        _uncombine(s, searches_by_size)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="server.matchmaker.algorithm.avg_mean"><code class="name flex">
+<span>def <span class="ident">avg_mean</span></span>(<span>search: <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>) ‑> float</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the average of all trueskill means for a search counting means with
+high deviation as 0.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def avg_mean(search: Search) -&gt; float:
+    &#34;&#34;&#34;
+    Get the average of all trueskill means for a search counting means with
+    high deviation as 0.
+    &#34;&#34;&#34;
+    return stats.mean(mean if dev &lt; 250 else 0 for mean, dev in search.ratings)</code></pre>
+</details>
+</dd>
+<dt id="server.matchmaker.algorithm.make_matches"><code class="name flex">
+<span>def <span class="ident">make_matches</span></span>(<span>searches: Iterable[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>]) ‑> List[Tuple[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Main entrypoint for the matchmaker algorithm.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_matches(searches: Iterable[Search]) -&gt; List[Match]:
+    &#34;&#34;&#34;
+    Main entrypoint for the matchmaker algorithm.
+    &#34;&#34;&#34;
+    return Matchmaker(searches).find()</code></pre>
+</details>
+</dd>
+<dt id="server.matchmaker.algorithm.make_teams"><code class="name flex">
+<span>def <span class="ident">make_teams</span></span>(<span>searches: List[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>], size: int) ‑> Tuple[List[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>], List[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Tries to group as many searches together into teams of the given size as
+possible. Returns the new grouped searches, and the remaining searches that
+were not succesfully grouped.</p>
+<p>Does not try to balance teams so it should be used only as a last resort.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_teams(
+    searches: List[Search],
+    size: int
+) -&gt; Tuple[List[Search], List[Search]]:
+    &#34;&#34;&#34;
+    Tries to group as many searches together into teams of the given size as
+    possible. Returns the new grouped searches, and the remaining searches that
+    were not succesfully grouped.
+
+    Does not try to balance teams so it should be used only as a last resort.
+    &#34;&#34;&#34;
+
+    searches_by_size = _make_searches_by_size(searches)
+
+    new_searches = []
+    for search in searches:
+        if len(search.players) &gt; size:
+            continue
+
+        new_search = _make_team_for_search(search, searches_by_size, size)
+        if new_search:
+            new_searches.append(new_search)
+
+    return new_searches, list(itertools.chain(*searches_by_size.values()))</code></pre>
+</details>
+</dd>
+<dt id="server.matchmaker.algorithm.make_teams_from_single"><code class="name flex">
+<span>def <span class="ident">make_teams_from_single</span></span>(<span>searches: List[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>], size: int) ‑> Tuple[List[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>], List[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Make teams in the special case where all players are solo queued (no
+parties).</p>
+<p>Tries to put players of similar skill on the same team as long as there are
+enough such players to form at least 2 teams. If there are not enough
+similar players for two teams, then distributes similarly rated players
+accross different teams.</p>
+<h1 id="algorithm">Algorithm</h1>
+<ol>
+<li>Group players into "buckets" by rating. This is a sort of heuristic for
+determining which players have similar rating.</li>
+<li>Create as many games as possible within each bucket.</li>
+<li>Create games from remaining players by balancing teams with players from
+different buckets.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_teams_from_single(
+    searches: List[Search],
+    size: int
+) -&gt; Tuple[List[Search], List[Search]]:
+    &#34;&#34;&#34;
+    Make teams in the special case where all players are solo queued (no
+    parties).
+
+    Tries to put players of similar skill on the same team as long as there are
+    enough such players to form at least 2 teams. If there are not enough
+    similar players for two teams, then distributes similarly rated players
+    accross different teams.
+
+    # Algorithm
+    1. Group players into &#34;buckets&#34; by rating. This is a sort of heuristic for
+        determining which players have similar rating.
+    2. Create as many games as possible within each bucket.
+    3. Create games from remaining players by balancing teams with players from
+        different buckets.
+    &#34;&#34;&#34;
+    assert all(len(s.players) == 1 for s in searches)
+
+    # Make buckets
+    buckets = _make_buckets(searches)
+    remaining: List[Tuple[Search, float]] = []
+
+    new_searches: List[Search] = []
+    # Match up players within buckets
+    for bucket in buckets.values():
+        # Always produce an even number of teams
+        num_groups = len(bucket) // (size * 2)
+        num_teams = num_groups * 2
+        num_players = num_teams * size
+
+        selected = random.sample(bucket, num_players)
+        # TODO: Optimize?
+        remaining.extend(s for s in bucket if s not in selected)
+        # Sort by trueskill mean
+        selected.sort(key=lambda item: item[1])
+        new_searches.extend(_distribute(selected, size))
+
+    # Match up players accross buckets
+    remaining.sort(key=lambda item: item[1])
+    while len(remaining) &gt;= size:
+        if len(remaining) &gt;= 2 * size:
+            # enough for at least 2 teams
+            selected = remaining[:2 * size]
+            new_searches.extend(_distribute(selected, size))
+        else:
+            selected = remaining[:size]
+            new_searches.append(CombinedSearch(*[s for s, m in selected]))
+
+        remaining = [item for item in remaining if item not in selected]
+
+    return new_searches, [search for search, _ in remaining]</code></pre>
+</details>
+</dd>
+<dt id="server.matchmaker.algorithm.rotate"><code class="name flex">
+<span>def <span class="ident">rotate</span></span>(<span>list_: List[~T], amount: int) ‑> List[~T]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def rotate(list_: List[T], amount: int) -&gt; List[T]:
+    return list_[amount:] + list_[:amount]</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="server.matchmaker.algorithm.Matchmaker"><code class="flex name class">
+<span>class <span class="ident">Matchmaker</span></span>
+<span>(</span><span>searches: Iterable[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>])</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Matchmaker(object):
+    def __init__(self, searches: Iterable[Search]):
+        self.searches = searches
+        self.matches: Dict[Search, Search] = {}
+
+    def find(self) -&gt; List[Match]:
+        self._logger.debug(&#34;Matching with stable marriage...&#34;)
+        searches = list(self.searches)
+        if len(searches) &lt; 30:
+            ranks = _MatchingGraph.build_full(searches)
+        else:
+            ranks = _MatchingGraph.build_fast(searches)
+        _MatchingGraph.remove_isolated(ranks)
+        self.matches.update(StableMarriage().find(ranks))
+
+        remaining_searches = [
+            search for search in self.searches if search not in self.matches
+        ]
+        self._logger.debug(&#34;Matching randomly for remaining newbies...&#34;)
+        self.matches.update(RandomlyMatchNewbies().find(remaining_searches))
+
+        self._register_unmatched_searches()
+
+        return self._remove_duplicates()
+
+    def _register_unmatched_searches(self):
+        &#34;&#34;&#34;
+        Tells all unmatched searches that they went through a failed matching
+        attempt.
+        &#34;&#34;&#34;
+        for search in self.searches:
+            if search in self.matches:
+                continue
+
+            search.register_failed_matching_attempt()
+            self._logger.debug(
+                &#34;Search %s remained unmatched at threshold %f in attempt number %s&#34;,
+                search, search.match_threshold, search.failed_matching_attempts
+            )
+
+    def _remove_duplicates(self) -&gt; List[Match]:
+        matches_set: Set[Match] = set()
+        for s1, s2 in self.matches.items():
+            if (s1, s2) in matches_set or (s2, s1) in matches_set:
+                continue
+            matches_set.add((s1, s2))
+        return list(matches_set)</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="server.matchmaker.algorithm.Matchmaker.find"><code class="name flex">
+<span>def <span class="ident">find</span></span>(<span>self) ‑> List[Tuple[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def find(self) -&gt; List[Match]:
+    self._logger.debug(&#34;Matching with stable marriage...&#34;)
+    searches = list(self.searches)
+    if len(searches) &lt; 30:
+        ranks = _MatchingGraph.build_full(searches)
+    else:
+        ranks = _MatchingGraph.build_fast(searches)
+    _MatchingGraph.remove_isolated(ranks)
+    self.matches.update(StableMarriage().find(ranks))
+
+    remaining_searches = [
+        search for search in self.searches if search not in self.matches
+    ]
+    self._logger.debug(&#34;Matching randomly for remaining newbies...&#34;)
+    self.matches.update(RandomlyMatchNewbies().find(remaining_searches))
+
+    self._register_unmatched_searches()
+
+    return self._remove_duplicates()</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="server.matchmaker.algorithm.MatchmakingPolicy"><code class="flex name class">
+<span>class <span class="ident">MatchmakingPolicy</span></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MatchmakingPolicy(object):
+    def __init__(self):
+        self.matches: Dict[Search, Search] = {}
+
+    def _match(self, s1: Search, s2: Search):
+        self._logger.debug(f&#34;Matching %s and %s ({self.__class__})&#34;, s1, s2)
+        self.matches[s1] = s2
+        self.matches[s2] = s1
+
+    def _unmatch(self, s1: Search):
+        s2 = self.matches[s1]
+        self._logger.debug(f&#34;Unmatching %s and %s ({self.__class__})&#34;, s1, s2)
+        assert self.matches[s2] == s1
+        del self.matches[s1]
+        del self.matches[s2]</code></pre>
+</details>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="server.matchmaker.algorithm.RandomlyMatchNewbies" href="#server.matchmaker.algorithm.RandomlyMatchNewbies">RandomlyMatchNewbies</a></li>
+<li><a title="server.matchmaker.algorithm.StableMarriage" href="#server.matchmaker.algorithm.StableMarriage">StableMarriage</a></li>
+</ul>
+</dd>
+<dt id="server.matchmaker.algorithm.RandomlyMatchNewbies"><code class="flex name class">
+<span>class <span class="ident">RandomlyMatchNewbies</span></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class RandomlyMatchNewbies(MatchmakingPolicy):
+    def find(self, searches: Iterable[Search]) -&gt; Dict[Search, Search]:
+        self.matches.clear()
+
+        unmatched_newbies = []
+        first_opponent = None
+        for search in searches:
+            if search.has_top_player():
+                continue
+
+            if search.has_newbie():
+                unmatched_newbies.append(search)
+            elif not first_opponent and search.failed_matching_attempts &gt;= 1:
+                first_opponent = search
+
+        while len(unmatched_newbies) &gt;= 2:
+            newbie1 = unmatched_newbies.pop()
+            newbie2 = unmatched_newbies.pop()
+            self._match(newbie1, newbie2)
+
+        if unmatched_newbies and first_opponent:
+            newbie = unmatched_newbies[0]
+            self._match(newbie, first_opponent)
+
+        return self.matches</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="server.matchmaker.algorithm.MatchmakingPolicy" href="#server.matchmaker.algorithm.MatchmakingPolicy">MatchmakingPolicy</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="server.matchmaker.algorithm.RandomlyMatchNewbies.find"><code class="name flex">
+<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>]) ‑> Dict[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def find(self, searches: Iterable[Search]) -&gt; Dict[Search, Search]:
+    self.matches.clear()
+
+    unmatched_newbies = []
+    first_opponent = None
+    for search in searches:
+        if search.has_top_player():
+            continue
+
+        if search.has_newbie():
+            unmatched_newbies.append(search)
+        elif not first_opponent and search.failed_matching_attempts &gt;= 1:
+            first_opponent = search
+
+    while len(unmatched_newbies) &gt;= 2:
+        newbie1 = unmatched_newbies.pop()
+        newbie2 = unmatched_newbies.pop()
+        self._match(newbie1, newbie2)
+
+    if unmatched_newbies and first_opponent:
+        newbie = unmatched_newbies[0]
+        self._match(newbie, first_opponent)
+
+    return self.matches</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="server.matchmaker.algorithm.StableMarriage"><code class="flex name class">
+<span>class <span class="ident">StableMarriage</span></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class StableMarriage(MatchmakingPolicy):
+    def find(self, ranks: WeightedGraph) -&gt; Dict[Search, Search]:
+        &#34;&#34;&#34; Perform the stable matching algorithm until a maximal stable matching
+        is found.
+        &#34;&#34;&#34;
+        self.matches.clear()
+
+        max_degree = max((len(edges) for edges in ranks.values()), default=0)
+        for i in range(max_degree):
+            self._logger.debug(
+                &#34;Round %i of stable marriage, currently %i matches&#34;, i,
+                len(self.matches) // 2
+            )
+            # Do one round of proposals
+            if len(self.matches) == len(ranks):
+                # Everyone found a match so we are done
+                break
+
+            for search in ranks:
+                if search in self.matches:
+                    continue
+
+                if not ranks[search]:
+                    # Preference list exhausted
+                    continue
+
+                preferred, quality = ranks[search].pop()
+
+                self._logger.debug(
+                    &#34;Quality between %s and %s: %f thresholds: [%f, %f]&#34;,
+                    search, preferred, quality,
+                    search.match_threshold,
+                    preferred.match_threshold
+                )
+
+                self._propose(search, preferred, quality)
+
+        return self.matches
+
+    def _propose(self, search: Search, preferred: Search, new_quality: float):
+        &#34;&#34;&#34; An unmatched search proposes to it&#39;s preferred opponent.
+
+        If the opponent is not matched, they become matched. If the opponent is
+        matched, but prefers this new search to its current one, then the opponent
+        unmatches from its previous adversary and matches with the new search instead.
+        &#34;&#34;&#34;
+        if preferred not in self.matches:
+            self._match(search, preferred)
+            return
+
+        current_match = self.matches[preferred]
+        current_quality = preferred.quality_with(current_match)
+
+        if new_quality &gt; current_quality:
+            # Found a better match
+            self._unmatch(preferred)
+            self._match(search, preferred)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="server.matchmaker.algorithm.MatchmakingPolicy" href="#server.matchmaker.algorithm.MatchmakingPolicy">MatchmakingPolicy</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="server.matchmaker.algorithm.StableMarriage.find"><code class="name flex">
+<span>def <span class="ident">find</span></span>(<span>self, ranks: Dict[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, List[Tuple[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, float]]]) ‑> Dict[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Perform the stable matching algorithm until a maximal stable matching
+is found.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def find(self, ranks: WeightedGraph) -&gt; Dict[Search, Search]:
+    &#34;&#34;&#34; Perform the stable matching algorithm until a maximal stable matching
+    is found.
+    &#34;&#34;&#34;
+    self.matches.clear()
+
+    max_degree = max((len(edges) for edges in ranks.values()), default=0)
+    for i in range(max_degree):
+        self._logger.debug(
+            &#34;Round %i of stable marriage, currently %i matches&#34;, i,
+            len(self.matches) // 2
+        )
+        # Do one round of proposals
+        if len(self.matches) == len(ranks):
+            # Everyone found a match so we are done
+            break
+
+        for search in ranks:
+            if search in self.matches:
+                continue
+
+            if not ranks[search]:
+                # Preference list exhausted
+                continue
+
+            preferred, quality = ranks[search].pop()
+
+            self._logger.debug(
+                &#34;Quality between %s and %s: %f thresholds: [%f, %f]&#34;,
+                search, preferred, quality,
+                search.match_threshold,
+                preferred.match_threshold
+            )
+
+            self._propose(search, preferred, quality)
+
+    return self.matches</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="server.matchmaker" href="index.html">server.matchmaker</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="server.matchmaker.algorithm.avg_mean" href="#server.matchmaker.algorithm.avg_mean">avg_mean</a></code></li>
+<li><code><a title="server.matchmaker.algorithm.make_matches" href="#server.matchmaker.algorithm.make_matches">make_matches</a></code></li>
+<li><code><a title="server.matchmaker.algorithm.make_teams" href="#server.matchmaker.algorithm.make_teams">make_teams</a></code></li>
+<li><code><a title="server.matchmaker.algorithm.make_teams_from_single" href="#server.matchmaker.algorithm.make_teams_from_single">make_teams_from_single</a></code></li>
+<li><code><a title="server.matchmaker.algorithm.rotate" href="#server.matchmaker.algorithm.rotate">rotate</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="server.matchmaker.algorithm.Matchmaker" href="#server.matchmaker.algorithm.Matchmaker">Matchmaker</a></code></h4>
+<ul class="">
+<li><code><a title="server.matchmaker.algorithm.Matchmaker.find" href="#server.matchmaker.algorithm.Matchmaker.find">find</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.matchmaker.algorithm.MatchmakingPolicy" href="#server.matchmaker.algorithm.MatchmakingPolicy">MatchmakingPolicy</a></code></h4>
+</li>
+<li>
+<h4><code><a title="server.matchmaker.algorithm.RandomlyMatchNewbies" href="#server.matchmaker.algorithm.RandomlyMatchNewbies">RandomlyMatchNewbies</a></code></h4>
+<ul class="">
+<li><code><a title="server.matchmaker.algorithm.RandomlyMatchNewbies.find" href="#server.matchmaker.algorithm.RandomlyMatchNewbies.find">find</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.matchmaker.algorithm.StableMarriage" href="#server.matchmaker.algorithm.StableMarriage">StableMarriage</a></code></h4>
+<ul class="">
+<li><code><a title="server.matchmaker.algorithm.StableMarriage.find" href="#server.matchmaker.algorithm.StableMarriage.find">find</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>

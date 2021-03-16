@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>server.stats.achievement_service API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>server.stats.achievement_service</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from server.api.api_accessor import ApiAccessor
+from server.core import Service
+from server.decorators import with_logger
+
+ACH_NOVICE = &#34;c6e6039f-c543-424e-ab5f-b34df1336e81&#34;
+ACH_JUNIOR = &#34;d5c759fe-a1a8-4103-888d-3ba319562867&#34;
+ACH_SENIOR = &#34;6a37e2fc-1609-465e-9eca-91eeda4e63c4&#34;
+ACH_VETERAN = &#34;bd12277a-6604-466a-9ee6-af6908573585&#34;
+ACH_ADDICT = &#34;805f268c-88aa-4073-aa2b-ea30700f70d6&#34;
+ACH_FIRST_SUCCESS = &#34;5b7ec244-58c0-40ca-9d68-746b784f0cad&#34;
+ACH_HATTRICK = &#34;08629902-8e18-4d92-ad14-c8ecde4a8674&#34;
+ACH_THAT_WAS_CLOSE = &#34;290df67c-eb01-4fe7-9e32-caae1c10442f&#34;
+ACH_TOP_SCORE = &#34;305a8d34-42fd-42f3-ba91-d9f5e437a9a6&#34;
+ACH_UNBEATABLE = &#34;d3d2c78b-d42d-4b65-99b8-a350f119f898&#34;
+ACH_RUSHER = &#34;02081bb0-3b7a-4a36-99ef-5ae5d92d7146&#34;
+ACH_MA12_STRIKER = &#34;1a3ad9e0-53eb-47d0-9404-14dbcefbed9b&#34;
+ACH_RIPTIDE = &#34;326493d7-ce2c-4a43-bbc8-3e990e2685a1&#34;
+ACH_DEMOLISHER = &#34;7d6d8c55-3e2a-41d0-a97e-d35513af1ec6&#34;
+ACH_MANTIS = &#34;d1d50fbb-7fe9-41b0-b667-4433704b8a2c&#34;
+ACH_WAGNER = &#34;af161922-3e52-4600-9161-d850ab0fae86&#34;
+ACH_TREBUCHET = &#34;ff23024e-f533-4e23-8f8f-ecc21d5283f8&#34;
+ACH_AURORA = &#34;d656ade4-e054-415a-a2e9-5f4105f7d724&#34;
+ACH_BLAZE = &#34;06a39447-66a3-4160-93d5-d48337b0cbb5&#34;
+ACH_SERENITY = &#34;7f993f98-dbec-41a5-9c9a-5f85edf30767&#34;
+ACH_THAAM = &#34;c964ac69-b146-43d0-bd7a-cd22144f9983&#34;
+ACH_YENZYNE = &#34;7aa7fc88-48a2-4e49-9cd7-35e2f6ce4cec&#34;
+ACH_SUTHANUS = &#34;6acc8bc6-1fd3-4c33-97a1-85dfed6d167a&#34;
+ACH_LANDLUBBER = &#34;53173f4d-450c-46f0-ac59-85834cc74972&#34;
+ACH_SEAMAN = &#34;2d5cd544-4fc8-47b9-8ebb-e72ed6423d51&#34;
+ACH_ADMIRAL_OF_THE_FLEET = &#34;bd77964b-c06b-4649-bf7c-d35cb7715854&#34;
+ACH_WRIGHT_BROTHER = &#34;c1ccde26-8449-4625-b769-7d8f75fa8df3&#34;
+ACH_WINGMAN = &#34;a4ade3d4-d541-473f-9788-e92339446d75&#34;
+ACH_KING_OF_THE_SKIES = &#34;e220d5e6-481c-4347-ac69-b6b6f956bc0f&#34;
+ACH_MILITIAMAN = &#34;e5c63aec-20a0-4263-841d-b7bc45209713&#34;
+ACH_GRENADIER = &#34;ec8faec7-e3e1-436e-a1ac-9f7adc3d0387&#34;
+ACH_FIELD_MARSHAL = &#34;10f17c75-1154-447d-a4f7-6217add0407e&#34;
+ACH_TECHIE = &#34;06b19364-5aab-4bce-883d-975f663d2091&#34;
+ACH_I_LOVE_BIG_TOYS = &#34;cd64c5e7-b063-4543-9f52-0e87883b33a9&#34;
+ACH_EXPERIMENTALIST = &#34;e8af7cc9-aaa6-4d0e-8e5a-481702a83a4e&#34;
+ACH_WHAT_A_SWARM = &#34;045342e1-ae0d-4ef6-98bc-0bb54ffe00b3&#34;
+ACH_THE_TRANSPORTER = &#34;d38aec23-e487-4aa2-899e-418e29ffbd36&#34;
+ACH_WHO_NEEDS_SUPPORT = &#34;eb1ee9ab-4828-417b-b3e8-c8281ee7a353&#34;
+ACH_DEADLY_BUGS = &#34;e7645e7c-7456-48a8-a562-d97521498e7e&#34;
+ACH_NO_MERCY = &#34;f0cde5d8-4933-4074-a2fb-819074d21abd&#34;
+ACH_FLYING_DEATH = &#34;a98fcfaf-29ac-4526-84c2-44f284518f8c&#34;
+ACH_INCOMING_ROBOTS = &#34;1c8fcb6f-a5b6-497f-8b0d-ac5ac6fef408&#34;
+ACH_ARACHNOLOGIST = &#34;a1f87fb7-67ca-4a86-afc6-f23a41b40e9f&#34;
+ACH_HOLY_CRAB = &#34;db141e87-5818-435f-80a3-08cc6f1fdac6&#34;
+ACH_FATTER_IS_BETTER = &#34;ab241de5-e773-412e-b073-090da8e38c4c&#34;
+ACH_ALIEN_INVASION = &#34;1f140add-b0ae-4e02-91a0-45d62b988a22&#34;
+ACH_ASS_WASHER = &#34;60d1e60d-036b-491e-a992-2b18321848c2&#34;
+ACH_DEATH_FROM_ABOVE = &#34;539da20b-5026-4c49-8e22-e4a305d58845&#34;
+ACH_STORMY_SEA = &#34;e603f306-ba6b-4507-9556-37a308e5a722&#34;
+ACH_IT_AINT_A_CITY = &#34;a909629f-46f5-469e-afd1-192d42f55e4d&#34;
+ACH_RAINMAKER = &#34;50260d04-90ff-45c8-816b-4ad8d7b97ecd&#34;
+ACH_I_HAVE_A_CANON = &#34;31a728f8-ace9-45fa-a3f2-57084bc9e461&#34;
+ACH_MAKE_IT_HAIL = &#34;987ca192-26e1-4b96-b593-40c115451cc0&#34;
+ACH_SO_MUCH_RESOURCES = &#34;46a6e900-88bb-4eae-92d1-4f31b53faedc&#34;
+ACH_NUCLEAR_WAR = &#34;9ad697bb-441e-45a5-b682-b9227e8eef3e&#34;
+ACH_DR_EVIL = &#34;a6b7dfa1-1ebc-4c6d-9305-4a9d623e1b4f&#34;
+ACH_DONT_MESS_WITH_ME = &#34;2103e0de-1c87-4fba-bc1b-0bba66669607&#34;
+
+
+@with_logger
+class AchievementService(Service):
+    def __init__(self, api_accessor: ApiAccessor):
+        self.api_accessor = api_accessor
+
+    async def execute_batch_update(self, player_id, queue):
+        &#34;&#34;&#34;
+        Sends a batch of achievement updates.
+
+        :param player_id: the player to update the achievements for
+        :param queue: an array of achievement updates in the form::
+
+            [{
+                &#34;achievement_id&#34;: string,
+                &#34;update_type&#34;: string,
+                &#34;steps&#34;: integer
+            }]
+
+            ``updateType`` being one of &#34;REVEAL&#34;, &#34;INCREMENT&#34;, &#34;UNLOCK&#34; or &#34;SET_STEPS_AT_LEAST&#34;
+            ``steps`` being mandatory only for update type `` INCREMENT`` and ``SET_STEPS_AT_LEAST``
+
+        :return
+        If successful, this method returns an array with the following structure::
+
+            [{
+                &#34;achievement_id&#34;: string,
+                &#34;current_state&#34;: string,
+                &#34;current_steps&#34;: integer,
+                &#34;newly_unlocked&#34;: boolean
+            }]
+
+        Else, it returns None
+        &#34;&#34;&#34;
+        self._logger.info(&#34;Updating %d achievements for player %d&#34;, len(queue), player_id)
+        try:
+            response, content = await self.api_accessor.update_achievements(queue, player_id)
+        except ConnectionError:
+            self._logger.error(&#34;Failed to update achievements: connection error&#34;)
+            return None
+        if response &lt; 300:
+            &#34;&#34;&#34;
+            Converting the Java API data to the structure mentioned above
+            &#34;&#34;&#34;
+            api_data = content[&#34;data&#34;]
+            achievements_data = []
+            for achievement in api_data:
+                converted_achievement = {
+                    &#34;achievement_id&#34;: achievement[&#34;attributes&#34;][&#34;achievementId&#34;],
+                    &#34;current_state&#34;: achievement[&#34;attributes&#34;][&#34;state&#34;],
+                    &#34;newly_unlocked&#34;: achievement[&#34;attributes&#34;][&#34;newlyUnlocked&#34;]
+                }
+                if &#34;steps&#34; in achievement[&#34;attributes&#34;]:
+                    converted_achievement[&#34;current_steps&#34;] = achievement[&#34;attributes&#34;][&#34;steps&#34;]
+
+                achievements_data.append(converted_achievement)
+
+            return achievements_data
+        return None
+
+    def unlock(self, achievement_id, queue):
+        &#34;&#34;&#34;
+        Enqueues an achievement update that reveals an achievement.
+
+        :param achievement_id: the achievement to unlock
+        :param queue: the queue to put this update into so it can be batch executed later
+        &#34;&#34;&#34;
+        queue.append({
+            &#34;achievement_id&#34;: achievement_id,
+            &#34;update_type&#34;: &#34;UNLOCK&#34;
+        })
+
+    def reveal(self, achievement_id, queue):
+        &#34;&#34;&#34;
+        Enqueues an achievement update that reveals an achievement.
+
+        :param achievement_id: the achievement to unlock
+        :param queue: the queue to put this update into so it can be batch executed later
+        &#34;&#34;&#34;
+        queue.append({
+            &#34;achievement_id&#34;: achievement_id,
+            &#34;update_type&#34;: &#34;REVEAL&#34;
+        })
+
+    def increment(self, achievement_id, steps, queue):
+        &#34;&#34;&#34;
+        Enqueues an achievement update that increments an achievement.
+
+        :param achievement_id: the achievement to unlock
+        :param steps the number of steps to increment
+        :param queue: the queue to put this update into so it can be batch executed later
+        &#34;&#34;&#34;
+        if steps == 0:
+            return
+
+        queue.append({
+            &#34;achievement_id&#34;: achievement_id,
+            &#34;update_type&#34;: &#34;INCREMENT&#34;,
+            &#34;steps&#34;: steps
+        })
+
+    def set_steps_at_least(self, achievement_id, steps, queue):
+        &#34;&#34;&#34;
+        Enqueues an achievement update that sets the steps to the specified minimum steps.
+
+        :param achievement_id: the achievement to update
+        :param steps the minimum number of steps to set
+        :param queue: the queue to put this update into so it can be batch executed later
+        &#34;&#34;&#34;
+        if steps == 0:
+            return
+
+        queue.append({
+            &#34;achievement_id&#34;: achievement_id,
+            &#34;update_type&#34;: &#34;SET_STEPS_AT_LEAST&#34;,
+            &#34;steps&#34;: steps
+        })</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="server.stats.achievement_service.AchievementService"><code class="flex name class">
+<span>class <span class="ident">AchievementService</span></span>
+<span>(</span><span>api_accessor: <a title="server.api.api_accessor.ApiAccessor" href="../api/api_accessor.html#server.api.api_accessor.ApiAccessor">ApiAccessor</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>All services should inherit from this class.</p>
+<p>Services are singleton objects which manage some server task.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class AchievementService(Service):
+    def __init__(self, api_accessor: ApiAccessor):
+        self.api_accessor = api_accessor
+
+    async def execute_batch_update(self, player_id, queue):
+        &#34;&#34;&#34;
+        Sends a batch of achievement updates.
+
+        :param player_id: the player to update the achievements for
+        :param queue: an array of achievement updates in the form::
+
+            [{
+                &#34;achievement_id&#34;: string,
+                &#34;update_type&#34;: string,
+                &#34;steps&#34;: integer
+            }]
+
+            ``updateType`` being one of &#34;REVEAL&#34;, &#34;INCREMENT&#34;, &#34;UNLOCK&#34; or &#34;SET_STEPS_AT_LEAST&#34;
+            ``steps`` being mandatory only for update type `` INCREMENT`` and ``SET_STEPS_AT_LEAST``
+
+        :return
+        If successful, this method returns an array with the following structure::
+
+            [{
+                &#34;achievement_id&#34;: string,
+                &#34;current_state&#34;: string,
+                &#34;current_steps&#34;: integer,
+                &#34;newly_unlocked&#34;: boolean
+            }]
+
+        Else, it returns None
+        &#34;&#34;&#34;
+        self._logger.info(&#34;Updating %d achievements for player %d&#34;, len(queue), player_id)
+        try:
+            response, content = await self.api_accessor.update_achievements(queue, player_id)
+        except ConnectionError:
+            self._logger.error(&#34;Failed to update achievements: connection error&#34;)
+            return None
+        if response &lt; 300:
+            &#34;&#34;&#34;
+            Converting the Java API data to the structure mentioned above
+            &#34;&#34;&#34;
+            api_data = content[&#34;data&#34;]
+            achievements_data = []
+            for achievement in api_data:
+                converted_achievement = {
+                    &#34;achievement_id&#34;: achievement[&#34;attributes&#34;][&#34;achievementId&#34;],
+                    &#34;current_state&#34;: achievement[&#34;attributes&#34;][&#34;state&#34;],
+                    &#34;newly_unlocked&#34;: achievement[&#34;attributes&#34;][&#34;newlyUnlocked&#34;]
+                }
+                if &#34;steps&#34; in achievement[&#34;attributes&#34;]:
+                    converted_achievement[&#34;current_steps&#34;] = achievement[&#34;attributes&#34;][&#34;steps&#34;]
+
+                achievements_data.append(converted_achievement)
+
+            return achievements_data
+        return None
+
+    def unlock(self, achievement_id, queue):
+        &#34;&#34;&#34;
+        Enqueues an achievement update that reveals an achievement.
+
+        :param achievement_id: the achievement to unlock
+        :param queue: the queue to put this update into so it can be batch executed later
+        &#34;&#34;&#34;
+        queue.append({
+            &#34;achievement_id&#34;: achievement_id,
+            &#34;update_type&#34;: &#34;UNLOCK&#34;
+        })
+
+    def reveal(self, achievement_id, queue):
+        &#34;&#34;&#34;
+        Enqueues an achievement update that reveals an achievement.
+
+        :param achievement_id: the achievement to unlock
+        :param queue: the queue to put this update into so it can be batch executed later
+        &#34;&#34;&#34;
+        queue.append({
+            &#34;achievement_id&#34;: achievement_id,
+            &#34;update_type&#34;: &#34;REVEAL&#34;
+        })
+
+    def increment(self, achievement_id, steps, queue):
+        &#34;&#34;&#34;
+        Enqueues an achievement update that increments an achievement.
+
+        :param achievement_id: the achievement to unlock
+        :param steps the number of steps to increment
+        :param queue: the queue to put this update into so it can be batch executed later
+        &#34;&#34;&#34;
+        if steps == 0:
+            return
+
+        queue.append({
+            &#34;achievement_id&#34;: achievement_id,
+            &#34;update_type&#34;: &#34;INCREMENT&#34;,
+            &#34;steps&#34;: steps
+        })
+
+    def set_steps_at_least(self, achievement_id, steps, queue):
+        &#34;&#34;&#34;
+        Enqueues an achievement update that sets the steps to the specified minimum steps.
+
+        :param achievement_id: the achievement to update
+        :param steps the minimum number of steps to set
+        :param queue: the queue to put this update into so it can be batch executed later
+        &#34;&#34;&#34;
+        if steps == 0:
+            return
+
+        queue.append({
+            &#34;achievement_id&#34;: achievement_id,
+            &#34;update_type&#34;: &#34;SET_STEPS_AT_LEAST&#34;,
+            &#34;steps&#34;: steps
+        })</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="server.core.service.Service" href="../core/service.html#server.core.service.Service">Service</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.stats.achievement_service.AchievementService.services"><code class="name">var <span class="ident">services</span> : Dict[str, type]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="server.stats.achievement_service.AchievementService.execute_batch_update"><code class="name flex">
+<span>async def <span class="ident">execute_batch_update</span></span>(<span>self, player_id, queue)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Sends a batch of achievement updates.</p>
+<p>:param player_id: the player to update the achievements for
+:param queue: an array of achievement updates in the form::</p>
+<pre><code>[{
+    "achievement_id": string,
+    "update_type": string,
+    "steps": integer
+}]
+
+&lt;code&gt;updateType&lt;/code&gt; being one of "REVEAL", "INCREMENT", "UNLOCK" or "SET_STEPS_AT_LEAST"
+&lt;code&gt;steps&lt;/code&gt; being mandatory only for update type &lt;code&gt; INCREMENT&lt;/code&gt; and &lt;code&gt;SET\_STEPS\_AT\_LEAST&lt;/code&gt;
+</code></pre>
+<p>:return
+If successful, this method returns an array with the following structure::</p>
+<pre><code>[{
+    "achievement_id": string,
+    "current_state": string,
+    "current_steps": integer,
+    "newly_unlocked": boolean
+}]
+</code></pre>
+<p>Else, it returns None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def execute_batch_update(self, player_id, queue):
+    &#34;&#34;&#34;
+    Sends a batch of achievement updates.
+
+    :param player_id: the player to update the achievements for
+    :param queue: an array of achievement updates in the form::
+
+        [{
+            &#34;achievement_id&#34;: string,
+            &#34;update_type&#34;: string,
+            &#34;steps&#34;: integer
+        }]
+
+        ``updateType`` being one of &#34;REVEAL&#34;, &#34;INCREMENT&#34;, &#34;UNLOCK&#34; or &#34;SET_STEPS_AT_LEAST&#34;
+        ``steps`` being mandatory only for update type `` INCREMENT`` and ``SET_STEPS_AT_LEAST``
+
+    :return
+    If successful, this method returns an array with the following structure::
+
+        [{
+            &#34;achievement_id&#34;: string,
+            &#34;current_state&#34;: string,
+            &#34;current_steps&#34;: integer,
+            &#34;newly_unlocked&#34;: boolean
+        }]
+
+    Else, it returns None
+    &#34;&#34;&#34;
+    self._logger.info(&#34;Updating %d achievements for player %d&#34;, len(queue), player_id)
+    try:
+        response, content = await self.api_accessor.update_achievements(queue, player_id)
+    except ConnectionError:
+        self._logger.error(&#34;Failed to update achievements: connection error&#34;)
+        return None
+    if response &lt; 300:
+        &#34;&#34;&#34;
+        Converting the Java API data to the structure mentioned above
+        &#34;&#34;&#34;
+        api_data = content[&#34;data&#34;]
+        achievements_data = []
+        for achievement in api_data:
+            converted_achievement = {
+                &#34;achievement_id&#34;: achievement[&#34;attributes&#34;][&#34;achievementId&#34;],
+                &#34;current_state&#34;: achievement[&#34;attributes&#34;][&#34;state&#34;],
+                &#34;newly_unlocked&#34;: achievement[&#34;attributes&#34;][&#34;newlyUnlocked&#34;]
+            }
+            if &#34;steps&#34; in achievement[&#34;attributes&#34;]:
+                converted_achievement[&#34;current_steps&#34;] = achievement[&#34;attributes&#34;][&#34;steps&#34;]
+
+            achievements_data.append(converted_achievement)
+
+        return achievements_data
+    return None</code></pre>
+</details>
+</dd>
+<dt id="server.stats.achievement_service.AchievementService.increment"><code class="name flex">
+<span>def <span class="ident">increment</span></span>(<span>self, achievement_id, steps, queue)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Enqueues an achievement update that increments an achievement.</p>
+<p>:param achievement_id: the achievement to unlock
+:param steps the number of steps to increment
+:param queue: the queue to put this update into so it can be batch executed later</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def increment(self, achievement_id, steps, queue):
+    &#34;&#34;&#34;
+    Enqueues an achievement update that increments an achievement.
+
+    :param achievement_id: the achievement to unlock
+    :param steps the number of steps to increment
+    :param queue: the queue to put this update into so it can be batch executed later
+    &#34;&#34;&#34;
+    if steps == 0:
+        return
+
+    queue.append({
+        &#34;achievement_id&#34;: achievement_id,
+        &#34;update_type&#34;: &#34;INCREMENT&#34;,
+        &#34;steps&#34;: steps
+    })</code></pre>
+</details>
+</dd>
+<dt id="server.stats.achievement_service.AchievementService.reveal"><code class="name flex">
+<span>def <span class="ident">reveal</span></span>(<span>self, achievement_id, queue)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Enqueues an achievement update that reveals an achievement.</p>
+<p>:param achievement_id: the achievement to unlock
+:param queue: the queue to put this update into so it can be batch executed later</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reveal(self, achievement_id, queue):
+    &#34;&#34;&#34;
+    Enqueues an achievement update that reveals an achievement.
+
+    :param achievement_id: the achievement to unlock
+    :param queue: the queue to put this update into so it can be batch executed later
+    &#34;&#34;&#34;
+    queue.append({
+        &#34;achievement_id&#34;: achievement_id,
+        &#34;update_type&#34;: &#34;REVEAL&#34;
+    })</code></pre>
+</details>
+</dd>
+<dt id="server.stats.achievement_service.AchievementService.set_steps_at_least"><code class="name flex">
+<span>def <span class="ident">set_steps_at_least</span></span>(<span>self, achievement_id, steps, queue)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Enqueues an achievement update that sets the steps to the specified minimum steps.</p>
+<p>:param achievement_id: the achievement to update
+:param steps the minimum number of steps to set
+:param queue: the queue to put this update into so it can be batch executed later</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_steps_at_least(self, achievement_id, steps, queue):
+    &#34;&#34;&#34;
+    Enqueues an achievement update that sets the steps to the specified minimum steps.
+
+    :param achievement_id: the achievement to update
+    :param steps the minimum number of steps to set
+    :param queue: the queue to put this update into so it can be batch executed later
+    &#34;&#34;&#34;
+    if steps == 0:
+        return
+
+    queue.append({
+        &#34;achievement_id&#34;: achievement_id,
+        &#34;update_type&#34;: &#34;SET_STEPS_AT_LEAST&#34;,
+        &#34;steps&#34;: steps
+    })</code></pre>
+</details>
+</dd>
+<dt id="server.stats.achievement_service.AchievementService.unlock"><code class="name flex">
+<span>def <span class="ident">unlock</span></span>(<span>self, achievement_id, queue)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Enqueues an achievement update that reveals an achievement.</p>
+<p>:param achievement_id: the achievement to unlock
+:param queue: the queue to put this update into so it can be batch executed later</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def unlock(self, achievement_id, queue):
+    &#34;&#34;&#34;
+    Enqueues an achievement update that reveals an achievement.
+
+    :param achievement_id: the achievement to unlock
+    :param queue: the queue to put this update into so it can be batch executed later
+    &#34;&#34;&#34;
+    queue.append({
+        &#34;achievement_id&#34;: achievement_id,
+        &#34;update_type&#34;: &#34;UNLOCK&#34;
+    })</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="server.core.service.Service" href="../core/service.html#server.core.service.Service">Service</a></b></code>:
+<ul class="hlist">
+<li><code><a title="server.core.service.Service.initialize" href="../core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
+<li><code><a title="server.core.service.Service.on_connection_lost" href="../core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
+<li><code><a title="server.core.service.Service.shutdown" href="../core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="server.stats" href="index.html">server.stats</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="server.stats.achievement_service.AchievementService" href="#server.stats.achievement_service.AchievementService">AchievementService</a></code></h4>
+<ul class="">
+<li><code><a title="server.stats.achievement_service.AchievementService.execute_batch_update" href="#server.stats.achievement_service.AchievementService.execute_batch_update">execute_batch_update</a></code></li>
+<li><code><a title="server.stats.achievement_service.AchievementService.increment" href="#server.stats.achievement_service.AchievementService.increment">increment</a></code></li>
+<li><code><a title="server.stats.achievement_service.AchievementService.reveal" href="#server.stats.achievement_service.AchievementService.reveal">reveal</a></code></li>
+<li><code><a title="server.stats.achievement_service.AchievementService.services" href="#server.stats.achievement_service.AchievementService.services">services</a></code></li>
+<li><code><a title="server.stats.achievement_service.AchievementService.set_steps_at_least" href="#server.stats.achievement_service.AchievementService.set_steps_at_least">set_steps_at_least</a></code></li>
+<li><code><a title="server.stats.achievement_service.AchievementService.unlock" href="#server.stats.achievement_service.AchievementService.unlock">unlock</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>
