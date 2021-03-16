@@ -125,15 +125,15 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
 
     msg1, msg2 = await asyncio.gather(
-        read_until_command(proto1, "game_launch"),
-        read_until_command(proto2, "game_launch")
+        read_until_command(proto1, "game_launch", timeout=120),
+        read_until_command(proto2, "game_launch", timeout=120)
     )
     # LEGACY BEHAVIOUR: The host does not respond with the appropriate GameState
     # so the match is cancelled. However, the client does not know how to
     # handle `match_cancelled` messages so we still send `game_launch` to
     # prevent the client from showing that it is searching when it really isn't.
-    await read_until_command(proto2, "match_cancelled", timeout=180)
-    await read_until_command(proto1, "match_cancelled", timeout=180)
+    await read_until_command(proto2, "match_cancelled", timeout=120)
+    await read_until_command(proto1, "match_cancelled", timeout=120)
 
     assert msg1["uid"] == msg2["uid"]
     assert msg1["mod"] == "ladder1v1"
