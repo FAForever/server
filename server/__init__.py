@@ -1,11 +1,13 @@
 """
-Forged Alliance Forever server project
+Forged Alliance Forever lobby server.
 
-Copyright (c) 2012-2014 Gael Honorez
-Copyright (c) 2015-2016 Michael Søndergaard <sheeo@faforever.com>
+- Copyright © 2012-2014 Gael Honorez
+- Copyright © 2015-2016 Michael Søndergaard <sheeo@faforever.com>
+- Copyright © 2021 Forged Alliance Forever
 
 Distributed under GPLv3, see license.txt
 """
+
 import asyncio
 import logging
 from typing import Dict, Optional, Set, Tuple, Type
@@ -71,7 +73,7 @@ if config.ENABLE_METRICS:
 
 class ServerInstance(object):
     """
-        A class representing a shared server state. Each ServerInstance may be
+    A class representing a shared server state. Each `ServerInstance` may be
     exposed on multiple ports, but each port will share the same internal server
     state, i.e. the same players, games, etc.
     """
@@ -113,7 +115,14 @@ class ServerInstance(object):
             party_service=self.services["party_service"]
         )
 
-    def write_broadcast(self, message, predicate=lambda conn: conn.authenticated):
+    def write_broadcast(
+        self,
+        message,
+        predicate=lambda conn: conn.authenticated
+    ):
+        """
+        Queue a message to be sent to all connected clients.
+        """
         self._logger.log(TRACE, "]]: %s", message)
         metrics.server_broadcasts.inc()
 

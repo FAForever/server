@@ -18,14 +18,6 @@ class TwilioNTS:
     Creates new twilio NTS tokens
     """
     def __init__(self, sid=None, token=None):
-        """
-        Constructor
-
-        Creates a Twilio rest client
-
-        :param sid str: Twilio Account Sid
-        :param key str: Twilio Auth Token
-        """
         if sid is None:
             sid = config.TWILIO_ACCOUNT_SID  # pragma: no cover
         if token is None:
@@ -39,7 +31,8 @@ class TwilioNTS:
         """
         Fetches token from Twilio
 
-        :param ttl - ttl in seconds
+        # Params
+        - `ttl`: ttl in seconds
         """
         if ttl is None:
             ttl = config.TWILIO_TTL  # pragma: no cover

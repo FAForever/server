@@ -3,7 +3,7 @@ import json
 import logging
 import time
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Set, Tuple
 
 import pymysql
 from sqlalchemy import and_, bindparam
@@ -152,7 +152,7 @@ class Game():
         self._name = value[:max_len]
 
     @property
-    def armies(self):
+    def armies(self) -> FrozenSet[int]:
         return frozenset(
             self.get_player_option(player.id, "Army")
             for player in self.players
@@ -163,7 +163,7 @@ class Game():
         return self._results.is_mutually_agreed_draw(self.armies)
 
     @property
-    def players(self):
+    def players(self) -> FrozenSet[Player]:
         """
         Players in the game
 
@@ -171,7 +171,6 @@ class Game():
           - (LOBBY) The currently connected players
           - (LIVE) Players who participated in the game
           - Empty list
-        :return: frozenset
         """
         if self.state is GameState.LOBBY:
             return frozenset(
@@ -189,11 +188,11 @@ class Game():
             )
 
     @property
-    def connections(self):
+    def connections(self) -> Iterable["GameConnection"]:
         return self._connections.values()
 
     @property
-    def teams(self):
+    def teams(self) -> FrozenSet[int]:
         """
         A set of all teams of this game's players.
         """
@@ -220,10 +219,16 @@ class Game():
     @property
     def is_even(self) -> bool:
         """
-        Returns True iff all teams have the same player count, taking into account that players on the FFA team are in individual teams.
+        If teams are balanced taking into account that players on the FFA team
+        are on individual teams.
+
+        # Returns
+        `True` iff all teams have the same player count.
+
         Special cases:
-         - Returns True if there are zero teams.
-         - Returns False if there is a single team.
+
+        - `True` if there are zero teams.
+        - `False` if there is a single team.
         """
         teams = self.get_team_sets()
         if len(teams) == 0:
@@ -278,11 +283,12 @@ class Game():
     ):
         """
         As computed by the game.
-        :param reporter: player ID
-        :param army: the army number being reported for
-        :param result_type: a string representing the result
-        :param score: an arbitrary number assigned with the result
-        :return:
+
+        # Params
+        - `reporter`: player ID
+        - `army`: the army number being reported for
+        - `result_type`: a string representing the result
+        - `score`: an arbitrary number assigned with the result
         """
         if army not in self.armies:
             self._logger.debug(
@@ -345,9 +351,7 @@ class Game():
 
     def add_game_connection(self, game_connection):
         """
-        Add a game connection to this game
-        :param game_connection:
-        :return:
+        Add a game connection to this game.
         """
         if game_connection.state != GameConnectionState.CONNECTED_TO_HOST:
             raise GameError(
@@ -361,12 +365,10 @@ class Game():
 
     async def remove_game_connection(self, game_connection):
         """
-        Remove a game connection from this game
+        Remove a game connection from this game.
 
-        Will trigger on_game_end if there are no more active connections to the game
-        :param peer:
-        :param
-        :return: None
+        Will trigger `on_game_end` if there are no more active connections to the
+        game.
         """
         if game_connection not in self._connections.values():
             return
@@ -494,7 +496,6 @@ class Game():
     async def load_results(self):
         """
         Load results from the database
-        :return:
         """
         self._results = await GameResultReports.from_db(self._db, self.id)
 
@@ -502,8 +503,8 @@ class Game():
         """
         Persist game results into the database
 
-        Requires the game to have been launched and the appropriate rows to exist in the database.
-        :return:
+        Requires the game to have been launched and the appropriate rows to
+        exist in the database.
         """
 
         self._logger.debug("Saving scores from game %s", self.id)
@@ -559,28 +560,18 @@ class Game():
     def set_player_option(self, player_id: int, key: str, value: Any):
         """
         Set game-associative options for given player, by id
-
-        :param player_id: The given player's id
-        :param key: option key string
-        :param value: option value
         """
         self._player_options[player_id][key] = value
 
     def get_player_option(self, player_id: int, key: str) -> Optional[Any]:
         """
         Retrieve game-associative options for given player, by their uid
-        :param player_id: The id of the player
-        :param key: The name of the option
         """
         return self._player_options[player_id].get(key)
 
     def set_ai_option(self, name, key, value):
         """
-        This is a noop for now
-        :param name: Name of the AI
-        :param key: option key string
-        :param value: option value
-        :return:
+        Set game-associative options for given AI, by name
         """
         if name not in self.AIs:
             self.AIs[name] = {}
@@ -588,12 +579,11 @@ class Game():
 
     def clear_slot(self, slot_index):
         """
-        A somewhat awkward message while we're still half-slot-associated with a bunch of data.
+        A somewhat awkward message while we're still half-slot-associated with
+        a bunch of data.
 
-        Just makes sure that any players associated with this
-        slot aren't assigned an army or team, and deletes any AI's.
-        :param slot_index:
-        :return:
+        Just makes sure that any players associated with this slot aren't
+        assigned an army or team, and deletes any AI's.
         """
         for player in self.players:
             if self.get_player_option(player.id, "StartSpot") == slot_index:
@@ -675,7 +665,6 @@ class Game():
         Mark the game as live.
 
         Freezes the set of active players so they are remembered if they drop.
-        :return: None
         """
         assert self.state is GameState.LOBBY
         self.launched_at = time.time()
@@ -893,10 +882,9 @@ class Game():
         }
 
     @property
-    def map_folder_name(self):
+    def map_folder_name(self) -> str:
         """
         Map folder name
-        :return:
         """
         try:
             return str(self.map_scenario_path.split("/")[2]).lower()

@@ -1,3 +1,7 @@
+"""
+Prometheus metric definitions
+"""
+
 from prometheus_client import Counter, Gauge, Histogram, Info
 
 info = Info("build", "Information collected on server start")

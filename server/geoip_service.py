@@ -1,3 +1,7 @@
+"""
+Manages the GeoIP database
+"""
+
 import asyncio
 import hashlib
 import os
@@ -20,11 +24,11 @@ from .timing import Timer
 @with_logger
 class GeoIpService(Service):
     """
-        Service for managing the GeoIp database. This includes an asyncio crontab
+    Service for managing the GeoIp database. This includes an asyncio crontab
     which periodically checks if the current file is out of date. If it is, then
-    the service will try to download a new file from tue url in ``server.config``.
+    the service will try to download a new file from tue url in `server.config`.
 
-        Provides an interface for getting data out of the database.
+    Provides an interface for getting data out of the database.
     """
 
     def __init__(self):
@@ -53,7 +57,7 @@ class GeoIpService(Service):
 
     def check_geoip_db_file_updated(self):
         """
-            Checks if the local database file has been updated by a server admin
+        Checks if the local database file has been updated by a server admin
         and loads it if it has.
         """
         if not os.path.isfile(self.file_path):
@@ -74,7 +78,7 @@ class GeoIpService(Service):
 
     async def check_update_geoip_db(self) -> None:
         """
-            Check if the geoip database is old and update it if so.
+        Check if the geoip database is old and update it if so.
         """
         if not config.GEO_IP_LICENSE_KEY:
             self._logger.warning(
@@ -108,7 +112,7 @@ class GeoIpService(Service):
 
     async def download_geoip_db(self) -> None:
         """
-            Download the geoip database to a file. If the downloaded file is not
+        Download the geoip database to a file. If the downloaded file is not
         a valid gzip file, then it does NOT overwrite the old file.
         """
         assert config.GEO_IP_LICENSE_KEY is not None
@@ -136,10 +140,11 @@ class GeoIpService(Service):
 
     async def _download_file(self, url: str, license_key: str, file_path: str) -> None:
         """
-            Download a file using aiohttp and save it to a file.
+        Download a file using aiohttp and save it to a file.
 
-            :param url: The url to download from
-            :param file_path: Path to save the file at
+        # Params
+        - `url`: The url to download from
+        - `file_path`: Path to save the file at
         """
 
         chunk_size = 1024
@@ -182,7 +187,7 @@ class GeoIpService(Service):
 
     def load_db(self) -> None:
         """
-            Loads the database into memory.
+        Loads the database into memory.
         """
         try:
             # Set the time first, if the file is corrupted we don't need to try
@@ -199,7 +204,7 @@ class GeoIpService(Service):
 
     def country(self, address: str) -> str:
         """
-            Look up an ip address in the db and return it's country code.
+        Look up an ip address in the db and return it's country code.
         """
         default_value = ""
         if self.db is None:
@@ -220,7 +225,8 @@ def extract_file(tar: tarfile.TarFile, name: str) -> IO[bytes]:
     This is needed because we don't necessarily know the name of it's containing
     folder.
 
-    :raises: TarError if the tar archive does not contain the databse file
+    # Errors
+    Raises `TarError` if the tar archive does not contain the databse file.
     """
     mmdb = next(
         (m for m in tar.getmembers() if

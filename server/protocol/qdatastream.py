@@ -17,14 +17,15 @@ class QDataStreamProtocol(Protocol):
     @staticmethod
     def read_qstring(buffer: bytes, pos: int = 0) -> Tuple[int, str]:
         """
-        Parse a serialized QString from buffer (A bytes like object) at given position
+        Parse a serialized QString from buffer (A bytes like object) at given
+        position.
 
-        Requires len(buffer[pos:]) >= 4.
+        Requires `len(buffer[pos:]) >= 4`.
 
         Pos is added to buffer_pos.
 
-        :type buffer: bytes
-        :return (int, str): (buffer_pos, message)
+        # Returns
+        The new buffer position and the message.
         """
         chunk = buffer[pos:pos + 4]
         rest = buffer[pos + 4:]
@@ -83,9 +84,8 @@ class QDataStreamProtocol(Protocol):
         """
         Read a message from the stream
 
-        On malformed stream, raises IncompleteReadError
-
-        :return dict: Parsed message
+        # Errors
+        Raises `IncompleteReadError` on malformed stream.
         """
         (block_length, ) = struct.unpack("!I", (await self.reader.readexactly(4)))
         block = await self.reader.readexactly(block_length)

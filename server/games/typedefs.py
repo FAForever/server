@@ -30,22 +30,13 @@ class GameType(Enum):
     @staticmethod
     def from_string(value: str) -> Optional["GameType"]:
         """
-        :param value: The string to convert from
-
-        :return: GameType or None if the string is not valid
+        # Returns
+        `GameType` or `None` if the string is not valid
         """
-        return {
-            "coop": GameType.COOP,
-            "custom": GameType.CUSTOM,
-            "matchmaker": GameType.MATCHMAKER,
-        }.get(value)
+        return GameType.__members__.get(value.upper())
 
-    def to_string(self) -> Optional[str]:
-        return {
-            GameType.COOP: "coop",
-            GameType.CUSTOM: "custom",
-            GameType.MATCHMAKER: "matchmaker",
-        }.get(self)
+    def to_string(self) -> str:
+        return self.name.lower()
 
 
 @unique

@@ -1,3 +1,7 @@
+"""
+Manages interactions between players and matchmakers
+"""
+
 import asyncio
 import json
 import random

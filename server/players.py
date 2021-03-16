@@ -1,3 +1,7 @@
+"""
+Player type definitions
+"""
+
 from contextlib import suppress
 from enum import Enum, unique
 from typing import Optional, Union
@@ -108,7 +112,8 @@ class Player:
         """
         Try to send a message to this player.
 
-        :raises: DisconnectedError if the player has disconnected.
+        # Errors
+        Raises `DisconnectedError` if the player has disconnected.
         """
         if self.lobby_connection is None:
             raise DisconnectedError("Player has disconnected!")
@@ -130,7 +135,6 @@ class Player:
     def to_dict(self):
         """
         Return a dictionary representing this player object
-        :return:
         """
 
         def filter_none(t):

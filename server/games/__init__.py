@@ -1,3 +1,7 @@
+"""
+Type definitions for game objects
+"""
+
 from typing import NamedTuple
 
 from .coop import CoopGame

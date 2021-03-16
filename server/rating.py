@@ -1,3 +1,7 @@
+"""
+Type definitions for player ratings
+"""
+
 from typing import DefaultDict, Optional, Tuple, TypeVar, Union
 
 from trueskill import Rating

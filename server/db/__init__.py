@@ -1,3 +1,7 @@
+"""
+Database interaction
+"""
+
 import asyncio
 import logging
 
