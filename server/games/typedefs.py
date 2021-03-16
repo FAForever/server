@@ -14,6 +14,20 @@ class GameState(Enum):
 
 
 @unique
+class GameConnectionState(Enum):
+    INITIALIZING = 0
+    INITIALIZED = 1
+    CONNECTED_TO_HOST = 2
+    ENDED = 3
+
+
+@unique
+class InitMode(Enum):
+    NORMAL_LOBBY = 0
+    AUTO_LOBBY = 1
+
+
+@unique
 class Victory(Enum):
     DEMORALIZATION = 0
     DOMINATION = 1

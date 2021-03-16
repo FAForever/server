@@ -27,15 +27,16 @@ from server.games.game_results import (
 )
 from server.rating import InclusiveRange, RatingType
 
-from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
 from .typedefs import (
     FA,
     BasicGameInfo,
     EndedGameInfo,
     FeaturedModType,
+    GameConnectionState,
     GameState,
     GameType,
+    InitMode,
     ValidityState,
     Victory,
     VisibilityState

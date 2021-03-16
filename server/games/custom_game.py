@@ -1,11 +1,11 @@
 import asyncio
 import time
 
-from server.abc.base_game import InitMode
 from server.decorators import with_logger
 from server.rating import RatingType
 
-from .game import Game, GameType, ValidityState
+from .game import Game
+from .typedefs import GameType, InitMode, ValidityState
 
 
 @with_logger

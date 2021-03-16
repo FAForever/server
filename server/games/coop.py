@@ -1,9 +1,7 @@
 import asyncio
 
-from server.abc.base_game import InitMode
-
 from .game import Game
-from .typedefs import FA, GameType, ValidityState, Victory
+from .typedefs import FA, GameType, InitMode, ValidityState, Victory
 
 
 class CoopGame(Game):

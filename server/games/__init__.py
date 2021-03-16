@@ -10,7 +10,9 @@ from .game import Game, GameError
 from .ladder_game import LadderGame
 from .typedefs import (
     FeaturedModType,
+    GameConnectionState,
     GameState,
+    InitMode,
     ValidityState,
     Victory,
     VisibilityState
@@ -32,8 +34,10 @@ __all__ = (
     "FeaturedMod",
     "FeaturedModType",
     "Game",
+    "GameConnectionState",
     "GameError",
     "GameState",
+    "InitMode",
     "LadderGame",
     "ValidityState",
     "Victory",

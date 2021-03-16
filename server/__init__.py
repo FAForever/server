@@ -56,7 +56,6 @@ __all__ = (
     "RatingService",
     "RatingService",
     "ServerInstance",
-    "abc",
     "control",
     "game_service",
     "protocol",

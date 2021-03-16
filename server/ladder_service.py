@@ -12,7 +12,6 @@ from typing import Dict, List, Optional, Set, Tuple
 import aiocron
 from sqlalchemy import and_, func, select, text, true
 
-from .abc.base_game import InitMode
 from .config import config
 from .core import Service
 from .db import FAFDatabase
@@ -33,7 +32,7 @@ from .db.models import (
 )
 from .decorators import with_logger
 from .game_service import GameService
-from .games import LadderGame
+from .games import InitMode, LadderGame
 from .matchmaker import MapPool, MatchmakerQueue, OnMatchedCallback, Search
 from .players import Player, PlayerState
 from .types import GameLaunchOptions, Map, NeroxisGeneratedMap
