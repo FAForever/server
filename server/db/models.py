@@ -257,7 +257,7 @@ map_pool = Table(
 map_pool_map_version = Table(
     "map_pool_map_version", metadata,
     Column("id",            Integer,        primary_key=True),
-    Column("map_pool_id",   Integer,        ForeignKey("map_pool.id"),      nullable=False),
+    Column("map_pool_id",    Integer,       ForeignKey("map_pool.id"),      nullable=False),
     Column("map_version_id", Integer,       ForeignKey("map_version.id")),
     Column("weight",        Integer,        nullable=False),
     Column("map_params",    Text),
