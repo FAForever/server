@@ -4,7 +4,7 @@ name: Test
 on: [push, pull_request]
 
 env:
-  FAF_DB_VERSION: v110
+  FAF_DB_VERSION: v112
   FLYWAY_VERSION: 7.5.4
 
 jobs:
