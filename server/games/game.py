@@ -118,12 +118,9 @@ class Game():
         self._launch_fut = asyncio.Future()
 
         self._logger.debug("%s created", self)
-        asyncio.get_event_loop().create_task(self.timeout_game())
 
-    async def timeout_game(self):
-        # coop takes longer to set up
-        tm = 30 if self.game_mode != FeaturedModType.COOP else 60
-        await asyncio.sleep(tm)
+    async def timeout_game(self, timeout: int = 30):
+        await asyncio.sleep(timeout)
         if self.state is GameState.INITIALIZING:
             self._is_hosted.set_exception(
                 asyncio.TimeoutError("Game setup timed out")

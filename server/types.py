@@ -1,3 +1,5 @@
+import base64
+import random
 from typing import NamedTuple, Optional
 
 
@@ -27,3 +29,56 @@ class Map(NamedTuple):
     id: int
     name: str
     path: str
+    weight: int = 1
+
+    def get_map(self) -> "Map":
+        return self
+
+
+# FIXME: Use typing.Protocol in python3.8 to subtype with MAP
+class NeroxisGeneratedMap(NamedTuple):
+    id: int
+    version: str
+    spawns: int
+    map_size_pixels: int
+    weight: int = 1
+
+    @classmethod
+    def of(cls, params: dict, weight: int = 1):
+        assert params["type"] == "neroxis"
+
+        map_size_pixels = int(params["size"])
+
+        if map_size_pixels <= 0:
+            raise Exception("Map size is zero or negative")
+
+        if map_size_pixels & (map_size_pixels - 1) != 0:
+            raise Exception("Map size is not a power of 2")
+
+        spawns = int(params["spawns"])
+        if spawns % 2 != 0:
+            raise Exception("spawns is not a multiple of 2")
+
+        version = params["version"]
+        return NeroxisGeneratedMap(
+            -int.from_bytes(bytes(f"{version}_{spawns}_{map_size_pixels}", encoding="ascii"), "big"),
+            version,
+            spawns,
+            map_size_pixels,
+            weight
+        )
+
+    def get_map(self) -> Map:
+        """
+            Generate a map name based on the version and parameters. If invalid parameters are specified
+            hand back None
+        """
+        seed_bytes = random.getrandbits(64).to_bytes(8, "big")
+        size_byte = (self.map_size_pixels // 64).to_bytes(1, "big")
+        spawn_byte = self.spawns.to_bytes(1, "big")
+        option_bytes = spawn_byte + size_byte
+        seed_str = base64.b32encode(seed_bytes).decode("ascii").replace("=", "").lower()
+        option_str = base64.b32encode(option_bytes).decode("ascii").replace("=", "").lower()
+        map_name = f"neroxis_map_generator_{self.version}_{seed_str}_{option_str}"
+        map_path = f"maps/{map_name}.zip"
+        return Map(self.id, map_name, map_path, self.weight)

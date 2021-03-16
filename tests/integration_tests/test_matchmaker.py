@@ -1,4 +1,5 @@
 import asyncio
+import re
 
 import pytest
 from sqlalchemy import select
@@ -38,6 +39,18 @@ async def test_game_launch_message(lobby_server):
     assert msg1["expected_players"] == msg2["expected_players"] == 2
     assert msg1["map_position"] == 1
     assert msg2["map_position"] == 2
+
+
+@fast_forward(70)
+async def test_game_launch_message_map_generator(lobby_server):
+    proto1, proto2 = await queue_players_for_matchmaking(lobby_server, queue_name="neroxis1v1")
+
+    msg1 = await read_until_command(proto1, "game_launch")
+    await open_fa(proto1)
+    msg2 = await read_until_command(proto2, "game_launch")
+
+    assert msg1["mapname"] == msg2["mapname"]
+    assert re.match("neroxis_map_generator_0.0.0_[0-9a-z]{13}_aiea", msg1["mapname"])
 
 
 @fast_forward(15)
@@ -112,15 +125,15 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
 
     msg1, msg2 = await asyncio.gather(
-        read_until_command(proto1, "game_launch"),
-        read_until_command(proto2, "game_launch")
+        read_until_command(proto1, "game_launch", timeout=120),
+        read_until_command(proto2, "game_launch", timeout=120)
     )
     # LEGACY BEHAVIOUR: The host does not respond with the appropriate GameState
     # so the match is cancelled. However, the client does not know how to
     # handle `match_cancelled` messages so we still send `game_launch` to
     # prevent the client from showing that it is searching when it really isn't.
-    await read_until_command(proto2, "match_cancelled")
-    await read_until_command(proto1, "match_cancelled")
+    await read_until_command(proto2, "match_cancelled", timeout=120)
+    await read_until_command(proto1, "match_cancelled", timeout=120)
 
     assert msg1["uid"] == msg2["uid"]
     assert msg1["mod"] == "ladder1v1"
@@ -131,7 +144,7 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
         proto1,
         "game_info",
         state="closed",
-        timeout=5
+        timeout=15
     )
     assert game_service._games == {}
 
@@ -141,7 +154,7 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
         "state": "start",
         "faction": "uef"
     })
-    await read_until_command(proto1, "search_info", state="start", timeout=5)
+    await read_until_command(proto1, "search_info", state="start", timeout=15)
 
 
 @fast_forward(120)
@@ -153,8 +166,8 @@ async def test_game_matchmaking_timeout_guest(lobby_server, game_service):
         client_response(proto2)
     )
     # GameState Launching is never sent
-    await read_until_command(proto2, "match_cancelled")
-    await read_until_command(proto1, "match_cancelled")
+    await read_until_command(proto2, "match_cancelled", timeout=120)
+    await read_until_command(proto1, "match_cancelled", timeout=120)
 
     assert msg1["uid"] == msg2["uid"]
     assert msg1["mod"] == "ladder1v1"
@@ -182,7 +195,8 @@ async def test_game_matchmaking_timeout_guest(lobby_server, game_service):
 async def test_game_matchmaking_cancel(lobby_server):
     proto = await queue_player_for_matchmaking(
         ("ladder1", "ladder1"),
-        lobby_server
+        lobby_server,
+        queue_name="ladder1v1"
     )
 
     await proto.send_message({
@@ -215,7 +229,7 @@ async def test_game_matchmaking_disconnect(lobby_server):
     # One player disconnects before the game has launched
     await proto1.close()
 
-    msg = await read_until_command(proto2, "match_cancelled")
+    msg = await read_until_command(proto2, "match_cancelled", timeout=120)
 
     assert msg == {"command": "match_cancelled"}
 

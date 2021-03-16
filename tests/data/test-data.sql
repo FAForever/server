@@ -53,6 +53,8 @@ DELETE FROM matchmaker_queue_game;
 DELETE FROM matchmaker_queue_map_pool;
 DELETE FROM map_pool;
 DELETE FROM map_pool_map_version;
+DELETE FROM user_group;
+DELETE FROM group_permission_assignment;
 
 SET FOREIGN_KEY_CHECKS=1;
 
@@ -94,11 +96,21 @@ insert into name_history (id, change_time, user_id, previous_name) values
   (1, date_sub(now(), interval 12 month), 1, 'test_maniac'),
   (2, date_sub(now(), interval 1 month), 2, 'YoungDostya');
 
+insert into user_group (id, technical_name, public, name_key) values
+  (1, 'faf_server_administrators', true, 'admins'),
+  (2, 'faf_moderators_global', true, 'mods');
+
 -- Permissions
-insert into lobby_admin (user_id, `group`) values (1,2);
-insert into user_group_assignment(user_id, group_id)  values (1, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'));
-insert into user_group_assignment(user_id, group_id)  values (2, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
-insert into user_group_assignment(user_id, group_id)  values (20, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
+insert into group_permission_assignment (id, group_id, permission_id) values
+  (1, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_BROADCAST_MESSAGE')),
+  (2, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_KICK_SERVER')),
+  (3, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_JOIN_CHANNEL')),
+  (4, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_KICK_SERVER'));
+
+insert into lobby_admin (user_id, `group`) values (1, 2);
+insert into user_group_assignment(user_id, group_id) values (1, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'));
+insert into user_group_assignment(user_id, group_id) values (2, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
+insert into user_group_assignment(user_id, group_id) values (20, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
 
 insert into leaderboard (id, technical_name, name_key, description_key) values
   (1, "global", "leaderboard.global.name", "leaderboard.global.desc"),
@@ -200,7 +212,7 @@ insert into map_version (id, description, max_players, width, height, version, f
   (15, 'SCMP 015', 8, 512, 512, 1, 'maps/scmp_015.zip', 0, 1, 15),
   (16, 'SCMP 015', 8, 512, 512, 2, 'maps/scmp_015.v0002.zip', 0, 1, 15),
   (17, 'SCMP 015', 8, 512, 512, 3, 'maps/scmp_015.v0003.zip', 0, 1, 15),
-  (18, 'Sneaky_Map', 8, 512, 512, 1, "maps/neroxis_map_generator_sneaky_map.zip", 0, 0, 16);
+  (18, 'Sneaky_Map', 8, 512, 512, 1, 'maps/neroxis_map_generator_sneaky_map.zip', 0, 0, 16);
 
 insert into ladder_map (id, idmap) values
   (1,1),
@@ -272,7 +284,8 @@ insert into game_player_stats (gameId, playerId, AI, faction, color, team, place
 insert into matchmaker_queue (id, technical_name, featured_mod_id, leaderboard_id, name_key, team_size, enabled) values
   (1, "ladder1v1", 6, 2, "matchmaker.ladder1v1", 1, true),
   (2, "tmm2v2", 1, 3, "matchmaker.tmm2v2", 2, true),
-  (3, "disabled", 1, 1, "matchmaker.disabled", 4, false);
+  (3, "disabled", 1, 1, "matchmaker.disabled", 4, false),
+  (4, "neroxis1v1", 1, 2, "matchmaker.neroxis", 1, true);
 
 insert into matchmaker_queue_game (matchmaker_queue_id, game_stats_id) values
   (1, 1),
@@ -301,18 +314,26 @@ insert into matchmaker_queue_game (matchmaker_queue_id, game_stats_id) values
 insert into map_pool (id, name) values
   (1, "Ladder1v1 season 1: 5-10k"),
   (2, "Ladder1v1 season 1: all"),
-  (3, "Large maps");
+  (3, "Large maps"),
+  (4, "Generated Maps with Errors");
 
-insert into map_pool_map_version (map_pool_id, map_version_id) values
-  (1, 15), (1, 16), (1, 17),
-  (2, 11), (2, 14), (2, 15), (2, 16), (2, 17),
-  (3, 1),  (3, 2),  (3, 3);
+insert into map_pool_map_version (map_pool_id, map_version_id, weight, map_params) values
+  (1, 15, 1, NULL), (1, 16, 1, NULL), (1, 17, 1, NULL),
+  (2, 11, 1, NULL), (2, 14, 1, NULL), (2, 15, 1, NULL), (2, 16, 1, NULL), (2, 17, 1, NULL),
+  (3, 1, 1, NULL), (3, 2, 1, NULL), (3, 3, 1, NULL),
+  (4, NULL, 1, '{"type": "neroxis", "size": 512, "spawns": 2, "version": "0.0.0"}'),
+  -- Bad Generated Map Parameters should not be included in pool
+  (4, NULL, 1, '{"type": "neroxis", "size": 513, "spawns": 2, "version": "0.0.0"}'),
+  (4, NULL, 1, '{"type": "neroxis", "size": 0, "spawns": 2, "version": "0.0.0"}'),
+  (4, NULL, 1, '{"type": "neroxis", "size": 512, "spawns": 3, "version": "0.0.0"}'),
+  (4, NULL, 1, '{"type": "beroxis", "size": 512, "spawns": 2, "version": "0.0.0"}');
 
 insert into matchmaker_queue_map_pool (matchmaker_queue_id, map_pool_id, min_rating, max_rating) values
   (1, 1, NULL, 800),
   (1, 2, 800, NULL),
   (1, 3, 1000, NULL),
-  (2, 3, NULL, NULL);
+  (2, 3, NULL, NULL),
+  (4, 4, NULL, NULL);
 
 insert into friends_and_foes (user_id, subject_id, `status`) values
   (1, 3, 'FOE'),
