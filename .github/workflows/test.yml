@@ -1,7 +1,12 @@
 # Run unit tests
 name: Test
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
 
 env:
   FAF_DB_VERSION: v112
@@ -74,6 +79,9 @@ jobs:
         with:
           files: coverage.xml
           fail_ci_if_error: true
+
+      - name: Check documentation
+        run: PYTHONWARNINGS='error::UserWarning' pipenv run pdoc3 server >/dev/null
 
   docker-build:
       runs-on: ubuntu-latest

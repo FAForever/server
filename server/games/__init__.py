@@ -1,4 +1,4 @@
-from collections import namedtuple
+from typing import NamedTuple
 
 from .coop import CoopGame
 from .custom_game import CustomGame
@@ -12,10 +12,14 @@ from .typedefs import (
     VisibilityState
 )
 
-FeaturedMod = namedtuple(
-    "FeaturedMod",
-    "id name full_name description publish order"
-)
+
+class FeaturedMod(NamedTuple):
+    id: int
+    name: str
+    full_name: str
+    description: str
+    publish: bool
+    order: int
 
 
 __all__ = (
