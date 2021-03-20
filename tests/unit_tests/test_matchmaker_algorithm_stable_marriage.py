@@ -461,8 +461,8 @@ def test_matchmaker(player_factory):
         pro_alone,
         top_player
     ]
-    matchmaker = stable_marriage.StableMarriageMatchmaker(searches, 1)
-    match_pairs = matchmaker.find()
+    matchmaker = stable_marriage.StableMarriageMatchmaker(1)
+    match_pairs = matchmaker.find(searches)
     match_sets = [set(pair) for pair in match_pairs]
 
     assert {newbie_that_matches1, newbie_that_matches2} in match_sets
@@ -480,8 +480,8 @@ def test_matchmaker_performance(player_factory, bench, caplog):
     searches = [Search([player_factory(1500, 500, ladder_games=1)]) for _ in range(NUM_SEARCHES)]
 
     with bench:
-        matchmaker = stable_marriage.StableMarriageMatchmaker(searches, 1)
-        matchmaker.find()
+        matchmaker = stable_marriage.StableMarriageMatchmaker(1)
+        matchmaker.find(searches)
 
     assert bench.elapsed() < 0.5
 
@@ -491,8 +491,8 @@ def test_matchmaker_random_only(player_factory):
     newbie2 = Search([player_factory(200, 400, ladder_games=9)])
 
     searches = (newbie1, newbie2)
-    matchmaker = stable_marriage.StableMarriageMatchmaker(searches, 1)
-    match_pairs = matchmaker.find()
+    matchmaker = stable_marriage.StableMarriageMatchmaker(1)
+    match_pairs = matchmaker.find(searches)
     match_sets = [set(pair) for pair in match_pairs]
 
     assert {newbie1, newbie2} in match_sets
@@ -504,26 +504,8 @@ def test_find_will_not_match_low_quality_games(player_factory):
 
     searches = [s1, s2]
 
-    matchmaker = stable_marriage.StableMarriageMatchmaker(searches, 1)
-    matches = matchmaker.find()
+    matchmaker = stable_marriage.StableMarriageMatchmaker(1)
+    matches = matchmaker.find(searches)
 
     assert (s1, s2) not in matches
     assert (s2, s1) not in matches
-
-
-def test_find_communicates_failed_attempts(player_factory):
-    s1 = Search([player_factory(100, 64, name="p1")])
-    s2 = Search([player_factory(2000, 64, name="p2")])
-
-    searches = [s1, s2]
-
-    assert s1.failed_matching_attempts == 0
-    assert s2.failed_matching_attempts == 0
-
-    matchmaker = stable_marriage.StableMarriageMatchmaker(searches, 1)
-    matches = matchmaker.find()
-
-    # These searches should not have been matched
-    assert not matches
-    assert s1.failed_matching_attempts == 1
-    assert s2.failed_matching_attempts == 1

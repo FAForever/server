@@ -14,7 +14,7 @@ from .algorithm.bucket_teams import BucketTeamMatchmaker
 from .algorithm.stable_marriage import StableMarriageMatchmaker
 from .map_pool import MapPool
 from .pop_timer import PopTimer
-from .search import Search
+from .search import Search, Match
 
 MatchFoundCallback = Callable[[Search, Search, "MatchmakerQueue"], Any]
 
@@ -65,6 +65,8 @@ class MatchmakerQueue:
         self._is_running = True
 
         self.timer = PopTimer(self)
+
+        self.matchmaker = BucketTeamMatchmaker(self.team_size)
 
     def add_map_pool(
         self,
@@ -157,11 +159,15 @@ class MatchmakerQueue:
 
         # Call self.match on all matches and filter out the ones that were cancelled
         loop = asyncio.get_running_loop()
-        matchmaker = BucketTeamMatchmaker(searches, self.team_size)
         matches = list(filter(
             lambda m: self.match(m[0], m[1]),
-            await loop.run_in_executor(None, matchmaker.find)
+            await loop.run_in_executor(None, self.matchmaker.find, searches)
         ))
+
+        self._register_unmatched_searches(
+            list(self._queue.keys()),
+            matches,
+        )
 
         number_of_matches = len(matches)
         metrics.matches.labels(self.name).set(number_of_matches)
@@ -176,6 +182,31 @@ class MatchmakerQueue:
                 self.on_match_found(search1, search2, self)
             except Exception:
                 self._logger.exception("Match callback raised an exception!")
+
+    def _register_unmatched_searches(
+        self,
+        searches: List[Search],
+        matches: List[Match]
+    ):
+        """
+        Tells all unmatched searches that they went through a failed matching
+        attempt.
+        """
+        searches_set = set(searches)
+        matched_searches = set(
+            search
+            for match in matches
+            for combinedSearch in match
+            for search in combinedSearch.get_original_searches()
+        )
+        unmatched_searches = searches_set - matched_searches
+
+        for search in unmatched_searches:
+            search.register_failed_matching_attempt()
+            self._logger.debug(
+                "Search %s remained unmatched at threshold %f in attempt number %s",
+                search, search.match_threshold, search.failed_matching_attempts
+            )
 
     def push(self, search: Search):
         """ Push the given search object onto the queue """

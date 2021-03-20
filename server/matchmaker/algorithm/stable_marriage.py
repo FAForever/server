@@ -15,6 +15,7 @@ from typing import (
 
 from ...decorators import with_logger
 from ..search import CombinedSearch, Match, Search
+from .matchmaker import Matchmaker
 
 WeightedGraph = Dict[Search, List[Tuple[Search, float]]]
 
@@ -124,40 +125,23 @@ class RandomlyMatchNewbies(MatchmakingPolicy1v1):
         return self.matches
 
 @with_logger
-class Matchmaker(object):
-    def __init__(self, searches: Iterable[Search], team_size: int):
-        self.searches = searches
-        self.matches: Dict[Search, Search] = {}
-        self.team_size = team_size
-
-    def _register_unmatched_searches(self):
-        """
-        Tells all unmatched searches that they went through a failed matching
-        attempt.
-        """
-        for search in self.searches:
-            if search in self.matches:
-                continue
-
-            search.register_failed_matching_attempt()
-            self._logger.debug(
-                "Search %s remained unmatched at threshold %f in attempt number %s",
-                search, search.match_threshold, search.failed_matching_attempts
-            )
-
-
-
-@with_logger
 class StableMarriageMatchmaker(Matchmaker):
-    def __init__(self, searches: Iterable[Search], team_size: int):
-        super().__init__(searches, team_size)
+    """
+    Runs stable marriage to produce a list of matches
+    and afterwards adds random matchups for previously unmatched new players.
+    """
+    def __init__(self, team_size: int):
+        super().__init__(1)
         if team_size != 1:
             self._logger.error(
                 "Invalid team size %i for stable marriage matchmaker will be ignored",
                 team_size
             )
 
-    def find(self) -> List[Match]:
+    def find(self, searches: Iterable[Search]) -> List[Match]:
+        self.searches = searches
+        self.matches: Dict[Search, Search] = {}
+
         self._logger.debug("Matching with stable marriage...")
         searches = list(self.searches)
         if len(searches) < 30:
@@ -172,8 +156,6 @@ class StableMarriageMatchmaker(Matchmaker):
         ]
         self._logger.debug("Matching randomly for remaining newbies...")
         self.matches.update(RandomlyMatchNewbies().find(remaining_searches))
-
-        self._register_unmatched_searches()
 
         return self._remove_duplicates()
 

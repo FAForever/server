@@ -24,14 +24,20 @@ Buckets = Dict[Search, List[Tuple[Search, float]]]
 
 @with_logger
 class BucketTeamMatchmaker(Matchmaker):
-    def find(self) -> List[Match]:
-        teams = self._find_teams()
-        matchmaker1v1 = StableMarriageMatchmaker(teams, 1)
-        return matchmaker1v1.find()
+    """
+    Uses heuristics to group searches of any size
+    into CombinedSearches of team_size
+    and then runs StableMarriageMatchmaker
+    to produce a list of matches from these.
+    """
+    def find(self, searches: Iterable[Search]) -> List[Match]:
+        teams = self._find_teams(searches)
+        matchmaker1v1 = StableMarriageMatchmaker(1)
+        return matchmaker1v1.find(teams)
 
-    def _find_teams(self) -> List[Search]:
+    def _find_teams(self, searches: Iterable[Search]) -> List[Search]:
         full_teams = []
-        unmatched = self.searches
+        unmatched = searches
         need_team = []
         for search in unmatched:
             if len(search.players) == self.team_size:
