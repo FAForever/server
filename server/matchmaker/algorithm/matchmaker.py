@@ -1,20 +1,8 @@
-import itertools
-import math
-import random
-import statistics as stats
-from collections import OrderedDict
-from typing import (
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Set,
-    Tuple,
-)
+from typing import Iterable, List
 
 from ...decorators import with_logger
-from ..search import CombinedSearch, Match, Search
+from ..search import Match, Search
+
 
 @with_logger
 class Matchmaker(object):

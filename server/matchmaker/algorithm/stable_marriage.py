@@ -1,24 +1,19 @@
 import itertools
 import math
-import random
 import statistics as stats
-from collections import OrderedDict
 from typing import (
     Dict,
     Iterable,
-    Iterator,
     List,
-    Optional,
     Set,
     Tuple,
 )
 
 from ...decorators import with_logger
-from ..search import CombinedSearch, Match, Search
+from ..search import Match, Search
 from .matchmaker import Matchmaker
 
 WeightedGraph = Dict[Search, List[Tuple[Search, float]]]
-
 
 
 @with_logger
@@ -41,7 +36,7 @@ class MatchmakingPolicy1v1(object):
 
 class StableMarriage(MatchmakingPolicy1v1):
     def find(self, ranks: WeightedGraph) -> Dict[Search, Search]:
-        """ Perform the stable matching algorithm until a maximal stable matching
+        """Perform the stable matching algorithm until a maximal stable matching
         is found.
         """
         self.matches.clear()
@@ -49,8 +44,9 @@ class StableMarriage(MatchmakingPolicy1v1):
         max_degree = max((len(edges) for edges in ranks.values()), default=0)
         for i in range(max_degree):
             self._logger.debug(
-                "Round %i of stable marriage, currently %i matches", i,
-                len(self.matches) // 2
+                "Round %i of stable marriage, currently %i matches",
+                i,
+                len(self.matches) // 2,
             )
             # Do one round of proposals
             if len(self.matches) == len(ranks):
@@ -69,9 +65,11 @@ class StableMarriage(MatchmakingPolicy1v1):
 
                 self._logger.debug(
                     "Quality between %s and %s: %f thresholds: [%f, %f]",
-                    search, preferred, quality,
+                    search,
+                    preferred,
+                    quality,
                     search.match_threshold,
-                    preferred.match_threshold
+                    preferred.match_threshold,
                 )
 
                 self._propose(search, preferred, quality)
@@ -79,7 +77,7 @@ class StableMarriage(MatchmakingPolicy1v1):
         return self.matches
 
     def _propose(self, search: Search, preferred: Search, new_quality: float):
-        """ An unmatched search proposes to it's preferred opponent.
+        """An unmatched search proposes to it's preferred opponent.
 
         If the opponent is not matched, they become matched. If the opponent is
         matched, but prefers this new search to its current one, then the opponent
@@ -124,18 +122,20 @@ class RandomlyMatchNewbies(MatchmakingPolicy1v1):
 
         return self.matches
 
+
 @with_logger
 class StableMarriageMatchmaker(Matchmaker):
     """
     Runs stable marriage to produce a list of matches
     and afterwards adds random matchups for previously unmatched new players.
     """
+
     def __init__(self, team_size: int):
         super().__init__(1)
         if team_size != 1:
             self._logger.error(
                 "Invalid team size %i for stable marriage matchmaker will be ignored",
-                team_size
+                team_size,
             )
 
     def find(self, searches: Iterable[Search]) -> List[Match]:
@@ -172,7 +172,7 @@ class StableMarriageMatchmaker(Matchmaker):
 class _MatchingGraph:
     @staticmethod
     def build_full(searches: List[Search]) -> WeightedGraph:
-        """ A graph in adjacency list representation, whose nodes are the searches
+        """A graph in adjacency list representation, whose nodes are the searches
         and whose edges are the possible matchings for each node. Checks every
         possible edge for inclusion in the graph.
 
@@ -201,7 +201,7 @@ class _MatchingGraph:
 
     @staticmethod
     def build_fast(searches: List[Search]) -> WeightedGraph:
-        """ Builds approximately the same graph as `build_full`, but does not
+        """Builds approximately the same graph as `build_full`, but does not
         check every possible edge.
 
         Time complexity: O(n*log(n))
@@ -212,7 +212,7 @@ class _MatchingGraph:
         # Now compute quality with `num_to_check` nearby searches on either side
         num_to_check = int(math.log(max(16, len(searches)), 2)) // 2
         for i, search in enumerate(searches):
-            for other in searches[i+1:i+1+num_to_check]:
+            for other in searches[i + 1: i + 1 + num_to_check]:
                 quality = search.quality_with(other)
                 if not _MatchingGraph.is_possible_match(search, other, quality):
                     continue
@@ -231,32 +231,34 @@ class _MatchingGraph:
     def is_possible_match(search: Search, other: Search, quality: float) -> bool:
         log_string = "Quality between %s and %s: %.3f thresholds: [%.3f, %.3f]."
         log_args = (
-            search, other, quality,
-            search.match_threshold, other.match_threshold
+            search,
+            other,
+            quality,
+            search.match_threshold,
+            other.match_threshold,
         )
 
         if search._match_quality_acceptable(other, quality):
             _MatchingGraph._logger.debug(
-                f"{log_string} Will be considered during stable marriage.",
-                *log_args
+                f"{log_string} Will be considered during stable marriage.", *log_args
             )
             return True
         else:
             _MatchingGraph._logger.debug(
-                f"{log_string} Will be discarded for stable marriage.",
-                *log_args
+                f"{log_string} Will be discarded for stable marriage.", *log_args
             )
             return False
 
     @staticmethod
     def remove_isolated(graph: WeightedGraph):
-        """ Remove any searches that have no possible matchings.
+        """Remove any searches that have no possible matchings.
 
         Note: This assumes that edges are undirected. Calling this on directed
-        graphs will produce incorrect results. """
+        graphs will produce incorrect results."""
         for search, neighbors in list(graph.items()):
             if not neighbors:
                 del graph[search]
+
 
 def avg_mean(search: Search) -> float:
     """
@@ -264,4 +266,3 @@ def avg_mean(search: Search) -> float:
     high deviation as 0.
     """
     return stats.mean(mean if dev < 250 else 0 for mean, dev in search.ratings)
-

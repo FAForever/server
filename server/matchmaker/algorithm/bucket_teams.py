@@ -1,7 +1,5 @@
 import itertools
-import math
 import random
-import statistics as stats
 from collections import OrderedDict
 from typing import (
     Dict,
@@ -30,6 +28,7 @@ class BucketTeamMatchmaker(Matchmaker):
     and then runs StableMarriageMatchmaker
     to produce a list of matches from these.
     """
+
     def find(self, searches: Iterable[Search]) -> List[Match]:
         teams = self._find_teams(searches)
         matchmaker1v1 = StableMarriageMatchmaker(1)
@@ -53,9 +52,9 @@ class BucketTeamMatchmaker(Matchmaker):
 
         return full_teams
 
+
 def _make_teams_from_single(
-    searches: List[Search],
-    size: int
+    searches: List[Search], size: int
 ) -> Tuple[List[Search], List[Search]]:
     """
     Make teams in the special case where all players are solo queued (no
@@ -99,7 +98,7 @@ def _make_teams_from_single(
     while len(remaining) >= size:
         if len(remaining) >= 2 * size:
             # enough for at least 2 teams
-            selected = remaining[:2 * size]
+            selected = remaining[: 2 * size]
             new_searches.extend(_distribute(selected, size))
         else:
             selected = remaining[:size]
@@ -144,8 +143,7 @@ def _make_buckets(searches: List[Search]) -> Buckets:
 
 
 def _distribute(
-    items: List[Tuple[Search, float]],
-    team_size: int
+    items: List[Tuple[Search, float]], team_size: int
 ) -> Iterator[CombinedSearch]:
     """
     Distributes a sorted list into teams of a given size in a balanced manner.
@@ -172,10 +170,7 @@ def _distribute(
     return (CombinedSearch(*team) for team in teams)
 
 
-def _make_teams(
-    searches: List[Search],
-    size: int
-) -> Tuple[List[Search], List[Search]]:
+def _make_teams(searches: List[Search], size: int) -> Tuple[List[Search], List[Search]]:
     """
     Tries to group as many searches together into teams of the given size as
     possible. Returns the new grouped searches, and the remaining searches that
@@ -216,9 +211,7 @@ def _make_searches_by_size(searches: List[Search]) -> Dict[int, Set[Search]]:
 
 
 def _make_team_for_search(
-    search: Search,
-    searches_by_size: Dict[int, Set[Search]],
-    size: int
+    search: Search, searches_by_size: Dict[int, Set[Search]], size: int
 ) -> Optional[Search]:
     """
     Match this search with other searches to create a new team of `size`
@@ -252,10 +245,7 @@ def _make_team_for_search(
     return new_search
 
 
-def _uncombine(
-    search: Search,
-    searches_by_size: Dict[int, Set[Search]]
-) -> None:
+def _uncombine(search: Search, searches_by_size: Dict[int, Set[Search]]) -> None:
     """
     Adds all of the searches in search back to their respective spots in
     `searches_by_size`.
@@ -267,6 +257,7 @@ def _uncombine(
 
     for s in search.searches:
         _uncombine(s, searches_by_size)
+
 
 def rotate(list_: List[T], amount: int) -> List[T]:
     return list_[amount:] + list_[:amount]
