@@ -7,7 +7,8 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from server import config
-from server.matchmaker import Search, algorithm
+from server.matchmaker import Search
+from server.matchmaker.algorithm import stable_marriage
 from server.rating import RatingType
 
 from .strategies import st_searches_list
@@ -32,7 +33,7 @@ def player_factory(player_factory):
     return make
 
 
-def add_graph_edge_weights(graph) -> algorithm.stable_marriage.WeightedGraph:
+def add_graph_edge_weights(graph) -> stable_marriage.WeightedGraph:
     return {
         s1: [(s2, s1.quality_with(s2)) for s2 in edges]
         for s1, edges in graph.items()
@@ -40,8 +41,8 @@ def add_graph_edge_weights(graph) -> algorithm.stable_marriage.WeightedGraph:
 
 
 @pytest.mark.parametrize("build_func", (
-    algorithm.stable_marriage._MatchingGraph.build_full,
-    algorithm.stable_marriage._MatchingGraph.build_fast
+    stable_marriage._MatchingGraph.build_full,
+    stable_marriage._MatchingGraph.build_fast
 ))
 def test_build_full_matching_graph(player_factory, build_func):
     # For small numbers of searches, build_full and build_fast should create
@@ -61,8 +62,8 @@ def test_build_full_matching_graph(player_factory, build_func):
 
 
 @pytest.mark.parametrize("build_func", (
-    algorithm.stable_marriage._MatchingGraph.build_full,
-    algorithm.stable_marriage._MatchingGraph.build_fast
+    stable_marriage._MatchingGraph.build_full,
+    stable_marriage._MatchingGraph.build_fast
 ))
 def test_build_matching_graph_different_ranks(player_factory, build_func):
     s1 = Search([player_factory(1500, 64, ladder_games=20)])
@@ -89,7 +90,7 @@ def test_remove_isolated(player_factory):
         s3: [s1]
     })
 
-    algorithm.stable_marriage._MatchingGraph.remove_isolated(ranks)
+    stable_marriage._MatchingGraph.remove_isolated(ranks)
 
     assert ranks == add_graph_edge_weights({
         s1: [s3],
@@ -107,14 +108,14 @@ def test_remove_isolated_2(player_factory):
         s3: []
     }
 
-    algorithm.stable_marriage._MatchingGraph.remove_isolated(ranks)
+    stable_marriage._MatchingGraph.remove_isolated(ranks)
 
     assert ranks == {}
 
 
 @pytest.mark.parametrize("build_func", (
-    algorithm.stable_marriage._MatchingGraph.build_full,
-    algorithm.stable_marriage._MatchingGraph.build_fast
+    stable_marriage._MatchingGraph.build_full,
+    stable_marriage._MatchingGraph.build_fast
 ))
 def test_match_graph_will_not_include_matches_below_threshold_quality(player_factory, build_func):
     s1 = Search([player_factory(1500, 500)])
@@ -130,8 +131,8 @@ def test_match_graph_will_not_include_matches_below_threshold_quality(player_fac
 
 
 @pytest.mark.parametrize("build_func", (
-    algorithm.stable_marriage._MatchingGraph.build_full,
-    algorithm.stable_marriage._MatchingGraph.build_fast
+    stable_marriage._MatchingGraph.build_full,
+    stable_marriage._MatchingGraph.build_fast
 ))
 @given(searches=st_searches_list(max_players=2))
 @settings(deadline=300)
@@ -153,8 +154,8 @@ def test_matching_graph_symmetric(
 
 
 @pytest.mark.parametrize("build_func", (
-    algorithm.stable_marriage._MatchingGraph.build_full,
-    algorithm.stable_marriage._MatchingGraph.build_fast
+    stable_marriage._MatchingGraph.build_full,
+    stable_marriage._MatchingGraph.build_fast
 ))
 @given(searches=st_searches_list(max_players=2))
 @settings(deadline=300)
@@ -169,7 +170,7 @@ def test_stable_marriage_produces_symmetric_matchings(
 
         ranks = build_func(searches)
 
-        matches = algorithm.stable_marriage.StableMarriage().find(ranks)
+        matches = stable_marriage.StableMarriage().find(ranks)
 
         for search in matches:
             opponent = matches[search]
@@ -185,9 +186,9 @@ def test_stable_marriage(player_factory):
     s6 = Search([player_factory(1250, 175, name="p6")])
 
     searches = [s1, s2, s3, s4, s5, s6]
-    ranks = algorithm.stable_marriage._MatchingGraph.build_full(searches)
+    ranks = stable_marriage._MatchingGraph.build_full(searches)
 
-    matches = algorithm.stable_marriage.StableMarriage().find(ranks)
+    matches = stable_marriage.StableMarriage().find(ranks)
 
     assert matches[s1] == s4
     assert matches[s2] == s5
@@ -201,9 +202,9 @@ def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_differ
     old2 = Search([player_factory(2350, 75, name="old2", ladder_games=200)])
 
     searches = [new1, new2, old1, old2]
-    ranks = algorithm.stable_marriage._MatchingGraph.build_full(searches)
+    ranks = stable_marriage._MatchingGraph.build_full(searches)
 
-    matches = algorithm.stable_marriage.StableMarriage().find(ranks)
+    matches = stable_marriage.StableMarriage().find(ranks)
 
     assert matches[new1] == new2
     assert matches[old1] == old2
@@ -218,9 +219,9 @@ def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_same_m
     old2 = Search([player_factory(500, 75, name="old2", ladder_games=100)])
 
     searches = [new1, new2, old1, old2]
-    ranks = algorithm.stable_marriage._MatchingGraph.build_full(searches)
+    ranks = stable_marriage._MatchingGraph.build_full(searches)
 
-    matches = algorithm.stable_marriage.StableMarriage().find(ranks)
+    matches = stable_marriage.StableMarriage().find(ranks)
 
     assert matches[new1] == new2
     assert matches[old1] == old2
@@ -235,9 +236,9 @@ def test_stable_marriage_better_than_greedy(player_factory):
     s6 = Search([player_factory(2400, 64, name="p6")])
 
     searches = [s1, s2, s3, s4, s5, s6]
-    ranks = algorithm.stable_marriage._MatchingGraph.build_full(searches)
+    ranks = stable_marriage._MatchingGraph.build_full(searches)
 
-    matches = algorithm.stable_marriage.StableMarriage().find(ranks)
+    matches = stable_marriage.StableMarriage().find(ranks)
 
     # Note that the most balanced configuration would be
     # (s1, s6)  quality: 0.93
@@ -258,9 +259,9 @@ def test_stable_marriage_unmatch(player_factory):
     s4 = Search([player_factory(505, 64, name="p4")])
 
     searches = [s1, s2, s3, s4]
-    ranks = algorithm.stable_marriage._MatchingGraph.build_full(searches)
+    ranks = stable_marriage._MatchingGraph.build_full(searches)
 
-    matches = algorithm.stable_marriage.StableMarriage().find(ranks)
+    matches = stable_marriage.StableMarriage().find(ranks)
 
     assert matches[s1] == s4  # quality: 0.96622
     assert matches[s2] == s3  # quality: 0.96623
@@ -275,7 +276,7 @@ def test_random_newbie_matching_is_symmetric(player_factory):
     s6 = Search([player_factory(600, 500, name="p6", ladder_games=5)])
 
     searches = [s1, s2, s3, s4, s5, s6]
-    matches = algorithm.stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert matches
 
@@ -291,7 +292,7 @@ def test_newbies_are_forcefully_matched_with_newbies(player_factory):
     pro.register_failed_matching_attempt()
 
     searches = [newbie1, pro, newbie2]
-    matches = algorithm.stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert matches[newbie1] == newbie2
     assert matches[newbie2] == newbie1
@@ -308,7 +309,7 @@ def test_newbie_team_matched_with_newbie_team(player_factory):
     ])
 
     searches = [newbie1, newbie2]
-    matches = algorithm.stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert matches[newbie1] == newbie2
     assert matches[newbie2] == newbie1
@@ -325,7 +326,7 @@ def test_partial_newbie_team_matched_with_newbie_team(player_factory):
     ])
 
     searches = [partial_newbie, newbie]
-    matches = algorithm.stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert matches[partial_newbie] == newbie
     assert matches[newbie] == partial_newbie
@@ -342,7 +343,7 @@ def test_newbie_and_top_rated_team_not_matched_randomly(player_factory):
     ])
 
     searches = [newbie_and_top_rated, newbie]
-    matches = algorithm.stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert not matches
 
@@ -352,12 +353,12 @@ def test_unmatched_newbies_forcefully_match_pros(player_factory):
     pro = Search([player_factory(1400, 10, ladder_games=100)])
 
     searches = [newbie, pro]
-    matches = algorithm.stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
     # No match if the pro is on their first attempt
     assert len(matches) == 0
 
     pro.register_failed_matching_attempt()
-    matches = algorithm.stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
     assert len(matches) == 2
 
 
@@ -372,12 +373,12 @@ def test_newbie_team_matched_with_pro_team(player_factory):
     ])
 
     searches = [newbie, pro]
-    matches = algorithm.stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
     # No match if the pros are on their first attempt
     assert len(matches) == 0
 
     pro.register_failed_matching_attempt()
-    matches = algorithm.stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
     assert len(matches) == 2
 
 
@@ -387,7 +388,7 @@ def test_unmatched_newbies_do_not_forcefully_match_top_players(player_factory):
     top_player.register_failed_matching_attempt()
 
     searches = [newbie, top_player]
-    matches = algorithm.stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert len(matches) == 0
 
@@ -404,7 +405,7 @@ def test_newbie_team_dos_not_match_with_top_players_team(player_factory):
     top_player.register_failed_matching_attempt()
 
     searches = [newbie, top_player]
-    matches = algorithm.stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert len(matches) == 0
 
@@ -418,7 +419,7 @@ def unmatched_newbie_teams_do_not_forcefully_match_pros(player_factory):
     pro.register_failed_matching_attempt()
 
     searches = [newbie_team, pro]
-    matches = algorithm.stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert len(matches) == 0
 
@@ -431,7 +432,7 @@ def test_odd_number_of_unmatched_newbies(player_factory):
     pro.register_failed_matching_attempt()
 
     searches = [newbie1, pro, newbie2, newbie3]
-    matches = algorithm.stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert len(matches) == 4
 
@@ -460,7 +461,7 @@ def test_matchmaker(player_factory):
         pro_alone,
         top_player
     ]
-    matchmaker = algorithm.stable_marriage.StableMarriageMatchmaker(searches)
+    matchmaker = stable_marriage.StableMarriageMatchmaker(searches, 1)
     match_pairs = matchmaker.find()
     match_sets = [set(pair) for pair in match_pairs]
 
@@ -479,7 +480,7 @@ def test_matchmaker_performance(player_factory, bench, caplog):
     searches = [Search([player_factory(1500, 500, ladder_games=1)]) for _ in range(NUM_SEARCHES)]
 
     with bench:
-        matchmaker = algorithm.stable_marriage.StableMarriageMatchmaker(searches)
+        matchmaker = stable_marriage.StableMarriageMatchmaker(searches, 1)
         matchmaker.find()
 
     assert bench.elapsed() < 0.5
@@ -490,7 +491,7 @@ def test_matchmaker_random_only(player_factory):
     newbie2 = Search([player_factory(200, 400, ladder_games=9)])
 
     searches = (newbie1, newbie2)
-    matchmaker = algorithm.stable_marriage.StableMarriageMatchmaker(searches)
+    matchmaker = stable_marriage.StableMarriageMatchmaker(searches, 1)
     match_pairs = matchmaker.find()
     match_sets = [set(pair) for pair in match_pairs]
 
@@ -503,7 +504,7 @@ def test_find_will_not_match_low_quality_games(player_factory):
 
     searches = [s1, s2]
 
-    matchmaker = algorithm.stable_marriage.StableMarriageMatchmaker(searches)
+    matchmaker = stable_marriage.StableMarriageMatchmaker(searches, 1)
     matches = matchmaker.find()
 
     assert (s1, s2) not in matches
@@ -519,7 +520,7 @@ def test_find_communicates_failed_attempts(player_factory):
     assert s1.failed_matching_attempts == 0
     assert s2.failed_matching_attempts == 0
 
-    matchmaker = algorithm.stable_marriage.StableMarriageMatchmaker(searches)
+    matchmaker = stable_marriage.StableMarriageMatchmaker(searches, 1)
     matches = matchmaker.find()
 
     # These searches should not have been matched

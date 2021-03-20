@@ -16,30 +16,38 @@ from typing import (
 
 from ...decorators import with_logger
 from ..search import CombinedSearch, Match, Search
+from .stable_marriage import Matchmaker, StableMarriageMatchmaker, avg_mean
 
 T = TypeVar("T")
 Buckets = Dict[Search, List[Tuple[Search, float]]]
 
 
-def make_matches(searches: Iterable[Search]) -> List[Match]:
-    """
-    Main entrypoint for the matchmaker algorithm.
-    """
-    return Matchmaker(searches).find()
+@with_logger
+class BucketTeamMatchmaker(Matchmaker):
+    def find(self) -> List[Match]:
+        teams = self._find_teams()
+        matchmaker1v1 = StableMarriageMatchmaker(teams, 1)
+        return matchmaker1v1.find()
 
-def avg_mean(search: Search) -> float:
-    """
-    Get the average of all trueskill means for a search counting means with
-    high deviation as 0.
-    """
-    return stats.mean(mean if dev < 250 else 0 for mean, dev in search.ratings)
+    def _find_teams(self) -> List[Search]:
+        full_teams = []
+        unmatched = self.searches
+        need_team = []
+        for search in unmatched:
+            if len(search.players) == self.team_size:
+                full_teams.append(search)
+            else:
+                need_team.append(search)
 
+        if all(len(s.players) == 1 for s in need_team):
+            teams, unmatched = _make_teams_from_single(need_team, self.team_size)
+        else:
+            teams, unmatched = _make_teams(need_team, self.team_size)
+        full_teams.extend(teams)
 
-def rotate(list_: List[T], amount: int) -> List[T]:
-    return list_[amount:] + list_[:amount]
+        return full_teams
 
-
-def make_teams_from_single(
+def _make_teams_from_single(
     searches: List[Search],
     size: int
 ) -> Tuple[List[Search], List[Search]]:
@@ -158,7 +166,7 @@ def _distribute(
     return (CombinedSearch(*team) for team in teams)
 
 
-def make_teams(
+def _make_teams(
     searches: List[Search],
     size: int
 ) -> Tuple[List[Search], List[Search]]:
@@ -253,3 +261,6 @@ def _uncombine(
 
     for s in search.searches:
         _uncombine(s, searches_by_size)
+
+def rotate(list_: List[T], amount: int) -> List[T]:
+    return list_[amount:] + list_[:amount]

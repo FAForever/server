@@ -8,6 +8,7 @@ from hypothesis import strategies as st
 
 from server import config
 from server.matchmaker import Search, algorithm
+from server.matchmaker.algorithm.bucket_teams import BucketTeamMatchmaker, _make_teams, _make_teams_from_single
 from server.rating import RatingType
 
 from .strategies import st_searches_list
@@ -32,8 +33,8 @@ def player_factory(player_factory):
     return make
 
 @pytest.mark.parametrize("make_teams_func", (
-    algorithm.bucket_teams.make_teams,
-    algorithm.bucket_teams.make_teams_from_single
+    _make_teams,
+    _make_teams_from_single
 ))
 @given(
     searches=st_searches_list(max_players=1),
@@ -63,7 +64,7 @@ def test_make_teams_single_2v2_large_pool(player_factory):
         Search([player_factory(random.uniform(450, 550), 10, name=f"p{i}")])
         for i in range(num)
     ]
-    matched, non_matched = algorithm.bucket_teams.make_teams_from_single(searches, size=2)
+    matched, non_matched = _make_teams_from_single(searches, size=2)
 
     assert matched != []
     assert non_matched == []
@@ -95,7 +96,7 @@ def test_make_teams_single_2v2_small_pool(player_factory):
                 [player_factory(random.gauss(500, 5), 10, name=f"r{i}")]
             ) for i in range(2)
         ]
-        matched, non_matched = algorithm.bucket_teams.make_teams_from_single(searches, size=2)
+        matched, non_matched = _make_teams_from_single(searches, size=2)
 
         assert matched != []
         assert non_matched == []
@@ -205,7 +206,7 @@ def test_make_teams_5(player_factory):
 def do_test_make_teams(teams, team_size, total_unmatched, unmatched_sizes):
     searches = [Search(t) for t in teams]
 
-    matched, non_matched = algorithm.bucket_teams.make_teams(searches, size=team_size)
+    matched, non_matched = _make_teams(searches, size=team_size)
     players_non_matched = [s.players for s in non_matched]
 
     for s in matched:

@@ -10,7 +10,7 @@ import server.metrics as metrics
 from ..asyncio_extensions import SpinLock, synchronized
 from ..decorators import with_logger
 from ..players import PlayerState
-from .algorithm.bucket_teams import make_teams, make_teams_from_single
+from .algorithm.bucket_teams import BucketTeamMatchmaker
 from .algorithm.stable_marriage import StableMarriageMatchmaker
 from .map_pool import MapPool
 from .pop_timer import PopTimer
@@ -153,11 +153,11 @@ class MatchmakerQueue:
         if self.num_players < 2 * self.team_size:
             return
 
-        searches = self.find_teams()
+        searches = list(self._queue.keys())
 
         # Call self.match on all matches and filter out the ones that were cancelled
         loop = asyncio.get_running_loop()
-        matchmaker = StableMarriageMatchmaker(searches)
+        matchmaker = BucketTeamMatchmaker(searches, self.team_size)
         matches = list(filter(
             lambda m: self.match(m[0], m[1]),
             await loop.run_in_executor(None, matchmaker.find)
@@ -176,24 +176,6 @@ class MatchmakerQueue:
                 self.on_match_found(search1, search2, self)
             except Exception:
                 self._logger.exception("Match callback raised an exception!")
-
-    def find_teams(self) -> List[Search]:
-        searches = []
-        unmatched = list(self._queue.keys())
-        need_team = []
-        for search in unmatched:
-            if len(search.players) == self.team_size:
-                searches.append(search)
-            else:
-                need_team.append(search)
-
-        if all(len(s.players) == 1 for s in need_team):
-            teams, unmatched = make_teams_from_single(need_team, self.team_size)
-        else:
-            teams, unmatched = make_teams(need_team, self.team_size)
-        searches.extend(teams)
-
-        return searches
 
     def push(self, search: Search):
         """ Push the given search object onto the queue """

@@ -125,9 +125,10 @@ class RandomlyMatchNewbies(MatchmakingPolicy1v1):
 
 @with_logger
 class Matchmaker(object):
-    def __init__(self, searches: Iterable[Search]):
+    def __init__(self, searches: Iterable[Search], team_size: int):
         self.searches = searches
         self.matches: Dict[Search, Search] = {}
+        self.team_size = team_size
 
     def _register_unmatched_searches(self):
         """
@@ -148,6 +149,14 @@ class Matchmaker(object):
 
 @with_logger
 class StableMarriageMatchmaker(Matchmaker):
+    def __init__(self, searches: Iterable[Search], team_size: int):
+        super().__init__(searches, team_size)
+        if team_size != 1:
+            self._logger.error(
+                "Invalid team size %i for stable marriage matchmaker will be ignored",
+                team_size
+            )
+
     def find(self) -> List[Match]:
         self._logger.debug("Matching with stable marriage...")
         searches = list(self.searches)
