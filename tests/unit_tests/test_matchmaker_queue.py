@@ -424,7 +424,7 @@ async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
 async def test_find_matches_synchronized(queue_factory):
     is_matching = False
 
-    def make_matches(*args):
+    def find(*args):
         nonlocal is_matching
 
         assert not is_matching, "Function call not synchronized"
@@ -436,8 +436,8 @@ async def test_find_matches_synchronized(queue_factory):
         return []
 
     with mock.patch(
-        "server.matchmaker.matchmaker_queue.make_matches",
-        make_matches
+        "server.matchmaker.matchmaker_queue.StableMarriageMatchmaker.find",
+        find
     ):
         queues = [queue_factory(f"Queue{i}") for i in range(5)]
         # Ensure that find_matches does not short circuit

@@ -10,7 +10,8 @@ import server.metrics as metrics
 from ..asyncio_extensions import SpinLock, synchronized
 from ..decorators import with_logger
 from ..players import PlayerState
-from .algorithm import make_matches, make_teams, make_teams_from_single
+from .algorithm.bucket_teams import make_teams, make_teams_from_single
+from .algorithm.stable_marriage import StableMarriageMatchmaker
 from .map_pool import MapPool
 from .pop_timer import PopTimer
 from .search import Search
@@ -156,9 +157,10 @@ class MatchmakerQueue:
 
         # Call self.match on all matches and filter out the ones that were cancelled
         loop = asyncio.get_running_loop()
+        matchmaker = StableMarriageMatchmaker(searches)
         matches = list(filter(
             lambda m: self.match(m[0], m[1]),
-            await loop.run_in_executor(None, make_matches, searches)
+            await loop.run_in_executor(None, matchmaker.find)
         ))
 
         number_of_matches = len(matches)
