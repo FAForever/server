@@ -11,10 +11,9 @@ from ..asyncio_extensions import SpinLock, synchronized
 from ..decorators import with_logger
 from ..players import PlayerState
 from .algorithm.bucket_teams import BucketTeamMatchmaker
-from .algorithm.stable_marriage import StableMarriageMatchmaker
 from .map_pool import MapPool
 from .pop_timer import PopTimer
-from .search import Search, Match
+from .search import Match, Search
 
 MatchFoundCallback = Callable[[Search, Search, "MatchmakerQueue"], Any]
 

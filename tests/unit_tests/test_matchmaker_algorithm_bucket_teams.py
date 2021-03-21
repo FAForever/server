@@ -1,14 +1,16 @@
-import logging
 import math
 import random
 
 import pytest
-from hypothesis import given, settings
+from hypothesis import given
 from hypothesis import strategies as st
 
 from server import config
 from server.matchmaker import Search, algorithm
-from server.matchmaker.algorithm.bucket_teams import BucketTeamMatchmaker, _make_teams, _make_teams_from_single
+from server.matchmaker.algorithm.bucket_teams import (
+    _make_teams,
+    _make_teams_from_single
+)
 from server.rating import RatingType
 
 from .strategies import st_searches_list
@@ -31,6 +33,7 @@ def player_factory(player_factory):
         )
         return player
     return make
+
 
 @pytest.mark.parametrize("make_teams_func", (
     _make_teams,

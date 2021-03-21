@@ -1,15 +1,11 @@
 import logging
-import math
-import random
 
 import pytest
 from hypothesis import given, settings
-from hypothesis import strategies as st
 
 from server import config
 from server.matchmaker import Search
 from server.matchmaker.algorithm import stable_marriage
-from server.rating import RatingType
 
 from .strategies import st_searches_list
 

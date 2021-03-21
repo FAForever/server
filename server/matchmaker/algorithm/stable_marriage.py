@@ -1,13 +1,7 @@
 import itertools
 import math
 import statistics as stats
-from typing import (
-    Dict,
-    Iterable,
-    List,
-    Set,
-    Tuple,
-)
+from typing import Dict, Iterable, List, Set, Tuple
 
 from ...decorators import with_logger
 from ..search import Match, Search
