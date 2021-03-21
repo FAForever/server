@@ -8,6 +8,7 @@ from hypothesis import strategies as st
 from server import config
 from server.matchmaker import Search, algorithm
 from server.matchmaker.algorithm.bucket_teams import (
+    BucketTeamMatchmaker,
     _make_teams,
     _make_teams_from_single
 )
@@ -21,8 +22,8 @@ def player_factory(player_factory):
     def make(
         mean: int = 1500,
         deviation: int = 500,
-        ladder_games: int = config.NEWBIE_MIN_GAMES+1,
-        name=None
+        ladder_games: int = config.NEWBIE_MIN_GAMES + 1,
+        name=None,
     ):
         """Make a player with the given ratings"""
         player = player_factory(
@@ -32,16 +33,14 @@ def player_factory(player_factory):
             lobby_connection_spec=None,
         )
         return player
+
     return make
 
 
-@pytest.mark.parametrize("make_teams_func", (
-    _make_teams,
-    _make_teams_from_single
-))
+@pytest.mark.parametrize("make_teams_func", (_make_teams, _make_teams_from_single))
 @given(
     searches=st_searches_list(max_players=1),
-    size=st.integers(min_value=1, max_value=10)
+    size=st.integers(min_value=1, max_value=10),
 )
 def test_make_teams_single_correct_size(searches, size, make_teams_func):
     matched, non_matched = make_teams_func(searches, size)
@@ -90,14 +89,12 @@ def test_make_teams_single_2v2_small_pool(player_factory):
     # Try a bunch of times so it is unlikely to pass by chance
     for _ in range(20):
         searches = [
-            Search(
-                [player_factory(random.gauss(1000, 5), 10, name=f"p{i}")]
-            ) for i in range(2)
+            Search([player_factory(random.gauss(1000, 5), 10, name=f"p{i}")])
+            for i in range(2)
         ]
         searches += [
-            Search(
-                [player_factory(random.gauss(500, 5), 10, name=f"r{i}")]
-            ) for i in range(2)
+            Search([player_factory(random.gauss(500, 5), 10, name=f"r{i}")])
+            for i in range(2)
         ]
         matched, non_matched = _make_teams_from_single(searches, size=2)
 
@@ -117,11 +114,7 @@ def test_make_teams_single_2v2_small_pool(player_factory):
 def test_make_buckets_performance(bench, player_factory):
     NUM_SEARCHES = 1000
     searches = [
-        Search([player_factory(
-            random.gauss(1500, 200),
-            500,
-            ladder_games=1
-        )])
+        Search([player_factory(random.gauss(1500, 200), 500, ladder_games=1)])
         for _ in range(NUM_SEARCHES)
     ]
 
@@ -133,77 +126,65 @@ def test_make_buckets_performance(bench, player_factory):
 
 def test_make_teams_1(player_factory):
     teams = [
-        [player_factory(name="p1"), player_factory(name="p2"), player_factory(name="p3")],
+        [
+            player_factory(name="p1"),
+            player_factory(name="p2"),
+            player_factory(name="p3"),
+        ],
         [player_factory(name="p4"), player_factory(name="p5")],
         [player_factory(name="p6"), player_factory(name="p7")],
         [player_factory(name="p8")],
         [player_factory(name="p9")],
         [player_factory(name="p10")],
-        [player_factory(name="p11")]
+        [player_factory(name="p11")],
     ]
-    do_test_make_teams(
-        teams,
-        team_size=3,
-        total_unmatched=2,
-        unmatched_sizes={1}
-    )
+    do_test_make_teams(teams, team_size=3, total_unmatched=2, unmatched_sizes={1})
 
 
 def test_make_teams_2(player_factory):
     teams = [
-        [player_factory(name="p1"), player_factory(name="p2"), player_factory(name="p3")],
+        [
+            player_factory(name="p1"),
+            player_factory(name="p2"),
+            player_factory(name="p3"),
+        ],
         [player_factory(name="p4"), player_factory(name="p5")],
         [player_factory(name="p6"), player_factory(name="p7")],
         [player_factory(name="p8")],
         [player_factory(name="p9")],
         [player_factory(name="p10")],
-        [player_factory(name="p11")]
+        [player_factory(name="p11")],
     ]
-    do_test_make_teams(
-        teams,
-        team_size=2,
-        total_unmatched=1,
-        unmatched_sizes={3}
-    )
+    do_test_make_teams(teams, team_size=2, total_unmatched=1, unmatched_sizes={3})
 
 
 def test_make_teams_3(player_factory):
-    teams = [
-        [player_factory(name=f"p{i+1}")] for i in range(9)
-    ]
-    do_test_make_teams(
-        teams,
-        team_size=4,
-        total_unmatched=1,
-        unmatched_sizes={1}
-    )
+    teams = [[player_factory(name=f"p{i+1}")] for i in range(9)]
+    do_test_make_teams(teams, team_size=4, total_unmatched=1, unmatched_sizes={1})
 
 
 def test_make_teams_4(player_factory):
     teams = [[player_factory()] for i in range(9)]
     teams += [[player_factory(), player_factory()] for i in range(5)]
     teams += [[player_factory(), player_factory(), player_factory()] for i in range(15)]
-    teams += [[player_factory(), player_factory(), player_factory(), player_factory()] for i in range(4)]
-    do_test_make_teams(
-        teams,
-        team_size=4,
-        total_unmatched=7,
-        unmatched_sizes={3, 2}
-    )
+    teams += [
+        [player_factory(), player_factory(), player_factory(), player_factory()]
+        for i in range(4)
+    ]
+    do_test_make_teams(teams, team_size=4, total_unmatched=7, unmatched_sizes={3, 2})
 
 
 def test_make_teams_5(player_factory):
     teams = [
-        [player_factory(name="p1"), player_factory(name="p2"), player_factory(name="p3")],
+        [
+            player_factory(name="p1"),
+            player_factory(name="p2"),
+            player_factory(name="p3"),
+        ],
         [player_factory(name="p4"), player_factory(name="p5")],
         [player_factory(name="p6"), player_factory(name="p7")],
     ]
-    do_test_make_teams(
-        teams,
-        team_size=4,
-        total_unmatched=1,
-        unmatched_sizes={3}
-    )
+    do_test_make_teams(teams, team_size=4, total_unmatched=1, unmatched_sizes={3})
 
 
 def do_test_make_teams(teams, team_size, total_unmatched, unmatched_sizes):
@@ -224,7 +205,9 @@ def test_distribute_pairs_1(player_factory):
     searches = [(Search([player]), 0) for player in players]
     p1, p2, p3, p4 = players
 
-    grouped = [search.players for search in algorithm.bucket_teams._distribute(searches, 2)]
+    grouped = [
+        search.players for search in algorithm.bucket_teams._distribute(searches, 2)
+    ]
     assert grouped == [[p1, p4], [p2, p3]]
 
 
@@ -233,7 +216,9 @@ def test_distribute_pairs_2(player_factory):
     searches = [(Search([player]), 0) for player in players]
     p1, p2, p3, p4, p5, p6, p7, p8 = players
 
-    grouped = [search.players for search in algorithm.bucket_teams._distribute(searches, 2)]
+    grouped = [
+        search.players for search in algorithm.bucket_teams._distribute(searches, 2)
+    ]
     assert grouped == [[p1, p4], [p2, p3], [p5, p8], [p6, p7]]
 
 
@@ -242,6 +227,59 @@ def test_distribute_triples(player_factory):
     searches = [(Search([player]), 0) for player in players]
     p1, p2, p3, p4, p5, p6 = players
 
-    grouped = [search.players for search in algorithm.bucket_teams._distribute(searches, 3)]
+    grouped = [
+        search.players for search in algorithm.bucket_teams._distribute(searches, 3)
+    ]
 
     assert grouped == [[p1, p3, p6], [p2, p4, p5]]
+
+
+def test_BucketTeamMatchmaker_1v1(player_factory):
+    num_players = 6
+    players = [player_factory(1500, 500, name=f"p{i+1}") for i in range(num_players)]
+    searches = [Search([player]) for player in players]
+
+    team_size = 1
+    matchmaker = BucketTeamMatchmaker(team_size)
+    matches = matchmaker.find(searches)
+
+    assert len(matches) == num_players / 2 / team_size
+
+
+def test_BucketTeamMatchmaker_2v2_single_searches(player_factory):
+    num_players = 12
+    players = [player_factory(1500, 500, name=f"p{i+1}") for i in range(num_players)]
+    searches = [Search([player]) for player in players]
+
+    team_size = 2
+    matchmaker = BucketTeamMatchmaker(team_size)
+    matches = matchmaker.find(searches)
+
+    assert len(matches) == num_players / 2 / team_size
+
+
+def test_BucketTeamMatchmaker_2v2_full_party_searches(player_factory):
+    num_players = 12
+    players = [player_factory(1500, 500, name=f"p{i+1}") for i in range(num_players)]
+    searches = [Search([players[i], players[i + 1]]) for i in range(0, len(players), 2)]
+
+    team_size = 2
+    matchmaker = BucketTeamMatchmaker(team_size)
+    matches = matchmaker.find(searches)
+
+    assert len(matches) == num_players / 2 / team_size
+
+
+def test_BucketTeammatchmaker_2v2_mixed_party_sizes(player_factory):
+    num_players = 24
+    players = [player_factory(1500, 500, name=f"p{i+1}") for i in range(num_players)]
+    searches = [
+        Search([players[i], players[i + 1]]) for i in range(0, len(players) // 2, 2)
+    ]
+    searches.extend([Search([player]) for player in players[len(players) // 2 :]])
+
+    team_size = 2
+    matchmaker = BucketTeamMatchmaker(team_size)
+    matches = matchmaker.find(searches)
+
+    assert len(matches) == num_players / 2 / team_size
