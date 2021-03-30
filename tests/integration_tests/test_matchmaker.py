@@ -234,6 +234,44 @@ async def test_game_matchmaking_disconnect(lobby_server):
     assert msg == {"command": "match_cancelled"}
 
 
+@fast_forward(130)
+async def test_game_matchmaking_close_fa_and_requeue(lobby_server):
+    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+
+    _, _ = await asyncio.gather(
+        client_response(proto1),
+        client_response(proto2)
+    )
+    # Players can't connect to eachother, so one of them abandons the game and
+    # joins the queue again
+    await proto1.send_message({
+        "command": "GameState",
+        "target": "game",
+        "args": ["Ended"]
+    })
+    await proto1.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "queue": "ladder1v1"
+    })
+    await read_until_command(proto1, "search_info", state="start", timeout=5)
+
+    # The other player waits for the game to time out and then queues again
+    await read_until_command(proto2, "match_cancelled", timeout=120)
+    await proto2.send_message({
+        "command": "GameState",
+        "target": "game",
+        "args": ["Ended"]
+    })
+    await proto2.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "queue": "ladder1v1"
+    })
+
+    await read_until_command(proto1, "match_found", timeout=5)
+
+
 @fast_forward(10)
 async def test_matchmaker_info_message(lobby_server, mocker):
     mocker.patch("server.matchmaker.pop_timer.time", return_value=1_562_000_000)
