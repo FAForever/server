@@ -160,8 +160,7 @@ class GameService(Service):
                 FeaturedModType.LADDER_1V1:   LadderGame,
                 FeaturedModType.COOP:         CoopGame,
                 FeaturedModType.FAF:          CustomGame,
-                FeaturedModType.FAFBETA:      CustomGame,
-                FeaturedModType.EQUILIBRIUM:  CustomGame
+                FeaturedModType.FAFBETA:      CustomGame
             }.get(game_mode, Game)
         game = game_class(**game_args)
 
