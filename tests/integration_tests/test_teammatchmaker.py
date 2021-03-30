@@ -1,7 +1,14 @@
 import asyncio
 
 import pytest
+from sqlalchemy import and_, select
 
+from server.db.models import (
+    game_player_stats,
+    leaderboard,
+    leaderboard_rating,
+    leaderboard_rating_journal
+)
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until, read_until_command
@@ -416,7 +423,8 @@ async def test_game_matchmaking_timeout(lobby_server):
 
     # We don't send the `GameState: Lobby` command so the game should time out
     await asyncio.gather(*[
-        read_until_command(proto, "match_cancelled", timeout=120) for proto in protos
+        read_until_command(proto, "match_cancelled", timeout=120)
+        for proto in protos
     ])
 
     # Player's state is reset once they leave the game
@@ -508,7 +516,7 @@ async def test_game_ratings(lobby_server):
 
 
 @fast_forward(60)
-async def test_game_ratings_initialized_based_on_global(lobby_server):
+async def test_ratings_initialized_based_on_global(lobby_server):
     test_id, _, proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
@@ -577,6 +585,107 @@ async def test_game_ratings_initialized_based_on_global(lobby_server):
         "ladder_rating": [2000.0, 125.0],
         "number_of_games": 5,
     }
+
+
+@fast_forward(60)
+async def test_ratings_initialized_based_on_global_persisted(
+    lobby_server,
+    database
+):
+    # 2 ladder and global noobs
+    _, _, proto1 = await connect_and_sign_in(
+        ("ladder1", "ladder1"), lobby_server
+    )
+    _, _, proto2 = await connect_and_sign_in(
+        ("ladder2", "ladder2"), lobby_server
+    )
+    # One global pro with no tmm games
+    test_id, _, proto3 = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    # One tmm pro to balance the match
+    _, _, proto4 = await connect_and_sign_in(
+        ("tmm2", "tmm2"), lobby_server
+    )
+    protos = [proto1, proto2, proto3, proto4]
+    for proto in protos:
+        await read_until_command(proto, "game_info")
+        await proto.send_message({
+            "command": "game_matchmaking",
+            "state": "start",
+            "mod": "tmm2v2"
+        })
+
+    msg1, msg2, msg3, msg4 = await asyncio.gather(*[
+        client_response(proto) for proto in protos
+    ])
+    # So it doesn't matter who is host
+    await asyncio.gather(*[
+        proto.send_message({
+            "command": "GameState",
+            "target": "game",
+            "args": ["Launching"]
+        }) for proto in protos
+    ])
+
+    army1 = msg1["map_position"]
+    army2 = msg2["map_position"]
+    test_army = msg3["map_position"]
+    army4 = msg4["map_position"]
+
+    for result in (
+        [army1, "defeat -10"],
+        [army2, "defeat -10"],
+        [army4, "defeat -10"],
+        [test_army, "victory 10"],
+    ):
+        for proto in protos:
+            await proto.send_message({
+                "target": "game",
+                "command": "GameResult",
+                "args": result
+            })
+
+    for proto in protos:
+        await proto.send_message({
+            "target": "game",
+            "command": "GameEnded",
+            "args": []
+        })
+
+    await read_until(
+        proto3,
+        lambda msg: msg["command"] == "player_info"
+        and any(player["id"] == test_id for player in msg["players"]),
+        timeout=10
+    )
+
+    async with database.acquire() as conn:
+        res = await conn.execute(
+            select([leaderboard_rating]).select_from(
+                leaderboard.join(leaderboard_rating)
+            ).where(and_(
+                leaderboard.c.technical_name == "tmm_2v2",
+                leaderboard_rating.c.login_id == test_id
+            ))
+        )
+        row = await res.fetchone()
+        assert row.mean > 2000
+
+        res = await conn.execute(
+            select([leaderboard_rating_journal]).select_from(
+                leaderboard
+                .join(leaderboard_rating_journal)
+                .join(game_player_stats)
+            ).where(and_(
+                leaderboard.c.technical_name == "tmm_2v2",
+                game_player_stats.c.playerId == test_id
+            ))
+        )
+        rows = await res.fetchall()
+        assert len(rows) == 1
+        assert rows[0].rating_mean_before == 2000
+        assert rows[0].rating_deviation_before == 250
 
 
 @fast_forward(30)
