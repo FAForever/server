@@ -19,7 +19,7 @@ class MapPool(object):
         self.maps = None
         self.set_maps(maps)
 
-    def set_maps(self, maps: Iterable[Map]) -> None:
+    def set_maps(self, maps: Iterable[Union[Map, NeroxisGeneratedMap]]) -> None:
         self.maps = {map_.id: map_ for map_ in maps}
 
     def choose_map(self, played_map_ids: Iterable[int] = ()) -> Map:
@@ -55,5 +55,5 @@ class MapPool(object):
 
         return self.maps[random.choices(least_common, weights=weights, k=1)[0][0]].get_map()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"MapPool({self.id}, {self.name}, {list(self.maps.values())})"
