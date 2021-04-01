@@ -3323,7 +3323,7 @@ statistics, and launches the games.</p></div>
                 map_pool.c.name,
                 map_pool_map_version.c.weight,
                 map_pool_map_version.c.map_params,
-                map_version.c.map_id,
+                map_version.c.id.label(&#34;map_id&#34;),
                 map_version.c.filename,
                 t_map.c.display_name
             ]).select_from(
@@ -3352,8 +3352,8 @@ statistics, and launches the games.</p></div>
                     else:
                         self._logger.warning(
                             &#34;Unsupported map type %s in pool %s&#34;,
-                             map_type,
-                             row.id
+                            map_type,
+                            row.id
                         )
 
                 except Exception:
@@ -3787,7 +3787,7 @@ statistics, and launches the games.</p></div>
             map_pool.c.name,
             map_pool_map_version.c.weight,
             map_pool_map_version.c.map_params,
-            map_version.c.map_id,
+            map_version.c.id.label(&#34;map_id&#34;),
             map_version.c.filename,
             t_map.c.display_name
         ]).select_from(
@@ -3816,8 +3816,8 @@ statistics, and launches the games.</p></div>
                 else:
                     self._logger.warning(
                         &#34;Unsupported map type %s in pool %s&#34;,
-                         map_type,
-                         row.id
+                        map_type,
+                        row.id
                     )
 
             except Exception:
