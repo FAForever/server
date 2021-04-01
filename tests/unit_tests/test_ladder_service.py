@@ -116,7 +116,7 @@ async def test_load_from_database_new_data(ladder_service, database):
     player1=st_players("p1", player_id=1, lobby_connection_spec="mock"),
     player2=st_players("p2", player_id=2, lobby_connection_spec="mock")
 )
-@settings(deadline=300)
+@settings(deadline=None)
 @autocontext("ladder_and_game_service_context", "monkeypatch_context")
 async def test_start_game_1v1(
     ladder_and_game_service,
@@ -176,7 +176,7 @@ async def test_start_game_timeout(
     player3=st_players("p3", player_id=3, lobby_connection_spec="mock"),
     player4=st_players("p4", player_id=4, lobby_connection_spec="mock")
 )
-@settings(deadline=300)
+@settings(deadline=None)
 @autocontext("ladder_and_game_service_context", "monkeypatch_context")
 async def test_start_game_with_teams(
     ladder_and_game_service,
