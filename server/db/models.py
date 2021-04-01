@@ -141,7 +141,7 @@ game_stats = Table(
     Column("gameType",  Enum(Victory),  nullable=False),
     Column("gameMod",   Integer,        ForeignKey("game_featuredMods.id"), nullable=False),
     Column("host",      Integer,        nullable=False),
-    Column("mapId",     Integer),
+    Column("mapId",     Integer,        ForeignKey("map_version.id")),
     Column("gameName",  String(128),    nullable=False),
     Column("validity",  Integer,        nullable=False),
 )
