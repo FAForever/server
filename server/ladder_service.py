@@ -137,8 +137,8 @@ class LadderService(Service):
                     else:
                         self._logger.warning(
                             "Unsupported map type %s in pool %s",
-                             map_type,
-                             row.id
+                            map_type,
+                            row.id
                         )
 
                 except Exception:
