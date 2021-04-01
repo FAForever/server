@@ -148,13 +148,27 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
     )
     assert game_service._games == {}
 
-    # Player's state is reset so they are able to queue again
+    # Player's state is reset once they leave the game
+    await proto1.send_message({
+        "command": "GameState",
+        "target": "game",
+        "args": ["Ended"]
+    })
     await proto1.send_message({
         "command": "game_matchmaking",
         "state": "start",
         "faction": "uef"
     })
-    await read_until_command(proto1, "search_info", state="start", timeout=15)
+    await read_until_command(proto1, "search_info", state="start", timeout=5)
+
+    # And not before they've left the game
+    await proto2.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef"
+    })
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(proto2, "search_info", state="start", timeout=5)
 
 
 @fast_forward(120)
@@ -182,13 +196,27 @@ async def test_game_matchmaking_timeout_guest(lobby_server, game_service):
     )
     assert game_service._games == {}
 
-    # Player's state is reset so they are able to queue again
+    # Player's state is reset once they leave the game
+    await proto1.send_message({
+        "command": "GameState",
+        "target": "game",
+        "args": ["Ended"]
+    })
     await proto1.send_message({
         "command": "game_matchmaking",
         "state": "start",
         "faction": "uef"
     })
     await read_until_command(proto1, "search_info", state="start", timeout=5)
+
+    # And not before they've left the game
+    await proto2.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef"
+    })
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(proto2, "search_info", state="start", timeout=5)
 
 
 @fast_forward(15)

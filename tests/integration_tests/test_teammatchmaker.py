@@ -282,7 +282,7 @@ async def test_newbie_matchmaking_with_parties(lobby_server):
         assert msg["map_position"] in (1, 2, 3, 4)
 
 
-@fast_forward(60)
+@fast_forward(120)
 async def test_game_matchmaking_multiqueue_timeout(lobby_server):
     protos, _ = await connect_players(lobby_server)
 
@@ -306,6 +306,7 @@ async def test_game_matchmaking_multiqueue_timeout(lobby_server):
         })
         for proto in protos
     ])
+    await read_until_command(protos[1], "search_info", state="start")
     msg = await read_until_command(
         protos[0],
         "search_info",
@@ -316,7 +317,12 @@ async def test_game_matchmaking_multiqueue_timeout(lobby_server):
     # Don't send any GPGNet messages so the match times out
     await read_until_command(protos[0], "match_cancelled", timeout=120)
 
-    # Player's state is reset so they are able to queue again
+    # Player's state is reset once they leave the game
+    await protos[0].send_message({
+        "command": "GameState",
+        "target": "game",
+        "args": ["Ended"]
+    })
     await protos[0].send_message({
         "command": "game_matchmaking",
         "state": "start",
@@ -329,6 +335,15 @@ async def test_game_matchmaking_multiqueue_timeout(lobby_server):
         queue_name="ladder1v1",
         timeout=5
     )
+
+    # And not before they've left the game
+    await protos[1].send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef"
+    })
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(protos[1], "search_info", state="start", timeout=5)
 
 
 @fast_forward(60)
@@ -395,7 +410,7 @@ async def test_game_matchmaking_multiqueue_multimatch(lobby_server):
     assert msg1["state"] == "stop"
 
 
-@fast_forward(60)
+@fast_forward(120)
 async def test_game_matchmaking_timeout(lobby_server):
     protos, _ = await queue_players_for_matchmaking(lobby_server)
 
@@ -404,7 +419,12 @@ async def test_game_matchmaking_timeout(lobby_server):
         read_until_command(proto, "match_cancelled", timeout=120) for proto in protos
     ])
 
-    # Player's state is reset so they are able to queue again
+    # Player's state is reset once they leave the game
+    await protos[0].send_message({
+        "command": "GameState",
+        "target": "game",
+        "args": ["Ended"]
+    })
     await protos[0].send_message({
         "command": "game_matchmaking",
         "state": "start",
@@ -417,6 +437,15 @@ async def test_game_matchmaking_timeout(lobby_server):
         queue_name="ladder1v1",
         timeout=5
     )
+
+    # And not before they've left the game
+    await protos[1].send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef"
+    })
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(protos[1], "search_info", state="start", timeout=5)
 
 
 @fast_forward(60)

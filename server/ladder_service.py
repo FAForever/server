@@ -373,10 +373,6 @@ class LadderService(Service):
             all_players = team1 + team2
             all_guests = all_players[1:]
 
-            host.state = PlayerState.HOSTING
-            for guest in all_guests:
-                guest.state = PlayerState.JOINING
-
             played_map_ids = await self.get_game_history(
                 all_players,
                 queue.id,
@@ -475,7 +471,8 @@ class LadderService(Service):
 
             msg = {"command": "match_cancelled"}
             for player in all_players:
-                player.state = PlayerState.IDLE
+                if player.state == PlayerState.STARTING_AUTOMATCH:
+                    player.state = PlayerState.IDLE
                 player.write_message(msg)
 
     async def get_game_history(
