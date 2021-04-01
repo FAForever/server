@@ -40,9 +40,9 @@ class MapPool(object):
 
         least_common = counter.most_common()[::-1]
         least_count = 1
-        for map_count in least_common:
-            if isinstance(self.maps[map_count[0]], Map):
-                least_count = map_count[1]
+        for id_, count in least_common:
+            if isinstance(self.maps[id_], Map):
+                least_count = count
                 break
 
         # Trim off the maps with higher play counts
