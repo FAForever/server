@@ -8,6 +8,7 @@ from trueskill import Rating
 class RatingType():
     GLOBAL = "global"
     LADDER_1V1 = "ladder_1v1"
+    TMM_2V2 = "tmm_2v2"
 
 
 K = Union[RatingType, str]
@@ -36,7 +37,9 @@ class PlayerRatings(RatingTypeMap[Tuple[float, float]]):
         super().__setitem__(key, val)
 
     def __getitem__(self, key: K) -> Tuple[float, float]:
-        if key == "tmm_2v2" and key not in self:
+        # TODO: Generalize for arbitrary ratings
+        # https://github.com/FAForever/server/issues/727
+        if key == RatingType.TMM_2V2 and key not in self:
             mean, dev = self[RatingType.GLOBAL]
             if dev > 250:
                 tmm_2v2_rating = (mean, dev)

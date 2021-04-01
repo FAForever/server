@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import asynccontextmanager
 from typing import Dict
 
 import aiocron
@@ -30,6 +31,15 @@ from .typedefs import (
     ServiceNotReadyError,
     TeamRatingData
 )
+
+
+@asynccontextmanager
+async def acquire_or_default(db, default=None):
+    if default is None:
+        async with db.acquire() as conn:
+            yield conn
+    else:
+        yield default
 
 
 @with_logger
@@ -146,7 +156,7 @@ class RatingService(Service):
         ]
 
     async def _get_player_rating(
-        self, player_id: int, rating_type: str
+        self, player_id: int, rating_type: str, conn=None
     ) -> Rating:
         if self._rating_type_ids is None:
             self._logger.warning(
@@ -158,7 +168,7 @@ class RatingService(Service):
         if rating_type_id is None:
             raise ValueError(f"Unknown rating type {rating_type}.")
 
-        async with self._db.acquire() as conn:
+        async with acquire_or_default(self._db, conn) as conn:
             sql = select(
                 [leaderboard_rating.c.mean, leaderboard_rating.c.deviation]
             ).where(
@@ -172,6 +182,13 @@ class RatingService(Service):
             row = await result.fetchone()
 
             if not row:
+                # TODO: Generalize for arbitrary ratings
+                # https://github.com/FAForever/server/issues/727
+                if rating_type == RatingType.TMM_2V2:
+                    return await self._create_tmm_2v2_rating(
+                        conn, player_id
+                    )
+
                 try:
                     return await self._get_player_legacy_rating(
                         conn, player_id, rating_type
@@ -182,6 +199,27 @@ class RatingService(Service):
                     )
 
         return Rating(row["mean"], row["deviation"])
+
+    async def _create_tmm_2v2_rating(
+        self, conn, player_id: int
+    ) -> Rating:
+        mean, dev = await self._get_player_rating(
+            player_id, RatingType.GLOBAL, conn=conn
+        )
+        if dev < 250:
+            dev = min(dev + 150, 250)
+
+        insertion_sql = leaderboard_rating.insert().values(
+            login_id=player_id,
+            mean=mean,
+            deviation=dev,
+            total_games=0,
+            won_games=0,
+            leaderboard_id=self._rating_type_ids[RatingType.TMM_2V2],
+        )
+        await conn.execute(insertion_sql)
+
+        return Rating(mean, dev)
 
     async def _get_player_legacy_rating(
         self, conn, player_id: int, rating_type: str

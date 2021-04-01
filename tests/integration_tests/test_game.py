@@ -376,7 +376,7 @@ async def test_ladder_game_draw_bug(lobby_server, database):
         [army2, "defeat -10"]
     ):
         for proto in (proto1, proto2):
-            await proto1.send_message({
+            await proto.send_message({
                 "target": "game",
                 "command": "GameResult",
                 "args": result
