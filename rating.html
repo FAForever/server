@@ -36,6 +36,7 @@ from trueskill import Rating
 class RatingType():
     GLOBAL = &#34;global&#34;
     LADDER_1V1 = &#34;ladder_1v1&#34;
+    TMM_2V2 = &#34;tmm_2v2&#34;
 
 
 K = Union[RatingType, str]
@@ -64,7 +65,9 @@ class PlayerRatings(RatingTypeMap[Tuple[float, float]]):
         super().__setitem__(key, val)
 
     def __getitem__(self, key: K) -&gt; Tuple[float, float]:
-        if key == &#34;tmm_2v2&#34; and key not in self:
+        # TODO: Generalize for arbitrary ratings
+        # https://github.com/FAForever/server/issues/727
+        if key == RatingType.TMM_2V2 and key not in self:
             mean, dev = self[RatingType.GLOBAL]
             if dev &gt; 250:
                 tmm_2v2_rating = (mean, dev)
@@ -181,7 +184,9 @@ assert 11 not in InclusiveRange(0, 10)</p></div>
         super().__setitem__(key, val)
 
     def __getitem__(self, key: K) -&gt; Tuple[float, float]:
-        if key == &#34;tmm_2v2&#34; and key not in self:
+        # TODO: Generalize for arbitrary ratings
+        # https://github.com/FAForever/server/issues/727
+        if key == RatingType.TMM_2V2 and key not in self:
             mean, dev = self[RatingType.GLOBAL]
             if dev &gt; 250:
                 tmm_2v2_rating = (mean, dev)
@@ -212,7 +217,8 @@ assert 11 not in InclusiveRange(0, 10)</p></div>
 </summary>
 <pre><code class="python">class RatingType():
     GLOBAL = &#34;global&#34;
-    LADDER_1V1 = &#34;ladder_1v1&#34;</code></pre>
+    LADDER_1V1 = &#34;ladder_1v1&#34;
+    TMM_2V2 = &#34;tmm_2v2&#34;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
@@ -221,6 +227,10 @@ assert 11 not in InclusiveRange(0, 10)</p></div>
 <div class="desc"></div>
 </dd>
 <dt id="server.rating.RatingType.LADDER_1V1"><code class="name">var <span class="ident">LADDER_1V1</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.rating.RatingType.TMM_2V2"><code class="name">var <span class="ident">TMM_2V2</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -285,6 +295,7 @@ assert 11 not in InclusiveRange(0, 10)</p></div>
 <ul class="">
 <li><code><a title="server.rating.RatingType.GLOBAL" href="#server.rating.RatingType.GLOBAL">GLOBAL</a></code></li>
 <li><code><a title="server.rating.RatingType.LADDER_1V1" href="#server.rating.RatingType.LADDER_1V1">LADDER_1V1</a></code></li>
+<li><code><a title="server.rating.RatingType.TMM_2V2" href="#server.rating.RatingType.TMM_2V2">TMM_2V2</a></code></li>
 </ul>
 </li>
 <li>

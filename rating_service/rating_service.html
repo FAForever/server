@@ -27,6 +27,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">import asyncio
+from contextlib import asynccontextmanager
 from typing import Dict
 
 import aiocron
@@ -58,6 +59,15 @@ from .typedefs import (
     ServiceNotReadyError,
     TeamRatingData
 )
+
+
+@asynccontextmanager
+async def acquire_or_default(db, default=None):
+    if default is None:
+        async with db.acquire() as conn:
+            yield conn
+    else:
+        yield default
 
 
 @with_logger
@@ -174,7 +184,7 @@ class RatingService(Service):
         ]
 
     async def _get_player_rating(
-        self, player_id: int, rating_type: str
+        self, player_id: int, rating_type: str, conn=None
     ) -&gt; Rating:
         if self._rating_type_ids is None:
             self._logger.warning(
@@ -186,7 +196,7 @@ class RatingService(Service):
         if rating_type_id is None:
             raise ValueError(f&#34;Unknown rating type {rating_type}.&#34;)
 
-        async with self._db.acquire() as conn:
+        async with acquire_or_default(self._db, conn) as conn:
             sql = select(
                 [leaderboard_rating.c.mean, leaderboard_rating.c.deviation]
             ).where(
@@ -200,6 +210,13 @@ class RatingService(Service):
             row = await result.fetchone()
 
             if not row:
+                # TODO: Generalize for arbitrary ratings
+                # https://github.com/FAForever/server/issues/727
+                if rating_type == RatingType.TMM_2V2:
+                    return await self._create_tmm_2v2_rating(
+                        conn, player_id
+                    )
+
                 try:
                     return await self._get_player_legacy_rating(
                         conn, player_id, rating_type
@@ -210,6 +227,27 @@ class RatingService(Service):
                     )
 
         return Rating(row[&#34;mean&#34;], row[&#34;deviation&#34;])
+
+    async def _create_tmm_2v2_rating(
+        self, conn, player_id: int
+    ) -&gt; Rating:
+        mean, dev = await self._get_player_rating(
+            player_id, RatingType.GLOBAL, conn=conn
+        )
+        if dev &lt; 250:
+            dev = min(dev + 150, 250)
+
+        insertion_sql = leaderboard_rating.insert().values(
+            login_id=player_id,
+            mean=mean,
+            deviation=dev,
+            total_games=0,
+            won_games=0,
+            leaderboard_id=self._rating_type_ids[RatingType.TMM_2V2],
+        )
+        await conn.execute(insertion_sql)
+
+        return Rating(mean, dev)
 
     async def _get_player_legacy_rating(
         self, conn, player_id: int, rating_type: str
@@ -405,6 +443,27 @@ class RatingService(Service):
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="server.rating_service.rating_service.acquire_or_default"><code class="name flex">
+<span>async def <span class="ident">acquire_or_default</span></span>(<span>db, default=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@asynccontextmanager
+async def acquire_or_default(db, default=None):
+    if default is None:
+        async with db.acquire() as conn:
+            yield conn
+    else:
+        yield default</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
@@ -534,7 +593,7 @@ atomic.</p></div>
         ]
 
     async def _get_player_rating(
-        self, player_id: int, rating_type: str
+        self, player_id: int, rating_type: str, conn=None
     ) -&gt; Rating:
         if self._rating_type_ids is None:
             self._logger.warning(
@@ -546,7 +605,7 @@ atomic.</p></div>
         if rating_type_id is None:
             raise ValueError(f&#34;Unknown rating type {rating_type}.&#34;)
 
-        async with self._db.acquire() as conn:
+        async with acquire_or_default(self._db, conn) as conn:
             sql = select(
                 [leaderboard_rating.c.mean, leaderboard_rating.c.deviation]
             ).where(
@@ -560,6 +619,13 @@ atomic.</p></div>
             row = await result.fetchone()
 
             if not row:
+                # TODO: Generalize for arbitrary ratings
+                # https://github.com/FAForever/server/issues/727
+                if rating_type == RatingType.TMM_2V2:
+                    return await self._create_tmm_2v2_rating(
+                        conn, player_id
+                    )
+
                 try:
                     return await self._get_player_legacy_rating(
                         conn, player_id, rating_type
@@ -570,6 +636,27 @@ atomic.</p></div>
                     )
 
         return Rating(row[&#34;mean&#34;], row[&#34;deviation&#34;])
+
+    async def _create_tmm_2v2_rating(
+        self, conn, player_id: int
+    ) -&gt; Rating:
+        mean, dev = await self._get_player_rating(
+            player_id, RatingType.GLOBAL, conn=conn
+        )
+        if dev &lt; 250:
+            dev = min(dev + 150, 250)
+
+        insertion_sql = leaderboard_rating.insert().values(
+            login_id=player_id,
+            mean=mean,
+            deviation=dev,
+            total_games=0,
+            won_games=0,
+            leaderboard_id=self._rating_type_ids[RatingType.TMM_2V2],
+        )
+        await conn.execute(insertion_sql)
+
+        return Rating(mean, dev)
 
     async def _get_player_legacy_rating(
         self, conn, player_id: int, rating_type: str
@@ -879,6 +966,11 @@ atomic.</p></div>
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="server.rating_service" href="index.html">server.rating_service</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="server.rating_service.rating_service.acquire_or_default" href="#server.rating_service.rating_service.acquire_or_default">acquire_or_default</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
