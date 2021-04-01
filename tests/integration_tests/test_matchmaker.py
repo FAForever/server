@@ -300,6 +300,54 @@ async def test_game_matchmaking_close_fa_and_requeue(lobby_server):
     await read_until_command(proto1, "match_found", timeout=5)
 
 
+@fast_forward(200)
+async def test_anti_map_repetition(lobby_server):
+    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+
+    # Play one game so that it exists in the players history
+    msg1, _ = await asyncio.gather(
+        client_response(proto1),
+        client_response(proto2)
+    )
+    mapname = msg1["mapname"]
+
+    for proto in (proto1, proto2):
+        await proto.send_message({
+            "command": "GameState",
+            "target": "game",
+            "args": ["Launching"]
+        })
+
+    for proto in (proto1, proto2):
+        for result in (
+            [1, "draw 0"],
+            [2, "draw 0"],
+        ):
+            await proto.send_message({
+                "command": "GameResult",
+                "target": "game",
+                "args": result
+            })
+
+    for proto in (proto1, proto2):
+        await proto.send_message({
+            "command": "GameEnded",
+            "target": "game",
+            "args": []
+        })
+
+    # Now match a whole bunch of times and make sure we never get the map that
+    # was played. We don't actually play the game out here, so the players
+    # game history should remain unchanged.
+    for _ in range(20):
+        await proto1.close()
+        await proto2.close()
+
+        proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+        msg = await read_until_command(proto1, "game_launch")
+        assert msg["mapname"] != mapname
+
+
 @fast_forward(10)
 async def test_matchmaker_info_message(lobby_server, mocker):
     mocker.patch("server.matchmaker.pop_timer.time", return_value=1_562_000_000)

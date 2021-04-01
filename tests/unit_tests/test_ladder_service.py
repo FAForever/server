@@ -54,12 +54,16 @@ async def test_load_from_database(ladder_service, queue_factory):
         assert queue.name == "ladder1v1"
         assert len(queue.map_pools) == 3
         assert list(queue.map_pools[1][0].maps.values()) == [
-            Map(id=15, name="SCMP_015", path="maps/scmp_015.v0003.zip"),
+            Map(id=15, name="SCMP_015", path="maps/scmp_015.zip"),
+            Map(id=16, name="SCMP_015", path="maps/scmp_015.v0002.zip"),
+            Map(id=17, name="SCMP_015", path="maps/scmp_015.v0003.zip"),
         ]
         assert list(queue.map_pools[2][0].maps.values()) == [
             Map(id=11, name="SCMP_011", path="maps/scmp_011.zip"),
             Map(id=14, name="SCMP_014", path="maps/scmp_014.zip"),
-            Map(id=15, name="SCMP_015", path="maps/scmp_015.v0003.zip"),
+            Map(id=15, name="SCMP_015", path="maps/scmp_015.zip"),
+            Map(id=16, name="SCMP_015", path="maps/scmp_015.v0002.zip"),
+            Map(id=17, name="SCMP_015", path="maps/scmp_015.v0003.zip"),
         ]
         assert list(queue.map_pools[3][0].maps.values()) == [
             Map(id=1, name="SCMP_001", path="maps/scmp_001.zip"),
@@ -112,7 +116,7 @@ async def test_load_from_database_new_data(ladder_service, database):
     player1=st_players("p1", player_id=1, lobby_connection_spec="mock"),
     player2=st_players("p2", player_id=2, lobby_connection_spec="mock")
 )
-@settings(deadline=300)
+@settings(deadline=None)
 @autocontext("ladder_and_game_service_context", "monkeypatch_context")
 async def test_start_game_1v1(
     ladder_and_game_service,
@@ -172,7 +176,7 @@ async def test_start_game_timeout(
     player3=st_players("p3", player_id=3, lobby_connection_spec="mock"),
     player4=st_players("p4", player_id=4, lobby_connection_spec="mock")
 )
-@settings(deadline=300)
+@settings(deadline=None)
 @autocontext("ladder_and_game_service_context", "monkeypatch_context")
 async def test_start_game_with_teams(
     ladder_and_game_service,

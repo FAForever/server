@@ -108,7 +108,7 @@ class LadderService(Service):
                 map_pool.c.name,
                 map_pool_map_version.c.weight,
                 map_pool_map_version.c.map_params,
-                map_version.c.map_id,
+                map_version.c.id.label("map_id"),
                 map_version.c.filename,
                 t_map.c.display_name
             ]).select_from(
@@ -137,8 +137,8 @@ class LadderService(Service):
                     else:
                         self._logger.warning(
                             "Unsupported map type %s in pool %s",
-                             map_type,
-                             row.id
+                            map_type,
+                            row.id
                         )
 
                 except Exception:
