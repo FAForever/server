@@ -2,7 +2,7 @@ import asyncio
 import time
 from collections import OrderedDict
 from concurrent.futures import CancelledError
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 import server.metrics as metrics
@@ -247,6 +247,9 @@ class MatchmakerQueue:
             "queue_pop_time": datetime.fromtimestamp(
                 self.timer.next_queue_pop, timezone.utc
             ).isoformat(),
+            "queue_pop_time_delta": timedelta(
+                seconds=self.timer.next_queue_pop - time.time()
+            ).total_seconds(),
             "num_players": self.num_players,
             "boundary_80s": [search.boundary_80 for search in self._queue.keys()],
             "boundary_75s": [search.boundary_75 for search in self._queue.keys()],
