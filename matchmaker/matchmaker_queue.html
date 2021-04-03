@@ -275,6 +275,7 @@ class MatchmakerQueue:
             &#34;queue_pop_time&#34;: datetime.fromtimestamp(
                 self.timer.next_queue_pop, timezone.utc
             ).isoformat(),
+            &#34;queue_pop_time_delta&#34;: self.timer.next_queue_pop - time.time(),
             &#34;num_players&#34;: self.num_players,
             &#34;boundary_80s&#34;: [search.boundary_80 for search in self._queue.keys()],
             &#34;boundary_75s&#34;: [search.boundary_75 for search in self._queue.keys()],
@@ -513,6 +514,7 @@ class MatchmakerQueue:
             &#34;queue_pop_time&#34;: datetime.fromtimestamp(
                 self.timer.next_queue_pop, timezone.utc
             ).isoformat(),
+            &#34;queue_pop_time_delta&#34;: self.timer.next_queue_pop - time.time(),
             &#34;num_players&#34;: self.num_players,
             &#34;boundary_80s&#34;: [search.boundary_80 for search in self._queue.keys()],
             &#34;boundary_75s&#34;: [search.boundary_75 for search in self._queue.keys()],
@@ -837,6 +839,7 @@ in the queue.</p></div>
         &#34;queue_pop_time&#34;: datetime.fromtimestamp(
             self.timer.next_queue_pop, timezone.utc
         ).isoformat(),
+        &#34;queue_pop_time_delta&#34;: self.timer.next_queue_pop - time.time(),
         &#34;num_players&#34;: self.num_players,
         &#34;boundary_80s&#34;: [search.boundary_80 for search in self._queue.keys()],
         &#34;boundary_75s&#34;: [search.boundary_75 for search in self._queue.keys()],
