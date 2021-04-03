@@ -95,7 +95,11 @@ class QDataStreamProtocol(Protocol):
         if action in ("PING", "PONG"):
             return {"command": action.lower()}
 
-        message = json.loads(action)
+        try:
+            message = json.loads(action)
+        except json.decoder.JSONDecodeError as err:
+            raise json.decoder.JSONDecodeError(
+                "Invalid JSON, full action string was: {}".format(action)) from err
         try:
             for part in self.read_block(block):
                 try:
