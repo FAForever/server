@@ -2,7 +2,7 @@ import asyncio
 import time
 from collections import OrderedDict
 from concurrent.futures import CancelledError
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 import server.metrics as metrics
