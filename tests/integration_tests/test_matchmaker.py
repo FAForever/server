@@ -1,9 +1,11 @@
 import asyncio
+import math
 import re
 
 import pytest
 from sqlalchemy import select
 
+from server import config
 from server.db.models import (
     game_player_stats,
     matchmaker_queue,
@@ -351,6 +353,10 @@ async def test_anti_map_repetition(lobby_server):
 @fast_forward(10)
 async def test_matchmaker_info_message(lobby_server, mocker):
     mocker.patch("server.matchmaker.pop_timer.time", return_value=1_562_000_000)
+    mocker.patch(
+        "server.matchmaker.matchmaker_queue.time.time",
+        return_value=1_562_000_000,
+    )
 
     _, _, proto = await connect_and_sign_in(
         ("ladder1", "ladder1"),
@@ -368,6 +374,9 @@ async def test_matchmaker_info_message(lobby_server, mocker):
         assert "num_players" in queue
 
         assert queue["queue_pop_time"] == "2019-07-01T16:53:21+00:00"
+        assert queue["queue_pop_time_delta"] == math.ceil(
+            config.QUEUE_POP_TIME_MAX / 2
+        )
         assert queue["boundary_80s"] == []
         assert queue["boundary_75s"] == []
 
@@ -375,6 +384,10 @@ async def test_matchmaker_info_message(lobby_server, mocker):
 @fast_forward(10)
 async def test_command_matchmaker_info(lobby_server, mocker):
     mocker.patch("server.matchmaker.pop_timer.time", return_value=1_562_000_000)
+    mocker.patch(
+        "server.matchmaker.matchmaker_queue.time.time",
+        return_value=1_562_000_000,
+    )
 
     _, _, proto = await connect_and_sign_in(
         ("ladder1", "ladder1"),
@@ -394,6 +407,9 @@ async def test_command_matchmaker_info(lobby_server, mocker):
         assert "num_players" in queue
 
         assert queue["queue_pop_time"] == "2019-07-01T16:53:21+00:00"
+        assert queue["queue_pop_time_delta"] == math.ceil(
+            config.QUEUE_POP_TIME_MAX / 2
+        )
         assert queue["boundary_80s"] == []
         assert queue["boundary_75s"] == []
 

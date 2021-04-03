@@ -247,6 +247,7 @@ class MatchmakerQueue:
             "queue_pop_time": datetime.fromtimestamp(
                 self.timer.next_queue_pop, timezone.utc
             ).isoformat(),
+            "queue_pop_time_delta": self.timer.next_queue_pop - time.time(),
             "num_players": self.num_players,
             "boundary_80s": [search.boundary_80 for search in self._queue.keys()],
             "boundary_75s": [search.boundary_75 for search in self._queue.keys()],

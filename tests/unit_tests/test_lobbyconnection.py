@@ -960,7 +960,8 @@ async def test_command_matchmaker_info(
     lobbyconnection,
     ladder_service,
     queue_factory,
-    player_factory
+    player_factory,
+    mocker
 ):
     queue = queue_factory("test", rating_type=RatingType.LADDER_1V1)
     queue.timer.next_queue_pop = 1_562_000_000
@@ -976,6 +977,10 @@ async def test_command_matchmaker_info(
         player_factory(player_id=5, ladder_rating=(1300, 100), ladder_games=200),
         player_factory(player_id=6, ladder_rating=(2000, 100), ladder_games=1000),
     ]))
+    mocker.patch(
+        "server.matchmaker.matchmaker_queue.time.time",
+        return_value=queue.timer.next_queue_pop - 1,
+    )
 
     lobbyconnection.ladder_service.queues = {
         "test": queue
@@ -991,6 +996,7 @@ async def test_command_matchmaker_info(
             {
                 "queue_name": "test",
                 "queue_pop_time": "2019-07-01T16:53:20+00:00",
+                "queue_pop_time_delta": 1.0,
                 "team_size": 1,
                 "num_players": 6,
                 "boundary_80s": [(1800, 2200), (300, 700), (800, 1200)],
