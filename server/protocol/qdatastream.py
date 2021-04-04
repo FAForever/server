@@ -97,9 +97,12 @@ class QDataStreamProtocol(Protocol):
 
         try:
             message = json.loads(action)
-        except json.decoder.JSONDecodeError as err:
+        except json.decoder.JSONDecodeError as e:
             raise json.decoder.JSONDecodeError(
-                "Invalid JSON, full action string was: {}".format(action)) from err
+                msg = f"Invalid JSON, full action string was: \
+                    {action[e.pos-100:e.pos+100]}",
+                doc = e.doc,
+                pos = e.pos) from e
         try:
             for part in self.read_block(block):
                 try:
