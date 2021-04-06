@@ -80,7 +80,7 @@ def mock_games():
 
 @pytest.fixture
 def mock_protocol():
-    return asynctest.create_autospec(QDataStreamProtocol(mock.Mock(), mock.Mock()))
+    return asynctest.create_autospec(QDataStreamProtocol)
 
 
 @pytest.fixture
@@ -97,7 +97,8 @@ def lobbyconnection(
     mock_players,
     mock_player,
     mock_geoip,
-    mock_nts_client
+    mock_nts_client,
+    rating_service
 ):
     lc = LobbyConnection(
         database=database,
@@ -107,7 +108,8 @@ def lobbyconnection(
         nts_client=mock_nts_client,
         ladder_service=asynctest.create_autospec(LadderService),
         party_service=asynctest.create_autospec(PartyService),
-        oauth_service=asynctest.create_autospec(OAuthService)
+        rating_service=rating_service,
+        oauth_service=asynctest.create_autospec(OAuthService),
     )
 
     lc.player = mock_player

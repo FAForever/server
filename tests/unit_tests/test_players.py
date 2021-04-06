@@ -53,7 +53,7 @@ def test_equality_by_id():
 
 
 def test_weak_references():
-    p = Player(login="Test")
+    p = Player("Test")
     weak_properties = ["lobby_connection", "game", "game_connection"]
     referent = mock.Mock()
     for prop in weak_properties:
@@ -67,7 +67,7 @@ def test_weak_references():
 
 
 def test_unlink_weakref():
-    p = Player(login="Test")
+    p = Player("Test")
     mock_game = mock.Mock()
     p.game = mock_game
     assert p.game == mock_game
@@ -108,7 +108,7 @@ def test_serialize():
 
 @pytest.mark.asyncio
 async def test_send_message():
-    p = Player(login="Test")
+    p = Player("Test")
 
     assert p.lobby_connection is None
     with pytest.raises(DisconnectedError):
@@ -116,7 +116,7 @@ async def test_send_message():
 
 
 def test_write_message():
-    p = Player(login="Test")
+    p = Player("Test")
 
     assert p.lobby_connection is None
     # Should not raise

@@ -1,6 +1,6 @@
 import asyncio
 from contextlib import asynccontextmanager
-from typing import Dict
+from typing import Dict, Optional
 
 import aiocron
 from sqlalchemy import and_, func, select
@@ -201,43 +201,61 @@ class RatingService(Service):
             raise ValueError(f"Unknown rating type {rating_type}.")
 
         async with acquire_or_default(self._db, conn) as conn:
-            sql = select(
-                [leaderboard_rating.c.mean, leaderboard_rating.c.deviation]
-            ).where(
-                and_(
-                    leaderboard_rating.c.login_id == player_id,
-                    leaderboard_rating.c.leaderboard_id == rating_type_id,
-                )
+            rating = await self._do_get_player_rating(
+                conn, player_id, rating_type
             )
 
-            result = await conn.execute(sql)
-            row = await result.fetchone()
+            if rating:
+                return rating
 
-            if not row:
-                # TODO: Generalize for arbitrary ratings
-                # https://github.com/FAForever/server/issues/727
-                if rating_type == RatingType.TMM_2V2:
-                    return await self._create_tmm_2v2_rating(
-                        conn, player_id
-                    )
+            initializer = self.leaderboards.get(rating_type).initializer
+            if initializer:
+                return await self._create_initial_rating(
+                    conn, player_id, rating_type, initializer.technical_name
+                )
+            else:
+                return await self._create_default_rating(
+                    conn, player_id, rating_type
+                )
 
-                try:
-                    return await self._get_player_legacy_rating(
-                        conn, player_id, rating_type
-                    )
-                except ValueError:
-                    return await self._create_default_rating(
-                        conn, player_id, rating_type
-                    )
+    async def _do_get_player_rating(
+        self, conn, player_id: int, rating_type: str
+    ) -> Optional[Rating]:
+        rating_type_id = self._rating_type_ids[rating_type]
+        sql = select(
+            [leaderboard_rating.c.mean, leaderboard_rating.c.deviation]
+        ).where(
+            and_(
+                leaderboard_rating.c.login_id == player_id,
+                leaderboard_rating.c.leaderboard_id == rating_type_id,
+            )
+        )
+
+        result = await conn.execute(sql)
+        row = await result.fetchone()
+
+        if not row:
+            try:
+                return await self._get_player_legacy_rating(
+                    conn, player_id, rating_type
+                )
+            except ValueError:
+                return None
 
         return Rating(row["mean"], row["deviation"])
 
-    async def _create_tmm_2v2_rating(
-        self, conn, player_id: int
+    async def _create_initial_rating(
+        self, conn, player_id: int, rating_type: str, initializer_type: str
     ) -> Rating:
-        mean, dev = await self._get_player_rating(
-            player_id, RatingType.GLOBAL, conn=conn
+        rating = await self._do_get_player_rating(
+            conn, player_id, initializer_type
         )
+        if not rating:
+            return await self._create_default_rating(
+                conn, player_id, rating_type
+            )
+
+        mean, dev = rating
         if dev < 250:
             dev = min(dev + 150, 250)
 
@@ -247,7 +265,7 @@ class RatingService(Service):
             deviation=dev,
             total_games=0,
             won_games=0,
-            leaderboard_id=self._rating_type_ids[RatingType.TMM_2V2],
+            leaderboard_id=self._rating_type_ids[rating_type],
         )
         await conn.execute(insertion_sql)
 

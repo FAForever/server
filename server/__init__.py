@@ -192,7 +192,8 @@ class ServerInstance(object):
             players=self.services["player_service"],
             ladder_service=self.services["ladder_service"],
             party_service=self.services["party_service"],
-            oauth_service=self.services["oauth_service"]
+            rating_service=self.services["rating_service"],
+            oauth_service=self.services["oauth_service"],
         )
 
     def write_broadcast(

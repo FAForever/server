@@ -1,11 +1,9 @@
-import asyncio
-
 import pytest
-from asynctest import exhaust_callbacks
 
 from server import ServerInstance
 from server.config import config
 from server.protocol import QDataStreamProtocol, SimpleJsonProtocol
+from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until
 from .test_game import host_game
@@ -23,6 +21,7 @@ def has_player(msg, name):
 
 
 @pytest.mark.asyncio
+@fast_forward(100)
 async def test_multiple_contexts(
     database,
     broadcast_service,
@@ -33,6 +32,7 @@ async def test_multiple_contexts(
     tmp_user,
     policy_server,
     party_service,
+    rating_service,
     oauth_service,
     event_loop
 ):
@@ -50,6 +50,7 @@ async def test_multiple_contexts(
             "player_service": player_service,
             "geo_ip_service": geoip_service,
             "ladder_service": ladder_service,
+            "rating_service": rating_service,
             "party_service": party_service,
             "oauth_service": oauth_service
         }
@@ -73,12 +74,14 @@ async def test_multiple_contexts(
     )
 
     # Verify that the users can see each other
-    await asyncio.wait_for(
-        read_until(proto1, lambda m: has_player(m, "SimpleJsonUser1")),
+    await read_until(
+        proto1,
+        lambda m: has_player(m, "SimpleJsonUser1"),
         timeout=5
     )
-    await asyncio.wait_for(
-        read_until(proto2, lambda m: has_player(m, "QDataStreamUser1")),
+    await read_until(
+        proto2,
+        lambda m: has_player(m, "QDataStreamUser1"),
         timeout=5
     )
 
@@ -86,11 +89,11 @@ async def test_multiple_contexts(
     game_id = await host_game(proto1)
     msg = await read_until(
         proto2,
-        lambda msg: msg["command"] == "game_info" and "games" not in msg
+        lambda msg: msg["command"] == "game_info" and "games" not in msg,
+        timeout=5
     )
     assert msg["uid"] == game_id
 
     await instance.shutdown()
     await proto1.close()
     await proto2.close()
-    await exhaust_callbacks(event_loop)

@@ -3,11 +3,15 @@ Type definitions for player ratings
 """
 
 from dataclasses import dataclass
-from typing import DefaultDict, Optional, Tuple, TypeVar, Union
+from typing import Dict, Optional, Tuple, TypeVar, Union
 
-from trueskill import Rating
+import trueskill
 
+from server.config import config
 from server.weakattr import WeakAttribute
+
+Rating = Tuple[float, float]
+V = TypeVar("V")
 
 
 @dataclass(init=False)
@@ -45,48 +49,51 @@ class Leaderboard():
 class RatingType():
     GLOBAL = "global"
     LADDER_1V1 = "ladder_1v1"
-    TMM_2V2 = "tmm_2v2"
 
 
-K = Union[RatingType, str]
-V = TypeVar("V")
+class PlayerRatings(Dict[str, Rating]):
+    def __init__(self, leaderboards: Dict[str, Leaderboard]):
+        self.leaderboards = leaderboards
 
-
-class RatingTypeMap(DefaultDict[K, V]):
-    """
-    A thin wrapper around `defaultdict` which stores RatingType keys as strings.
-    """
-    def __init__(self, default_factory, *args, **kwargs):
-        super().__init__(default_factory, *args, **kwargs)
-
-        # Initialize defaults for enumerated rating types
-        for rating in (RatingType.GLOBAL, RatingType.LADDER_1V1):
-            self.__getitem__(rating)
-
-
-# Only used to coerce rating type.
-class PlayerRatings(RatingTypeMap[Tuple[float, float]]):
-    def __setitem__(self, key: K, value: Tuple[float, float]) -> None:
-        if isinstance(value, Rating):
+    def __setitem__(
+        self,
+        rating_type: str,
+        value: Union[Rating, trueskill.Rating]
+    ) -> None:
+        if isinstance(value, trueskill.Rating):
             val = (value.mu, value.sigma)
         else:
             val = value
-        super().__setitem__(key, val)
+        super().__setitem__(rating_type, val)
 
-    def __getitem__(self, key: K) -> Tuple[float, float]:
-        # TODO: Generalize for arbitrary ratings
-        # https://github.com/FAForever/server/issues/727
-        if key == RatingType.TMM_2V2 and key not in self:
-            mean, dev = self[RatingType.GLOBAL]
-            if dev > 250:
-                tmm_2v2_rating = (mean, dev)
-            else:
-                tmm_2v2_rating = (mean, min(dev + 150, 250))
+    def __getitem__(self, rating_type: str) -> Rating:
+        if rating_type not in self:
+            rating = self._get_initial_rating(rating_type)
 
-            self[key] = tmm_2v2_rating
-            return tmm_2v2_rating
-        else:
-            return super().__getitem__(key)
+            self[rating_type] = rating
+            return rating
+
+        return super().__getitem__(rating_type)
+
+    def _get_initial_rating(self, rating_type: str) -> Rating:
+        """Create an initial rating when no rating exists yet."""
+        leaderboard = self.leaderboards.get(rating_type)
+        if leaderboard is None or leaderboard.initializer is None:
+            return default_rating()
+
+        rating = self.get(leaderboard.initializer.technical_name)
+        if rating is None:
+            return default_rating()
+
+        mean, dev = rating
+        if dev > 250:
+            return (mean, dev)
+
+        return (mean, min(dev + 150, 250))
+
+
+def default_rating() -> Rating:
+    return (config.START_RATING_MEAN, config.START_RATING_DEV)
 
 
 class InclusiveRange():

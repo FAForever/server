@@ -5,7 +5,7 @@ from server.rating import PlayerRatings, RatingType
 
 @pytest.fixture
 def ratings():
-    return PlayerRatings(lambda: (1500, 500))
+    return PlayerRatings({})
 
 
 def test_leaderboard_class():
