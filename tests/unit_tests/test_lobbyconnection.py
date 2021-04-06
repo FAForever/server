@@ -246,6 +246,7 @@ async def test_command_game_host_creates_game(
     })
     expected_call = {
         "game_mode": "faf",
+        "game_class": CustomGame,
         "name": test_game_info["title"],
         "host": players.hosting,
         "visibility": VisibilityState.PUBLIC,

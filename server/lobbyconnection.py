@@ -32,7 +32,13 @@ from .exceptions import AuthenticationError, BanError, ClientError
 from .factions import Faction
 from .game_service import GameService
 from .gameconnection import GameConnection
-from .games import FeaturedModType, GameState, VisibilityState
+from .games import (
+    CoopGame,
+    CustomGame,
+    FeaturedModType,
+    GameState,
+    VisibilityState
+)
 from .geoip_service import GeoIpService
 from .ice_servers.coturn import CoturnHMAC
 from .ice_servers.nts import TwilioNTS
@@ -895,9 +901,12 @@ class LobbyConnection:
         if rating_max is not None:
             rating_max = float(rating_max)
 
+        game_class = CoopGame if game_mode == FeaturedModType.COOP else CustomGame
+
         game = self.game_service.create_game(
             visibility=visibility,
             game_mode=game_mode,
+            game_class=game_class,
             host=self.player,
             name=title,
             mapname=mapname,

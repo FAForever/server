@@ -44,6 +44,7 @@ async def test_all_games(players, game_service):
 async def test_create_game_ladder1v1(players, game_service):
     game = game_service.create_game(
         game_mode="ladder1v1",
+        game_class=LadderGame,
         host=players.hosting,
         name="Test Ladder",
     )

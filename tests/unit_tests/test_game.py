@@ -82,7 +82,6 @@ async def test_validate_game_settings(game: Game, game_add_players):
     mods = (
         FeaturedModType.FAF,
         FeaturedModType.LADDER_1V1,
-        FeaturedModType.EQUILIBRIUM,
         "AnythingReally"
     )
 

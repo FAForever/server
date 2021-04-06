@@ -10,13 +10,11 @@ from .core import Service
 from .db import FAFDatabase
 from .decorators import with_logger
 from .games import (
-    CoopGame,
     CustomGame,
     FeaturedMod,
     FeaturedModType,
     Game,
     GameState,
-    LadderGame,
     ValidityState,
     VisibilityState
 )
@@ -129,7 +127,7 @@ class GameService(Service):
     def create_game(
         self,
         game_mode: str,
-        game_class: Type[Game] = None,
+        game_class: Type[Game] = CustomGame,
         visibility=VisibilityState.PUBLIC,
         host: Optional[Player] = None,
         name: Optional[str] = None,
@@ -154,15 +152,6 @@ class GameService(Service):
             "matchmaker_queue_id": matchmaker_queue_id,
         }
         game_args.update(kwargs)
-
-        if not game_class:
-            game_class = {
-                FeaturedModType.LADDER_1V1:   LadderGame,
-                FeaturedModType.COOP:         CoopGame,
-                FeaturedModType.FAF:          CustomGame,
-                FeaturedModType.FAFBETA:      CustomGame,
-                FeaturedModType.EQUILIBRIUM:  CustomGame
-            }.get(game_mode, Game)
         game = game_class(**game_args)
 
         self._games[game_id] = game

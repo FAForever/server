@@ -92,7 +92,6 @@ class FeaturedModType():
     """
 
     COOP = "coop"
-    EQUILIBRIUM = "equilibrium"
     FAF = "faf"
     FAFBETA = "fafbeta"
     LADDER_1V1 = "ladder1v1"
