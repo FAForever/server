@@ -38,13 +38,11 @@ from .core import Service
 from .db import FAFDatabase
 from .decorators import with_logger
 from .games import (
-    CoopGame,
     CustomGame,
     FeaturedMod,
     FeaturedModType,
     Game,
     GameState,
-    LadderGame,
     ValidityState,
     VisibilityState
 )
@@ -157,7 +155,7 @@ class GameService(Service):
     def create_game(
         self,
         game_mode: str,
-        game_class: Type[Game] = None,
+        game_class: Type[Game] = CustomGame,
         visibility=VisibilityState.PUBLIC,
         host: Optional[Player] = None,
         name: Optional[str] = None,
@@ -182,15 +180,6 @@ class GameService(Service):
             &#34;matchmaker_queue_id&#34;: matchmaker_queue_id,
         }
         game_args.update(kwargs)
-
-        if not game_class:
-            game_class = {
-                FeaturedModType.LADDER_1V1:   LadderGame,
-                FeaturedModType.COOP:         CoopGame,
-                FeaturedModType.FAF:          CustomGame,
-                FeaturedModType.FAFBETA:      CustomGame,
-                FeaturedModType.EQUILIBRIUM:  CustomGame
-            }.get(game_mode, Game)
         game = game_class(**game_args)
 
         self._games[game_id] = game
@@ -395,7 +384,7 @@ class GameService(Service):
     def create_game(
         self,
         game_mode: str,
-        game_class: Type[Game] = None,
+        game_class: Type[Game] = CustomGame,
         visibility=VisibilityState.PUBLIC,
         host: Optional[Player] = None,
         name: Optional[str] = None,
@@ -420,15 +409,6 @@ class GameService(Service):
             &#34;matchmaker_queue_id&#34;: matchmaker_queue_id,
         }
         game_args.update(kwargs)
-
-        if not game_class:
-            game_class = {
-                FeaturedModType.LADDER_1V1:   LadderGame,
-                FeaturedModType.COOP:         CoopGame,
-                FeaturedModType.FAF:          CustomGame,
-                FeaturedModType.FAFBETA:      CustomGame,
-                FeaturedModType.EQUILIBRIUM:  CustomGame
-            }.get(game_mode, Game)
         game = game_class(**game_args)
 
         self._games[game_id] = game
@@ -638,7 +618,7 @@ def pending_games(self) -&gt; List[Game]:
 </details>
 </dd>
 <dt id="server.game_service.GameService.create_game"><code class="name flex">
-<span>def <span class="ident">create_game</span></span>(<span>self, game_mode: str, game_class: Type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = None, visibility=VisibilityState.PUBLIC, host: Union[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>, NoneType] = None, name: Union[str, NoneType] = None, mapname: Union[str, NoneType] = None, password: Union[str, NoneType] = None, matchmaker_queue_id: Union[int, NoneType] = None, **kwargs)</span>
+<span>def <span class="ident">create_game</span></span>(<span>self, game_mode: str, game_class: Type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame, visibility=VisibilityState.PUBLIC, host: Union[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>, NoneType] = None, name: Union[str, NoneType] = None, mapname: Union[str, NoneType] = None, password: Union[str, NoneType] = None, matchmaker_queue_id: Union[int, NoneType] = None, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Main entrypoint for creating new games</p></div>
@@ -649,7 +629,7 @@ def pending_games(self) -&gt; List[Game]:
 <pre><code class="python">def create_game(
     self,
     game_mode: str,
-    game_class: Type[Game] = None,
+    game_class: Type[Game] = CustomGame,
     visibility=VisibilityState.PUBLIC,
     host: Optional[Player] = None,
     name: Optional[str] = None,
@@ -674,15 +654,6 @@ def pending_games(self) -&gt; List[Game]:
         &#34;matchmaker_queue_id&#34;: matchmaker_queue_id,
     }
     game_args.update(kwargs)
-
-    if not game_class:
-        game_class = {
-            FeaturedModType.LADDER_1V1:   LadderGame,
-            FeaturedModType.COOP:         CoopGame,
-            FeaturedModType.FAF:          CustomGame,
-            FeaturedModType.FAFBETA:      CustomGame,
-            FeaturedModType.EQUILIBRIUM:  CustomGame
-        }.get(game_mode, Game)
     game = game_class(**game_args)
 
     self._games[game_id] = game
