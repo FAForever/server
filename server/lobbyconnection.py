@@ -36,9 +36,7 @@ from .games import (
     CoopGame,
     CustomGame,
     FeaturedModType,
-    Game,
     GameState,
-    LadderGame,
     VisibilityState
 )
 from .geoip_service import GeoIpService
