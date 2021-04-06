@@ -903,12 +903,7 @@ class LobbyConnection:
         if rating_max is not None:
             rating_max = float(rating_max)
 
-        game_class = {
-            FeaturedModType.LADDER_1V1:   LadderGame,
-            FeaturedModType.COOP:         CoopGame,
-            FeaturedModType.FAF:          CustomGame,
-            FeaturedModType.FAFBETA:      CustomGame
-        }.get(game_mode, Game)
+        game_class = CoopGame if game_mode == FeaturedModType.COOP else CustomGame
 
         game = self.game_service.create_game(
             visibility=visibility,

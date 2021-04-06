@@ -15,7 +15,6 @@ async def test_create_game(players, game_service):
     game = game_service.create_game(
         visibility=VisibilityState.PUBLIC,
         game_mode="faf",
-        game_class=CustomGame,
         host=players.hosting,
         name="Test",
         mapname="SCMP_007",
@@ -33,7 +32,6 @@ async def test_all_games(players, game_service):
     game = game_service.create_game(
         visibility=VisibilityState.PUBLIC,
         game_mode="faf",
-        game_class=CustomGame,
         host=players.hosting,
         name="Test",
         mapname="SCMP_007",
@@ -60,7 +58,6 @@ async def test_create_game_other_gamemode(players, game_service):
     game = game_service.create_game(
         visibility=VisibilityState.PUBLIC,
         game_mode="labwars",
-        game_class=CustomGame,
         host=players.hosting,
         name="Test",
         mapname="SCMP_007",

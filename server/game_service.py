@@ -10,6 +10,7 @@ from .core import Service
 from .db import FAFDatabase
 from .decorators import with_logger
 from .games import (
+    CustomGame,
     FeaturedMod,
     FeaturedModType,
     Game,
@@ -126,7 +127,7 @@ class GameService(Service):
     def create_game(
         self,
         game_mode: str,
-        game_class: Type[Game] = None,
+        game_class: Type[Game] = CustomGame,
         visibility=VisibilityState.PUBLIC,
         host: Optional[Player] = None,
         name: Optional[str] = None,
