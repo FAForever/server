@@ -33,12 +33,12 @@ from .factions import Faction
 from .game_service import GameService
 from .gameconnection import GameConnection
 from .games import (
-    CustomGame, 
     CoopGame,
+    CustomGame,
     FeaturedModType,
     Game,
-    GameState, 
-    LadderGame, 
+    GameState,
+    LadderGame,
     VisibilityState
 )
 from .geoip_service import GeoIpService
