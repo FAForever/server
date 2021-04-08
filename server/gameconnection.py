@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import typing
 
 from sqlalchemy import select, text
 
@@ -294,14 +295,19 @@ class GameConnection(GpgNetServerProtocol):
         except (KeyError, ValueError):  # pragma: no cover
             self._logger.warning("Invalid result for %s reported: %s", army, result)
 
-    async def handle_operation_complete(self, army, secondary, delta):
-        if not int(army) == 1:
+    async def handle_operation_complete(
+        self,
+        primary_objectives_complete: typing.Union[bool, int],
+        secondary_objectives_complete: typing.Union[bool, int],
+        delta: str,
+    ) -> None:
+        if not primary_objectives_complete:
             return
 
         if self.game.validity != ValidityState.COOP_NOT_RANKED:
             return
 
-        secondary, delta = int(secondary), str(delta)
+        secondary, delta = int(secondary_objectives_complete), str(delta)
         async with self._db.acquire() as conn:
             # FIXME: Resolve used map earlier than this
             result = await conn.execute(
@@ -311,19 +317,29 @@ class GameConnection(GpgNetServerProtocol):
             )
             row = await result.fetchone()
             if not row:
-                self._logger.debug("can't find coop map: %s", self.game.map_file_path)
+                self._logger.debug(
+                    "can't find coop map: %s", self.game.map_file_path
+                )
                 return
             mission = row["id"]
 
-            await conn.execute(
-                coop_leaderboard.insert().values(
-                    mission=mission,
-                    gameuid=self.game.id,
-                    secondary=secondary,
-                    time=delta,
-                    player_count=len(self.game.players),
+            previously_completed_operations = await conn.execute(
+                select([coop_leaderboard]).where(
+                    coop_leaderboard.c.gameuid == self.game.id
                 )
             )
+            if await previously_completed_operations.fetchone() is None:
+                # Each player in a co-op game will send the OperationComplete
+                # message but we only need to perform this insert once
+                await conn.execute(
+                    coop_leaderboard.insert().values(
+                        mission=mission,
+                        gameuid=self.game.id,
+                        secondary=secondary,
+                        time=delta,
+                        player_count=len(self.game.players),
+                    )
+                )
 
     async def handle_json_stats(self, stats):
         self.game.report_army_stats(stats)

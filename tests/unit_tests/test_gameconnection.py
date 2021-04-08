@@ -1,12 +1,16 @@
 import asyncio
+import logging
+from datetime import datetime
 from unittest import mock
 
 import asynctest
+import pymysql
 import pytest
 from asynctest import CoroutineMock, exhaust_callbacks
 
 from server import GameConnection
 from server.abc.base_game import GameConnectionState
+from server.db.models import game_stats
 from server.games import Game, GameState, ValidityState, Victory
 from server.players import PlayerState
 from server.protocol import DisconnectedError
@@ -438,56 +442,119 @@ async def test_handle_action_GameEnded_ends_game(
     game.on_game_end.assert_called_once()
 
 
-async def test_handle_action_OperationComplete(ugame: Game, game_connection: GameConnection, database):
-    """
-        Sends an OperationComplete action to handle action and verifies that
-    the `coop_leaderboard` table is updated accordingly.
-
-    Requires that the map from `game.map_file_path` exists in the database.
-    """
-
+async def test_handle_action_OperationComplete(
+    ugame: Game,
+    game_connection: GameConnection,
+    database,
+):
     ugame.map_file_path = "maps/prothyon16.v0005.zip"
     ugame.validity = ValidityState.COOP_NOT_RANKED
     game_connection.game = ugame
-
-    secondary = 1
     time_taken = "09:08:07.654321"
-    await game_connection.handle_action("OperationComplete", ["1", secondary, time_taken])
+
+    await game_connection.handle_action(
+        "OperationComplete", [True, True, time_taken]
+    )
 
     async with database.acquire() as conn:
         result = await conn.execute(
             "SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
-            ugame.id)
+            ugame.id,
+        )
 
         row = await result.fetchone()
+        assert (row[0], row[1]) == (1, ugame.id)
 
-    assert (secondary, ugame.id) == (row[0], row[1])
+
+async def test_handle_action_OperationComplete_primary_incomplete(
+    ugame: Game,
+    game_connection: GameConnection,
+    database,
+):
+    ugame.map_file_path = "maps/prothyon16.v0005.zip"
+    ugame.validity = ValidityState.COOP_NOT_RANKED
+    game_connection.game = ugame
+    time_taken = "09:08:07.654321"
+
+    await game_connection.handle_action(
+        "OperationComplete", [False, True, time_taken]
+    )
+
+    async with database.acquire() as conn:
+        result = await conn.execute(
+            "SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
+            ugame.id,
+        )
+
+        row = await result.fetchone()
+        assert row is None
 
 
-async def test_handle_action_OperationComplete_invalid(ugame: Game, game_connection: GameConnection, database):
-    """
-        Sends an OperationComplete action to handle action and verifies that
-    the `coop_leaderboard` table is updated accordingly.
-
-    Requires that the map from `game.map_file_path` exists in the database.
-    """
-
+async def test_handle_action_OperationComplete_invalid(
+    ugame: Game,
+    game_connection: GameConnection,
+    database,
+):
     ugame.map_file_path = "maps/prothyon16.v0005.zip"
     ugame.validity = ValidityState.OTHER_UNRANK
     game_connection.game = ugame
-
-    secondary = 1
     time_taken = "09:08:07.654321"
-    await game_connection.handle_action("OperationComplete", ["1", secondary, time_taken])
+
+    await game_connection.handle_action(
+        "OperationComplete", [True, True, time_taken]
+    )
 
     async with database.acquire() as conn:
         result = await conn.execute(
             "SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
-            ugame.id)
+            ugame.id,
+        )
 
         row = await result.fetchone()
+        assert row is None
 
-    assert row is None
+
+async def test_handle_action_OperationComplete_duplicate(
+    ugame: Game,
+    game_connection: GameConnection,
+    database,
+    caplog,
+):
+    ugame.map_file_path = "maps/prothyon16.v0005.zip"
+    ugame.validity = ValidityState.COOP_NOT_RANKED
+    game_connection.game = ugame
+    time_taken = "09:08:07.654321"
+
+    async with database.acquire() as conn:
+        # OperationComplete expects an existing corresponding game_stats row,
+        # we automatically add such a row for ugame.id == 1 in test-data.sql
+        await conn.execute(
+            game_stats.insert().values(
+                id=ugame.id,
+                startTime=datetime.utcnow(),
+                gameName='Another test game',
+                gameType='0',
+                gameMod=6,
+                host=1,
+                mapId=1,
+                validity=0,
+            )
+        )
+
+    with caplog.at_level(logging.ERROR):
+        await game_connection.handle_action(
+            "OperationComplete", [True, True, time_taken]
+        )
+        caplog.clear()
+        await game_connection.handle_action(
+            "OperationComplete", [True, True, time_taken]
+        )
+
+        assert not any(
+            record.exc_info
+            and isinstance(record.exc_info[1], pymysql.err.IntegrityError)
+            for record in caplog.records
+        )
 
 
 async def test_handle_action_IceMsg(
