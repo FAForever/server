@@ -39,6 +39,7 @@ from .games import (
     GameState,
     VisibilityState
 )
+from .games.typedefs import GameType
 from .geoip_service import GeoIpService
 from .ice_servers.coturn import CoturnHMAC
 from .ice_servers.nts import TwilioNTS
@@ -953,6 +954,8 @@ class LobbyConnection:
             # options are. Currently, options for ladder are hardcoded into the
             # client.
             "name": game.name,
+            "game_type": GameType.to_string(game.game_type),
+            # Use game_type instead, init_mode is depreciated
             "init_mode": game.init_mode.value,
             "rating_type": game.rating_type,
             **options._asdict()
