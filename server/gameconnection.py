@@ -297,10 +297,15 @@ class GameConnection(GpgNetServerProtocol):
 
     async def handle_operation_complete(
         self,
-        primary_objectives_complete: typing.Union[bool, int],
-        secondary_objectives_complete: typing.Union[bool, int],
+        primary_objectives_complete: typing.Any,
+        secondary_objectives_complete: typing.Any,
         delta: str,
     ) -> None:
+
+        def to_bool(x): return x in [1, "1", True, "True", "true"]
+        primary_objectives_complete = to_bool(primary_objectives_complete)
+        secondary_objectives_complete = to_bool(secondary_objectives_complete)
+
         if not primary_objectives_complete:
             return
 
@@ -323,14 +328,10 @@ class GameConnection(GpgNetServerProtocol):
                 return
             mission = row["id"]
 
-            previously_completed_operations = await conn.execute(
-                select([coop_leaderboard]).where(
-                    coop_leaderboard.c.gameuid == self.game.id
-                )
-            )
-            if await previously_completed_operations.fetchone() is None:
-                # Each player in a co-op game will send the OperationComplete
-                # message but we only need to perform this insert once
+            # Each player in a co-op game will send the OperationComplete
+            # message but we only need to perform this insert once
+            already_saved = getattr(self.game, '_coop_leaderboard_saved', False)
+            if not already_saved:
                 await conn.execute(
                     coop_leaderboard.insert().values(
                         mission=mission,
@@ -340,6 +341,7 @@ class GameConnection(GpgNetServerProtocol):
                         player_count=len(self.game.players),
                     )
                 )
+                self.game._coop_leaderboard_saved = True
 
     async def handle_json_stats(self, stats):
         self.game.report_army_stats(stats)

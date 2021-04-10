@@ -442,18 +442,23 @@ async def test_handle_action_GameEnded_ends_game(
     game.on_game_end.assert_called_once()
 
 
+@pytest.mark.parametrize(
+    "primary_objectives_complete", [1, "1", True, "True", "true"]
+)
 async def test_handle_action_OperationComplete(
+    primary_objectives_complete,
     ugame: Game,
     game_connection: GameConnection,
     database,
 ):
+    ugame.id = 1  # reuse existing corresponding game_stats row
     ugame.map_file_path = "maps/prothyon16.v0005.zip"
     ugame.validity = ValidityState.COOP_NOT_RANKED
     game_connection.game = ugame
     time_taken = "09:08:07.654321"
 
     await game_connection.handle_action(
-        "OperationComplete", [True, True, time_taken]
+        "OperationComplete", [primary_objectives_complete, 1, time_taken]
     )
 
     async with database.acquire() as conn:
@@ -466,7 +471,11 @@ async def test_handle_action_OperationComplete(
         assert (row[0], row[1]) == (1, ugame.id)
 
 
+@pytest.mark.parametrize(
+    "primary_objectives_complete", [0, "0", False, "False", "false"]
+)
 async def test_handle_action_OperationComplete_primary_incomplete(
+    primary_objectives_complete,
     ugame: Game,
     game_connection: GameConnection,
     database,
@@ -477,7 +486,7 @@ async def test_handle_action_OperationComplete_primary_incomplete(
     time_taken = "09:08:07.654321"
 
     await game_connection.handle_action(
-        "OperationComplete", [False, True, time_taken]
+        "OperationComplete", [primary_objectives_complete, 1, time_taken]
     )
 
     async with database.acquire() as conn:
@@ -501,7 +510,7 @@ async def test_handle_action_OperationComplete_invalid(
     time_taken = "09:08:07.654321"
 
     await game_connection.handle_action(
-        "OperationComplete", [True, True, time_taken]
+        "OperationComplete", [1, 1, time_taken]
     )
 
     async with database.acquire() as conn:
@@ -543,11 +552,11 @@ async def test_handle_action_OperationComplete_duplicate(
 
     with caplog.at_level(logging.ERROR):
         await game_connection.handle_action(
-            "OperationComplete", [True, True, time_taken]
+            "OperationComplete", [1, 1, time_taken]
         )
         caplog.clear()
         await game_connection.handle_action(
-            "OperationComplete", [True, True, time_taken]
+            "OperationComplete", [1, 1, time_taken]
         )
 
         assert not any(
