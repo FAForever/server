@@ -374,6 +374,39 @@ async def test_command_game_join_uid_as_str(
     }
     lobbyconnection.send.assert_called_with(expected_reply)
 
+async def test_should_reply_with_game_type_field_on_game_lauch(database,
+                                            lobbyconnection,
+                                            game_service,
+                                            test_game_info,
+                                            players,
+                                            game_stats_service):
+    lobbyconnection.send = CoroutineMock()
+    lobbyconnection.game_service = game_service
+    game = Game(42, database, game_service, game_stats_service)
+    game.state = GameState.LOBBY
+    game.password = None
+    game.game_mode = "faf"
+    game.id = 42
+    game.name = "Test Game Name"
+    game_service._games[42] = game
+    lobbyconnection.player = players.hosting
+    test_game_info["uid"] = 42
+
+    await lobbyconnection.on_message_received({
+        "command": "game_join",
+        **test_game_info
+    })
+    expected_reply = {
+        "command": "game_launch",
+        "game_type": "custom",
+        "args": ["/numgames", players.hosting.game_count[RatingType.GLOBAL]],
+        "mod": "faf",
+        "uid": 42,
+        "name": "Test Game Name",
+        "init_mode": InitMode.NORMAL_LOBBY.value,
+    }
+    lobbyconnection.send.assert_called_with(expected_reply)
+
 
 async def test_command_game_join_without_password(
     lobbyconnection,
