@@ -10,7 +10,9 @@ import pytest
 from aiohttp import web
 from asynctest import exhaust_callbacks
 
-from server import GameService, ServerInstance, run_control_server
+from server import GameService, ServerInstance
+from server.config import config
+from server.control import ControlServer
 from server.db.models import login
 from server.ladder_service import LadderService
 from server.party_service import PartyService
@@ -102,7 +104,13 @@ async def lobby_server(
 
 @pytest.fixture
 async def control_server(player_service, game_service):
-    server = await run_control_server(player_service, game_service)
+    server = ControlServer(
+        game_service,
+        player_service,
+        "127.0.0.1",
+        config.CONTROL_SERVER_PORT
+    )
+    await server.start()
 
     yield server
 
