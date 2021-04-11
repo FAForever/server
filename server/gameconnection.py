@@ -1,6 +1,6 @@
 import asyncio
 import contextlib
-import typing
+from typing import Any
 
 from sqlalchemy import select, text
 
@@ -11,7 +11,8 @@ from .config import TRACE
 from .db.models import coop_leaderboard, coop_map, teamkills
 from .decorators import with_logger
 from .game_service import GameService
-from .games import Game, GameError, GameState, ValidityState, Victory
+from .games import CoopGame, Game, GameError, GameState, ValidityState, Victory
+from .games.typedefs import _FAFalse, _FATrue
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, GpgNetServerProtocol, Protocol
@@ -296,25 +297,27 @@ class GameConnection(GpgNetServerProtocol):
             self._logger.warning("Invalid result for %s reported: %s", army, result)
 
     async def handle_operation_complete(
-        self,
-        primary_objectives_complete: typing.Any,
-        secondary_objectives_complete: typing.Any,
-        delta: str,
+        self, primary: Any, secondary: Any, delta: str
     ) -> None:
+        """`primary` and `secondary` denote whether or not the primary and
+        secondary mission objectives have been completed"""
+        primary = _FATrue() == primary
+        secondary = _FATrue() == secondary
 
-        def to_bool(x): return x in [1, "1", True, "True", "true"]
-        primary_objectives_complete = to_bool(primary_objectives_complete)
-        secondary_objectives_complete = to_bool(secondary_objectives_complete)
-
-        if not primary_objectives_complete:
+        if not primary:
             return
 
-        if self.game.validity != ValidityState.COOP_NOT_RANKED:
+        if (
+            not isinstance(self.game, CoopGame)
+            or self.game.validity != ValidityState.COOP_NOT_RANKED
+        ):
+            self._logger.debug(
+                "OperationComplete called for non-coop game: %s", self.game.id
+            )
             return
 
-        secondary, delta = int(secondary_objectives_complete), str(delta)
+        secondary, delta = int(secondary), str(delta)
         async with self._db.acquire() as conn:
-            # FIXME: Resolve used map earlier than this
             result = await conn.execute(
                 select([coop_map.c.id]).where(
                     coop_map.c.filename == self.game.map_file_path
@@ -330,8 +333,7 @@ class GameConnection(GpgNetServerProtocol):
 
             # Each player in a co-op game will send the OperationComplete
             # message but we only need to perform this insert once
-            already_saved = getattr(self.game, '_coop_leaderboard_saved', False)
-            if not already_saved:
+            if not self.game.leaderboard_saved:
                 await conn.execute(
                     coop_leaderboard.insert().values(
                         mission=mission,
@@ -341,7 +343,7 @@ class GameConnection(GpgNetServerProtocol):
                         player_count=len(self.game.players),
                     )
                 )
-                self.game._coop_leaderboard_saved = True
+                self.game.leaderboard_saved = True
 
     async def handle_json_stats(self, stats):
         self.game.report_army_stats(stats)

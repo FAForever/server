@@ -11,7 +11,7 @@ from asynctest import CoroutineMock, exhaust_callbacks
 from server import GameConnection
 from server.abc.base_game import GameConnectionState
 from server.db.models import game_stats
-from server.games import Game, GameState, ValidityState, Victory
+from server.games import CoopGame, Game, GameState, ValidityState, Victory
 from server.players import PlayerState
 from server.protocol import DisconnectedError
 
@@ -442,57 +442,45 @@ async def test_handle_action_GameEnded_ends_game(
     game.on_game_end.assert_called_once()
 
 
-@pytest.mark.parametrize(
-    "primary_objectives_complete", [1, "1", True, "True", "true"]
-)
+@pytest.mark.parametrize("primary", [1, True, "True", "true"])
 async def test_handle_action_OperationComplete(
-    primary_objectives_complete,
-    ugame: Game,
-    game_connection: GameConnection,
-    database,
+    primary, coop_game: CoopGame, game_connection: GameConnection, database
 ):
-    ugame.id = 1  # reuse existing corresponding game_stats row
-    ugame.map_file_path = "maps/prothyon16.v0005.zip"
-    ugame.validity = ValidityState.COOP_NOT_RANKED
-    game_connection.game = ugame
+    coop_game.id = 1  # reuse existing corresponding game_stats row
+    coop_game.map_file_path = "maps/prothyon16.v0005.zip"
+    game_connection.game = coop_game
     time_taken = "09:08:07.654321"
 
     await game_connection.handle_action(
-        "OperationComplete", [primary_objectives_complete, 1, time_taken]
+        "OperationComplete", [primary, 1, time_taken]
     )
 
     async with database.acquire() as conn:
         result = await conn.execute(
             "SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
-            ugame.id,
+            coop_game.id,
         )
 
         row = await result.fetchone()
-        assert (row[0], row[1]) == (1, ugame.id)
+        assert (row[0], row[1]) == (1, coop_game.id)
 
 
-@pytest.mark.parametrize(
-    "primary_objectives_complete", [0, "0", False, "False", "false"]
-)
+@pytest.mark.parametrize("primary", [0, False, "False", "false"])
 async def test_handle_action_OperationComplete_primary_incomplete(
-    primary_objectives_complete,
-    ugame: Game,
-    game_connection: GameConnection,
-    database,
+    primary, coop_game: CoopGame, game_connection: GameConnection, database
 ):
-    ugame.map_file_path = "maps/prothyon16.v0005.zip"
-    ugame.validity = ValidityState.COOP_NOT_RANKED
-    game_connection.game = ugame
+    coop_game.map_file_path = "maps/prothyon16.v0005.zip"
+    game_connection.game = coop_game
     time_taken = "09:08:07.654321"
 
     await game_connection.handle_action(
-        "OperationComplete", [primary_objectives_complete, 1, time_taken]
+        "OperationComplete", [primary, 1, time_taken]
     )
 
     async with database.acquire() as conn:
         result = await conn.execute(
             "SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
-            ugame.id,
+            coop_game.id,
         )
 
         row = await result.fetchone()
@@ -500,13 +488,11 @@ async def test_handle_action_OperationComplete_primary_incomplete(
 
 
 async def test_handle_action_OperationComplete_invalid(
-    ugame: Game,
-    game_connection: GameConnection,
-    database,
+    coop_game: CoopGame, game_connection: GameConnection, database
 ):
-    ugame.map_file_path = "maps/prothyon16.v0005.zip"
-    ugame.validity = ValidityState.OTHER_UNRANK
-    game_connection.game = ugame
+    coop_game.map_file_path = "maps/prothyon16.v0005.zip"
+    coop_game.validity = ValidityState.OTHER_UNRANK
+    game_connection.game = coop_game
     time_taken = "09:08:07.654321"
 
     await game_connection.handle_action(
@@ -516,7 +502,7 @@ async def test_handle_action_OperationComplete_invalid(
     async with database.acquire() as conn:
         result = await conn.execute(
             "SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
-            ugame.id,
+            coop_game.id,
         )
 
         row = await result.fetchone()
@@ -524,22 +510,19 @@ async def test_handle_action_OperationComplete_invalid(
 
 
 async def test_handle_action_OperationComplete_duplicate(
-    ugame: Game,
-    game_connection: GameConnection,
-    database,
-    caplog,
+    coop_game: CoopGame, game_connection: GameConnection, database, caplog
 ):
-    ugame.map_file_path = "maps/prothyon16.v0005.zip"
-    ugame.validity = ValidityState.COOP_NOT_RANKED
-    game_connection.game = ugame
+    coop_game.map_file_path = "maps/prothyon16.v0005.zip"
+    game_connection.game = coop_game
     time_taken = "09:08:07.654321"
 
     async with database.acquire() as conn:
         # OperationComplete expects an existing corresponding game_stats row,
-        # we automatically add such a row for ugame.id == 1 in test-data.sql
+        # we automatically add such a row for coop_game.id == 1 in
+        # test-data.sql
         await conn.execute(
             game_stats.insert().values(
-                id=ugame.id,
+                id=coop_game.id,
                 startTime=datetime.utcnow(),
                 gameName='Another test game',
                 gameType='0',

@@ -21,7 +21,7 @@ from server.api.oauth_session import OAuth2Session
 from server.config import TRACE, config
 from server.db import FAFDatabase
 from server.game_service import GameService
-from server.games import FeaturedModType
+from server.games import FeaturedModType, ValidityState
 from server.geoip_service import GeoIpService
 from server.lobbyconnection import LobbyConnection
 from server.matchmaker import MatchmakerQueue
@@ -153,6 +153,7 @@ def game(database, players):
 
 
 GAME_UID = 1
+COOP_GAME_UID = 1
 
 
 @pytest.fixture
@@ -163,12 +164,28 @@ def ugame(database, players):
     return game
 
 
-def make_game(database, uid, players):
+@pytest.fixture
+def coop_game(database, players):
+    global COOP_GAME_UID
+    game = make_game(database, COOP_GAME_UID, players, coop=True)
+    game.validity = ValidityState.COOP_NOT_RANKED
+    game.leaderboard_saved = False
+    COOP_GAME_UID += 1
+    return game
+
+
+def make_game(database, uid, players, coop=False):
     from server.abc.base_game import InitMode
-    from server.games import Game
+    from server.games import CoopGame, Game
     mock_parent = CoroutineMock()
-    game = asynctest.create_autospec(spec=Game(uid, database, mock_parent,
-                                               CoroutineMock()))
+    if coop:
+        game = asynctest.create_autospec(
+            spec=CoopGame(uid, database, mock_parent, CoroutineMock())
+        )
+    else:
+        game = asynctest.create_autospec(
+            spec=Game(uid, database, mock_parent, CoroutineMock())
+        )
     players.hosting.getGame = CoroutineMock(return_value=game)
     players.joining.getGame = CoroutineMock(return_value=game)
     players.peer.getGame = CoroutineMock(return_value=game)
