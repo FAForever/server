@@ -12,7 +12,7 @@ from .db.models import coop_leaderboard, coop_map, teamkills
 from .decorators import with_logger
 from .game_service import GameService
 from .games import CoopGame, Game, GameError, GameState, ValidityState, Victory
-from .games.typedefs import _FAFalse, _FATrue
+from .games.typedefs import _FATrue
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, GpgNetServerProtocol, Protocol
