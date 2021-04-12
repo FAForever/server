@@ -7,10 +7,11 @@ import asynctest
 import pymysql
 import pytest
 from asynctest import CoroutineMock, exhaust_callbacks
+from sqlalchemy import select
 
 from server import GameConnection
 from server.abc.base_game import GameConnectionState
-from server.db.models import game_stats
+from server.db.models import coop_leaderboard, game_stats
 from server.games import CoopGame, Game, GameState, ValidityState, Victory
 from server.players import PlayerState
 from server.protocol import DisconnectedError
@@ -457,8 +458,9 @@ async def test_handle_action_OperationComplete(
 
     async with database.acquire() as conn:
         result = await conn.execute(
-            "SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
-            coop_game.id,
+            select(
+                [coop_leaderboard.c.secondary, coop_leaderboard.c.gameuid]
+            ).where(coop_leaderboard.c.gameuid == coop_game.id),
         )
 
         row = await result.fetchone()
@@ -479,8 +481,31 @@ async def test_handle_action_OperationComplete_primary_incomplete(
 
     async with database.acquire() as conn:
         result = await conn.execute(
-            "SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
-            coop_game.id,
+            select(
+                [coop_leaderboard.c.secondary, coop_leaderboard.c.gameuid]
+            ).where(coop_leaderboard.c.gameuid == coop_game.id),
+        )
+
+        row = await result.fetchone()
+        assert row is None
+
+
+async def test_handle_action_OperationComplete_non_coop_game(
+    ugame: Game, game_connection: GameConnection, database
+):
+    ugame.map_file_path = "maps/prothyon16.v0005.zip"
+    game_connection.game = ugame
+    time_taken = "09:08:07.654321"
+
+    await game_connection.handle_action(
+        "OperationComplete", [1, 1, time_taken]
+    )
+
+    async with database.acquire() as conn:
+        result = await conn.execute(
+            select(
+                [coop_leaderboard.c.secondary, coop_leaderboard.c.gameuid]
+            ).where(coop_leaderboard.c.gameuid == ugame.id),
         )
 
         row = await result.fetchone()
@@ -501,8 +526,9 @@ async def test_handle_action_OperationComplete_invalid(
 
     async with database.acquire() as conn:
         result = await conn.execute(
-            "SELECT secondary, gameuid from `coop_leaderboard` where gameuid=%s",
-            coop_game.id,
+            select(
+                [coop_leaderboard.c.secondary, coop_leaderboard.c.gameuid]
+            ).where(coop_leaderboard.c.gameuid == coop_game.id),
         )
 
         row = await result.fetchone()
