@@ -264,7 +264,7 @@ async def test_game_matchmaking_disconnect(lobby_server):
     assert msg == {"command": "match_cancelled"}
 
 
-@fast_forward(130)
+@fast_forward(131)
 async def test_game_matchmaking_close_fa_and_requeue(lobby_server):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
 
