@@ -304,7 +304,7 @@ class GameConnection(GpgNetServerProtocol):
         """
         :param primary: are primary mission objectives complete?
         :param secondary: are secondary mission objectives complete?
-        :param delta: the time at which the operation occurred
+        :param delta: the time it took to complete the mission
         :return: None
         """
         primary = FA.ENABLED == primary
@@ -320,9 +320,6 @@ class GameConnection(GpgNetServerProtocol):
             return
 
         if self.game.validity != ValidityState.COOP_NOT_RANKED:
-            self._logger.warning(
-                "OperationComplete called for invalid game: %s", self.game.id
-            )
             return
 
         secondary, delta = int(secondary), str(delta)
