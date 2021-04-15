@@ -443,9 +443,16 @@ async def test_handle_action_GameEnded_ends_game(
     game.on_game_end.assert_called_once()
 
 
-@pytest.mark.parametrize("primary", [1, True, "True", "true"])
+@pytest.mark.parametrize(
+    "primary,secondary",
+    [(1, 1), (True, True), ("True", "True"), ("true", "true")],
+)
 async def test_handle_action_OperationComplete(
-    primary, coop_game: CoopGame, game_connection: GameConnection, database
+    primary,
+    secondary,
+    coop_game: CoopGame,
+    game_connection: GameConnection,
+    database,
 ):
     coop_game.id = 1  # reuse existing corresponding game_stats row
     coop_game.map_file_path = "maps/prothyon16.v0005.zip"
@@ -453,7 +460,7 @@ async def test_handle_action_OperationComplete(
     time_taken = "09:08:07.654321"
 
     await game_connection.handle_action(
-        "OperationComplete", [primary, 1, time_taken]
+        "OperationComplete", [primary, secondary, time_taken]
     )
 
     async with database.acquire() as conn:

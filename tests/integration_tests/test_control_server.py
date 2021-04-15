@@ -20,7 +20,7 @@ def listify(obj: dict):
     return obj
 
 
-@fast_forward(3)
+@fast_forward(2)
 async def test_players(control_server, lobby_server, player_service):
     test_id, _, _ = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
@@ -34,7 +34,7 @@ async def test_players(control_server, lobby_server, player_service):
             assert data == [listify(player_service[test_id].to_dict())]
 
 
-@fast_forward(3)
+@fast_forward(2)
 async def test_games(control_server, lobby_server, game_service):
     test_id, _, proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server

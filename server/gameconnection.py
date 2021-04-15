@@ -322,7 +322,7 @@ class GameConnection(GpgNetServerProtocol):
         if self.game.validity != ValidityState.COOP_NOT_RANKED:
             return
 
-        secondary, delta = int(secondary), str(delta)
+        secondary, delta = secondary, str(delta)
         async with self._db.acquire() as conn:
             result = await conn.execute(
                 select([coop_map.c.id]).where(
