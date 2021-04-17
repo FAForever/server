@@ -674,7 +674,7 @@ class ServerInstance(object):
                     offer=False
                 )
 
-    async def handle_action(self, command, args):
+    async def handle_action(self, command: str, args: List[Any]):
         &#34;&#34;&#34;
         Handle GpgNetSend messages, wrapped in the JSON protocol
         :param command: command type
@@ -699,7 +699,7 @@ class ServerInstance(object):
     async def handle_desync(self, *_args):  # pragma: no cover
         self.game.desyncs += 1
 
-    async def handle_game_option(self, key, value):
+    async def handle_game_option(self, key: str, value: Any):
         if not self.is_host():
             return
 
@@ -725,7 +725,7 @@ class ServerInstance(object):
 
         self._mark_dirty()
 
-    async def handle_game_mods(self, mode, args):
+    async def handle_game_mods(self, mode: Any, args: List[Any]):
         if not self.is_host():
             return
 
@@ -749,28 +749,30 @@ class ServerInstance(object):
 
         self._mark_dirty()
 
-    async def handle_player_option(self, player_id, command, value):
+    async def handle_player_option(
+        self, player_id: Any, command: Any, value: Any
+    ):
         if not self.is_host():
             return
 
         self.game.set_player_option(int(player_id), command, value)
         self._mark_dirty()
 
-    async def handle_ai_option(self, name, key, value):
+    async def handle_ai_option(self, name: Any, key: Any, value: Any):
         if not self.is_host():
             return
 
         self.game.set_ai_option(str(name), key, value)
         self._mark_dirty()
 
-    async def handle_clear_slot(self, slot):
+    async def handle_clear_slot(self, slot: Any):
         if not self.is_host():
             return
 
         self.game.clear_slot(int(slot))
         self._mark_dirty()
 
-    async def handle_game_result(self, army, result):
+    async def handle_game_result(self, army: Any, result: Any):
         army = int(army)
         result = str(result).lower()
         try:
@@ -779,16 +781,32 @@ class ServerInstance(object):
         except (KeyError, ValueError):  # pragma: no cover
             self._logger.warning(&#34;Invalid result for %s reported: %s&#34;, army, result)
 
-    async def handle_operation_complete(self, army, secondary, delta):
-        if not int(army) == 1:
+    async def handle_operation_complete(
+        self, primary: Any, secondary: Any, delta: str
+    ):
+        &#34;&#34;&#34;
+        :param primary: are primary mission objectives complete?
+        :param secondary: are secondary mission objectives complete?
+        :param delta: the time it took to complete the mission
+        :return: None
+        &#34;&#34;&#34;
+        primary = FA.ENABLED == primary
+        secondary = FA.ENABLED == secondary
+
+        if not primary:
+            return
+
+        if not isinstance(self.game, CoopGame):
+            self._logger.warning(
+                &#34;OperationComplete called for non-coop game: %s&#34;, self.game.id
+            )
             return
 
         if self.game.validity != ValidityState.COOP_NOT_RANKED:
             return
 
-        secondary, delta = int(secondary), str(delta)
+        secondary, delta = secondary, str(delta)
         async with self._db.acquire() as conn:
-            # FIXME: Resolve used map earlier than this
             result = await conn.execute(
                 select([coop_map.c.id]).where(
                     coop_map.c.filename == self.game.map_file_path
@@ -796,27 +814,40 @@ class ServerInstance(object):
             )
             row = await result.fetchone()
             if not row:
-                self._logger.debug(&#34;can&#39;t find coop map: %s&#34;, self.game.map_file_path)
+                self._logger.debug(
+                    &#34;can&#39;t find coop map: %s&#34;, self.game.map_file_path
+                )
                 return
             mission = row[&#34;id&#34;]
 
-            await conn.execute(
-                coop_leaderboard.insert().values(
-                    mission=mission,
-                    gameuid=self.game.id,
-                    secondary=secondary,
-                    time=delta,
-                    player_count=len(self.game.players),
+            # Each player in a co-op game will send the OperationComplete
+            # message but we only need to perform this insert once
+            if not self.game.leaderboard_saved:
+                await conn.execute(
+                    coop_leaderboard.insert().values(
+                        mission=mission,
+                        gameuid=self.game.id,
+                        secondary=secondary,
+                        time=delta,
+                        player_count=len(self.game.players),
+                    )
                 )
-            )
+                self.game.leaderboard_saved = True
 
-    async def handle_json_stats(self, stats):
+    async def handle_json_stats(self, stats: str):
         self.game.report_army_stats(stats)
 
     async def handle_enforce_rating(self):
         self.game.enforce_rating = True
 
-    async def handle_teamkill_report(self, gametime, reporter_id, reporter_name, teamkiller_id, teamkiller_name):
+    async def handle_teamkill_report(
+        self,
+        gametime: Any,
+        reporter_id: Any,
+        reporter_name: str,
+        teamkiller_id: Any,
+        teamkiller_name: str,
+    ):
         &#34;&#34;&#34;
             Sent when a player is teamkilled and clicks the &#39;Report&#39; button.
 
@@ -829,7 +860,14 @@ class ServerInstance(object):
 
         pass
 
-    async def handle_teamkill_happened(self, gametime, victim_id, victim_name, teamkiller_id, teamkiller_name):
+    async def handle_teamkill_happened(
+        self,
+        gametime: Any,
+        victim_id: Any,
+        victim_name: str,
+        teamkiller_id: Any,
+        teamkiller_name: str,
+    ):
         &#34;&#34;&#34;
             Send automatically by the game whenever a teamkill happens. Takes
             the same parameters as TeamkillReport.
@@ -857,7 +895,7 @@ class ServerInstance(object):
                 )
             )
 
-    async def handle_ice_message(self, receiver_id, ice_msg):
+    async def handle_ice_message(self, receiver_id: Any, ice_msg: str):
         receiver_id = int(receiver_id)
         peer = self.player_service.get_player(receiver_id)
         if not peer:
@@ -884,7 +922,7 @@ class ServerInstance(object):
                 receiver_id
             )
 
-    async def handle_game_state(self, state):
+    async def handle_game_state(self, state: str):
         &#34;&#34;&#34;
         Changes in game state
         :param state: new state
@@ -927,7 +965,7 @@ class ServerInstance(object):
             await self.on_connection_lost()
         self._mark_dirty()
 
-    async def handle_game_ended(self, *args):
+    async def handle_game_ended(self, *args:  List[Any]):
         &#34;&#34;&#34;
         Signals that the simulation has ended.
         &#34;&#34;&#34;
@@ -938,28 +976,28 @@ class ServerInstance(object):
         if self.game.ended:
             await self.game.on_game_end()
 
-    async def handle_rehost(self, *args):
+    async def handle_rehost(self, *args: List[Any]):
         &#34;&#34;&#34;
         Signals that the user has rehosted the game. This is currently unused but
         included for documentation purposes.
         &#34;&#34;&#34;
         pass
 
-    async def handle_bottleneck(self, *args):
+    async def handle_bottleneck(self, *args: List[Any]):
         &#34;&#34;&#34;
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         &#34;&#34;&#34;
         pass
 
-    async def handle_bottleneck_cleared(self, *args):
+    async def handle_bottleneck_cleared(self, *args: List[Any]):
         &#34;&#34;&#34;
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         &#34;&#34;&#34;
         pass
 
-    async def handle_disconnected(self, *args):
+    async def handle_disconnected(self, *args: List[Any]):
         &#34;&#34;&#34;
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
@@ -1214,7 +1252,7 @@ and deletes references to Player and Game held by this object.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_action"><code class="name flex">
-<span>async def <span class="ident">handle_action</span></span>(<span>self, command, args)</span>
+<span>async def <span class="ident">handle_action</span></span>(<span>self, command: str, args: List[Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Handle GpgNetSend messages, wrapped in the JSON protocol
@@ -1225,7 +1263,7 @@ and deletes references to Player and Game held by this object.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_action(self, command, args):
+<pre><code class="python">async def handle_action(self, command: str, args: List[Any]):
     &#34;&#34;&#34;
     Handle GpgNetSend messages, wrapped in the JSON protocol
     :param command: command type
@@ -1249,7 +1287,7 @@ and deletes references to Player and Game held by this object.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_ai_option"><code class="name flex">
-<span>async def <span class="ident">handle_ai_option</span></span>(<span>self, name, key, value)</span>
+<span>async def <span class="ident">handle_ai_option</span></span>(<span>self, name: Any, key: Any, value: Any)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1257,7 +1295,7 @@ and deletes references to Player and Game held by this object.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_ai_option(self, name, key, value):
+<pre><code class="python">async def handle_ai_option(self, name: Any, key: Any, value: Any):
     if not self.is_host():
         return
 
@@ -1266,7 +1304,7 @@ and deletes references to Player and Game held by this object.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_bottleneck"><code class="name flex">
-<span>async def <span class="ident">handle_bottleneck</span></span>(<span>self, *args)</span>
+<span>async def <span class="ident">handle_bottleneck</span></span>(<span>self, *args: List[Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Not sure what this command means. This is currently unused but
@@ -1275,7 +1313,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_bottleneck(self, *args):
+<pre><code class="python">async def handle_bottleneck(self, *args: List[Any]):
     &#34;&#34;&#34;
     Not sure what this command means. This is currently unused but
     included for documentation purposes.
@@ -1284,7 +1322,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_bottleneck_cleared"><code class="name flex">
-<span>async def <span class="ident">handle_bottleneck_cleared</span></span>(<span>self, *args)</span>
+<span>async def <span class="ident">handle_bottleneck_cleared</span></span>(<span>self, *args: List[Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Not sure what this command means. This is currently unused but
@@ -1293,7 +1331,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_bottleneck_cleared(self, *args):
+<pre><code class="python">async def handle_bottleneck_cleared(self, *args: List[Any]):
     &#34;&#34;&#34;
     Not sure what this command means. This is currently unused but
     included for documentation purposes.
@@ -1318,7 +1356,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_clear_slot"><code class="name flex">
-<span>async def <span class="ident">handle_clear_slot</span></span>(<span>self, slot)</span>
+<span>async def <span class="ident">handle_clear_slot</span></span>(<span>self, slot: Any)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1326,7 +1364,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_clear_slot(self, slot):
+<pre><code class="python">async def handle_clear_slot(self, slot: Any):
     if not self.is_host():
         return
 
@@ -1348,7 +1386,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_disconnected"><code class="name flex">
-<span>async def <span class="ident">handle_disconnected</span></span>(<span>self, *args)</span>
+<span>async def <span class="ident">handle_disconnected</span></span>(<span>self, *args: List[Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Not sure what this command means. This is currently unused but
@@ -1357,7 +1395,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_disconnected(self, *args):
+<pre><code class="python">async def handle_disconnected(self, *args: List[Any]):
     &#34;&#34;&#34;
     Not sure what this command means. This is currently unused but
     included for documentation purposes.
@@ -1379,7 +1417,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_game_ended"><code class="name flex">
-<span>async def <span class="ident">handle_game_ended</span></span>(<span>self, *args)</span>
+<span>async def <span class="ident">handle_game_ended</span></span>(<span>self, *args: List[Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Signals that the simulation has ended.</p></div>
@@ -1387,7 +1425,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_game_ended(self, *args):
+<pre><code class="python">async def handle_game_ended(self, *args:  List[Any]):
     &#34;&#34;&#34;
     Signals that the simulation has ended.
     &#34;&#34;&#34;
@@ -1416,7 +1454,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_game_mods"><code class="name flex">
-<span>async def <span class="ident">handle_game_mods</span></span>(<span>self, mode, args)</span>
+<span>async def <span class="ident">handle_game_mods</span></span>(<span>self, mode: Any, args: List[Any])</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1424,7 +1462,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_game_mods(self, mode, args):
+<pre><code class="python">async def handle_game_mods(self, mode: Any, args: List[Any]):
     if not self.is_host():
         return
 
@@ -1450,7 +1488,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_game_option"><code class="name flex">
-<span>async def <span class="ident">handle_game_option</span></span>(<span>self, key, value)</span>
+<span>async def <span class="ident">handle_game_option</span></span>(<span>self, key: str, value: Any)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1458,7 +1496,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_game_option(self, key, value):
+<pre><code class="python">async def handle_game_option(self, key: str, value: Any):
     if not self.is_host():
         return
 
@@ -1486,7 +1524,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_game_result"><code class="name flex">
-<span>async def <span class="ident">handle_game_result</span></span>(<span>self, army, result)</span>
+<span>async def <span class="ident">handle_game_result</span></span>(<span>self, army: Any, result: Any)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1494,7 +1532,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_game_result(self, army, result):
+<pre><code class="python">async def handle_game_result(self, army: Any, result: Any):
     army = int(army)
     result = str(result).lower()
     try:
@@ -1505,7 +1543,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_game_state"><code class="name flex">
-<span>async def <span class="ident">handle_game_state</span></span>(<span>self, state)</span>
+<span>async def <span class="ident">handle_game_state</span></span>(<span>self, state: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Changes in game state
@@ -1515,7 +1553,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_game_state(self, state):
+<pre><code class="python">async def handle_game_state(self, state: str):
     &#34;&#34;&#34;
     Changes in game state
     :param state: new state
@@ -1560,7 +1598,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_ice_message"><code class="name flex">
-<span>async def <span class="ident">handle_ice_message</span></span>(<span>self, receiver_id, ice_msg)</span>
+<span>async def <span class="ident">handle_ice_message</span></span>(<span>self, receiver_id: Any, ice_msg: str)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1568,7 +1606,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_ice_message(self, receiver_id, ice_msg):
+<pre><code class="python">async def handle_ice_message(self, receiver_id: Any, ice_msg: str):
     receiver_id = int(receiver_id)
     peer = self.player_service.get_player(receiver_id)
     if not peer:
@@ -1597,7 +1635,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_json_stats"><code class="name flex">
-<span>async def <span class="ident">handle_json_stats</span></span>(<span>self, stats)</span>
+<span>async def <span class="ident">handle_json_stats</span></span>(<span>self, stats: str)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1605,29 +1643,48 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_json_stats(self, stats):
+<pre><code class="python">async def handle_json_stats(self, stats: str):
     self.game.report_army_stats(stats)</code></pre>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_operation_complete"><code class="name flex">
-<span>async def <span class="ident">handle_operation_complete</span></span>(<span>self, army, secondary, delta)</span>
+<span>async def <span class="ident">handle_operation_complete</span></span>(<span>self, primary: Any, secondary: Any, delta: str)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>:param primary: are primary mission objectives complete?
+:param secondary: are secondary mission objectives complete?
+:param delta: the time it took to complete the mission
+:return: None</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_operation_complete(self, army, secondary, delta):
-    if not int(army) == 1:
+<pre><code class="python">async def handle_operation_complete(
+    self, primary: Any, secondary: Any, delta: str
+):
+    &#34;&#34;&#34;
+    :param primary: are primary mission objectives complete?
+    :param secondary: are secondary mission objectives complete?
+    :param delta: the time it took to complete the mission
+    :return: None
+    &#34;&#34;&#34;
+    primary = FA.ENABLED == primary
+    secondary = FA.ENABLED == secondary
+
+    if not primary:
+        return
+
+    if not isinstance(self.game, CoopGame):
+        self._logger.warning(
+            &#34;OperationComplete called for non-coop game: %s&#34;, self.game.id
+        )
         return
 
     if self.game.validity != ValidityState.COOP_NOT_RANKED:
         return
 
-    secondary, delta = int(secondary), str(delta)
+    secondary, delta = secondary, str(delta)
     async with self._db.acquire() as conn:
-        # FIXME: Resolve used map earlier than this
         result = await conn.execute(
             select([coop_map.c.id]).where(
                 coop_map.c.filename == self.game.map_file_path
@@ -1635,23 +1692,29 @@ included for documentation purposes.</p></div>
         )
         row = await result.fetchone()
         if not row:
-            self._logger.debug(&#34;can&#39;t find coop map: %s&#34;, self.game.map_file_path)
+            self._logger.debug(
+                &#34;can&#39;t find coop map: %s&#34;, self.game.map_file_path
+            )
             return
         mission = row[&#34;id&#34;]
 
-        await conn.execute(
-            coop_leaderboard.insert().values(
-                mission=mission,
-                gameuid=self.game.id,
-                secondary=secondary,
-                time=delta,
-                player_count=len(self.game.players),
+        # Each player in a co-op game will send the OperationComplete
+        # message but we only need to perform this insert once
+        if not self.game.leaderboard_saved:
+            await conn.execute(
+                coop_leaderboard.insert().values(
+                    mission=mission,
+                    gameuid=self.game.id,
+                    secondary=secondary,
+                    time=delta,
+                    player_count=len(self.game.players),
+                )
             )
-        )</code></pre>
+            self.game.leaderboard_saved = True</code></pre>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_player_option"><code class="name flex">
-<span>async def <span class="ident">handle_player_option</span></span>(<span>self, player_id, command, value)</span>
+<span>async def <span class="ident">handle_player_option</span></span>(<span>self, player_id: Any, command: Any, value: Any)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1659,7 +1722,9 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_player_option(self, player_id, command, value):
+<pre><code class="python">async def handle_player_option(
+    self, player_id: Any, command: Any, value: Any
+):
     if not self.is_host():
         return
 
@@ -1668,7 +1733,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_rehost"><code class="name flex">
-<span>async def <span class="ident">handle_rehost</span></span>(<span>self, *args)</span>
+<span>async def <span class="ident">handle_rehost</span></span>(<span>self, *args: List[Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Signals that the user has rehosted the game. This is currently unused but
@@ -1677,7 +1742,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_rehost(self, *args):
+<pre><code class="python">async def handle_rehost(self, *args: List[Any]):
     &#34;&#34;&#34;
     Signals that the user has rehosted the game. This is currently unused but
     included for documentation purposes.
@@ -1686,7 +1751,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_teamkill_happened"><code class="name flex">
-<span>async def <span class="ident">handle_teamkill_happened</span></span>(<span>self, gametime, victim_id, victim_name, teamkiller_id, teamkiller_name)</span>
+<span>async def <span class="ident">handle_teamkill_happened</span></span>(<span>self, gametime: Any, victim_id: Any, victim_name: str, teamkiller_id: Any, teamkiller_name: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Send automatically by the game whenever a teamkill happens. Takes
@@ -1700,7 +1765,14 @@ the same parameters as TeamkillReport.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_teamkill_happened(self, gametime, victim_id, victim_name, teamkiller_id, teamkiller_name):
+<pre><code class="python">async def handle_teamkill_happened(
+    self,
+    gametime: Any,
+    victim_id: Any,
+    victim_name: str,
+    teamkiller_id: Any,
+    teamkiller_name: str,
+):
     &#34;&#34;&#34;
         Send automatically by the game whenever a teamkill happens. Takes
         the same parameters as TeamkillReport.
@@ -1730,7 +1802,7 @@ the same parameters as TeamkillReport.</p>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_teamkill_report"><code class="name flex">
-<span>async def <span class="ident">handle_teamkill_report</span></span>(<span>self, gametime, reporter_id, reporter_name, teamkiller_id, teamkiller_name)</span>
+<span>async def <span class="ident">handle_teamkill_report</span></span>(<span>self, gametime: Any, reporter_id: Any, reporter_name: str, teamkiller_id: Any, teamkiller_name: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Sent when a player is teamkilled and clicks the 'Report' button.</p>
@@ -1743,7 +1815,14 @@ the same parameters as TeamkillReport.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_teamkill_report(self, gametime, reporter_id, reporter_name, teamkiller_id, teamkiller_name):
+<pre><code class="python">async def handle_teamkill_report(
+    self,
+    gametime: Any,
+    reporter_id: Any,
+    reporter_name: str,
+    teamkiller_id: Any,
+    teamkiller_name: str,
+):
     &#34;&#34;&#34;
         Sent when a player is teamkilled and clicks the &#39;Report&#39; button.
 

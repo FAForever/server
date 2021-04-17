@@ -51,6 +51,7 @@ class CoopGame(Game):
             &#34;Difficulty&#34;: 3,
             &#34;Expansion&#34;: &#34;true&#34;
         })
+        self.leaderboard_saved = False
         asyncio.get_event_loop().create_task(self.timeout_game(60))
 
     async def validate_game_mode_settings(self):
@@ -61,9 +62,9 @@ class CoopGame(Game):
         valid_options = {
             &#34;Victory&#34;: (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
             &#34;TeamSpawn&#34;: (&#34;fixed&#34;, ValidityState.SPAWN_NOT_FIXED),
-            &#34;RevealedCivilians&#34;: (FA.FALSE, ValidityState.CIVILIANS_REVEALED),
+            &#34;RevealedCivilians&#34;: (FA.DISABLED, ValidityState.CIVILIANS_REVEALED),
             &#34;Difficulty&#34;: (3, ValidityState.WRONG_DIFFICULTY),
-            &#34;Expansion&#34;: (FA.TRUE, ValidityState.EXPANSION_DISABLED),
+            &#34;Expansion&#34;: (FA.ENABLED, ValidityState.EXPANSION_DISABLED),
         }
         await self._validate_game_options(valid_options)
 
@@ -110,6 +111,7 @@ class CoopGame(Game):
             &#34;Difficulty&#34;: 3,
             &#34;Expansion&#34;: &#34;true&#34;
         })
+        self.leaderboard_saved = False
         asyncio.get_event_loop().create_task(self.timeout_game(60))
 
     async def validate_game_mode_settings(self):
@@ -120,9 +122,9 @@ class CoopGame(Game):
         valid_options = {
             &#34;Victory&#34;: (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
             &#34;TeamSpawn&#34;: (&#34;fixed&#34;, ValidityState.SPAWN_NOT_FIXED),
-            &#34;RevealedCivilians&#34;: (FA.FALSE, ValidityState.CIVILIANS_REVEALED),
+            &#34;RevealedCivilians&#34;: (FA.DISABLED, ValidityState.CIVILIANS_REVEALED),
             &#34;Difficulty&#34;: (3, ValidityState.WRONG_DIFFICULTY),
-            &#34;Expansion&#34;: (FA.TRUE, ValidityState.EXPANSION_DISABLED),
+            &#34;Expansion&#34;: (FA.ENABLED, ValidityState.EXPANSION_DISABLED),
         }
         await self._validate_game_options(valid_options)
 
@@ -182,9 +184,9 @@ class CoopGame(Game):
     valid_options = {
         &#34;Victory&#34;: (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
         &#34;TeamSpawn&#34;: (&#34;fixed&#34;, ValidityState.SPAWN_NOT_FIXED),
-        &#34;RevealedCivilians&#34;: (FA.FALSE, ValidityState.CIVILIANS_REVEALED),
+        &#34;RevealedCivilians&#34;: (FA.DISABLED, ValidityState.CIVILIANS_REVEALED),
         &#34;Difficulty&#34;: (3, ValidityState.WRONG_DIFFICULTY),
-        &#34;Expansion&#34;: (FA.TRUE, ValidityState.EXPANSION_DISABLED),
+        &#34;Expansion&#34;: (FA.ENABLED, ValidityState.EXPANSION_DISABLED),
     }
     await self._validate_game_options(valid_options)</code></pre>
 </details>

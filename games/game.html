@@ -657,11 +657,11 @@ class Game():
             await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
             return
         valid_options = {
-            &#34;AIReplacement&#34;: (FA.FALSE, ValidityState.HAS_AI_PLAYERS),
+            &#34;AIReplacement&#34;: (FA.DISABLED, ValidityState.HAS_AI_PLAYERS),
             &#34;FogOfWar&#34;: (&#34;explored&#34;, ValidityState.NO_FOG_OF_WAR),
-            &#34;CheatsEnabled&#34;: (FA.FALSE, ValidityState.CHEATS_ENABLED),
-            &#34;PrebuiltUnits&#34;: (FA.FALSE, ValidityState.PREBUILT_ENABLED),
-            &#34;NoRushOption&#34;: (FA.FALSE, ValidityState.NORUSH_ENABLED),
+            &#34;CheatsEnabled&#34;: (FA.DISABLED, ValidityState.CHEATS_ENABLED),
+            &#34;PrebuiltUnits&#34;: (FA.DISABLED, ValidityState.PREBUILT_ENABLED),
+            &#34;NoRushOption&#34;: (FA.DISABLED, ValidityState.NORUSH_ENABLED),
             &#34;RestrictedCategories&#34;: (0, ValidityState.BAD_UNIT_RESTRICTIONS),
             &#34;TeamLock&#34;: (&#34;locked&#34;, ValidityState.UNLOCKED_TEAMS)
         }
@@ -693,7 +693,7 @@ class Game():
         for key, value in self.gameOptions.items():
             if key in valid_options:
                 (valid_value, validity_state) = valid_options[key]
-                if self.gameOptions[key] != valid_value:
+                if valid_value != self.gameOptions[key]:
                     await self.mark_invalid(validity_state)
                     return False
         return True
@@ -1552,11 +1552,11 @@ class Game():
             await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
             return
         valid_options = {
-            &#34;AIReplacement&#34;: (FA.FALSE, ValidityState.HAS_AI_PLAYERS),
+            &#34;AIReplacement&#34;: (FA.DISABLED, ValidityState.HAS_AI_PLAYERS),
             &#34;FogOfWar&#34;: (&#34;explored&#34;, ValidityState.NO_FOG_OF_WAR),
-            &#34;CheatsEnabled&#34;: (FA.FALSE, ValidityState.CHEATS_ENABLED),
-            &#34;PrebuiltUnits&#34;: (FA.FALSE, ValidityState.PREBUILT_ENABLED),
-            &#34;NoRushOption&#34;: (FA.FALSE, ValidityState.NORUSH_ENABLED),
+            &#34;CheatsEnabled&#34;: (FA.DISABLED, ValidityState.CHEATS_ENABLED),
+            &#34;PrebuiltUnits&#34;: (FA.DISABLED, ValidityState.PREBUILT_ENABLED),
+            &#34;NoRushOption&#34;: (FA.DISABLED, ValidityState.NORUSH_ENABLED),
             &#34;RestrictedCategories&#34;: (0, ValidityState.BAD_UNIT_RESTRICTIONS),
             &#34;TeamLock&#34;: (&#34;locked&#34;, ValidityState.UNLOCKED_TEAMS)
         }
@@ -1588,7 +1588,7 @@ class Game():
         for key, value in self.gameOptions.items():
             if key in valid_options:
                 (valid_value, validity_state) = valid_options[key]
-                if self.gameOptions[key] != valid_value:
+                if valid_value != self.gameOptions[key]:
                     await self.mark_invalid(validity_state)
                     return False
         return True
@@ -2995,11 +2995,11 @@ care about recording stats for, after all).</p></div>
         await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
         return
     valid_options = {
-        &#34;AIReplacement&#34;: (FA.FALSE, ValidityState.HAS_AI_PLAYERS),
+        &#34;AIReplacement&#34;: (FA.DISABLED, ValidityState.HAS_AI_PLAYERS),
         &#34;FogOfWar&#34;: (&#34;explored&#34;, ValidityState.NO_FOG_OF_WAR),
-        &#34;CheatsEnabled&#34;: (FA.FALSE, ValidityState.CHEATS_ENABLED),
-        &#34;PrebuiltUnits&#34;: (FA.FALSE, ValidityState.PREBUILT_ENABLED),
-        &#34;NoRushOption&#34;: (FA.FALSE, ValidityState.NORUSH_ENABLED),
+        &#34;CheatsEnabled&#34;: (FA.DISABLED, ValidityState.CHEATS_ENABLED),
+        &#34;PrebuiltUnits&#34;: (FA.DISABLED, ValidityState.PREBUILT_ENABLED),
+        &#34;NoRushOption&#34;: (FA.DISABLED, ValidityState.NORUSH_ENABLED),
         &#34;RestrictedCategories&#34;: (0, ValidityState.BAD_UNIT_RESTRICTIONS),
         &#34;TeamLock&#34;: (&#34;locked&#34;, ValidityState.UNLOCKED_TEAMS)
     }
