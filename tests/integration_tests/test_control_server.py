@@ -1,5 +1,3 @@
-import asyncio
-
 import aiohttp
 import pytest
 
