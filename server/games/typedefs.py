@@ -191,7 +191,7 @@ class EndedGameInfo(NamedTuple):
         }
 
 
-class _FATrue(object):
+class _FAEnabled(object):
     __slots__ = ()
 
     def __eq__(self, other: Any) -> bool:
@@ -201,7 +201,7 @@ class _FATrue(object):
         return other in (True, "true", "on", "yes", 1)
 
 
-class _FAFalse(object):
+class _FADisabled(object):
     __slots__ = ()
 
     def __eq__(self, other: Any) -> bool:
@@ -214,5 +214,5 @@ class _FAFalse(object):
 class FA(object):
     __slots__ = ()
 
-    TRUE = _FATrue()
-    FALSE = _FAFalse()
+    ENABLED = _FAEnabled()
+    DISABLED = _FADisabled()

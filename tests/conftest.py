@@ -21,7 +21,7 @@ from server.api.oauth_session import OAuth2Session
 from server.config import TRACE, config
 from server.db import FAFDatabase
 from server.game_service import GameService
-from server.games import FeaturedModType
+from server.games import CoopGame, FeaturedModType, Game, ValidityState
 from server.geoip_service import GeoIpService
 from server.lobbyconnection import LobbyConnection
 from server.matchmaker import MatchmakerQueue
@@ -36,11 +36,36 @@ logging.getLogger().setLevel(TRACE)
 
 
 def pytest_addoption(parser):
-    parser.addoption("--mysql_host", action="store", default=config.DB_SERVER, help="mysql host to use for test database")
-    parser.addoption("--mysql_username", action="store", default=config.DB_LOGIN, help="mysql username to use for test database")
-    parser.addoption("--mysql_password", action="store", default=config.DB_PASSWORD, help="mysql password to use for test database")
-    parser.addoption("--mysql_database", action="store", default="faf_test", help="mysql database to use for tests")
-    parser.addoption("--mysql_port",     action="store", default=int(config.DB_PORT), help="mysql port to use for tests")
+    parser.addoption(
+        "--mysql_host",
+        action="store",
+        default=config.DB_SERVER,
+        help="mysql host to use for test database",
+    )
+    parser.addoption(
+        "--mysql_username",
+        action="store",
+        default=config.DB_LOGIN,
+        help="mysql username to use for test database",
+    )
+    parser.addoption(
+        "--mysql_password",
+        action="store",
+        default=config.DB_PASSWORD,
+        help="mysql password to use for test database",
+    )
+    parser.addoption(
+        "--mysql_database",
+        action="store",
+        default="faf_test",
+        help="mysql database to use for tests",
+    )
+    parser.addoption(
+        "--mysql_port",
+        action="store",
+        default=int(config.DB_PORT),
+        help="mysql port to use for tests",
+    )
 
 
 def pytest_configure(config):
@@ -153,6 +178,7 @@ def game(database, players):
 
 
 GAME_UID = 1
+COOP_GAME_UID = 1
 
 
 @pytest.fixture
@@ -163,12 +189,22 @@ def ugame(database, players):
     return game
 
 
-def make_game(database, uid, players):
+@pytest.fixture
+def coop_game(database, players):
+    global COOP_GAME_UID
+    game = make_game(database, COOP_GAME_UID, players, game_type=CoopGame)
+    game.validity = ValidityState.COOP_NOT_RANKED
+    game.leaderboard_saved = False
+    COOP_GAME_UID += 1
+    return game
+
+
+def make_game(database, uid, players, game_type=Game):
     from server.abc.base_game import InitMode
-    from server.games import Game
     mock_parent = CoroutineMock()
-    game = asynctest.create_autospec(spec=Game(uid, database, mock_parent,
-                                               CoroutineMock()))
+    game = asynctest.create_autospec(
+        spec=game_type(uid, database, mock_parent, CoroutineMock())
+    )
     players.hosting.getGame = CoroutineMock(return_value=game)
     players.joining.getGame = CoroutineMock(return_value=game)
     players.peer.getGame = CoroutineMock(return_value=game)

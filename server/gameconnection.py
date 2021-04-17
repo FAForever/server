@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+from typing import Any, List
 
 from sqlalchemy import select, text
 
@@ -10,7 +11,8 @@ from .config import TRACE
 from .db.models import coop_leaderboard, coop_map, teamkills
 from .decorators import with_logger
 from .game_service import GameService
-from .games import Game, GameError, GameState, ValidityState, Victory
+from .games import CoopGame, Game, GameError, GameState, ValidityState, Victory
+from .games.typedefs import FA
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, GpgNetServerProtocol, Protocol
@@ -189,7 +191,7 @@ class GameConnection(GpgNetServerProtocol):
                     offer=False
                 )
 
-    async def handle_action(self, command, args):
+    async def handle_action(self, command: str, args: List[Any]):
         """
         Handle GpgNetSend messages, wrapped in the JSON protocol
         :param command: command type
@@ -214,7 +216,7 @@ class GameConnection(GpgNetServerProtocol):
     async def handle_desync(self, *_args):  # pragma: no cover
         self.game.desyncs += 1
 
-    async def handle_game_option(self, key, value):
+    async def handle_game_option(self, key: str, value: Any):
         if not self.is_host():
             return
 
@@ -240,7 +242,7 @@ class GameConnection(GpgNetServerProtocol):
 
         self._mark_dirty()
 
-    async def handle_game_mods(self, mode, args):
+    async def handle_game_mods(self, mode: Any, args: List[Any]):
         if not self.is_host():
             return
 
@@ -264,28 +266,30 @@ class GameConnection(GpgNetServerProtocol):
 
         self._mark_dirty()
 
-    async def handle_player_option(self, player_id, command, value):
+    async def handle_player_option(
+        self, player_id: Any, command: Any, value: Any
+    ):
         if not self.is_host():
             return
 
         self.game.set_player_option(int(player_id), command, value)
         self._mark_dirty()
 
-    async def handle_ai_option(self, name, key, value):
+    async def handle_ai_option(self, name: Any, key: Any, value: Any):
         if not self.is_host():
             return
 
         self.game.set_ai_option(str(name), key, value)
         self._mark_dirty()
 
-    async def handle_clear_slot(self, slot):
+    async def handle_clear_slot(self, slot: Any):
         if not self.is_host():
             return
 
         self.game.clear_slot(int(slot))
         self._mark_dirty()
 
-    async def handle_game_result(self, army, result):
+    async def handle_game_result(self, army: Any, result: Any):
         army = int(army)
         result = str(result).lower()
         try:
@@ -294,16 +298,32 @@ class GameConnection(GpgNetServerProtocol):
         except (KeyError, ValueError):  # pragma: no cover
             self._logger.warning("Invalid result for %s reported: %s", army, result)
 
-    async def handle_operation_complete(self, army, secondary, delta):
-        if not int(army) == 1:
+    async def handle_operation_complete(
+        self, primary: Any, secondary: Any, delta: str
+    ):
+        """
+        :param primary: are primary mission objectives complete?
+        :param secondary: are secondary mission objectives complete?
+        :param delta: the time it took to complete the mission
+        :return: None
+        """
+        primary = FA.ENABLED == primary
+        secondary = FA.ENABLED == secondary
+
+        if not primary:
+            return
+
+        if not isinstance(self.game, CoopGame):
+            self._logger.warning(
+                "OperationComplete called for non-coop game: %s", self.game.id
+            )
             return
 
         if self.game.validity != ValidityState.COOP_NOT_RANKED:
             return
 
-        secondary, delta = int(secondary), str(delta)
+        secondary, delta = secondary, str(delta)
         async with self._db.acquire() as conn:
-            # FIXME: Resolve used map earlier than this
             result = await conn.execute(
                 select([coop_map.c.id]).where(
                     coop_map.c.filename == self.game.map_file_path
@@ -311,27 +331,40 @@ class GameConnection(GpgNetServerProtocol):
             )
             row = await result.fetchone()
             if not row:
-                self._logger.debug("can't find coop map: %s", self.game.map_file_path)
+                self._logger.debug(
+                    "can't find coop map: %s", self.game.map_file_path
+                )
                 return
             mission = row["id"]
 
-            await conn.execute(
-                coop_leaderboard.insert().values(
-                    mission=mission,
-                    gameuid=self.game.id,
-                    secondary=secondary,
-                    time=delta,
-                    player_count=len(self.game.players),
+            # Each player in a co-op game will send the OperationComplete
+            # message but we only need to perform this insert once
+            if not self.game.leaderboard_saved:
+                await conn.execute(
+                    coop_leaderboard.insert().values(
+                        mission=mission,
+                        gameuid=self.game.id,
+                        secondary=secondary,
+                        time=delta,
+                        player_count=len(self.game.players),
+                    )
                 )
-            )
+                self.game.leaderboard_saved = True
 
-    async def handle_json_stats(self, stats):
+    async def handle_json_stats(self, stats: str):
         self.game.report_army_stats(stats)
 
     async def handle_enforce_rating(self):
         self.game.enforce_rating = True
 
-    async def handle_teamkill_report(self, gametime, reporter_id, reporter_name, teamkiller_id, teamkiller_name):
+    async def handle_teamkill_report(
+        self,
+        gametime: Any,
+        reporter_id: Any,
+        reporter_name: str,
+        teamkiller_id: Any,
+        teamkiller_name: str,
+    ):
         """
             Sent when a player is teamkilled and clicks the 'Report' button.
 
@@ -344,7 +377,14 @@ class GameConnection(GpgNetServerProtocol):
 
         pass
 
-    async def handle_teamkill_happened(self, gametime, victim_id, victim_name, teamkiller_id, teamkiller_name):
+    async def handle_teamkill_happened(
+        self,
+        gametime: Any,
+        victim_id: Any,
+        victim_name: str,
+        teamkiller_id: Any,
+        teamkiller_name: str,
+    ):
         """
             Send automatically by the game whenever a teamkill happens. Takes
             the same parameters as TeamkillReport.
@@ -372,7 +412,7 @@ class GameConnection(GpgNetServerProtocol):
                 )
             )
 
-    async def handle_ice_message(self, receiver_id, ice_msg):
+    async def handle_ice_message(self, receiver_id: Any, ice_msg: str):
         receiver_id = int(receiver_id)
         peer = self.player_service.get_player(receiver_id)
         if not peer:
@@ -399,7 +439,7 @@ class GameConnection(GpgNetServerProtocol):
                 receiver_id
             )
 
-    async def handle_game_state(self, state):
+    async def handle_game_state(self, state: str):
         """
         Changes in game state
         :param state: new state
@@ -442,7 +482,7 @@ class GameConnection(GpgNetServerProtocol):
             await self.on_connection_lost()
         self._mark_dirty()
 
-    async def handle_game_ended(self, *args):
+    async def handle_game_ended(self, *args:  List[Any]):
         """
         Signals that the simulation has ended.
         """
@@ -453,28 +493,28 @@ class GameConnection(GpgNetServerProtocol):
         if self.game.ended:
             await self.game.on_game_end()
 
-    async def handle_rehost(self, *args):
+    async def handle_rehost(self, *args: List[Any]):
         """
         Signals that the user has rehosted the game. This is currently unused but
         included for documentation purposes.
         """
         pass
 
-    async def handle_bottleneck(self, *args):
+    async def handle_bottleneck(self, *args: List[Any]):
         """
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         """
         pass
 
-    async def handle_bottleneck_cleared(self, *args):
+    async def handle_bottleneck_cleared(self, *args: List[Any]):
         """
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         """
         pass
 
-    async def handle_disconnected(self, *args):
+    async def handle_disconnected(self, *args: List[Any]):
         """
         Not sure what this command means. This is currently unused but
         included for documentation purposes.

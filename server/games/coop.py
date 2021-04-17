@@ -23,6 +23,7 @@ class CoopGame(Game):
             "Difficulty": 3,
             "Expansion": "true"
         })
+        self.leaderboard_saved = False
         asyncio.get_event_loop().create_task(self.timeout_game(60))
 
     async def validate_game_mode_settings(self):
@@ -33,9 +34,9 @@ class CoopGame(Game):
         valid_options = {
             "Victory": (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
             "TeamSpawn": ("fixed", ValidityState.SPAWN_NOT_FIXED),
-            "RevealedCivilians": (FA.FALSE, ValidityState.CIVILIANS_REVEALED),
+            "RevealedCivilians": (FA.DISABLED, ValidityState.CIVILIANS_REVEALED),
             "Difficulty": (3, ValidityState.WRONG_DIFFICULTY),
-            "Expansion": (FA.TRUE, ValidityState.EXPANSION_DISABLED),
+            "Expansion": (FA.ENABLED, ValidityState.EXPANSION_DISABLED),
         }
         await self._validate_game_options(valid_options)
 
