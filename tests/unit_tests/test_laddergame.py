@@ -140,13 +140,14 @@ async def test_persist_rating_victory(laddergame: LadderGame, database,
         leaderboard_rating.c.won_games
     ]).where(
         and_(
-            leaderboard_rating.c.login_id.in_((players[0].id, players[1].id)),
+            leaderboard_rating.c.login_id.in_([players[0].id, players[1].id]),
             leaderboard_rating.c.leaderboard_id == 2,
         )
     ).order_by(leaderboard_rating.c.login_id)
 
+    compiled = rating_sql.compile(compile_kwargs={"literal_binds": True})
     async with database.acquire() as conn:
-        result = await conn.execute(rating_sql)
+        result = await conn.execute(str(compiled))
         result_before = await result.fetchall()
 
     await laddergame.launch()
@@ -160,7 +161,7 @@ async def test_persist_rating_victory(laddergame: LadderGame, database,
     assert laddergame.validity is ValidityState.VALID
 
     async with database.acquire() as conn:
-        result = await conn.execute(rating_sql)
+        result = await conn.execute(str(compiled))
         result_after = await result.fetchall()
 
     assert result_after[0]["total_games"] == result_before[0]["total_games"] + 1
