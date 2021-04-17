@@ -70,7 +70,13 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     config.addinivalue_line(
+        "addopts", "--strict-markers"
+    )
+    config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
+    )
+    config.addinivalue_line(
+        "markers", "rabbitmq: marks tests as requiring a running instance of RabbitMQ"
     )
 
 
