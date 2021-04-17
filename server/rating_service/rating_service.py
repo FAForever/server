@@ -340,7 +340,7 @@ class RatingService(Service):
                             game_player_stats.c.playerId == player_id,
                             game_player_stats.c.gameId == game_id,
                         )
-                    ),
+                    ).scalar_subquery(),
                 )
                 await conn.execute(journal_insert_sql)
 
