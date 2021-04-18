@@ -48,6 +48,22 @@ jobs:
           MYSQL_USER: faf-python-server
           MYSQL_PASSWORD: banana
 
+      faf-rabbitmq:
+        image: rabbitmq:3-alpine
+        ports:
+          - 5672:5672
+        options: >-
+          --name faf-rabbitmq
+          --health-cmd "rabbitmq-diagnostics check_running --silent"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        env:
+          RABBITMQ_PID_FILE: /var/lib/rabbitmq/pid
+          RABBITMQ_DEFAULT_USER: admin
+          RABBITMQ_DEFAULT_PASS: banana
+          RABBITMQ_DEFAULT_VHOST: /
+
     steps:
       - uses: actions/checkout@v2
 
@@ -67,12 +83,16 @@ jobs:
           wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/${FLYWAY_VERSION}/flyway-commandline-${FLYWAY_VERSION}-linux-x64.tar.gz | tar xz
           flyway-${FLYWAY_VERSION}/flyway migrate
 
+      - name: Setup RabbitMQ
+        run: ./.github/workflows/scripts/init-rabbitmq.sh
+
+
       - name: Install dependencies with pipenv
         run: |
           pip install pipenv
           pipenv sync --dev
 
-      - run: pipenv run tests --cov-report=xml
+      - run: pipenv run tests --cov-report=xml -m ""
 
       - name: Report coverage
         uses: codecov/codecov-action@v1
