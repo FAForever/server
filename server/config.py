@@ -39,6 +39,9 @@ class ConfigurationStore:
         self.PROFILING_DURATION = 2
         self.PROFILING_INTERVAL = -1
 
+        self.DIRTY_REPORT_INTERVAL = 1
+        self.PING_INTERVAL = 45
+
         self.CONTROL_SERVER_PORT = 4000
         self.METRICS_PORT = 8011
         self.ENABLE_METRICS = False

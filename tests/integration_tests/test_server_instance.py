@@ -25,6 +25,7 @@ def has_player(msg, name):
 @pytest.mark.asyncio
 async def test_multiple_contexts(
     database,
+    broadcast_service,
     game_service,
     player_service,
     geoip_service,
@@ -43,6 +44,7 @@ async def test_multiple_contexts(
         twilio_nts=None,
         loop=event_loop,
         _override_services={
+            "broadcast_service": broadcast_service,
             "game_service": game_service,
             "player_service": player_service,
             "geo_ip_service": geoip_service,
@@ -50,6 +52,8 @@ async def test_multiple_contexts(
             "party_service": party_service,
         }
     )
+    broadcast_service.server = instance
+
     await instance.listen(("127.0.0.1", 8111), QDataStreamProtocol)
     await instance.listen(("127.0.0.1", 8112), SimpleJsonProtocol)
 

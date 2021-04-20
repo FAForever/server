@@ -10,14 +10,17 @@ import pytest
 from aiohttp import web
 from asynctest import exhaust_callbacks
 
-from server import GameService, ServerInstance
+from server import (
+    BroadcastService,
+    GameService,
+    LadderService,
+    PartyService,
+    ServerInstance
+)
 from server.config import config
 from server.control import ControlServer
 from server.db.models import login
-from server.ladder_service import LadderService
-from server.party_service import PartyService
 from server.protocol import Protocol
-from server.rating_service.rating_service import RatingService
 from server.servercontext import ServerContext
 
 
@@ -45,8 +48,19 @@ async def party_service(game_service):
     await service.shutdown()
 
 
-async def mock_rating(database, mock_players):
-    service = RatingService(database, mock_players)
+@pytest.fixture
+async def broadcast_service(
+    message_queue_service,
+    game_service,
+    player_service,
+):
+    # The reference to the ServerInstance needs to be established later
+    service = BroadcastService(
+        None,
+        message_queue_service,
+        game_service,
+        player_service,
+    )
     await service.initialize()
 
     yield service
@@ -58,6 +72,7 @@ async def mock_rating(database, mock_players):
 async def lobby_server(
     event_loop,
     database,
+    broadcast_service,
     player_service,
     game_service,
     geoip_service,
@@ -78,6 +93,7 @@ async def lobby_server(
             twilio_nts=None,
             loop=event_loop,
             _override_services={
+                "broadcast_service": broadcast_service,
                 "geo_ip_service": geoip_service,
                 "player_service": player_service,
                 "game_service": game_service,
@@ -87,6 +103,9 @@ async def lobby_server(
                 "party_service": party_service
             }
         )
+        # Set up the back reference
+        broadcast_service.server = instance
+
         ctx = await instance.listen(("127.0.0.1", None))
         ctx.__connected_client_protos = []
         player_service.is_uniqueid_exempt = lambda id: True
