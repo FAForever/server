@@ -87,10 +87,34 @@ class Timer(object):
         return self
 
     def __str__(self):
-        return f"{self.interval} {self.func}"
+        return f"{self.get_delay()} {self.func}"
 
     def __repr__(self):
         return f"<Timer {str(self)}>"
+
+
+class LazyIntervalTimer(Timer):
+    """A timer that calls a function to get the next interval"""
+
+    def __init__(
+        self,
+        interval_func,
+        func=None,
+        args=(),
+        start=False,
+        loop=None
+    ):
+        super().__init__(
+            interval=None,
+            func=func,
+            args=args,
+            start=start,
+            loop=loop
+        )
+        self.interval_func = interval_func
+
+    def get_delay(self):
+        return self.interval_func()
 
 
 def at_interval(interval, func=None, args=(), start=True, loop=None):
