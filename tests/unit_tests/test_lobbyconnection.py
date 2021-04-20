@@ -330,6 +330,7 @@ async def test_command_game_join_calls_join_game(
         "uid": 42,
         "mod": "faf",
         "name": "Test Game Name",
+        "game_type": "custom",
         "init_mode": InitMode.NORMAL_LOBBY.value,
         "rating_type": "global",
     }
@@ -369,6 +370,7 @@ async def test_command_game_join_uid_as_str(
         "mod": "faf",
         "uid": 42,
         "name": "Test Game Name",
+        "game_type": "custom",
         "init_mode": InitMode.NORMAL_LOBBY.value,
         "rating_type": "global",
     }
