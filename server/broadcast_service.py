@@ -1,3 +1,5 @@
+from aio_pika import DeliveryMode
+
 from .config import config
 from .core import Service
 from .decorators import with_logger
@@ -45,7 +47,7 @@ class BroadcastService(Service):
         )
         self._logger.debug("Broadcast service initialized")
 
-    def report_dirties(self):
+    async def report_dirties(self):
         self.game_service.update_active_game_metrics()
         dirty_games = self.game_service.dirty_games
         dirty_queues = self.game_service.dirty_queues
@@ -54,20 +56,26 @@ class BroadcastService(Service):
         self.player_service.clear_dirty()
 
         if dirty_queues:
-            self.server.write_broadcast({
+            matchmaker_info = {
                 "command": "matchmaker_info",
                 "queues": [queue.to_dict() for queue in dirty_queues]
-            })
+            }
+            self.server.write_broadcast(matchmaker_info)
 
         if dirty_players:
+            player_info = {
+                "command": "player_info",
+                "players": [player.to_dict() for player in dirty_players]
+            }
             self.server.write_broadcast(
-                {
-                    "command": "player_info",
-                    "players": [player.to_dict() for player in dirty_players]
-                },
+                player_info,
                 lambda lobby_conn: lobby_conn.authenticated
             )
 
+        game_info = {
+            "command": "game_info",
+            "games": []
+        }
         # TODO: This spams squillions of messages: we should implement per-
         # connection message aggregation at the next abstraction layer down :P
         for game in dirty_games:
@@ -76,6 +84,7 @@ class BroadcastService(Service):
 
             # So we're going to be broadcasting this to _somebody_...
             message = game.to_dict()
+            game_info["games"].append(message)
 
             self.server.write_broadcast(
                 message,
@@ -83,6 +92,30 @@ class BroadcastService(Service):
                     conn.authenticated
                     and game.is_visible_to_player(conn.player)
                 )
+            )
+
+        if dirty_queues:
+            await self.message_queue_service.publish(
+                config.MQ_EXCHANGE_NAME,
+                "broadcast.matchmakerInfo.update",
+                matchmaker_info,
+                delivery_mode=DeliveryMode.NOT_PERSISTENT
+            )
+
+        if dirty_players:
+            await self.message_queue_service.publish(
+                config.MQ_EXCHANGE_NAME,
+                "broadcast.playerInfo.update",
+                player_info,
+                delivery_mode=DeliveryMode.NOT_PERSISTENT
+            )
+
+        if dirty_games:
+            await self.message_queue_service.publish(
+                config.MQ_EXCHANGE_NAME,
+                "broadcast.gameInfo.update",
+                game_info,
+                delivery_mode=DeliveryMode.NOT_PERSISTENT
             )
 
     def broadcast_ping(self):

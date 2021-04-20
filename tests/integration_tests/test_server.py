@@ -10,11 +10,12 @@ from tests.utils import fast_forward
 from .conftest import (
     connect_and_sign_in,
     connect_client,
+    connect_mq_consumer,
     perform_login,
     read_until,
     read_until_command
 )
-from .test_game import join_game, open_fa, send_player_options
+from .test_game import host_game, join_game, open_fa, send_player_options
 
 pytestmark = pytest.mark.asyncio
 TEST_ADDRESS = ("127.0.0.1", None)
@@ -90,7 +91,36 @@ async def test_player_info_broadcast(lobby_server):
 
     await read_until(
         p2, lambda m: "player_info" in m.values()
-        and any(map(lambda d: ("login", "test") in d.items(), m["players"]))
+        and any(map(lambda d: d["login"] == "test", m["players"]))
+    )
+
+
+@pytest.mark.rabbitmq
+@fast_forward(5)
+async def test_player_info_broadcast_to_rabbitmq(lobby_server, channel):
+    mq_proto = await connect_mq_consumer(
+        lobby_server,
+        channel,
+        "broadcast.playerInfo.update"
+    )
+    mq_proto_all = await connect_mq_consumer(
+        lobby_server,
+        channel,
+        "broadcast.*.update"
+    )
+
+    _, _, proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    await read_until_command(proto, "player_info")
+
+    await read_until(
+        mq_proto, lambda m: "player_info" in m.values()
+        and any(map(lambda d: d["login"] == "test", m["players"]))
+    )
+    await read_until(
+        mq_proto_all, lambda m: "player_info" in m.values()
+        and any(map(lambda d: d["login"] == "test", m["players"]))
     )
 
 
@@ -282,6 +312,30 @@ async def test_game_info_broadcast_to_players_in_lobby(lobby_server):
     assert msg["featured_mod"] == "faf"
     assert msg["title"] == "New Title"
     assert msg["visibility"] == "friends"
+
+
+@pytest.mark.rabbitmq
+@fast_forward(10)
+async def test_info_broadcast_to_rabbitmq(lobby_server, channel):
+    mq_proto_all = await connect_mq_consumer(
+        lobby_server,
+        channel,
+        "broadcast.*.update"
+    )
+
+    _, _, proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    await read_until_command(proto, "game_info")
+    # matchmaker_info is broadcast whenever the timer pops
+    await read_until_command(mq_proto_all, "matchmaker_info")
+
+    # Check that game_info is broadcast when a new game is hosted
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(mq_proto_all, "game_info", timeout=3)
+
+    await host_game(proto)
+    await read_until_command(mq_proto_all, "game_info")
 
 
 @pytest.mark.parametrize("user", [

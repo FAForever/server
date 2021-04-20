@@ -1,10 +1,12 @@
 import asyncio
 import hashlib
+import json
 import logging
 from collections import defaultdict
 from typing import Any, Callable, Dict, Tuple
 from unittest import mock
 
+import aio_pika
 import asynctest
 import pytest
 from aiohttp import web
@@ -263,7 +265,11 @@ async def read_until_command(
 
 
 async def get_session(proto):
-    await proto.send_message({"command": "ask_session", "user_agent": "faf-client", "version": "0.11.16"})
+    await proto.send_message({
+        "command": "ask_session",
+        "user_agent": "faf-client",
+        "version": "0.11.16"
+    })
     msg = await read_until_command(proto, "session")
 
     return msg["session"]
@@ -279,3 +285,67 @@ async def connect_and_sign_in(
     hello = await read_until_command(proto, "welcome", timeout=120)
     player_id = hello["id"]
     return player_id, session, proto
+
+
+@pytest.fixture
+async def channel():
+    connection = await aio_pika.connect(
+        "amqp://{user}:{password}@localhost/{vhost}".format(
+            user=config.MQ_USER,
+            password=config.MQ_PASSWORD,
+            vhost=config.MQ_VHOST
+        )
+    )
+    channel = await connection.channel()
+
+    yield channel
+
+    await connection.close()
+
+
+async def connect_mq_consumer(server, channel, routing_key):
+    """
+    Returns a subclass of Protocol that yields messages read from a rabbitmq
+    exchange.
+    """
+    exchange = await channel.declare_exchange(
+        config.MQ_EXCHANGE_NAME,
+        aio_pika.ExchangeType.TOPIC
+    )
+    queue = await channel.declare_queue("", exclusive=True)
+    await queue.bind(exchange, routing_key=routing_key)
+    proto = AioQueueProtocol(queue)
+    await proto.consume()
+
+    return proto
+
+
+class AioQueueProtocol(Protocol):
+    """
+    A wrapper around an asyncio `Queue` that exposes the `Protocol` interface.
+    """
+
+    def __init__(self, queue):
+        self.queue = queue
+        self.consumer_tag = None
+        self.aio_queue = asyncio.Queue()
+
+    async def consume(self):
+        self.consumer_tag = await self.queue.consume(
+            lambda msg: self.aio_queue.put_nowait(
+                json.loads(msg.body.decode())
+            )
+        )
+
+    @staticmethod
+    def encode_message(message: dict) -> bytes:
+        raise NotImplementedError("AioQueueProtocol is read-only")
+
+    async def read_message(self) -> dict:
+        return await self.aio_queue.get()
+
+    async def send_message(self, message):
+        raise NotImplementedError("AioQueueProtocol is read-only")
+
+    async def close(self):
+        await self.queue.cancel(self.consumer_tag)
