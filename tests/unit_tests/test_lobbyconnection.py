@@ -389,7 +389,6 @@ async def test_should_reply_with_game_type_field_on_game_lauch(database,
     game.id = 42
     game.name = "Test Game Name"
     game_service._games[42] = game
-    lobbyconnection.player = players.hosting
     test_game_info["uid"] = 42
 
     await lobbyconnection.on_message_received({
@@ -398,12 +397,13 @@ async def test_should_reply_with_game_type_field_on_game_lauch(database,
     })
     expected_reply = {
         "command": "game_launch",
-        "game_type": "custom",
         "args": ["/numgames", players.hosting.game_count[RatingType.GLOBAL]],
-        "mod": "faf",
         "uid": 42,
+        "mod": "faf",
         "name": "Test Game Name",
+        "game_type": "custom",
         "init_mode": InitMode.NORMAL_LOBBY.value,
+        "rating_type": "global",
     }
     lobbyconnection.send.assert_called_with(expected_reply)
 
