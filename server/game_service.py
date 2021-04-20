@@ -16,7 +16,6 @@ from .decorators import with_logger
 from .games import (
     CustomGame,
     FeaturedMod,
-    FeaturedModType,
     Game,
     GameState,
     ValidityState,
