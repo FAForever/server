@@ -229,7 +229,8 @@ class LobbyConnection:
     async def send_game_list(self):
         await self.send({
             "command": "game_info",
-            "games": [game.to_dict() for game in self.game_service.open_games]
+            "games": [game.to_dict() if game.is_visible_to_player(self.player) else None
+                      for game in self.game_service.open_games]
         })
 
     async def command_social_remove(self, message):
