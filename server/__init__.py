@@ -1,6 +1,83 @@
 """
 Forged Alliance Forever lobby server.
 
+# Overview
+The lobby server handles live state information for the FAF ecosystem. This
+includes maintaining a list of online players, a list of hosted and ongoing
+games, and a number of matchmakers. It also performs certain post-game actions
+like computing and persisting rating changes and updating achievements. Every
+online player maintains an active TCP connection to the server through which
+the server syncronizes the current state.
+
+## Social
+The social components of the lobby server are relatively limited, as the
+primary social element, chat, is handled by a separate server. The social
+features handled by the lobby server are therefore limited to:
+
+- Syncronizing online player state
+- Enforcing global bans
+- Modifying a list of friends and a list of foes
+- Modifying the currently selected avatar
+
+## Games
+The server supports two ways of discovering games with other players: custom
+lobbies and matchmakers. Ultimately however, the lobby server is only able to
+help players discover eachother, and maintain certain meta information about
+games. Game simulation happens entirely on the client side, and is completely
+un-controlled by the server. Certain messages sent between clients throughout
+the course of a game will also be relayed to the server. These can be used to
+determine if clients were able to connect to eachother, and what the outcome of
+the game was.
+
+### Custom Games
+Historically, the standard way to play FAF has been for one player to host a
+game lobby, setup the desired map and game settings, and for other players to
+voluntarily join that lobby until the host is satisfied with the players and
+launches the game. The lobby server facilitates sending certain information
+about these custom lobbies to all online players (subject to friend/foe rules)
+as well as managing a game id that can be used to join a specific lobby. This
+information includes, but is not necessarily limited to:
+
+- Auto generated game uid
+- Host specified game name
+- Host selected map
+- List of connected players (non-AI only) and their team setup
+
+### Matchmaker games
+Players may also choose to join a matchmaker queue, instead of hosting a game
+and finding people to play with manually. The matchmaker will attempt to create
+balanced games using players TrueSkill rating, and choose a game host for
+hosting an automatch lobby. From the server perspective, automatch games behave
+virtually identical to custom games, the exception being that players may not
+request to join them by game id. The exchange of game messages and connectivity
+establishment happens identically to custom games.
+
+### Connectivity Establishment
+When a player requests to join a game, the lobby server initiates connection
+establishment between the joining player and the host, and then the joining
+player and all other players in the match. Connections are then established
+using the Interactive Connectivity Establishment (ICE) protocol, using the
+lobby server as a medium of exchanging candidate addresses between clients. If
+clients require a relay in order to connect to eachother, they will
+authenticate with a separate coturn server using credentials supplied by the
+lobby server.
+
+## Achievements
+When a game ends, each client will report a summary of the game in the form of
+a stat report. These stats are then parsed to extract information about events
+that occurred during the game, like units built, units killed, etc. and used to
+unlock or progress achievements for the players.
+
+# Technical Overview
+This section is intended for developers and will outline technical details of
+how to interact with the server. It will remain relatively high level and
+implementation agnostic, instead linking to other sections of the documentation
+that go into more detail.
+
+## Protocol
+TODO
+
+# Legal
 - Copyright © 2012-2014 Gael Honorez
 - Copyright © 2015-2016 Michael Søndergaard <sheeo@faforever.com>
 - Copyright © 2021 Forged Alliance Forever
