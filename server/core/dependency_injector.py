@@ -23,28 +23,28 @@ class DependencyInjector(object):
     instance of the object called `hello` (whether that is an injectable, or
     another class in the class list).
 
-    # Example
-    ```
-    class SomeClass(object):
-        def __init__(self, external):
-            self.external = external
+    # Examples
+    Create a class that depends on some external injectable.
+    >>> class SomeClass(object):
+    ...     def __init__(self, external):
+    ...         self.external = external
 
-    class SomeOtherClass(object):
-        def __init__(self, some_class):
-            self.some_class = some_class
+    Create a class that depends on the first class.
+    >>> class SomeOtherClass(object):
+    ...     def __init__(self, some_class):
+    ...         self.some_class = some_class
 
-    injector = DependencyInjector()
-    injector.add_injectables(external=object())
-    classes = injector.build_classes({
-        "some_class": SomeClass,
-        "other": SomeOtherClass
-    })
+    Do the dependency injection.
+    >>> injector = DependencyInjector()
+    >>> injector.add_injectables(external=object())
+    >>> classes = injector.build_classes({
+    ...     "some_class": SomeClass,
+    ...     "other": SomeOtherClass
+    ... })
 
-    assert isinstance(classes["some_class"], SomeClass)
-    assert isinstance(classes["other"], SomeOtherClass)
-    assert classes["other"].some_class is classes["some_class"]
-    ```
-
+    >>> assert isinstance(classes["some_class"], SomeClass)
+    >>> assert isinstance(classes["other"], SomeOtherClass)
+    >>> assert classes["other"].some_class is classes["some_class"]
     """
 
     def __init__(self) -> None:

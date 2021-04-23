@@ -1,3 +1,7 @@
+"""
+General type definitions
+"""
+
 import base64
 import random
 from typing import NamedTuple, Optional

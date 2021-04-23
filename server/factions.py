@@ -1,3 +1,7 @@
+"""
+Supreme Commander known faction definitions
+"""
+
 from enum import IntEnum, unique
 from typing import Union
 

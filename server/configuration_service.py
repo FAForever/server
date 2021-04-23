@@ -1,3 +1,7 @@
+"""
+Manages periodic reloading of config variables
+"""
+
 import asyncio
 
 from .config import config

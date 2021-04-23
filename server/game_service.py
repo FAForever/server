@@ -1,3 +1,7 @@
+"""
+Manages the lifecycle of active games
+"""
+
 from collections import Counter
 from typing import Dict, List, Optional, Type, Union, ValuesView
 
@@ -196,7 +200,6 @@ class GameService(Service):
             GameState.INITIALIZING: "closed",
 
         The client ignores everything "closed". This property fetches all such not-closed games.
-        :return:
         """
         return [game for game in self._games.values()
                 if game.state is GameState.LOBBY or game.state is GameState.LIVE]

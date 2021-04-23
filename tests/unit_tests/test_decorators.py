@@ -17,8 +17,9 @@ def test_timed_fun():
     @timed(logger=logger, limit=0)
     def something():
         return "Somevalue"
+
     assert something() == "Somevalue"
-    logger.warning.assert_any_call(mock.ANY)
+    logger.warning.assert_called_once()
 
 
 def test_timed_method():
@@ -28,16 +29,19 @@ def test_timed_method():
         @timed(logger=logger, limit=0)
         def something(self):
             return "Somevalue"
+
     assert TestClass().something() == "Somevalue"
-    logger.warning.assert_any_call(mock.ANY)
+    logger.warning.assert_called_once()
 
 
 def test_timed_wraps_right():
     @timed()
-    def somefun():
+    def somefun_1():
         return "test"
 
     @timed
-    def somefun():
+    def somefun_2():
         return "test"
-    assert somefun.__name__ == "somefun"
+
+    assert somefun_1.__name__ == "somefun_1"
+    assert somefun_2.__name__ == "somefun_2"

@@ -1,3 +1,7 @@
+"""
+Game communication over GpgNet
+"""
+
 import asyncio
 import contextlib
 from typing import Any, List
@@ -6,12 +10,19 @@ from sqlalchemy import select, text
 
 from server.db import FAFDatabase
 
-from .abc.base_game import GameConnectionState
 from .config import TRACE
 from .db.models import coop_leaderboard, coop_map, teamkills
 from .decorators import with_logger
 from .game_service import GameService
-from .games import CoopGame, Game, GameError, GameState, ValidityState, Victory
+from .games import (
+    CoopGame,
+    Game,
+    GameConnectionState,
+    GameError,
+    GameState,
+    ValidityState,
+    Victory
+)
 from .games.typedefs import FA
 from .player_service import PlayerService
 from .players import Player, PlayerState
@@ -85,7 +96,8 @@ class GameConnection(GpgNetServerProtocol):
         """
         Send a game message to the client.
 
-        :raises: DisconnectedError
+        # Errors
+        May raise `DisconnectedError`
 
         NOTE: When calling this on a connection other than `self` make sure to
         handle `DisconnectedError`, otherwise failure to send the message will
@@ -99,7 +111,6 @@ class GameConnection(GpgNetServerProtocol):
     async def _handle_idle_state(self):
         """
         This message is sent by FA when it doesn't know what to do.
-        :return: None
         """
         assert self.game
         state = self.player.state
@@ -153,7 +164,6 @@ class GameConnection(GpgNetServerProtocol):
     async def connect_to_host(self, peer: "GameConnection"):
         """
         Connect self to a given peer (host)
-        :return:
         """
         if not peer or peer.player.state != PlayerState.HOSTING:
             await self.abort("The host left the lobby")
@@ -174,7 +184,6 @@ class GameConnection(GpgNetServerProtocol):
     async def connect_to_peer(self, peer: "GameConnection"):
         """
         Connect two peers
-        :return: None
         """
         if peer is not None:
             await self.send_ConnectToPeer(
@@ -194,9 +203,6 @@ class GameConnection(GpgNetServerProtocol):
     async def handle_action(self, command: str, args: List[Any]):
         """
         Handle GpgNetSend messages, wrapped in the JSON protocol
-        :param command: command type
-        :param args: command arguments
-        :return: None
         """
         try:
             await COMMAND_HANDLERS[command](self, *args)
@@ -302,10 +308,10 @@ class GameConnection(GpgNetServerProtocol):
         self, primary: Any, secondary: Any, delta: str
     ):
         """
-        :param primary: are primary mission objectives complete?
-        :param secondary: are secondary mission objectives complete?
-        :param delta: the time it took to complete the mission
-        :return: None
+        # Params
+        - `primary`: are primary mission objectives complete?
+        - `secondary`: are secondary mission objectives complete?
+        - `delta`: the time it took to complete the mission
         """
         primary = FA.ENABLED == primary
         secondary = FA.ENABLED == secondary
@@ -366,15 +372,15 @@ class GameConnection(GpgNetServerProtocol):
         teamkiller_name: str,
     ):
         """
-            Sent when a player is teamkilled and clicks the 'Report' button.
+        Sent when a player is teamkilled and clicks the 'Report' button.
 
-            :param gametime: seconds of gametime when kill happened
-            :param reporter_id: reporter id
-            :param reporter_name: reporter nickname (for debug purpose only)
-            :param teamkiller_id: teamkiller id
-            :param teamkiller_name: teamkiller nickname (for debug purpose only)
+        # Params
+        - `gametime`: seconds of gametime when kill happened
+        - `reporter_id`: reporter id
+        - `reporter_name`: reporter nickname (for debug purpose only)
+        - `teamkiller_id`: teamkiller id
+        - `teamkiller_name`: teamkiller nickname (for debug purpose only)
         """
-
         pass
 
     async def handle_teamkill_happened(
@@ -386,14 +392,15 @@ class GameConnection(GpgNetServerProtocol):
         teamkiller_name: str,
     ):
         """
-            Send automatically by the game whenever a teamkill happens. Takes
-            the same parameters as TeamkillReport.
+        Send automatically by the game whenever a teamkill happens. Takes
+        the same parameters as TeamkillReport.
 
-            :param gametime: seconds of gametime when kill happened
-            :param victim_id: victim id
-            :param victim_name: victim nickname (for debug purpose only)
-            :param teamkiller_id: teamkiller id
-            :param teamkiller_name: teamkiller nickname (for debug purpose only)
+        # Params
+        - `gametime`: seconds of gametime when kill happened
+        - `victim_id`: victim id
+        - `victim_name`: victim nickname (for debug purpose only)
+        - `teamkiller_id`: teamkiller id
+        - `teamkiller_name`: teamkiller nickname (for debug purpose only)
         """
         victim_id = int(victim_id)
         teamkiller_id = int(teamkiller_id)
@@ -442,8 +449,6 @@ class GameConnection(GpgNetServerProtocol):
     async def handle_game_state(self, state: str):
         """
         Changes in game state
-        :param state: new state
-        :return: None
         """
 
         if state == "Idle":

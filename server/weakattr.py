@@ -1,3 +1,7 @@
+"""
+Helpers for non-owned object attributes
+"""
+
 import contextlib
 import weakref
 from typing import Generic, Optional, TypeVar

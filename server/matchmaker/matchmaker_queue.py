@@ -120,9 +120,7 @@ class MatchmakerQueue:
         """
         Search for a match.
 
-        Puts a search object into the Queue and awaits completion.
-
-        :param player: Player to search for a matchup for
+        Puts a search object into the queue and awaits completion.
         """
         assert search is not None
 
@@ -204,9 +202,9 @@ class MatchmakerQueue:
     def match(self, s1: Search, s2: Search) -> bool:
         """
         Mark the given two searches as matched
-        :param s1:
-        :param s2:
-        :return: True if matching succeeded or False if matching failed
+
+        # Returns
+        `True` if matching succeeded or `False` if matching failed.
         """
         if s1.is_matched or s2.is_matched:
             return False

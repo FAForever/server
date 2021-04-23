@@ -1,3 +1,7 @@
+"""
+Analysis of application performance
+"""
+
 import asyncio
 import cProfile
 from asyncio import CancelledError

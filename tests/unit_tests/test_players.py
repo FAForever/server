@@ -27,7 +27,6 @@ def test_ratings():
 def test_faction():
     """
     Yes, this test was motivated by a bug
-    :return:
     """
     p = Player("Schroedinger2")
     p.faction = "aeon"

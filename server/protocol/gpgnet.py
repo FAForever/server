@@ -8,33 +8,33 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
     """
     async def send_ConnectToPeer(self, player_name: str, player_uid: int, offer: bool):
         """
-        Tells a client that has a listening LobbyComm instance to connect to the given peer
-        :param player_name: Remote player name
-        :param player_uid: Remote player identifier
+        Tells a client that has a listening LobbyComm instance to connect to the
+        given peer
+
+        # Params
+        - `player_name`: Remote player name
+        - `player_uid`: Remote player identifier
         """
         await self.send_gpgnet_message("ConnectToPeer", [player_name, player_uid, offer])
 
     async def send_JoinGame(self, remote_player_name: str, remote_player_uid: int):
         """
         Tells the game to join the given peer by ID
-        :param remote_player_name:
-        :param remote_player_uid:
         """
         await self.send_gpgnet_message("JoinGame", [remote_player_name, remote_player_uid])
 
-    async def send_HostGame(self, map_path):
+    async def send_HostGame(self, map_path: str):
         """
         Tells the game to start listening for incoming connections as a host
-        :param map_path: Which scenario to use
+
+        # Params
+        - `map_path`: Which scenario to use
         """
         await self.send_gpgnet_message("HostGame", [str(map_path)])
 
     async def send_DisconnectFromPeer(self, id: int):
         """
         Instructs the game to disconnect from the peer given by id
-
-        :param id:
-        :return:
         """
         await self.send_gpgnet_message("DisconnectFromPeer", [id])
 

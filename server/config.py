@@ -1,3 +1,7 @@
+"""
+Server config variables
+"""
+
 import asyncio
 import logging
 import os
