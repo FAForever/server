@@ -51,11 +51,11 @@ class ConfigurationStore:
         self.API_BASE_URL = "https://api.test.faforever.com/"
         self.USE_API = True
 
-        self.MQ_USER = "faf-lobby"
+        self.MQ_USER = "faf-python-server"
         self.MQ_PASSWORD = "banana"
         self.MQ_SERVER = "127.0.0.1"
         self.MQ_PORT = 5672
-        self.MQ_VHOST = "/faf-lobby"
+        self.MQ_VHOST = "/faf-core"
         self.MQ_EXCHANGE_NAME = "faf-rabbitmq"
 
         self.WWW_URL = "https://www.faforever.com"
